@@ -18,6 +18,8 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 
 - Creative freedom: designs do NOT have to follow docs/BIBLE.md; Matt is happy for any ideas that fit the game (identity, mechanics, style). The bible is a starting point.
 
+- WREN DIRECTION (2026-10-14): Take C "Pelt Walker" (alpha wolf-pelt hood, shadowed face with amber glints, amber paw stitches, lantern ember floating on a thread) PLUS a wolf pup companion. v1 (round teal hood), A Lantern Keeper and B Pack Pup are not chosen. Next: Wren v2 sheet. Open idea for the abilities workshop: the pup could visually tie to Ghost Wolves ranks (visual only unless approved).
+
 ## Rejected (and why)
 - Round 1 UI directions D1-D4 (glass, gothic, neon, ember): better than the original but "still blocky", "too much at once", "no identity of its own".
 - Round 2 identity directions E1-E3 (ink, comic cel, papercut): disliked ("I don't like either"); picked "stylised 3D-looking", "too plain/simple", "characters not appealing", "wrong mood for the game".
