@@ -9,5 +9,12 @@ Process: research (docs/research/23) -> design -> review -> bot check -> build. 
 - Pack Howl as shipped is retired by this change (needs build + probe: must stay a modest share of Wren's power; run win rate with ability off within 5 points).
 - Open: pup visual tie to Ghost Wolves rank (visual only, idea).
 
+## Roster scope (APPROVED 2026-10-14)
+- First release launches with TWO heroes: Wren and Elias, designed in full. The other 8 planned heroes stay as concepts and become hero unlocks on the progression tree (gates).
+
+## Elias (ability APPROVED 2026-10-14)
+- Active ability: **Sanctuary: Candle Wheel**: he plants a wheel of light; a ring blooms colour, he heals while inside (bounded: radius ~80 px, heal ~1.5 HP/s as probe start values, 6 s window / 60 s cooldown), and his Holy Orbit orbs lock into the ring. No standing meta: keep damage low, check with bot (ability off within 5 points of win rate).
+- Look: not designed yet (next chunk: Elias design takes). Creative freedom: bible is a starting point.
+
 ## Next in the workshop
-- Elias and one more launch hero; then the rest at concept level (candidates to be unlocked via the tree).
+- Elias design takes (look), then summons/magic weapons review, then enemies/boss, then the other 8 heroes at concept level.
