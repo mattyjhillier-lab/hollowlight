@@ -8,7 +8,8 @@ const med = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length 
 const fmt = (s) => (s == null ? '-' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`);
 
 const runs = [];
-for (let sd = 1; sd <= seeds; sd++) runs.push(playRun(char, sd));
+const s0 = Number(process.env.SEED_FROM || 1);
+for (let sd = s0; sd < s0 + seeds; sd++) runs.push(playRun(char, sd));
 
 const wins = runs.filter((r) => r.outcome === 'victory').length;
 const deaths = runs.filter((r) => r.outcome !== 'victory').map((r) => r.time);
@@ -25,3 +26,6 @@ console.log(`  evolutions/run  median ${med(evoCount)} (min ${Math.min(...evoCou
 console.log(`  death times     ${deaths.length ? deaths.sort((a, b) => a - b).map(fmt).join(' ') : 'none'}${deaths.length ? `  (${bossDeaths} at/after boss)` : ''}`);
 const m = (k) => runs.map((r) => r.marks[k]?.lvl).filter((v) => v != null);
 console.log(`  level @1/3/5/10 min  ${[1, 3, 5, 10].map((k) => med(m(k))).join(' / ')}`);
+const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+console.log(`  hearts/run ${mean(runs.map((r) => r.hearts)).toFixed(1)}  magnets/run ${mean(runs.map((r) => r.magnets)).toFixed(1)}  hits taken/run ${mean(runs.map((r) => r.hurts)).toFixed(0)}  alive@end ${Math.round(mean(runs.map((r) => r.alive)))}`);
+if (process.env.VERBOSE) for (const r of runs) console.log(`    ${r.outcome} ${fmt(r.time)} L${r.level} hearts ${r.hearts} evo [${r.evolved}] w [${r.weaponIds}] hp/en@min ${Object.entries(r.marks).filter(([k]) => k !== 'evo').map(([k, v]) => `${k}:${v.hp}/${v.en}`).join(' ')}`);

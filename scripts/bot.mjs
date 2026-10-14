@@ -63,7 +63,8 @@ export function playRun(charId, seed, opts = {}) {
     if (sim.time % 60 < DT && !marks[m]) marks[m] = { lvl: sim.level, hp: Math.round(sim.player.hp), en: sim.enemies.length };
   }
   const r = sim.result();
-  return { ...r, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  const ev = (t) => sim.events.filter((e) => e.type === t).length;
+  return { ...r, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
