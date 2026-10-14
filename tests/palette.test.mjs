@@ -27,8 +27,8 @@ test('gradeAt clamps and is monotone in warmth at the end', () => {
 });
 
 test('ARC: ambient/fog clamp, hit keyframes exactly, night is the darkest ambient', () => {
-  assert.equal(ambientAt(-1), 0x6a5a9a);
-  assert.equal(ambientAt(0.55), 0x33406c);
+  assert.equal(ambientAt(-1), ARC[0][1]);
+  assert.equal(ambientAt(0.55), ARC[2][1]);
   assert.equal(ambientAt(2), 0xffe2c4);
   assert.equal(fogAt(0.95), 0xc88a9a);
   assert.equal(gradeAt(Number.NaN), ARC[0][2]);

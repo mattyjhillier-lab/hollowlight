@@ -203,7 +203,18 @@ async function shrinkFile(file) {
   } finally { c.close(); }
 }
 
+// node scripts/cdp.mjs sheet <out.png>: greyscale silhouette sheet of hero, enemies and summons (outline-readability check).
+async function sheet(file) {
+  const c = await launch();
+  try {
+    await open(c, 'http://localhost:4173/?style=a&auto=wren&seed=1&t=300&god=1&debug=1', 1280, 720, 1);
+    const b64 = await c.ev(`(()=>{const keys=['hero_wren','hero_elias','wolf','crow','root','wolfU','raven','orb','bolt','gem'];const H=120;const cv=document.createElement('canvas');cv.width=keys.length*130;cv.height=H+10;const g=cv.getContext('2d');g.fillStyle='#808080';g.fillRect(0,0,cv.width,cv.height);keys.forEach((k,i)=>{const im=window.__game.textures.get(k).getSourceImage();const s=Math.min(110/im.width,110/im.height);g.filter='grayscale(1)';g.drawImage(im,i*130+10,5,im.width*s,im.height*s);g.filter='none';});return cv.toDataURL('image/png').split(',')[1]})()`);
+    writeFileSync(file, Buffer.from(b64, 'base64'));
+  } finally { c.close(); }
+}
+
 const [cmd, a1, a2, a3] = process.argv.slice(2);
+if (cmd === 'sheet') await sheet(a1);
 if (cmd === 'shrink') await shrinkFile(a1);
 if (cmd === 'wow') await wow(a1, a2, a3 || 'http://localhost:4173');
 // Dev probe: node scripts/cdp.mjs probe <style> <outFile>  (env JS = expression run in the page after load, Q = tier)

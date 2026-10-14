@@ -5,7 +5,7 @@ import { app } from '../app.js';
 import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { PerfOverlay } from '../gfx/perf.js';
-import { PAL, gradeAt, ambientAt } from '../gfx/palette.js';
+import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
@@ -120,7 +120,9 @@ export class RunScene extends Phaser.Scene {
     makeDigitFont(this);
     this.parts = new Particles(this, D_PART);
     this.nums = new DamageNumbers(this, D_PART + 10);
-    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(0xffcf7a).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
+    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(ROLE.lantern).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
+    this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4000).setScale(inv('hero_wren_o')).setVisible(false);
+    this.heroOutA = 0;
     this.ring = this.add.image(0, 0, 'ring').setBlendMode(ADD).setDepth(D_HALO + 1).setScale(inv('ring')).setVisible(false);
     this.flashR = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
     this.flashT = 0; this.flashLife = 1; this.flashA = 0;
@@ -252,6 +254,8 @@ export class RunScene extends Phaser.Scene {
       this.decor.push(img);
     }
     this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv('hero_wren')).setVisible(true);
+    this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv('hero_wren_o'));
+    this.heroOutA = 0;
     this.parts.clear();
     this.nums.clear();
     for (const r of this.rings) r.on = false;
@@ -273,6 +277,7 @@ export class RunScene extends Phaser.Scene {
     app.freeze = false;
     this.clearDecor();
     this.playerImg.setVisible(false);
+    this.heroOut.setVisible(false);
     this.hideAmbient();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
@@ -515,13 +520,13 @@ export class RunScene extends Phaser.Scene {
     if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha((lit ? 0.3 : 0.3) + 0.03 * Math.sin(sim.time * 2.5));
     if (this.ring.visible) {
       const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
-      this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : 0xffcf7a).setAlpha(0.45 + 0.2 * pulse);
+      this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : ROLE.lantern).setAlpha(0.45 + 0.2 * pulse);
     }
     if (lit) {
       const target = lowHp ? 90 : 130;
       this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
-      lm.add(p.x, p.y - 4, this.lanR * fl, 0xffd9a0, 0.9);
+      lm.add(p.x, p.y - 4, this.lanR * fl, ROLE.lantern, 0.9);
     }
 
     const g = this.groundG;
@@ -568,29 +573,34 @@ export class RunScene extends Phaser.Scene {
       pl.gem.get(gem.id).setPosition(gem.x, gem.y).setDepth(D_LIT - 100).setScale(big * pulse * pl.gem.inv);
       if (gemGlow < caps.gemGlow) {
         gemGlow++;
-        pl.haloG.get(gem.id).setPosition(gem.x, gem.y).setTint(PAL.teal).setScale(0.55 * big * pulse * pl.haloG.inv).setAlpha(0.35 + 0.15 * Math.sin(sim.time * 5 + gem.id));
+        pl.haloG.get(gem.id).setPosition(gem.x, gem.y).setTint(ROLE.pickup).setScale(0.7 * big * pulse * pl.haloG.inv).setAlpha(0.5 + 0.15 * Math.sin(sim.time * 5 + gem.id));
       }
     }
 
     for (const k of sim.pickups) {
       const bob = Math.sin(sim.time * 5 + k.id) * 1.5;
       pl[k.type].get(k.id).setPosition(k.x, k.y + bob).setDepth(D_LIT - 90).setAlpha(k.ttl < 6 && Math.floor(k.ttl * 6) % 2 ? 0.35 : 1);
-      if (caps.gemGlow) pl.haloG.get(k.id).setPosition(k.x, k.y + bob).setTint(k.type === 'magnet' ? PAL.violet : PAL.lavender).setScale(0.9 * pl.haloG.inv).setAlpha(0.4 + 0.15 * Math.sin(sim.time * 4));
+      if (caps.gemGlow) pl.haloG.get(k.id).setPosition(k.x, k.y + bob).setTint(k.type === 'magnet' ? ROLE.magnet : ROLE.heart).setScale(0.9 * pl.haloG.inv).setAlpha(0.4 + 0.15 * Math.sin(sim.time * 4));
     }
 
     // enemies (culled to the view; boss always drawn)
+    let crowd = 0;
     for (const e of sim.enemies) {
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
       // lit state: white flash > bleed > distance tint (min 0.62, 16 steps so setTint only runs on change)
       let tq;
+      const ddx = e.x - p.x;
+      const ddy = e.y - p.y;
+      const d2 = ddx * ddx + ddy * ddy;
+      if (!e.boss) {
+        if (d2 < 256) crowd++;
+        img.setAlpha(d2 < 100 && e.y > p.y ? 0.85 : 1); // enemies in front of the hero never fully hide it
+      }
       if (e.flash > 0) tq = 100;
       else if (e.bleedT > 0) tq = 101;
       else if (lit && !e.boss) {
-        const ddx = e.x - p.x;
-        const ddy = e.y - p.y;
-        const d2 = ddx * ddx + ddy * ddy;
         tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
       } else tq = 0;
       if (img.tq !== tq) {
@@ -600,7 +610,7 @@ export class RunScene extends Phaser.Scene {
         else if (tq === 0) img.clearTint();
         else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
       }
-      if (lit && e.boss) lm.add(e.x, e.y - 10, 90, 0xffb84a, 0.8);
+      if (lit && e.boss) lm.add(e.x, e.y - 10, 90, ROLE.bossEye, 0.8);
       if (e.tele) {
         if (e.boss) {
           g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
@@ -611,6 +621,11 @@ export class RunScene extends Phaser.Scene {
         }
       }
     }
+
+    // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
+    const oa = this.heroOutA + ((crowd >= 3 ? 0.7 : 0) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120);
+    this.heroOutA = oa;
+    this.heroOut.setVisible(oa > 0.02).setPosition(p.x, p.y).setAlpha(oa).setFlipX(p.faceX < 0);
 
     // spirit trails tick at ~30 Hz
     const trailOn = caps.trails > 0 && this.parts.count < this.parts.cap * 0.75 && !this.reducedMotion();
@@ -631,19 +646,19 @@ export class RunScene extends Phaser.Scene {
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
         pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * pl.uWolf.inv).setAlpha(0.92);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.teal).setScale(u.r / 4 * 1.15 * pl.haloU.inv).setAlpha(0.45);
-        trail(u.x, u.y + 1, PAL.teal, 0.4);
-        if (lit) lm.add(u.x, u.y, 40, 0x9fe8ff, 0.8);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.3 * pl.haloU.inv).setAlpha(0.75);
+        trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
+        if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.violet).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
-        trail(u.x, u.y, PAL.violet, 0.3);
-        if (lit) lm.add(u.x, u.y, 40, 0x8a6fe0, 0.8);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
+        trail(u.x, u.y, ROLE.spiritB, 0.3);
+        if (lit) lm.add(u.x, u.y, 40, ROLE.spiritB, 0.8);
       } else if (u.kind === 'orb') {
         pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.ice).setScale(1.1 * pl.haloU.inv).setAlpha(0.55);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale(1.1 * pl.haloU.inv).setAlpha(0.55);
         trail(u.x, u.y, PAL.lavender, 0.3);
-        if (lit) lm.add(u.x, u.y, 40, 0xb8f2ff, 0.8);
+        if (lit) lm.add(u.x, u.y, 40, ROLE.spiritC, 0.8);
       }
     }
 
@@ -651,9 +666,9 @@ export class RunScene extends Phaser.Scene {
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
       pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((b.r / 3) * pl.bolt.inv);
-      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(PAL.teal).setScale((b.r / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
+      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale((b.r / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
       trail(b.x, b.y, PAL.ice, 0.28);
-      if (lit) lm.add(b.x, b.y, 24, 0x7ff0ff, 0.8);
+      if (lit) lm.add(b.x, b.y, 24, ROLE.bolt, 0.8);
     }
 
     // transient effects (additive: glow comes for free)
@@ -666,7 +681,7 @@ export class RunScene extends Phaser.Scene {
         fx.lineStyle(2, c, Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
       } else if (f.kind === 'bolt') {
         const a = Math.min(1, f.ttl / 0.1);
-        if (lit && f.pts.length) lm.add(f.pts[f.pts.length - 1].x, f.pts[f.pts.length - 1].y, 60, 0xe8f4ff, 0.9 * a);
+        if (lit && f.pts.length) lm.add(f.pts[f.pts.length - 1].x, f.pts[f.pts.length - 1].y, 60, ROLE.lightning, 0.9 * a);
         for (let pass = 0; pass < 2; pass++) {
           if (pass === 0) fx.lineStyle(5, PAL.violet, 0.3 * a);
           else fx.lineStyle(2, PAL.ice, a);
@@ -705,7 +720,7 @@ export class RunScene extends Phaser.Scene {
       for (const d of this.dfl) {
         if (d.t >= 0.2) continue;
         d.t += dt;
-        lm.add(d.x, d.y, 30, 0xffd0a0, 0.8 * Math.max(0, 1 - d.t / 0.2));
+        lm.add(d.x, d.y, 30, ROLE.enemyRim, 0.8 * Math.max(0, 1 - d.t / 0.2));
       }
       lm.flush(this.ambient);
       if (!lm.ok) this.applyTier(); // lightmap failed at runtime: fall back to the Low look
