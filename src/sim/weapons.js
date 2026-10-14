@@ -275,7 +275,7 @@ function strikeChain(sim, w, first, chains, dmg, area) {
     sim.hurt(cur, dmg * Math.max(0.5, 1 - 0.05 * i));
     cur = sim.nearestEnemy(cur.x, cur.y, area, (e) => !hit.has(e.id));
   }
-  sim.addFx({ kind: 'bolt', pts, ttl: 0.16, color: '#fff27a' });
+  sim.addFx({ kind: 'bolt', pts, ttl: 0.16, color: '#b8f2ff' });
 }
 
 const chainLightning = {
@@ -295,7 +295,7 @@ const chainLightning = {
       for (let k = 0; k < strikes && pool.length; k++) {
         const e = pool.splice(sim.rng.int(pool.length), 1)[0];
         sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.5));
-        sim.addFx({ kind: 'bolt', pts: [{ x: e.x + sim.rng.range(-8, 8), y: e.y - 70 }, { x: e.x, y: e.y }], ttl: 0.12, color: '#fff27a' });
+        sim.addFx({ kind: 'bolt', pts: [{ x: e.x + sim.rng.range(-8, 8), y: e.y - 70 }, { x: e.x, y: e.y }], ttl: 0.12, color: '#b8f2ff' });
       }
       return;
     }
@@ -311,7 +311,7 @@ const chainLightning = {
           if (Math.hypot(e.x - p.x, e.y - p.y) > 260) continue;
           n++;
           sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.9));
-          sim.addFx({ kind: 'bolt', pts: [{ x: e.x, y: e.y - 80 }, { x: e.x, y: e.y }], ttl: 0.2, color: '#fff7b0' });
+          sim.addFx({ kind: 'bolt', pts: [{ x: e.x, y: e.y - 80 }, { x: e.x, y: e.y }], ttl: 0.2, color: '#b8f2ff' });
         }
       }
     }
@@ -361,7 +361,7 @@ const holyOrbit = {
             if (o.dead) continue;
             if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34) sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.8));
           }
-          sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: 34, ttl: 0.2, color: '#ffe08a' });
+          sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: 34, ttl: 0.2, color: '#e8e0ff' });
           u.disabledT = tune(sim, w, 'rest', 1.0);
           break;
         }
@@ -374,7 +374,7 @@ const holyOrbit = {
       if (rt.zCd <= 0) {
         rt.zCd = 1.5;
         const u = units[sim.rng.int(units.length)];
-        sim.spawnZone({ x: u.x, y: u.y, r: 22, ttl: 4, dps: dmg, heal: 0.8, color: '#ffe08a' });
+        sim.spawnZone({ x: u.x, y: u.y, r: 22, ttl: 4, dps: dmg, heal: 0.8, color: '#e8e0ff' });
       }
     }
   },
