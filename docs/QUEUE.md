@@ -1,7 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 ## NOW / NEXT / LATER (focus keeper)
-- NOW: wait for the 3 running jobs (3D proof, 2D cartoon mock-ups, skill tree) and review them one at a time.
+- NOW: wait for the 2 running jobs (3D proof, skill tree) and review them one at a time. (2D cartoon mock-ups done: Matt prefers P1 Warm Lantern.)
 - NEXT: agree the action plan together (small chunks), starting with at most 3 decisions: art direction, bible edits, summons fixes.
 - LATER: build phases in small chunks after the GO gate (docs/READINESS.md).
 - PARKING LOT (ideas not started): see bottom of this file.

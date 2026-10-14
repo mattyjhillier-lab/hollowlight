@@ -10,6 +10,8 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 - Name: Hollowlight: Spirits of the Dusk. Chapter 1: Cursed Forest.
 - Keep from earlier work: modern interface direction is wanted, but the specific UI look is NOT decided.
 
+- Mood preference (2026-10-14): P1 WARM LANTERN (cosy, golden, cream-amber spirits on a cool grey-blue Hollow) over P2 Moonwell. Polished 2D cartoon mock-ups were well received (Hollow vs restored colour split, appealing creatures, node-web skill tree). Cream-amber ghost wolves (differs from bible moon-blue): assumed OK unless Matt says otherwise. FINAL art family (polished 2D cartoon vs 3D) still waits for the 3D proof comparison.
+
 ## Rejected (and why)
 - Round 1 UI directions D1-D4 (glass, gothic, neon, ember): better than the original but "still blocky", "too much at once", "no identity of its own".
 - Round 2 identity directions E1-E3 (ink, comic cel, papercut): disliked ("I don't like either"); picked "stylised 3D-looking", "too plain/simple", "characters not appealing", "wrong mood for the game".
