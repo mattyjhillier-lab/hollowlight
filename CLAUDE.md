@@ -8,6 +8,9 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 - He playtests and gives feedback in plain language. Treat feedback as the spec; fix, run tests, rebuild, tell him in a few bullets.
 - Do not build parked features until he says so. Ask before big design changes.
 
+## Standing rule: everything must fit the game (set by Matt)
+Whatever is added or designed (feature, creature, weapon, evolution, UI, effect, sound, asset, story) must (1) fit Hollowlight's look and identity (docs/IDENTITY.md, docs/BIBLE.md, the chosen art direction, role colours, restraint) and (2) make mechanical sense inside the game (consistent with the locked design, the sim rules, the summoner fantasy, balance targets, and how the player reads and understands it). Before building anything new, state in one line how it fits the look and why it makes mechanical sense; if it does not clearly fit, do not add it and raise it with Matt. Generic or off-style assets and mechanics that do not belong are rejected even if they are free or easy. Check this in every review and end each task with a one-line "Fit check" next to the "Security check".
+
 ## Standing rule: token conservation (set by Matt)
 Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.
 - Agents: set `model` explicitly. haiku = file lookups, formatting, simple edits, running scripts and reporting. sonnet = research, routine coding, tests, balance sweeps. opus (or stronger) only for hard architecture/design decisions, tricky bugs, or security-critical review.
