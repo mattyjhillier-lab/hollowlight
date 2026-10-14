@@ -54,7 +54,7 @@ Standing rules always apply: security first, token conservation, everything must
 - [ ] Phone test of current dev build (performance baseline).
 
 ## Decisions pending from skill tree report
-- [?] Difficulty tiers (recommended) to keep Chapter 1 hard once the tree is bought; run-modifier unlock type is ready.
+- [~] Matt chose a different fix than difficulty tiers: progression gates (options unlocked behind conditions, small capped stat nodes). Design doc + bot test running: docs/design/progression-gates-v1.md. Difficulty tiers stay an optional later idea.
 - [ ] Exclusive branches vs exclusive keystone pairs; tree-gated weapons/heroes (supported via treeGate); free respec in v1 (kept); flat +1 spirit nodes removed (bot found them strongest). Raise in the roster workshop.
 
 ## Ideas parked (do not start without Matt)
