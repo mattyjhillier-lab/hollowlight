@@ -4,6 +4,7 @@
 - NOW: skill tree build finishing (the last running job). Art family LOCKED: polished 2D cartoon, P1 Warm Lantern.
 - NOW (art): style recipe chosen (S1+S5 mix, see ART-DECISIONS). Next small chunk: Wren design sheet in this recipe for Matt to approve.
 - DONE: Wren v2 approved (Pelt Walker + pup). Wren ability decided: Rally the Pack + ember flavour, Pelt Dash later as an unlock (docs/design/heroes-and-abilities.md).
+- BUILD QUEUE (approved): G1 = gate plumbing (~15 lines tree.js/Sim.js/cards.js + 12 gate nodes + hpScale tweak), then G2 = value rescale + data validator. Each with independent review before building, tests, bot check, security + fit check. Start after the Elias design is approved.
 - NEXT (Matt asked): ROSTER + ABILITIES WORKSHOP right after the Wren sheet and before drawing other heroes: revisit who the heroes are, their special abilities and how summons/evolutions work, so everything matches what the game is evolving into (inputs: docs/BIBLE.md hero section, docs/research/18 summons review, docs/IDENTITY.md). Do it in small steps, 2-3 heroes at a time, check mechanical sense and look fit.
 - THEN (Matt asked): CONTENT REVIEW SERIES, small steps, in this order: (1) roster + hero abilities workshop (abilities must be meaningful, fit the hero, never game-breaking: see CLAUDE.md ABILITY DESIGN PRINCIPLE), (2) summons and magic weapons and their evolutions (each evolution must be meaningful, fit its spirit and hero, change the verb, never game-breaking) (what each is, how it plays, fit with the Hollow look and mechanics; use docs/research/18 findings: only wolves are true summons, ravens/orbit are rings, several evolution texts do not match behaviour, Murder Storm 5-13x outlier), (3) power-ups/pickups and what each CHAPTER adds (chapter-specific power-ups, hazards, rewards). Research to do first for steps 2-3 (how other games design summon/magic weapon sets, evolutions, per-chapter pickups); keep it in separate small research chunks.
 - THEN: agree the action plan in small chunks: first chunk proposal = approve creature design sheets one at a time (Wren first), then rebuild the in-game look step by step.
@@ -56,7 +57,7 @@ Standing rules always apply: security first, token conservation, everything must
 - [ ] Phone test of current dev build (performance baseline).
 
 ## Decisions pending from skill tree report
-- [~] Matt chose a different fix than difficulty tiers: progression gates (options unlocked behind conditions, small capped stat nodes). Design doc + bot test running: docs/design/progression-gates-v1.md. Difficulty tiers stay an optional later idea.
+- [x] APPROVED 2026-10-14 (gates direction, base difficulty up via hpScale, G1 build after Elias design). Original note: progression gates (options unlocked behind conditions, small capped stat nodes). Design doc + bot test running: docs/design/progression-gates-v1.md. Difficulty tiers stay an optional later idea.
 - [ ] Exclusive branches vs exclusive keystone pairs; tree-gated weapons/heroes (supported via treeGate); free respec in v1 (kept); flat +1 spirit nodes removed (bot found them strongest). Raise in the roster workshop.
 
 ## Ideas parked (do not start without Matt)
