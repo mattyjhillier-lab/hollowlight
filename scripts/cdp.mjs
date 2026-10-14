@@ -49,7 +49,12 @@ async function open(c, url, w, h, dpr) {
   await c.send('Page.navigate', { url });
   for (let i = 0; i < 80; i++) {
     await sleep(250);
-    try { if (await c.ev('!!(window.__app && window.__app.sim)')) return; } catch { /* loading */ }
+    try {
+      if (await c.ev('!!(window.__app && window.__app.sim)')) {
+        if (process.env.Q) await c.ev(`window.__app.save.setSettings({quality:'${process.env.Q}'}); true`);
+        return;
+      }
+    } catch { /* loading */ }
   }
   console.error(await c.ev('JSON.stringify({rs:document.readyState,app:typeof window.__app,sim:!!(window.__app&&window.__app.sim),href:location.href,txt:document.body.innerText.slice(0,200)})'));
   throw new Error('run did not start: ' + url);
@@ -67,7 +72,7 @@ async function shot(c, file) {
   writeFileSync(file, Buffer.from(r.data, 'base64'));
 }
 
-const GRANT = 'ghost_wolves:speed=3,power=3;raven_flock:power=3;spirit_bolts:power=3,pierce=2;holy_orbit:power=2';
+const GRANT = process.env.NOGRANT ? '' : 'ghost_wolves:speed=3,power=3;raven_flock:power=3;spirit_bolts:power=3,pierce=2;holy_orbit:power=2';
 
 export async function shots(out, base) {
   mkdirSync(out, { recursive: true });
@@ -100,14 +105,14 @@ export async function shots(out, base) {
 }
 
 // Per style x tier: run from t=300 for `secs`, sample scene.perf.rec twice a second.
-export async function perf(base, secs = 12, throttle = 1, styles = ['a', 'b'], tiers = ['low', 'med', 'high'], size = [1280, 720, 1]) {
+export async function perf(base, secs = 12, throttle = 1, styles = ['a', 'b'], tiers = ['low', 'med', 'high'], size = (process.env.SIZE || '1280,720,1').split(',').map(Number)) {
   const c = await launch();
   const rows = [];
   try {
     if (throttle > 1) await c.send('Emulation.setCPUThrottlingRate', { rate: throttle });
     for (const st of styles) {
       for (const tier of tiers) {
-        await open(c, `${base}/?style=${st}&auto=wren&seed=1&t=300&god=1&debug=1&grant=${GRANT}`, ...size);
+        await open(c, `${base}/?style=${st}&auto=wren&seed=1&t=${process.env.T || 300}&god=1&debug=1&grant=${GRANT}`, ...size);
         await c.ev(`window.__app.save.setSettings({quality:'${tier}'}); true`);
         await sleep(3000);
         const acc = { fps: 0, ms: 0, work: 0, sprites: 0, particles: 0, calls: 0, n: 0 };
@@ -128,7 +133,33 @@ export async function perf(base, secs = 12, throttle = 1, styles = ['a', 'b'], t
   return rows;
 }
 
+// Zoomed crop around the player at DPR 2 (art inspection). node scripts/cdp.mjs closeup <outDir> [t]
+export async function closeup(out, base, t = 358) {
+  mkdirSync(out, { recursive: true });
+  const c = await launch();
+  try {
+    for (const st of ['a', 'b']) {
+      await open(c, `${base}/?style=${st}&auto=wren&seed=1&t=${t}&god=1&debug=1&grant=${GRANT}`, 1280, 720, 2);
+      await waitSim(c, `window.__app.sim.time > ${Number(t) + 6}`);
+      const r = await c.send('Page.captureScreenshot', { format: 'png', clip: { x: 400, y: 160, width: 480, height: 300, scale: 2 } });
+      writeFileSync(join(out, `${st}-closeup.png`), Buffer.from(r.data, 'base64'));
+    }
+  } finally { c.close(); }
+}
+
 const [cmd, a1, a2] = process.argv.slice(2);
+// Dev probe: node scripts/cdp.mjs probe <style> <outFile>  (env JS = expression run in the page after load, Q = tier)
+if (cmd === 'probe') {
+  const c = await launch();
+  try {
+    await open(c, `http://localhost:4173/?style=${a1}&auto=wren&seed=1&t=358&god=1&debug=1&grant=${GRANT}`, 1280, 720, 1);
+    await waitSim(c, 'window.__app.sim.time > 364');
+    if (process.env.JS) console.log(await c.ev(process.env.JS));
+    await sleep(1200);
+    await shot(c, a2);
+  } finally { c.close(); }
+}
+if (cmd === 'closeup') await closeup(a1, 'http://localhost:4173', a2 || 358);
 if (cmd === 'shots') await shots(a1, a2 || 'http://localhost:4173');
 else if (cmd === 'perf') {
   const th = Number(process.env.THROTTLE || 1);

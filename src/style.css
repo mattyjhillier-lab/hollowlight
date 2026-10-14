@@ -177,8 +177,26 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .vlabel { position: absolute; right: 1em; bottom: .6em; color: var(--muted); font-size: .8em; }
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { transition: none !important; animation: none !important; }
 
+/* ---------- small stage (phones): compact HUD ---------- */
+@container (max-width: 520px) {
+  .hud .bars { width: 13em; left: 1em; top: .9em; }
+  .bar { height: 1.5em; margin-bottom: .3em; }
+  .bar.xp { height: 1em; }
+  .hud .timer { font-size: 1.5em; top: .6em; padding: .1em .6em; }
+  .hud .stats { right: 1em; top: .9em; }
+  .hud .stats > div { padding: .15em .6em; }
+  .hud .slots { left: 1em; bottom: .9em; gap: .35em; }
+  .slot { width: 5.8em; min-height: 2.5em; padding: .35em .4em .4em .7em; }
+  .slot .n { font-size: .72em; }
+  .hud .ability { right: 1em; bottom: .9em; width: 8.6em; padding: .4em .6em .45em; }
+  .hud .boss { width: 22em; top: 4.2em; }
+  .hud .toast { top: 7em; }
+  .bossintro { font-size: 2em; }
+  .perf { top: 5.4em; }
+}
+
 /* ---------- effects ---------- */
 .bossintro { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; font-family: var(--font-head); font-size: 3.2em; font-weight: 700; letter-spacing: .3em; color: #fff; text-shadow: 0 0 .5em var(--violet), 0 0 1.2em var(--glow-violet), 0 2px 4px #000; }
 .bossintro.on { animation: bossintro 2.6s ease-out; }
 @keyframes bossintro { 0% { opacity: 0; letter-spacing: .6em; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; letter-spacing: .3em; } }
-.perf { position: absolute; left: .6em; top: 6.8em; padding: .3em .5em; background: rgba(7, 7, 13, .7); color: var(--ice); font-size: .8em; white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; border-radius: .4em; font-family: ui-monospace, Consolas, monospace; }
+.perf { position: absolute; left: .6em; top: 6.8em; padding: .3em .5em; background: rgba(7, 7, 13, .7); color: var(--ice); font-size: clamp(7px, 1.3cqw, 15px); white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; border-radius: .4em; font-family: ui-monospace, Consolas, monospace; }
