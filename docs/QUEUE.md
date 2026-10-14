@@ -2,7 +2,7 @@
 
 ## NOW / NEXT / LATER (focus keeper)
 - NOW: skill tree build finishing (the last running job). Art family LOCKED: polished 2D cartoon, P1 Warm Lantern.
-- NOW (art): style lab round - explore variants within 2D cartoon (line, shading, proportions, world rendering), then pick/mix.
+- NOW (art): style recipe chosen (S1+S5 mix, see ART-DECISIONS). Next small chunk: Wren design sheet in this recipe for Matt to approve.
 - NEXT: agree the action plan in small chunks: first chunk proposal = approve creature design sheets one at a time (Wren first), then rebuild the in-game look step by step.
 - LATER: build phases in small chunks after the GO gate (docs/READINESS.md).
 - PARKING LOT (ideas not started): see bottom of this file.
