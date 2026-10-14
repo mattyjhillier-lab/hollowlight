@@ -24,6 +24,8 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 
 - ELIAS DIRECTION (2026-10-14): Take B The Lamplighter (stout kindly gravedigger-lamplighter, patched coat, light spilling from pockets, lantern-staff with spade foot) + C's flame ring; the lantern becomes a small candle-wheel chandelier that the spade lowers to the ground (Candle Wheel ability). A Keeper of the Wheel and C Wax Saint not chosen. Next: Elias v2 sheet.
 
+- ELIAS v2 APPROVED (2026-10-14): The Lamplighter + flame ring (docs/mockups/elias-v2/). Launch duo LOCKED: Wren v2 + Elias v2. Fixes to fold into the build: stiff arm/plain hand, crown candles merge into one bar at 40px, ground wheel flatter than scene grass; both carry gold-ish light dots at 40px (told apart by position). Elias is taller (75px desktop/50px phone vs Wren 65/44): hit-box/scale call, keep.
+
 ## Rejected (and why)
 - Round 1 UI directions D1-D4 (glass, gothic, neon, ember): better than the original but "still blocky", "too much at once", "no identity of its own".
 - Round 2 identity directions E1-E3 (ink, comic cel, papercut): disliked ("I don't like either"); picked "stylised 3D-looking", "too plain/simple", "characters not appealing", "wrong mood for the game".

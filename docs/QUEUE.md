@@ -1,15 +1,11 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 ## NOW / NEXT / LATER (focus keeper)
-- NOW: skill tree build finishing (the last running job). Art family LOCKED: polished 2D cartoon, P1 Warm Lantern.
-- NOW (art): style recipe chosen (S1+S5 mix, see ART-DECISIONS). Next small chunk: Wren design sheet in this recipe for Matt to approve.
-- DONE: Wren v2 approved (Pelt Walker + pup). Wren ability decided: Rally the Pack + ember flavour, Pelt Dash later as an unlock (docs/design/heroes-and-abilities.md).
-- BUILD QUEUE (approved): G1 = gate plumbing (~15 lines tree.js/Sim.js/cards.js + 12 gate nodes + hpScale tweak), then G2 = value rescale + data validator. Each with independent review before building, tests, bot check, security + fit check. Start after the Elias design is approved.
-- NEXT (Matt asked): ROSTER + ABILITIES WORKSHOP right after the Wren sheet and before drawing other heroes: revisit who the heroes are, their special abilities and how summons/evolutions work, so everything matches what the game is evolving into (inputs: docs/BIBLE.md hero section, docs/research/18 summons review, docs/IDENTITY.md). Do it in small steps, 2-3 heroes at a time, check mechanical sense and look fit.
-- THEN (Matt asked): CONTENT REVIEW SERIES, small steps, in this order: (1) roster + hero abilities workshop (abilities must be meaningful, fit the hero, never game-breaking: see CLAUDE.md ABILITY DESIGN PRINCIPLE), (2) summons and magic weapons and their evolutions (each evolution must be meaningful, fit its spirit and hero, change the verb, never game-breaking) (what each is, how it plays, fit with the Hollow look and mechanics; use docs/research/18 findings: only wolves are true summons, ravens/orbit are rings, several evolution texts do not match behaviour, Murder Storm 5-13x outlier), (3) power-ups/pickups and what each CHAPTER adds (chapter-specific power-ups, hazards, rewards). Research to do first for steps 2-3 (how other games design summon/magic weapon sets, evolutions, per-chapter pickups); keep it in separate small research chunks.
-- THEN: agree the action plan in small chunks: first chunk proposal = approve creature design sheets one at a time (Wren first), then rebuild the in-game look step by step.
-- LATER: build phases in small chunks after the GO gate (docs/READINESS.md).
-- PARKING LOT (ideas not started): see bottom of this file.
+- DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
+- NOW (next session): independent review of build chunk G1 (gate plumbing ~15 lines + 12 gate nodes + hpScale difficulty tweak), then build it with tests + bot check + security/fit check.
+- NEXT: summons and magic weapons review + Ghost Wolf/raven designs; enemy roster + Elder Treant designs; retune evolutions (Murder Storm outlier etc.); then rest of the content review series.
+- LATER: build phases via the GO gate (docs/READINESS.md): art pass in Style v1, audio, enemies/boss, phone/PWA, packaging, launch. Live game is still v0.2.0; dev has v0.4.0.
+- PARKING LOT: see bottom.
 
 Legend: [ ] queued, [~] in progress, [?] waiting on Matt, [x] done. Parked items are not started without Matt's say-so (CLAUDE.md).
 Standing rules always apply: security first, token conservation, everything must fit the game, no hiring/zero budget.
