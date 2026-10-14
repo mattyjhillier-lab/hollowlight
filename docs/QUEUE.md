@@ -14,7 +14,7 @@ Standing rules always apply: security first, token conservation, everything must
 ## In progress (agents running)
 - [~] 3D proof (branch spike-3d): real 3D vs pre-rendered sprites, plus a "life map" (The Hollow) ground prototype. Go/no-go: >=45 fps at 300 enemies on throttled phone viewport.
 - [~] Polished 2D cartoon mock-ups (P1 Warm Lantern, P2 Moonwell): world, creature sheet, skill-tree web, level-up cards.
-- [~] Skill tree v1 (dev): data-driven pannable node web, exploration-driven unlocks (per-enemy/per-stage), save integration, tests. Plain styling for now.
+- [x] Skill tree v1 built on dev (v0.4.0, 63 nodes, node web, exploration unlocks, 87 tests). Plain styling; re-skin later. PROBLEM: full tree makes the bot win 100% (half tree 75-94%): needs difficulty tiers or base re-tune.
 - [~] Summons and evolution design review (read-only report): docs/research/18-*.md.
 
 ## Waiting on Matt (decisions / inputs)
@@ -52,6 +52,10 @@ Standing rules always apply: security first, token conservation, everything must
 - [ ] Re-read each asset licence box by eye before shipping; keep CREDITS files.
 - [ ] Private repo move + Cloudflare Pages setup (guided, step by step).
 - [ ] Phone test of current dev build (performance baseline).
+
+## Decisions pending from skill tree report
+- [?] Difficulty tiers (recommended) to keep Chapter 1 hard once the tree is bought; run-modifier unlock type is ready.
+- [ ] Exclusive branches vs exclusive keystone pairs; tree-gated weapons/heroes (supported via treeGate); free respec in v1 (kept); flat +1 spirit nodes removed (bot found them strongest). Raise in the roster workshop.
 
 ## Ideas parked (do not start without Matt)
 Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 characters, prestige, codex, touch controls beyond P8, gameplay link for the life map (restored ground empowers summons), "summon mastery/commands" idea from the review, kill-streak/other systems.
