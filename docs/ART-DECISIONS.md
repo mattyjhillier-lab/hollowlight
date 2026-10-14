@@ -22,6 +22,8 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 
 - WREN v2 APPROVED (2026-10-14): Pelt Walker + ghost wolf pup (docs/mockups/wren-v2/). Quality bar for all heroes. Known fixes to fold into the build: paw ties read as clasped hands, weak pup sleep/howl/back poses, pale-on-pale contrast on restored grass, keep pup glow on and at her heel.
 
+- ELIAS DIRECTION (2026-10-14): Take B The Lamplighter (stout kindly gravedigger-lamplighter, patched coat, light spilling from pockets, lantern-staff with spade foot) + C's flame ring; the lantern becomes a small candle-wheel chandelier that the spade lowers to the ground (Candle Wheel ability). A Keeper of the Wheel and C Wax Saint not chosen. Next: Elias v2 sheet.
+
 ## Rejected (and why)
 - Round 1 UI directions D1-D4 (glass, gothic, neon, ember): better than the original but "still blocky", "too much at once", "no identity of its own".
 - Round 2 identity directions E1-E3 (ink, comic cel, papercut): disliked ("I don't like either"); picked "stylised 3D-looking", "too plain/simple", "characters not appealing", "wrong mood for the game".

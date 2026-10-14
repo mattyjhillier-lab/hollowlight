@@ -14,7 +14,7 @@ Process: research (docs/research/23) -> design -> review -> bot check -> build. 
 
 ## Elias (ability APPROVED 2026-10-14)
 - Active ability: **Sanctuary: Candle Wheel**: he plants a wheel of light; a ring blooms colour, he heals while inside (bounded: radius ~80 px, heal ~1.5 HP/s as probe start values, 6 s window / 60 s cooldown), and his Holy Orbit orbs lock into the ring. No standing meta: keep damage low, check with bot (ability off within 5 points of win rate).
-- Look: not designed yet (next chunk: Elias design takes). Creative freedom: bible is a starting point.
+- Look (direction chosen 2026-10-14): The Lamplighter (stout kindly gravedigger-lamplighter, patched coat, light spilling from pockets, lantern-staff with spade foot) plus a ring of flames; the lantern is a small candle-wheel chandelier the spade lowers to the ground for Candle Wheel. Refinement sheet (Elias v2) in progress.
 
 ## Next in the workshop
 - Elias design takes (look), then summons/magic weapons review, then enemies/boss, then the other 8 heroes at concept level.
