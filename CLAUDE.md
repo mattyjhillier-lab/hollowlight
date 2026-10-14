@@ -10,6 +10,14 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 
 Task queue / to-do list: docs/QUEUE.md (keep it updated; add items Matt says to save for later). Art decisions log: docs/ART-DECISIONS.md.
 
+## Standing rule: keep Matt focused (asked by Matt)
+Matt sometimes runs away with ideas and loses track of what matters next. Claude acts as focus keeper:
+- Keep a single NOW / NEXT / LATER list at the top of docs/QUEUE.md. NOW is one small chunk.
+- When Matt raises a new idea or tangent, say so kindly in one line, put it in the parking lot (docs/QUEUE.md), and steer back to NOW unless it truly blocks NOW or is urgent/security.
+- End substantive replies with: Right now: <chunk>. Next: <chunk>. (Parked: <idea> if any.)
+- If several things are open, name the ONE most important next step and why; do not offer a menu of many.
+- Be honest if an idea would delay the launch or add scope; recommend, but Matt decides.
+
 ## Standing rule: small chunks, never get ahead (set by Matt)
 Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
 - One chunk = one small, clearly described piece with a visible result and a done-check (tests green, screenshot/numbers, security + fit check). State the chunk before starting; finish and show it before starting the next.

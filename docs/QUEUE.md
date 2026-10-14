@@ -1,5 +1,11 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+## NOW / NEXT / LATER (focus keeper)
+- NOW: wait for the 3 running jobs (3D proof, 2D cartoon mock-ups, skill tree) and review them one at a time.
+- NEXT: agree the action plan together (small chunks), starting with at most 3 decisions: art direction, bible edits, summons fixes.
+- LATER: build phases in small chunks after the GO gate (docs/READINESS.md).
+- PARKING LOT (ideas not started): see bottom of this file.
+
 Legend: [ ] queued, [~] in progress, [?] waiting on Matt, [x] done. Parked items are not started without Matt's say-so (CLAUDE.md).
 Standing rules always apply: security first, token conservation, everything must fit the game, no hiring/zero budget.
 
