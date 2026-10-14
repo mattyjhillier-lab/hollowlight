@@ -3,6 +3,8 @@
 import Phaser from 'phaser';
 import { app } from '../app.js';
 import { createRng } from '../sim/rng.js';
+import { Quality } from '../gfx/quality.js';
+import { PerfOverlay } from '../gfx/perf.js';
 
 const hex = (s) => parseInt(s.slice(1), 16);
 
@@ -219,6 +221,26 @@ export class RunScene extends Phaser.Scene {
       if (document.hidden && app.sim && app.sim.state === 'running' && !app.paused) app.togglePause();
     });
 
+    // quality tiers + frame measurement (docs/research/11)
+    const cores = navigator.hardwareConcurrency || 4;
+    this.quality = new Quality(cores <= 4 ? 'low' : 'med');
+    this.qMode = null;
+    this.perf = new PerfOverlay(document.getElementById('stage') || document.body);
+    this.perf.hook(this.renderer);
+    this.perf.toggle(app.params.debug);
+    this.workT0 = 0;
+    this.lastStep = 0;
+    this.frameMs = 16.7;
+    this.workMs = 0;
+    this.perfInfo = { sprites: 0, particles: 0, tier: '', mode: '' };
+    const ev = this.game.events;
+    ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); });
+    ev.on(Phaser.Core.Events.POST_RENDER, () => {
+      this.workMs = performance.now() - this.workT0;
+      this.perf.frameEnd();
+    });
+    this.input.keyboard.on('keydown-F3', (e) => { e.preventDefault(); this.perf.toggle(); });
+
     app.scene = this;
     window.dispatchEvent(new Event('scene-ready'));
   }
@@ -282,7 +304,38 @@ export class RunScene extends Phaser.Scene {
     return { x, y, ability: Phaser.Input.Keyboard.JustDown(k.SPACE) };
   }
 
+  // Measure frame interval + CPU work; auto-tier decisions; refresh overlay.
+  measure() {
+    const now = performance.now();
+    const dt = this.lastStep ? now - this.lastStep : 16.7;
+    this.lastStep = now;
+    this.frameMs = dt;
+    const q = this.quality;
+    const mode = app.save.data.settings.quality;
+    if (mode !== this.qMode) {
+      this.qMode = mode;
+      q.setMode(mode);
+      this.applyTier();
+    }
+    if (this.sim && this.sim.state === 'running' && !app.paused && q.sample(dt, this.workMs)) this.applyTier();
+    const info = this.perfInfo;
+    info.sprites = this.countSprites();
+    info.particles = 0;
+    info.tier = q.tier;
+    info.mode = q.mode;
+    this.perf.update(dt, this.workMs, info);
+  }
+
+  countSprites() {
+    let n = 1;
+    for (const pool of Object.values(this.pools)) n += pool.map.size;
+    return n;
+  }
+
+  applyTier() {}
+
   update(time, delta) {
+    this.measure();
     if (this.keys && Phaser.Input.Keyboard.JustDown(this.keys.ESC)) app.togglePause();
     app.frame(Math.min(delta, 100) / 1000);
     if (this.sim) this.draw();
