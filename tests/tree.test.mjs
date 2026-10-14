@@ -12,6 +12,7 @@ import { parseSave, defaultSave, sanitize, SAVE_VERSION } from '../src/save/sche
 const DT = 1 / 60;
 const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
 const richSave = (extra = {}) => ({ ...defaultSave(), gold: 1e7, shards: 100, ...extra });
+const E = (id, i = 0) => def.nodes[id].effects[i];
 const ownedPath = (save, ids) => { for (const id of ids) { const r = buy(save, id, def, data); assert.ok(r.ok, `${id}: ${r.reason}`); } };
 
 // ---- minimal synthetic trees for validation tests
@@ -96,9 +97,10 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
   assert.equal(buy(s, 'sp_reroll1', def, data).ok, false, 'max rank 1 already owned');
   // multi-rank
   const m = richSave();
-  assert.equal(buy(m, 'su_bond', def, data).rank, 1);
-  assert.equal(buy(m, 'su_bond', def, data).rank, 2);
-  assert.equal(buy(m, 'su_bond', def, data).ok, false);
+  ownedPath(m, ['su_bond', 'su_pot', 'rv_talon']);
+  assert.equal(buy(m, 'rv_wide', def, data).rank, 1);
+  assert.equal(buy(m, 'rv_wide', def, data).rank, 2);
+  assert.equal(buy(m, 'rv_wide', def, data).ok, false);
   // shards
   const sh = richSave({ shards: 0 });
   ownedPath(sh, ['su_bond', 'su_rush']);
@@ -123,17 +125,17 @@ test('unlock conditions gate buying; teasers never buyable', () => {
 
 test('keystones are mutually exclusive', () => {
   const s = richSave();
-  ownedPath(s, ['su_bond', 'su_rush', 'su_key', 'ma_focus', 'ma_pow2']);
+  ownedPath(s, ['su_bond', 'su_rush', 'su_key', 'ma_focus', 'ma_attune']);
   assert.equal(nodeStatus(def, s, 'ma_key', data).state, 'excluded');
   assert.equal(buy(s, 'ma_key', def, data).ok, false);
-  const t = sanitizeTree({ su_bond: 1, su_rush: 1, su_key: 1, ma_focus: 1, ma_pow2: 1, ma_key: 1 }, defaultSave().stats, def, data);
+  const t = sanitizeTree({ su_bond: 1, su_rush: 1, su_key: 1, ma_focus: 1, ma_attune: 1, ma_key: 1 }, defaultSave().stats, def, data);
   assert.ok(t.su_key && !t.ma_key, 'edited save cannot hold both rivals');
 });
 
 test('respec refunds everything for free and clears the tree', () => {
   const s = defaultSave();
   s.gold = 5000; s.shards = 3;
-  ownedPath(s, ['sp_reroll1', 'sp_ban1', 'su_bond', 'su_bond']);
+  ownedPath(s, ['sp_reroll1', 'sp_ban1', 'su_bond', 'su_pot']);
   const spent = spentOf(s.tree, def);
   const goldAfter = s.gold;
   const out = respec(s, def);
@@ -160,7 +162,7 @@ test('sanitizeTree: unknown ids, junk, huge/negative ranks, prerequisite and con
   assert.equal(t.wf_third, undefined, 'missing prereqs and unmet kill condition');
   assert.equal(t.li_last, undefined, 'chapter not cleared');
   assert.equal(t.tz_marsh, undefined, 'teaser');
-  assert.equal(t.ma_focus, 2, 'huge rank clamped to max');
+  assert.equal(t.ma_focus, 1, 'huge rank clamped to max');
   assert.equal(Object.getPrototypeOf(t), Object.prototype);
   for (const bad of [null, [], 'x', 5, undefined]) assert.deepEqual(sanitizeTree(bad, stats, def, data), {});
 });
@@ -319,30 +321,31 @@ test('a real headless run records per-enemy kills that unlock a node', () => {
 test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   const none = aggregateMods({}, def, data);
   assert.deepEqual(none, emptyEffects());
-  const a = aggregateMods({ sp_edge: 1, sp_cd1: 1, sp_cd2: 1, sp_cd3: 1, sp_cd4: 1, ma_cast: 2, ma_area: 2, su_bond: 2, ma_focus: 2, li_vigor: 2, li_regen: 2 }, def, data);
-  assert.ok(Math.abs(a.mods.damage - 1.04) < 1e-9);
+  const a = aggregateMods({ sp_edge: 1, sp_cd1: 1, sp_cd2: 1, sp_cd3: 1, sp_cd4: 1, ma_cast: 1, ma_area: 1, su_bond: 1, ma_focus: 1, li_vigor: 1, li_regen: 1 }, def, data);
+  assert.ok(Math.abs(a.mods.damage - (1 + E('sp_edge').pct / 100)) < 1e-9);
   assert.ok(Math.abs(a.mods.abilityCd - 0.55) < 1e-9, `abilityCd ${a.mods.abilityCd}`);
-  assert.ok(Math.abs(a.mods.cooldown - 0.9) < 1e-9);
-  assert.ok(Math.abs(a.mods.area - 1.16) < 1e-9);
-  assert.ok(Math.abs(a.player.maxHp - 1.1) < 1e-9);
-  assert.ok(Math.abs(a.player.regen - 0.8) < 1e-9);
-  assert.equal(a.weaponBonus.ghost_wolves.power.pct, 10, 'summon tag expands to wolves');
-  assert.equal(a.weaponBonus.raven_flock.power.pct, 10);
-  assert.equal(a.weaponBonus.spirit_bolts.power.pct, 10, 'magic tag expands to bolts');
-  assert.equal(a.weaponBonus.holy_orbit.power.pct, 10);
+  assert.ok(Math.abs(a.mods.cooldown - (1 + E('ma_cast').pct / 100)) < 1e-9);
+  assert.ok(Math.abs(a.mods.area - (1 + E('ma_area').pct / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.maxHp - (1 + E('li_vigor').pct / 100)) < 1e-9);
+  assert.equal(a.player.levelHeal, E('li_regen').pct);
+  assert.equal(a.weaponBonus.ghost_wolves.power.pct, E('su_bond').pct, 'summon tag expands to wolves');
+  assert.equal(a.weaponBonus.raven_flock.power.pct, E('su_bond').pct);
+  assert.equal(a.weaponBonus.spirit_bolts.power.pct, E('ma_focus').pct, 'magic tag expands to bolts');
+  assert.equal(a.weaponBonus.holy_orbit.power.pct, E('ma_focus').pct);
   assert.equal(a.weaponBonus.ghost_wolves.speed, undefined);
   // reroll / banish / auto / revive / rush
   const v = aggregateMods({ sp_reroll1: 1, sp_reroll2: 1, sp_reroll3: 1, sp_ban1: 1, sp_auto: 1, li_last: 1, su_rush: 1, ma_attune: 1 }, def, data);
   assert.equal(v.meta.rerolls, 3);
   assert.equal(v.meta.banishes, 1);
   assert.equal(v.ability.autoHp, 0.3);
-  assert.equal(v.player.revive, 0.4);
+  assert.equal(v.player.revive, E('li_last').frac);
   assert.deepEqual(v.rush, { pct: 25, secs: 6 });
   assert.equal(v.evoLuck, 1.5);
   // keystone trade-off
   const k = aggregateMods({ su_key: 1 }, def, data);
-  assert.equal(k.weaponBonus.ghost_wolves.power.pct, 20);
-  assert.equal(k.weaponBonus.spirit_bolts.power.pct, -15);
+  assert.equal(k.weaponBonus.ghost_wolves.power.pct, E('su_key', 0).pct);
+  assert.equal(k.weaponBonus.spirit_bolts.power.pct, E('su_key', 1).pct);
+  assert.ok(E('su_key', 0).pct > 0 && E('su_key', 1).pct < 0, 'keystone trades one side for the other');
   // hostile ranks cannot push values out of bounds
   const h = aggregateMods({ sp_cd1: 1e9, li_vigor: 1e9, sp_reroll1: 1e9 }, def, data);
   assert.equal(h.mods.abilityCd, 0.5);
@@ -357,7 +360,7 @@ test('presets: none/half/full are valid, full respects rivals and teasers', () =
   const full = presetTree(def, 'full');
   assert.ok(!full.tz_marsh);
   assert.ok(!(full.su_key && full.ma_key) && !(full.li_lantern && full.li_glass));
-  assert.deepEqual(sanitizeTree(full, { ...defaultSave().stats, killsByEnemy: { wolf: 1e6, crow: 1e6, root_crawler: 1e6 } }, def, data).su_bond, 2);
+  assert.deepEqual(sanitizeTree(full, { ...defaultSave().stats, killsByEnemy: { wolf: 1e6, crow: 1e6, root_crawler: 1e6 } }, def, data).su_bond, 1);
   const half = presetTree(def, 'half');
   const sh = spentOf(half, def).gold;
   assert.ok(sh > 0 && sh <= totalCost(def).gold * 0.5 + 1);
@@ -400,16 +403,19 @@ const fx = (owned) => aggregateMods(owned, def, data);
 
 test('effects: damage nodes raise damage dealt (same seed)', () => {
   const a = new Sim({ data, seed: 11, godMode: true });
-  const b = new Sim({ data, seed: 11, godMode: true, tree: fx({ sp_edge: 1, su_bond: 2, su_pot: 1 }) });
+  const b = new Sim({ data, seed: 11, godMode: true, tree: fx({ sp_edge: 1, su_bond: 1, su_pot: 1, wf_fang: 1, ch_wren: 1 }) });
   run(a, 90); run(b, 90);
-  assert.ok(b.damageDealt > a.damageDealt * 1.05, `${b.damageDealt} vs ${a.damageDealt}`);
+  assert.ok(b.damageDealt > a.damageDealt * 1.03, `${b.damageDealt} vs ${a.damageDealt}`);
 });
 
 test('effects: weapon bonuses change real weapon stats (count, power, pierce)', () => {
-  const sim = new Sim({ data, seed: 1, tree: fx({ su_bond: 1, su_call: 1, wf_fang: 1 }) });
+  const cd = compileTree(raw([node('c', { effects: [{ weapon: 'ghost_wolves', stat: 'count', add: 1 }, { weapon: 'ghost_wolves', stat: 'power', pct: 10 }] })]), data);
+  const sim = new Sim({ data, seed: 1, tree: aggregateMods({ c: 1 }, cd, data) });
   const w = sim.weapons[0];
   assert.equal(w.s.count, 3);
-  assert.ok(Math.abs(w.s.power - 7 * 1.15) < 1e-9, `power ${w.s.power}`);
+  assert.ok(Math.abs(w.s.power - 7 * 1.1) < 1e-9, `power ${w.s.power}`);
+  const real = new Sim({ data, seed: 1, tree: fx({ su_bond: 1, wf_fang: 1 }) });
+  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (E('su_bond').pct + E('wf_fang').pct) / 100)) < 1e-9);
   sim.debugGrant('ghost_wolves', { count: 2, power: 1 });
   assert.equal(sim.weapons[0].s.count, 5, 'bonus persists through rank-ups and debug grants');
   run(sim, 5);
@@ -417,7 +423,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   const s2 = new Sim({ data, seed: 1, characterId: 'elias', tree: fx({ ma_cast: 1, bo_pierce: 1 }) });
   s2.addWeapon('spirit_bolts');
   assert.equal(s2.weapons[1].s.pierce, 1);
-  assert.ok(Math.abs(s2.mods.cooldown - 0.95) < 1e-9);
+  assert.ok(Math.abs(s2.mods.cooldown - (1 + E('ma_cast').pct / 100)) < 1e-9);
 });
 
 test('effects: reroll and banish are unavailable at the start and unlocked by the tree', () => {
@@ -458,12 +464,17 @@ test('effects: ability duration, auto-activate at low health', () => {
 });
 
 test('effects: max health, regeneration, hearts', () => {
-  const sim = new Sim({ data, seed: 1, godMode: true, tree: fx({ li_vigor: 2, li_regen: 2, li_heal: 0 }) });
-  assert.equal(sim.player.maxHp, 66);
+  const sim = new Sim({ data, seed: 1, godMode: true, tree: fx({ li_vigor: 1, li_regen: 1 }) });
+  assert.equal(sim.player.maxHp, Math.round(60 * (1 + E('li_vigor').pct / 100)));
   sim.player.hp = 10;
-  sim.weapons.length = 0;
-  run(sim, 5);
-  assert.ok(sim.player.hp > 10.5 && sim.player.hp < 40, `hp ${sim.player.hp}`);
+  sim.xp = sim.xpNeeded + 1;
+  sim.checkLevelUp();
+  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * E('li_regen').pct / 100)) < 1e-9, `hp ${sim.player.hp}`);
+  const reg = new Sim({ data, seed: 1, godMode: true, tree: { player: { regen: 1 } } });
+  reg.player.hp = 10;
+  reg.weapons.length = 0;
+  run(reg, 5);
+  assert.ok(reg.player.hp > 14 && reg.player.hp < 16, `hp ${reg.player.hp}`);
   const heal = new Sim({ data, seed: 1, tree: { drops: { heartHeal: 2 } } });
   heal.player.hp = 1;
   heal.pickups.push({ id: 99, type: 'heart', x: heal.player.x, y: heal.player.y, ttl: 5 });

@@ -22,6 +22,7 @@ export function effectPE(e) {
   if (e.mod) return e.pct * W[e.mod];
   if (e.player === 'maxHp') return e.pct * W.maxHp;
   if (e.player === 'regen') return e.add * W.regen;
+  if (e.player === 'levelHeal') return e.pct * 0.4;
   if (e.player === 'revive') return W.revive;
   if (e.drop) return e.pct * W[e.drop];
   if (e.ability) return e.pct * W.dur;

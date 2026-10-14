@@ -109,7 +109,7 @@ export class TreeScreen {
       const rad = (b.angle * Math.PI) / 180;
       const lab = mk('div', 'tree-branch', b.name);
       lab.style.left = `${Math.cos(rad) * this.def.ringStep * 0.62}px`;
-      lab.style.top = `${Math.sin(rad) * this.def.ringStep * 0.62}px`;
+      lab.style.top = `${Math.sin(rad) * this.def.ringStep * 0.62 + (Math.abs(Math.cos(rad)) > 0.5 ? 24 : 0)}px`;
       if (b.color) lab.style.color = b.color;
       this.world.append(lab);
     }

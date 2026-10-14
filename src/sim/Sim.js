@@ -49,6 +49,7 @@ export class Sim {
     this.tfx = {
       regen: T.player?.regen || 0,
       revive: T.player?.revive || 0,
+      levelHeal: T.player?.levelHeal || 0,
       heart: T.drops?.heart ?? 1,
       magnet: T.drops?.magnet ?? 1,
       heartHeal: T.drops?.heartHeal ?? 1,
@@ -715,6 +716,7 @@ export class Sim {
       this.level += 1;
       this.pending += 1;
       if (this.tfx.rush) this.buffs.rush = this.tfx.rush.secs;
+      if (this.tfx.levelHeal > 0) this.healPlayer((this.player.maxHp * this.tfx.levelHeal) / 100);
       this.pushEvent('levelup');
     }
     if (this.pending > 0 && this.state === 'running') this.beginLevelUp();

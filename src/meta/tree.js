@@ -222,6 +222,7 @@ function checkEffect(e, data, where) {
     if (e.player === 'maxHp') num('pct', -90, 200);
     else if (e.player === 'regen') num('add', 0, 10);
     else if (e.player === 'revive') num('frac', 0.05, 1);
+    else if (e.player === 'levelHeal') num('pct', 0, 50);
     else fail(`${where}: unknown player effect`);
   } else if (e.drop !== undefined) {
     if (!['heart', 'magnet', 'heartHeal'].includes(e.drop)) fail(`${where}: unknown drop effect`);
@@ -357,7 +358,7 @@ export function emptyEffects() {
   return {
     mods: Object.fromEntries(MOD_KEYS.map((k) => [k, 1])),
     meta: { rerolls: 0, banishes: 0 },
-    player: { maxHp: 1, regen: 0, revive: 0 },
+    player: { maxHp: 1, regen: 0, revive: 0, levelHeal: 0 },
     drops: { heart: 1, magnet: 1, heartHeal: 1 },
     ability: { dur: 1, autoHp: 0 },
     evoLuck: 1,
@@ -385,6 +386,7 @@ export function aggregateMods(tree, def, data) {
       if (e.mod) add(`mod:${e.mod}`, e.pct * r);
       else if (e.player === 'maxHp') add('maxHp', e.pct * r);
       else if (e.player === 'regen') out.player.regen += e.add * r;
+      else if (e.player === 'levelHeal') out.player.levelHeal += e.pct * r;
       else if (e.player === 'revive') out.player.revive = Math.max(out.player.revive, e.frac);
       else if (e.drop) add(`drop:${e.drop}`, e.pct * r);
       else if (e.ability === 'dur') add('abilityDur', e.pct * r);
@@ -408,6 +410,7 @@ export function aggregateMods(tree, def, data) {
     const v = 1 + (pct[`mod:${k}`] || 0) / 100;
     out.mods[k] = k === 'cooldown' || k === 'abilityCd' ? Math.max(0.5, v) : Math.min(5, Math.max(0.1, v));
   }
+  out.player.levelHeal = Math.min(50, out.player.levelHeal);
   out.player.maxHp = Math.min(5, Math.max(0.2, 1 + (pct.maxHp || 0) / 100));
   for (const k of ['heart', 'magnet', 'heartHeal']) out.drops[k] = Math.min(6, Math.max(0, 1 + (pct[`drop:${k}`] || 0) / 100));
   out.ability.dur = Math.min(4, 1 + (pct.abilityDur || 0) / 100);
@@ -422,8 +425,9 @@ export function aggregateMods(tree, def, data) {
 export function presetTree(def, name) {
   const tree = {};
   const rivals = (id) => def.nodes[id].excludes.some((x) => own(tree, x));
-  if (name === 'none') return tree;
-  const budget = name === 'half' ? totalCost(def).gold * 0.5 : Infinity;
+  if (name === 'none' || !(name === 'half' || name === 'full' || Number.isFinite(Number(name)))) return tree;
+  const frac = name === 'half' ? 0.5 : name === 'full' ? 1 : Number(name);
+  const budget = Number.isFinite(frac) && frac < 1 ? totalCost(def).gold * Math.max(0, frac) : Infinity;
   let spent = 0;
   for (;;) {
     let best = null;
