@@ -1,5 +1,6 @@
 // Save manager: localStorage with in-memory fallback, rolling backup, debounced writes.
 import { defaultSave, parseSave, sanitize } from './schema.js';
+import { metConditions } from '../meta/tree.js';
 
 export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
@@ -66,6 +67,12 @@ export class SaveStore {
 
   flush() { if (this.timer) this.saveNow(); }
 
+  markSeen(id) {
+    if (this.data.seen[id]) return;
+    this.data.seen = sanitize({ ...this.data, seen: { ...this.data.seen, [id]: true } }).seen;
+    this.saveSoon();
+  }
+
   setSettings(patch) {
     this.data.settings = sanitize({ ...this.data, settings: { ...this.data.settings, ...patch } }).settings;
     this.saveSoon();
@@ -73,22 +80,46 @@ export class SaveStore {
   }
 
   // Bank a finished run. Returns a summary for the results screen.
-  bankRun(r) {
+  bankRun(r, ctx = null) {
     const s = this.data.stats;
     const pos = (v) => Math.max(0, Math.floor(Number(v) || 0));
     const time = Math.max(0, Number(r.time) || 0);
     const prevBest = s.bestTime;
     const newBest = time > prevBest;
+    const before = ctx && ctx.def ? metConditions(ctx.def, s, ctx.data) : new Set();
     this.data.gold += pos(r.gold);
     this.data.shards += pos(r.shards);
     s.runs += 1;
-    if (r.outcome === 'victory') s.wins += 1;
+    const won = r.outcome === 'victory';
+    if (won) s.wins += 1;
     s.kills += pos(r.kills);
+    s.totalGold += pos(r.gold);
     s.totalPlayTime += time;
+    s.bestLevel = Math.max(s.bestLevel, pos(r.level));
     if (newBest) s.bestTime = time;
+    // Per-enemy / per-chapter / per-build records (ids come from the sim; sanitize() re-clamps everything).
+    const bump = (map, id, n = 1) => { if (typeof id === 'string' && id) map[id] = (Object.hasOwn(map, id) ? map[id] : 0) + n; };
+    if (r.killsByEnemy && typeof r.killsByEnemy === 'object') for (const [id, n] of Object.entries(r.killsByEnemy)) bump(s.killsByEnemy, id, pos(n));
+    if (r.bossKilled && r.bossId) bump(s.bossKills, r.bossId);
+    if (typeof r.character === 'string') bump(s.charsUsed, r.character);
+    if (Array.isArray(r.weapons)) {
+      for (const w of r.weapons) {
+        if (!w || typeof w.id !== 'string') continue;
+        bump(s.weaponsUsed, w.id);
+        if (w.evo) bump(s.evolved, w.evo);
+      }
+    }
+    if (typeof r.chapter === 'string') {
+      const c = Object.hasOwn(s.chapters, r.chapter) ? s.chapters[r.chapter] : (s.chapters[r.chapter] = { runs: 0, clears: 0, bestTime: 0 });
+      c.runs += 1;
+      if (won) c.clears += 1;
+      c.bestTime = Math.max(c.bestTime, time);
+    }
     this.data = sanitize(this.data);
+    const after = ctx && ctx.def ? metConditions(ctx.def, this.data.stats, ctx.data) : new Set();
+    const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);
     this.saveNow();
-    return { gold: this.data.gold, shards: this.data.shards, bestTime: this.data.stats.bestTime, newBest, prevBest };
+    return { gold: this.data.gold, shards: this.data.shards, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet };
   }
 
   exportText() { return JSON.stringify(this.data, null, 2); }

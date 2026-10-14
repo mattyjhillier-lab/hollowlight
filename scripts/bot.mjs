@@ -4,10 +4,17 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Sim } from '../src/sim/Sim.js';
+import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
-const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
+const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
+
+// META=none|half|full buys a preset of the skill tree (ignores unlock conditions) for balance probes.
+const treeDef = compileTree(data.tree, data);
+export function metaTree(name = process.env.META || 'none') {
+  return name === 'none' ? null : aggregateMods(presetTree(treeDef, name), treeDef, data);
+}
 
 function botInput(sim) {
   const p = sim.player;
@@ -39,6 +46,9 @@ function botInput(sim) {
 function pick(sim, rng) {
   const offer = sim.offer;
   if (offer.gold.length) return offer.gold[0].key;
+  // Rerolls: redraw a hand with no weapon card and no stat already in progress. Banish: drop fallback cards.
+  if (sim.banishesLeft > 0) { const f = offer.cards.find((c) => c.kind === 'fallback'); if (f && sim.banish(f.key)) return pick(sim, rng); }
+  if (sim.rerollsLeft > 0 && !offer.cards.some((c) => c.kind === 'weapon' || (c.kind === 'stat' && c.rank >= 1)) && sim.reroll()) return pick(sim, rng);
   // prefer to finish a stat pair: weight cards toward stats already ranked
   const cards = offer.cards;
   const focus = process.env.FOCUS === '1';
@@ -49,7 +59,7 @@ function pick(sim, rng) {
 }
 
 export function playRun(charId, seed, opts = {}) {
-  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {} });
+  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: opts.tree !== undefined ? opts.tree : metaTree() });
   let s = seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;

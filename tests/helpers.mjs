@@ -13,3 +13,8 @@ export const data = {
   enemies: load('enemies'),
   chapters: load('chapters'),
 };
+data.tree = load('tree');
+import { compileTree } from '../src/meta/tree.js';
+import { setTreeDef } from '../src/save/schema.js';
+export const treeDef = compileTree(data.tree, data);
+setTreeDef(treeDef, data);
