@@ -30,7 +30,7 @@ N('sp_cd4', 'Unbroken Rhythm', 'spirit', 5, 0, { desc: 'Ability cooldown -15% mo
 N('sp_dur', 'Long Howl', 'spirit', 4, -2, { desc: 'Pack Howl and Sanctuary last 25% longer.', gold: 3000, req: ['sp_cd2'], eff: [{ ability: 'dur', pct: 25 }] });
 N('sp_auto', 'Last Whistle', 'spirit', 4, 2, { desc: 'Unlocks auto-activate: your ability fires by itself when health falls below 30%.', flavour: 'The spirits answer before you call.', gold: 3500, req: ['sp_cd2'], eff: [un('autoAbility', { hp: 0.3 })] });
 N('sp_edge', 'Edge of Dusk', 'spirit', 5, -2, { desc: 'All your spirits and spells deal +3% damage.', gold: 5000, req: ['sp_dur'], eff: [mod('damage', 3)] });
-N('sp_mastery', 'Dusk Mastery', 'spirit', 6, -2, { desc: 'All damage +2%.', flavour: 'You have walked the whole night.', gold: 9000, shards: 2, req: ['sp_edge'], eff: [mod('damage', 2)], unlock: { t: 'all', of: [{ t: 'clearChapter', id: CF }, evo('any', 5)] } });
+N('sp_mastery', 'Dusk Mastery', 'spirit', 6, -2, { desc: 'All damage +3%.', flavour: 'You have walked the whole night.', gold: 9000, shards: 2, req: ['sp_edge'], eff: [mod('damage', 3)], unlock: { t: 'all', of: [{ t: 'clearChapter', id: CF }, evo('any', 5)] } });
 
 // ------------------------------------------------------------ SUMMONER (left)
 N('su_bond', 'Bound Spirits', 'summoner', 1, 0, { desc: 'Summoned spirits (wolves, ravens) deal +3% damage per rank.', flavour: 'A promise made in lantern light.', gold: 400, rc: 2, max: 2, eff: [wpn('@summon', 'power', 'pct', 3)] });
@@ -55,7 +55,7 @@ N('ma_area', 'Widening Light', 'magic', 2, 1, { desc: 'Areas and reach +8% per r
 N('ma_attune', 'Attuned Hands', 'magic', 4, -1, { desc: 'New verb: cards that complete an evolution pair appear 50% more often.', flavour: 'Your spells remember what they can become.', gold: 3500, req: ['ma_focus'], eff: [{ perk: 'evoLuck', pct: 50 }] });
 N('ma_pow3', 'Dusk Lightning', 'magic', 5, -1, { desc: 'Magic deals +4% damage.', gold: 7000, shards: 1, req: ['ma_attune'], eff: [wpn('@magic', 'power', 'pct', 4)] });
 N('ma_key', 'Unbound Light', 'magic', 5, 0, { desc: 'KEYSTONE: magic deals +20% damage, but summons deal -15%. Closes Bonded Pack.', flavour: 'You are never a mage. You are only light.', gold: 6000, shards: 3, key: true, req: ['ma_attune'], ex: ['su_key'], eff: [wpn('@magic', 'power', 'pct', 20), wpn('@summon', 'power', 'pct', -15)] });
-N('ma_ascend', 'Convergence', 'magic', 6, -1, { desc: 'Spirit Bolts and Chain Lightning cast 5% faster.', flavour: 'Three evolutions, one light.', gold: 6000, req: ['ma_pow3'], eff: [mod('cooldown', -5)], unlock: evo('any', 3) });
+N('ma_ascend', 'Convergence', 'magic', 6, -1, { desc: 'Areas and reach +8%.', flavour: 'Three evolutions, one light.', gold: 6000, req: ['ma_pow3'], eff: [mod('area', 8)], unlock: evo('any', 3) });
 N('bo_pierce', 'Piercing Wisp', 'magic', 3, -3, { desc: 'Spirit Bolts pierce +1 enemy.', gold: 2000, req: ['ma_cast'], eff: [wpn('spirit_bolts', 'pierce', 'add', 1)] });
 N('bo_swift', 'Swift Wisps', 'magic', 4, -3, { desc: 'Spirit Bolts fly 15% faster.', gold: 1800, req: ['bo_pierce'], eff: [wpn('spirit_bolts', 'speed', 'pct', 15)] });
 N('bo_twin', 'Twin Wisps', 'magic', 5, -3, { desc: 'Spirit Bolts strike for +10% damage and fly 10% faster.', flavour: 'Evolve the bolts and the wisps answer in pairs.', gold: 5000, req: ['bo_swift'], eff: [wpn('spirit_bolts', 'power', 'pct', 10), wpn('spirit_bolts', 'speed', 'pct', 10)], unlock: evo('spirit_bolts') });
@@ -87,7 +87,7 @@ N('li_lantern', 'Lantern-Bearer', 'light', 5, -1, { desc: 'KEYSTONE: maximum hea
 N('li_last', 'Last Light', 'light', 5, 0, { desc: 'New verb: once per run, a killing blow returns you at 20% health instead.', flavour: 'The forest cannot hold you.', gold: 3000, shards: 5, req: ['li_regen'], eff: [{ player: 'revive', frac: 0.2 }], unlock: { t: 'clearChapter', id: CF } });
 N('li_glass', 'Glass Dusk', 'light', 5, 1, { desc: 'KEYSTONE: damage +6%, but maximum health -15%. Closes Lantern-Bearer.', flavour: 'Burn bright. Burn short.', gold: 6000, shards: 3, key: true, req: ['li_magnet'], ex: ['li_lantern'], eff: [mod('damage', 6), { player: 'maxHp', pct: -15 }] });
 N('li_elder', "Elder's Marrow", 'light', 6, 0, { desc: 'Every level-up heals 2% of your maximum health.', flavour: 'Sap from the heart of the Treant.', gold: 4000, shards: 2, req: ['li_last'], eff: [{ player: 'levelHeal', pct: 2 }], unlock: { t: 'bossKill', id: 'elder_treant' } });
-N('li_dawn', 'Dawnlight', 'light', 6, 2, { desc: 'All damage +2%.', flavour: 'A light you did not know you carried.', gold: 5000, req: ['li_vow'], eff: [mod('damage', 2)], hidden: true, unlock: { t: 'bestLevel', n: 50 } });
+N('li_dawn', 'Dawnlight', 'light', 6, 2, { desc: 'All damage +3%.', flavour: 'A light you did not know you carried.', gold: 5000, req: ['li_vow'], eff: [mod('damage', 3)], hidden: true, unlock: { t: 'bestLevel', n: 50 } });
 N('tz_crown', 'Drowned Crown', 'light', 7, 0, { desc: 'A light that waits beyond this forest.', teaser: true, gold: 0, req: ['li_elder'], eff: [], unlock: { t: 'bossKill', id: 'drowned_king' } });
 
 // ------------------------------------------------------------ emit

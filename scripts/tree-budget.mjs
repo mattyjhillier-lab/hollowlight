@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { compileTree, totalCost, costFor } from '../src/meta/tree.js';
+import { compileTree, totalCost, costFor, conditionProgress } from '../src/meta/tree.js';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
@@ -66,10 +66,18 @@ for (const r of rows) {
   util += nodeUtil(r.n);
 }
 if (process.argv.includes('--table')) {
-  for (const r of rows) {
-    let g = 0, s = 0;
-    for (let k = 1; k <= r.n.maxRank; k++) { const c = costFor(r.n, k); g += c.gold; s += c.shards; }
-    console.log(`| ${r.id} | ${r.n.name} | ${r.n.branch} | ${r.n.ring} | ${r.n.maxRank} | ${g} | ${s} | ${r.n.requires.join(', ') || 'hub'} | ${r.n.unlock ? 'yes' : ''} | ${r.pe.toFixed(1)}${r.skipped ? ' (rival)' : ''} |`);
+  console.log('| id | name | branch | tier | ranks | gold | shards | requires | unlock condition | effect (numbers are per node) | combat PE (utility not counted) |');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
+  const cond = (n) => (n.unlock ? conditionProgress(n.unlock, {}, def, data).lines.map((l) => l.text).join(n.unlock.t === 'any' ? ' OR ' : ' AND ') : '');
+  for (const id of def.list) {
+    const n = def.nodes[id];
+    let g = 0, sh = 0;
+    for (let k = 1; k <= n.maxRank; k++) { const c = costFor(n, k); g += c.gold; sh += c.shards; }
+    const r = rows.find((x) => x.id === id);
+    const pe = n.teaser ? '-' : `${r.pe.toFixed(1)}${r.skipped ? ' (rival)' : ''}`;
+    const tag = n.teaser ? ' (teaser)' : n.hidden ? ' (hidden)' : n.keystone ? ' (keystone)' : '';
+    const text = n.teaser || n.hidden ? '???' : cond(n);
+    console.log(`| ${id} | ${n.name}${tag} | ${n.branch} | ${n.ring} | ${n.maxRank} | ${g} | ${sh} | ${n.requires.join(', ') || 'hub'} | ${n.teaser ? 'unknown (future chapter)' : n.hidden ? '??? (hidden: ' + cond(n) + ')' : text} | ${n.desc.split('|').join('/')} | ${pe} |`);
   }
 }
 const tc = totalCost(def);
