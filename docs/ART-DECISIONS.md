@@ -21,6 +21,8 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 - Liked all three Hollow identity ideas (colour returns, spirit-painted trails, creeping corruption).
 - Round 1 mock-ups were "better directions" than the live UI.
 
+- First reference game: Spirit Hunters: Infinite Horde. Matt loves how it LOOKED (hence stylised 3D-looking) and its SKILL TREE: large pannable web, nodes lighting up, weapons/abilities unlocking from the tree, meaningful branch choices. Learn from it; do not copy art, names or layouts (research: docs/research/19-spirit-hunters-reference.md when ready).
+
 ## Open questions
 - Palette (not yet chosen; keep colours role-based so swaps are cheap).
 - UI personality (bold, restrained, own identity) - to explore after the world look is set.
