@@ -164,9 +164,16 @@ export class UI {
     const el = this.show('start', `
       <h1>Hollowlight</h1>
       <div class="sub">Spirits of the Dusk · Chapter 1: Cursed Forest · prototype</div>
+      <div class="bankline"></div>
       <div class="row">${cards}</div>
       <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
-      <p>Survive 15 minutes. The Elder Treant wakes at 10:00. Gold and the skill tree arrive in a later stage, so nothing is saved yet.</p>`);
+      <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
+      <div class="row"><button class="btn" data-act="settings">Settings</button></div>
+      <div class="vlabel"></div>`);
+    el.querySelector('.vlabel').textContent = typeof __APP_VERSION__ !== 'undefined' ? `v${__APP_VERSION__}` : '';
+    const bank = this.handlers.getBank ? this.handlers.getBank() : null;
+    if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
+    el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
     el.querySelectorAll('.charcard').forEach((c) => c.addEventListener('click', () => onPick(c.dataset.id)));
   }
 
@@ -220,33 +227,163 @@ export class UI {
   showPause() {
     const el = this.show('pause', `
       <h2>Paused</h2>
-      <div class="row"><button class="btn big" data-act="resume">Resume (Esc)</button><button class="btn big" data-act="menu">Quit to menu</button></div>`);
+      <div class="row"><button class="btn big" data-act="resume">Resume (Esc)</button><button class="btn big" data-act="settings">Settings</button><button class="btn big" data-act="menu">Quit to menu</button></div>`);
+    el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
     el.querySelector('[data-act="resume"]').addEventListener('click', () => this.handlers.togglePause());
     el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
   }
 
   hidePause() { this.hide('pause'); }
 
-  showEnd(sim) {
+  showEnd(sim, bank) {
     const r = sim.result();
     const d = this.data;
     const won = r.outcome === 'victory';
     const evos = r.weapons.filter((w) => w.evo).map((w) => d.evolutions[w.evo].name);
     const el = this.show('end', `
       <h2 style="color:${won ? 'var(--good)' : 'var(--hp)'}">${won ? 'You survived the night' : 'You were overrun'}</h2>
+      <div class="newbest"></div>
       <dl class="endstats">
         <dt>Time survived</dt><dd>${fmtTime(r.time)}</dd>
         <dt>Level reached</dt><dd>${r.level}</dd>
         <dt>Enemies slain</dt><dd>${r.kills}</dd>
-        <dt>Gold earned</dt><dd>${r.gold}</dd>
-        <dt>Soul shards</dt><dd>${r.shards}${r.bossKilled ? ' (Elder Treant slain)' : ''}</dd>
-        <dt>Weapons</dt><dd>${r.weapons.map((w) => (w.evo ? d.evolutions[w.evo].name : d.weapons[w.id].name)).join(', ')}</dd>
+        <dt>Gold earned</dt><dd class="g"></dd>
+        <dt>Soul shards</dt><dd class="sh"></dd>
+        <dt>Best time</dt><dd class="bt"></dd>
         <dt>Evolutions</dt><dd>${evos.length ? evos.join(', ') : 'none this run'}</dd>
       </dl>
-      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="menu">Character select</button></div>
-      <div class="note">Gold and shards are not banked yet. The skill tree comes in a later stage.</div>`);
+      <div class="note warn"></div>
+      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="menu">Main menu</button></div>`);
+    const set = (sel, t) => { el.querySelector(sel).textContent = t; };
+    if (bank) {
+      set('.g', `+${r.gold} (bank ${bank.gold})`);
+      set('.sh', `+${r.shards} (bank ${bank.shards})${r.bossKilled ? ' · Elder Treant slain' : ''}`);
+      set('.bt', fmtTime(bank.bestTime));
+      if (bank.newBest) set('.newbest', 'New best!');
+      if (bank.note) set('.warn', bank.note);
+    } else {
+      set('.g', String(r.gold));
+      set('.sh', String(r.shards));
+      set('.bt', '-');
+      set('.warn', 'Debug run: not saved.');
+    }
     el.querySelector('[data-act="again"]').addEventListener('click', () => this.handlers.again());
     el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+  }
+
+  // ------------------------------------------------------------------ settings
+  // Built with DOM APIs and textContent only. Values come from the sanitised save.
+  showSettings(message) {
+    const h = this.handlers;
+    const st = h.getSettings();
+    const el = this.layer('settings');
+    el.classList.add('settings');
+    el.replaceChildren();
+    this.settingsOpen = true;
+    const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+    const grid = mk('div', 'setgrid');
+    const row = (label, ctl) => { grid.append(mk('label', '', label), ctl); };
+    const slider = (key) => {
+      const i = mk('input');
+      i.type = 'range'; i.min = '0'; i.max = '100'; i.step = '5'; i.value = String(Math.round(st[key] * 100));
+      i.addEventListener('input', () => h.setSetting({ [key]: Number(i.value) / 100 }));
+      return i;
+    };
+    const check = (key) => {
+      const i = mk('input');
+      i.type = 'checkbox'; i.checked = !!st[key];
+      i.addEventListener('change', () => h.setSetting({ [key]: i.checked }));
+      return i;
+    };
+    row('Music volume', slider('musicVol'));
+    row('Sound effects volume', slider('sfxVol'));
+    row('Screen shake', check('screenShake'));
+    row('Reduced motion', check('reducedMotion'));
+    row('Damage numbers', check('damageNumbers'));
+    const sel = mk('select');
+    for (const [v, t] of [['auto', 'Auto'], ['low', 'Low'], ['med', 'Medium'], ['high', 'High']]) {
+      const o = mk('option', '', t);
+      o.value = v;
+      if (st.quality === v) o.selected = true;
+      sel.append(o);
+    }
+    sel.addEventListener('change', () => h.setSetting({ quality: sel.value }));
+    row('Quality', sel);
+
+    const msg = mk('div', 'setmsg', message || '');
+    const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+    const actions = mk('div', 'row');
+    const bExp = mk('button', 'btn', 'Export save');
+    const bImp = mk('button', 'btn', 'Import save');
+    const bRes = mk('button', 'btn', 'Reset save');
+    const bClose = mk('button', 'btn big', 'Back (Esc)');
+    const file = mk('input');
+    file.type = 'file'; file.accept = '.json,application/json'; file.style.display = 'none';
+    const confirmBox = mk('div', 'setconfirm');
+    const clearConfirm = () => { confirmBox.replaceChildren(); };
+    const ask = (text, yesLabel, onYes) => {
+      clearConfirm();
+      const y = mk('button', 'btn', yesLabel);
+      const n = mk('button', 'btn', 'Cancel');
+      y.addEventListener('click', () => { clearConfirm(); onYes(); });
+      n.addEventListener('click', () => { clearConfirm(); say(''); });
+      confirmBox.append(mk('span', '', text), y, n);
+    };
+    bExp.addEventListener('click', () => {
+      try {
+        const url = URL.createObjectURL(new Blob([h.exportSave()], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'hollowlight-save.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        say('Save exported.');
+      } catch { say('Could not export the save.', true); }
+    });
+    bImp.addEventListener('click', () => { clearConfirm(); file.value = ''; file.click(); });
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      if (f.size > h.maxSaveBytes) { say('Save file is too large.', true); return; }
+      let text;
+      try { text = await f.text(); } catch { say('Could not read that file.', true); return; }
+      const res = h.checkImport(text);
+      if (!res.ok) { say(res.error, true); return; }
+      say('');
+      ask('Replace your current save with this file?', 'Replace save', () => { h.applyImport(res.save); this.showSettings('Save imported.'); });
+    });
+    let armed = false;
+    let armTimer = null;
+    bRes.addEventListener('click', () => {
+      if (!armed) {
+        armed = true;
+        bRes.textContent = 'Really reset? Click again';
+        armTimer = setTimeout(() => { armed = false; bRes.textContent = 'Reset save'; }, 4000);
+        return;
+      }
+      clearTimeout(armTimer);
+      armed = false;
+      bRes.textContent = 'Reset save';
+      ask('This erases all gold, shards and stats. It cannot be undone.', 'Erase everything', () => { h.resetSave(); this.showSettings('Save reset.'); });
+    });
+    bClose.addEventListener('click', () => this.hideSettings());
+    actions.append(bExp, bImp, bRes);
+    const back = mk('div', 'row');
+    back.append(bClose);
+    el.append(mk('h2', '', 'Settings'), grid, actions, confirmBox, msg, back, file);
+    const note = h.storageNote ? h.storageNote() : null;
+    if (note) el.append(mk('div', 'note', note));
+    this.show('settings');
+    bClose.focus();
+  }
+
+  hideSettings() {
+    if (!this.settingsOpen) return;
+    this.settingsOpen = false;
+    this.hide('settings');
+    if (this.handlers.closeSettings) this.handlers.closeSettings();
   }
 
   hideEnd() { this.hide('end'); }
@@ -257,6 +394,10 @@ export class UI {
 
   // ------------------------------------------------------------------ keys
   onKey(e) {
+    if (this.settingsOpen) {
+      if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
+      return;
+    }
     const lu = this.layers.levelup;
     if (lu && lu.style.display !== 'none' && this.currentCards) {
       const n = parseInt(e.key, 10);

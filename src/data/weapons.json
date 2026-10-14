@@ -33,7 +33,7 @@
     "desc": "Homing spirit orbs seek out the nearest enemies.",
     "stats": {
       "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "+1 bolt" },
-      "power":  { "name": "Bolt power",  "base": 10,  "perRank": 5,   "fmt": "int", "hint": "+5 damage" },
+      "power":  { "name": "Bolt power",  "base": 10,  "perRank": 4,   "fmt": "int", "hint": "+4 damage" },
       "speed":  { "name": "Bolt speed",  "base": 150, "perRank": 22,  "fmt": "int", "hint": "+22 speed" },
       "pierce": { "name": "Pierce",      "base": 0,   "perRank": 1,   "fmt": "int", "hint": "+1 pierce" }
     }

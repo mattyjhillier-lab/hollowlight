@@ -557,7 +557,7 @@ export class Sim {
     const magnetP = b.magnet * (1 + this.sinceMagnet / b.pityMagnet);
     const forced = this.sinceHeart >= (b.pityHeartForce || Infinity) && p.hp < p.maxHp * 0.8; // guaranteed heart after a long dry spell
     if (p.hp < p.maxHp && (forced || this.rng.chance(heartP))) { this.addPickup('heart', e.x, e.y); this.sinceHeart = 0; }
-    else if (this.gems.length > 12 && this.rng.chance(magnetP)) { this.addPickup('magnet', e.x, e.y); this.sinceMagnet = 0; }
+    else if (this.gems.length > (b.magnetGems ?? 12) && this.rng.chance(magnetP)) { this.addPickup('magnet', e.x, e.y); this.sinceMagnet = 0; }
   }
 
   addPickup(type, x, y) {

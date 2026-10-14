@@ -1,6 +1,8 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
 import { Sim } from './sim/Sim.js';
 import data from './data/index.js';
+import { SaveStore } from './save/store.js';
+import { MAX_SAVE_BYTES } from './save/schema.js';
 
 function parseParams() {
   const q = new URLSearchParams(window.location.search);
@@ -27,6 +29,8 @@ export const app = {
   hudAcc: 0,
   params: parseParams(),
   characterId: null,
+  save: new SaveStore(),
+  banked: false,
 
   startRun(characterId) {
     const p = this.params;
@@ -35,6 +39,7 @@ export const app = {
       data,
       characterId,
       seed: p.seed ?? ((Math.random() * 1e9) | 0),
+      // Tree is not built yet: rerolls/banishes stay 0 unless a debug URL param sets them.
       meta: { rerolls: p.rerolls, banishes: p.banishes },
       startTime: p.startTime,
       godMode: p.god,
@@ -42,6 +47,7 @@ export const app = {
     if (p.grant) this.applyGrants(sim, p.grant);
     this.sim = sim;
     this.paused = false;
+    this.banked = false;
     this.lastState = 'running';
     this.ui.hideAll();
     this.ui.showHud();
@@ -85,7 +91,7 @@ export const app = {
       else if (prev === 'levelup') this.ui.hideLevelUp();
       if (sim.state === 'victory' || sim.state === 'defeat') {
         this.ui.hidePause();
-        this.ui.showEnd(sim);
+        this.ui.showEnd(sim, this.bankRun(sim));
       }
     }
 
@@ -98,7 +104,7 @@ export const app = {
 
   onEvent(ev) {
     const d = this.data;
-    if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); }
+    if (ev.type === 'hurt') { this.scene.shake(); if (!this.save.data.settings.reducedMotion) this.ui.hurt(); }
     else if (ev.type === 'boss') this.ui.toast('The Elder Treant awakens');
     else if (ev.type === 'swarm') this.ui.toast(ev.enemy === 'wolf' ? 'A wolf pack closes in' : 'A murder of crows descends');
     else if (ev.type === 'evolve') this.ui.toast(`Evolved: ${d.evolutions[ev.id].name}`);
@@ -127,7 +133,43 @@ export const app = {
     if (this.sim && this.sim.banish(key)) this.ui.showLevelUp(this.sim);
   },
 
+  // Debug URL params never touch the real save.
+  isDebugRun() {
+    const p = this.params;
+    return !!(p.auto || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.debug || p.seed !== null);
+  },
+
+  bankRun(sim) {
+    if (this.banked || this.isDebugRun()) return null;
+    this.banked = true;
+    const b = this.save.bankRun(sim.result());
+    if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';
+    return b;
+  },
+
+  applySettings() {
+    const s = this.save.data.settings;
+    document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
+  },
+
+  settingsHandlers() {
+    return {
+      getSettings: () => ({ ...this.save.data.settings }),
+      setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); },
+      exportSave: () => this.save.exportText(),
+      maxSaveBytes: MAX_SAVE_BYTES,
+      checkImport: (t) => this.save.checkImport(t),
+      applyImport: (s) => { this.save.applyImport(s); this.applySettings(); },
+      resetSave: () => { this.save.reset(); this.applySettings(); },
+      storageNote: () => (this.save.persistent ? null : 'Browser storage is blocked or full: progress will not persist.'),
+      getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),
+      openSettings: () => this.ui.showSettings(),
+      closeSettings: () => { if (!this.sim) this.showMenu(); },
+    };
+  },
+
   togglePause() {
+    if (this.ui.settingsOpen || performance.now() - (this.ui.escAt || -1e9) < 250) return;
     const sim = this.sim;
     if (!sim || sim.state !== 'running') return;
     this.paused = !this.paused;

@@ -266,6 +266,8 @@ export class RunScene extends Phaser.Scene {
   }
 
   shake(ms = 90, intensity = 0.004) {
+    const st = app.save.data.settings;
+    if (!st.screenShake || st.reducedMotion) return;
     this.cameras.main.shake(ms, intensity);
   }
 

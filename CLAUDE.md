@@ -31,7 +31,7 @@ Phaser 3 + Vite, vanilla JS, ES modules. Single-file build (vite-plugin-singlefi
 - `src/sim/` pure-JS simulation (no Phaser/DOM): `Sim.js`, `weapons.js`, `cards.js`, `rng.js`, `grid.js`. Seeded RNG (mulberry32). Unit/bot-testable in Node.
 - `src/data/*.json` all content (balance, weapons, evolutions, characters, enemies, chapters). New content = data first.
 - `src/scenes/RunScene.js` Phaser rendering only (placeholder generated textures, pooled sprites). `src/ui/ui.js` DOM overlay (HUD, cards, menus). `src/app.js` glue. `src/main.js` boot.
-- `tests/*.test.mjs` (`npm test`, 35 tests). `scripts/bot.mjs` headless balance probe: `node scripts/bot.mjs wren 8` (`FOCUS=1` for a focused-pick bot). Prints first-evolution time.
+- `tests/*.test.mjs` (`npm test`, 48 tests). `scripts/bot.mjs` headless balance probe: `node scripts/bot.mjs wren 8` (`FOCUS=1` for a focused-pick bot). Prints first-evolution time.
 - Commands: `npm install`, `npm run dev`, `npm run build`, `npm test`.
 - View is 640x360 logical, Phaser FIT scaling, pixelArt. World 4000x4000. DOM HUD scales by container query.
 - URL debug params: `?auto=wren&seed=1&t=540&god=1&rr=3&ban=3&grant=ghost_wolves:speed=5,power=5:phantom_stampede&debug=1`.

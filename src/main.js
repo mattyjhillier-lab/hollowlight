@@ -5,7 +5,10 @@ import { UI } from './ui/ui.js';
 import { RunScene } from './scenes/RunScene.js';
 
 app.ui = new UI(document.getElementById('ui'), app.data);
+app.save.load();
+app.applySettings();
 app.ui.setHandlers({
+  ...app.settingsHandlers(),
   pick: (k) => app.pick(k),
   reroll: () => app.reroll(),
   banish: (k) => app.banish(k),
@@ -27,6 +30,7 @@ const game = new Phaser.Game({
   scene: [RunScene],
 });
 
+window.addEventListener('pagehide', () => app.save.flush());
 window.addEventListener('scene-ready', () => {
   if (app.params.auto && app.data.characters[app.params.auto]) app.startRun(app.params.auto);
   else app.showMenu();
