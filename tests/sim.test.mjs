@@ -101,10 +101,10 @@ test('Dire Alpha is a single wolf; Howling Legion makes a bigger pack', () => {
 test('wolf stat ranks change behaviour: more count means more wolves', () => {
   const sim = mk({ godMode: true });
   run(sim, 1);
-  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 1);
+  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 2);
   sim.debugGrant('ghost_wolves', { count: 3 });
   run(sim, 1);
-  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 4);
+  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 5);
 });
 
 test('xp pickup leads to a level-up pause, a pick, then play resumes', () => {

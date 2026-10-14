@@ -14,7 +14,7 @@
   },
   "hpScale": {
     "linear": 0.34,
-    "quad": 0.02
+    "quad": 0.021
   },
   "dmgScale": {
     "linear": 0.07

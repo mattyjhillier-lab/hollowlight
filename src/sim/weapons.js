@@ -219,7 +219,7 @@ const ravenFlock = {
         const rr = e.r + u.r + 1;
         if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `raven${i}`, 0.55)) {
           sim.hurt(e, dmg);
-          if (fear) e.fearT = Math.max(e.fearT, 1.2);
+          if (fear) e.fearT = Math.max(e.fearT, tune(sim, w, 'fear', 1.2));
         }
       }
     });
