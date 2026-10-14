@@ -113,9 +113,10 @@ export function buildPool(ctx) {
     for (const statKey of Object.keys(data.weapons[w.id].stats)) {
       if (w.ranks[statKey] >= data.balance.maxRank) continue;
       const pairs = Object.values(data.evolutions).filter((e) => e.weapon === w.id && e.pair.includes(statKey));
-      let wt = pairs.length ? 2.2 : 1;
+      const nudge = data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
+      let wt = pairs.length ? nudge.pair : 1;
       // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
-      if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= 3)) wt *= 2;
+      if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= nudge.partnerRank)) wt *= nudge.partnerMult;
       pool.push({ card: statCard(w, statKey, data), w: wt });
     }
   }

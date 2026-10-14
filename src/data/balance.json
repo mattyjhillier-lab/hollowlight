@@ -8,9 +8,9 @@
   "maxRank": 5,
   "weaponSlots": 4,
   "xp": {
-    "base": 3,
-    "linear": 0.6,
-    "quad": 0.008
+    "base": 6,
+    "linear": 2.0,
+    "quad": 0.03
   },
   "hpScale": {
     "linear": 0.26,
@@ -22,6 +22,11 @@
   "maxEnemies": 380,
   "gemCap": 350,
   "weaponCardWeight": 4,
+  "evoNudge": {
+    "pair": 3,
+    "partnerRank": 2,
+    "partnerMult": 2.5
+  },
   "playerIframes": 0.4,
   "pickupRadius": 38,
   "drops": {
