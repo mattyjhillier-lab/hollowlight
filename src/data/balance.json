@@ -8,29 +8,35 @@
   "maxRank": 5,
   "weaponSlots": 4,
   "xp": {
-    "base": 3,
-    "linear": 0.6,
-    "quad": 0.008
+    "base": 6,
+    "linear": 1.9,
+    "quad": 0.03
   },
   "hpScale": {
-    "linear": 0.26,
-    "quad": 0.012
+    "linear": 0.34,
+    "quad": 0.021
   },
   "dmgScale": {
-    "linear": 0.04
+    "linear": 0.07
   },
-  "maxEnemies": 380,
+  "maxEnemies": 240,
   "gemCap": 350,
   "weaponCardWeight": 4,
+  "evoNudge": {
+    "pair": 4,
+    "partnerRank": 2,
+    "partnerMult": 3
+  },
   "playerIframes": 0.4,
   "pickupRadius": 38,
   "drops": {
     "heart": 0.008,
     "magnet": 0.004,
-    "pityHeart": 40,
-    "pityMagnet": 60,
+    "pityHeart": 30,
+    "pityMagnet": 45,
     "heartHeal": 0.3,
-    "ttl": 45
+    "ttl": 45,
+    "pityHeartForce": 75
   },
   "magnetSpeed": 260,
   "despawnDistance": 560,

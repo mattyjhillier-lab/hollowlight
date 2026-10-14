@@ -1,13 +1,13 @@
 {
-  "phantom_stampede": { "weapon": "ghost_wolves", "pair": ["speed", "power"],   "name": "Pouncing Pack", "desc": "Wolves leap onto an enemy, pin it down and maul it." },
-  "howling_legion":   { "weapon": "ghost_wolves", "pair": ["count", "duration"], "name": "Howling Legion",   "desc": "A huge, lasting pack. Their howl boosts your move speed." },
-  "dire_alpha":       { "weapon": "ghost_wolves", "pair": ["power", "duration"], "name": "Dire Alpha",       "desc": "One giant alpha wolf with cleaving bites and heavy bleeding." },
-  "murder_storm":     { "weapon": "raven_flock",  "pair": ["count", "range"],    "name": "Murder Storm",     "desc": "A vast flock that swirls around you and sends enemies fleeing." },
+  "phantom_stampede": { "weapon": "ghost_wolves", "pair": ["speed", "power"],   "name": "Pouncing Pack", "desc": "Wolves leap onto an enemy, pin it down and maul it.", "tune": { "dmg": 1.1, "speed": 1.1, "leapHit": 1.8, "leapCd": 1.8, "maul": 0.45 } },
+  "howling_legion":   { "weapon": "ghost_wolves", "pair": ["count", "duration"], "name": "Howling Legion",   "desc": "A huge, lasting pack. Their howl boosts your move speed.", "tune": { "dmg": 1.25 } },
+  "dire_alpha":       { "weapon": "ghost_wolves", "pair": ["power", "duration"], "name": "Dire Alpha",       "desc": "One giant alpha wolf with cleaving bites and heavy bleeding.", "tune": { "dmg": 3.2, "biteGap": 0.45, "cleave": 24 } },
+  "murder_storm":     { "weapon": "raven_flock",  "pair": ["count", "range"],    "name": "Murder Storm",     "desc": "A vast flock that swirls around you and sends enemies fleeing.", "tune": { "fear": 0.3 } },
   "dive_bombers":     { "weapon": "raven_flock",  "pair": ["speed", "power"],    "name": "Dive Bombers",     "desc": "Ravens dive at the toughest enemy nearby for huge hits." },
-  "spirit_tempest":   { "weapon": "spirit_bolts", "pair": ["count", "speed"],    "name": "Spirit Tempest",   "desc": "Rapid bursts of eight homing bolts that explode on their last hit." },
-  "soul_lance":       { "weapon": "spirit_bolts", "pair": ["power", "pierce"],   "name": "Soul Lance",       "desc": "One massive bolt that pierces everything in its path." },
-  "thunder_judgment": { "weapon": "chain_lightning", "pair": ["chains", "power"], "name": "Thunder Judgment", "desc": "Periodically strikes every enemy around you. Chains almost without limit." },
-  "static_storm":     { "weapon": "chain_lightning", "pair": ["cooldown", "area"], "name": "Static Storm",    "desc": "A constant lightning field strikes random enemies near you." },
+  "spirit_tempest":   { "weapon": "spirit_bolts", "pair": ["count", "speed"],    "name": "Spirit Tempest",   "desc": "Rapid bursts of eight homing bolts that explode on their last hit.", "tune": { "dmg": 1, "cd": 0.8 } },
+  "soul_lance":       { "weapon": "spirit_bolts", "pair": ["power", "pierce"],   "name": "Soul Lance",       "desc": "One massive bolt that pierces everything in its path.", "tune": { "dmg": 8, "r": 12, "cd": 1.1 } },
+  "thunder_judgment": { "weapon": "chain_lightning", "pair": ["chains", "power"], "name": "Thunder Judgment", "desc": "Periodically strikes every enemy around you. Chains almost without limit.", "tune": { "chains": 9, "cd": 3, "cap": 30, "dmg": 0.9 } },
+  "static_storm":     { "weapon": "chain_lightning", "pair": ["cooldown", "area"], "name": "Static Storm",    "desc": "A constant lightning field strikes random enemies near you.", "tune": { "strikes": 4, "dmg": 0.5 } },
   "sanctum_halo":     { "weapon": "holy_orbit",   "pair": ["count", "radius"],   "name": "Sanctum Halo",     "desc": "A wide ring of orbs that leaves holy ground and heals you slowly." },
-  "judgement_wheel":  { "weapon": "holy_orbit",   "pair": ["power", "speed"],    "name": "Judgement Wheel",  "desc": "Fast orbs that explode on contact, then re-form." }
+  "judgement_wheel":  { "weapon": "holy_orbit",   "pair": ["power", "speed"],    "name": "Judgement Wheel",  "desc": "Fast orbs that explode on contact, then re-form.", "tune": { "dmg": 1.8, "rest": 1 } }
 }

@@ -101,10 +101,10 @@ test('Dire Alpha is a single wolf; Howling Legion makes a bigger pack', () => {
 test('wolf stat ranks change behaviour: more count means more wolves', () => {
   const sim = mk({ godMode: true });
   run(sim, 1);
-  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 1);
+  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 2);
   sim.debugGrant('ghost_wolves', { count: 3 });
   run(sim, 1);
-  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 4);
+  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 5);
 });
 
 test('xp pickup leads to a level-up pause, a pick, then play resumes', () => {
@@ -227,7 +227,7 @@ test('root patches slow the player', () => {
   assert.ok(slowed < sim.player.x - x1 * 1, 'patch slows movement');
 });
 
-test('pacing: expected XP over 15 minutes lands near 55-60 level-ups', () => {
+test('pacing: expected XP over 15 minutes lands near 38-50 level-ups (docs/research/00-SUMMARY.md)', () => {
   const ch = data.chapters.cursed_forest;
   const xpAt = (T) => {
     let xp = 0;
@@ -252,13 +252,13 @@ test('pacing: expected XP over 15 minutes lands near 55-60 level-ups', () => {
   };
   const out = { m3: levelAt(180), m5: levelAt(300), m10: levelAt(600), m15: levelAt(900) };
   console.log('level-ups if every enemy were killed:', JSON.stringify(out));
-  assert.ok(out.m15 >= 70 && out.m15 <= 95, `got ${out.m15}`);
-  assert.ok(out.m3 >= 12, 'early game feels fast enough');
-  // A focused player needs roughly 30 level-ups to ready an evolution; that should land around minute 5-9.
+  assert.ok(out.m15 >= 38 && out.m15 <= 52, `got ${out.m15}`);
+  assert.ok(out.m3 >= 10, 'early game feels fast enough');
+  // A focused player needs roughly 20-25 level-ups to ready the first evolution; that should land around minute 5-8.
   const secondsFor = (n) => { for (let t = 1; t <= 900; t++) if (levelAt(t) >= n) return t; return Infinity; };
-  const t30 = secondsFor(30);
-  console.log('30th level-up at', t30, 's');
-  assert.ok(t30 >= 150 && t30 <= 330, `30th level-up at ${t30}s`);
+  const t30 = secondsFor(25);
+  console.log('25th level-up at', t30, 's');
+  assert.ok(t30 >= 240 && t30 <= 480, `25th level-up at ${t30}s`);
 });
 
 test('pouncing pack: a wolf leaps, pins the enemy and kills it', () => {

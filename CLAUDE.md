@@ -8,6 +8,24 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 - He playtests and gives feedback in plain language. Treat feedback as the spec; fix, run tests, rebuild, tell him in a few bullets.
 - Do not build parked features until he says so. Ask before big design changes.
 
+## Standing rule: token conservation (set by Matt)
+Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.
+- Agents: set `model` explicitly. haiku = file lookups, formatting, simple edits, running scripts and reporting. sonnet = research, routine coding, tests, balance sweeps. opus (or stronger) only for hard architecture/design decisions, tricky bugs, or security-critical review.
+- Keep the main chat light: delegate long or bulky work to agents, read only the parts of files needed, avoid re-reading files, keep replies and agent briefs short, cap agent report length.
+- Do not spawn agents for quick lookups; do not run overlapping agents on the same files; reuse an agent via SendMessage rather than starting a new one when context matters.
+- Prefer deterministic scripts (sweep/bot/tests) over repeated model reasoning; batch tool calls.
+- Never trade away the security rule below to save tokens.
+
+## Standing rule: security first (set by Matt, applies to everything)
+Every change, dependency, asset, workflow and deploy gets a security check and is made as safe as possible before it is shipped. Minimum, each time:
+- Dependencies: add as few as possible; check each is well-known and maintained; run `npm audit` and report results; never `npm audit fix --force` blindly (test upgrades on `dev` branch).
+- Assets/downloads: only well-known sources (Kenney, OpenGameArt, itch.io CC0); verify licence; treat downloads as untrusted; record in a CREDITS file.
+- Secrets: never put passwords/keys/tokens in code, commits, docs or chat. Ask Matt to do any account/security-setting change himself (e.g. 2FA).
+- Saves/imports and any URL params: treat as untrusted input; validate and sanitise before use; never inject into the DOM with innerHTML from untrusted data; add tests.
+- GitHub: work on `dev` branch and merge via PR; `main` is protected and is the live site. Workflow permissions stay minimal; pin/verify action versions; secret scanning, push protection and Dependabot stay on.
+- Outward-facing/irreversible actions (publish, push to main, settings, deletes) need Matt's explicit yes first.
+- End each task with a short "Security check" line: what was checked and any findings.
+
 ## Stack and layout
 Phaser 3 + Vite, vanilla JS, ES modules. Single-file build (vite-plugin-singlefile -> dist/index.html).
 - `src/sim/` pure-JS simulation (no Phaser/DOM): `Sim.js`, `weapons.js`, `cards.js`, `rng.js`, `grid.js`. Seeded RNG (mulberry32). Unit/bot-testable in Node.

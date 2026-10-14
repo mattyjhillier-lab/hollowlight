@@ -4,6 +4,9 @@
 
 const TAU = Math.PI * 2;
 
+// Evolution tuning lives in evolutions.json under "tune"; the second argument is the fallback.
+const tune = (sim, w, key, dflt) => sim.data.evolutions[w.evo]?.tune?.[key] ?? dflt;
+
 function syncUnits(sim, w, kind, count, props) {
   const list = w.rt.units || (w.rt.units = []);
   while (list.length > count) list.pop().dead = true;
@@ -43,11 +46,11 @@ const ghostWolves = {
     let dmg = s.power * sim.dmgMult(w) * howl;
     let speed = s.speed * howl;
     let bleedDur = s.duration;
-    if (evo === 'phantom_stampede') { dmg *= 1.1; speed *= 1.1; }
-    if (evo === 'howling_legion') bleedDur *= 1.3;
-    if (evo === 'dire_alpha') { dmg *= 2.6; bleedDur *= 1.5; }
+    if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
+    if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
+    if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.4); bleedDur *= 1.5; }
     const bleedDps = dmg * 0.35;
-    const biteGap = 0.6 / howl;
+    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.5) : 0.6) / howl;
 
     if (evo === 'howling_legion') {
       rt.howlCd = (rt.howlCd ?? 4) - dt;
@@ -76,7 +79,7 @@ const ghostWolves = {
           u.leap = null;
           const t = L.target;
           if (t && !t.dead) {
-            sim.hurt(t, dmg * 1.3);
+            sim.hurt(t, dmg * tune(sim, w, 'leapHit', 1.8));
             sim.bleed(t, bleedDps, bleedDur);
             if (!t.boss) t.heldT = 1.0;
             u.maul = 1.0;
@@ -96,7 +99,7 @@ const ghostWolves = {
           u.y = t.y + 2;
           u.faceX = u.slot % 2 ? -1 : 1;
           u.maulCd -= dt;
-          if (u.maulCd <= 0) { u.maulCd = 0.2; sim.hurt(t, dmg * 0.3); }
+          if (u.maulCd <= 0) { u.maulCd = 0.2; sim.hurt(t, dmg * tune(sim, w, 'maul', 0.3)); }
           if (!t.boss) t.heldT = Math.max(t.heldT || 0, 0.15);
         }
         if (u.maul > 0) continue;
@@ -117,7 +120,7 @@ const ghostWolves = {
         const d = Math.hypot(dx, dy) || 0.001;
         if (evo === 'phantom_stampede' && u.dashCd <= 0 && d > 12 && d < 110) {
           u.leap = { sx: u.x, sy: u.y, tx: t.x, ty: t.y, target: t, t: 0 };
-          u.dashCd = 3.2;
+          u.dashCd = tune(sim, w, 'leapCd', 3.2);
           continue;
         }
         if (d > t.r + u.r) {
@@ -127,12 +130,12 @@ const ghostWolves = {
           if (evo === 'dire_alpha') {
             for (const e of sim.enemies) {
               if (e.dead) continue;
-              if (Math.hypot(e.x - u.x, e.y - u.y) < e.r + 22) {
+              if (Math.hypot(e.x - u.x, e.y - u.y) < e.r + tune(sim, w, 'cleave', 28)) {
                 sim.hurt(e, dmg);
                 sim.bleed(e, bleedDps, bleedDur);
               }
             }
-            sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: 22, ttl: 0.15, color: '#9fd8ff' });
+            sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: tune(sim, w, 'cleave', 28), ttl: 0.15, color: '#9fd8ff' });
           } else {
             sim.hurt(t, dmg);
             sim.bleed(t, bleedDps, bleedDur);
@@ -191,7 +194,7 @@ const ravenFlock = {
           return;
         }
         if (u.st === 'return') {
-          if (moveToward(u, ox, oy, 240, dt) < 6) u.st = 'orbit';
+          if (moveToward(u, ox, oy, Math.max(240, range * spin * 1.4), dt) < 8) u.st = 'orbit';
           return;
         }
         u.diveCd -= dt;
@@ -216,7 +219,7 @@ const ravenFlock = {
         const rr = e.r + u.r + 1;
         if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `raven${i}`, 0.55)) {
           sim.hurt(e, dmg);
-          if (fear) e.fearT = Math.max(e.fearT, 1.2);
+          if (fear) e.fearT = Math.max(e.fearT, tune(sim, w, 'fear', 1.2));
         }
       }
     });
@@ -240,8 +243,8 @@ const spiritBolts = {
     let homing = true;
     let explode = false;
     let life = 2.4;
-    if (evo === 'spirit_tempest') { count = 8; cd = 0.8; speed *= 1.4; explode = true; }
-    if (evo === 'soul_lance') { count = 1; dmg *= 5; pierce = Infinity; speed *= 1.3; r = 8; homing = false; cd = 1.4; life = 1.6; }
+    if (evo === 'spirit_tempest') { count = 8; cd = tune(sim, w, 'cd', 0.8); speed *= 1.4; explode = true; dmg *= tune(sim, w, 'dmg', 1); }
+    if (evo === 'soul_lance') { count = 1; dmg *= tune(sim, w, 'dmg', 5); pierce = Infinity; speed *= 1.3; r = tune(sim, w, 'r', 8); homing = false; cd = tune(sim, w, 'cd', 1.4); life = 1.6; }
 
     const targets = sim.nearestEnemies(p.x, p.y, 210, Math.max(1, count));
     if (!targets.length) { rt.cd = 0.15; return; }
@@ -286,11 +289,12 @@ const chainLightning = {
       rt.cd = (rt.cd ?? 0.2) - dt;
       if (rt.cd > 0) return;
       rt.cd = Math.max(0.1, 0.3 * (s.cooldown / 1.6)) * sim.mods.cooldown;
+      const strikes = tune(sim, w, 'strikes', 4);
       const radius = 110 + area * 0.8;
       const pool = sim.enemies.filter((e) => !e.dead && Math.hypot(e.x - p.x, e.y - p.y) < radius);
-      for (let k = 0; k < 2 && pool.length; k++) {
+      for (let k = 0; k < strikes && pool.length; k++) {
         const e = pool.splice(sim.rng.int(pool.length), 1)[0];
-        sim.hurt(e, dmg * 0.7);
+        sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.5));
         sim.addFx({ kind: 'bolt', pts: [{ x: e.x + sim.rng.range(-8, 8), y: e.y - 70 }, { x: e.x, y: e.y }], ttl: 0.12, color: '#fff27a' });
       }
       return;
@@ -299,13 +303,14 @@ const chainLightning = {
     if (evo === 'thunder_judgment') {
       rt.jCd = (rt.jCd ?? 1.5) - dt;
       if (rt.jCd <= 0) {
-        rt.jCd = 2.4;
+        rt.jCd = tune(sim, w, 'cd', 3);
         let n = 0;
+        const cap = tune(sim, w, 'cap', 30);
         for (const e of sim.enemies) {
-          if (e.dead || n >= 45) continue;
+          if (e.dead || n >= cap) continue;
           if (Math.hypot(e.x - p.x, e.y - p.y) > 260) continue;
           n++;
-          sim.hurt(e, dmg * 1.6);
+          sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.9));
           sim.addFx({ kind: 'bolt', pts: [{ x: e.x, y: e.y - 80 }, { x: e.x, y: e.y }], ttl: 0.2, color: '#fff7b0' });
         }
       }
@@ -315,7 +320,7 @@ const chainLightning = {
     if (rt.cd > 0) return;
     const first = sim.nearestEnemy(p.x, p.y, 220);
     if (!first) { rt.cd = 0.15; return; }
-    const chains = evo === 'thunder_judgment' ? 14 : s.chains;
+    const chains = evo === 'thunder_judgment' ? tune(sim, w, 'chains', 9) : s.chains;
     strikeChain(sim, w, first, chains, dmg, area);
     rt.cd = Math.max(0.2, s.cooldown) * sim.mods.cooldown;
   },
@@ -354,10 +359,10 @@ const holyOrbit = {
         if (evo === 'judgement_wheel') {
           for (const o of sim.enemies) {
             if (o.dead) continue;
-            if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34) sim.hurt(o, dmg * 1.3);
+            if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34) sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.8));
           }
           sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: 34, ttl: 0.2, color: '#ffe08a' });
-          u.disabledT = 1.2;
+          u.disabledT = tune(sim, w, 'rest', 1.0);
           break;
         }
         if (sim.canHit(e, `orb${i}`, 0.5)) sim.hurt(e, dmg);
