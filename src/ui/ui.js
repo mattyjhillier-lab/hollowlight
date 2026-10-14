@@ -24,7 +24,7 @@ export class UI {
   layer(name) {
     if (!this.layers[name]) {
       const el = document.createElement('div');
-      el.className = name === 'hud' ? 'hud' : 'overlay';
+      el.className = name === 'hud' ? 'hud' : `overlay layer-${name}`;
       el.style.display = 'none';
       this.root.appendChild(el);
       this.layers[name] = el;
@@ -122,7 +122,7 @@ export class UI {
         const def = this.data.weapons[w.id];
         const total = Object.values(w.ranks).reduce((a, b) => a + b, 0);
         const name = w.evo ? this.data.evolutions[w.evo].name : def.name;
-        slots.push(`<div class="slot ${w.evo ? 'evolved' : ''}" style="border-left-color:${def.color}"><div class="n">${name}</div><div class="r"><i style="width:${w.evo ? 100 : (total / max) * 100}%"></i></div></div>`);
+        slots.push(`<div class="slot ${w.evo ? 'evolved' : ''}" style="--c:${def.color}"><div class="n">${name}</div><div class="r"><i style="width:${w.evo ? 100 : (total / max) * 100}%"></i></div></div>`);
       }
       h.slots.innerHTML = slots.join('');
     }
@@ -160,8 +160,8 @@ export class UI {
   showStart(onPick) {
     const chars = Object.entries(this.data.characters);
     const cards = chars.map(([id, c]) => `
-      <div class="charcard" data-id="${id}">
-        <h3><span class="swatch" style="background:${c.color}"></span>${c.name}</h3>
+      <div class="charcard" data-id="${id}" tabindex="0" role="button">
+        <h3><span class="swatch" style="background:${c.color};color:${c.color}"></span>${c.name}</h3>
         <div class="blurb">${c.blurb}</div>
         <dl>
           <dt>Health</dt><dd>${c.hp}</dd>
@@ -184,7 +184,12 @@ export class UI {
     const bank = this.handlers.getBank ? this.handlers.getBank() : null;
     if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
-    el.querySelectorAll('.charcard').forEach((c) => c.addEventListener('click', () => onPick(c.dataset.id)));
+    el.querySelectorAll('.charcard').forEach((c) => {
+      c.addEventListener('click', () => onPick(c.dataset.id));
+      c.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onPick(c.dataset.id); } });
+    });
+    const firstCard = el.querySelector('.charcard');
+    if (firstCard) firstCard.focus({ preventScroll: true });
   }
 
   hideStart() { this.hide('start'); }
@@ -202,7 +207,7 @@ export class UI {
       }
       const ban = sim.banishesLeft > 0 && !gold ? `<button class="btn ban" data-ban="${c.key}">Banish</button>` : '';
       return `
-        <div class="card ${gold ? 'gold' : ''}" data-key="${c.key}" style="border-top-color:${c.color}">
+        <div class="card k-${c.kind} ${gold ? 'gold' : ''}" data-key="${c.key}" style="--i:${i}" tabindex="0" role="button">
           ${c.badge ? `<div class="badge">${c.badge}</div>` : ''}
           <div class="key">${i + 1}</div>
           <h4>${c.title}</h4>
@@ -219,6 +224,9 @@ export class UI {
       <div class="cards">${all.map(cardHtml).join('')}</div>
       <div class="lu-actions">${actions.join('')}</div>`);
     this.currentCards = all;
+    this.cardEls = Array.from(el.querySelectorAll('.card'));
+    this.setSel(0);
+    this.cardEls.forEach((ce, i) => ce.addEventListener('mouseenter', () => this.setSel(i)));
     el.querySelectorAll('.card').forEach((c) => c.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-ban]')) return;
       this.handlers.pick(c.dataset.key);
@@ -231,7 +239,15 @@ export class UI {
     if (rr) rr.addEventListener('click', () => this.handlers.reroll());
   }
 
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
+  // Keyboard-first selection: arrows move, Enter picks, 1-4 pick directly.
+  setSel(i) {
+    const els = this.cardEls || [];
+    if (!els.length) return;
+    this.selIdx = Math.max(0, Math.min(els.length - 1, i));
+    els.forEach((e, k) => e.classList.toggle('sel', k === this.selIdx));
+  }
+
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; this.cardEls = null; }
 
   // ------------------------------------------------------------------ pause / end
   showPause() {
@@ -416,6 +432,14 @@ export class UI {
         this.handlers.pick(this.currentCards[n - 1].key);
       } else if (e.key === 'r' || e.key === 'R') {
         this.handlers.reroll();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault(); this.setSel((this.selIdx || 0) - 1);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault(); this.setSel((this.selIdx || 0) + 1);
+      } else if (e.key === 'Enter' && !(e.target && e.target.closest && e.target.closest('button'))) {
+        e.preventDefault();
+        const c = this.currentCards[this.selIdx || 0];
+        if (c) this.handlers.pick(c.key);
       }
     }
   }
