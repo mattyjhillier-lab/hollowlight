@@ -13,11 +13,11 @@
     "quad": 0.03
   },
   "hpScale": {
-    "linear": 0.3,
-    "quad": 0.018
+    "linear": 0.34,
+    "quad": 0.02
   },
   "dmgScale": {
-    "linear": 0.06
+    "linear": 0.07
   },
   "maxEnemies": 240,
   "gemCap": 350,

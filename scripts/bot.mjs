@@ -58,6 +58,7 @@ export function playRun(charId, seed, opts = {}) {
   while (sim.state === 'running' || sim.state === 'levelup') {
     if (sim.state === 'levelup') { sim.pickCard(pick(sim, rng)); continue; }
     sim.step(DT, botInput(sim));
+    if (marks.bossKill === undefined && sim.bossKilled) marks.bossKill = Math.round(sim.time);
     if (marks.evo === undefined && sim.weapons.some((w) => w.evo)) marks.evo = Math.round(sim.time);
     const m = Math.floor(sim.time / 60);
     if (sim.time % 60 < DT && !marks[m]) marks[m] = { lvl: sim.level, hp: Math.round(sim.player.hp), en: sim.enemies.length };

@@ -41,13 +41,13 @@
       {
         "t": 150,
         "enemy": "crow",
-        "count": 14,
+        "count": 12,
         "formation": "arc"
       },
       {
         "t": 240,
         "enemy": "wolf",
-        "count": 10,
+        "count": 8,
         "formation": "arc"
       },
       {
@@ -77,7 +77,7 @@
       {
         "t": 600,
         "enemy": "wolf",
-        "count": 28,
+        "count": 20,
         "formation": "arc"
       },
       {

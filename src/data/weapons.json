@@ -6,8 +6,8 @@
     "color": "#9fd8ff",
     "desc": "Spectral wolves hunt the nearest enemy and bite. Bites cause bleeding.",
     "stats": {
-      "count":    { "name": "Pack size",     "base": 1,   "perRank": 1,   "fmt": "int",  "hint": "+1 wolf" },
-      "power":    { "name": "Bite power",    "base": 8,   "perRank": 3,   "fmt": "int",  "hint": "+3 damage" },
+      "count":    { "name": "Pack size",     "base": 2,   "perRank": 1,   "fmt": "int",  "hint": "+1 wolf" },
+      "power":    { "name": "Bite power",    "base": 7,   "perRank": 3,   "fmt": "int",  "hint": "+3 damage" },
       "speed":    { "name": "Wolf speed",    "base": 90,  "perRank": 14,  "fmt": "int",  "hint": "+14 speed" },
       "duration": { "name": "Bleed time",    "base": 1.5, "perRank": 0.5, "fmt": "sec",  "hint": "+0.5s bleed" }
     }
@@ -59,7 +59,7 @@
     "desc": "Holy orbs circle you and burn anything they touch.",
     "stats": {
       "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "+1 orb" },
-      "power":  { "name": "Orb power",  "base": 10,   "perRank": 3.5,  "fmt": "int", "hint": "+3.5 damage" },
+      "power":  { "name": "Orb power",  "base": 10,   "perRank": 4,    "fmt": "int", "hint": "+4 damage" },
       "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "hint": "+6 radius" },
       "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "hint": "+0.35 spin" }
     }
