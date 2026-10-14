@@ -33,7 +33,8 @@
     "heart": 0.008,
     "magnet": 0.004,
     "pityHeart": 30,
-    "pityMagnet": 45,
+    "pityMagnet": 30,
+    "magnetGems": 6,
     "heartHeal": 0.3,
     "ttl": 45,
     "pityHeartForce": 75

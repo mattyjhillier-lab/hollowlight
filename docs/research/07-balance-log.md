@@ -39,3 +39,17 @@ Other changes: pickups (heart ~1 per 85-110 s incl. forced pity, magnet ~1 per 1
 - Level-ups: focused 37-44 (in range 38-48), random 36-37 (dying runs end early; winning runs reach 47-48).
 - Evolutions per run: random median 1 (target 1-2, OK), focus Elias 1 (target 2-3). Lowering the 10-rank evolution requirement would fix it but is a locked-design change, so not done.
 - First evolution p10 3:36-4:49 is slightly earlier than the 4:00 target for Wren focus; median 5:06 vs 5:30.
+
+## P1 finish (Spirit Bolts trim, magnet frequency)
+
+- Spirit Bolts power perRank 5 -> 4 (base unchanged). `evo-dps.mjs` maxed bolts: single 126->108, stream10 516->442, stream40 1032->885 (-14%). Evolution ratios unchanged (they scale off base): Tempest 1.62/1.97/2.41x, Lance 2.00/0.91/1.28x, so no `tune` changes. Lance stream ratios were already below 1.8x before the trim (unchanged, flagged for P6).
+- Magnet: new `drops.magnetGems` 6 (was hardcoded >12 gems), `pityMagnet` 45 -> 30. Sim.js reads `b.magnetGems ?? 12`.
+- Sweep (96 seeds, magnet/run at 15 min): gems 6 + pity 45: 5.4-9.1 (elias ~6, wren ~7-9); gems 6 + pity 30: 7.3-9.8.
+
+```
+final (gems 6, pity 30, seeds 0-95)  win%  mag
+elias/focus 43%  7.3   elias/random 36%  7.8
+wren/focus  43%  9.8   wren/random  17%  7.7
+```
+Same set, pity 45: wren r/f 18/40, elias r/f 26/46; seeds 96-191: wren 21/45, elias 23/39. Noise is +-7 points. Wren random in 15-25, wren focus 40-46 (marginally under 45 on average, within noise), Elias random 23-36 (above target, known bot-flee issue), Elias focus 39-46.
+Tests: 35 pass, none needed changing.
