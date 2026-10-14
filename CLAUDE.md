@@ -8,6 +8,14 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 - He playtests and gives feedback in plain language. Treat feedback as the spec; fix, run tests, rebuild, tell him in a few bullets.
 - Do not build parked features until he says so. Ask before big design changes.
 
+## Standing rule: token conservation (set by Matt)
+Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.
+- Agents: set `model` explicitly. haiku = file lookups, formatting, simple edits, running scripts and reporting. sonnet = research, routine coding, tests, balance sweeps. opus (or stronger) only for hard architecture/design decisions, tricky bugs, or security-critical review.
+- Keep the main chat light: delegate long or bulky work to agents, read only the parts of files needed, avoid re-reading files, keep replies and agent briefs short, cap agent report length.
+- Do not spawn agents for quick lookups; do not run overlapping agents on the same files; reuse an agent via SendMessage rather than starting a new one when context matters.
+- Prefer deterministic scripts (sweep/bot/tests) over repeated model reasoning; batch tool calls.
+- Never trade away the security rule below to save tokens.
+
 ## Standing rule: security first (set by Matt, applies to everything)
 Every change, dependency, asset, workflow and deploy gets a security check and is made as safe as possible before it is shipped. Minimum, each time:
 - Dependencies: add as few as possible; check each is well-known and maintained; run `npm audit` and report results; never `npm audit fix --force` blindly (test upgrades on `dev` branch).
