@@ -49,6 +49,11 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
   box-shadow: 0 0 0 1px rgba(94, 230, 255, .16), 0 0 40px rgba(139, 108, 255, .12);
   overflow: hidden;
 }
+/* Portrait screens: the stage fills the screen so the camera zoom can use the full height (docs/research/15 s3). */
+@media (max-aspect-ratio: 1/1) {
+  #app { padding: 0; }
+  #stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+}
 #game, #ui { position: absolute; inset: 0; }
 #game canvas { display: block; width: 100% !important; height: 100% !important; }
 #ui { pointer-events: none; font-size: clamp(9px, 1.7cqw, 20px); }

@@ -3,7 +3,7 @@
 //  B: drawn at 2 texels/unit, then pixelised (hard alpha, posterised colour bands, 1px dark outline,
 //     lit top-left edge, flat shadow) and sampled NEAREST.
 // All sizes are in world units (the 640x360 logical space); INV[key] = world units per texel.
-import { INV } from './style.js';
+import { INV, VIS, DENS } from './style.js';
 
 const TAU = Math.PI * 2;
 const ch = (c, s) => (c >> s) & 255;
@@ -318,7 +318,7 @@ function pixelize(cv, sd, S, pad) {
 }
 
 function renderSprite(def, style) {
-  const S = style === 'b' ? 2 : 3;
+  const S = style === 'b' ? 2 : Math.max(3, Math.round((DENS[def.key] || 3) * (VIS[def.key] || 1)));
   const pad = def.pad === undefined ? 2 : def.pad;
   const cv = mkCanvas((def.w + pad * 2) * S, (def.h + pad * 2) * S);
   const c = cv.getContext('2d');
@@ -462,11 +462,11 @@ function digitsCanvas(style) {
 export function makeStyleTextures(scene, style) {
   const nearest = style === 'b';
   for (const [key, def] of Object.entries(SPRITES)) {
-    const { cv, S } = renderSprite(def, style);
+    const { cv, S } = renderSprite({ ...def, key }, style);
     if (scene.textures.exists(key)) scene.textures.remove(key);
     const t = scene.textures.addCanvas(key, cv);
     if (nearest && !def.noPix && key !== 'glow') t.setFilter(1); // Phaser.Textures.FilterMode.NEAREST
-    INV[key] = 1 / S;
+    INV[key] = (VIS[key] || 1) / S; // world units per texel, display size included
   }
   const gcv = style === 'b' ? groundB() : groundA();
   const gt = scene.textures.addCanvas('ground', gcv);

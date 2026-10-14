@@ -40,8 +40,8 @@
     "pityHeartForce": 75
   },
   "magnetSpeed": 260,
-  "despawnDistance": 560,
-  "spawnDistance": 390,
+  "despawnDistance": 510,
+  "spawnDistance": 340,
   "offerSize": 3,
   "maxGoldCards": 3,
   "fallback": {

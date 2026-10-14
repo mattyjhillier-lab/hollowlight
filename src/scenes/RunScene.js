@@ -8,7 +8,7 @@ import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, gradeAt } from '../gfx/palette.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
-import { STYLE, inv } from '../gfx/style.js';
+import { STYLE, inv, zoomFor } from '../gfx/style.js';
 import { makeStyleTextures } from '../gfx/sprites.js';
 
 const ADD = Phaser.BlendModes.ADD;
@@ -165,14 +165,17 @@ export class RunScene extends Phaser.Scene {
     window.dispatchEvent(new Event('scene-ready'));
   }
 
-  // Native-resolution rendering: the canvas is window size x DPR; the camera zoom maps the 640x360 logical world onto it.
-  // Screen-space layers (scrollFactor 0) sit at the canvas centre; their logical sizes are scaled by the zoom.
+  // Native-resolution rendering: the canvas is window size x DPR; zoom comes from the short side (zoomFor).
+  // Screen-space layers (scrollFactor 0) sit at the canvas centre and are sized to the visible world area + margin.
   fit() {
     const W = this.scale.width;
     const H = this.scale.height;
-    this.baseZoom = W / app.data.balance.view.w;
+    this.baseZoom = zoomFor(W, H);
     this.cameras.main.setZoom(this.baseZoom);
-    for (const o of [this.grade, this.vig, this.dawn, this.flashR]) o.setPosition(W / 2, H / 2);
+    const vw = (W / this.baseZoom) * 1.06;
+    const vh = (H / this.baseZoom) * 1.06;
+    for (const o of [this.grade, this.dawn, this.flashR]) o.setPosition(W / 2, H / 2).setSize(vw, vh);
+    this.vig.setPosition(W / 2, H / 2).setDisplaySize(vw, vh);
   }
 
   // Faint ambient life: drifting fog banks and fireflies (Med/High). World-space, wrapped around the view.
