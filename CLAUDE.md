@@ -10,6 +10,14 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 
 Task queue / to-do list: docs/QUEUE.md (keep it updated; add items Matt says to save for later). Art decisions log: docs/ART-DECISIONS.md.
 
+## Standing rule: small chunks, never get ahead (set by Matt)
+Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
+- One chunk = one small, clearly described piece with a visible result and a done-check (tests green, screenshot/numbers, security + fit check). State the chunk before starting; finish and show it before starting the next.
+- Never start the next chunk, a new phase or a new direction without Matt's go-ahead. New ideas go to docs/QUEUE.md, not straight into building.
+- Max 1-2 agents at once, on separate files; no new agents while Matt has unreviewed results waiting.
+- Ask Matt for at most 3 decisions at a time, each with a recommendation; keep messages short.
+- After each chunk: summarise in a few bullets, show what changed, say what the next small chunk would be, and wait.
+
 ## Standing rule: everything must fit the game (set by Matt)
 Whatever is added or designed (feature, creature, weapon, evolution, UI, effect, sound, asset, story) must (1) fit Hollowlight's look and identity (docs/IDENTITY.md, docs/BIBLE.md, the chosen art direction, role colours, restraint) and (2) make mechanical sense inside the game (consistent with the locked design, the sim rules, the summoner fantasy, balance targets, and how the player reads and understands it). Before building anything new, state in one line how it fits the look and why it makes mechanical sense; if it does not clearly fit, do not add it and raise it with Matt. Generic or off-style assets and mechanics that do not belong are rejected even if they are free or easy. Check this in every review and end each task with a one-line "Fit check" next to the "Security check".
 

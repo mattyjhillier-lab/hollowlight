@@ -27,5 +27,8 @@ Goal (Matt): once all research is in and everything is ready, we just GO and bui
 - [ ] CI checks on dev (tests, build, audit) and PR template
 - [ ] Phone test device/viewport plan
 
+## How the build runs (Matt: small chunks, do not get ahead)
+Each phase is cut into small chunks (a chunk = one visible result, about one sitting). After every chunk Claude shows the result and the next proposed chunk, and waits for Matt before starting it. Max 1-2 agents at a time. The Decision Sheet is asked in batches of at most 3.
+
 ## GO
 When Gates 1-3 are ticked: Matt says "GO". Claude then runs phases in order. Each phase ends with: tests green, security + fit check, screenshots/fps numbers, a PR to main, Matt playtests, merge. No new big decisions mid-phase (they go to docs/QUEUE.md).
