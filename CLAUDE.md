@@ -10,6 +10,14 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 
 Task queue / to-do list: docs/QUEUE.md (keep it updated; add items Matt says to save for later). Art decisions log: docs/ART-DECISIONS.md.
 
+## Standing rule: research, review, then build (set by Matt)
+Everything going forward is researched and reviewed BEFORE it is built, to make sure it is the best fit and makes sense. Process for every chunk, scaled to its size (token rule still applies):
+1. RESEARCH: how do comparable games handle it, what are the options, what are the risks (sources, labelled OFFICIAL/COMMUNITY/OPINION). Small chunks: a quick check of existing docs/research first; big or new areas: a research file.
+2. DESIGN: state the choice, alternatives considered, why this one, and the fit check (look/identity) and mechanical-sense check (locked design, balance, player readability).
+3. REVIEW: a second look before building: for anything medium or big, an independent reviewer (fresh agent or the strongest model) critiques the design/research for gaps, risks and better options; Matt sees the summary and decides.
+4. BUILD in small chunks, then verify (tests, numbers, screenshots, security + fit check), then Matt playtests/reviews.
+Trivial or reversible changes (typo, colour tweak, data tuning) need only a one-line rationale. Never skip steps for big things (new mechanics, art direction, content systems, hosting, anything touching saves or security).
+
 ## Standing rule: keep Matt focused (asked by Matt)
 Matt sometimes runs away with ideas and loses track of what matters next. Claude acts as focus keeper:
 - Keep a single NOW / NEXT / LATER list at the top of docs/QUEUE.md. NOW is one small chunk.
