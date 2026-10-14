@@ -3,7 +3,8 @@
 ## NOW / NEXT / LATER (focus keeper)
 - NOW: skill tree build finishing (the last running job). Art family LOCKED: polished 2D cartoon, P1 Warm Lantern.
 - NOW (art): style recipe chosen (S1+S5 mix, see ART-DECISIONS). Next small chunk: Wren design sheet in this recipe for Matt to approve.
-- NEXT: agree the action plan in small chunks: first chunk proposal = approve creature design sheets one at a time (Wren first), then rebuild the in-game look step by step.
+- NEXT (Matt asked): ROSTER + ABILITIES WORKSHOP right after the Wren sheet and before drawing other heroes: revisit who the heroes are, their special abilities and how summons/evolutions work, so everything matches what the game is evolving into (inputs: docs/BIBLE.md hero section, docs/research/18 summons review, docs/IDENTITY.md). Do it in small steps, 2-3 heroes at a time, check mechanical sense and look fit.
+- THEN: agree the action plan in small chunks: first chunk proposal = approve creature design sheets one at a time (Wren first), then rebuild the in-game look step by step.
 - LATER: build phases in small chunks after the GO gate (docs/READINESS.md).
 - PARKING LOT (ideas not started): see bottom of this file.
 
