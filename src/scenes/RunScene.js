@@ -5,6 +5,21 @@ import { app } from '../app.js';
 import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { PerfOverlay } from '../gfx/perf.js';
+import { PAL, gradeAt } from '../gfx/palette.js';
+import { Particles } from '../gfx/particles.js';
+import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
+
+const ADD = Phaser.BlendModes.ADD;
+// Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
+const jit = (n) => { n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d); n ^= n >>> 12; return (n & 255) / 255 - 0.5; };
+
+// Depth layers: world < grade (multiply) < halos (additive) < lit sprites < particles < fx < vignette.
+const D_GRADE = 5000;
+const D_HALO = 55000;
+const D_LIT = 60000;
+const D_PART = 90000;
+const D_FX = 100000;
+const D_VIG = 120000;
 
 const hex = (s) => parseInt(s.slice(1), 16);
 
@@ -17,29 +32,29 @@ function tex(scene, key, w, h, draw) {
 
 function makeTextures(scene) {
   tex(scene, 'ground', 64, 64, (g) => {
-    g.fillStyle(0x1b2a1d, 1).fillRect(0, 0, 64, 64);
+    g.fillStyle(0x1d2b3a, 1).fillRect(0, 0, 64, 64);
     for (let i = 0; i < 90; i++) {
-      const c = [0x203222, 0x172419, 0x24382a, 0x1a281c][i % 4];
+      const c = [0x223244, 0x182433, 0x12182b, 0x1a2a3a][i % 4];
       g.fillStyle(c, 1).fillRect(Math.floor(Math.random() * 62), Math.floor(Math.random() * 62), 2, 2);
     }
     for (let i = 0; i < 7; i++) {
       const x = 4 + Math.floor(Math.random() * 56);
       const y = 6 + Math.floor(Math.random() * 54);
-      g.fillStyle(0x2d4a30, 1).fillRect(x, y, 1, 3).fillRect(x + 2, y + 1, 1, 2);
+      g.fillStyle(0x2f4a4a, 1).fillRect(x, y, 1, 3).fillRect(x + 2, y + 1, 1, 2);
     }
   });
 
   tex(scene, 'tree', 30, 42, (g) => {
-    g.fillStyle(0x3a2616, 1).fillRect(12, 26, 6, 14);
-    g.fillStyle(0x4b331f, 1).fillRect(12, 26, 2, 14);
-    g.fillStyle(0x12281a, 1).fillCircle(15, 17, 12).fillCircle(8, 21, 8).fillCircle(22, 21, 8);
-    g.fillStyle(0x1a3a24, 1).fillCircle(13, 14, 8).fillCircle(20, 18, 6);
-    g.fillStyle(0x24502f, 1).fillCircle(11, 12, 4);
+    g.fillStyle(0x12182b, 1).fillRect(12, 26, 6, 14);
+    g.fillStyle(0x1d2b3a, 1).fillRect(12, 26, 2, 14);
+    g.fillStyle(0x0b1018, 1).fillCircle(15, 17, 12).fillCircle(8, 21, 8).fillCircle(22, 21, 8);
+    g.fillStyle(0x12202c, 1).fillCircle(13, 14, 8).fillCircle(20, 18, 6);
+    g.fillStyle(0x2f4a4a, 1).fillCircle(11, 12, 3);
   });
 
   tex(scene, 'patch', 64, 64, (g) => {
-    for (let i = 0; i < 8; i++) g.fillStyle(0x5a3a1a, 0.1).fillCircle(32, 32, 32 - i * 3.5);
-    g.lineStyle(1, 0x6b4a2b, 0.7);
+    for (let i = 0; i < 8; i++) g.fillStyle(0x2f4a4a, 0.1).fillCircle(32, 32, 32 - i * 3.5);
+    g.lineStyle(1, 0x2f4a4a, 0.7);
     for (let a = 0; a < 6; a++) {
       const ang = (a / 6) * Math.PI * 2;
       g.lineBetween(32, 32, 32 + Math.cos(ang) * 26, 32 + Math.sin(ang) * 20);
@@ -115,14 +130,14 @@ function makeTextures(scene) {
   });
 
   tex(scene, 'orb', 12, 12, (g) => {
-    g.fillStyle(0xffe08a, 0.25).fillCircle(6, 6, 6);
-    g.fillStyle(0xffd24a, 1).fillCircle(6, 6, 3.5);
+    g.fillStyle(0xe8e0ff, 0.25).fillCircle(6, 6, 6);
+    g.fillStyle(0xb8f2ff, 1).fillCircle(6, 6, 3.5);
     g.fillStyle(0xffffff, 1).fillCircle(5, 5, 1.6);
   });
 
   tex(scene, 'gem', 8, 10, (g) => {
-    g.fillStyle(0x2f7fd8, 1).fillTriangle(4, 0, 8, 5, 4, 10).fillTriangle(4, 0, 0, 5, 4, 10);
-    g.fillStyle(0x9bd0ff, 1).fillTriangle(4, 1, 6, 5, 4, 5).fillTriangle(4, 1, 2, 5, 4, 5);
+    g.fillStyle(0x6fd3c5, 1).fillTriangle(4, 0, 8, 5, 4, 10).fillTriangle(4, 0, 0, 5, 4, 10);
+    g.fillStyle(0xb8f2ff, 1).fillTriangle(4, 1, 6, 5, 4, 5).fillTriangle(4, 1, 2, 5, 4, 5);
   });
 
   tex(scene, 'heart', 12, 11, (g) => {
@@ -130,9 +145,9 @@ function makeTextures(scene) {
     g.fillStyle(0xff9aa8, 1).fillCircle(3, 2.5, 1.2);
   });
   tex(scene, 'magnet', 12, 12, (g) => {
-    g.fillStyle(0xd23b3b, 1).fillRect(1, 1, 3, 7).fillRect(8, 1, 3, 7);
-    g.fillStyle(0xcfd6dd, 1).fillRect(1, 1, 3, 2).fillRect(8, 1, 3, 2);
-    g.fillStyle(0xd23b3b, 1).fillRect(1, 8, 10, 3);
+    g.fillStyle(0x8a5cff, 1).fillRect(1, 1, 3, 7).fillRect(8, 1, 3, 7);
+    g.fillStyle(0xe8e0ff, 1).fillRect(1, 1, 3, 2).fillRect(8, 1, 3, 2);
+    g.fillStyle(0x8a5cff, 1).fillRect(1, 8, 10, 3);
   });
 
   tex(scene, 'bolt', 10, 10, (g) => {
@@ -141,13 +156,32 @@ function makeTextures(scene) {
     g.fillStyle(0xffffff, 1).fillCircle(5, 5, 1.4);
   });
 
+  // Soft radial glow used for halos, particles and gem glow (all additive, one batch).
+  tex(scene, 'glow', 32, 32, (g) => {
+    for (let i = 0; i < 14; i++) g.fillStyle(0xffffff, 0.07).fillCircle(16, 16, 16 - i * 1.05);
+  });
+
+  // Soft vignette (canvas gradient, one full-screen image).
+  if (!scene.textures.exists('vig')) {
+    const t = scene.textures.createCanvas('vig', 320, 180);
+    const c = t.getContext();
+    const gr = c.createRadialGradient(160, 90, 40, 160, 90, 190);
+    gr.addColorStop(0, 'rgba(255,255,255,0)');
+    gr.addColorStop(0.65, 'rgba(255,255,255,0.35)');
+    gr.addColorStop(1, 'rgba(255,255,255,0.9)');
+    c.fillStyle = gr;
+    c.fillRect(0, 0, 320, 180);
+    t.refresh();
+  }
+
   tex(scene, 'dot', 2, 2, (g) => { g.fillStyle(0xffffff, 1).fillRect(0, 0, 2, 2); });
 }
 
 class SpritePool {
-  constructor(scene, key) {
+  constructor(scene, key, init) {
     this.scene = scene;
     this.key = key;
+    this.init = init;
     this.map = new Map();
     this.free = [];
     this.stamp = 0;
@@ -156,7 +190,11 @@ class SpritePool {
   get(id) {
     let s = this.map.get(id);
     if (!s) {
-      const img = this.free.pop() || this.scene.add.image(0, 0, this.key);
+      let img = this.free.pop();
+      if (!img) {
+        img = this.scene.add.image(0, 0, this.key);
+        if (this.init) this.init(img);
+      }
       img.setVisible(true);
       s = { img, stamp: 0 };
       this.map.set(id, s);
@@ -194,7 +232,16 @@ export class RunScene extends Phaser.Scene {
     const size = app.data.balance.worldSize;
     this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000);
     this.groundG = this.add.graphics().setDepth(-400);
-    this.fxG = this.add.graphics().setDepth(100000);
+    this.fxG = this.add.graphics().setDepth(D_FX).setBlendMode(Phaser.BlendModes.ADD);
+
+    // dusk-to-dawn grade (multiply rect on Med/High; plain tint on Low) + vignette
+    this.grade = this.add.rectangle(320, 180, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_GRADE).setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.vig = this.add.image(320, 180, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
+    this.vigLow = false;
+    // warm pre-dawn glow: additive wash that grows over the last ~25% of the run (Med/High)
+    this.dawn = this.add.rectangle(320, 180, 760, 440, 0xff7a3a).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.gradeCol = -1;
+    this.gradeTint = -1;
 
     this.pools = {
       wolf: new SpritePool(this, 'wolf'),
@@ -208,9 +255,23 @@ export class RunScene extends Phaser.Scene {
       heart: new SpritePool(this, 'heart'),
       magnet: new SpritePool(this, 'magnet'),
       bolt: new SpritePool(this, 'bolt'),
+      haloU: new SpritePool(this, 'glow', (i) => i.setBlendMode(ADD).setDepth(D_HALO)),
+      haloG: new SpritePool(this, 'glow', (i) => i.setBlendMode(ADD).setDepth(D_HALO)),
     };
+    makeDigitFont(this);
+    this.parts = new Particles(this, D_PART);
+    this.nums = new DamageNumbers(this, D_PART + 10);
+    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(PAL.teal).setAlpha(0.2).setScale(6).setVisible(false);
+    this.flashR = this.add.rectangle(320, 180, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
+    this.flashT = 0; this.flashLife = 1; this.flashA = 0;
+    this.rings = Array.from({ length: 10 }, () => ({ on: false, x: 0, y: 0, t: 0, life: 1, r0: 0, r1: 1, col: 0, w: 2 }));
+    this.zoomT = 9; this.zoomAmp = 0; this.zoomDur = 1;
+    this.hitStop = 0; this.hitCool = 0;
+    this.trailAcc = 0; this.trailTick = 0; this.fxTick = 0;
+    this.bloom = null;
     this.playerImg = this.add.image(0, 0, 'hero_wren').setVisible(false);
     this.followTarget = this.add.zone(0, 0, 1, 1);
+    this.gradeNow = gradeAt(0);
 
     this.keys = this.input.keyboard.addKeys({
       W: 'W', A: 'A', S: 'S', D: 'D', UP: 'UP', DOWN: 'DOWN', LEFT: 'LEFT', RIGHT: 'RIGHT', SPACE: 'SPACE', ESC: 'ESC',
@@ -270,16 +331,34 @@ export class RunScene extends Phaser.Scene {
       this.decor.push(img);
     }
     this.playerImg.setTexture(`hero_${sim.characterId}`).setVisible(true);
+    this.parts.clear();
+    this.nums.clear();
+    for (const r of this.rings) r.on = false;
+    this.gradeTint = -1;
+    this.gradeCol = -1;
+    this.updateGrade(sim.time / app.data.balance.runSeconds);
+    this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
   }
 
   unbindSim() {
     this.sim = null;
+    this.parts.clear();
+    this.nums.clear();
+    this.playerGlow.setVisible(false);
+    this.flashR.setVisible(false);
+    for (const r of this.rings) r.on = false;
+    this.cameras.main.setZoom(1);
+    app.freeze = false;
     this.clearDecor();
     this.playerImg.setVisible(false);
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
     this.fxG.clear();
+    this.gradeTint = -1;
+    this.gradeCol = -1;
+    this.updateGrade(0);
+    this.applyTier();
   }
 
   clearDecor() {
@@ -290,7 +369,7 @@ export class RunScene extends Phaser.Scene {
   shake(ms = 90, intensity = 0.004) {
     const st = app.save.data.settings;
     if (!st.screenShake || st.reducedMotion) return;
-    this.cameras.main.shake(ms, intensity);
+    this.cameras.main.shake(Math.min(ms, 320), Math.min(intensity, 0.01));
   }
 
   readInput() {
@@ -320,7 +399,7 @@ export class RunScene extends Phaser.Scene {
     if (this.sim && this.sim.state === 'running' && !app.paused && q.sample(dt, this.workMs)) this.applyTier();
     const info = this.perfInfo;
     info.sprites = this.countSprites();
-    info.particles = 0;
+    info.particles = this.parts.count;
     info.tier = q.tier;
     info.mode = q.mode;
     this.perf.update(dt, this.workMs, info);
@@ -332,30 +411,205 @@ export class RunScene extends Phaser.Scene {
     return n;
   }
 
-  applyTier() {}
+  applyTier() {
+    const c = this.quality.caps;
+    this.grade.setVisible(c.grade);
+    this.vig.setVisible(c.vignette);
+    this.gradeCol = -1;
+    this.gradeTint = -1;
+    if (!c.grade) this.setGround(this.gradeNow);
+    else this.setGround(0xffffff);
+    this.parts.setCap(c.particles);
+    this.nums.setCap(c.dmgNums);
+    this.playerGlow.setVisible(c.grade && !!this.sim);
+    // Built-in bloom: High tier only, WebGL only, feature-detected; fails silently.
+    const cam = this.cameras.main;
+    try {
+      if (this.bloom && !c.bloom) { cam.postFX.remove(this.bloom); this.bloom = null; }
+      if (c.bloom && !this.bloom && this.renderer.type === Phaser.WEBGL && cam.postFX && typeof cam.postFX.addBloom === 'function') {
+        this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 1, 0.55, 2);
+      }
+    } catch (err) { this.bloom = null; }
+  }
+
+  reducedMotion() { return !!app.save.data.settings.reducedMotion; }
+
+  addRing(x, y, r0, r1, life, col, w = 2, delay = 0) {
+    for (const r of this.rings) {
+      if (r.on) continue;
+      r.on = true; r.x = x; r.y = y; r.r0 = r0; r.r1 = r1; r.life = life; r.col = col; r.w = w; r.t = -delay;
+      return;
+    }
+  }
+
+  flash(col, a, life) {
+    if (this.reducedMotion()) return;
+    this.flashR.setFillStyle(col, 1).setVisible(true);
+    this.flashA = a; this.flashLife = life; this.flashT = 0;
+  }
+
+  zoomPunch(amp, dur) {
+    if (this.reducedMotion()) return;
+    this.zoomT = 0; this.zoomAmp = amp; this.zoomDur = dur;
+  }
+
+  burst(x, y, n, tint, speed, life, size) {
+    const k = Math.max(1, Math.round(n * (this.quality.tier === 'low' ? 0.4 : 1)));
+    for (let i = 0; i < k; i++) {
+      const a = Math.random() * 6.2832;
+      const v = speed * (0.4 + Math.random() * 0.6);
+      if (!this.parts.emit(x, y, Math.cos(a) * v, Math.sin(a) * v, life * (0.6 + Math.random() * 0.4), size, 0.05, tint, 0.9)) break;
+    }
+  }
+
+  // ---- event hooks (called from app.onEvent) ----
+  levelBurst() {
+    const p = this.sim.player;
+    this.addRing(p.x, p.y, 8, 110, 0.55, PAL.ice, 2);
+    this.burst(p.x, p.y, 16, PAL.ice, 110, 0.7, 0.5);
+    this.zoomPunch(0.025, 0.4);
+  }
+
+  evolveMoment() {
+    const p = this.sim.player;
+    this.flash(PAL.gold, 0.45, 0.7);
+    this.addRing(p.x, p.y, 8, 220, 1.0, PAL.gold, 3);
+    this.addRing(p.x, p.y, 8, 150, 0.8, PAL.lavender, 2, 0.15);
+    this.burst(p.x, p.y, 34, PAL.gold, 150, 1.0, 0.7);
+    this.zoomPunch(0.07, 1.0);
+    this.stop(0.06);
+    this.shake(220, 0.006);
+  }
+
+  bossIntro() {
+    const b = this.sim.boss;
+    this.flash(PAL.lavender, 0.35, 0.6);
+    this.shake(320, 0.007);
+    if (b) this.addRing(b.x, b.y, 10, 160, 0.9, PAL.violet, 3);
+  }
+
+  stop(sec) {
+    if (this.reducedMotion() || this.hitCool > 0) return;
+    this.hitStop = Math.min(0.06, sec);
+    this.hitCool = 0.6;
+  }
+
+  // Tint ground + trees (Low tier cheap grade, and reset when leaving it).
+  setGround(col) {
+    if (col === this.gradeTint) return;
+    this.gradeTint = col;
+    this.ground.setTint(col);
+    for (const d of this.decor) d.setTint(col);
+  }
+
+  // Colour-grade for the current point in the run. Quantised so we only touch objects when it changes.
+  updateGrade(f) {
+    const col = gradeAt(Math.round(f * 150) / 150);
+    this.gradeNow = col;
+    const dw = f > 0.75 ? Math.min(1, (f - 0.75) / 0.25) * 0.2 : 0;
+    if (dw > 0 && this.quality.caps.grade) this.dawn.setVisible(true).setAlpha(dw);
+    else if (this.dawn.visible) this.dawn.setVisible(false);
+    if (this.quality.caps.grade) {
+      if (col !== this.gradeCol) { this.gradeCol = col; this.grade.setFillStyle(col, 1); }
+    } else this.setGround(col);
+  }
+
+  tickFx(dt) {
+    const sim = this.sim;
+    const cam = this.cameras.main;
+    const st = app.save.data.settings;
+    this.nums.enabled = !!st.damageNumbers;
+    this.parts.update(dt);
+    this.nums.update(dt);
+    // zoom punch: quick rise, smooth fall
+    if (this.zoomT < this.zoomDur) {
+      this.zoomT += dt;
+      const k = Math.min(1, this.zoomT / this.zoomDur);
+      const e = k < 0.12 ? k / 0.12 : (1 - k) * (1 - k) * 1.2;
+      cam.setZoom(1 + this.zoomAmp * Math.min(1, e));
+    } else if (cam.zoom !== 1) cam.setZoom(1);
+    if (this.flashR.visible) {
+      this.flashT += dt;
+      const k = this.flashT / this.flashLife;
+      if (k >= 1) this.flashR.setVisible(false);
+      else this.flashR.setAlpha(this.flashA * (1 - k));
+    }
+    // vignette: pulses red at low HP
+    const p = sim.player;
+    const low = p.hp > 0 && p.hp / p.maxHp < 0.3 && sim.state === 'running';
+    if (this.vig.visible) {
+      if (low) {
+        if (!this.vigLow) { this.vigLow = true; this.vig.setTint(PAL.danger); }
+        this.vig.setAlpha(0.6 + 0.3 * Math.sin(sim.time * 6));
+      } else {
+        if (this.vigLow) { this.vigLow = false; this.vig.setTint(PAL.ink); }
+        this.vig.setAlpha(1);
+      }
+    }
+  }
 
   update(time, delta) {
     this.measure();
     if (this.keys && Phaser.Input.Keyboard.JustDown(this.keys.ESC)) app.togglePause();
-    app.frame(Math.min(delta, 100) / 1000);
-    if (this.sim) this.draw();
+    const dt = Math.min(delta, 100) / 1000;
+    this.hitCool = Math.max(0, this.hitCool - dt);
+    app.freeze = this.hitStop > 0;
+    if (this.hitStop > 0) this.hitStop -= dt;
+    app.frame(dt);
+    if (this.sim) {
+      this.draw();
+      this.tickFx(dt);
+    }
   }
 
   draw() {
     const sim = this.sim;
     const p = sim.player;
     const pl = this.pools;
+    const caps = this.quality.caps;
     for (const pool of Object.values(pl)) pool.begin();
+    this.fxTick = (sim.time * 30) | 0;
+
+    const wv = this.cameras.main.worldView;
+    const vx0 = wv.x - 40;
+    const vy0 = wv.y - 40;
+    const vx1 = wv.right + 40;
+    const vy1 = wv.bottom + 40;
+    let halos = 0;
+
+    this.updateGrade(sim.time / app.data.balance.runSeconds);
 
     // player
     this.followTarget.setPosition(p.x, p.y);
-    this.playerImg.setPosition(p.x, p.y).setDepth(p.y).setFlipX(p.faceX < 0);
+    this.playerImg.setPosition(p.x, p.y).setDepth(D_LIT + p.y).setFlipX(p.faceX < 0);
     this.playerImg.setAlpha(p.iframes > 0 && Math.floor(sim.time * 24) % 2 ? 0.45 : 1);
+    if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha(0.17 + 0.03 * Math.sin(sim.time * 2.5));
 
     const g = this.groundG;
     const fx = this.fxG;
     g.clear();
     fx.clear();
+
+    // drain hit/kill records into numbers + puffs + hit-stop
+    const nh = sim.hitN;
+    sim.hitN = 0;
+    for (let i = 0; i < nh; i++) {
+      const h = sim.hitBuf[i];
+      if (h.kill) {
+        if (h.boss) {
+          this.burst(h.x, h.y, 40, PAL.lavender, 130, 1.0, 0.9);
+          this.addRing(h.x, h.y, 10, 200, 1.0, PAL.ice, 3);
+          this.shake(300, 0.008);
+          this.stop(0.06);
+        } else if (h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) {
+          this.deathPuff(h.x, h.y);
+        }
+        continue;
+      }
+      const big = h.boss ? h.a >= h.mx * 0.01 : h.a >= 20 && h.a >= h.mx * 0.5;
+      this.nums.spawn(h.x, h.y, h.a, h.id, big, big ? PAL.ice : PAL.lavender);
+      if (h.boss ? h.a >= h.mx * 0.03 : big && h.a >= 40) this.stop(0.05);
+    }
 
     // zones
     for (const z of sim.zones) {
@@ -365,19 +619,28 @@ export class RunScene extends Phaser.Scene {
       g.lineStyle(1, c, 0.6 * a).strokeCircle(z.x, z.y, z.r);
     }
 
-    // gems
+    // gems: culled to the view, gently pulsing with a soft halo (Med/High)
+    let gemGlow = 0;
     for (const gem of sim.gems) {
-      const img = pl.gem.get(gem.id);
-      img.setPosition(gem.x, gem.y).setDepth(-100).setScale(gem.v >= 10 ? 1.7 : gem.v >= 3 ? 1.25 : 1);
+      if (gem.x < vx0 || gem.x > vx1 || gem.y < vy0 || gem.y > vy1) continue;
+      const big = gem.v >= 10 ? 1.7 : gem.v >= 3 ? 1.25 : 1;
+      const pulse = 1 + 0.1 * Math.sin(sim.time * 5 + gem.id);
+      pl.gem.get(gem.id).setPosition(gem.x, gem.y).setDepth(D_LIT - 100).setScale(big * pulse);
+      if (gemGlow < caps.gemGlow) {
+        gemGlow++;
+        pl.haloG.get(gem.id).setPosition(gem.x, gem.y).setTint(PAL.teal).setScale(0.55 * big * pulse).setAlpha(0.35 + 0.15 * Math.sin(sim.time * 5 + gem.id));
+      }
     }
 
     for (const k of sim.pickups) {
       const bob = Math.sin(sim.time * 5 + k.id) * 1.5;
-      pl[k.type].get(k.id).setPosition(k.x, k.y + bob).setDepth(-90).setAlpha(k.ttl < 6 && Math.floor(k.ttl * 6) % 2 ? 0.35 : 1);
+      pl[k.type].get(k.id).setPosition(k.x, k.y + bob).setDepth(D_LIT - 90).setAlpha(k.ttl < 6 && Math.floor(k.ttl * 6) % 2 ? 0.35 : 1);
+      if (caps.gemGlow) pl.haloG.get(k.id).setPosition(k.x, k.y + bob).setTint(k.type === 'magnet' ? PAL.violet : PAL.lavender).setScale(0.9).setAlpha(0.4 + 0.15 * Math.sin(sim.time * 4));
     }
 
-    // enemies
+    // enemies (culled to the view; boss always drawn)
     for (const e of sim.enemies) {
+      if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(e.y).setFlipX(e.faceX < 0);
       if (e.flash > 0) img.setTintFill(0xffffff);
@@ -385,8 +648,8 @@ export class RunScene extends Phaser.Scene {
       else img.clearTint();
       if (e.tele) {
         if (e.boss) {
-          g.fillStyle(0xd9534f, 0.2).fillCircle(e.x, e.y, 74);
-          g.lineStyle(1, 0xd9534f, 0.9).strokeCircle(e.x, e.y, 74);
+          g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
+          g.lineStyle(1, PAL.danger, 0.9).strokeCircle(e.x, e.y, 74);
         } else {
           fx.lineStyle(1, 0xff5a4a, 0.6).lineBetween(e.x, e.y, e.x + e.dx * 55, e.y + e.dy * 55);
           fx.fillStyle(0xff3b2f, 1).fillTriangle(e.x, e.y - 18, e.x - 3, e.y - 11, e.x + 3, e.y - 11);
@@ -394,50 +657,101 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    // summons
+    // spirit trails tick at ~30 Hz
+    const trailOn = caps.trails > 0 && this.parts.count < this.parts.cap * 0.75 && !this.reducedMotion();
+    let trailBudget = 0;
+    if (trailOn && this.fxTick !== this.trailTick) {
+      this.trailTick = this.fxTick;
+      if (caps.trails === 2 || (this.fxTick & 1) === 0) trailBudget = caps.trails === 2 ? 16 : 7;
+    }
+    const trail = (x, y, col, s) => {
+      if (trailBudget <= 0) return;
+      trailBudget--;
+      this.parts.emit(x, y, 0, 0, 0.32, s, 0.05, col, 0.5);
+    };
+
+    // summons: bright (above the grade) + additive halo
     for (const u of sim.units) {
       if (u.hidden) continue;
+      if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
-        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(u.y).setFlipX(u.faceX < 0).setScale(u.r / 4).setAlpha(0.92);
+        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale(u.r / 4).setAlpha(0.92);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.teal).setScale(u.r / 4 * 1.15).setAlpha(0.45);
+        trail(u.x, u.y + 1, PAL.teal, 0.4);
       } else if (u.kind === 'raven') {
-        pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(u.y + 30).setFlipX((u.faceX || 1) < 0);
+        pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.violet).setScale(0.85).setAlpha(0.55);
+        trail(u.x, u.y, PAL.violet, 0.3);
       } else if (u.kind === 'orb') {
-        pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(u.y + 30);
+        pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.ice).setScale(1.1).setAlpha(0.55);
+        trail(u.x, u.y, PAL.lavender, 0.3);
       }
     }
 
     // projectiles
     for (const b of sim.projectiles) {
-      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(b.y + 40).setScale(b.r / 3);
+      if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
+      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale(b.r / 3);
+      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(PAL.teal).setScale((b.r / 3) * 0.9).setAlpha(0.6);
+      trail(b.x, b.y, PAL.ice, 0.28);
     }
 
-    // transient effects
+    // transient effects (additive: glow comes for free)
+    let fi = 0;
     for (const f of sim.fx) {
-      const c = hex(f.color);
+      fi++;
       if (f.kind === 'ring') {
+        const c = hex(f.color);
         const k = Math.max(0, f.ttl / 0.3);
         fx.lineStyle(2, c, Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
       } else if (f.kind === 'bolt') {
-        fx.lineStyle(2, c, Math.min(1, f.ttl / 0.1));
-        for (let i = 1; i < f.pts.length; i++) {
-          const a = f.pts[i - 1];
-          const b = f.pts[i];
-          const dist = Math.hypot(b.x - a.x, b.y - a.y);
-          const n = Math.max(2, Math.ceil(dist / 12));
-          fx.beginPath();
-          fx.moveTo(a.x, a.y);
-          for (let s = 1; s < n; s++) {
-            const t = s / n;
-            const jx = (Math.random() - 0.5) * 6;
-            const jy = (Math.random() - 0.5) * 6;
-            fx.lineTo(a.x + (b.x - a.x) * t + jx, a.y + (b.y - a.y) * t + jy);
+        const a = Math.min(1, f.ttl / 0.1);
+        for (let pass = 0; pass < 2; pass++) {
+          if (pass === 0) fx.lineStyle(5, PAL.violet, 0.3 * a);
+          else fx.lineStyle(2, PAL.ice, a);
+          for (let i = 1; i < f.pts.length; i++) {
+            const pa = f.pts[i - 1];
+            const pb = f.pts[i];
+            const dist = Math.hypot(pb.x - pa.x, pb.y - pa.y);
+            const n = Math.max(2, Math.ceil(dist / 12));
+            fx.beginPath();
+            fx.moveTo(pa.x, pa.y);
+            for (let s2 = 1; s2 < n; s2++) {
+              const t = s2 / n;
+              const sd = this.fxTick * 7919 + fi * 131 + i * 31 + s2 * 17;
+              fx.lineTo(pa.x + (pb.x - pa.x) * t + jit(sd) * 8, pa.y + (pb.y - pa.y) * t + jit(sd + 5003) * 8);
+            }
+            fx.lineTo(pb.x, pb.y);
+            fx.strokePath();
           }
-          fx.lineTo(b.x, b.y);
-          fx.strokePath();
         }
       }
     }
 
+    // scene-local rings (level-up, evolution, boss)
+    const dt = this.game.loop.delta / 1000;
+    for (const r of this.rings) {
+      if (!r.on) continue;
+      r.t += dt;
+      if (r.t < 0) continue;
+      const k = r.t / r.life;
+      if (k >= 1) { r.on = false; continue; }
+      const e = 1 - (1 - k) * (1 - k);
+      fx.lineStyle(r.w, r.col, 0.9 * (1 - k)).strokeCircle(r.x, r.y, r.r0 + (r.r1 - r.r0) * e);
+    }
+
+    this.haloCount = halos;
     for (const pool of Object.values(pl)) pool.end();
+  }
+
+  // Enemy death: a few rising spirit wisps (pooled, additive).
+  deathPuff(x, y) {
+    const n = this.quality.tier === 'low' ? 2 : this.quality.tier === 'med' ? 4 : 6;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 6.2832;
+      const v = 14 + Math.random() * 22;
+      if (!this.parts.emit(x, y, Math.cos(a) * v, Math.sin(a) * v - 22, 0.45 + Math.random() * 0.3, 0.45, 0.08, i & 1 ? PAL.teal : PAL.violet, 0.8)) break;
+    }
   }
 }

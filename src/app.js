@@ -25,6 +25,7 @@ export const app = {
   ui: null,
   scene: null,
   paused: false,
+  freeze: false, // hit-stop
   lastState: null,
   hudAcc: 0,
   params: parseParams(),
@@ -77,7 +78,7 @@ export const app = {
   frame(dt) {
     const sim = this.sim;
     if (!sim) return;
-    if (sim.state === 'running' && !this.paused) sim.step(dt, this.scene.readInput());
+    if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
 
     if (sim.events.length) {
       for (const ev of sim.events) this.onEvent(ev);
@@ -105,9 +106,13 @@ export const app = {
   onEvent(ev) {
     const d = this.data;
     if (ev.type === 'hurt') { this.scene.shake(); if (!this.save.data.settings.reducedMotion) this.ui.hurt(); }
-    else if (ev.type === 'boss') this.ui.toast('The Elder Treant awakens');
+    else if (ev.type === 'boss') {
+      const b = this.sim && this.sim.boss;
+      this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion);
+      this.scene.bossIntro();
+    } else if (ev.type === 'levelup') this.scene.levelBurst();
     else if (ev.type === 'swarm') this.ui.toast(ev.enemy === 'wolf' ? 'A wolf pack closes in' : 'A murder of crows descends');
-    else if (ev.type === 'evolve') this.ui.toast(`Evolved: ${d.evolutions[ev.id].name}`);
+    else if (ev.type === 'evolve') { this.ui.toast(`Evolved: ${d.evolutions[ev.id].name}`); this.scene.evolveMoment(); }
     else if (ev.type === 'heart') this.ui.toast('Health restored');
     else if (ev.type === 'magnet') this.ui.toast('Soul Magnet');
     else if (ev.type === 'howl') this.ui.toast('Pack Howl');

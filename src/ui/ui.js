@@ -56,6 +56,7 @@ export class UI {
       <div class="stats"><div>Kills <b class="kills">0</b></div><div>Gold <b class="gold">0</b></div></div>
       <div class="boss"><div class="bossname"></div><div class="bar"><i></i></div></div>
       <div class="toast"></div>
+      <div class="bossintro"></div>
       <div class="slots"></div>
       <div class="ability"><div class="t"><span class="abname"></span><span class="k">[Space]</span></div><div class="cd"><i></i></div></div>
       <div class="hurtflash"></div>`;
@@ -71,6 +72,7 @@ export class UI {
       bossName: hud.querySelector('.bossname'),
       bossFill: hud.querySelector('.boss .bar i'),
       toast: hud.querySelector('.toast'),
+      bossIntro: hud.querySelector('.bossintro'),
       slots: hud.querySelector('.slots'),
       ability: hud.querySelector('.ability'),
       abName: hud.querySelector('.abname'),
@@ -138,6 +140,14 @@ export class UI {
     t.classList.add('show');
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  bossIntro(name, animate) {
+    const el = this.hud.bossIntro;
+    el.textContent = String(name).toUpperCase();
+    el.classList.remove('on');
+    if (animate) { void el.offsetWidth; el.classList.add('on'); }
+    else { el.style.opacity = '1'; clearTimeout(this.introTimer); this.introTimer = setTimeout(() => { el.style.opacity = ''; }, 2000); }
   }
 
   hurt() {

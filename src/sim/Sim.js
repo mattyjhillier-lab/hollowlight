@@ -30,6 +30,9 @@ export class Sim {
     this.state = 'running'; // running | levelup | victory | defeat
     this.nextId = 1;
     this.events = [];
+    // Preallocated ring of hit/kill records for the renderer (no per-hit allocation). Not part of the sim state.
+    this.hitBuf = Array.from({ length: 64 }, () => ({ x: 0, y: 0, a: 0, id: 0, mx: 0, boss: false, kill: false }));
+    this.hitN = 0;
 
     const size = this.balance.worldSize;
     this.player = {
@@ -133,9 +136,14 @@ export class Sim {
     if (e.dead || amount <= 0) return 0;
     e.hp -= amount;
     this.damageDealt += amount;
-    if (!opts.silent) e.flash = 0.08;
+    if (!opts.silent) { e.flash = 0.08; this.logHit(e, amount, false); }
     if (e.hp <= 0) e.dead = true;
     return amount;
+  }
+
+  logHit(e, a, kill) {
+    const h = this.hitBuf[this.hitN < 64 ? this.hitN++ : 63];
+    h.x = e.x; h.y = e.y; h.a = a; h.id = e.id; h.mx = e.maxHp; h.boss = e.boss; h.kill = kill;
   }
 
   bleed(e, dps, dur) {
@@ -622,6 +630,7 @@ export class Sim {
       if (!e.dead) continue;
       any = true;
       this.kills += 1;
+      this.logHit(e, 0, true);
       this.gold += e.gold * this.mods.gold;
       this.addGem(e.x, e.y, e.xp);
       this.rollDrops(e);

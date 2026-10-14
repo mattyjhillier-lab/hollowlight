@@ -141,4 +141,4 @@ body { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono",
 .bossintro { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; font-size: 3.2em; font-weight: 700; letter-spacing: .3em; color: var(--text); text-shadow: 0 0 .5em var(--violet), 0 2px 4px #000; }
 .bossintro.on { animation: bossintro 2.6s ease-out; }
 @keyframes bossintro { 0% { opacity: 0; letter-spacing: .6em; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; letter-spacing: .3em; } }
-.perf { position: absolute; left: .6em; top: 5.6em; padding: .3em .5em; background: rgba(7,7,13,.7); color: var(--ice); font-size: .8em; white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; }
+.perf { position: absolute; left: .6em; top: 6.4em; padding: .3em .5em; background: rgba(7,7,13,.7); color: var(--ice); font-size: .8em; white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; }

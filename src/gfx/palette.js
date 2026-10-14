@@ -40,11 +40,11 @@ export function applyCssPalette(root) {
 // Dusk-to-dawn colour grade (multiply). Keyframes at fraction of the run.
 // Deep dusk violet -> night blue -> rose pre-dawn -> warm dawn.
 const GRADE = [
-  [0.0, 0x7d68c8],
-  [0.3, 0x5a6cc0],
-  [0.6, 0x4f68b0],
-  [0.85, 0xc09aa8],
-  [1.0, 0xffe2b0],
+  [0.0, 0xa592f0],
+  [0.3, 0x8296e6],
+  [0.6, 0x7690d6],
+  [0.85, 0xe8a0a0],
+  [1.0, 0xffd9a0],
 ];
 
 const ch = (c, s) => (c >> s) & 255;
