@@ -5,7 +5,8 @@ import { app } from '../app.js';
 import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { PerfOverlay } from '../gfx/perf.js';
-import { PAL, gradeAt } from '../gfx/palette.js';
+import { PAL, gradeAt, ambientAt } from '../gfx/palette.js';
+import { Lightmap } from '../gfx/lightmap.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { STYLE, inv, zoomFor } from '../gfx/style.js';
@@ -15,7 +16,7 @@ const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
 const jit = (n) => { n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d); n ^= n >>> 12; return (n & 255) / 255 - 0.5; };
 
-// Depth layers: world < grade (multiply) < halos (additive) < lit sprites < particles < fx < vignette.
+// Depth layers: world < lightmap (multiply) < halos (additive) < lit sprites < particles < fx < vignette.
 const D_GRADE = 5000;
 const D_HALO = 55000;
 const D_LIT = 60000;
@@ -88,13 +89,17 @@ export class RunScene extends Phaser.Scene {
     this.groundG = this.add.graphics().setDepth(-400);
     this.fxG = this.add.graphics().setDepth(D_FX).setBlendMode(Phaser.BlendModes.ADD);
 
-    // dusk-to-dawn grade (multiply rect on Med/High; plain tint on Low) + vignette
-    this.grade = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_GRADE).setBlendMode(Phaser.BlendModes.MULTIPLY);
+    // dusk-to-dawn: lightmap (Med/High, half-res multiply layer) or plain tint of ground + trees (Low / fallback) + vignette
+    this.lm = new Lightmap(this, D_GRADE);
+    this.lmOn = false;
+    this.ambient = 0x33406c;
+    this.dfl = Array.from({ length: 10 }, () => ({ x: 0, y: 0, t: 9 }));
+    this.dflI = 0;
+    this.lanR = 130;
     this.vig = this.add.image(0, 0, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
     this.vigLow = false;
     // warm pre-dawn glow: additive wash that grows over the last ~25% of the run (Med/High)
     this.dawn = this.add.rectangle(0, 0, 760, 440, 0xffa888).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.gradeCol = -1;
     this.gradeTint = -1;
 
     this.pools = {
@@ -115,7 +120,8 @@ export class RunScene extends Phaser.Scene {
     makeDigitFont(this);
     this.parts = new Particles(this, D_PART);
     this.nums = new DamageNumbers(this, D_PART + 10);
-    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(PAL.teal).setAlpha(0.2).setScale(8 * inv('glow')).setVisible(false);
+    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(0xffcf7a).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
+    this.ring = this.add.image(0, 0, 'ring').setBlendMode(ADD).setDepth(D_HALO + 1).setScale(inv('ring')).setVisible(false);
     this.flashR = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
     this.flashT = 0; this.flashLife = 1; this.flashA = 0;
     this.rings = Array.from({ length: 10 }, () => ({ on: false, x: 0, y: 0, t: 0, life: 1, r0: 0, r1: 1, col: 0, w: 2 }));
@@ -174,8 +180,10 @@ export class RunScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.baseZoom);
     const vw = (W / this.baseZoom) * 1.06;
     const vh = (H / this.baseZoom) * 1.06;
-    for (const o of [this.grade, this.dawn, this.flashR]) o.setPosition(W / 2, H / 2).setSize(vw, vh);
+    for (const o of [this.dawn, this.flashR]) o.setPosition(W / 2, H / 2).setSize(vw, vh);
     this.vig.setPosition(W / 2, H / 2).setDisplaySize(vw, vh);
+    this.lm.destroy(); // rebuilt at the new size by applyTier
+    this.applyTier();
   }
 
   // Faint ambient life: drifting fog banks and fireflies (Med/High). World-space, wrapped around the view.
@@ -248,7 +256,6 @@ export class RunScene extends Phaser.Scene {
     this.nums.clear();
     for (const r of this.rings) r.on = false;
     this.gradeTint = -1;
-    this.gradeCol = -1;
     this.updateGrade(sim.time / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
@@ -259,6 +266,7 @@ export class RunScene extends Phaser.Scene {
     this.parts.clear();
     this.nums.clear();
     this.playerGlow.setVisible(false);
+    this.ring.setVisible(false);
     this.flashR.setVisible(false);
     for (const r of this.rings) r.on = false;
     this.cameras.main.setZoom(this.baseZoom);
@@ -270,7 +278,6 @@ export class RunScene extends Phaser.Scene {
     this.groundG.clear();
     this.fxG.clear();
     this.gradeTint = -1;
-    this.gradeCol = -1;
     this.updateGrade(0);
     this.applyTier();
   }
@@ -327,15 +334,18 @@ export class RunScene extends Phaser.Scene {
 
   applyTier() {
     const c = this.quality.caps;
-    this.grade.setVisible(c.grade);
+    // Lightmap on Med/High if WebGL accepts it; otherwise the Low look (tinted ground + trees, halo pools).
+    if (c.lightmap && !this.lm.rt) this.lm.build(this.scale.width, this.scale.height, this.baseZoom);
+    this.lmOn = !!(c.lightmap && this.lm.ok);
+    this.lm.setVisible(this.lmOn);
     this.vig.setVisible(c.vignette);
-    this.gradeCol = -1;
     this.gradeTint = -1;
-    if (!c.grade) this.setGround(this.gradeNow);
-    else this.setGround(0xffffff);
+    if (this.lmOn) this.setGround(0xffffff);
+    else this.setGround(this.gradeNow);
     this.parts.setCap(c.particles);
     this.nums.setCap(c.dmgNums);
-    this.playerGlow.setVisible(c.grade && !!this.sim);
+    this.playerGlow.setVisible(!!this.sim);
+    this.ring.setVisible(!!this.sim);
     // Built-in bloom: High tier only, WebGL only, feature-detected; fails silently.
     const cam = this.cameras.main;
     try {
@@ -418,14 +428,14 @@ export class RunScene extends Phaser.Scene {
 
   // Colour-grade for the current point in the run. Quantised so we only touch objects when it changes.
   updateGrade(f) {
-    const col = gradeAt(Math.round(f * 150) / 150);
+    const q = Math.round(f * 150) / 150;
+    const col = gradeAt(q);
     this.gradeNow = col;
+    this.ambient = ambientAt(q);
     const dw = f > 0.7 ? Math.min(1, (f - 0.7) / 0.3) * 0.36 : 0;
-    if (dw > 0 && this.quality.caps.grade) this.dawn.setVisible(true).setAlpha(dw);
+    if (dw > 0 && this.lmOn) this.dawn.setVisible(true).setAlpha(dw);
     else if (this.dawn.visible) this.dawn.setVisible(false);
-    if (this.quality.caps.grade) {
-      if (col !== this.gradeCol) { this.gradeCol = col; this.grade.setFillStyle(col, 1); }
-    } else this.setGround(col);
+    if (!this.lmOn) this.setGround(col);
   }
 
   tickFx(dt) {
@@ -493,12 +503,26 @@ export class RunScene extends Phaser.Scene {
 
     this.updateGrade(sim.time / app.data.balance.runSeconds);
     this.tickAmbient(sim);
+    const lm = this.lm;
+    const lit = this.lmOn;
+    if (lit) lm.begin(wv.centerX, wv.centerY, this.cameras.main.zoom, caps.lights);
 
-    // player
+    // player: lantern pool + ground ring (readability) + lantern light
     this.followTarget.setPosition(p.x, p.y);
     this.playerImg.setPosition(p.x, p.y).setDepth(D_LIT + p.y).setFlipX(p.faceX < 0);
     this.playerImg.setAlpha(p.iframes > 0 && Math.floor(sim.time * 24) % 2 ? 0.45 : 1);
-    if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha(0.2 + 0.03 * Math.sin(sim.time * 2.5));
+    const lowHp = p.hp > 0 && p.hp / p.maxHp < 0.3;
+    if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha((lit ? 0.3 : 0.3) + 0.03 * Math.sin(sim.time * 2.5));
+    if (this.ring.visible) {
+      const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
+      this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : 0xffcf7a).setAlpha(0.45 + 0.2 * pulse);
+    }
+    if (lit) {
+      const target = lowHp ? 90 : 130;
+      this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
+      const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
+      lm.add(p.x, p.y - 4, this.lanR * fl, 0xffd9a0, 0.9);
+    }
 
     const g = this.groundG;
     const fx = this.fxG;
@@ -532,6 +556,7 @@ export class RunScene extends Phaser.Scene {
       const a = Math.min(1, z.ttl);
       g.fillStyle(c, 0.14 * a).fillCircle(z.x, z.y, z.r);
       g.lineStyle(1, c, 0.6 * a).strokeCircle(z.x, z.y, z.r);
+      if (lit) lm.add(z.x, z.y, z.r, c, 0.55 * a);
     }
 
     // gems: culled to the view, gently pulsing with a soft halo (Med/High)
@@ -558,9 +583,24 @@ export class RunScene extends Phaser.Scene {
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
-      if (e.flash > 0) img.setTintFill(0xffffff);
-      else if (e.bleedT > 0) img.setTint(0xff9a9a);
-      else img.clearTint();
+      // lit state: white flash > bleed > distance tint (min 0.62, 16 steps so setTint only runs on change)
+      let tq;
+      if (e.flash > 0) tq = 100;
+      else if (e.bleedT > 0) tq = 101;
+      else if (lit && !e.boss) {
+        const ddx = e.x - p.x;
+        const ddy = e.y - p.y;
+        const d2 = ddx * ddx + ddy * ddy;
+        tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
+      } else tq = 0;
+      if (img.tq !== tq) {
+        img.tq = tq;
+        if (tq === 100) img.setTintFill(0xffffff);
+        else if (tq === 101) img.setTint(0xff9a9a);
+        else if (tq === 0) img.clearTint();
+        else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
+      }
+      if (lit && e.boss) lm.add(e.x, e.y - 10, 90, 0xffb84a, 0.8);
       if (e.tele) {
         if (e.boss) {
           g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
@@ -593,14 +633,17 @@ export class RunScene extends Phaser.Scene {
         pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * pl.uWolf.inv).setAlpha(0.92);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.teal).setScale(u.r / 4 * 1.15 * pl.haloU.inv).setAlpha(0.45);
         trail(u.x, u.y + 1, PAL.teal, 0.4);
+        if (lit) lm.add(u.x, u.y, 40, 0x9fe8ff, 0.8);
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.violet).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
         trail(u.x, u.y, PAL.violet, 0.3);
+        if (lit) lm.add(u.x, u.y, 40, 0x8a6fe0, 0.8);
       } else if (u.kind === 'orb') {
         pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.ice).setScale(1.1 * pl.haloU.inv).setAlpha(0.55);
         trail(u.x, u.y, PAL.lavender, 0.3);
+        if (lit) lm.add(u.x, u.y, 40, 0xb8f2ff, 0.8);
       }
     }
 
@@ -610,6 +653,7 @@ export class RunScene extends Phaser.Scene {
       pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((b.r / 3) * pl.bolt.inv);
       if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(PAL.teal).setScale((b.r / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
       trail(b.x, b.y, PAL.ice, 0.28);
+      if (lit) lm.add(b.x, b.y, 24, 0x7ff0ff, 0.8);
     }
 
     // transient effects (additive: glow comes for free)
@@ -622,6 +666,7 @@ export class RunScene extends Phaser.Scene {
         fx.lineStyle(2, c, Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
       } else if (f.kind === 'bolt') {
         const a = Math.min(1, f.ttl / 0.1);
+        if (lit && f.pts.length) lm.add(f.pts[f.pts.length - 1].x, f.pts[f.pts.length - 1].y, 60, 0xe8f4ff, 0.9 * a);
         for (let pass = 0; pass < 2; pass++) {
           if (pass === 0) fx.lineStyle(5, PAL.violet, 0.3 * a);
           else fx.lineStyle(2, PAL.ice, a);
@@ -656,12 +701,24 @@ export class RunScene extends Phaser.Scene {
       fx.lineStyle(r.w, r.col, 0.9 * (1 - k)).strokeCircle(r.x, r.y, r.r0 + (r.r1 - r.r0) * e);
     }
 
+    if (lit) {
+      for (const d of this.dfl) {
+        if (d.t >= 0.2) continue;
+        d.t += dt;
+        lm.add(d.x, d.y, 30, 0xffd0a0, 0.8 * Math.max(0, 1 - d.t / 0.2));
+      }
+      lm.flush(this.ambient);
+      if (!lm.ok) this.applyTier(); // lightmap failed at runtime: fall back to the Low look
+    }
     this.haloCount = halos;
     for (const pool of Object.values(pl)) pool.end();
   }
 
   // Enemy death: a few rising spirit wisps (pooled, additive).
   deathPuff(x, y) {
+    const f = this.dfl[this.dflI];
+    this.dflI = (this.dflI + 1) % this.dfl.length;
+    f.x = x; f.y = y; f.t = 0;
     const n = this.quality.tier === 'low' ? 2 : this.quality.tier === 'med' ? 4 : 6;
     for (let i = 0; i < n; i++) {
       const a = Math.random() * 6.2832;

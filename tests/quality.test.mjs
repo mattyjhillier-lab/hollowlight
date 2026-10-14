@@ -56,4 +56,6 @@ test('hitches and bad input are ignored; caps respect budget', () => {
   assert.equal(q.sample(NaN, 1), false);
   for (const c of Object.values(CAPS)) assert.ok(c.particles <= 300);
   assert.equal(CAPS.low.bloom || CAPS.med.bloom, false);
+  assert.equal(CAPS.low.lightmap, false);
+  assert.ok(CAPS.med.lights === 40 && CAPS.high.lights === 80 && CAPS.low.lights === 0);
 });

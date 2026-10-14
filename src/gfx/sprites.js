@@ -218,6 +218,22 @@ const SPRITES = {
       }
     },
   },
+  // white radial falloff used as the lightmap stamp (tinted per light); 1 texel per unit
+  light: {
+    w: 64, h: 64, pad: 0, noPix: 1, S: 1,
+    draw: (c) => {
+      c.fillStyle = rg(c, 32, 32, 0, 32, [[0, 'rgba(255,255,255,1)'], [0.4, 'rgba(255,255,255,0.8)'], [0.75, 'rgba(255,255,255,0.28)'], [1, 'rgba(255,255,255,0)']]);
+      c.fillRect(0, 0, 64, 64);
+    },
+  },
+  // hero ground ring (tinted warm / danger): 24x9 u ellipse with a soft halo
+  ring: {
+    w: 28, h: 12, pad: 0, noPix: 1,
+    draw: (c) => {
+      c.beginPath(); c.ellipse(14, 6, 12, 4.5, 0, 0, TAU); c.lineWidth = 3.2; c.strokeStyle = 'rgba(255,255,255,0.22)'; c.stroke();
+      c.beginPath(); c.ellipse(14, 6, 12, 4.5, 0, 0, TAU); c.lineWidth = 1.2; c.strokeStyle = 'rgba(255,255,255,0.95)'; c.stroke();
+    },
+  },
   glow: {
     w: 32, h: 32, pad: 0, noPix: 1,
     draw: (c) => {
@@ -318,7 +334,7 @@ function pixelize(cv, sd, S, pad) {
 }
 
 function renderSprite(def, style) {
-  const S = style === 'b' ? 2 : Math.max(3, Math.round((DENS[def.key] || 3) * (VIS[def.key] || 1)));
+  const S = def.S || (style === 'b' ? 2 : Math.max(3, Math.round((DENS[def.key] || 3) * (VIS[def.key] || 1))));
   const pad = def.pad === undefined ? 2 : def.pad;
   const cv = mkCanvas((def.w + pad * 2) * S, (def.h + pad * 2) * S);
   const c = cv.getContext('2d');
@@ -375,7 +391,7 @@ function groundA() {
   const d = id.data;
   for (let i = 0; i < d.length; i += 4) {
     const n = (r() - 0.5) * 7;
-    d[i] += n; d[i + 1] += n; d[i + 2] += n * 1.2;
+    d[i] = d[i] * 1.55 + n; d[i + 1] = d[i + 1] * 1.55 + n; d[i + 2] = d[i + 2] * 1.55 + n * 1.2; // mid-value ground: darkness comes from the lightmap
   }
   c.putImageData(id, 0, 0);
   return cv;
