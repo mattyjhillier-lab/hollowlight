@@ -38,7 +38,7 @@ Phaser 3 + Vite, vanilla JS, ES modules. Single-file build (vite-plugin-singlefi
 - Hooks already present for the future skill tree: `sim.mods = {damage, area, cooldown, speed, pickup, xp, gold, abilityCd}`, `meta.rerolls/banishes`.
 
 ## Locked design
-- Platform: web, keyboard first (WASD/arrows, Space ability, Esc pause, 1-4 pick, R reroll). Touch later. 16x16 pixel art from free CC0 packs later (Kenney, OpenGameArt, itch.io CC0); placeholders for now. 15-minute runs.
+- Platform: web, keyboard first (WASD/arrows, Space ability, Esc pause, 1-4 pick, R reroll). Touch later. ART STYLE (changed by Matt 2026-10-14, was 16x16 pixel art): smooth modern vector-glow ("Moonlit Spirit-Glow" palette, spirits made of light), generated in code at 2-4x resolution, native-res rendering, "Moonlit Glass" DOM UI; style A is default (`?style=a`), B (HD pixel) kept only for comparison. Free CC0 packs only for icons/fonts/audio unless Matt says otherwise. Must feel premium and make people say wow 15-minute runs.
 - Currencies: gold (spent on tree) and soul shards (from bosses). Tree is shown greyed-out with unlock conditions (kill counts, chapter clears, hidden nodes). Versioned saves. 
 - Weapons: **summons and magic only** (more types can be added later). 4 weapon slots, 4 stats per weapon x 5 ranks.
 - V1 weapons: Ghost Wolves, Raven Flock, Spirit Bolts, Chain Lightning, Holy Orbit. 11 evolutions (see evolutions.json).
