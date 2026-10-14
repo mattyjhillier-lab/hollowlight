@@ -8,14 +8,19 @@ const GLYPHS = [
 
 export function makeDigitFont(scene) {
   if (scene.cache.bitmapFont.exists('digits')) return;
+  // 5x7 cells: 3x5 white glyph with a baked 1px dark drop-shadow (stays crisp on dark and bright backgrounds; tint only colours the glyph).
   const g = scene.make.graphics({ x: 0, y: 0, add: false });
-  g.fillStyle(0xffffff, 1);
   GLYPHS.forEach((bits, i) => {
-    for (let k = 0; k < 15; k++) if (bits[k] === '1') g.fillRect(i * 4 + (k % 3), Math.floor(k / 3) + 1, 1, 1);
+    g.fillStyle(0x07070d, 1);
+    for (let k = 0; k < 15; k++) if (bits[k] === '1') g.fillRect(i * 5 + 2 + (k % 3), 1 + Math.floor(k / 3), 1, 1);
   });
-  g.generateTexture('digits', 40, 7);
+  GLYPHS.forEach((bits, i) => {
+    g.fillStyle(0xffffff, 1);
+    for (let k = 0; k < 15; k++) if (bits[k] === '1') g.fillRect(i * 5 + 1 + (k % 3), Math.floor(k / 3), 1, 1);
+  });
+  g.generateTexture('digits', 50, 7);
   g.destroy();
-  const data = Phaser.GameObjects.RetroFont.Parse(scene, { image: 'digits', width: 4, height: 7, chars: '0123456789', charsPerRow: 10, spacing: { x: 0, y: 0 }, offset: { x: 0, y: 0 } });
+  const data = Phaser.GameObjects.RetroFont.Parse(scene, { image: 'digits', width: 5, height: 7, chars: '0123456789', charsPerRow: 10, spacing: { x: 0, y: 0 }, offset: { x: 0, y: 0 } });
   scene.cache.bitmapFont.add('digits', data);
 }
 
@@ -58,7 +63,7 @@ export class DamageNumbers {
     for (let i = 0; i < items.length; i++) if (!items[i].on) { n = items[i]; break; }
     if (!n) {
       if (items.length >= 40) return;
-      n = { t: this.scene.add.bitmapText(0, 0, 'digits', '0').setOrigin(0.5).setDepth(this.depth), on: false, age: 0, val: 0, eid: 0, big: false, x: 0, y: 0 };
+      n = { t: this.scene.add.bitmapText(0, 0, 'digits', '0').setLetterSpacing(-1).setOrigin(0.5).setDepth(this.depth), on: false, age: 0, val: 0, eid: 0, big: false, x: 0, y: 0 };
       items.push(n);
     }
     n.on = true; n.age = 0; n.val = val; n.eid = eid; n.big = big; n.x = x + (Math.random() - 0.5) * 6; n.y = y - 8;
@@ -74,8 +79,8 @@ export class DamageNumbers {
       n.age += dt;
       if (n.age >= LIFE) { n.on = false; n.t.setVisible(false); this.alive--; continue; }
       const k = n.age / LIFE;
-      const pop = k < 0.15 ? 1.6 - (k / 0.15) * 0.6 : 1;
-      n.t.setPosition(n.x, n.y - 22 * k).setScale((n.big ? 2 : 1.5) * pop).setAlpha(k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4);
+      const pop = k < 0.12 ? 1.5 - (k / 0.12) * 0.5 : 1;
+      n.t.setPosition(n.x, n.y - 26 * k).setScale((n.big ? 3 : 2) * pop).setAlpha(k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4);
     }
   }
 }

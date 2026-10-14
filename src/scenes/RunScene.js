@@ -30,6 +30,23 @@ function tex(scene, key, w, h, draw) {
   g.destroy();
 }
 
+function rim(scene, key, col) {
+  const src = scene.textures.get(key).getSourceImage();
+  const w = src.width + 2;
+  const h = src.height + 2;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  for (const d of [[0, 1], [2, 1], [1, 0], [1, 2]]) x.drawImage(src, d[0], d[1]);
+  x.globalCompositeOperation = 'source-in';
+  x.fillStyle = col;
+  x.fillRect(0, 0, w, h);
+  x.globalCompositeOperation = 'source-over';
+  x.drawImage(src, 1, 1);
+  scene.textures.remove(key);
+  scene.textures.addCanvas(key, c);
+}
+
 function makeTextures(scene) {
   tex(scene, 'ground', 64, 64, (g) => {
     g.fillStyle(0x1d2b3a, 1).fillRect(0, 0, 64, 64);
@@ -174,6 +191,9 @@ function makeTextures(scene) {
     t.refresh();
   }
 
+  // 1px rim-light on enemies (baked once: no extra draw calls) so they read against the dusk grade.
+  for (const k of ['wolf', 'crow', 'root', 'treant']) rim(scene, k, '#d6a8c4');
+
   tex(scene, 'dot', 2, 2, (g) => { g.fillStyle(0xffffff, 1).fillRect(0, 0, 2, 2); });
 }
 
@@ -239,7 +259,7 @@ export class RunScene extends Phaser.Scene {
     this.vig = this.add.image(320, 180, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
     this.vigLow = false;
     // warm pre-dawn glow: additive wash that grows over the last ~25% of the run (Med/High)
-    this.dawn = this.add.rectangle(320, 180, 760, 440, 0xff7a3a).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.dawn = this.add.rectangle(320, 180, 760, 440, 0xffa888).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.gradeCol = -1;
     this.gradeTint = -1;
 
@@ -472,7 +492,7 @@ export class RunScene extends Phaser.Scene {
 
   evolveMoment() {
     const p = this.sim.player;
-    this.flash(PAL.gold, 0.45, 0.7);
+    this.flash(PAL.gold, 0.32, 0.6);
     this.addRing(p.x, p.y, 8, 220, 1.0, PAL.gold, 3);
     this.addRing(p.x, p.y, 8, 150, 0.8, PAL.lavender, 2, 0.15);
     this.burst(p.x, p.y, 34, PAL.gold, 150, 1.0, 0.7);
@@ -506,7 +526,7 @@ export class RunScene extends Phaser.Scene {
   updateGrade(f) {
     const col = gradeAt(Math.round(f * 150) / 150);
     this.gradeNow = col;
-    const dw = f > 0.75 ? Math.min(1, (f - 0.75) / 0.25) * 0.2 : 0;
+    const dw = f > 0.7 ? Math.min(1, (f - 0.7) / 0.3) * 0.36 : 0;
     if (dw > 0 && this.quality.caps.grade) this.dawn.setVisible(true).setAlpha(dw);
     else if (this.dawn.visible) this.dawn.setVisible(false);
     if (this.quality.caps.grade) {
@@ -642,7 +662,7 @@ export class RunScene extends Phaser.Scene {
     for (const e of sim.enemies) {
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
-      img.setPosition(e.x, e.y).setDepth(e.y).setFlipX(e.faceX < 0);
+      img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
       if (e.flash > 0) img.setTintFill(0xffffff);
       else if (e.bleedT > 0) img.setTint(0xff9a9a);
       else img.clearTint();
