@@ -3,7 +3,9 @@ import './style.css';
 import { app } from './app.js';
 import { UI } from './ui/ui.js';
 import { RunScene } from './scenes/RunScene.js';
+import { applyCssPalette } from './gfx/palette.js';
 
+applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
 app.save.load();
 app.applySettings();
@@ -23,7 +25,7 @@ const game = new Phaser.Game({
   parent: 'game',
   width: view.w,
   height: view.h,
-  backgroundColor: '#0b0f0c',
+  backgroundColor: '#07070d',
   pixelArt: true,
   render: { antialias: false, roundPixels: true },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
