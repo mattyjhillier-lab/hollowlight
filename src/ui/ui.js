@@ -7,6 +7,8 @@ const fmtTime = (s) => {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
+import { TreeScreen } from './treescreen.js';
+
 export class UI {
   constructor(root, data) {
     this.root = root;
@@ -15,6 +17,7 @@ export class UI {
     this.hudCache = {};
     this.handlers = {};
     this.toastTimer = null;
+    this.tree = new TreeScreen(this);
     this.buildHud();
     window.addEventListener('keydown', (e) => this.onKey(e));
   }
@@ -130,7 +133,7 @@ export class UI {
     const a = sim.ability;
     this.setText('abname', h.abName, a.name);
     const ready = a.cdLeft <= 0;
-    h.abFill.style.width = `${ready ? 100 : (1 - a.cdLeft / (a.cooldown * sim.mods.abilityCd)) * 100}%`;
+    h.abFill.style.width = `${ready ? 100 : (1 - a.cdLeft / sim.abilityCooldown) * 100}%`;
     h.ability.classList.toggle('ready', ready);
   }
 
@@ -158,7 +161,7 @@ export class UI {
 
   // ------------------------------------------------------------------ menus
   showStart(onPick) {
-    const chars = Object.entries(this.data.characters);
+    const chars = Object.entries(this.data.characters).filter(([id]) => !this.handlers.heroUnlocked || this.handlers.heroUnlocked(id));
     const cards = chars.map(([id, c]) => `
       <div class="charcard" data-id="${id}" tabindex="0" role="button">
         <h3><span class="swatch" style="background:${c.color};color:${c.color}"></span>${c.name}</h3>
@@ -178,8 +181,9 @@ export class UI {
       <div class="row">${cards}</div>
       <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
       <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
-      <div class="row"><button class="btn" data-act="settings">Settings</button></div>
+      <div class="row"><button class="btn" data-act="tree">Skill Tree</button><button class="btn" data-act="settings">Settings</button></div>
       <div class="vlabel"></div>`);
+    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
     el.querySelector('.vlabel').textContent = typeof __APP_VERSION__ !== 'undefined' ? `v${__APP_VERSION__}` : '';
     const bank = this.handlers.getBank ? this.handlers.getBank() : null;
     if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
@@ -279,7 +283,10 @@ export class UI {
         <dt>Evolutions</dt><dd>${evos.length ? evos.join(', ') : 'none this run'}</dd>
       </dl>
       <div class="note warn"></div>
-      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="menu">Main menu</button></div>`);
+      <div class="endtree"></div>
+      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="tree">Spend gold</button><button class="btn big" data-act="menu">Main menu</button></div>`);
+    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
+    this.fillEndTree(el.querySelector('.endtree'), bank);
     const set = (sel, t) => { el.querySelector(sel).textContent = t; };
     if (bank) {
       set('.g', `+${r.gold} (bank ${bank.gold})`);
@@ -295,6 +302,20 @@ export class UI {
     }
     el.querySelector('[data-act="again"]').addEventListener('click', () => this.handlers.again());
     el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+  }
+
+  // Accomplishment feedback: newly unlocked nodes and the closest locked ones (textContent only).
+  fillEndTree(box, bank) {
+    if (!bank) return;
+    const mkEl = (cls, text) => { const n = document.createElement('div'); n.className = cls; n.textContent = text; return n; };
+    if (bank.newly && bank.newly.length) {
+      box.append(mkEl('et-head good', 'Newly unlocked in the Skill Tree'));
+      for (const name of bank.newly.slice(0, 6)) box.append(mkEl('et-row', name));
+    }
+    if (bank.closest && bank.closest.length) {
+      box.append(mkEl('et-head', 'Closest unlocks'));
+      for (const c of bank.closest) box.append(mkEl('et-row', `${c.name} · ${c.text} (${Math.floor(c.frac * 100)}%)`));
+    }
   }
 
   // ------------------------------------------------------------------ settings
@@ -420,6 +441,7 @@ export class UI {
 
   // ------------------------------------------------------------------ keys
   onKey(e) {
+    if (this.tree.isOpen) return; // the tree screen handles its own keys
     if (this.settingsOpen) {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
