@@ -8,6 +8,16 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 - He playtests and gives feedback in plain language. Treat feedback as the spec; fix, run tests, rebuild, tell him in a few bullets.
 - Do not build parked features until he says so. Ask before big design changes.
 
+## Standing rule: security first (set by Matt, applies to everything)
+Every change, dependency, asset, workflow and deploy gets a security check and is made as safe as possible before it is shipped. Minimum, each time:
+- Dependencies: add as few as possible; check each is well-known and maintained; run `npm audit` and report results; never `npm audit fix --force` blindly (test upgrades on `dev` branch).
+- Assets/downloads: only well-known sources (Kenney, OpenGameArt, itch.io CC0); verify licence; treat downloads as untrusted; record in a CREDITS file.
+- Secrets: never put passwords/keys/tokens in code, commits, docs or chat. Ask Matt to do any account/security-setting change himself (e.g. 2FA).
+- Saves/imports and any URL params: treat as untrusted input; validate and sanitise before use; never inject into the DOM with innerHTML from untrusted data; add tests.
+- GitHub: work on `dev` branch and merge via PR; `main` is protected and is the live site. Workflow permissions stay minimal; pin/verify action versions; secret scanning, push protection and Dependabot stay on.
+- Outward-facing/irreversible actions (publish, push to main, settings, deletes) need Matt's explicit yes first.
+- End each task with a short "Security check" line: what was checked and any findings.
+
 ## Stack and layout
 Phaser 3 + Vite, vanilla JS, ES modules. Single-file build (vite-plugin-singlefile -> dist/index.html).
 - `src/sim/` pure-JS simulation (no Phaser/DOM): `Sim.js`, `weapons.js`, `cards.js`, `rng.js`, `grid.js`. Seeded RNG (mulberry32). Unit/bot-testable in Node.
