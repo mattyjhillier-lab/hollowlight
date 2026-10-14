@@ -1,4 +1,4 @@
-# Cursed Forest — survivors-style incremental game
+# Hollowlight: Spirits of the Dusk (formerly Cursed Forest) — survivors-style incremental game
 
 Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Building a game inspired by *Spirit Hunters: Infinite Horde*. **Everything must be free to build and host.**
 

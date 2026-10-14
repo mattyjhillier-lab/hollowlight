@@ -162,8 +162,8 @@ export class UI {
         </dl>
       </div>`).join('');
     const el = this.show('start', `
-      <h1>Cursed Forest</h1>
-      <div class="sub">Prototype · stage 1 · placeholder art</div>
+      <h1>Hollowlight</h1>
+      <div class="sub">Spirits of the Dusk · Chapter 1: Cursed Forest · prototype</div>
       <div class="row">${cards}</div>
       <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
       <p>Survive 15 minutes. The Elder Treant wakes at 10:00. Gold and the skill tree arrive in a later stage, so nothing is saved yet.</p>`);
