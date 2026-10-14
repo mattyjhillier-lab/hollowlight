@@ -1,0 +1,67 @@
+{
+  "ghost_wolves": {
+    "name": "Ghost Wolves",
+    "type": "summon",
+    "tags": [],
+    "color": "#9fd8ff",
+    "desc": "Spectral wolves hunt the nearest enemy and bite. Bites cause bleeding.",
+    "stats": {
+      "count":    { "name": "Pack size",     "base": 1,   "perRank": 1,   "fmt": "int",  "hint": "+1 wolf" },
+      "power":    { "name": "Bite power",    "base": 6,   "perRank": 3,   "fmt": "int",  "hint": "+3 damage" },
+      "speed":    { "name": "Wolf speed",    "base": 90,  "perRank": 14,  "fmt": "int",  "hint": "+14 speed" },
+      "duration": { "name": "Bleed time",    "base": 1.5, "perRank": 0.5, "fmt": "sec",  "hint": "+0.5s bleed" }
+    }
+  },
+  "raven_flock": {
+    "name": "Raven Flock",
+    "type": "summon",
+    "tags": [],
+    "color": "#b79cff",
+    "desc": "A flock of ravens circles you and pecks anything that gets close.",
+    "stats": {
+      "count": { "name": "Flock size",   "base": 2,   "perRank": 1,    "fmt": "int", "hint": "+1 raven" },
+      "power": { "name": "Peck power",   "base": 5,   "perRank": 2.5,  "fmt": "int", "hint": "+2.5 damage" },
+      "range": { "name": "Flock radius", "base": 40,  "perRank": 7,    "fmt": "int", "hint": "+7 radius" },
+      "speed": { "name": "Flight speed", "base": 2.2, "perRank": 0.4,  "fmt": "dec", "hint": "+0.4 spin" }
+    }
+  },
+  "spirit_bolts": {
+    "name": "Spirit Bolts",
+    "type": "magic",
+    "tags": ["holy"],
+    "color": "#7ff0ff",
+    "desc": "Homing spirit orbs seek out the nearest enemies.",
+    "stats": {
+      "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "+1 bolt" },
+      "power":  { "name": "Bolt power",  "base": 10,  "perRank": 5,   "fmt": "int", "hint": "+5 damage" },
+      "speed":  { "name": "Bolt speed",  "base": 150, "perRank": 22,  "fmt": "int", "hint": "+22 speed" },
+      "pierce": { "name": "Pierce",      "base": 0,   "perRank": 1,   "fmt": "int", "hint": "+1 pierce" }
+    }
+  },
+  "chain_lightning": {
+    "name": "Chain Lightning",
+    "type": "magic",
+    "tags": [],
+    "color": "#fff27a",
+    "desc": "Lightning strikes the nearest enemy and jumps between foes.",
+    "stats": {
+      "chains":   { "name": "Chains",   "base": 2,   "perRank": 1,     "fmt": "int", "hint": "+1 chain" },
+      "power":    { "name": "Power",    "base": 12,  "perRank": 5,     "fmt": "int", "hint": "+5 damage" },
+      "cooldown": { "name": "Cooldown", "base": 1.6, "perRank": -0.15, "fmt": "sec", "hint": "-0.15s" },
+      "area":     { "name": "Jump range","base": 60, "perRank": 10,    "fmt": "int", "hint": "+10 range" }
+    }
+  },
+  "holy_orbit": {
+    "name": "Holy Orbit",
+    "type": "magic",
+    "tags": ["holy"],
+    "color": "#ffe08a",
+    "desc": "Holy orbs circle you and burn anything they touch.",
+    "stats": {
+      "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "+1 orb" },
+      "power":  { "name": "Orb power",  "base": 8,   "perRank": 3.5,  "fmt": "int", "hint": "+3.5 damage" },
+      "radius": { "name": "Orbit size", "base": 34,  "perRank": 6,    "fmt": "int", "hint": "+6 radius" },
+      "speed":  { "name": "Orbit speed","base": 2.0, "perRank": 0.35, "fmt": "dec", "hint": "+0.35 spin" }
+    }
+  }
+}

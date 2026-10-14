@@ -1,0 +1,54 @@
+{
+  "runSeconds": 900,
+  "worldSize": 4000,
+  "view": {
+    "w": 640,
+    "h": 360
+  },
+  "maxRank": 5,
+  "weaponSlots": 4,
+  "xp": {
+    "base": 3,
+    "linear": 0.6,
+    "quad": 0.008
+  },
+  "hpScale": {
+    "linear": 0.26,
+    "quad": 0.012
+  },
+  "dmgScale": {
+    "linear": 0.04
+  },
+  "maxEnemies": 380,
+  "gemCap": 350,
+  "weaponCardWeight": 4,
+  "playerIframes": 0.4,
+  "pickupRadius": 38,
+  "drops": {
+    "heart": 0.008,
+    "magnet": 0.004,
+    "pityHeart": 40,
+    "pityMagnet": 60,
+    "heartHeal": 0.3,
+    "ttl": 45
+  },
+  "magnetSpeed": 260,
+  "despawnDistance": 560,
+  "spawnDistance": 390,
+  "offerSize": 3,
+  "maxGoldCards": 3,
+  "fallback": {
+    "heal": {
+      "name": "Restoring Light",
+      "desc": "Heal 35% of max HP."
+    },
+    "gold": {
+      "name": "Grave Coins",
+      "desc": "+25 gold for this run."
+    },
+    "xp": {
+      "name": "Soul Surge",
+      "desc": "Gain a chunk of XP."
+    }
+  }
+}

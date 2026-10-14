@@ -1,0 +1,79 @@
+{
+  "cursed_forest": {
+    "name": "Cursed Forest",
+    "bossId": "elder_treant",
+    "bossAt": 600,
+    "bossShards": 5,
+    "rootPatches": 70,
+    "waves": [
+      {
+        "enemy": "wolf",
+        "from": 5,
+        "to": 900,
+        "rate0": 0.6,
+        "rate1": 1.8,
+        "curve": 0.55
+      },
+      {
+        "enemy": "crow",
+        "from": 15,
+        "to": 900,
+        "rate0": 0.7,
+        "rate1": 2.0,
+        "curve": 0.55
+      },
+      {
+        "enemy": "root_crawler",
+        "from": 70,
+        "to": 900,
+        "rate0": 0.12,
+        "rate1": 0.6,
+        "curve": 0.7
+      }
+    ],
+    "events": [
+      {
+        "t": 60,
+        "enemy": "wolf",
+        "count": 8,
+        "formation": "arc"
+      },
+      {
+        "t": 150,
+        "enemy": "crow",
+        "count": 20,
+        "formation": "arc"
+      },
+      {
+        "t": 240,
+        "enemy": "wolf",
+        "count": 14,
+        "formation": "arc"
+      },
+      {
+        "t": 360,
+        "enemy": "wolf",
+        "count": 20,
+        "formation": "arc"
+      },
+      {
+        "t": 450,
+        "enemy": "crow",
+        "count": 30,
+        "formation": "arc"
+      },
+      {
+        "t": 540,
+        "enemy": "wolf",
+        "count": 26,
+        "formation": "arc"
+      },
+      {
+        "t": 660,
+        "enemy": "crow",
+        "count": 40,
+        "formation": "arc"
+      }
+    ]
+  }
+}

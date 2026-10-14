@@ -1,0 +1,6 @@
+{
+  "wolf":         { "name": "Forest Wolf",    "hp": 12,   "speed": 46,  "dmg": 5,  "r": 6,  "xp": 1, "gold": 1,   "color": "#8a7f78", "shape": "wolf",   "mass": 1 },
+  "crow":         { "name": "Carrion Crow",   "hp": 5,    "speed": 62,  "dmg": 3,  "r": 4,  "xp": 1, "gold": 0.5, "color": "#2b2b3a", "shape": "crow",   "mass": 0.6 },
+  "root_crawler": { "name": "Root Crawler",   "hp": 38,   "speed": 26,  "dmg": 8,  "r": 8,  "xp": 3, "gold": 2,   "color": "#6b4a2b", "shape": "root",   "mass": 2 },
+  "elder_treant": { "name": "Elder Treant",   "hp": 1800, "speed": 18,  "dmg": 16, "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true }
+}
