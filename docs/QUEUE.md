@@ -1,8 +1,8 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 ## NOW / NEXT / LATER (focus keeper)
-- NOW: wait for the 2 running jobs (3D proof, skill tree) and review them one at a time. (2D cartoon mock-ups done: Matt prefers P1 Warm Lantern.)
-- NEXT: agree the action plan together (small chunks), starting with at most 3 decisions: art direction, bible edits, summons fixes.
+- NOW: skill tree build finishing (the last running job). Art family LOCKED: polished 2D cartoon, P1 Warm Lantern.
+- NEXT: agree the action plan in small chunks: first chunk proposal = approve creature design sheets one at a time (Wren first), then rebuild the in-game look step by step.
 - LATER: build phases in small chunks after the GO gate (docs/READINESS.md).
 - PARKING LOT (ideas not started): see bottom of this file.
 
@@ -16,7 +16,7 @@ Standing rules always apply: security first, token conservation, everything must
 - [~] Summons and evolution design review (read-only report): docs/research/18-*.md.
 
 ## Waiting on Matt (decisions / inputs)
-- [?] Art direction: 3D proof vs polished 2D cartoon (look at both when ready), then palette, then UI personality. Log reactions in docs/ART-DECISIONS.md.
+- [x] Art direction settled: polished 2D cartoon P1 Warm Lantern (3D parked). Still open: final palette tweaks, UI personality details, creature design approvals.
 - [?] Reference screenshots of games/art he loves (esp. Spirit Hunters' Divinity Web and look) with notes on what he likes.
 - [?] Bible draft (docs/BIBLE.md): react/rewrite; 10 open creative questions inside it; proposed renames (enemy display names, Chapter 6 light/dark theme, gold coins as brass/"embers", Chapter 8 boss "The Unlit" instead of "Hollow King").
 - [?] Name check: "Hollowlight" medium clash risk (Hollow Knight, "Hollow Light" jam game/studio). Search UK IPO/EUIPO/itch/Steam himself; decide before any public launch.

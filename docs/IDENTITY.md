@@ -18,5 +18,5 @@ A low-resolution grid texture (about 128x128 cells over the 4000x4000 world, cov
 - Restraint: one strong idea, few colours, few effects; the identity does the work.
 
 ## Open
-- Art style family: Matt chose "stylised 3D-looking"; spike-3d (branch) compares real 3D vs pre-rendered sprites.
+- Art style family: LOCKED polished 2D cartoon, P1 Warm Lantern (3D parked).
 - Palette to be set after the spike; role tokens in src/gfx/palette.js make swaps cheap.

@@ -4,7 +4,7 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 
 ## Decided
 - Identity concept: **The Hollow** (grey drained world; spirit light restores colour and leaves luminous trails; enemies spread corruption; one life-map system). See docs/IDENTITY.md.
-- Art family: **stylised 3D-looking** (polished mobile-hit feel, rich lighting, depth). Real 3D vs pre-rendered sprites under test (branch spike-3d).
+- Art family: **polished chunky 2D cartoon, mood P1 WARM LANTERN** (LOCKED 2026-10-14, after the 3D proof: real 3D was richer but generic and too heavy for phones, needs custom models we cannot hire; 3D parked, branch spike-3d kept).
 - Every character and enemy has its own unique, recognisable design. Hero, boss and signature spirits are custom for Hollowlight.
 - Everything must fit the look and make mechanical sense (CLAUDE.md standing rule).
 - Name: Hollowlight: Spirits of the Dusk. Chapter 1: Cursed Forest.
@@ -29,5 +29,5 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 - Palette (not yet chosen; keep colours role-based so swaps are cheap).
 - UI personality (bold, restrained, own identity) - to explore after the world look is set.
 - Hero, boss and creature designs (see docs/BIBLE.md draft when ready).
-- Real 3D vs pre-rendered sprites (spike results pending).
+- (Settled) 3D parked; 2D cartoon P1 locked.
 - Reference screenshots from Matt: not yet received (would help a lot).
