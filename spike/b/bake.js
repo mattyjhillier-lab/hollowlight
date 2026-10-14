@@ -94,12 +94,12 @@ export async function runBake(stage) {
   const SC = 8, spirits = document.createElement('canvas'); spirits.width = SC * CELL; spirits.height = 5 * CELL;
   const sc = spirits.getContext('2d');
   const wolf = new THREE.Mesh(ghostWolfGeo(), patch(new THREE.MeshToonMaterial({ color: 0x78ecff, emissive: 0x1696c0, gradientMap: grad, transparent: true, opacity: 0.85 }), { rim: new THREE.Color(0.2, 0.45, 0.5) }));
-  const wm = normalise(wolf, 1.8);
+  const wm = new THREE.Group(); wolf.scale.setScalar(1.5); wm.add(wolf);
   bakeCells(env, sc, CELL, SC, 0, wm, DIRS, 1, () => {});
   const raven = new THREE.Mesh(ravenGeo(), patch(new THREE.MeshToonMaterial({ color: 0x8a6bd8, emissive: 0x2a1070, gradientMap: grad, side: THREE.DoubleSide }), { flap: true, rim: new THREE.Color(0.25, 0.15, 0.5) }));
-  const rm = normalise(raven, 1.2);
+  const rm = new THREE.Group(); raven.scale.setScalar(1.5); raven.position.y = 0.5; rm.add(raven);
   bakeCells(env, sc, CELL, SC, 8, rm, DIRS, 4, (f) => { U.uTime.value = (f / 4) * (Math.PI * 2 / 12); });
-  meta.spirits = { cols: SC, wolf: 0, raven: 8, ravenFrames: 4, wolfH: 1.8, ravenH: 1.2 };
+  meta.spirits = { cols: SC, wolf: 0, raven: 8, ravenFrames: 4, ravenLift: 0.5 };
 
   // ---- props atlas: 2 trees at 256 px, 3 small props at 128 px
   const props = document.createElement('canvas'); props.width = 1024; props.height = 256;

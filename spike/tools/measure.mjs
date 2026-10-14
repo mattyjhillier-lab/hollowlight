@@ -2,7 +2,7 @@
 //   node spike/tools/measure.mjs shot  "<query>" <out.png> <w> <h> <dpr> [settleMs=4000] [throttle=1]
 //   node spike/tools/measure.mjs bench "<query>" <w> <h> <dpr> [throttle=1] [secs=8] [warmMs=3000]
 // Needs the vite dev server (npx vite --port 4180) running. Env UNCAP=1 removes the 60 Hz rAF cap.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { writeFileSync, mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -38,7 +38,7 @@ async function launch() {
     if (r.exceptionDetails) throw new Error(r.exceptionDetails.text + ' ' + (r.exceptionDetails.exception?.description || ''));
     return r.result.value;
   };
-  return { send, ev, close: () => { try { ws.close(); proc.kill(); } catch { /* ignore */ } } };
+  return { send, ev, close: () => { try { ws.close(); } catch { /* ignore */ } try { spawnSync('taskkill', ['/PID', String(proc.pid), '/T', '/F'], { stdio: 'ignore' }); } catch { /* ignore */ } } };
 }
 
 async function open(c, query, w, h, dpr, throttle) {

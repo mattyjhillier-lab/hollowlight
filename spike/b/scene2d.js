@@ -21,24 +21,24 @@ void main(){
   moss = mix(moss, vec3(0.34,0.29,0.20), smoothstep(0.55,0.8,n3));
   moss *= 0.85 + 0.3*n2;
   float leaf = smoothstep(0.82, 0.9, vnoise(w*7.0));
-  moss = mix(moss, vec3(0.75,0.5,0.2), leaf*0.35);
+  moss = mix(moss, vec3(0.75,0.5,0.2), leaf*0.18);
   vec3 col = moss;
   vec4 lf = texture2D(iChannel0, w / uWorld);
   if (uLifeOn > 0.5) {
     float nz = vnoise(w*0.7)*0.6 + vnoise(w*2.3)*0.4;
     float L = smoothstep(0.28, 0.62, lf.r + (nz-0.5)*0.45);
     float g = dot(col, vec3(0.299,0.587,0.114));
-    vec3 hollow = vec3(g) * vec3(0.62,0.7,0.88) * 0.95;
-    col = mix(hollow, col*vec3(1.18,1.12,0.92), L);
+    vec3 hollow = vec3(g) * vec3(0.6,0.68,0.9) * 0.8;
+    col = mix(hollow, col*vec3(1.05,1.04,0.95), L);
     float C = smoothstep(0.35, 0.8, lf.g + (nz-0.5)*0.35);
     float vn = vnoise(w*1.6) + 0.5*vnoise(w*4.1);
     float vein = 1.0 - smoothstep(0.0, 0.07, abs(fract(vn*1.7) - 0.5) - 0.38);
     col = mix(col, vec3(0.035,0.02,0.05) + vec3(0.4,0.04,0.55)*vein*0.55, C);
   }
   float d = length(w - uHero);
-  float lit = 0.62 + 0.9*uLight*exp(-d*d/130.0);
+  float lit = 0.8 + 0.6*uLight*exp(-d*d/220.0);
   lit = floor(lit*5.0)/5.0 * 0.5 + lit*0.5;
-  col *= lit * mix(vec3(0.8,0.85,1.1), vec3(1.25,1.0,0.7), clamp(exp(-d*d/60.0),0.0,1.0));
+  col *= lit * mix(vec3(0.85,0.9,1.1), vec3(1.12,1.0,0.8), clamp(exp(-d*d/60.0),0.0,1.0));
   gl_FragColor = vec4(col, 1.0);
 }`;
 
@@ -92,8 +92,9 @@ export async function createB({ stage, canvas, drive, life, quality = 'high', wi
   for (const [name, p] of Object.entries(meta.props)) pt.add(name, 0, p.x, p.y, p.cell, p.cell);
   glowTex(scene, 'glow', 64, [[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]);
   glowTex(scene, 'blob', 64, [[0, 'rgba(0,0,0,0.7)'], [1, 'rgba(0,0,0,0)']]);
-  glowTex(scene, 'vig', 256, [[0.45, 'rgba(10,8,34,0)'], [1, 'rgba(10,8,34,0.8)']]);
+  glowTex(scene, 'vig', 256, [[0.45, 'rgba(10,8,34,0)'], [1, 'rgba(10,8,34,0.5)']]);
   const lifeCv = scene.textures.createCanvas('life', life.n, life.n);
+  lifeCv.setFilter(Phaser.Textures.FilterMode.LINEAR);
   const lifeCtx = lifeCv.getContext();
   const lifeImg = lifeCtx.createImageData(life.n, life.n);
 
@@ -131,7 +132,7 @@ export async function createB({ stage, canvas, drive, life, quality = 'high', wi
   const ravenPool = pool(80, () => mk('spirits', 'raven_0_0'));
   const gemPool = pool(700, () => scene.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0x55ffee).setDepth(900));
   const glowPool = pool(360, () => scene.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(901));
-  const lanternGlow = scene.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xff9a3a).setAlpha(0.35).setDepth(899);
+  const lanternGlow = scene.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xff9a3a).setAlpha(0.18).setDepth(899);
   const vig = scene.add.image(W / 2, H / 2, 'vig').setDisplaySize(W, H).setDepth(1000);
   const heroH = sim.player.r * S * 2 * 2.3;
   const hmap = { wolf: 'wolf', crow: 'crow', root_crawler: 'root_crawler', elder_treant: 'elder_treant' };
@@ -180,7 +181,7 @@ export async function createB({ stage, canvas, drive, life, quality = 'high', wi
       if (sx < -150 || sx > W + 150 || sy < -200 || sy > H + 200) { im.setVisible(false); continue; }
       const f = Math.floor((t * 7 + e.id * 0.37) % 6);
       im.setVisible(true).setFrame(`${hmap[e.type]}_${dirOf(p.x - e.x, p.y - e.y)}_${f}`).setPosition(sx, sy).setScale(k * (eh(e.type, e.r) / meta.targetH)).setDepth(sy);
-      if (e.flash > 0) im.setTintFill(0xffffff); else im.clearTint();
+      
       if (ns < 700) { shadows[ns++].setVisible(true).setPosition(sx, sy).setScale((e.r * S * 2.6 * P) / 64, (e.r * S * 2.6 * P * TILT) / 64); }
     }
     for (let i = ne; i < enemyPool.length; i++) enemyPool[i].setVisible(false);
@@ -192,10 +193,10 @@ export async function createB({ stage, canvas, drive, life, quality = 'high', wi
       const sx = SX(u.x * S), sy = SY(u.y * S);
       if (u.kind === 'wolf' && nw < 80) {
         const im = wolfPool[nw++];
-        im.setVisible(true).setFrame(`wolf_${u.faceX >= 0 ? 2 : 6}`).setPosition(sx, sy - Math.abs(Math.sin(t * 9 + nw)) * 4).setScale(k * (1.5 * 1.8 / meta.targetH) * (meta.spirits.wolfH ? 1 : 1) * 1.33).setDepth(sy).setAlpha(0.85);
+        im.setVisible(true).setFrame(`wolf_${u.faceX >= 0 ? 2 : 6}`).setPosition(sx, sy - Math.abs(Math.sin(t * 9 + nw)) * 4).setScale(k).setDepth(sy).setAlpha(0.85);
       } else if (u.kind === 'raven' && nr < 80) {
         const im = ravenPool[nr++];
-        im.setVisible(true).setFrame(`raven_${u.faceX >= 0 ? 2 : 6}_${Math.floor(((t * 12 + nr) % 4))}`).setPosition(sx, sy - 2.0 * P * 0.669).setScale(k * (1.5 * 1.2 / meta.targetH) * 2).setDepth(sy + 500);
+        im.setVisible(true).setFrame(`raven_${u.faceX >= 0 ? 2 : 6}_${Math.floor(((t * 12 + nr) % 4))}`).setPosition(sx, sy - 1.5 * P * 0.669).setScale(k).setDepth(sy + 500);
       } else if (u.kind === 'orb' && ng < 360) {
         glowPool[ng++].setVisible(true).setTint(0xffd070).setPosition(sx, sy - 1.4 * P * 0.669).setScale(k * 0.7);
       }

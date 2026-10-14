@@ -33,11 +33,11 @@ export class LifeMap {
   update(sim, dt) {
     const t0 = performance.now();
     const p = sim.player;
-    this.stamp(this.life, p.x, p.y, 170, 0.9 * dt);
-    for (const u of sim.units) if (!u.dead) this.stamp(this.life, u.x, u.y, 70, (u.kind === 'orb' ? 0.5 : 0.7) * dt);
+    this.stamp(this.life, p.x, p.y, 80, 0.7 * dt);
+    for (const u of sim.units) if (!u.dead) this.stamp(this.life, u.x, u.y, 40, (u.kind === 'orb' ? 0.5 : 0.7) * dt);
     for (const e of sim.enemies) if (!e.dead) this.stamp(this.corr, e.x, e.y, 36, 0.14 * dt);
     const L = this.life, C = this.corr;
-    const dl = 0.004 * dt, dc = 0.05 * dt;
+    const dl = 0.003 * dt, dc = 0.05 * dt;
     for (let k = 0; k < L.length; k++) {
       const c = C[k];
       let l = L[k] - dl - c * 0.25 * dt;
