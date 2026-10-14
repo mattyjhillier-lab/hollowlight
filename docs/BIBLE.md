@@ -1,6 +1,6 @@
 # Hollowlight: Spirits of the Dusk - Creative Bible (DRAFT v0.1)
 
-Status: draft for Matt to react to, cross out and rewrite. Nothing here is locked until Matt says so. Everything is visual or flavour unless marked GAMEPLAY (those need Matt's OK, per CLAUDE.md).
+Status: draft for Matt to react to, cross out and rewrite. UPDATE 2026-10-14: Matt says designs do NOT have to follow this bible; he is happy for ANY ideas that fit the game (identity, mechanics, style). Treat the bible as a starting point, not a constraint. Nothing here is locked until Matt says so. Everything is visual or flavour unless marked GAMEPLAY (those need Matt's OK, per CLAUDE.md).
 Builds on: CLAUDE.md (locked design), docs/IDENTITY.md (The Hollow, life map), src/data/*.json, docs/research/10-bosses-and-enemies.md.
 
 ---

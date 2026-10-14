@@ -16,6 +16,8 @@ Matt is happy to iterate on style and colour as long as needed until it is right
 
 - STYLE RECIPE CHOSEN: HOLLOWLIGHT STYLE v1 (Matt, 2026-10-14) = mix of S1 Storybook Glow + S5 Heroic Cartoon: LINE L2 (tinted outline, a darker shade of each fill) + SHADE H2 (soft gradient with rim light) + PROPORTIONS P1 (chibi: big head, small and round, cosy and appealing) + WORLD W2 (richly textured painted ground with grass/flower detail) + LIGHT G1 lantern pool plus long glowing trails behind lantern, scarf and spirits (from G2). Mood P1 Warm Lantern. See docs/mockups/style-lab/.
 
+- Creative freedom: designs do NOT have to follow docs/BIBLE.md; Matt is happy for any ideas that fit the game (identity, mechanics, style). The bible is a starting point.
+
 ## Rejected (and why)
 - Round 1 UI directions D1-D4 (glass, gothic, neon, ember): better than the original but "still blocky", "too much at once", "no identity of its own".
 - Round 2 identity directions E1-E3 (ink, comic cel, papercut): disliked ("I don't like either"); picked "stylised 3D-looking", "too plain/simple", "characters not appealing", "wrong mood for the game".
