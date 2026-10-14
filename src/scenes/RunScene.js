@@ -8,6 +8,8 @@ import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, gradeAt } from '../gfx/palette.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
+import { STYLE, inv } from '../gfx/style.js';
+import { makeStyleTextures } from '../gfx/sprites.js';
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -23,184 +25,15 @@ const D_VIG = 120000;
 
 const hex = (s) => parseInt(s.slice(1), 16);
 
-function tex(scene, key, w, h, draw) {
-  const g = scene.make.graphics({ x: 0, y: 0, add: false });
-  draw(g);
-  g.generateTexture(key, w, h);
-  g.destroy();
-}
-
-function rim(scene, key, col) {
-  const src = scene.textures.get(key).getSourceImage();
-  const w = src.width + 2;
-  const h = src.height + 2;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const x = c.getContext('2d');
-  for (const d of [[0, 1], [2, 1], [1, 0], [1, 2]]) x.drawImage(src, d[0], d[1]);
-  x.globalCompositeOperation = 'source-in';
-  x.fillStyle = col;
-  x.fillRect(0, 0, w, h);
-  x.globalCompositeOperation = 'source-over';
-  x.drawImage(src, 1, 1);
-  scene.textures.remove(key);
-  scene.textures.addCanvas(key, c);
-}
-
 function makeTextures(scene) {
-  tex(scene, 'ground', 64, 64, (g) => {
-    g.fillStyle(0x1d2b3a, 1).fillRect(0, 0, 64, 64);
-    for (let i = 0; i < 90; i++) {
-      const c = [0x223244, 0x182433, 0x12182b, 0x1a2a3a][i % 4];
-      g.fillStyle(c, 1).fillRect(Math.floor(Math.random() * 62), Math.floor(Math.random() * 62), 2, 2);
-    }
-    for (let i = 0; i < 7; i++) {
-      const x = 4 + Math.floor(Math.random() * 56);
-      const y = 6 + Math.floor(Math.random() * 54);
-      g.fillStyle(0x2f4a4a, 1).fillRect(x, y, 1, 3).fillRect(x + 2, y + 1, 1, 2);
-    }
-  });
-
-  tex(scene, 'tree', 30, 42, (g) => {
-    g.fillStyle(0x12182b, 1).fillRect(12, 26, 6, 14);
-    g.fillStyle(0x1d2b3a, 1).fillRect(12, 26, 2, 14);
-    g.fillStyle(0x0b1018, 1).fillCircle(15, 17, 12).fillCircle(8, 21, 8).fillCircle(22, 21, 8);
-    g.fillStyle(0x12202c, 1).fillCircle(13, 14, 8).fillCircle(20, 18, 6);
-    g.fillStyle(0x2f4a4a, 1).fillCircle(11, 12, 3);
-  });
-
-  tex(scene, 'patch', 64, 64, (g) => {
-    for (let i = 0; i < 8; i++) g.fillStyle(0x2f4a4a, 0.1).fillCircle(32, 32, 32 - i * 3.5);
-    g.lineStyle(1, 0x2f4a4a, 0.7);
-    for (let a = 0; a < 6; a++) {
-      const ang = (a / 6) * Math.PI * 2;
-      g.lineBetween(32, 32, 32 + Math.cos(ang) * 26, 32 + Math.sin(ang) * 20);
-    }
-  });
-
-  const hero = (key, body, trim, hood) => tex(scene, key, 14, 18, (g) => {
-    g.fillStyle(0x000000, 0.3).fillEllipse(7, 16, 11, 4);
-    g.fillStyle(body, 1).fillRect(3, 7, 8, 9);
-    g.fillStyle(trim, 1).fillRect(3, 12, 8, 1).fillRect(6, 7, 2, 9);
-    g.fillStyle(hood, 1).fillCircle(7, 5, 5);
-    g.fillStyle(0xf1d2b0, 1).fillRect(5, 4, 4, 3);
-    g.fillStyle(0x1a1a1a, 1).fillRect(5, 5, 1, 1).fillRect(8, 5, 1, 1);
-  });
-  hero('hero_wren', 0x7a4b2a, 0xe8b86d, 0xb5783d);
-  hero('hero_elias', 0xeeeeee, 0xffd24a, 0xdddddd);
-
-  tex(scene, 'wolf', 18, 12, (g) => {
-    g.fillStyle(0x000000, 0.28).fillEllipse(9, 10, 14, 4);
-    g.fillStyle(0x6e645e, 1).fillEllipse(8, 6, 13, 7);
-    g.fillStyle(0x857a73, 1).fillCircle(14, 5, 3.5);
-    g.fillStyle(0x6e645e, 1).fillTriangle(12, 2, 13, -1, 15, 2).fillTriangle(15, 2, 16, -1, 17, 2);
-    g.fillStyle(0x6e645e, 1).fillTriangle(1, 5, -2, 2, 3, 3);
-    g.fillStyle(0xff4a3a, 1).fillRect(15, 4, 1, 1);
-    g.fillStyle(0x4e4641, 1).fillRect(4, 9, 2, 3).fillRect(10, 9, 2, 3);
-  });
-
-  tex(scene, 'crow', 14, 10, (g) => {
-    g.fillStyle(0x23232f, 1).fillEllipse(6, 5, 9, 5);
-    g.fillStyle(0x30303f, 1).fillTriangle(3, 4, 6, -1, 9, 4);
-    g.fillStyle(0x23232f, 1).fillCircle(10, 4, 2.5);
-    g.fillStyle(0xe0b040, 1).fillTriangle(12, 4, 14, 5, 12, 6);
-    g.fillStyle(0xff5050, 1).fillRect(10, 3, 1, 1);
-  });
-
-  tex(scene, 'root', 20, 20, (g) => {
-    g.lineStyle(2, 0x4a3320, 1);
-    for (let a = 0; a < 7; a++) {
-      const ang = (a / 7) * Math.PI * 2;
-      g.lineBetween(10, 10, 10 + Math.cos(ang) * 9, 10 + Math.sin(ang) * 9);
-    }
-    g.fillStyle(0x6b4a2b, 1).fillCircle(10, 10, 6);
-    g.fillStyle(0x7d5a36, 1).fillCircle(8, 8, 3);
-    g.fillStyle(0x9dff7a, 1).fillRect(7, 9, 2, 2).fillRect(11, 9, 2, 2);
-  });
-
-  tex(scene, 'treant', 64, 72, (g) => {
-    g.fillStyle(0x000000, 0.3).fillEllipse(32, 66, 44, 10);
-    g.fillStyle(0x4b331f, 1).fillRect(22, 28, 20, 38);
-    g.fillStyle(0x5d4129, 1).fillRect(22, 28, 7, 38);
-    g.lineStyle(4, 0x4b331f, 1);
-    g.lineBetween(22, 40, 6, 52).lineBetween(42, 40, 58, 52).lineBetween(26, 66, 14, 70).lineBetween(38, 66, 50, 70);
-    g.fillStyle(0x1f4a24, 1).fillCircle(32, 20, 20).fillCircle(14, 28, 11).fillCircle(50, 28, 11);
-    g.fillStyle(0x2f6a34, 1).fillCircle(26, 14, 9).fillCircle(40, 18, 7);
-    g.fillStyle(0xffa63a, 1).fillRect(25, 38, 4, 4).fillRect(35, 38, 4, 4);
-    g.fillStyle(0x1a1109, 1).fillRect(27, 48, 10, 3);
-  });
-
-  tex(scene, 'wolfU', 18, 12, (g) => {
-    g.fillStyle(0x9fd8ff, 0.18).fillEllipse(9, 6, 18, 11);
-    g.fillStyle(0x9fd8ff, 0.9).fillEllipse(8, 6, 12, 6);
-    g.fillStyle(0xcdeeff, 1).fillCircle(14, 5, 3);
-    g.fillStyle(0x9fd8ff, 0.9).fillTriangle(12, 2, 13, -1, 15, 2).fillTriangle(15, 2, 16, -1, 17, 2).fillTriangle(1, 5, -2, 2, 3, 3);
-    g.fillStyle(0xffffff, 1).fillRect(15, 4, 1, 1);
-  });
-
-  tex(scene, 'raven', 12, 10, (g) => {
-    g.fillStyle(0x6a4fc8, 0.25).fillCircle(6, 5, 6);
-    g.fillStyle(0x2c1f55, 1).fillEllipse(6, 5, 8, 4);
-    g.fillStyle(0x4b3a8e, 1).fillTriangle(3, 4, 6, -1, 9, 4);
-    g.fillStyle(0x2c1f55, 1).fillCircle(9, 4, 2);
-    g.fillStyle(0xe0b040, 1).fillRect(11, 4, 1, 1);
-  });
-
-  tex(scene, 'orb', 12, 12, (g) => {
-    g.fillStyle(0xe8e0ff, 0.25).fillCircle(6, 6, 6);
-    g.fillStyle(0xb8f2ff, 1).fillCircle(6, 6, 3.5);
-    g.fillStyle(0xffffff, 1).fillCircle(5, 5, 1.6);
-  });
-
-  tex(scene, 'gem', 8, 10, (g) => {
-    g.fillStyle(0x6fd3c5, 1).fillTriangle(4, 0, 8, 5, 4, 10).fillTriangle(4, 0, 0, 5, 4, 10);
-    g.fillStyle(0xb8f2ff, 1).fillTriangle(4, 1, 6, 5, 4, 5).fillTriangle(4, 1, 2, 5, 4, 5);
-  });
-
-  tex(scene, 'heart', 12, 11, (g) => {
-    g.fillStyle(0xe0455a, 1).fillCircle(3.5, 3.5, 3.5).fillCircle(8.5, 3.5, 3.5).fillTriangle(0, 5, 12, 5, 6, 11);
-    g.fillStyle(0xff9aa8, 1).fillCircle(3, 2.5, 1.2);
-  });
-  tex(scene, 'magnet', 12, 12, (g) => {
-    g.fillStyle(0x8a5cff, 1).fillRect(1, 1, 3, 7).fillRect(8, 1, 3, 7);
-    g.fillStyle(0xe8e0ff, 1).fillRect(1, 1, 3, 2).fillRect(8, 1, 3, 2);
-    g.fillStyle(0x8a5cff, 1).fillRect(1, 8, 10, 3);
-  });
-
-  tex(scene, 'bolt', 10, 10, (g) => {
-    g.fillStyle(0x7ff0ff, 0.3).fillCircle(5, 5, 5);
-    g.fillStyle(0x7ff0ff, 1).fillCircle(5, 5, 3);
-    g.fillStyle(0xffffff, 1).fillCircle(5, 5, 1.4);
-  });
-
-  // Soft radial glow used for halos, particles and gem glow (all additive, one batch).
-  tex(scene, 'glow', 32, 32, (g) => {
-    for (let i = 0; i < 14; i++) g.fillStyle(0xffffff, 0.07).fillCircle(16, 16, 16 - i * 1.05);
-  });
-
-  // Soft vignette (canvas gradient, one full-screen image).
-  if (!scene.textures.exists('vig')) {
-    const t = scene.textures.createCanvas('vig', 320, 180);
-    const c = t.getContext();
-    const gr = c.createRadialGradient(160, 90, 40, 160, 90, 190);
-    gr.addColorStop(0, 'rgba(255,255,255,0)');
-    gr.addColorStop(0.65, 'rgba(255,255,255,0.35)');
-    gr.addColorStop(1, 'rgba(255,255,255,0.9)');
-    c.fillStyle = gr;
-    c.fillRect(0, 0, 320, 180);
-    t.refresh();
-  }
-
-  // 1px rim-light on enemies (baked once: no extra draw calls) so they read against the dusk grade.
-  for (const k of ['wolf', 'crow', 'root', 'treant']) rim(scene, k, '#d6a8c4');
-
-  tex(scene, 'dot', 2, 2, (g) => { g.fillStyle(0xffffff, 1).fillRect(0, 0, 2, 2); });
+  makeStyleTextures(scene, STYLE);
 }
 
 class SpritePool {
   constructor(scene, key, init) {
     this.scene = scene;
     this.key = key;
+    this.inv = inv(key); // world units per texel: multiply any setScale by this
     this.init = init;
     this.map = new Map();
     this.free = [];
@@ -213,6 +46,7 @@ class SpritePool {
       let img = this.free.pop();
       if (!img) {
         img = this.scene.add.image(0, 0, this.key);
+        img.setScale(this.inv);
         if (this.init) this.init(img);
       }
       img.setVisible(true);
@@ -250,16 +84,16 @@ export class RunScene extends Phaser.Scene {
   create() {
     makeTextures(this);
     const size = app.data.balance.worldSize;
-    this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000);
+    this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000).setTileScale(inv('ground'));
     this.groundG = this.add.graphics().setDepth(-400);
     this.fxG = this.add.graphics().setDepth(D_FX).setBlendMode(Phaser.BlendModes.ADD);
 
     // dusk-to-dawn grade (multiply rect on Med/High; plain tint on Low) + vignette
-    this.grade = this.add.rectangle(320, 180, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_GRADE).setBlendMode(Phaser.BlendModes.MULTIPLY);
-    this.vig = this.add.image(320, 180, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
+    this.grade = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_GRADE).setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.vig = this.add.image(0, 0, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
     this.vigLow = false;
     // warm pre-dawn glow: additive wash that grows over the last ~25% of the run (Med/High)
-    this.dawn = this.add.rectangle(320, 180, 760, 440, 0xffa888).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.dawn = this.add.rectangle(0, 0, 760, 440, 0xffa888).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.gradeCol = -1;
     this.gradeTint = -1;
 
@@ -281,8 +115,8 @@ export class RunScene extends Phaser.Scene {
     makeDigitFont(this);
     this.parts = new Particles(this, D_PART);
     this.nums = new DamageNumbers(this, D_PART + 10);
-    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(PAL.teal).setAlpha(0.2).setScale(6).setVisible(false);
-    this.flashR = this.add.rectangle(320, 180, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
+    this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(PAL.teal).setAlpha(0.2).setScale(8 * inv('glow')).setVisible(false);
+    this.flashR = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
     this.flashT = 0; this.flashLife = 1; this.flashA = 0;
     this.rings = Array.from({ length: 10 }, () => ({ on: false, x: 0, y: 0, t: 0, life: 1, r0: 0, r1: 1, col: 0, w: 2 }));
     this.zoomT = 9; this.zoomAmp = 0; this.zoomDur = 1;
@@ -322,8 +156,64 @@ export class RunScene extends Phaser.Scene {
     });
     this.input.keyboard.on('keydown-F3', (e) => { e.preventDefault(); this.perf.toggle(); });
 
+    this.baseZoom = 1;
+    this.buildAmbient();
+    this.fit();
+    this.scale.on('resize', () => this.fit());
+
     app.scene = this;
     window.dispatchEvent(new Event('scene-ready'));
+  }
+
+  // Native-resolution rendering: the canvas is window size x DPR; the camera zoom maps the 640x360 logical world onto it.
+  // Screen-space layers (scrollFactor 0) sit at the canvas centre; their logical sizes are scaled by the zoom.
+  fit() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    this.baseZoom = W / app.data.balance.view.w;
+    this.cameras.main.setZoom(this.baseZoom);
+    for (const o of [this.grade, this.vig, this.dawn, this.flashR]) o.setPosition(W / 2, H / 2);
+  }
+
+  // Faint ambient life: drifting fog banks and fireflies (Med/High). World-space, wrapped around the view.
+  buildAmbient() {
+    this.fog = [];
+    this.flies = [];
+    for (let i = 0; i < 6; i++) {
+      this.fog.push({ img: this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO - 5).setTint(i & 1 ? 0x4a7a9a : 0x5a4a9a).setAlpha(0.06).setScale(22 * inv('glow') + (i % 3) * 4 * inv('glow')).setVisible(false), ph: i * 1.7, sx: 6 + i * 2.5 });
+    }
+    for (let i = 0; i < 24; i++) {
+      this.flies.push({ img: this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO - 4).setTint(i % 3 ? 0xc8ff9a : 0x9affd8).setScale(0.22 * inv('glow')).setVisible(false), fx: (i * 0.6180339) % 1, fy: (i * 0.4142136 + 0.3) % 1, ph: i * 2.3, sp: 3 + (i % 5) * 1.5 });
+    }
+  }
+
+  tickAmbient(sim) {
+    const caps = this.quality.caps;
+    const nFlies = caps.vignette ? (caps.bloom ? 24 : 10) : 0;
+    const nFog = caps.vignette ? 6 : 0;
+    const wv = this.cameras.main.worldView;
+    const t = sim.time;
+    const w = wv.width + 40;
+    const h = wv.height + 40;
+    for (let i = 0; i < this.fog.length; i++) {
+      const f = this.fog[i];
+      if (i >= nFog) { f.img.setVisible(false); continue; }
+      const x = wv.x - 20 + ((((i * 0.37 + t * f.sx * 0.002) % 1) + 1) % 1) * w;
+      const y = wv.y - 20 + (0.2 + 0.6 * ((i * 0.53) % 1)) * h + Math.sin(t * 0.3 + f.ph) * 12;
+      f.img.setVisible(true).setPosition(x, y);
+    }
+    for (let i = 0; i < this.flies.length; i++) {
+      const f = this.flies[i];
+      if (i >= nFlies) { f.img.setVisible(false); continue; }
+      const x = wv.x - 20 + ((((f.fx + t * f.sp * 0.004) % 1) + 1) % 1) * w + Math.sin(t * 0.9 + f.ph) * 6;
+      const y = wv.y - 20 + ((((f.fy - t * f.sp * 0.002) % 1) + 1) % 1) * h + Math.cos(t * 1.1 + f.ph) * 5;
+      f.img.setVisible(true).setPosition(x, y).setAlpha(0.35 + 0.5 * Math.max(0, Math.sin(t * 1.7 + f.ph)));
+    }
+  }
+
+  hideAmbient() {
+    for (const f of this.fog) f.img.setVisible(false);
+    for (const f of this.flies) f.img.setVisible(false);
   }
 
   bindSim(sim) {
@@ -339,7 +229,7 @@ export class RunScene extends Phaser.Scene {
     this.clearDecor();
     const rng = createRng(sim.seed ^ 0x51ed);
     for (const pt of sim.patches) {
-      const img = this.add.image(pt.x, pt.y, 'patch').setScale((pt.r * 2) / 64).setDepth(-500);
+      const img = this.add.image(pt.x, pt.y, 'patch').setScale(((pt.r * 2) / 64) * inv('patch')).setDepth(-500);
       this.decor.push(img);
     }
     for (let i = 0; i < 520; i++) {
@@ -347,10 +237,10 @@ export class RunScene extends Phaser.Scene {
       const y = rng.range(30, size - 10);
       if (Math.hypot(x - sim.player.x, y - sim.player.y) < 90) continue;
       const img = this.add.image(x, y, 'tree').setOrigin(0.5, 0.92).setDepth(y);
-      img.setScale(rng.range(0.85, 1.25));
+      img.setScale(rng.range(0.85, 1.25) * inv('tree'));
       this.decor.push(img);
     }
-    this.playerImg.setTexture(`hero_${sim.characterId}`).setVisible(true);
+    this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv('hero_wren')).setVisible(true);
     this.parts.clear();
     this.nums.clear();
     for (const r of this.rings) r.on = false;
@@ -368,10 +258,11 @@ export class RunScene extends Phaser.Scene {
     this.playerGlow.setVisible(false);
     this.flashR.setVisible(false);
     for (const r of this.rings) r.on = false;
-    this.cameras.main.setZoom(1);
+    this.cameras.main.setZoom(this.baseZoom);
     app.freeze = false;
     this.clearDecor();
     this.playerImg.setVisible(false);
+    this.hideAmbient();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
     this.fxG.clear();
@@ -426,7 +317,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   countSprites() {
-    let n = 1;
+    let n = 1 + (this.sim ? this.fog.length + this.flies.length : 0);
     for (const pool of Object.values(this.pools)) n += pool.map.size;
     return n;
   }
@@ -546,8 +437,8 @@ export class RunScene extends Phaser.Scene {
       this.zoomT += dt;
       const k = Math.min(1, this.zoomT / this.zoomDur);
       const e = k < 0.12 ? k / 0.12 : (1 - k) * (1 - k) * 1.2;
-      cam.setZoom(1 + this.zoomAmp * Math.min(1, e));
-    } else if (cam.zoom !== 1) cam.setZoom(1);
+      cam.setZoom(this.baseZoom * (1 + this.zoomAmp * Math.min(1, e)));
+    } else if (cam.zoom !== this.baseZoom) cam.setZoom(this.baseZoom);
     if (this.flashR.visible) {
       this.flashT += dt;
       const k = this.flashT / this.flashLife;
@@ -598,12 +489,13 @@ export class RunScene extends Phaser.Scene {
     let halos = 0;
 
     this.updateGrade(sim.time / app.data.balance.runSeconds);
+    this.tickAmbient(sim);
 
     // player
     this.followTarget.setPosition(p.x, p.y);
     this.playerImg.setPosition(p.x, p.y).setDepth(D_LIT + p.y).setFlipX(p.faceX < 0);
     this.playerImg.setAlpha(p.iframes > 0 && Math.floor(sim.time * 24) % 2 ? 0.45 : 1);
-    if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha(0.17 + 0.03 * Math.sin(sim.time * 2.5));
+    if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha(0.2 + 0.03 * Math.sin(sim.time * 2.5));
 
     const g = this.groundG;
     const fx = this.fxG;
@@ -645,17 +537,17 @@ export class RunScene extends Phaser.Scene {
       if (gem.x < vx0 || gem.x > vx1 || gem.y < vy0 || gem.y > vy1) continue;
       const big = gem.v >= 10 ? 1.7 : gem.v >= 3 ? 1.25 : 1;
       const pulse = 1 + 0.1 * Math.sin(sim.time * 5 + gem.id);
-      pl.gem.get(gem.id).setPosition(gem.x, gem.y).setDepth(D_LIT - 100).setScale(big * pulse);
+      pl.gem.get(gem.id).setPosition(gem.x, gem.y).setDepth(D_LIT - 100).setScale(big * pulse * pl.gem.inv);
       if (gemGlow < caps.gemGlow) {
         gemGlow++;
-        pl.haloG.get(gem.id).setPosition(gem.x, gem.y).setTint(PAL.teal).setScale(0.55 * big * pulse).setAlpha(0.35 + 0.15 * Math.sin(sim.time * 5 + gem.id));
+        pl.haloG.get(gem.id).setPosition(gem.x, gem.y).setTint(PAL.teal).setScale(0.55 * big * pulse * pl.haloG.inv).setAlpha(0.35 + 0.15 * Math.sin(sim.time * 5 + gem.id));
       }
     }
 
     for (const k of sim.pickups) {
       const bob = Math.sin(sim.time * 5 + k.id) * 1.5;
       pl[k.type].get(k.id).setPosition(k.x, k.y + bob).setDepth(D_LIT - 90).setAlpha(k.ttl < 6 && Math.floor(k.ttl * 6) % 2 ? 0.35 : 1);
-      if (caps.gemGlow) pl.haloG.get(k.id).setPosition(k.x, k.y + bob).setTint(k.type === 'magnet' ? PAL.violet : PAL.lavender).setScale(0.9).setAlpha(0.4 + 0.15 * Math.sin(sim.time * 4));
+      if (caps.gemGlow) pl.haloG.get(k.id).setPosition(k.x, k.y + bob).setTint(k.type === 'magnet' ? PAL.violet : PAL.lavender).setScale(0.9 * pl.haloG.inv).setAlpha(0.4 + 0.15 * Math.sin(sim.time * 4));
     }
 
     // enemies (culled to the view; boss always drawn)
@@ -695,16 +587,16 @@ export class RunScene extends Phaser.Scene {
       if (u.hidden) continue;
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
-        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale(u.r / 4).setAlpha(0.92);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.teal).setScale(u.r / 4 * 1.15).setAlpha(0.45);
+        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * pl.uWolf.inv).setAlpha(0.92);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.teal).setScale(u.r / 4 * 1.15 * pl.haloU.inv).setAlpha(0.45);
         trail(u.x, u.y + 1, PAL.teal, 0.4);
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.violet).setScale(0.85).setAlpha(0.55);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.violet).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
         trail(u.x, u.y, PAL.violet, 0.3);
       } else if (u.kind === 'orb') {
         pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.ice).setScale(1.1).setAlpha(0.55);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(PAL.ice).setScale(1.1 * pl.haloU.inv).setAlpha(0.55);
         trail(u.x, u.y, PAL.lavender, 0.3);
       }
     }
@@ -712,8 +604,8 @@ export class RunScene extends Phaser.Scene {
     // projectiles
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
-      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale(b.r / 3);
-      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(PAL.teal).setScale((b.r / 3) * 0.9).setAlpha(0.6);
+      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((b.r / 3) * pl.bolt.inv);
+      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(PAL.teal).setScale((b.r / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
       trail(b.x, b.y, PAL.ice, 0.28);
     }
 

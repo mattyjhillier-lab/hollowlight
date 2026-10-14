@@ -1,5 +1,6 @@
 // Pooled additive particles. Fixed pool, no allocation after warm-up, capped by quality tier.
 import Phaser from 'phaser';
+import { inv } from './style.js';
 
 const MAX = 300;
 
@@ -11,6 +12,7 @@ export class Particles {
     this.live = [];
     this.cap = 100;
     this.made = 0;
+    this.gi = inv('glow');
   }
 
   setCap(n) {
@@ -30,7 +32,7 @@ export class Particles {
       p = { img: this.scene.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(this.depth), vx: 0, vy: 0, t: 0, life: 1, s0: 1, s1: 0, a0: 1 };
     }
     p.vx = vx; p.vy = vy; p.t = 0; p.life = life; p.s0 = s0; p.s1 = s1; p.a0 = a0;
-    p.img.setPosition(x, y).setTint(tint).setScale(s0).setAlpha(a0).setVisible(true);
+    p.img.setPosition(x, y).setTint(tint).setScale(s0 * this.gi).setAlpha(a0).setVisible(true);
     this.live.push(p);
     return true;
   }
@@ -53,7 +55,7 @@ export class Particles {
       const img = p.img;
       img.x += p.vx * dt;
       img.y += p.vy * dt;
-      img.setScale(p.s0 + (p.s1 - p.s0) * k);
+      img.setScale((p.s0 + (p.s1 - p.s0) * k) * this.gi);
       img.setAlpha(p.a0 * (1 - k));
     }
   }
