@@ -2,7 +2,7 @@
 
 ## NOW / NEXT / LATER (focus keeper)
 - DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
-- NOW: G1a build = gate plumbing with NOTHING gated yet (+ fix ?grant= unchecked evolution id crash). G1 review verdict GO WITH CHANGES (docs/design/g1-review.md). Approved order: G1a plumbing, G1b data flip + bot GATES switch + test rewrites, G1c results/HUD wording, G1d hpScale tuning (own chunk, ~250 seeds/hero/bot, Wren and Elias separate). Matt approved: gate nodes permanent (no respec refund), gate nodes hang off the hub, BLESSING cards for dead late-run level-ups (own chunk: research/design/review first).
+- NOW: BLESS-1 build (approved 2026-10-14): approach A+C per docs/design/blessings-review.md (Blessings fill the slots the normal pool cannot, from when <3 real cards remain; capped heal swap 45s cooldown + HP<40%); 5 Blessings: Wider Glow, Wrapped Warmth, Kindled Spirits, Kind Fortune, Dawnlit Soles; cut Dusk Compass/Quiet Hours/Hearthwarm/Pup Errand/Steadier Flame; defer Last Ember/Bloom Ring/Ember Trail/Warm Hands/Lingering Light. THEN measure, THEN G1d hpScale. DONE: G1a, G1b, G1c (locked, plain styling).
 - NEXT: summons and magic weapons review + Ghost Wolf/raven designs; enemy roster + Elder Treant designs; retune evolutions (Murder Storm outlier etc.); then rest of the content review series.
 - LATER: build phases via the GO gate (docs/READINESS.md): art pass in Style v1, audio, enemies/boss, phone/PWA, packaging, launch. Live game is still v0.2.0; dev has v0.4.0.
 - PARKING LOT: see bottom.
