@@ -1,72 +1,68 @@
-// Pooled floating damage numbers using a generated bitmap font (texture built in gfx/sprites.js). No per-frame allocation.
+// Pooled floating numbers drawn with generated bitmap fonts (textures built in gfx/sprites.js). Logic lives in numpool.js (pure).
+// Two fonts: 'digits' (dark outline) for normal numbers, 'digitsB' (dark + brass outline) for big hits. No per-frame allocation:
+// text is rewritten only when a number is spawned or merged.
 import Phaser from 'phaser';
 import { inv } from './style.js';
+import { NumPool, KIND, fmtSigned } from './numpool.js';
+import { PAL } from './palette.js';
+
+export const GLYPHS = '0123456789k+-.M';
+const TINT = [PAL.cream, 0xffdcae, 0x8fe3c8, 0xff8078]; // normal, big (warmer, never gold), heal (soft teal), taken (light red)
 
 export function makeDigitFont(scene) {
-  if (scene.cache.bitmapFont.exists('digits')) return;
-  // The 'digits' texture (5x7-unit cells) is drawn by gfx/sprites.js at 1/INV.digits texels per unit.
-  const k = 1 / inv('digits');
-  const data = Phaser.GameObjects.RetroFont.Parse(scene, { image: 'digits', width: 5 * k, height: 7 * k, chars: '0123456789', charsPerRow: 10, spacing: { x: 0, y: 0 }, offset: { x: 0, y: 0 } });
-  scene.cache.bitmapFont.add('digits', data);
+  for (const key of ['digits', 'digitsB']) {
+    if (scene.cache.bitmapFont.exists(key)) continue;
+    // The texture (5x7-unit cells, one per glyph) is drawn by gfx/sprites.js at 1/INV[key] texels per unit.
+    const k = 1 / inv(key);
+    const data = Phaser.GameObjects.RetroFont.Parse(scene, { image: key, width: 5 * k, height: 7 * k, chars: GLYPHS, charsPerRow: GLYPHS.length, spacing: { x: 0, y: 0 }, offset: { x: 0, y: 0 } });
+    scene.cache.bitmapFont.add(key, data);
+  }
 }
-
-const LIFE = 0.6;
 
 export class DamageNumbers {
   constructor(scene, depth) {
     this.scene = scene;
     this.depth = depth;
-    this.items = [];
-    this.alive = 0;
-    this.cap = 40;
-    this.enabled = true;
+    this.pool = new NumPool(24);
+    this.texts = new Array(this.pool.slots.length).fill(null);
+    this.big = new Array(this.pool.slots.length).fill(false); // which font each text currently uses
   }
 
-  setCap(n) { this.cap = Math.min(40, n); }
+  get enabled() { return this.pool.enabled; }
+  set enabled(v) { if (this.pool.enabled && !v) this.clear(); this.pool.enabled = !!v; }
+  get alive() { return this.pool.alive; }
+  get cap() { return this.pool.cap; }
+  setCap(n) { this.pool.setCap(n); }
+  set reduced(v) { this.pool.reduced = !!v; }
 
   clear() {
-    for (const n of this.items) { n.t.setVisible(false); n.on = false; }
-    this.alive = 0;
+    this.pool.clear();
+    for (const t of this.texts) if (t) t.setVisible(false);
   }
 
-  spawn(x, y, val, eid, big, tint) {
-    if (!this.enabled || !(val >= 1)) return;
-    const items = this.items;
-    // merge into a recent number on the same enemy
-    for (let i = 0; i < items.length; i++) {
-      const n = items[i];
-      if (n.on && n.eid === eid && n.age < 0.12) {
-        n.val += val;
-        n.age = 0.04;
-        n.big = n.big || big;
-        n.t.setText(String(Math.min(99999, n.val | 0)));
-        return;
-      }
-    }
-    if (this.alive >= this.cap) { if (!big) return; }
-    else if (this.alive > this.cap * 0.6 && !big && val < 3) return; // crowded: skip small
-    let n = null;
-    for (let i = 0; i < items.length; i++) if (!items[i].on) { n = items[i]; break; }
-    if (!n) {
-      if (items.length >= 40) return;
-      n = { t: this.scene.add.bitmapText(0, 0, 'digits', '0').setLetterSpacing(-1 / inv('digits')).setOrigin(0.5).setDepth(this.depth), on: false, age: 0, val: 0, eid: 0, big: false, x: 0, y: 0 };
-      items.push(n);
-    }
-    n.on = true; n.age = 0; n.val = val; n.eid = eid; n.big = big; n.x = x + (Math.random() - 0.5) * 6; n.y = y - 8;
-    n.t.setText(String(Math.min(99999, val | 0))).setTint(tint).setVisible(true).setPosition(n.x, n.y);
-    this.alive++;
-  }
+  // kind: KIND.*; ref: typical hit; force: boss hits are always "big".
+  spawn(x, y, val, eid, kind, ref, force) { return this.pool.spawn(x, y, val, eid, kind, ref, force); }
 
   update(dt) {
-    const items = this.items;
-    for (let i = 0; i < items.length; i++) {
-      const n = items[i];
-      if (!n.on) continue;
-      n.age += dt;
-      if (n.age >= LIFE) { n.on = false; n.t.setVisible(false); this.alive--; continue; }
-      const k = n.age / LIFE;
-      const pop = k < 0.12 ? 1.5 - (k / 0.12) * 0.5 : 1;
-      n.t.setPosition(n.x, n.y - 26 * k).setScale((n.big ? 3 : 2) * pop * inv('digits')).setAlpha(k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4);
+    const P = this.pool;
+    P.update(dt);
+    const S = P.slots;
+    for (let i = 0; i < S.length; i++) {
+      const s = S[i];
+      let t = this.texts[i];
+      if (!s.on) { if (t && t.visible) t.setVisible(false); continue; }
+      const big = s.kind === KIND.BIG;
+      if (!t) {
+        t = this.scene.add.bitmapText(0, 0, 'digits', '0').setLetterSpacing(-1 / inv('digits')).setOrigin(0.5).setDepth(this.depth);
+        this.texts[i] = t; this.big[i] = false;
+      }
+      if (s.dirty) {
+        s.dirty = false;
+        if (this.big[i] !== big) { this.big[i] = big; t.setFont(big ? 'digitsB' : 'digits'); t.setLetterSpacing(-1 / inv('digits')); }
+        t.setText(fmtSigned(s.val, s.sign)).setTint(TINT[s.kind]);
+      }
+      const o = P.poseOf(s);
+      t.setVisible(true).setPosition(s.x, s.y + o.dy).setScale(2 * o.scale * inv('digits')).setAlpha(o.alpha);
     }
   }
 }

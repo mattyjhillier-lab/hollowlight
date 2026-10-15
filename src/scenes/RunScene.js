@@ -9,6 +9,7 @@ import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
+import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
 import { STYLE, inv, zoomFor } from '../gfx/style.js';
 import { makeStyleTextures } from '../gfx/sprites.js';
 
@@ -120,6 +121,9 @@ export class RunScene extends Phaser.Scene {
     makeDigitFont(this);
     this.parts = new Particles(this, D_PART);
     this.nums = new DamageNumbers(this, D_PART + 10);
+    this.hitRef = new HitRef();
+    this.watch = new FbWatch(); // pickup / heal / damage-taken feedback from sim value changes (display-only)
+    this.fbPing = { gem: -9, magnet: -9, aoe: -9 };
     this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(ROLE.lantern).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
     this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4000).setScale(inv('hero_wren_o')).setVisible(false);
     this.heroOutA = 0;
@@ -259,6 +263,9 @@ export class RunScene extends Phaser.Scene {
     this.heroOutA = 0;
     this.parts.clear();
     this.nums.clear();
+    this.hitRef = new HitRef();
+    this.watch.reset(sim);
+    this.fbPing.gem = this.fbPing.magnet = this.fbPing.aoe = -9;
     for (const r of this.rings) r.on = false;
     this.gradeTint = -1;
     this.updateGrade(sim.time / app.data.balance.runSeconds);
@@ -400,9 +407,35 @@ export class RunScene extends Phaser.Scene {
   // ---- event hooks (called from app.onEvent) ----
   levelBurst() {
     const p = this.sim.player;
-    this.addRing(p.x, p.y, 8, 110, 0.55, PAL.ice, 2);
-    this.burst(p.x, p.y, 16, PAL.ice, 110, 0.7, 0.5);
+    this.addRing(p.x, p.y, 8, 110, 0.55, PAL.thread, 2); // soft warm ring (thread cream, not evolution gold)
+    this.burst(p.x, p.y, 16, PAL.thread, 110, 0.7, 0.5);
     this.zoomPunch(0.025, 0.4);
+  }
+
+  // Pickup feedback (display-only). Low tier: rings only, no sparkles. All pooled (rings + particles).
+  heartFx() {
+    const p = this.sim.player;
+    this.addRing(p.x, p.y, 6, 34, 0.5, ROLE.heart, 2);
+    if (this.quality.tier !== 'low') this.burst(p.x, p.y - 6, 8, ROLE.heart, 60, 0.55, 0.45);
+  }
+
+  magnetFx() {
+    const p = this.sim.player;
+    this.addRing(p.x, p.y, 150, 12, 0.6, ROLE.magnet, 2); // violet pull: contracts toward the hero
+    this.addRing(p.x, p.y, 110, 10, 0.5, ROLE.magnet, 1, 0.12);
+  }
+
+  // Per frame: numbers for damage taken / healing and gem sparkle. Reads the watcher's rate-limited flags.
+  feedback(sim, p) {
+    const f = this.watch.step(sim);
+    const hud = app.ui && app.ui.hudView;
+    if (f.hurt > 0) this.nums.spawn(p.x + 24, p.y - 16, f.hurt, -1, KIND.HURT, 0, false);
+    if (f.heal > 0) this.nums.spawn(p.x - 24, p.y - 20, f.heal, -2, KIND.HEAL, 0, false);
+    if (f.gem) {
+      if (hud) hud.pulseThread();
+      if (this.quality.tier !== 'low') this.burst(p.x, p.y - 4, 3, PAL.teal, 40, 0.35, 0.3);
+    }
+    if (f.gold && hud) hud.tickCoin();
   }
 
   evolveMoment() {
@@ -454,6 +487,7 @@ export class RunScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const st = app.save.data.settings;
     this.nums.enabled = !!st.damageNumbers;
+    this.nums.reduced = !!st.reducedMotion;
     this.parts.update(dt);
     this.nums.update(dt);
     // zoom punch: quick rise, smooth fall
@@ -543,6 +577,9 @@ export class RunScene extends Phaser.Scene {
     // drain hit/kill records into numbers + puffs + hit-stop
     const nh = sim.hitN;
     sim.hitN = 0;
+    let nd = 0, top1 = 0, top2 = 0;
+    for (let i = 0; i < nh; i++) { const h = sim.hitBuf[i]; if (h.kill) continue; nd++; if (h.a > top1) { top2 = top1; top1 = h.a; } else if (h.a > top2) top2 = h.a; }
+    const aoe = nd > 5, aoeMin = top2;
     for (let i = 0; i < nh; i++) {
       const h = sim.hitBuf[i];
       if (h.kill) {
@@ -557,9 +594,14 @@ export class RunScene extends Phaser.Scene {
         continue;
       }
       const big = h.boss ? h.a >= h.mx * 0.01 : h.a >= 20 && h.a >= h.mx * 0.5;
-      this.nums.spawn(h.x, h.y, h.a, h.id, big, big ? PAL.ice : PAL.lavender);
+      this.hitRef.add(h.a);
+      // AoE (> 5 non-kill hits in one frame): only the 2 biggest get a number, plus one soft ring (research 28 s3)
+      if (aoe && h.a < aoeMin) continue;
+      this.nums.spawn(h.x, h.y, h.a, h.id, KIND.DMG, big ? 0 : this.hitRef.ref, big);
       if (h.boss ? h.a >= h.mx * 0.03 : big && h.a >= 40) this.stop(0.05);
     }
+    if (aoe && sim.time - this.fbPing.aoe > 0.3) { this.fbPing.aoe = sim.time; this.addRing(p.x, p.y, 6, 70, 0.35, PAL.cream, 1); }
+    this.feedback(sim, p);
 
     // zones
     for (const z of sim.zones) {

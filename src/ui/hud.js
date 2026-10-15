@@ -101,9 +101,17 @@ export class Hud {
     this.fresh = true; // first update of a run wakes the strip at the run's own clock
     this.fade = newFade();
     this.abKind = '';
+    this.activeUntil = 0; this.activeDur = 1;
+    this.boss.classList.remove('on', 'enter');
     this.strip.classList.remove('low');
     this.strip.replaceChildren();
   }
+
+  // HUD-3 feedback pings: restart a one-shot CSS animation (class toggle + reflow). CSS turns them off under reduced motion.
+  ping(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+  pulseThread() { this.ping(this.thread, 'pulse'); } // a gem landed
+  flareHp() { this.ping(this.lamp.svg.parentNode, 'flare'); } // a heart landed
+  tickCoin() { this.ping(this.coin, 'tick'); } // gold came in
 
   set(key, node, value) { if (this.cache[key] !== value) { this.cache[key] = value; node.textContent = value; return true; } return false; }
   attr(key, node, name, value) { if (this.cache[key] !== value) { this.cache[key] = value; node.setAttribute(name, value); } }
@@ -162,7 +170,7 @@ export class Hud {
     // boss bar
     const b = sim.boss && !sim.boss.dead ? sim.boss : null;
     if (b) {
-      if (!this.prev.boss) { this.prev.boss = true; this.boss.classList.add('on'); }
+      if (!this.prev.boss) { this.prev.boss = true; this.boss.classList.add('on'); this.ping(this.boss, 'enter'); }
       this.set('bossname', this.bossName, this.opts.bossName ? this.opts.bossName(b.type) : 'Boss');
       this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(b.hp, b.maxHp) * 100).toFixed(1)}%`);
     } else if (this.prev.boss) { this.prev.boss = false; this.boss.classList.remove('on'); }
@@ -194,9 +202,20 @@ export class Hud {
     }
     const ready = a.cdLeft <= 0;
     const cdTotal = sim.abilityCooldown;
-    this.attr('abring', this.abRing, 'stroke-dasharray', `${((ready ? 1 : clamp01(1 - a.cdLeft / cdTotal)) * 100).toFixed(0)} 100`);
+    if (a.cdLeft > this.prev.cd + 1) { // just used: the ring drains over the effect's duration, then refills as it cools
+      const m = sim.tfx && Number.isFinite(sim.tfx.abilityDur) ? sim.tfx.abilityDur : 1;
+      this.activeDur = Math.max(0.5, 6 * m); this.activeUntil = t + this.activeDur;
+    }
+    const active = t < this.activeUntil && !ready;
+    if (this.cache.abactive !== active) { this.cache.abactive = active; this.ability.classList.toggle('active', active); }
+    const ringF = active ? clamp01((this.activeUntil - t) / this.activeDur) : ready ? 1 : clamp01(1 - a.cdLeft / cdTotal);
+    this.attr('abring', this.abRing, 'stroke-dasharray', `${(ringF * 100).toFixed(0)} 100`);
     this.set('absec', this.abSec, ready ? '' : `${Math.max(0, whole(a.cdLeft, Math.ceil))}s`);
-    if (this.cache.abready !== ready) { this.cache.abready = ready; this.ability.classList.toggle('ready', ready); }
+    if (this.cache.abready !== ready) {
+      const was = this.cache.abready;
+      this.cache.abready = ready; this.ability.classList.toggle('ready', ready);
+      if (ready && was === false) this.ping(this.ability, 'ping'); // became ready: one gentle ring pulse
+    }
     if (a.cdLeft > this.prev.cd + 1) this.wake(); // ability used
     this.prev.cd = a.cdLeft;
 

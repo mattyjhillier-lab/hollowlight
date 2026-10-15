@@ -496,19 +496,20 @@ function vignette(scene) {
   t.refresh();
 }
 
-// ---- damage-number digits ---------------------------------------------------------------
-// 10 glyph cells, 5x7 units each, drawn into a canvas at k texels per unit.
-function digitsCanvas(style) {
+// ---- damage-number glyphs ---------------------------------------------------------------
+// 15 glyph cells ("0123456789k+-.M"), 5x7 units each, drawn into a canvas at k texels per unit. brass = big-hit font with a brass rim.
+function digitsCanvas(style, brass) {
   const k = 4;
-  const cv = mkCanvas(50 * k, 7 * k);
+  const cv = mkCanvas(75 * k, 7 * k);
   const c = cv.getContext('2d');
   if (style === 'b') {
     const G = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001',
-      '111100111001111', '111100111101111', '111001001001001', '111101111101111', '111101111001111'];
+      '111100111001111', '111100111101111', '111001001001001', '111101111101111', '111101111001111',
+      '101101110101101', '000010111010000', '000000111000000', '000000000010000', '101111111101101'];
     G.forEach((bits, i) => {
       for (let q = 0; q < 15; q++) {
         if (bits[q] !== '1') continue;
-        c.fillStyle = '#07070d'; c.fillRect((i * 5 + 2 + (q % 3)) * k, (1 + Math.floor(q / 3)) * k, k, k);
+        c.fillStyle = brass ? '#8d6c34' : '#07070d'; c.fillRect((i * 5 + 2 + (q % 3)) * k, (1 + Math.floor(q / 3)) * k, k, k);
       }
     });
     G.forEach((bits, i) => {
@@ -519,14 +520,20 @@ function digitsCanvas(style) {
     });
     return { cv, k };
   }
-  c.font = `700 ${6.4 * k}px "Trebuchet MS", "Segoe UI", system-ui, sans-serif`;
+  c.font = `800 ${6.4 * k}px "Trebuchet MS", "Segoe UI", system-ui, sans-serif`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineJoin = 'round';
-  for (let i = 0; i < 10; i++) {
+  const chars = '0123456789k+-.M';
+  for (let i = 0; i < chars.length; i++) {
     const cx = (i * 5 + 2.5) * k;
     const cy = 3.7 * k;
-    c.lineWidth = 1.5 * k; c.strokeStyle = 'rgba(7,7,13,0.92)'; c.strokeText(String(i), cx, cy);
-    c.fillStyle = '#fff'; c.fillText(String(i), cx, cy);
+    if (brass) {
+      c.lineWidth = 1.9 * k; c.strokeStyle = 'rgba(7,7,13,0.92)'; c.strokeText(chars[i], cx, cy);
+      c.lineWidth = 1.15 * k; c.strokeStyle = '#a9823f'; c.strokeText(chars[i], cx, cy);
+    } else {
+      c.lineWidth = 1.5 * k; c.strokeStyle = 'rgba(7,7,13,0.92)'; c.strokeText(chars[i], cx, cy);
+    }
+    c.fillStyle = '#fff'; c.fillText(chars[i], cx, cy);
   }
   return { cv, k };
 }
@@ -552,14 +559,17 @@ export function makeStyleTextures(scene, style) {
   if (nearest) gt.setFilter(1);
   INV.ground = style === 'b' ? 0.5 : 0.5;
   vignette(scene);
-  const dg = digitsCanvas(style);
-  const dt = scene.textures.addCanvas('digits', dg.cv);
-  if (nearest) dt.setFilter(1);
-  INV.digits = 1 / dg.k;
+  for (const [key, brass] of [['digits', false], ['digitsB', true]]) {
+    const dg = digitsCanvas(style, brass);
+    if (scene.textures.exists(key)) scene.textures.remove(key);
+    const dt = scene.textures.addCanvas(key, dg.cv);
+    if (nearest) dt.setFilter(1);
+    INV[key] = 1 / dg.k;
+  }
   const dot = mkCanvas(2, 2);
   dot.getContext('2d').fillStyle = '#fff';
   dot.getContext('2d').fillRect(0, 0, 2, 2);
   scene.textures.addCanvas('dot', dot);
   INV.dot = 1;
-  return dg.k;
+  return 1 / INV.digits;
 }

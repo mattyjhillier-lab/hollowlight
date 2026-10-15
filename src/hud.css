@@ -126,3 +126,26 @@ html.touch .h-ability, html.touch .h-pause, html.touch .h-abkey { display: none;
 .touch-ability .ta-state { position: absolute; font-family: var(--font-num, system-ui); font-weight: 900; font-size: 20px; color: var(--cream); -webkit-text-stroke: 3.4px var(--ink); paint-order: stroke fill; }
 .touch-ability.ready .ta-state { display: none; }
 .touch-ability.ready { box-shadow: 0 0 18px rgba(255, 178, 58, .6); }
+
+/* ---------- HUD-3: pickup feedback + states (one-shot, transform/opacity/box-shadow only; off under reduced motion) ---------- */
+.h-thread.pulse .h-rail { animation: hthr .38s ease-out; }
+@keyframes hthr { 0% { box-shadow: 0 0 calc(12 * var(--hu)) calc(2 * var(--hu)) rgba(255, 224, 160, .95); } 100% { box-shadow: 0 0 0 0 rgba(255, 224, 160, 0); } }
+.h-lamp::after { content: ""; position: absolute; inset: -22%; border-radius: 50%; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255, 171, 58, .8), rgba(255, 171, 58, 0) 66%); }
+.h-lamp.flare::after { animation: hlampg .7s ease-out; }
+@keyframes hlampg { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
+.h-coin.tick { animation: hcoin .26s ease-out; }
+@keyframes hcoin { 0% { transform: scale(1.07); box-shadow: 0 0 calc(10 * var(--hu)) rgba(216, 178, 106, .85), 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); } 100% { transform: scale(1); } }
+.h-knot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(2.4 * var(--hu)) solid rgba(255, 224, 160, .9); opacity: 0; pointer-events: none; }
+.h-knot.flare::after { animation: hknotring .6s ease-out; }
+@keyframes hknotring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.8); } }
+.h-ability::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(3 * var(--hu)) solid rgba(255, 178, 58, .85); opacity: 0; pointer-events: none; }
+.h-ability.ping::after { animation: habring .9s ease-out; }
+@keyframes habring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.55); } }
+.h-ability.active::before { opacity: .8; }
+.h-boss.enter { animation: hbossin .55s cubic-bezier(.2, .8, .2, 1); }
+@keyframes hbossin { 0% { opacity: 0; transform: translateX(-50%) translateY(calc(-16 * var(--hu))); } 100% { opacity: 1; transform: translateX(-50%); } }
+.h-boss.enter .h-bfill { animation: hbfill 1.4s ease-out; }
+@keyframes hbfill { 0% { clip-path: inset(0 100% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
+.reduced-motion .h-thread.pulse .h-rail, .reduced-motion .h-lamp.flare::after, .reduced-motion .h-coin.tick, .reduced-motion .h-knot.flare, .reduced-motion .h-knot.flare::after,
+.reduced-motion .h-ability.ping::after, .reduced-motion .h-ability.ready::before, .reduced-motion .h-boss.enter, .reduced-motion .h-boss.enter .h-bfill { animation: none; }
+@media (prefers-reduced-motion: reduce) { .h-thread.pulse .h-rail, .h-lamp.flare::after, .h-coin.tick, .h-knot.flare::after, .h-ability.ping::after, .h-boss.enter, .h-boss.enter .h-bfill { animation: none; } }

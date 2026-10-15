@@ -3,9 +3,9 @@ export const TIERS = ['low', 'med', 'high'];
 
 // Budget (docs/research/11): <=300 particles, FX/bloom on High only.
 export const CAPS = {
-  low: { particles: 100, halos: 40, gemGlow: 0, trails: 0, dmgNums: 20, vignette: false, lightmap: false, lights: 0, bloom: false },
-  med: { particles: 250, halos: 90, gemGlow: 30, trails: 1, dmgNums: 40, vignette: true, lightmap: true, lights: 40, bloom: false },
-  high: { particles: 300, halos: 160, gemGlow: 60, trails: 2, dmgNums: 40, vignette: true, lightmap: true, lights: 80, bloom: true },
+  low: { particles: 100, halos: 40, gemGlow: 0, trails: 0, dmgNums: 14, vignette: false, lightmap: false, lights: 0, bloom: false },
+  med: { particles: 250, halos: 90, gemGlow: 30, trails: 1, dmgNums: 24, vignette: true, lightmap: true, lights: 40, bloom: false },
+  high: { particles: 300, halos: 160, gemGlow: 60, trails: 2, dmgNums: 24, vignette: true, lightmap: true, lights: 80, bloom: true },
 };
 
 const BUCKET_MS = 1000; // 3 one-second buckets = rolling ~3 s window
