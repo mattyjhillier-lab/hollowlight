@@ -59,6 +59,8 @@ Standing rules always apply: security first, token conservation, everything must
 ## Pending new chunk: Blessing cards
 - [ ] Run-only themed, bounded, lantern/spirit-flavoured perks offered when all weapons are maxed/evolved (fixes 10-19 filler level-ups of ~45). Needs research (how other games handle post-maxed level-ups: VS, Brotato), design, independent review, bot check (filler share), then build. Must fit look/mechanics and not be game-breaking.
 
+## Big series queued (Matt, 2026-10-15): DESIGN SHEETS for every aspect (see docs/DESIGN-SHEETS.md): HUD+cards, world, summons, enemies, skill tree, menus/results, boss, audio/logo. One sheet at a time, approved before building.
+
 ## Big chunk queued (Matt, 2026-10-15): SKILL TREE REDESIGN v2
 - Matt: the tree should flow better; each WEAPON has its own mini skill tree (e.g. wolves: power, speed, count, duration) that you can only spend into once the weapon is unlocked; evolutions unlock inside that weapon's cluster; global rings (survival/economy/magic) around the hub; locked clusters dim until unlocked (Hollow colour-returns idea); nodes small (1-3%) with a power budget/soft cap; look follows the Warm Lantern tree mock-ups (docs/mockups/cartoon-polished/p1-tree.png) in the art pass.
 - Process: research (how genre games structure per-weapon trees and flow) -> design doc + layout mock-up -> independent review -> build in small chunks. Replaces/absorbs G2 (old tree rescale). Starts AFTER G1e (tree fix) lands, to avoid collisions in tree.json.
