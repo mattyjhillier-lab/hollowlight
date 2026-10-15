@@ -2,7 +2,7 @@
 
 ## NOW / NEXT / LATER (focus keeper)
 - DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
-- NOW (next session): independent review of build chunk G1 (gate plumbing ~15 lines + 12 gate nodes + hpScale difficulty tweak), then build it with tests + bot check + security/fit check.
+- NOW: G1a build = gate plumbing with NOTHING gated yet (+ fix ?grant= unchecked evolution id crash). G1 review verdict GO WITH CHANGES (docs/design/g1-review.md). Approved order: G1a plumbing, G1b data flip + bot GATES switch + test rewrites, G1c results/HUD wording, G1d hpScale tuning (own chunk, ~250 seeds/hero/bot, Wren and Elias separate). Matt approved: gate nodes permanent (no respec refund), gate nodes hang off the hub, BLESSING cards for dead late-run level-ups (own chunk: research/design/review first).
 - NEXT: summons and magic weapons review + Ghost Wolf/raven designs; enemy roster + Elder Treant designs; retune evolutions (Murder Storm outlier etc.); then rest of the content review series.
 - LATER: build phases via the GO gate (docs/READINESS.md): art pass in Style v1, audio, enemies/boss, phone/PWA, packaging, launch. Live game is still v0.2.0; dev has v0.4.0.
 - PARKING LOT: see bottom.
@@ -55,6 +55,9 @@ Standing rules always apply: security first, token conservation, everything must
 ## Decisions pending from skill tree report
 - [x] APPROVED 2026-10-14 (gates direction, base difficulty up via hpScale, G1 build after Elias design). Original note: progression gates (options unlocked behind conditions, small capped stat nodes). Design doc + bot test running: docs/design/progression-gates-v1.md. Difficulty tiers stay an optional later idea.
 - [ ] Exclusive branches vs exclusive keystone pairs; tree-gated weapons/heroes (supported via treeGate); free respec in v1 (kept); flat +1 spirit nodes removed (bot found them strongest). Raise in the roster workshop.
+
+## Pending new chunk: Blessing cards
+- [ ] Run-only themed, bounded, lantern/spirit-flavoured perks offered when all weapons are maxed/evolved (fixes 10-19 filler level-ups of ~45). Needs research (how other games handle post-maxed level-ups: VS, Brotato), design, independent review, bot check (filler share), then build. Must fit look/mechanics and not be game-breaking.
 
 ## Ideas parked (do not start without Matt)
 Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 characters, prestige, codex, touch controls beyond P8, gameplay link for the life map (restored ground empowers summons), "summon mastery/commands" idea from the review, kill-streak/other systems.
