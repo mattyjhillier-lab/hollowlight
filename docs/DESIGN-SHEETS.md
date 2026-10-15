@@ -2,7 +2,7 @@
 
 Matt: "like the character sheets we have done, a complete redesign of everything: the UI, the skill tree, every aspect". Method that worked for Wren and Elias: ONE area at a time -> research/options -> several takes or one refined sheet in Hollowlight Style v1 -> shown at ACTUAL game size -> Matt approves or redirects -> only then build. Each sheet follows the standing rules (fit-the-game, security, small chunks, no hiring: made by code/AI/CC0).
 
-## FIRST SHEET (Matt chose, 2026-10-15): #1 HUD + level-up cards + Blessing cards + damage numbers + pickups. Starts after the three small fixes (G1e tree fix, Elias speed, evolve hint).
+## SHEET #1 DONE AND LOCKED (2026-10-15, direction A; see docs/LOCKED.md). Original note: #1 HUD + level-up cards + Blessing cards + damage numbers + pickups. Starts after the three small fixes (G1e tree fix, Elias speed, evolve hint).
 
 ## Locked so far
 - Heroes: Wren v2 (Pelt Walker + pup), Elias v2 (Lamplighter). Style recipe: Hollowlight Style v1 (see ART-DECISIONS).
