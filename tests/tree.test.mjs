@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { data, treeDef as def } from './helpers.mjs';
+import { data, treeDef as def, ungated } from './helpers.mjs';
+const udata = ungated(data); // synthetic trees compile against ungated data (shipped data requires a real gate node per gated item)
 import {
   compileTree, canBuy, buy, respec, spentOf, totalCost, costFor, nodeStatus, sanitizeTree, aggregateMods, presetTree,
   conditionProgress, metConditions, closestUnlocks, describeNode, queryRect, pathToHub, emptyEffects,
@@ -19,7 +20,7 @@ const ownedPath = (save, ids) => { for (const id of ids) { const r = buy(save, i
 const B = { branches: { spirit: { name: 'S', angle: 90 } } };
 const node = (id, extra = {}) => ({ id, name: id, desc: 'd', branch: 'spirit', ring: 1, ang: 0, cost: { gold: 10 }, effects: [{ mod: 'damage', pct: 5 }], ...extra });
 const raw = (nodes) => ({ ...B, nodes });
-const bad = (nodes, re) => assert.throws(() => compileTree(raw(nodes), data), re);
+const bad = (nodes, re) => assert.throws(() => compileTree(raw(nodes), udata), re);
 
 test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes', () => {
   assert.ok(def.list.length >= 60 && def.list.length <= 90, `nodes ${def.list.length}`);
@@ -64,14 +65,14 @@ test('validation rejects duplicate ids, unknown/self prerequisites, cycles, bad 
   bad([node('a', { teaser: true, unlock: { t: 'totalKills', n: 1 } })], /teaser/);
   bad([node('a', { excludes: ['b'] }), node('b', { requires: ['a'], ang: 90 })], /excludes/);
   bad([node('a', { unlock: { t: 'all', of: [] } })], /children/);
-  assert.throws(() => compileTree({ nodes: 'x' }, data), /nodes array/);
+  assert.throws(() => compileTree({ nodes: 'x' }, udata), /nodes array/);
   // a teaser may reference things that do not exist yet
-  assert.doesNotThrow(() => compileTree(raw([node('t', { teaser: true, effects: [], unlock: { t: 'killEnemy', id: 'bog_witch', n: 9 } })]), data));
+  assert.doesNotThrow(() => compileTree(raw([node('t', { teaser: true, effects: [], unlock: { t: 'killEnemy', id: 'bog_witch', n: 9 } })]), udata));
 });
 
 test('costs: rank scaling, totals recomputed from nodes', () => {
   const n = node('a', { maxRank: 3, cost: { gold: 100, shards: 1 }, rankCost: 2 });
-  const d = compileTree(raw([n]), data);
+  const d = compileTree(raw([n]), udata);
   assert.deepEqual(costFor(d.nodes.a, 1), { gold: 100, shards: 1 });
   assert.deepEqual(costFor(d.nodes.a, 3), { gold: 400, shards: 1 });
   assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2 });
@@ -309,7 +310,7 @@ test('a real headless run records per-enemy kills that unlock a node', () => {
   const total = Object.values(res.killsByEnemy).reduce((a, b) => a + b, 0);
   // small custom tree: kill 20 of the most-killed enemy
   const top = Object.entries(res.killsByEnemy).sort((a, b) => b[1] - a[1])[0];
-  const d = compileTree(raw([node('hunt', { unlock: { t: 'killEnemy', id: top[0], n: Math.min(20, top[1]) } })]), data);
+  const d = compileTree(raw([node('hunt', { unlock: { t: 'killEnemy', id: top[0], n: Math.min(20, top[1]) } })]), udata);
   const st = new SaveStore(mem());
   st.load();
   assert.equal(metConditions(d, st.data.stats, data).size, 0);
@@ -385,7 +386,7 @@ test('scalability: a generated 600-node tree compiles and queries quickly', () =
     nodes.push(node(`n${i}`, { ring, ang: ((i % 30) * 360) / 30 + (ring % 2) * 6, requires: ring > 4 ? [`n${i - 30}`] : [] }));
   }
   const t0 = performance.now();
-  const d = compileTree(raw(nodes), data);
+  const d = compileTree(raw(nodes), udata);
   const ms = performance.now() - t0;
   assert.equal(d.list.length, 600);
   assert.ok(ms < 1500, `compile ${ms}ms`);
@@ -409,7 +410,7 @@ test('effects: damage nodes raise damage dealt (same seed)', () => {
 });
 
 test('effects: weapon bonuses change real weapon stats (count, power, pierce)', () => {
-  const cd = compileTree(raw([node('c', { effects: [{ weapon: 'ghost_wolves', stat: 'count', add: 1 }, { weapon: 'ghost_wolves', stat: 'power', pct: 10 }] })]), data);
+  const cd = compileTree(raw([node('c', { effects: [{ weapon: 'ghost_wolves', stat: 'count', add: 1 }, { weapon: 'ghost_wolves', stat: 'power', pct: 10 }] })]), udata);
   const sim = new Sim({ data, seed: 1, tree: aggregateMods({ c: 1 }, cd, data) });
   const w = sim.weapons[0];
   assert.equal(w.s.count, 3);
@@ -506,10 +507,11 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
   assert.equal(luck.cardCtx.evoLuck, 1.5);
 });
 
-test('unlock schema: weapon gate and hero gate work with data that opts in (nothing shipped is gated)', () => {
-  assert.ok(Object.values(data.weapons).every((w) => !w.treeGate), 'no existing weapon is gated (locked design)');
+test('unlock schema: weapon gate and hero gate work with data that opts in (G1b: shipped gates are exactly 3 weapons; heroes stay open)', () => {
+  // Rewritten in G1b: the old line pinned 'no weapon is gated'. Progression design now gates exactly these three.
+  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'raven_flock', 'spirit_bolts']);
   assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no existing hero is gated');
-  const gated = { ...data, weapons: { ...data.weapons, ghost_wolves: { ...data.weapons.ghost_wolves, treeGate: true } } };
+  const gated = { ...udata, weapons: { ...udata.weapons, ghost_wolves: { ...udata.weapons.ghost_wolves, treeGate: true } } };
   const d = compileTree(raw([node('uw', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }, { unlock: 'abilityUpgrade', id: 'long_howl' }, { unlock: 'modifier', id: 'hard_dusk' }] })]), gated);
   const off = new Sim({ data: gated, characterId: 'elias', seed: 4 });
   const on = new Sim({ data: gated, characterId: 'elias', seed: 4, tree: aggregateMods({ uw: 1 }, d, gated) });
@@ -525,5 +527,5 @@ test('unlock schema: weapon gate and hero gate work with data that opts in (noth
   const agg = aggregateMods({ uw: 1 }, d, gated);
   assert.deepEqual(agg.unlocks.abilityUpgrades, ['long_howl']);
   assert.deepEqual(agg.unlocks.modifiers, ['hard_dusk']);
-  assert.throws(() => compileTree(raw([node('uh', { effects: [{ unlock: 'hero', id: 'ghost' }] })]), data), /unknown hero/);
+  assert.throws(() => compileTree(raw([node('uh', { effects: [{ unlock: 'hero', id: 'ghost' }] })]), udata), /unknown hero/);
 });

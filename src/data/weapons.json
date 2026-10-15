@@ -14,6 +14,7 @@
   },
   "raven_flock": {
     "name": "Raven Flock",
+    "treeGate": true,
     "type": "summon",
     "tags": [],
     "color": "#b79cff",
@@ -27,6 +28,7 @@
   },
   "spirit_bolts": {
     "name": "Spirit Bolts",
+    "treeGate": true,
     "type": "magic",
     "tags": ["holy"],
     "color": "#7ff0ff",
@@ -40,6 +42,7 @@
   },
   "chain_lightning": {
     "name": "Chain Lightning",
+    "treeGate": true,
     "type": "magic",
     "tags": [],
     "color": "#b8f2ff",

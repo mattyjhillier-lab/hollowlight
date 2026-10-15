@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { data } from './helpers.mjs';
+import { data, treeDef } from './helpers.mjs';
+import { aggregateMods } from '../src/meta/tree.js';
 import { Sim } from '../src/sim/Sim.js';
 import { xpForLevel } from '../src/sim/cards.js';
 
@@ -134,8 +135,8 @@ test('a double level-up queues two offers back to back', () => {
   assert.equal(sim.state, 'running');
 });
 
-test('picking the evolution gold card evolves the weapon and kills the old units', () => {
-  const sim = mk({ godMode: true });
+test('picking the evolution gold card evolves the weapon and kills the old units (needs the gate node, G1b)', () => {
+  const sim = mk({ godMode: true, tree: aggregateMods({ gt_phantom_stampede: 1 }, treeDef, data) });
   sim.debugGrant('ghost_wolves', { speed: 5, power: 5 });
   run(sim, 1);
   sim.xp = sim.xpNeeded + 1;

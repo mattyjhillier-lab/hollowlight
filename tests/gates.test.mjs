@@ -1,13 +1,14 @@
-// G1a gate plumbing: tree-gated evolutions (weapons were gated already). Nothing shipped is gated yet,
-// so these use data copies that opt in. See docs/design/g1-review.md.
+// G1a gate plumbing: tree-gated evolutions (weapons were gated already). Shipped data is gated since G1b, so
+// the synthetic-tree tests here use `base` = shipped data with the gates stripped, then opt in explicitly. See docs/design/g1-review.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { data as base, treeDef as realDef } from './helpers.mjs';
+import { data as real, treeDef as realDef, ungated } from './helpers.mjs';
 import { compileTree, aggregateMods, respec, buy, sanitizeTree, closestUnlocks, presetTree } from '../src/meta/tree.js';
 import { availableEvolutions, buildPool, goldCards, newWeapon, evoOpen } from '../src/sim/cards.js';
 import { Sim } from '../src/sim/Sim.js';
 import { defaultSave, sanitize } from '../src/save/schema.js';
 
+const base = ungated(real);
 const gd = { ...base, evolutions: { ...base.evolutions, phantom_stampede: { ...base.evolutions.phantom_stampede, treeGate: true } } };
 const B = { branches: { spirit: { name: 'S', angle: 90 } } };
 const node = (id, extra = {}) => ({ id, name: id, desc: 'd', branch: 'spirit', ring: 1, ang: 0, cost: { gold: 10 }, effects: [{ mod: 'damage', pct: 5 }], ...extra });
