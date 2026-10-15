@@ -8,7 +8,7 @@
     "stats": {
       "count":    { "name": "Pack size",     "base": 2,   "perRank": 1,   "fmt": "int",  "hint": "+1 wolf" },
       "power":    { "name": "Bite power",    "base": 7,   "perRank": 3,   "fmt": "int",  "hint": "+3 damage" },
-      "speed":    { "name": "Wolf speed",    "base": 90,  "perRank": 14,  "fmt": "int",  "hint": "+14 speed" },
+      "speed":    { "name": "Wolf speed",    "base": 110, "perRank": 12,  "fmt": "int",  "hint": "+12 speed" },
       "duration": { "name": "Bleed time",    "base": 1.5, "perRank": 0.5, "fmt": "sec",  "hint": "+0.5s bleed" }
     }
   },
