@@ -13,6 +13,7 @@
 7. Optional: gentler earlier evolve hint (a stirring when partner stat is halfway)? Elias early deaths (11% before 5:00) feel harsh?
 
 ## NOW / NEXT / LATER (focus keeper)
+- W1a BUILT on dev 2026-10-15 (weapons batch, gated bugs only): Murder Storm never frightens bosses + 1.5 s per-enemy fear cooldown; Dive Bombers claim distinct targets; tests/evo-promises.test.mjs; scripts/evo-same-ranks.mjs. Starter sweeps byte-identical. Next in the weapons plan: W2 Rally the Pack (wolves only), then W3 Candle Wheel (see docs/design/weapons-review.md section 5). Open note: Murder Storm wall does ~0 damage to a boss (inner ring only); redesign belongs to a later chunk.
 - DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
 - DONE on dev (2026-10-15): HUD-1 in-run frame (Lantern & Thread: lantern flame HP, thread XP + level knot, moon-arc timer, boss bar, brass coin pill, pause, fading weapon strip, ability ring, low-HP frost, safe areas, phone landscape + portrait; screenshots docs/screenshots/hud1/). Awaiting Matt's look + phone test.
 - DONE on dev (2026-10-15): HUD-2 level-up cards (src/ui/cardview.js, cardicons.js, cardsui.js, src/cards.css; screenshots docs/screenshots/hud2/, check script scripts/hud2-shots.mjs; 10 new tests; balance sweeps byte-identical). Awaiting Matt's look.

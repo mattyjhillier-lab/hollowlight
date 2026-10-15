@@ -199,7 +199,10 @@ const ravenFlock = {
         }
         u.diveCd -= dt;
         if (u.diveCd <= 0) {
-          const t = sim.toughestEnemy(p.x, p.y, 170);
+          // W1a: claim set, ravens already diving keep their target; fall back to shared only when nothing unclaimed is in range.
+          const claimed = new Set();
+          for (const o of units) if (o !== u && o.st === 'dive' && o.target && !o.target.dead) claimed.add(o.target.id);
+          const t = sim.toughestEnemy(p.x, p.y, 170, (e) => !claimed.has(e.id)) || sim.toughestEnemy(p.x, p.y, 170);
           if (t) {
             u.st = 'dive';
             u.target = t;
@@ -219,7 +222,11 @@ const ravenFlock = {
         const rr = e.r + u.r + 1;
         if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `raven${i}`, 0.55)) {
           sim.hurt(e, dmg);
-          if (fear) e.fearT = Math.max(e.fearT, tune(sim, w, 'fear', 1.2));
+          // W1a: bosses are never frightened; an enemy that was frightened cannot be re-frightened until 1.5 s after it recovers.
+          if (fear && !e.boss) {
+            const fdur = tune(sim, w, 'fear', 1.2);
+            if (sim.canHit(e, 'stormFear', fdur + 1.5)) e.fearT = Math.max(e.fearT, fdur);
+          }
         }
       }
     });

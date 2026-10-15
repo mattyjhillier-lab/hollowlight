@@ -230,7 +230,7 @@ export class Sim {
     return list.slice(0, n).map((x2) => x2[1]);
   }
 
-  toughestEnemy(x, y, maxR) {
+  toughestEnemy(x, y, maxR, filter) {
     let best = null;
     let bestHp = -1;
     const r2 = maxR * maxR;
@@ -238,7 +238,7 @@ export class Sim {
       if (e.dead) continue;
       const dx = e.x - x;
       const dy = e.y - y;
-      if (dx * dx + dy * dy < r2 && e.hp > bestHp) {
+      if (dx * dx + dy * dy < r2 && e.hp > bestHp && (!filter || filter(e))) {
         bestHp = e.hp;
         best = e;
       }
