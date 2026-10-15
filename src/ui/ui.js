@@ -182,6 +182,8 @@ export class UI {
       <div class="bankline"></div>
       <div class="firstrun" style="display:none"><span class="frtext"></span> <button class="btn" data-act="frtree">See the Skill Tree</button></div>
       <div class="row">${cards}</div>
+      <div class="touchkeys">Left thumb: move · weapons fire on their own · right button: ability · II: pause · tap cards to pick</div>
+      <div class="orient-hint">Landscape recommended</div>
       <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
       <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
       <div class="row"><button class="btn" data-act="tree">Skill Tree</button><button class="btn" data-act="settings">Settings</button></div>
@@ -267,6 +269,7 @@ export class UI {
   showPause() {
     const el = this.show('pause', `
       <h2>Paused</h2>
+      <div class="orient-hint">Landscape recommended</div>
       <div class="row"><button class="btn big" data-act="resume">Resume (Esc)</button><button class="btn big" data-act="settings">Settings</button><button class="btn big" data-act="menu">Quit to menu</button></div>`);
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
     el.querySelector('[data-act="resume"]').addEventListener('click', () => this.handlers.togglePause());
@@ -366,6 +369,19 @@ export class UI {
     }
     sel.addEventListener('change', () => h.setSetting({ quality: sel.value }));
     row('Quality', sel);
+    const choice = (key, opts) => {
+      const s = mk('select');
+      for (const [v, t] of opts) {
+        const o = mk('option', '', t);
+        o.value = v;
+        if (st[key] === v) o.selected = true;
+        s.append(o);
+      }
+      s.addEventListener('change', () => h.setSetting({ [key]: s.value }));
+      return s;
+    };
+    row('Touch controls', choice('touchMode', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]));
+    row('Joystick size', choice('stickSize', [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']]));
 
     const msg = mk('div', 'setmsg', message || '');
     const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };

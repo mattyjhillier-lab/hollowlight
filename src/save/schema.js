@@ -4,6 +4,8 @@ import { sanitizeTree, sanitizeSeen } from '../meta/tree.js';
 export const SAVE_VERSION = 2;
 export const MAX_SAVE_BYTES = 200 * 1024;
 export const QUALITIES = ['auto', 'low', 'med', 'high'];
+export const TOUCH_MODES = ['auto', 'on', 'off'];
+export const STICK_NAMES = ['small', 'medium', 'large'];
 
 const MAX_NUM = 1e12;
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -14,7 +16,7 @@ let TREE_DATA = null;
 export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
 
 export function defaultSettings() {
-  return { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto' };
+  return { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', touchMode: 'auto', stickSize: 'medium' };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -140,6 +142,8 @@ export function sanitize(raw, now = Date.now()) {
       reducedMotion: bool(st.reducedMotion, ds.reducedMotion),
       damageNumbers: bool(st.damageNumbers, ds.damageNumbers),
       quality: QUALITIES.includes(st.quality) ? st.quality : ds.quality,
+      touchMode: TOUCH_MODES.includes(st.touchMode) ? st.touchMode : ds.touchMode,
+      stickSize: STICK_NAMES.includes(st.stickSize) ? st.stickSize : ds.stickSize,
     },
   };
 }

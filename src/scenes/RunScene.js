@@ -139,6 +139,7 @@ export class RunScene extends Phaser.Scene {
       W: 'W', A: 'A', S: 'S', D: 'D', UP: 'UP', DOWN: 'DOWN', LEFT: 'LEFT', RIGHT: 'RIGHT', SPACE: 'SPACE', ESC: 'ESC',
     });
     this.input.keyboard.addCapture('SPACE,UP,DOWN,LEFT,RIGHT');
+    this.inputOut = { x: 0, y: 0, ability: false };
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && app.sim && app.sim.state === 'running' && !app.paused) app.togglePause();
@@ -300,13 +301,18 @@ export class RunScene extends Phaser.Scene {
 
   readInput() {
     const k = this.keys;
+    const o = this.inputOut;
     let x = 0;
     let y = 0;
     if (k.A.isDown || k.LEFT.isDown) x -= 1;
     if (k.D.isDown || k.RIGHT.isDown) x += 1;
     if (k.W.isDown || k.UP.isDown) y -= 1;
     if (k.S.isDown || k.DOWN.isDown) y += 1;
-    return { x, y, ability: Phaser.Input.Keyboard.JustDown(k.SPACE) };
+    o.x = x;
+    o.y = y;
+    if (app.touch) app.touch.read(o); // analogue stick overrides keys while a finger is down
+    o.ability = Phaser.Input.Keyboard.JustDown(k.SPACE) || (app.touch ? app.touch.takeAbility() : false);
+    return o;
   }
 
   // Measure frame interval + CPU work; auto-tier decisions; refresh overlay.

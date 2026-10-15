@@ -266,3 +266,53 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .firstrun { color: var(--muted); margin: 0 0 1em; max-width: 36em; text-align: center; }
 .firstrun .btn { margin-top: .5em; }
 .tree-panel { font-size: .85em; }
+
+/* ---------- TOUCH-1: phone controls (PROVISIONAL layout; HUD design sheet #1 will replace it) ---------- */
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+html.touch, html.touch body { touch-action: none; }
+html.touch #ui { font-size: clamp(11px, 1.7cqw, 20px); }
+.touch-layer { position: fixed; inset: 0; z-index: 30; pointer-events: none; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.touch-layer * { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.touch-zone { position: absolute; left: 0; top: 0; bottom: 0; width: 55%; pointer-events: auto; touch-action: none; }
+.touch-base { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; border: 2px solid rgba(184, 242, 255, .55); background: rgba(14, 22, 44, .35); }
+.touch-knob { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; background: rgba(184, 242, 255, .55); box-shadow: 0 0 12px var(--glow-cyan); }
+.touch-ability { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 16px); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); width: 92px; height: 92px; padding: 0; border: 0; border-radius: 50%; pointer-events: auto; touch-action: none; color: var(--text); font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  --p: 100; background: conic-gradient(var(--violet) calc(var(--p) * 1%), rgba(14, 22, 44, .85) 0); }
+.touch-ability::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--glass-solid); }
+.touch-ability > span { position: relative; text-align: center; line-height: 1.1; }
+.touch-ability .ta-name { font-size: 11px; max-width: 72px; }
+.touch-ability .ta-state { font-size: 15px; font-weight: 700; color: var(--ice); }
+.touch-ability.ready { box-shadow: 0 0 18px var(--glow-violet); }
+.touch-ability.down { transform: scale(.94); }
+.touch-pause { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 10px); top: calc(env(safe-area-inset-top, 0px) + 10px); width: 48px; height: 48px; padding: 0; border: 1px solid rgba(184, 242, 255, .4); border-radius: 12px; pointer-events: auto; touch-action: none; background: var(--glass); color: var(--text); font: 700 16px var(--font-ui); letter-spacing: 2px; }
+html.touch .hud .ability { display: none; }
+.touchkeys, .orient-hint { display: none; }
+html.touch .touchkeys { display: block; color: var(--muted); margin-top: 1.2em; }
+html.touch .keys { display: none; }
+@media (orientation: portrait) { html.touch .orient-hint { display: block; color: var(--gold); margin-top: .8em; } }
+@media (max-aspect-ratio: 1/1) { html.touch .hud .stats { right: calc(env(safe-area-inset-right, 0px) + 66px); } }
+/* menus: scroll if tall, 44px hit targets, no hover dependence */
+html.touch .overlay { overflow-y: auto; justify-content: safe center; touch-action: pan-y; padding-left: max(2em, env(safe-area-inset-left)); padding-right: max(2em, env(safe-area-inset-right)); padding-bottom: max(2em, env(safe-area-inset-bottom)); }
+html.touch .overlay.layer-tree { padding: 0; touch-action: none; }
+html.touch .btn, html.touch .tree-zoom { min-height: 44px; min-width: 44px; }
+html.touch .card .ban { min-height: 44px; padding: .25em 1em; }
+html.touch .setgrid { grid-template-columns: minmax(8em, 1fr) minmax(8em, 1fr); }
+html.touch .setgrid select, html.touch .setgrid input[type="range"] { min-height: 44px; }
+html.touch .setgrid input[type="checkbox"] { width: 30px; height: 30px; }
+html.touch .charcard, html.touch .card { min-height: 44px; }
+html.touch .tree-view { touch-action: none; }
+html.touch .tree-panel { touch-action: pan-y; }
+@media (max-height: 480px) {
+  html.touch .overlay { padding-top: 6px; padding-bottom: 6px; }
+  html.touch .overlay h1 { font-size: 1.9em; margin: 0; }
+  html.touch .overlay .sub { margin-bottom: .3em; }
+  html.touch .bankline { margin: 0 0 .3em; }
+  html.touch .firstrun { margin: 0 0 .4em; }
+  html.touch .firstrun .btn { margin-top: .2em; }
+  html.touch .charcard { padding: .6em .9em; }
+  html.touch .charcard .blurb { margin-bottom: .3em; }
+  html.touch .touchkeys { margin-top: .5em; }
+  html.touch .overlay.layer-start > p { display: none; }
+  html.touch .row { gap: .6em; }
+}
+@media (max-aspect-ratio: 1/1) { html.touch .cards .card { width: min(90%, 24em); } }
