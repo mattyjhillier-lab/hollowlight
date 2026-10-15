@@ -1,6 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 ## WAITING ON MATT (reminder list, 2026-10-15)
+00. DONE 2026-10-15 (Matt approved): Vite 6.4.4 exact pin + in-repo inliner replaces vite-plugin-singlefile; npm audit 0; 204 tests; dev only (goes live with next release); Dependabot PRs #4/#5 closed. Future dependency bumps: test on a branch first, never merge blind.
 0. LIVE 2026-10-15 (PR #7, merged): installable app (PWA) + HUD-1 + HUD-2 cards + evolve hint at https://mattyjhillier-lab.github.io/hollowlight/. Matt: try the install on your phone, send the link to your friend, confirm manifest orientation landscape vs any, tell me what you think of the HUD and cards.
 1. HUD-1 screenshots (docs/screenshots/hud1/): like it / change X? (locks it)
 2. Front-door research (docs/research/27-front-door-flow.md): 3 small questions: cap profiles at 3; skip profile screen when only one; keep audio+touch settings per device.
