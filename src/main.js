@@ -7,9 +7,14 @@ import { RunScene } from './scenes/RunScene.js';
 import { applyCssPalette } from './gfx/palette.js';
 import { TouchControls } from './input/touch.js';
 import { STYLE, parseDpr } from './gfx/style.js';
+import './pwa/pwa.css';
+import { createPwa } from './pwa/index.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
+app.pwa = createPwa(window);
+app.ui.pwa = app.pwa;
+if (import.meta.env.PROD) app.pwa.registerServiceWorker(); // never in vite dev
 app.save.load();
 app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
 app.applySettings();

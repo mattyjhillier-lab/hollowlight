@@ -9,6 +9,7 @@ const fmtTime = (s) => {
 
 import { TreeScreen } from './treescreen.js';
 import { Hud } from './hud.js';
+import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
 export class UI {
@@ -121,6 +122,7 @@ export class UI {
     const bank = this.handlers.getBank ? this.handlers.getBank() : null;
     if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
+    if (this.pwa) { mountInstallCard(document, this.pwa, el, el.querySelector('.bankline')); el.append(updateNotice(document, this.pwa)); }
     if (this.handlers.isFirstRun && this.handlers.isFirstRun()) {
       el.querySelector('.firstrun').style.display = '';
       el.querySelector('.frtext').textContent = FIRST_RUN_HINT;
@@ -203,6 +205,11 @@ export class UI {
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
     el.querySelector('[data-act="resume"]').addEventListener('click', () => this.handlers.togglePause());
     el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+    if (this.pwa) {
+      const fe = fullscreenEntry(document, this.pwa, 'btn big');
+      if (fe) el.insertBefore(fe, el.querySelector('.row'));
+      el.append(updateNotice(document, this.pwa));
+    }
   }
 
   hidePause() { this.hide('pause'); }
@@ -375,6 +382,8 @@ export class UI {
     const back = mk('div', 'row');
     back.append(bClose);
     el.append(mk('h2', '', 'Settings'), grid, actions, confirmBox, msg, back, file);
+    const fe = this.pwa ? fullscreenEntry(document, this.pwa, 'btn') : null;
+    if (fe) el.insertBefore(fe, actions);
     const note = h.storageNote ? h.storageNote() : null;
     if (note) el.append(mk('div', 'note', note));
     this.show('settings');
