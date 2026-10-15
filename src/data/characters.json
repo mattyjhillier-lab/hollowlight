@@ -19,6 +19,6 @@
     "traits": { "holyDamage": 1.15 },
     "traitText": "+15% holy damage",
     "weapon": "holy_orbit",
-    "ability": { "id": "sanctuary", "name": "Sanctuary", "cooldown": 60, "desc": "6s of consecrated ground: burns enemies and heals you." }
+    "ability": { "id": "candle_wheel", "name": "Candle Wheel", "cooldown": 60, "radius": 80, "heal": 1.5, "dps": 0, "desc": "6s: plant a ring of light. You heal while you stand inside, and your Holy Orbit lights lock into the ring and burn what crosses it." }
   }
 }

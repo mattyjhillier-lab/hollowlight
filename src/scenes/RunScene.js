@@ -376,6 +376,32 @@ export class RunScene extends Phaser.Scene {
 
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
 
+  // Candle Wheel (Elias): a ring of cream light with a patch of restored colour inside, opening from the centre and
+  // fading at the end. Existing primitives only (no new art). Low tier: one disc + one ring. Reduced motion: no opening/pulse.
+  drawWheel(g, z, lm, caps, time) {
+    const rm = this.reducedMotion();
+    const open = rm ? 1 : Math.min(1, z.age / 0.4);
+    const e = open * open * (3 - 2 * open);
+    const fade = Math.min(1, Math.max(0, z.ttl) / 0.6);
+    const R = z.r * e;
+    if (R < 1) return;
+    const pulse = rm ? 1 : 0.9 + 0.1 * Math.sin(time * 3);
+    const warm = hex(z.color);
+    if (caps.lights > 0) g.fillStyle(0xbcd88a, 0.16 * fade).fillCircle(z.x, z.y, R * 0.92); // colour returns: restored grass patch
+    g.fillStyle(warm, 0.13 * fade * pulse).fillCircle(z.x, z.y, R);
+    g.lineStyle(3, warm, 0.22 * fade).strokeCircle(z.x, z.y, R + 1);
+    g.lineStyle(1.5, PAL.cream, 0.85 * fade).strokeCircle(z.x, z.y, R);
+    if (caps.lights > 0) {
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3 - Math.PI / 2;
+        const x = z.x + Math.cos(a) * R, y = z.y + Math.sin(a) * R;
+        g.lineStyle(1, warm, 0.18 * fade).lineBetween(z.x, z.y, x, y);
+        g.fillStyle(0xffc766, 0.9 * fade).fillCircle(x, y, 2);
+      }
+    }
+    if (lm) lm.add(z.x, z.y, R, warm, 0.55 * fade);
+  }
+
   addRing(x, y, r0, r1, life, col, w = 2, delay = 0) {
     for (const r of this.rings) {
       if (r.on) continue;
@@ -605,6 +631,7 @@ export class RunScene extends Phaser.Scene {
 
     // zones
     for (const z of sim.zones) {
+      if (z.wheel) { this.drawWheel(g, z, lit ? lm : null, caps, sim.time); continue; }
       const c = hex(z.color);
       const a = Math.min(1, z.ttl);
       g.fillStyle(c, 0.14 * a).fillCircle(z.x, z.y, z.r);

@@ -347,10 +347,21 @@ const holyOrbit = {
     const units = syncUnits(sim, w, 'orb', count, () => ({ r: 4, disabledT: 0, hidden: false }));
     rt.ang = (rt.ang || 0) + spin * dt;
 
+    // Candle Wheel (Elias's ability): while a wheel stands the orb lights glide out and lock into sockets on its ring,
+    // then glide back as it fades. Locked lights keep burning what touches them.
+    const wheel = sim.zones.find((z) => z.wheel);
+    let lock = 0;
+    if (wheel) { const k = Math.min(1, wheel.age / 0.5, Math.max(0, wheel.ttl) / 0.5); lock = k * k * (3 - 2 * k); }
+    rt.lock = lock;
     units.forEach((u, i) => {
       const a = rt.ang + (i * TAU) / count;
       u.x = p.x + Math.cos(a) * radius;
       u.y = p.y + Math.sin(a) * radius;
+      if (lock > 0) {
+        const sa = (i * TAU) / count - Math.PI / 2;
+        u.x += (wheel.x + Math.cos(sa) * wheel.r - u.x) * lock;
+        u.y += (wheel.y + Math.sin(sa) * wheel.r - u.y) * lock;
+      }
       if (u.disabledT > 0) {
         u.disabledT -= dt;
         u.hidden = true;

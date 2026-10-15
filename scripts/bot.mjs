@@ -1,5 +1,5 @@
 // Rough balance probe: a simple bot plays whole runs headlessly.
-// Usage: node scripts/bot.mjs [characterId] [seeds]   (GATES=starter|all|preset, default starter; META=none|half|full; FOCUS=1)
+// Usage: node scripts/bot.mjs [characterId] [seeds]   (ABILITY=off never triggers the active ability; GATES=starter|all|preset, default starter; META=none|half|full; FOCUS=1)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -59,7 +59,7 @@ function botInput(sim) {
   // drift back toward world centre when near the edge
   const c = sim.balance.worldSize / 2;
   ax += (c - p.x) * 0.0004; ay += (c - p.y) * 0.0004;
-  return { x: ax, y: ay, ability: sim.ability.cdLeft <= 0 && sim.enemies.length > 25 };
+  return { x: ax, y: ay, ability: process.env.ABILITY !== 'off' && sim.ability.cdLeft <= 0 && sim.enemies.length > 25 };
 }
 
 function pick(sim, rng) {

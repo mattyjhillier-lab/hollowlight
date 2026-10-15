@@ -566,9 +566,10 @@ export class Sim {
     for (const z of this.zones) {
       z.ttl -= dt;
       z.tick -= dt;
+      if (z.wheel) z.age += dt;
       if (z.tick <= 0) {
         z.tick = 0.25;
-        for (const e of this.enemies) {
+        if (z.dps > 0) for (const e of this.enemies) {
           if (e.dead) continue;
           if (Math.hypot(e.x - z.x, e.y - z.y) < z.r + e.r) this.hurt(e, z.dps * 0.25, { silent: true });
         }
@@ -674,10 +675,13 @@ export class Sim {
       }
       this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 130, ttl: 0.35, color: '#9fd8ff' });
       this.pushEvent('howl');
-    } else if (a.id === 'sanctuary') {
-      const holy = this.character.traits.holyDamage || 1;
-      this.spawnZone({ x: p.x, y: p.y, r: 70, ttl: dur, dps: 14 * this.mods.damage * holy, heal: 3, color: '#fff3b0' });
-      this.pushEvent('sanctuary');
+    } else if (a.id === 'candle_wheel') {
+      // Candle Wheel: a planted ring of light. Heals Elias only while he stands inside; his Holy Orbit lights lock
+      // into the ring (weapons.js) and burn what crosses it. The zone itself deals no damage.
+      const d = this.character.ability;
+      this.zones = this.zones.filter((z) => !z.wheel);
+      this.spawnZone({ wheel: true, x: p.x, y: p.y, r: d.radius ?? 80, ttl: dur, dur, age: 0, dps: d.dps ?? 0, heal: d.heal ?? 1.5, color: '#fff3b0' });
+      this.pushEvent('wheel');
     }
     return true;
   }

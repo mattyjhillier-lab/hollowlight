@@ -200,22 +200,6 @@ test('Pack Howl: starts on cooldown, scares nearby enemies, boosts speed, then r
   assert.ok(sim.ability.cdLeft < left, 'cannot be re-triggered while on cooldown');
 });
 
-test('Sanctuary creates a healing, damaging zone', () => {
-  const sim = mk({ characterId: 'elias', godMode: true });
-  sim.chapter = { ...sim.chapter, waves: [], events: [], bossAt: 1e9 };
-  sim.spawnAcc = [];
-  sim.weapons.length = 0;
-  sim.player.hp = 10;
-  sim.ability.cdLeft = 0;
-  const e = sim.spawnEnemy('root_crawler', sim.player.x + 20, sim.player.y);
-  const hp0 = e.hp;
-  sim.step(DT, { ability: true });
-  assert.equal(sim.zones.length, 1);
-  run(sim, 3, { x: 0, y: 0 });
-  assert.ok(sim.player.hp > 10, 'healed');
-  assert.ok(e.hp < hp0 || e.dead, 'damaged');
-});
-
 test('root patches slow the player', () => {
   const sim = mk({ godMode: true });
   sim.patches = [{ x: sim.player.x, y: sim.player.y, r: 400 }];

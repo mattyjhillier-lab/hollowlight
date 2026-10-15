@@ -191,7 +191,7 @@ export class FbWatch {
       if (d <= -0.5) o.hurt = -d;
       else if (d > 0) {
         this.healAcc += d;
-        // discrete heals (heart, card, revive) show at once; regen / sanctuary ticks gather into one number per 0.6s
+        // discrete heals (heart, card, revive) show at once; regen / candle wheel ticks gather into one number per 0.6s
         if (this.healAcc >= 5 || (this.healAcc >= 2 && t - this.healAt >= 0.6)) { o.heal = this.healAcc; this.healAcc = 0; this.healAt = t; }
       }
     }
