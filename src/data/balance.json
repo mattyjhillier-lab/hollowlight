@@ -6,6 +6,7 @@
     "h": 360
   },
   "maxRank": 5,
+  "abilityCdFloor": 30,
   "weaponSlots": 4,
   "xp": {
     "base": 6,
@@ -13,8 +14,8 @@
     "quad": 0.03
   },
   "hpScale": {
-    "linear": 0.34,
-    "quad": 0.021
+    "linear": 0.46,
+    "quad": 0.020
   },
   "dmgScale": {
     "linear": 0.07
@@ -40,8 +41,8 @@
     "pityHeartForce": 75
   },
   "magnetSpeed": 260,
-  "despawnDistance": 560,
-  "spawnDistance": 390,
+  "despawnDistance": 510,
+  "spawnDistance": 340,
   "offerSize": 3,
   "maxGoldCards": 3,
   "fallback": {

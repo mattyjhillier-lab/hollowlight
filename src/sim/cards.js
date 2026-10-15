@@ -1,14 +1,21 @@
 // Pure level-up card logic: pools, offers, rerolls, banishes, evolutions.
 // Nothing in here touches Phaser or the DOM so it can be unit tested in Node.
+import { blessingPool } from './blessings.js';
 
 export function statValue(def, key, rank) {
   const s = def.stats[key];
   return s.base + s.perRank * rank;
 }
 
-export function computeStats(def, ranks) {
+// `bonus` (skill tree): { stat: { add, pct } } applied on top of the rank value.
+export function computeStats(def, ranks, bonus) {
   const out = {};
-  for (const key of Object.keys(def.stats)) out[key] = statValue(def, key, ranks[key] || 0);
+  for (const key of Object.keys(def.stats)) {
+    let v = statValue(def, key, ranks[key] || 0);
+    const b = bonus && Object.hasOwn(bonus, key) ? bonus[key] : null;
+    if (b) v = (v + (b.add || 0)) * (1 + (b.pct || 0) / 100);
+    out[key] = v;
+  }
   return out;
 }
 
@@ -18,23 +25,30 @@ export function formatValue(fmt, v) {
   return Math.round(v).toString();
 }
 
-export function newWeapon(id, def) {
+export function newWeapon(id, def, bonus = null) {
   const ranks = {};
   for (const key of Object.keys(def.stats)) ranks[key] = 0;
-  return { id, ranks, evo: null, s: computeStats(def, ranks), rt: {} };
+  return { id, ranks, evo: null, bonus, s: computeStats(def, ranks, bonus), rt: {} };
 }
 
 export function refreshStats(w, data) {
-  w.s = computeStats(data.weapons[w.id], w.ranks);
+  w.s = computeStats(data.weapons[w.id], w.ranks, w.bonus);
+}
+
+// An evolution with treeGate:true only exists for the player once a tree node unlocks it.
+// Fails closed: a missing `unlocked` set means only ungated evolutions are open. Used at every
+// site that could reveal a recipe (gold card, pair nudge, stat-card hints) so locked ones never leak.
+export function evoOpen(evo, id, unlocked) {
+  return !evo.treeGate || !!(unlocked && unlocked.has(id));
 }
 
 // Evolutions whose stat pair is fully maxed and that haven't been taken yet.
-export function availableEvolutions(w, data) {
+export function availableEvolutions(w, data, unlocked) {
   if (w.evo) return [];
   const max = data.balance.maxRank;
   const out = [];
   for (const [evoId, evo] of Object.entries(data.evolutions)) {
-    if (evo.weapon !== w.id) continue;
+    if (evo.weapon !== w.id || !evoOpen(evo, evoId, unlocked)) continue;
     if (w.ranks[evo.pair[0]] >= max && w.ranks[evo.pair[1]] >= max) out.push(evoId);
   }
   return out;
@@ -53,13 +67,13 @@ function weaponCard(id, data) {
   };
 }
 
-function statCard(w, statKey, data) {
+function statCard(w, statKey, data, unlocked) {
   const def = data.weapons[w.id];
   const s = def.stats[statKey];
   const rank = w.ranks[statKey];
   const next = rank + 1;
-  const evoHints = Object.values(data.evolutions)
-    .filter((e) => e.weapon === w.id && e.pair.includes(statKey))
+  const evoHints = Object.entries(data.evolutions)
+    .filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, unlocked))
     .length;
   return {
     key: `s:${w.id}:${statKey}`,
@@ -105,6 +119,8 @@ export function buildPool(ctx) {
   if (weapons.length < slots) {
     const owned = new Set(weapons.map((w) => w.id));
     for (const id of Object.keys(data.weapons)) {
+      // Optional tree gate: a weapon with treeGate:true only enters the pool once a tree node unlocks it.
+      if (data.weapons[id].treeGate && !(ctx.unlockedWeapons && ctx.unlockedWeapons.has(id))) continue;
       if (!owned.has(id)) pool.push({ card: weaponCard(id, data), w: data.balance.weaponCardWeight });
     }
   }
@@ -112,12 +128,12 @@ export function buildPool(ctx) {
     if (w.evo) continue; // evolved weapons are final
     for (const statKey of Object.keys(data.weapons[w.id].stats)) {
       if (w.ranks[statKey] >= data.balance.maxRank) continue;
-      const pairs = Object.values(data.evolutions).filter((e) => e.weapon === w.id && e.pair.includes(statKey));
+      const pairs = Object.entries(data.evolutions).filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, ctx.unlockedEvolutions)).map(([, e]) => e);
       const nudge = data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
-      let wt = pairs.length ? nudge.pair : 1;
+      let wt = pairs.length ? nudge.pair * (ctx.evoLuck || 1) : 1;
       // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
       if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= nudge.partnerRank)) wt *= nudge.partnerMult;
-      pool.push({ card: statCard(w, statKey, data), w: wt });
+      pool.push({ card: statCard(w, statKey, data, ctx.unlockedEvolutions), w: wt });
     }
   }
   return pool.filter((p) => !banished.has(p.card.key));
@@ -155,7 +171,7 @@ export function goldCards(ctx) {
   const { weapons, data } = ctx;
   const out = [];
   for (const w of weapons) {
-    for (const evoId of availableEvolutions(w, data)) out.push(evolutionCard(w, evoId, data));
+    for (const evoId of availableEvolutions(w, data, ctx.unlockedEvolutions)) out.push(evolutionCard(w, evoId, data));
   }
   return out.slice(0, data.balance.maxGoldCards);
 }
@@ -164,6 +180,12 @@ export function goldCards(ctx) {
 export function drawNormalCards(ctx, rng, count, exclude = new Set()) {
   const pool = buildPool(ctx).filter((p) => !exclude.has(p.card.key));
   const cards = drawWeighted(pool, count, rng);
+  // Blessings only fill slots the real pool cannot (fewer than `count` real cards left); fallbacks only if those run out too.
+  if (cards.length < count && ctx.blessings) {
+    const have = new Set(cards.map((c) => c.key));
+    const bp = blessingPool(ctx).filter((p) => !exclude.has(p.card.key) && !have.has(p.card.key));
+    cards.push(...drawWeighted(bp, count - cards.length, rng));
+  }
   return fillWithFallbacks(cards, count, ctx.data, rng);
 }
 
@@ -192,7 +214,7 @@ export function banishCard(ctx, rng, offer, key) {
 export function applyCard(ctx, card) {
   const { weapons, data } = ctx;
   if (card.kind === 'weapon') {
-    const w = newWeapon(card.weaponId, data.weapons[card.weaponId]);
+    const w = newWeapon(card.weaponId, data.weapons[card.weaponId], ctx.weaponBonus ? ctx.weaponBonus[card.weaponId] || null : null);
     weapons.push(w);
     return w;
   }

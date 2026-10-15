@@ -14,6 +14,7 @@
   },
   "raven_flock": {
     "name": "Raven Flock",
+    "treeGate": true,
     "type": "summon",
     "tags": [],
     "color": "#b79cff",
@@ -27,6 +28,7 @@
   },
   "spirit_bolts": {
     "name": "Spirit Bolts",
+    "treeGate": true,
     "type": "magic",
     "tags": ["holy"],
     "color": "#7ff0ff",
@@ -40,9 +42,10 @@
   },
   "chain_lightning": {
     "name": "Chain Lightning",
+    "treeGate": true,
     "type": "magic",
     "tags": [],
-    "color": "#fff27a",
+    "color": "#b8f2ff",
     "desc": "Lightning strikes the nearest enemy and jumps between foes.",
     "stats": {
       "chains":   { "name": "Chains",   "base": 2,   "perRank": 1,     "fmt": "int", "hint": "+1 chain" },
@@ -55,7 +58,7 @@
     "name": "Holy Orbit",
     "type": "magic",
     "tags": ["holy"],
-    "color": "#ffe08a",
+    "color": "#e8e0ff",
     "desc": "Holy orbs circle you and burn anything they touch.",
     "stats": {
       "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "+1 orb" },

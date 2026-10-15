@@ -7,6 +7,9 @@ const fmtTime = (s) => {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
+import { TreeScreen } from './treescreen.js';
+import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
+
 export class UI {
   constructor(root, data) {
     this.root = root;
@@ -15,6 +18,8 @@ export class UI {
     this.hudCache = {};
     this.handlers = {};
     this.toastTimer = null;
+    this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
+    this.tree = new TreeScreen(this);
     this.buildHud();
     window.addEventListener('keydown', (e) => this.onKey(e));
   }
@@ -24,7 +29,7 @@ export class UI {
   layer(name) {
     if (!this.layers[name]) {
       const el = document.createElement('div');
-      el.className = name === 'hud' ? 'hud' : 'overlay';
+      el.className = name === 'hud' ? 'hud' : `overlay layer-${name}`;
       el.style.display = 'none';
       this.root.appendChild(el);
       this.layers[name] = el;
@@ -56,6 +61,7 @@ export class UI {
       <div class="stats"><div>Kills <b class="kills">0</b></div><div>Gold <b class="gold">0</b></div></div>
       <div class="boss"><div class="bossname"></div><div class="bar"><i></i></div></div>
       <div class="toast"></div>
+      <div class="bossintro"></div>
       <div class="slots"></div>
       <div class="ability"><div class="t"><span class="abname"></span><span class="k">[Space]</span></div><div class="cd"><i></i></div></div>
       <div class="hurtflash"></div>`;
@@ -71,6 +77,7 @@ export class UI {
       bossName: hud.querySelector('.bossname'),
       bossFill: hud.querySelector('.boss .bar i'),
       toast: hud.querySelector('.toast'),
+      bossIntro: hud.querySelector('.bossintro'),
       slots: hud.querySelector('.slots'),
       ability: hud.querySelector('.ability'),
       abName: hud.querySelector('.abname'),
@@ -120,7 +127,7 @@ export class UI {
         const def = this.data.weapons[w.id];
         const total = Object.values(w.ranks).reduce((a, b) => a + b, 0);
         const name = w.evo ? this.data.evolutions[w.evo].name : def.name;
-        slots.push(`<div class="slot ${w.evo ? 'evolved' : ''}" style="border-left-color:${def.color}"><div class="n">${name}</div><div class="r"><i style="width:${w.evo ? 100 : (total / max) * 100}%"></i></div></div>`);
+        slots.push(`<div class="slot ${w.evo ? 'evolved' : ''}" style="--c:${def.color}"><div class="n">${name}</div><div class="r"><i style="width:${w.evo ? 100 : (total / max) * 100}%"></i></div></div>`);
       }
       h.slots.innerHTML = slots.join('');
     }
@@ -128,7 +135,7 @@ export class UI {
     const a = sim.ability;
     this.setText('abname', h.abName, a.name);
     const ready = a.cdLeft <= 0;
-    h.abFill.style.width = `${ready ? 100 : (1 - a.cdLeft / (a.cooldown * sim.mods.abilityCd)) * 100}%`;
+    h.abFill.style.width = `${ready ? 100 : (1 - a.cdLeft / sim.abilityCooldown) * 100}%`;
     h.ability.classList.toggle('ready', ready);
   }
 
@@ -140,6 +147,14 @@ export class UI {
     this.toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
   }
 
+  bossIntro(name, animate) {
+    const el = this.hud.bossIntro;
+    el.textContent = String(name).toUpperCase();
+    el.classList.remove('on');
+    if (animate) { void el.offsetWidth; el.classList.add('on'); }
+    else { el.style.opacity = '1'; clearTimeout(this.introTimer); this.introTimer = setTimeout(() => { el.style.opacity = ''; }, 2000); }
+  }
+
   hurt() {
     const f = this.hud.flash;
     f.classList.add('on');
@@ -148,10 +163,10 @@ export class UI {
 
   // ------------------------------------------------------------------ menus
   showStart(onPick) {
-    const chars = Object.entries(this.data.characters);
+    const chars = Object.entries(this.data.characters).filter(([id]) => !this.handlers.heroUnlocked || this.handlers.heroUnlocked(id));
     const cards = chars.map(([id, c]) => `
-      <div class="charcard" data-id="${id}">
-        <h3><span class="swatch" style="background:${c.color}"></span>${c.name}</h3>
+      <div class="charcard" data-id="${id}" tabindex="0" role="button">
+        <h3><span class="swatch" style="background:${c.color};color:${c.color}"></span>${c.name}</h3>
         <div class="blurb">${c.blurb}</div>
         <dl>
           <dt>Health</dt><dd>${c.hp}</dd>
@@ -165,16 +180,28 @@ export class UI {
       <h1>Hollowlight</h1>
       <div class="sub">Spirits of the Dusk · Chapter 1: Cursed Forest · prototype</div>
       <div class="bankline"></div>
+      <div class="firstrun" style="display:none"><span class="frtext"></span> <button class="btn" data-act="frtree">See the Skill Tree</button></div>
       <div class="row">${cards}</div>
       <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
       <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
-      <div class="row"><button class="btn" data-act="settings">Settings</button></div>
+      <div class="row"><button class="btn" data-act="tree">Skill Tree</button><button class="btn" data-act="settings">Settings</button></div>
       <div class="vlabel"></div>`);
+    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
     el.querySelector('.vlabel').textContent = typeof __APP_VERSION__ !== 'undefined' ? `v${__APP_VERSION__}` : '';
     const bank = this.handlers.getBank ? this.handlers.getBank() : null;
     if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
-    el.querySelectorAll('.charcard').forEach((c) => c.addEventListener('click', () => onPick(c.dataset.id)));
+    if (this.handlers.isFirstRun && this.handlers.isFirstRun()) {
+      el.querySelector('.firstrun').style.display = '';
+      el.querySelector('.frtext').textContent = FIRST_RUN_HINT;
+      el.querySelector('[data-act="frtree"]').addEventListener('click', () => this.handlers.openTree());
+    }
+    el.querySelectorAll('.charcard').forEach((c) => {
+      c.addEventListener('click', () => onPick(c.dataset.id));
+      c.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onPick(c.dataset.id); } });
+    });
+    const firstCard = el.querySelector('.charcard');
+    if (firstCard) firstCard.focus({ preventScroll: true });
   }
 
   hideStart() { this.hide('start'); }
@@ -187,12 +214,12 @@ export class UI {
     const cardHtml = (c, i) => {
       const gold = c.kind === 'evolution';
       let pips = '';
-      if (c.kind === 'stat') {
-        pips = '<div class="pips">' + Array.from({ length: maxRank }, (_, k) => `<i class="${k < c.rank ? 'on' : k === c.rank ? 'next' : ''}"></i>`).join('') + '</div>';
+      if (c.kind === 'stat' || c.kind === 'blessing') {
+        pips = '<div class="pips">' + Array.from({ length: c.maxRank || maxRank }, (_, k) => `<i class="${k < c.rank ? 'on' : k === c.rank ? 'next' : ''}"></i>`).join('') + '</div>';
       }
       const ban = sim.banishesLeft > 0 && !gold ? `<button class="btn ban" data-ban="${c.key}">Banish</button>` : '';
       return `
-        <div class="card ${gold ? 'gold' : ''}" data-key="${c.key}" style="border-top-color:${c.color}">
+        <div class="card k-${c.kind} ${gold ? 'gold' : ''}" data-key="${c.key}" style="--i:${i}" tabindex="0" role="button">
           ${c.badge ? `<div class="badge">${c.badge}</div>` : ''}
           <div class="key">${i + 1}</div>
           <h4>${c.title}</h4>
@@ -208,7 +235,12 @@ export class UI {
       <div class="lu-sub">Choose one</div>
       <div class="cards">${all.map(cardHtml).join('')}</div>
       <div class="lu-actions">${actions.join('')}</div>`);
+    const fresh = toastWeapons(all, this.data, this.toastedWeapons);
+    if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
     this.currentCards = all;
+    this.cardEls = Array.from(el.querySelectorAll('.card'));
+    this.setSel(0);
+    this.cardEls.forEach((ce, i) => ce.addEventListener('mouseenter', () => this.setSel(i)));
     el.querySelectorAll('.card').forEach((c) => c.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-ban]')) return;
       this.handlers.pick(c.dataset.key);
@@ -221,7 +253,15 @@ export class UI {
     if (rr) rr.addEventListener('click', () => this.handlers.reroll());
   }
 
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
+  // Keyboard-first selection: arrows move, Enter picks, 1-4 pick directly.
+  setSel(i) {
+    const els = this.cardEls || [];
+    if (!els.length) return;
+    this.selIdx = Math.max(0, Math.min(els.length - 1, i));
+    els.forEach((e, k) => e.classList.toggle('sel', k === this.selIdx));
+  }
+
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; this.cardEls = null; }
 
   // ------------------------------------------------------------------ pause / end
   showPause() {
@@ -253,7 +293,10 @@ export class UI {
         <dt>Evolutions</dt><dd>${evos.length ? evos.join(', ') : 'none this run'}</dd>
       </dl>
       <div class="note warn"></div>
-      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="menu">Main menu</button></div>`);
+      <div class="endtree"></div>
+      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="tree">Spend gold</button><button class="btn big" data-act="menu">Main menu</button></div>`);
+    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
+    this.fillEndTree(el.querySelector('.endtree'), bank);
     const set = (sel, t) => { el.querySelector(sel).textContent = t; };
     if (bank) {
       set('.g', `+${r.gold} (bank ${bank.gold})`);
@@ -269,6 +312,20 @@ export class UI {
     }
     el.querySelector('[data-act="again"]').addEventListener('click', () => this.handlers.again());
     el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+  }
+
+  // Accomplishment feedback: newly unlocked nodes and the closest locked ones (textContent only).
+  fillEndTree(box, bank) {
+    if (!bank) return;
+    const mkEl = (cls, text) => { const n = document.createElement('div'); n.className = cls; n.textContent = text; return n; };
+    if (bank.newly && bank.newly.length) {
+      box.append(mkEl('et-head good', 'New in the Skill Tree'));
+      for (const line of bank.newly.slice(0, 6)) box.append(mkEl('et-row', line));
+    }
+    if (bank.closest && bank.closest.length) {
+      box.append(mkEl('et-head', 'Closest unlocks'));
+      for (const c of bank.closest) box.append(mkEl('et-row', `${c.gate ? 'Gate: ' : ''}${c.name} · ${c.text} (${Math.floor(c.frac * 100)}%)`));
+    }
   }
 
   // ------------------------------------------------------------------ settings
@@ -394,6 +451,7 @@ export class UI {
 
   // ------------------------------------------------------------------ keys
   onKey(e) {
+    if (this.tree.isOpen) return; // the tree screen handles its own keys
     if (this.settingsOpen) {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
@@ -406,6 +464,14 @@ export class UI {
         this.handlers.pick(this.currentCards[n - 1].key);
       } else if (e.key === 'r' || e.key === 'R') {
         this.handlers.reroll();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault(); this.setSel((this.selIdx || 0) - 1);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault(); this.setSel((this.selIdx || 0) + 1);
+      } else if (e.key === 'Enter' && !(e.target && e.target.closest && e.target.closest('button'))) {
+        e.preventDefault();
+        const c = this.currentCards[this.selIdx || 0];
+        if (c) this.handlers.pick(c.key);
       }
     }
   }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { data } from './helpers.mjs';
+import { data, allOpen } from './helpers.mjs';
 import { createRng } from '../src/sim/rng.js';
 import {
   newWeapon, buildPool, generateOffer, rerollOffer, banishCard, applyCard,
@@ -13,6 +13,8 @@ const mk = (...weaponIds) => ({
   data,
   banished: new Set(),
 });
+// Shipped data gates 3 weapons + 9 evolutions behind the tree (G1b). mkOpen = the old everything-unlocked context.
+const mkOpen = (...weaponIds) => allOpen(mk(...weaponIds));
 const maxStat = (w, stat) => { w.ranks[stat] = data.balance.maxRank; };
 
 test('data sanity: every evolution points at a real weapon and real stats', () => {
@@ -26,13 +28,13 @@ test('data sanity: every evolution points at a real weapon and real stats', () =
   assert.equal(Object.keys(data.evolutions).length, 11);
 });
 
-test('open slots: new weapons the player does not own are in the pool', () => {
-  const ctx = mk('ghost_wolves');
-  const pool = buildPool(ctx);
-  const newKeys = pool.filter((p) => p.card.kind === 'weapon').map((p) => p.card.weaponId);
-  assert.deepEqual(new Set(newKeys), new Set(ids.filter((i) => i !== 'ghost_wolves')));
-  // 4 stat cards for the owned weapon
-  assert.equal(pool.filter((p) => p.card.kind === 'stat').length, 4);
+test('open slots: starter run offers only the two starter weapons; unlocked weapons join the pool (rewritten G1b)', () => {
+  const pool = buildPool(mk('ghost_wolves'));
+  const keys = (p) => new Set(p.filter((x) => x.card.kind === 'weapon').map((x) => x.card.weaponId));
+  assert.deepEqual(keys(pool), new Set(['holy_orbit']), 'starter pool: Orbit only (Raven/Bolts/Chain are tree gates)');
+  const open = buildPool(mkOpen('ghost_wolves'));
+  assert.deepEqual(keys(open), new Set(ids.filter((i) => i !== 'ghost_wolves')));
+  assert.equal(open.filter((p) => p.card.kind === 'stat').length, 4);
 });
 
 test('slots full: only stat cards for owned weapons are offered', () => {
@@ -78,12 +80,12 @@ test('ranks never exceed the max', () => {
 });
 
 test('evolution gold card appears only when BOTH stats of a pair are maxed', () => {
-  const ctx = mk('ghost_wolves');
+  const ctx = mkOpen('ghost_wolves');
   const w = ctx.weapons[0];
   maxStat(w, 'speed');
-  assert.deepEqual(availableEvolutions(w, data), []);
+  assert.deepEqual(availableEvolutions(w, data, ctx.unlockedEvolutions), []);
   maxStat(w, 'power');
-  assert.deepEqual(availableEvolutions(w, data), ['phantom_stampede']);
+  assert.deepEqual(availableEvolutions(w, data, ctx.unlockedEvolutions), ['phantom_stampede']);
   const rng = createRng(2);
   const offer = generateOffer(ctx, rng);
   assert.equal(offer.gold.length, 1);
@@ -92,21 +94,21 @@ test('evolution gold card appears only when BOTH stats of a pair are maxed', () 
 });
 
 test('several evolutions can be available at once (power maxed with speed and duration)', () => {
-  const ctx = mk('ghost_wolves');
+  const ctx = mkOpen('ghost_wolves');
   const w = ctx.weapons[0];
   maxStat(w, 'power'); maxStat(w, 'speed'); maxStat(w, 'duration');
-  assert.deepEqual(new Set(availableEvolutions(w, data)), new Set(['phantom_stampede', 'dire_alpha']));
+  assert.deepEqual(new Set(availableEvolutions(w, data, ctx.unlockedEvolutions)), new Set(['phantom_stampede', 'dire_alpha']));
 });
 
 test('taking an evolution replaces the base weapon and removes the other choices and stat cards', () => {
-  const ctx = mk('ghost_wolves');
+  const ctx = mkOpen('ghost_wolves');
   const w = ctx.weapons[0];
   maxStat(w, 'power'); maxStat(w, 'speed'); maxStat(w, 'duration');
   const gold = goldCards(ctx);
   const dire = gold.find((c) => c.evoId === 'dire_alpha');
   applyCard(ctx, dire);
   assert.equal(w.evo, 'dire_alpha');
-  assert.deepEqual(availableEvolutions(w, data), []);
+  assert.deepEqual(availableEvolutions(w, data, ctx.unlockedEvolutions), []);
   assert.deepEqual(goldCards(ctx), []);
   assert.ok(!buildPool(ctx).some((p) => p.card.kind === 'stat' && p.card.weaponId === 'ghost_wolves'));
 });
@@ -164,12 +166,12 @@ test('xp curve is increasing', () => {
   }
 });
 
-test('a focused player readies a first evolution after roughly 18-30 level-ups (4 weapons held)', () => {
+test('a focused player readies a first evolution after roughly 18-30 level-ups (4 weapons held, everything unlocked)', () => {
   const ids4 = ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_lightning'];
   const results = [];
   for (let seed = 1; seed <= 300; seed++) {
     const rng = createRng(seed);
-    const ctx = mk(...ids4);
+    const ctx = mkOpen(...ids4);
     const target = ctx.weapons[0];
     const pair = Object.values(data.evolutions).find((e) => e.weapon === target.id).pair;
     let n = 0;
@@ -180,7 +182,7 @@ test('a focused player readies a first evolution after roughly 18-30 level-ups (
         || offer.cards.find((c) => c.kind === 'stat' && c.weaponId === target.id)
         || offer.cards.find((c) => c.kind === 'stat') || offer.cards[0];
       if (card.kind !== 'fallback') applyCard(ctx, card);
-      if (availableEvolutions(target, data).length) break;
+      if (availableEvolutions(target, data, ctx.unlockedEvolutions).length) break;
     }
     results.push(n);
   }
