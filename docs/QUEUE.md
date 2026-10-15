@@ -3,7 +3,7 @@
 ## WAITING ON MATT (reminder list, 2026-10-15)
 1. HUD-1 screenshots (docs/screenshots/hud1/): like it / change X? (locks it)
 2. Front-door research (docs/research/27-front-door-flow.md): 3 small questions: cap profiles at 3; skip profile screen when only one; keep audio+touch settings per device.
-3. HUD-2 (cards) being built; PWA-1 (installable app, full screen, install prompt) built on dev: review screenshots, then OK to put live (PR to main) so he and his friend can install it.
+3. HUD-2 (cards) being built; PWA-1 (installable app, full screen, install prompt) built on dev: review screenshots (docs/screenshots/pwa1/), then OK to put live (PR to main) so he and his friend can install it. NOTE: manifest orientation is "landscape" (agent choice for the 16:9 game; one word to change to "any"): confirm.
 4. World bible (docs/BIBLE.md): react to the 10 creative questions and proposed renames (The Unlit instead of Hollow King, brass coins).
 5. Name check: search Hollowlight on itch.io, Steam and UK trademark site before any public launch.
 6. Reference screenshots he loves (esp. Spirit Hunters tree): helpful, not blocking.
