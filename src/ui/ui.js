@@ -8,6 +8,7 @@ const fmtTime = (s) => {
 };
 
 import { TreeScreen } from './treescreen.js';
+import { Hud } from './hud.js';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
 export class UI {
@@ -49,95 +50,22 @@ export class UI {
     if (this.layers[name]) this.layers[name].style.display = 'none';
   }
 
-  // ------------------------------------------------------------------ HUD
+  // ------------------------------------------------------------------ HUD (HUD-1: src/ui/hud.js, display only)
   buildHud() {
     const hud = this.layer('hud');
-    hud.innerHTML = `
-      <div class="bars">
-        <div class="bar hp"><i></i><span class="hptext"></span></div>
-        <div class="bar xp"><i></i><span class="xptext"></span></div>
-      </div>
-      <div class="timer">00:00</div>
-      <div class="stats"><div>Kills <b class="kills">0</b></div><div>Gold <b class="gold">0</b></div></div>
-      <div class="boss"><div class="bossname"></div><div class="bar"><i></i></div></div>
-      <div class="toast"></div>
-      <div class="bossintro"></div>
-      <div class="slots"></div>
-      <div class="ability"><div class="t"><span class="abname"></span><span class="k">[Space]</span></div><div class="cd"><i></i></div></div>
-      <div class="hurtflash"></div>`;
-    this.hud = {
-      hpFill: hud.querySelector('.bar.hp i'),
-      hpText: hud.querySelector('.hptext'),
-      xpFill: hud.querySelector('.bar.xp i'),
-      xpText: hud.querySelector('.xptext'),
-      timer: hud.querySelector('.timer'),
-      kills: hud.querySelector('.kills'),
-      gold: hud.querySelector('.gold'),
-      boss: hud.querySelector('.boss'),
-      bossName: hud.querySelector('.bossname'),
-      bossFill: hud.querySelector('.boss .bar i'),
-      toast: hud.querySelector('.toast'),
-      bossIntro: hud.querySelector('.bossintro'),
-      slots: hud.querySelector('.slots'),
-      ability: hud.querySelector('.ability'),
-      abName: hud.querySelector('.abname'),
-      abFill: hud.querySelector('.ability .cd i'),
-      flash: hud.querySelector('.hurtflash'),
-    };
+    this.hudView = new Hud(document, hud, {
+      onPause: () => { if (this.handlers.togglePause) this.handlers.togglePause(); },
+      bossName: (type) => this.data.enemies[type].name,
+    });
+    this.hud = { toast: this.hudView.toast, bossIntro: this.hudView.bossIntro, flash: this.hudView.flash };
   }
 
-  showHud() { this.show('hud'); this.hudCache = {}; }
+  showHud() { this.show('hud'); this.hudCache = {}; this.hudView.reset(); }
   hideHud() { this.hide('hud'); }
 
-  setText(key, el, value) {
-    if (this.hudCache[key] !== value) {
-      this.hudCache[key] = value;
-      el.textContent = value;
-    }
-  }
-
-  updateHud(sim) {
-    const h = this.hud;
-    const p = sim.player;
-    h.hpFill.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
-    this.setText('hp', h.hpText, `${Math.ceil(p.hp)} / ${p.maxHp}`);
-    h.xpFill.style.width = `${Math.min(100, (sim.xp / sim.xpNeeded) * 100)}%`;
-    this.setText('xp', h.xpText, `Level ${sim.level}`);
-    this.setText('time', h.timer, fmtTime(Math.max(0, sim.balance.runSeconds - sim.time)));
-    this.setText('kills', h.kills, String(sim.kills));
-    this.setText('gold', h.gold, String(Math.floor(sim.gold)));
-
-    const boss = sim.boss && !sim.boss.dead ? sim.boss : null;
-    if (boss) {
-      h.boss.style.display = 'block';
-      this.setText('bossname', h.bossName, this.data.enemies[boss.type].name);
-      h.bossFill.style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
-    } else if (h.boss.style.display !== 'none') {
-      h.boss.style.display = 'none';
-    }
-
-    const key = sim.weapons.map((w) => `${w.id}:${w.evo || ''}:${Object.values(w.ranks).join('')}`).join('|');
-    if (this.hudCache.slotKey !== key) {
-      this.hudCache.slotKey = key;
-      const max = sim.balance.maxRank * 4;
-      const slots = [];
-      for (let i = 0; i < sim.balance.weaponSlots; i++) {
-        const w = sim.weapons[i];
-        if (!w) { slots.push('<div class="slot empty"><div class="n">empty slot</div><div class="r"><i style="width:0"></i></div></div>'); continue; }
-        const def = this.data.weapons[w.id];
-        const total = Object.values(w.ranks).reduce((a, b) => a + b, 0);
-        const name = w.evo ? this.data.evolutions[w.evo].name : def.name;
-        slots.push(`<div class="slot ${w.evo ? 'evolved' : ''}" style="--c:${def.color}"><div class="n">${name}</div><div class="r"><i style="width:${w.evo ? 100 : (total / max) * 100}%"></i></div></div>`);
-      }
-      h.slots.innerHTML = slots.join('');
-    }
-
-    const a = sim.ability;
-    this.setText('abname', h.abName, a.name);
-    const ready = a.cdLeft <= 0;
-    h.abFill.style.width = `${ready ? 100 : (1 - a.cdLeft / sim.abilityCooldown) * 100}%`;
-    h.ability.classList.toggle('ready', ready);
-  }
+  updateHud(sim) { this.hudView.update(sim, this.data); }
+  // Touch: a tap that lands on the weapon strip wakes it (the touch layer covers it).
+  hudTapAt(x, y) { this.hudView.tapAt(x, y); }
 
   toast(text) {
     const t = this.hud.toast;

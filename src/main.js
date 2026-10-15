@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
+import './hud.css';
 import { app } from './app.js';
 import { UI } from './ui/ui.js';
 import { RunScene } from './scenes/RunScene.js';
@@ -10,7 +11,7 @@ import { STYLE, parseDpr } from './gfx/style.js';
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
 app.save.load();
-app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause() });
+app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
 app.applySettings();
 app.ui.setHandlers({
   ...app.settingsHandlers(),

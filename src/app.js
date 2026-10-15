@@ -4,6 +4,7 @@ import data from './data/index.js';
 import { SaveStore } from './save/store.js';
 import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
 import { newlyLines } from './meta/gatewords.js';
+import { abilityEmblem } from './ui/hudsvg.js';
 import { parseTouchParam, touchEnabled } from './input/stick.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
