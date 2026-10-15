@@ -8,6 +8,7 @@ const fmtTime = (s) => {
 };
 
 import { TreeScreen } from './treescreen.js';
+import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
 export class UI {
   constructor(root, data) {
@@ -17,6 +18,7 @@ export class UI {
     this.hudCache = {};
     this.handlers = {};
     this.toastTimer = null;
+    this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
     this.tree = new TreeScreen(this);
     this.buildHud();
     window.addEventListener('keydown', (e) => this.onKey(e));
@@ -178,6 +180,7 @@ export class UI {
       <h1>Hollowlight</h1>
       <div class="sub">Spirits of the Dusk · Chapter 1: Cursed Forest · prototype</div>
       <div class="bankline"></div>
+      <div class="firstrun" style="display:none"><span class="frtext"></span> <button class="btn" data-act="frtree">See the Skill Tree</button></div>
       <div class="row">${cards}</div>
       <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
       <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
@@ -188,6 +191,11 @@ export class UI {
     const bank = this.handlers.getBank ? this.handlers.getBank() : null;
     if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
+    if (this.handlers.isFirstRun && this.handlers.isFirstRun()) {
+      el.querySelector('.firstrun').style.display = '';
+      el.querySelector('.frtext').textContent = FIRST_RUN_HINT;
+      el.querySelector('[data-act="frtree"]').addEventListener('click', () => this.handlers.openTree());
+    }
     el.querySelectorAll('.charcard').forEach((c) => {
       c.addEventListener('click', () => onPick(c.dataset.id));
       c.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onPick(c.dataset.id); } });
@@ -227,6 +235,8 @@ export class UI {
       <div class="lu-sub">Choose one</div>
       <div class="cards">${all.map(cardHtml).join('')}</div>
       <div class="lu-actions">${actions.join('')}</div>`);
+    const fresh = toastWeapons(all, this.data, this.toastedWeapons);
+    if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
     this.currentCards = all;
     this.cardEls = Array.from(el.querySelectorAll('.card'));
     this.setSel(0);
@@ -309,12 +319,12 @@ export class UI {
     if (!bank) return;
     const mkEl = (cls, text) => { const n = document.createElement('div'); n.className = cls; n.textContent = text; return n; };
     if (bank.newly && bank.newly.length) {
-      box.append(mkEl('et-head good', 'Newly unlocked in the Skill Tree'));
-      for (const name of bank.newly.slice(0, 6)) box.append(mkEl('et-row', name));
+      box.append(mkEl('et-head good', 'New in the Skill Tree'));
+      for (const line of bank.newly.slice(0, 6)) box.append(mkEl('et-row', line));
     }
     if (bank.closest && bank.closest.length) {
       box.append(mkEl('et-head', 'Closest unlocks'));
-      for (const c of bank.closest) box.append(mkEl('et-row', `${c.name} · ${c.text} (${Math.floor(c.frac * 100)}%)`));
+      for (const c of bank.closest) box.append(mkEl('et-row', `${c.gate ? 'Gate: ' : ''}${c.name} · ${c.text} (${Math.floor(c.frac * 100)}%)`));
     }
   }
 

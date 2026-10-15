@@ -3,6 +3,7 @@ import { Sim } from './sim/Sim.js';
 import data from './data/index.js';
 import { SaveStore } from './save/store.js';
 import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
+import { newlyLines } from './meta/gatewords.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
@@ -192,7 +193,7 @@ export const app = {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
     const b = this.save.bankRun(sim.result(), { def: treeDef, data });
-    b.newly = b.newlyMet.map((id) => treeDef.nodes[id].name);
+    b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
     if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';
     return b;
@@ -213,6 +214,7 @@ export const app = {
       applyImport: (s) => { this.save.applyImport(s); this.applySettings(); },
       resetSave: () => { this.save.reset(); this.applySettings(); },
       storageNote: () => (this.save.persistent ? null : 'Browser storage is blocked or full: progress will not persist.'),
+      isFirstRun: () => (this.save.data.stats.runs || 0) === 0 && Object.keys(this.save.data.tree).length === 0,
       getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),
       openSettings: () => this.ui.showSettings(),
       openTree: () => this.openTree(),

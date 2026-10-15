@@ -1,3 +1,4 @@
+import { nodeTitle } from './gatewords.js';
 // Skill tree (meta-progression). Pure JS, no DOM, no Phaser. All save input is untrusted.
 // Schema and rules: docs/design/skill-tree-v1.md. Data: src/data/tree.json.
 
@@ -505,8 +506,8 @@ export function closestUnlocks(def, save, data, count = 3) {
     const p = conditionProgress(n.unlock, save.stats, def, data);
     if (p.done || p.frac <= 0) continue;
     // progress has begun (frac > 0): same reveal rule as describeNode
-    const open = p.lines.filter((l) => !l.done)[0];
-    rows.push({ id, name: n.name, frac: p.frac, text: open ? `${open.text}: ${open.cur}/${open.goal}` : '' });
+    const open = p.lines.filter((l) => !l.done).slice(0, 2);
+    rows.push({ id, name: nodeTitle(def, id, data), gate: !!n.permanent, frac: p.frac, text: open.map((l) => `${l.text}: ${l.cur}/${l.goal}`).join(' + ') });
   }
   rows.sort((a, b) => b.frac - a.frac);
   return rows.slice(0, count);
@@ -521,7 +522,7 @@ export function describeNode(def, save, id, data) {
   return {
     ...s,
     masked,
-    name: masked ? '???' : n.name,
+    name: nodeTitle(def, id, data, masked),
     desc: masked ? 'Something stirs in the Hollow. Keep playing to find out what.' : n.desc,
     flavour: masked ? '' : n.flavour,
     condLines: masked ? [{ text: n.teaser ? 'Belongs to a part of the Hollow you have not reached.' : 'Conditions unknown.', cur: 0, goal: 1, done: false }] : lines,

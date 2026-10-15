@@ -1,6 +1,7 @@
 // Skill tree screen: a pannable, zoomable node web. Plain styling on purpose (the art identity is not chosen yet).
 // Lines are drawn on one canvas; nodes are DOM buttons created only while near the viewport (virtualised),
 // so 500+ nodes stay smooth. Every string from data is inserted with textContent, never innerHTML.
+import { gateTag, PERMANENT_NOTE, GATE_KEY_TEXT, RESPEC_ARMED, RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
 import { describeNode, nodeStatus, pathToHub, queryRect, spentOf } from '../meta/tree.js';
 
 const NODE = 46; // node diameter in world units
@@ -105,6 +106,10 @@ export class TreeScreen {
     hub.style.left = '0px';
     hub.style.top = '0px';
     this.world.append(hub);
+    const key = mk('div', 'tree-gatekey', GATE_KEY_TEXT);
+    key.style.left = '0px';
+    key.style.top = '52px';
+    this.world.append(key);
     for (const b of Object.values(this.def.branches)) {
       const rad = (b.angle * Math.PI) / 180;
       const lab = mk('div', 'tree-branch', b.name);
@@ -239,7 +244,7 @@ export class TreeScreen {
     this.status.clear();
     for (const id of this.def.list) this.status.set(id, nodeStatus(this.def, save, id, this.data));
     this.bankEl.textContent = `${save.gold} gold · ${save.shards} soul shards`;
-    this.respecBtn.disabled = Object.keys(save.tree).length === 0;
+    this.respecBtn.disabled = !Object.keys(save.tree).some((id) => this.def.nodes[id] && !this.def.nodes[id].permanent);
     for (const [id, el] of this.els) this.styleNode(id, el);
     this.schedule();
   }
@@ -252,6 +257,7 @@ export class TreeScreen {
     if (s.rank > 0 && s.state !== 'owned') cls.push('partial');
     if (s.state === 'available' && s.affordable) cls.push('afford');
     if (n.keystone) cls.push('key');
+    if (n.permanent) cls.push('gate');
     if (n.hidden || n.teaser) cls.push('mystery');
     if (s.state === 'available' && n.unlock && !save.seen[id]) cls.push('new');
     if (this.sel === id) cls.push('sel');
@@ -261,8 +267,8 @@ export class TreeScreen {
     const d = describeNode(this.def, save, id, this.data);
     el.setAttribute('aria-label', `${d.name}, ${s.state}${n.maxRank > 1 ? `, rank ${s.rank} of ${n.maxRank}` : ''}`);
     const lab = el.querySelector('.tn-label');
-    lab.textContent = d.masked ? '???' : n.name;
-    el.querySelector('.tn-rank').textContent = d.masked ? '?' : (n.maxRank > 1 ? `${s.rank}/${n.maxRank}` : (s.rank ? '' : ''));
+    lab.textContent = d.name;
+    el.querySelector('.tn-rank').textContent = gateTag(this.def, id) || (d.masked ? '?' : (n.maxRank > 1 ? `${s.rank}/${n.maxRank}` : ''));
     el.style.setProperty('--p', String(s.cond && !s.cond.done && !d.masked ? Math.round(s.cond.frac * 100) : (s.state === 'owned' ? 100 : 0)));
   }
 
@@ -368,10 +374,11 @@ export class TreeScreen {
     const d = describeNode(this.def, save, this.sel, this.data);
     const br = this.def.branches[n.branch];
     p.append(mk('div', 'tp-title', d.name));
-    const meta = `${br.name} · tier ${n.ring}${n.maxRank > 1 ? ` · rank ${d.rank}/${n.maxRank}` : ''}${n.keystone ? ' · KEYSTONE' : ''}`;
-    p.append(mk('div', 'tp-meta', d.masked ? `${br.name} · tier ${n.ring}` : meta));
+    const meta = `${gateTag(this.def, this.sel) ? 'GATE · ' : ''}${br.name} · tier ${n.ring}${n.maxRank > 1 ? ` · rank ${d.rank}/${n.maxRank}` : ''}${n.keystone ? ' · KEYSTONE' : ''}`;
+    p.append(mk('div', 'tp-meta', d.masked ? `${gateTag(this.def, this.sel) ? 'GATE · ' : ''}${br.name} · tier ${n.ring}` : meta));
     p.append(mk('div', 'tp-desc', d.desc));
     if (d.flavour) p.append(mk('div', 'tp-flavour', d.flavour));
+    if (n.permanent) p.append(mk('div', 'tp-line perm', PERMANENT_NOTE));
     if (d.state === 'owned') p.append(mk('div', 'tp-line ok', 'Owned.'));
     else if (d.reason && d.state !== 'condition') p.append(mk('div', 'tp-line warn', d.reason));
     if (d.condLines.length && d.state !== 'owned' && d.rank === 0) {
@@ -432,7 +439,7 @@ export class TreeScreen {
   onRespec() {
     if (this.armed !== 'respec') {
       this.armed = 'respec';
-      this.respecBtn.textContent = 'Really respec? Click again';
+      this.respecBtn.textContent = RESPEC_ARMED;
       clearTimeout(this.armTimer);
       this.armTimer = setTimeout(() => { this.armed = null; this.respecBtn.textContent = 'Respec (free)'; }, 4000);
       return;
@@ -443,6 +450,6 @@ export class TreeScreen {
     const spent = this.api.respec();
     this.refresh();
     this.renderPanel();
-    if (this.msg) this.msg.textContent = `Refunded ${spent.gold} gold and ${spent.shards} shards.`;
+    if (this.msg) this.msg.textContent = `Refunded ${spent.gold} gold and ${spent.shards} shards.${RESPEC_DONE_SUFFIX}`;
   }
 }

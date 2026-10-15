@@ -255,3 +255,10 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .et-head.good { color: var(--gold); }
 .et-row { font-size: .95em; }
 @container (max-width: 520px) { .tree-help { display: none; } .tree-panel { max-height: 45%; } }
+/* G1c: gate wording (plain; reuses tokens) */
+.tree-gatekey { position: absolute; transform: translateX(-50%); font-size: 10px; letter-spacing: .08em; color: var(--muted); white-space: nowrap; pointer-events: none; }
+.tree-node.gate { border-style: double; border-width: 4px; }
+.tree-node.gate .tn-rank { font-size: 8px; letter-spacing: .06em; }
+.tp-line.perm { color: var(--gold); font-size: .85em; }
+.firstrun { color: var(--muted); margin: 0 0 1em; max-width: 36em; text-align: center; }
+.firstrun .btn { margin-top: .5em; }
