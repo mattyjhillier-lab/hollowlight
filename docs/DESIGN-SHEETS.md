@@ -13,7 +13,7 @@ Matt: "like the character sheets we have done, a complete redesign of everything
 3. Summons: Ghost Wolf (pack look, pup link), Raven, Orbit lights, Bolts, Chain Lightning, their evolutions' signature looks (after the summons/weapons review decides what each is).
 4. Enemies (include MINIBOSSES at set times + chest rewards idea, see QUEUE parked idea): Fell Wolf, Grave Crow, Root Crawler + new Chapter 1 types, corruption look, animation personality, behaviour (research first; Matt: enemies feel blocky/flat).
 5. Skill tree (with EMBLEM CONSTELLATIONS (Matt, 2026-10-15): each weapon cluster's node layout traces that weapon's emblem (wolf head, raven wing, jagged bolt, forked lightning, orbit ring; future: flame for Lantern Wisps, bell, hand...). Evolution gates sit at meaningful points of the shape (e.g. the wolf's eyes). Locked clusters show a faint silhouette teaser until the weapon is unlocked, then light up. Needs ~12-20 nodes per weapon, readable at phone size, upgrade flow must still make sense along the shape.): STRUCTURE v2 first (per-weapon clusters, global rings, evolutions inside weapon clusters), then its look (lit nodes, fog reveal, detail panel), desktop and phone.
-6. Title screen, hero select, menus, settings, results/victory dawn, defeat.
+6. Front door flow (cover, device save-slots/profiles, Continue/New, hero select, map/chapter select, no accounts; see QUEUE): Title screen, hero select, menus, settings, results/victory dawn, defeat.
 7. Boss: Elder Treant (3 phases) and boss intro.
 8. Audio direction (sound palette, music mood) and logo/wordmark/icon.
 
