@@ -18,6 +18,15 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | Skill tree v2 | Per-weapon clusters (emblem constellations), global rings, evolutions inside weapon clusters, locked clusters dim until unlocked | 2026-10-15 | docs/QUEUE.md (design sheet pending) |
 | Design sheet series | One sheet per area, approved before building; first = HUD + cards | 2026-10-15 | docs/DESIGN-SHEETS.md |
 | Working rules | Security first, token conservation, fit-the-game, small chunks, focus keeper, research-review-build, ability principle, no hiring | 2026-10-14/15 | CLAUDE.md |
+| Meta-progression principle | The tree rewards exploration: different enemies, stages, builds and heroes unlock different nodes; big pannable web; nodes light up; locked nodes show progress | 2026-10-14 | CLAUDE.md, docs/research/19, 22 |
+| Unique creatures | Every hero and enemy has its own silhouette/colour/animation personality (no recolours); each authored as its own data-driven vector definition | 2026-10-14 | CLAUDE.md |
+| Creative freedom | docs/BIBLE.md is a starting point, not binding; any idea that fits identity + mechanics + style is welcome | 2026-10-14 | docs/ART-DECISIONS.md |
+| Ability/evolution principle | Meaningful, fits the hero/spirit, never game-breaking; evolutions change the verb, ~1.8-2.3x base, 3x cap, checked against real behaviour | 2026-10-14 | CLAUDE.md |
+| Asset production | Zero budget, no hiring; code/AI/CC0 only; AI assets need licence and provenance checks; disclose AI use at launch; Matt's Forge/ComfyUI on D:AI is for his other project: no GPU use or changes without asking | 2026-10-14 | CLAUDE.md, docs/research/20 |
+| Hosting | Public GitHub Pages for now (main protected, PR + Matt's yes); later private repo + Cloudflare Pages before outside testers/launch | 2026-10-14 | docs/research/05, 11, 21 |
+| Phone play | TOUCH-1: floating joystick, ability and pause buttons, tappable cards; provisional layout until HUD sheet #1; PWA/installable later | 2026-10-15 | docs/QUEUE.md (queued) |
+| Quality gate | Every chunk: tests + balance check + security + fit + lock-conflict check + true-size screenshots (see CLAUDE.md definition of done) | 2026-10-15 | CLAUDE.md |
+| Parked ideas (not locked, research later) | Map challenges/points of interest; minibosses at set times with chest rewards; life-map gameplay link; difficulty tiers/Gloom dial; the other 8 heroes; chapters 2-8; weapon combining | 2026-10-15 | docs/QUEUE.md |
 
 ## Reopened (with reason)
 - (none yet)
