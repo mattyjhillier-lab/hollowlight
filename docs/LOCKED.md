@@ -30,6 +30,7 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | Quality gate | Every chunk: tests + balance check + security + fit + lock-conflict check + true-size screenshots (see CLAUDE.md definition of done) | 2026-10-15 | CLAUDE.md |
 | W2 Rally the Pack decision | HELD on branch w2-rally until W3 Candle Wheel is built; rebalance both abilities together at the R1 retune checkpoint (Matt 2026-10-15) | 2026-10-15 | docs/QUEUE.md |
 | PWA orientation | Installed app opens LANDSCAPE only (manifest orientation landscape) | 2026-10-15 | public/manifest.webmanifest |
+| Weapons v1.1 small decisions | Echo wolves rise only from kills the pack itself makes; ravens get NO Rally damage bonus (they join the call); front-door audio and touch settings are per DEVICE not per profile (Matt 2026-10-15) | 2026-10-15 | docs/design/weapons-and-summons-v1.1.md |
 | Front door | Device-only save slots/profiles (max 3; the profile screen is skipped when only one exists; Matt 2026-10-15), Continue/New Game, no accounts or backend at launch; flow cover -> play -> profile -> hero -> map -> run (design sheet #6 pending) | 2026-10-15 | docs/QUEUE.md |
 | Parked ideas (not locked, research later) | Map challenges/points of interest; minibosses at set times with chest rewards; life-map gameplay link; difficulty tiers/Gloom dial; the other 8 heroes; chapters 2-8; weapon combining | 2026-10-15 | docs/QUEUE.md |
 
