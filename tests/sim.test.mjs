@@ -185,15 +185,15 @@ test('surviving 15 minutes ends in victory; zero HP ends in defeat', () => {
   assert.equal(lose.state, 'defeat');
 });
 
-test('Pack Howl: starts on cooldown, scares nearby enemies, boosts speed, then recharges', () => {
+test('Rally the Pack: starts on cooldown, opens the window, no fear, then recharges', () => {
   const sim = mk({ characterId: 'wren', godMode: true });
   sim.chapter = { ...sim.chapter, waves: [], events: [], bossAt: 1e9 };
   sim.spawnAcc = [];
   sim.ability.cdLeft = 0;
   const e = sim.spawnEnemy('wolf', sim.player.x + 40, sim.player.y);
   sim.step(DT, { ability: true });
-  assert.ok(sim.buffs.packHowl > 5);
-  assert.ok(e.fearT > 1);
+  assert.ok(sim.buffs.rally > 5);
+  assert.ok(!(e.fearT > 0));
   assert.ok(sim.ability.cdLeft > 55);
   const left = sim.ability.cdLeft;
   sim.step(DT, { ability: true });

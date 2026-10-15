@@ -42,15 +42,15 @@ const ghostWolves = {
       r: 4, atkCd: 0, target: null, retarget: 0, dash: 0, dashCd: 0.1 + i * 0.25, slot: i, hit: null, faceX: 1,
     }));
 
-    const howl = sim.buffs.packHowl > 0 ? 2 : 1;
-    let dmg = s.power * sim.dmgMult(w) * howl;
-    let speed = s.speed * howl;
+    const rallying = sim.rally && sim.buffs.rally > 0; // Rally the Pack: wolves only
+    let dmg = s.power * sim.dmgMult(w) * (rallying ? 1 + sim.ability.bonus : 1);
+    let speed = s.speed;
     let bleedDur = s.duration;
     if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.4); bleedDur *= 1.5; }
     const bleedDps = dmg * 0.35;
-    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.5) : 0.6) / howl;
+    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.5) : 0.6);
 
     if (evo === 'howling_legion') {
       rt.howlCd = (rt.howlCd ?? 4) - dt;
@@ -105,7 +105,11 @@ const ghostWolves = {
         if (u.maul > 0) continue;
       }
 
-      if (!u.target || u.target.dead || u.retarget <= 0) {
+      const rallyT = rallying && sim.rally.target && !sim.rally.target.dead ? sim.rally.target : null;
+      if (rallyT) {
+        u.target = rallyT; // the whole pack converges on the rallied enemy
+        u.retarget = 0.4;
+      } else if (!u.target || u.target.dead || u.retarget <= 0) {
         // Hunt close to the player so loot and gems stay within reach.
         const taken = new Set();
         for (const o of units) if (o !== u && o.target && !o.target.dead) taken.add(o.target.id);

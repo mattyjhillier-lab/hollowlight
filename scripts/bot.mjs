@@ -59,7 +59,7 @@ function botInput(sim) {
   // drift back toward world centre when near the edge
   const c = sim.balance.worldSize / 2;
   ax += (c - p.x) * 0.0004; ay += (c - p.y) * 0.0004;
-  return { x: ax, y: ay, ability: sim.ability.cdLeft <= 0 && sim.enemies.length > 25 };
+  return { x: ax, y: ay, ability: process.env.ABILITY !== 'off' && sim.ability.cdLeft <= 0 && sim.enemies.length > 25 };
 }
 
 function pick(sim, rng) {

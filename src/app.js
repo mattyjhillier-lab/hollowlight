@@ -179,7 +179,8 @@ export const app = {
     else if (ev.type === 'evolve') { this.ui.toast(`Evolved: ${d.evolutions[ev.id].name}`); this.scene.evolveMoment(); }
     else if (ev.type === 'heart') { this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
     else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
-    else if (ev.type === 'howl') this.ui.toast('Pack Howl');
+    else if (ev.type === 'rally') { this.ui.toast('Rally the Pack'); this.scene.rallyMoment(); }
+    else if (ev.type === 'howl') this.ui.toast('Howl');
     else if (ev.type === 'sanctuary') this.ui.toast('Sanctuary');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
     else if (ev.type === 'bossDead') this.ui.toast('The Elder Treant falls (+soul shards)');

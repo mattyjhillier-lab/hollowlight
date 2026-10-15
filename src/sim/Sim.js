@@ -64,7 +64,7 @@ export class Sim {
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
     this.unlockedEvolutions = new Set(T.unlocks?.evolutions || []); // tree-derived only, never from save.unlocks
-    this.buffs = { packHowl: 0, speedBoost: 0, speedMult: 1, rush: 0 };
+    this.buffs = { rally: 0, speedBoost: 0, speedMult: 1, rush: 0 };
     if (T.player?.maxHp && T.player.maxHp !== 1) {
       this.player.maxHp = Math.round(this.player.maxHp * T.player.maxHp);
       this.player.hp = this.player.maxHp;
@@ -111,7 +111,8 @@ export class Sim {
     this.chapter.events.forEach((ev, i) => { if (ev.t < startTime) this.eventsDone.add(i); });
 
     const ab = this.character.ability;
-    this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10 };
+    this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10, bonus: ab.bonus ?? 0 };
+    this.rally = null; // Rally the Pack window: { target, t, dur } (target may be null until an enemy is in reach)
     this.ability.cdLeft = Math.min(this.ability.cdLeft, this.abilityCooldown);
 
     this.patches = [];
@@ -502,7 +503,6 @@ export class Sim {
     p.iframes = Math.max(0, p.iframes - dt);
     if (this.tfx.regen > 0) this.healPlayer(this.tfx.regen * dt);
     this.buffs.rush = Math.max(0, this.buffs.rush - dt);
-    this.buffs.packHowl = Math.max(0, this.buffs.packHowl - dt);
     this.buffs.speedBoost = Math.max(0, this.buffs.speedBoost - dt);
   }
 
@@ -666,20 +666,50 @@ export class Sim {
     const p = this.player;
     a.cdLeft = this.abilityCooldown;
     const dur = 6 * this.tfx.abilityDur;
-    if (a.id === 'pack_howl') {
-      this.buffs.packHowl = dur;
-      this.addSpeedBoost(1.25, dur);
-      for (const e of this.enemies) {
-        if (!e.dead && !e.boss && Math.hypot(e.x - p.x, e.y - p.y) < 130) e.fearT = Math.max(e.fearT, 2);
-      }
-      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 130, ttl: 0.35, color: '#9fd8ff' });
-      this.pushEvent('howl');
+    if (a.id === 'rally_pack') {
+      // Rally the Pack: the wolves converge on (and pin) the toughest non-boss enemy; wolf damage +bonus while it lasts.
+      // The window is its own state (this.rally), never a speed boost. Ravens read this.rally.target from W8a on.
+      this.buffs.rally = dur;
+      this.rally = { target: this.pickRallyTarget(), t: dur, dur };
+      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 90, ttl: 0.35, color: '#ffcf7a' });
+      this.pushEvent('rally');
     } else if (a.id === 'sanctuary') {
       const holy = this.character.traits.holyDamage || 1;
       this.spawnZone({ x: p.x, y: p.y, r: 70, ttl: dur, dps: 14 * this.mods.damage * holy, heal: 3, color: '#fff3b0' });
       this.pushEvent('sanctuary');
     }
     return true;
+  }
+
+  // Toughest (highest current HP) non-boss enemy near the hero; a boss only if nothing else is in reach (wolves bite it, never pin it).
+  pickRallyTarget() {
+    const p = this.player;
+    let best = null;
+    let boss = null;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (e.boss) { if (d < 300 && !boss) boss = e; continue; }
+      if (d < 240 && (!best || e.hp > best.hp || (e.hp === best.hp && e.id < best.id))) best = e;
+    }
+    return best || boss;
+  }
+
+  updateRally(dt) {
+    const r = this.rally;
+    if (!r) return;
+    r.t -= dt;
+    this.buffs.rally = Math.max(0, r.t);
+    if (r.t <= 0) {
+      const t = r.target;
+      if (t && !t.dead) this.addFx({ kind: 'ring', x: t.x, y: t.y, r: 26, ttl: 0.3, color: '#ffcf7a' });
+      this.pushEvent('rallyEnd');
+      this.rally = null;
+      return;
+    }
+    if (!r.target || r.target.dead) r.target = this.pickRallyTarget();
+    const t = r.target;
+    if (t && !t.boss) t.heldT = Math.max(t.heldT || 0, 0.25); // pin; a boss is never pinned
   }
 
   cleanupDead() {
@@ -813,6 +843,7 @@ export class Sim {
     this.time += dt;
     this.updatePlayer(dt, input);
     this.updateSpawns(dt);
+    this.updateRally(dt);
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
     this.updateWeapons(dt);
