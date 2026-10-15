@@ -114,3 +114,5 @@ Standing rules always apply: security first, token conservation, everything must
 
 ## Ideas parked (do not start without Matt)
 Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 characters, prestige, codex, touch controls beyond P8, gameplay link for the life map (restored ground empowers summons), "summon mastery/commands" idea from the review, kill-streak/other systems.
+
+- FEEDBACK 2026-10-16 (Matt, on W0): "world needs to feel more alive". Fold into W1-W5 spec as an "ambient life" pass (sway, motes, critters, wind, reactive foliage); design it before building W1. Waiting for Matt's go on W1.
