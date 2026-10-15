@@ -563,6 +563,15 @@ export function makeStyleTextures(scene, style) {
   const gt = scene.textures.addCanvas('ground', gcv);
   if (nearest) gt.setFilter(1);
   INV.ground = style === 'b' ? 0.5 : 0.5;
+  // W0 placeholder restored tile (same seamless layout as the Hollow tile, warmed and brightened). Real tiles come in W1.
+  if (scene.textures.exists('groundR')) scene.textures.remove('groundR');
+  const rcv = mkCanvas(gcv.width, gcv.height);
+  const rc = rcv.getContext('2d');
+  rc.drawImage(gcv, 0, 0);
+  rc.globalCompositeOperation = 'soft-light'; rc.fillStyle = '#8fd06a'; rc.globalAlpha = 0.9; rc.fillRect(0, 0, rcv.width, rcv.height);
+  rc.globalCompositeOperation = 'screen'; rc.fillStyle = '#2a3a2c'; rc.globalAlpha = 1; rc.fillRect(0, 0, rcv.width, rcv.height);
+  rc.globalCompositeOperation = 'source-over';
+  scene.textures.addCanvas('groundR', rcv);
   vignette(scene);
   for (const [key, brass] of [['digits', false], ['digitsB', true]]) {
     const dg = digitsCanvas(style, brass);

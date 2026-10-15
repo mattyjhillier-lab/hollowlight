@@ -25,6 +25,8 @@ function parseParams() {
     grant: q.get('grant'), // dev: "spirit_bolts:power=5,pierce=5:soul_lance;raven_flock"
     bless: q.get('bless'), // dev: "wider_glow:2;kind_fortune:3" (validated; disables banking)
     debug: q.get('debug') === '1',
+    life: q.get('life') === '1', // dev: show the life map
+    flat: q.get('ground') === 'flat', // dev: force the Low ground fallback (no shader)
     touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree
   };

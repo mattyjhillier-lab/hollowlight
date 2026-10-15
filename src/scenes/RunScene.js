@@ -11,6 +11,8 @@ import { heroHaloAlpha } from '../gfx/rigmath.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
+import { GroundBlend } from '../gfx/groundblend.js';
+import { LifeMap } from '../world/lifemap.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
@@ -28,6 +30,21 @@ const D_LIT = 60000;
 const D_PART = 90000;
 const D_FX = 100000;
 const D_VIG = 120000;
+
+// ?life=1 debug view of the life map (DOM canvas, bottom-left).
+function makeLifeDebug(parent) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 256;
+  cv.style.cssText = 'position:absolute;left:8px;bottom:8px;width:160px;height:160px;z-index:50;image-rendering:pixelated;border:1px solid #fff8;pointer-events:none;background:#000';
+  parent.appendChild(cv);
+  return { cv, g: cv.getContext('2d'), img: new ImageData(256, 256) };
+}
+function drawLifeDebug(d, life, p) {
+  const px = d.img.data;
+  for (let i = 0, j = 0; i < life.life.length; i++, j += 4) { const v = life.rgba[j]; px[j] = v; px[j + 1] = v * 0.8; px[j + 2] = v * 0.3; px[j + 3] = 255; }
+  d.g.putImageData(d.img, 0, 0);
+  d.g.fillStyle = '#0ff'; d.g.fillRect(p.x / life.cell - 2, p.y / life.cell - 2, 4, 4);
+}
 
 const hex = (s) => parseInt(s.slice(1), 16);
 
@@ -92,6 +109,16 @@ export class RunScene extends Phaser.Scene {
     const size = app.data.balance.worldSize;
     this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000).setTileScale(inv('ground'));
     this.groundG = this.add.graphics().setDepth(-400);
+    // W0 life map (visual only): hero + spirits paint life, it fades in ~25 s; the ground shader (Med/High) or warm pool sprites (Low) show it
+    this.life = new LifeMap({ n: 256, world: size, decay: 25 });
+    this.gb = new GroundBlend(this);
+    this.gbOn = false;
+    this.lifeLast = null;
+    this.lifeFrames = 0;
+    this.lifeDbg = app.params.life ? makeLifeDebug(document.getElementById('stage') || document.body) : null;
+    this.lowPool = Array.from({ length: 14 }, () => this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(-450).setTint(ROLE.lantern).setScale(5.5 * inv('glow')).setAlpha(0).setVisible(false));
+    this.lowPoolI = 0;
+    this.lowPoolT = 0;
     this.fxG = this.add.graphics().setDepth(D_FX).setBlendMode(Phaser.BlendModes.ADD);
 
     // dusk-to-dawn: lightmap (Med/High, half-res multiply layer) or plain tint of ground + trees (Low / fallback) + vignette
@@ -246,6 +273,9 @@ export class RunScene extends Phaser.Scene {
 
   bindSim(sim) {
     this.sim = sim;
+    this.life.reset();
+    this.lifeLast = null;
+    for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
     const size = app.data.balance.worldSize;
     const cam = this.cameras.main;
     cam.setBounds(0, 0, size, size);
@@ -372,10 +402,18 @@ export class RunScene extends Phaser.Scene {
     if (c.lightmap && !this.lm.rt) this.lm.build(this.scale.width, this.scale.height, this.baseZoom);
     this.lmOn = !!(c.lightmap && this.lm.ok);
     this.lm.setVisible(this.lmOn);
+    // ground blend shader on Med/High when WebGL accepts it; otherwise flat Hollow tile + warm pool sprites
+    const wantGb = !!(c.lightmap && !app.params.flat);
+    if (wantGb && !this.gb.sh) this.gb.build(app.data.balance.worldSize, this.life);
+    this.gbOn = !!(wantGb && this.gb.ok);
+    this.gb.setVisible(this.gbOn);
+    this.ground.setVisible(!this.gbOn);
     this.vig.setVisible(c.vignette);
     this.gradeTint = -1;
     if (this.lmOn) this.setGround(0xffffff);
     else this.setGround(this.gradeNow);
+    this.gb.setTint(this.lmOn ? 0xffffff : this.gradeNow);
+    for (const im of this.lowPool) im.setVisible(false);
     this.parts.setCap(c.particles);
     this.nums.setCap(c.dmgNums);
     this.playerGlow.setVisible(!!this.sim);
@@ -511,6 +549,7 @@ export class RunScene extends Phaser.Scene {
     if (col === this.gradeTint) return;
     this.gradeTint = col;
     this.ground.setTint(col);
+    this.gb.setTint(col);
     for (const d of this.decor) d.setTint(col);
   }
 
@@ -598,6 +637,7 @@ export class RunScene extends Phaser.Scene {
 
     // player: lantern pool + ground ring (readability) + lantern light
     this.followTarget.setPosition(p.x, p.y);
+    this.tickLife(sim, p);
     const rig = this.rig.active;
     if (rig) this.rig.update(sim, this.quality.tier, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, caps, this.parts);
     else {
@@ -834,6 +874,40 @@ export class RunScene extends Phaser.Scene {
     }
     this.haloCount = halos;
     for (const pool of Object.values(pl)) pool.end();
+  }
+
+  // W0 life map: hero lantern paints a ribbon, spirits paint small blooms (10 Hz); decay + GPU upload at 10 Hz. Visual only.
+  tickLife(sim, p) {
+    const life = this.life;
+    const last = this.lifeLast;
+    if (last && Math.abs(p.x - last.x) + Math.abs(p.y - last.y) < 400) life.stampLine(last.x, last.y, p.x, p.y, 70, 1);
+    else life.stamp(p.x, p.y, 70, 1);
+    if (!last) this.lifeLast = { x: p.x, y: p.y };
+    else { last.x = p.x; last.y = p.y; }
+    const us = sim.units;
+    if (this.lifeAcc === undefined || this.lifeAcc >= 0.1) { this.lifeAcc = 0; for (let i = 0, n = Math.min(us.length, 30); i < n; i++) { const u = us[i]; if (!u.dead) life.stamp(u.x, u.y, 36, 0.9); } }
+    this.lifeAcc += this.game.loop.delta / 1000;
+    if (!life.update(this.game.loop.delta / 1000)) return;
+    if (this.gbOn) this.gb.upload(life);
+    if (this.lifeDbg) drawLifeDebug(this.lifeDbg, life, p);
+    if (++this.lifeFrames === 8 && this.gbOn) { // one-time GL error check after the first uploads
+      const gl = this.renderer.gl;
+      if (gl && gl.getError() !== gl.NO_ERROR) { this.gb.fail(); this.applyTier(); }
+    }
+    if (!this.gbOn) {
+      this.lowPoolT += 0.1;
+      if (this.lowPoolT >= 0.6) { // Low look: a warm pool dropped behind the hero every 0.6 s, alpha follows the life map
+        this.lowPoolT = 0;
+        const im = this.lowPool[this.lowPoolI];
+        this.lowPoolI = (this.lowPoolI + 1) % this.lowPool.length;
+        im.setPosition(p.x, p.y + 8);
+        im.dropAt = sim.time;
+      }
+      for (const im of this.lowPool) {
+        const v = im.dropAt === undefined ? 0 : life.sample(im.x, im.y);
+        im.setVisible(v > 0.02).setAlpha(0.3 * v);
+      }
+    }
   }
 
   // Enemy death: a few rising spirit wisps (pooled, additive).
