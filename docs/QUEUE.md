@@ -1,6 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 ## WAITING ON MATT (reminder list, 2026-10-15)
+000. Weapons+summons design (docs/design/weapons-and-summons-v1.md): Matt approved decisions 1 (Ravens real summon + Rally includes ravens), 2 (Howling Legion echo wolves), 3 (Holy Orbit guard contraction). STILL TO DECIDE after the independent review: Halo healing model (kill-heal capped 1 HP/s, heal-zone stopgap) and raven mark +10%. World research (docs/research/30-world-and-maps.md) to walk through, then world design sheet #2.
 00. DONE 2026-10-15 (Matt approved): Vite 6.4.4 exact pin + in-repo inliner replaces vite-plugin-singlefile; npm audit 0; 204 tests; dev only (goes live with next release); Dependabot PRs #4/#5 closed. Future dependency bumps: test on a branch first, never merge blind.
 0. LIVE 2026-10-15 (PR #7, merged): installable app (PWA) + HUD-1 + HUD-2 cards + evolve hint at https://mattyjhillier-lab.github.io/hollowlight/. Matt: try the install on your phone, send the link to your friend, confirm manifest orientation landscape vs any, tell me what you think of the HUD and cards.
 1. HUD-1 screenshots (docs/screenshots/hud1/): like it / change X? (locks it)
