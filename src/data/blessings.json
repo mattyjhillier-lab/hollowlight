@@ -1,11 +1,11 @@
 {
   "heal": { "hpBelow": 0.4, "cooldown": 45 },
-  "caps": { "damage": 1.06, "maxHp": 1.18, "speed": 1.06, "pickup": 1.24, "gold": 1.24 },
+  "caps": { "damage": 1.06, "maxHp": 1.12, "speed": 1.04, "pickup": 1.24, "gold": 1.24 },
   "items": {
     "wider_glow": { "name": "Wider Glow", "desc": "Your lantern shines further. Pickup radius +8%.", "effect": "pickup", "perRank": 0.08, "ranks": 3, "weight": 1 },
-    "wrapped_warmth": { "name": "Wrapped Warmth", "desc": "Wrapped in warmth. Max HP +6% and heal that much.", "effect": "maxHp", "perRank": 0.06, "ranks": 3, "weight": 1 },
+    "wrapped_warmth": { "name": "Wrapped Warmth", "desc": "Wrapped in warmth. Max HP +4% and heal that much.", "effect": "maxHp", "perRank": 0.04, "ranks": 3, "weight": 1 },
     "kindled_spirits": { "name": "Kindled Spirits", "desc": "Your spirits burn brighter. Spirit damage +2%.", "effect": "damage", "perRank": 0.02, "ranks": 3, "weight": 0.7 },
     "kind_fortune": { "name": "Kind Fortune", "desc": "Spirits repay kindness. Gold +8% this run.", "effect": "gold", "perRank": 0.08, "ranks": 3, "weight": 0.7 },
-    "dawnlit_soles": { "name": "Dawnlit Soles", "desc": "Your steps quicken toward dawn. Move speed +3%.", "effect": "speed", "perRank": 0.03, "ranks": 2, "weight": 1 }
+    "dawnlit_soles": { "name": "Dawnlit Soles", "desc": "Your steps quicken toward dawn. Move speed +2%.", "effect": "speed", "perRank": 0.02, "ranks": 2, "weight": 1 }
   }
 }

@@ -158,7 +158,7 @@ test('bless caps hold with extreme tree mods and absurd ranks', () => {
   const sim = new Sim({ data, characterId: 'wren', seed: 1, tree: { mods: { damage: 9, pickup: 9, speed: 9, gold: 9 } } });
   for (const id of IDS) sim.blessRanks[id] = 1e9;
   const b = sim.bless;
-  assert.ok(b.damage <= 1.06 + 1e-9 && b.speed <= 1.06 + 1e-9 && b.pickup <= 1.24 + 1e-9 && b.gold <= 1.24 + 1e-9 && b.maxHp <= 1.18 + 1e-9);
+  assert.ok(b.damage <= 1.06 + 1e-9 && b.speed <= 1.04 + 1e-9 && b.pickup <= 1.24 + 1e-9 && b.gold <= 1.24 + 1e-9 && b.maxHp <= 1.12 + 1e-9);
   assert.equal(sim.mods.damage, 9, 'tree mods untouched');
   sim.blessRanks.wider_glow = NaN; sim.blessRanks.kind_fortune = -5;
   assert.equal(sim.bless.pickup, 1);
@@ -186,18 +186,18 @@ test('blessing pick changes stats once and sets rank; wrapped warmth heals what 
   sim.offer = { cards: [{ key: 'b:wrapped_warmth', kind: 'blessing', blessId: 'wrapped_warmth', rank: 0 }], gold: [] };
   sim.pickCard('b:wrapped_warmth');
   assert.equal(sim.blessRanks.wrapped_warmth, 1);
-  assert.equal(sim.player.maxHp, Math.round(base * 1.06));
+  assert.equal(sim.player.maxHp, Math.round(base * 1.04));
   assert.ok(Math.abs(sim.player.hp - (base - 20 + (sim.player.maxHp - base))) < 1e-9);
   sim.state = 'levelup';
   sim.offer = { cards: [{ key: 'b:wrapped_warmth', kind: 'blessing', blessId: 'wrapped_warmth', rank: 1 }], gold: [] };
   sim.pickCard('b:wrapped_warmth');
   assert.equal(sim.blessRanks.wrapped_warmth, 2);
-  assert.equal(sim.player.maxHp, Math.round(base * 1.12));
+  assert.equal(sim.player.maxHp, Math.round(base * 1.08));
   assert.ok(Number.isFinite(sim.player.hp) && sim.player.hp <= sim.player.maxHp);
   const sp = new Sim({ data, characterId: 'wren', seed: 3 });
   const sp0 = sp.bless.speed;
   sp.setBlessRank('dawnlit_soles', 2);
-  assert.ok(Math.abs(sp.bless.speed - sp0 * 1.06) < 1e-9);
+  assert.ok(Math.abs(sp.bless.speed - sp0 * 1.04) < 1e-9);
 });
 
 test('blessing effects reach the sim: gold and summon damage', () => {
