@@ -1,6 +1,7 @@
 // Balance sweep: many seeded bot runs, summary table.
 // Usage: node scripts/sweep.mjs [characterId] [seeds]   (FOCUS=1 for focused-pick bot)
-import { playRun } from './bot.mjs';
+import { playRun, GATES } from './bot.mjs';
+console.error(`sweep: GATES=${GATES} META=${process.env.META || 'none'}`);
 
 const char = process.argv[2] || 'wren';
 const seeds = Number(process.argv[3] || 20);

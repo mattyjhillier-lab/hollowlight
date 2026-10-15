@@ -61,6 +61,7 @@ export class Sim {
     this.reviveLeft = this.tfx.revive > 0 ? 1 : 0;
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
+    this.unlockedEvolutions = new Set(T.unlocks?.evolutions || []); // tree-derived only, never from save.unlocks
     this.buffs = { packHowl: 0, speedBoost: 0, speedMult: 1, rush: 0 };
     if (T.player?.maxHp && T.player.maxHp !== 1) {
       this.player.maxHp = Math.round(this.player.maxHp * T.player.maxHp);
@@ -121,7 +122,7 @@ export class Sim {
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).
@@ -813,9 +814,12 @@ export class Sim {
 
   // Dev/test: give a weapon (or set its ranks) without going through level-ups.
   debugGrant(id, ranks = {}, evo = null) {
+    if (!Object.hasOwn(this.data.weapons, id)) return null;
     let w = this.weapons.find((x) => x.id === id);
     if (!w) w = this.addWeapon(id);
-    Object.assign(w.ranks, ranks);
+    // Debug input is untrusted (URL): only known stats, clamped ranks; evo must be a real evolution of this weapon.
+    for (const k of Object.keys(w.ranks)) if (Object.hasOwn(ranks, k) && Number.isFinite(ranks[k])) w.ranks[k] = Math.min(this.balance.maxRank, Math.max(0, Math.floor(ranks[k])));
+    if (evo && !(Object.hasOwn(this.data.evolutions, evo) && this.data.evolutions[evo].weapon === id)) evo = null;
     w.s = {};
     w.s = computeStats(this.data.weapons[id], w.ranks, w.bonus);
     if (evo) {

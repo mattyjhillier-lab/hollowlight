@@ -4,7 +4,8 @@
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const ID_RE = /^[a-z0-9_]{1,40}$/;
 const MOD_KEYS = ['damage', 'area', 'cooldown', 'speed', 'pickup', 'xp', 'gold', 'abilityCd'];
-const UNLOCK_IDS = ['weapon', 'hero', 'abilityUpgrade', 'modifier']; // id-style unlocks
+const UNLOCK_IDS = ['weapon', 'evolution', 'hero', 'abilityUpgrade', 'modifier']; // id-style unlocks
+const GATE_KINDS = ['weapon', 'evolution', 'hero']; // permanent unlock kinds (never refunded by respec)
 const MAX_NODES = 5000;
 const CELL = 240;
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -152,6 +153,7 @@ export function compileTree(raw, data) {
       ring: n.ring, ang: n.ang, maxRank, cost: { gold, shards }, rankCost,
       requires: n.requires ? [...n.requires] : [], excludes: n.excludes ? [...n.excludes] : [],
       effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null,
+      permanent: false,
       hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true,
       x: 0, y: 0,
     };
@@ -184,6 +186,32 @@ export function compileTree(raw, data) {
     order.push(id);
   };
   for (const id of list) visit(id);
+
+  // gate nodes: permanent, maxRank 1, hang off the hub (or other gate nodes only), 1:1 with gated content
+  const gateIds = new Set();
+  const gateNodeFor = { weapon: new Map(), evolution: new Map() };
+  for (const id of list) {
+    const n = nodes[id];
+    const gates = n.effects.filter((e) => isObj(e) && GATE_KINDS.includes(e.unlock));
+    if (!gates.length) continue;
+    n.permanent = true;
+    gateIds.add(id);
+    if (n.maxRank !== 1) fail(`${id}: unlock nodes must have maxRank 1`);
+    for (const e of gates) {
+      if (e.unlock === 'hero') continue;
+      const pool = e.unlock === 'weapon' ? data.weapons : data.evolutions;
+      if (!pool[e.id].treeGate) fail(`${id}: unlocks ${e.unlock} "${e.id}" which is not gated`);
+      gateNodeFor[e.unlock].set(e.id, (gateNodeFor[e.unlock].get(e.id) || 0) + 1);
+    }
+  }
+  for (const id of gateIds) for (const r of nodes[id].requires) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
+  if (data) {
+    for (const [kind, pool] of [['weapon', data.weapons], ['evolution', data.evolutions]]) {
+      for (const [gid, g] of Object.entries(pool || {})) {
+        if (g && g.treeGate && !gateNodeFor[kind].has(gid)) fail(`gated ${kind} "${gid}" has no unlocking node (unreachable)`);
+      }
+    }
+  }
 
   // layout + overlap check + spatial index
   const cells = new Map();
@@ -250,6 +278,7 @@ function checkEffect(e, data, where) {
     else if (UNLOCK_IDS.includes(e.unlock)) {
       if (typeof e.id !== 'string' || !ID_RE.test(e.id)) fail(`${where}: unlock needs an id`);
       if (e.unlock === 'weapon' && !(data && own(data.weapons, e.id))) fail(`${where}: unknown weapon`);
+      if (e.unlock === 'evolution' && !(data && own(data.evolutions, e.id))) fail(`${where}: unknown evolution`);
       if (e.unlock === 'hero' && !(data && own(data.characters, e.id))) fail(`${where}: unknown hero`);
     } else fail(`${where}: unknown unlock kind`);
   } else fail(`${where}: unknown effect`);
@@ -328,10 +357,20 @@ export function buy(save, id, def, data) {
 
 // v1 respec: free and total. Refund = cost recomputed from the owned nodes (never a stored total).
 export function respec(save, def) {
-  const spent = spentOf(save.tree, def);
+  // Unlock nodes (weapon/evolution/hero gates) are permanent: kept, never refunded.
+  const kept = {};
+  const refundable = {};
+  if (isObj(save.tree)) {
+    for (const id of def.list) {
+      const r = rankOf(save.tree, id);
+      if (r < 1) continue;
+      if (def.nodes[id].permanent) kept[id] = r; else refundable[id] = r;
+    }
+  }
+  const spent = spentOf(refundable, def);
   save.gold = Math.min(1e12, (save.gold || 0) + spent.gold);
   save.shards = Math.min(1e12, (save.shards || 0) + spent.shards);
-  save.tree = {};
+  save.tree = kept;
   return spent;
 }
 
@@ -364,7 +403,7 @@ export function emptyEffects() {
     evoLuck: 1,
     rush: null,
     weaponBonus: {},
-    unlocks: { weapons: [], heroes: [], abilityUpgrades: [], modifiers: [] },
+    unlocks: { weapons: [], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [] },
   };
 }
 
@@ -401,6 +440,7 @@ export function aggregateMods(tree, def, data) {
       else if (e.unlock === 'banishes') out.meta.banishes += e.n * r;
       else if (e.unlock === 'autoAbility') out.ability.autoHp = Math.max(out.ability.autoHp, e.hp);
       else if (e.unlock === 'weapon') out.unlocks.weapons.push(e.id);
+      else if (e.unlock === 'evolution') out.unlocks.evolutions.push(e.id);
       else if (e.unlock === 'hero') out.unlocks.heroes.push(e.id);
       else if (e.unlock === 'abilityUpgrade') out.unlocks.abilityUpgrades.push(e.id);
       else if (e.unlock === 'modifier') out.unlocks.modifiers.push(e.id);
@@ -422,7 +462,7 @@ export function aggregateMods(tree, def, data) {
 
 // Presets for balance probes: full (every non-teaser node at max rank; first rival wins) or a
 // fraction of the total gold cost bought cheapest-first. Ignores unlock conditions on purpose.
-export function presetTree(def, name) {
+export function presetTree(def, name, withGates = false) {
   const tree = {};
   const rivals = (id) => def.nodes[id].excludes.some((x) => own(tree, x));
   if (name === 'none' || !(name === 'half' || name === 'full' || Number.isFinite(Number(name)))) return tree;
@@ -434,7 +474,7 @@ export function presetTree(def, name) {
     for (const id of def.list) {
       const n = def.nodes[id];
       const r = rankOf(tree, id);
-      if (n.teaser || r >= n.maxRank || rivals(id) || n.requires.some((q) => rankOf(tree, q) < 1)) continue;
+      if (n.teaser || (n.permanent && !withGates) || r >= n.maxRank || rivals(id) || n.requires.some((q) => rankOf(tree, q) < 1)) continue;
       const c = costFor(n, r + 1).gold;
       if (!best || c < best.c) best = { id, c };
     }
@@ -464,8 +504,9 @@ export function closestUnlocks(def, save, data, count = 3) {
     if (!n.unlock || n.teaser || rankOf(save.tree, id) > 0) continue;
     const p = conditionProgress(n.unlock, save.stats, def, data);
     if (p.done || p.frac <= 0) continue;
+    // progress has begun (frac > 0): same reveal rule as describeNode
     const open = p.lines.filter((l) => !l.done)[0];
-    rows.push({ id, name: n.hidden && p.frac < 0.5 ? '???' : n.name, frac: p.frac, text: open ? `${open.text}: ${open.cur}/${open.goal}` : '' });
+    rows.push({ id, name: n.name, frac: p.frac, text: open ? `${open.text}: ${open.cur}/${open.goal}` : '' });
   }
   rows.sort((a, b) => b.frac - a.frac);
   return rows.slice(0, count);

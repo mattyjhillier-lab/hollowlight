@@ -64,7 +64,7 @@ export const app = {
 
   // Effects of the player's owned nodes (or a dev preset). Rebuilt from the sanitised save each run.
   treeEffects() {
-    const owned = this.params.meta ? presetTree(treeDef, this.params.meta) : this.save.data.tree;
+    const owned = this.params.meta ? presetTree(treeDef, this.params.meta, true) /* previews include gate nodes */ : this.save.data.tree;
     return aggregateMods(owned, treeDef, data);
   },
 
@@ -102,7 +102,7 @@ export const app = {
   applyGrants(sim, spec) {
     for (const part of spec.split(';')) {
       const [id, stats, evo] = part.split(':');
-      if (!id || !data.weapons[id]) continue;
+      if (!id || !Object.hasOwn(data.weapons, id)) continue;
       const ranks = {};
       if (stats) for (const kv of stats.split(',')) { const [k, v] = kv.split('='); ranks[k] = Number(v); }
       sim.debugGrant(id, ranks, evo || null);

@@ -34,13 +34,20 @@ export function refreshStats(w, data) {
   w.s = computeStats(data.weapons[w.id], w.ranks, w.bonus);
 }
 
+// An evolution with treeGate:true only exists for the player once a tree node unlocks it.
+// Fails closed: a missing `unlocked` set means only ungated evolutions are open. Used at every
+// site that could reveal a recipe (gold card, pair nudge, stat-card hints) so locked ones never leak.
+export function evoOpen(evo, id, unlocked) {
+  return !evo.treeGate || !!(unlocked && unlocked.has(id));
+}
+
 // Evolutions whose stat pair is fully maxed and that haven't been taken yet.
-export function availableEvolutions(w, data) {
+export function availableEvolutions(w, data, unlocked) {
   if (w.evo) return [];
   const max = data.balance.maxRank;
   const out = [];
   for (const [evoId, evo] of Object.entries(data.evolutions)) {
-    if (evo.weapon !== w.id) continue;
+    if (evo.weapon !== w.id || !evoOpen(evo, evoId, unlocked)) continue;
     if (w.ranks[evo.pair[0]] >= max && w.ranks[evo.pair[1]] >= max) out.push(evoId);
   }
   return out;
@@ -59,13 +66,13 @@ function weaponCard(id, data) {
   };
 }
 
-function statCard(w, statKey, data) {
+function statCard(w, statKey, data, unlocked) {
   const def = data.weapons[w.id];
   const s = def.stats[statKey];
   const rank = w.ranks[statKey];
   const next = rank + 1;
-  const evoHints = Object.values(data.evolutions)
-    .filter((e) => e.weapon === w.id && e.pair.includes(statKey))
+  const evoHints = Object.entries(data.evolutions)
+    .filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, unlocked))
     .length;
   return {
     key: `s:${w.id}:${statKey}`,
@@ -120,12 +127,12 @@ export function buildPool(ctx) {
     if (w.evo) continue; // evolved weapons are final
     for (const statKey of Object.keys(data.weapons[w.id].stats)) {
       if (w.ranks[statKey] >= data.balance.maxRank) continue;
-      const pairs = Object.values(data.evolutions).filter((e) => e.weapon === w.id && e.pair.includes(statKey));
+      const pairs = Object.entries(data.evolutions).filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, ctx.unlockedEvolutions)).map(([, e]) => e);
       const nudge = data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
       let wt = pairs.length ? nudge.pair * (ctx.evoLuck || 1) : 1;
       // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
       if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= nudge.partnerRank)) wt *= nudge.partnerMult;
-      pool.push({ card: statCard(w, statKey, data), w: wt });
+      pool.push({ card: statCard(w, statKey, data, ctx.unlockedEvolutions), w: wt });
     }
   }
   return pool.filter((p) => !banished.has(p.card.key));
@@ -163,7 +170,7 @@ export function goldCards(ctx) {
   const { weapons, data } = ctx;
   const out = [];
   for (const w of weapons) {
-    for (const evoId of availableEvolutions(w, data)) out.push(evolutionCard(w, evoId, data));
+    for (const evoId of availableEvolutions(w, data, ctx.unlockedEvolutions)) out.push(evolutionCard(w, evoId, data));
   }
   return out.slice(0, data.balance.maxGoldCards);
 }

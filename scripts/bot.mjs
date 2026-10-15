@@ -1,5 +1,5 @@
 // Rough balance probe: a simple bot plays whole runs headlessly.
-// Usage: node scripts/bot.mjs [characterId] [seeds]
+// Usage: node scripts/bot.mjs [characterId] [seeds]   (GATES=starter|all, default all)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -14,6 +14,18 @@ const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters
 const treeDef = compileTree(data.tree, data);
 export function metaTree(name = process.env.META || 'none') {
   return name === 'none' ? null : aggregateMods(presetTree(treeDef, name), treeDef, data);
+}
+
+// GATES=all (default, current behaviour) opens every tree-gated weapon/evolution; GATES=starter opens none.
+// Nothing is gated in the shipped data yet, so both modes are identical until the gate data lands.
+export const GATES = process.env.GATES === 'starter' ? 'starter' : 'all';
+export function withGates(t) {
+  if (GATES !== 'all') return t;
+  const weapons = Object.keys(data.weapons).filter((i) => data.weapons[i].treeGate);
+  const evolutions = Object.keys(data.evolutions).filter((i) => data.evolutions[i].treeGate);
+  if (!weapons.length && !evolutions.length) return t;
+  const base = t || aggregateMods({}, treeDef, data);
+  return { ...base, unlocks: { ...base.unlocks, weapons: [...(base.unlocks?.weapons || []), ...weapons], evolutions: [...(base.unlocks?.evolutions || []), ...evolutions] } };
 }
 
 function botInput(sim) {
@@ -59,7 +71,7 @@ function pick(sim, rng) {
 }
 
 export function playRun(charId, seed, opts = {}) {
-  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: opts.tree !== undefined ? opts.tree : metaTree() });
+  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree()) });
   let s = seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;
@@ -81,6 +93,7 @@ export function playRun(charId, seed, opts = {}) {
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
   const char = process.argv[2] || 'wren';
   const seeds = Number(process.argv[3] || 3);
+  console.error(`bot: GATES=${GATES} META=${process.env.META || 'none'}`);
   for (let sd = 1; sd <= seeds; sd++) {
     const r = playRun(char, sd);
     console.log(`${char} seed ${sd}: ${r.outcome} at ${Math.round(r.time)}s, level ${r.level}, kills ${r.kills}, gold ${r.gold}, boss killed ${r.bossKilled}, weapons ${r.weaponIds.join('+')} evolutions [${r.evolved.join(',')}] firstEvo ${r.marks.evo ?? '-'}s (sim ${r.wall.toFixed(1)}s)`);
