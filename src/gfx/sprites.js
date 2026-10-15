@@ -194,12 +194,15 @@ const SPRITES = {
     },
   },
   orb: {
-    w: 12, h: 12, pad: 0,
+    // A2: a Holy Orbit light is a small lilac-white FLAME (the locked Elias v2 flame ring), not a ball. Same footprint and centre as before.
+    w: 12, h: 14, pad: 0,
     draw: (c) => {
-      circ(c, 6, 6, 6, rg(c, 6, 6, 1, 6, [[0, css(ROLE.spiritB2, 0.5)], [1, css(ROLE.spiritB2, 0)]]));
-      c.beginPath(); c.arc(6, 6, 4.4, 0, TAU); c.lineWidth = 0.6; c.strokeStyle = css(ROLE.spiritC, 0.8); c.stroke();
-      circ(c, 6, 6, 3.4, rg(c, 5, 5, 0.3, 3.8, [[0, '#ffffff'], [0.5, sh(ROLE.spiritC, 1)], [1, sh(ROLE.spiritA2, 1)]]));
-      circ(c, 4.9, 4.9, 1.1, 'rgba(255,255,255,0.95)');
+      circ(c, 6, 7.6, 6, rg(c, 6, 7.6, 1, 6, [[0, css(ROLE.spiritB2, 0.45)], [1, css(ROLE.spiritB2, 0)]]));
+      const fl = (k, col) => { c.beginPath(); c.moveTo(6, 12.6); c.bezierCurveTo(6 - 3.6 * k, 12, 6 - 3.4 * k, 7, 6 + 0.4 * k, 1.2 + (1 - k) * 6); c.bezierCurveTo(6 + 3.4 * k, 7, 6 + 3.6 * k, 12, 6, 12.6); c.fillStyle = col; c.fill(); };
+      fl(1, sh(ROLE.spiritC, 0.85));
+      c.lineWidth = 0.6; c.strokeStyle = css(ROLE.spiritA2, 0.7); c.stroke();
+      fl(0.74, sh(ROLE.spiritC, 1.2));
+      fl(0.42, '#ffffff');
     },
   },
   gem: {

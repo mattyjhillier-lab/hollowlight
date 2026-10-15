@@ -27,11 +27,11 @@ const pathBB = (d) => {
   for (let i = 0; i + 1 < n.length; i += 2) { x0 = Math.min(x0, n[i]); x1 = Math.max(x1, n[i]); y0 = Math.min(y0, n[i + 1]); y1 = Math.max(y1, n[i + 1]); }
   return [x0, y0, x1, y1];
 };
-const S = (d, bb) => ({ p: new Path2D(d), bb: bb || pathBB(d) }); // SVG path data (absolute M L C Q Z only unless bb given)
-const E = (x, y, rx, ry) => { const p = new Path2D(); p.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); return { p, bb: [x - rx, y - ry, x + rx, y + ry] }; };
-const C = (x, y, r) => E(x, y, r, r);
+export const S = (d, bb) => ({ p: new Path2D(d), bb: bb || pathBB(d) }); // SVG path data (absolute M L C Q Z only unless bb given)
+export const E = (x, y, rx, ry) => { const p = new Path2D(); p.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); return { p, bb: [x - rx, y - ry, x + rx, y + ry] }; };
+export const C = (x, y, r) => E(x, y, r, r);
 // capsule between two points (legs, forepaws)
-const CAP = (x1, y1, x2, y2, r1, r2 = r1) => {
+export const CAP = (x1, y1, x2, y2, r1, r2 = r1) => {
   const a = Math.atan2(y2 - y1, x2 - x1); const nx = -Math.sin(a); const ny = Math.cos(a);
   const q = (x, y, r, s) => `${(x + nx * r * s).toFixed(2)} ${(y + ny * r * s).toFixed(2)}`;
   const d = `M${q(x1, y1, r1, 1)} L${q(x2, y2, r2, 1)} A${r2} ${r2} 0 0 0 ${q(x2, y2, r2, -1)} L${q(x1, y1, r1, -1)} A${r1} ${r1} 0 0 0 ${q(x1, y1, r1, 1)}Z`;
@@ -39,7 +39,7 @@ const CAP = (x1, y1, x2, y2, r1, r2 = r1) => {
 };
 
 // o: w (outline weight), so (unused, kept for sheet parity), nl (no outline), x(c) extra drawn clipped to the shape
-function shape(c, sh, col, o = {}) {
+export function shape(c, sh, col, o = {}) {
   const w = o.w ?? 1;
   const lt = mix(col, '#fff6dc', 0.36); const dk = mix(col, '#3a1f4a', 0.4);
   const ink = mix(col, '#2a0f30', INK_MIX);
@@ -56,22 +56,22 @@ function shape(c, sh, col, o = {}) {
   if (o.x) o.x(c);
   c.restore();
 }
-const stroke = (c, d, col, w, o = {}) => {
+export const stroke = (c, d, col, w, o = {}) => {
   c.save();
   c.strokeStyle = col; c.lineWidth = w; c.lineCap = o.cap || 'round'; c.lineJoin = 'round'; c.globalAlpha = o.a ?? 1;
   if (o.dash) c.setLineDash(o.dash);
   c.stroke(typeof d === 'string' ? new Path2D(d) : d);
   c.restore();
 };
-const fillP = (c, d, col, a = 1) => { c.save(); c.globalAlpha = a; c.fillStyle = col; c.fill(typeof d === 'string' ? new Path2D(d) : d); c.restore(); };
-const glowAt = (c, x, y, r, col, a) => {
+export const fillP = (c, d, col, a = 1) => { c.save(); c.globalAlpha = a; c.fillStyle = col; c.fill(typeof d === 'string' ? new Path2D(d) : d); c.restore(); };
+export const glowAt = (c, x, y, r, col, a) => {
   const g = c.createRadialGradient(x, y, 0, x, y, r);
   const rgb = hx(col).join(',');
   g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(0.18, `rgba(${rgb},${a * 0.62})`); g.addColorStop(0.4, `rgba(${rgb},${a * 0.26})`); g.addColorStop(0.7, `rgba(${rgb},${a * 0.07})`); g.addColorStop(1, `rgba(${rgb},0)`);
   c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
 };
-const dot = (c, x, y, r, col, a = 1) => { c.save(); c.globalAlpha = a; c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.restore(); };
-const ell = (c, x, y, rx, ry, col, a = 1, rot = 0) => { c.save(); c.globalAlpha = a; c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); c.fill(); c.restore(); };
+export const dot = (c, x, y, r, col, a = 1) => { c.save(); c.globalAlpha = a; c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.restore(); };
+export const ell = (c, x, y, rx, ry, col, a = 1, rot = 0) => { c.save(); c.globalAlpha = a; c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); c.fill(); c.restore(); };
 const pawPrint = (c, x, y, k, col, a = 1) => {
   c.save(); c.translate(x, y); c.scale(k, k); c.globalAlpha = a; c.fillStyle = col;
   for (const [ex, ey, rx, ry] of [[0, 2, 4.6, 3.7], [-5, -3, 1.9, 2.5], [-1.7, -5.6, 1.9, 2.6], [1.9, -5.6, 1.9, 2.6], [5.2, -3, 1.9, 2.5]]) { c.beginPath(); c.ellipse(ex, ey, rx, ry, 0, 0, Math.PI * 2); c.fill(); }
@@ -325,12 +325,12 @@ export function shelfPack(items, maxW = 1024, gap = 2) {
 }
 
 // Draws every frame into one canvas. mk(w,h) -> canvas. Returns {cv, frames:{name:{x,y,w,h,ox,oy}}} (ox,oy = origin fraction).
-export function buildRigAtlas(mk) {
-  const items = FRAMES.map((f) => ({ name: f.name, w: Math.ceil((f.bb[2] - f.bb[0]) * TEX), h: Math.ceil((f.bb[3] - f.bb[1]) * TEX) }));
-  const pk = shelfPack(items, 768);
+export function buildRigAtlas(mk, frameList = FRAMES, pack = 768) {
+  const items = frameList.map((f) => ({ name: f.name, w: Math.ceil((f.bb[2] - f.bb[0]) * TEX), h: Math.ceil((f.bb[3] - f.bb[1]) * TEX) }));
+  const pk = shelfPack(items, pack);
   const cv = mk(pk.w, pk.h); const c = cv.getContext('2d');
   const frames = {};
-  for (const f of FRAMES) {
+  for (const f of frameList) {
     const r = pk.rects[f.name];
     c.save(); c.beginPath(); c.rect(r.x, r.y, r.w, r.h); c.clip();
     c.translate(r.x - f.bb[0] * TEX, r.y - f.bb[1] * TEX); c.scale(TEX, TEX);

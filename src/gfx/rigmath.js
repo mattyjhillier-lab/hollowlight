@@ -136,3 +136,26 @@ export function heroHaloAlpha(tier, reduced, lowHp, t) {
   const base = lowHp ? 0.24 : 0.42;
   return reduced ? base : base + 0.03 * Math.sin(t * 2.5);
 }
+
+// ---- A2: Elias v2 helpers (pure) ----
+// Which Elias head texture to use. cast = Candle Wheel just planted (jaw set, brows up).
+export function pickEliasExpr(dead, hurtActive, cast, lowHp, blink) {
+  if (dead) return 'death';
+  if (hurtActive) return 'hurt';
+  if (cast) return 'brace';
+  if (lowHp) return 'tender';
+  return blink ? 'blink' : 'kind';
+}
+
+// Staff swing about the gripping hand, degrees (forward = positive). Still: a faint rest lean. Walking: leans forward and sways with the step.
+export function staffTilt(phase, sp) {
+  const s = clamp(sp, 0, 1);
+  return 1 + 3 * s + Math.sin(fin(phase) * TAU) * 2.2 * s;
+}
+
+// Candle Wheel flare 1..1.5 for the crown glow while a wheel stands (opens fast, fades over the last 0.5 s). wheel = {age, ttl} or null.
+export function wheelFlare(wheel) {
+  if (!wheel) return 1;
+  return 1 + 0.5 * clamp(fin(wheel.age) / 0.3, 0, 1) * clamp(fin(wheel.ttl) / 0.5, 0, 1);
+}
+export const wheelCasting = (wheel) => !!wheel && fin(wheel.age) < 0.7;

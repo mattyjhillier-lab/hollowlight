@@ -3,6 +3,7 @@
 import { INV } from './style.js';
 import { ROLE } from './palette.js';
 import { buildRigAtlas, drawWrenFlat, drawPupFlat, FLAT, FLAT_TEXEL, PUP_FLAT, TEX, PUP_K, DU } from './wrenart.js';
+import { ELIAS_FRAMES, drawEliasFlat, E_FLAT, E_FLAT_TEXEL } from './eliasart.js';
 
 const TAU = Math.PI * 2;
 const mk = (w, h) => {
@@ -14,6 +15,37 @@ const put = (scene, key, cv) => {
   if (scene.textures.exists(key)) scene.textures.remove(key);
   return scene.textures.addCanvas(key, cv);
 };
+
+// crowd outline: cream ring around the silhouette (drawn above everyone when 3+ enemies close in)
+function crowdOutline(scene, fcv, key) {
+  const px = 1.1 / INV[key];
+  const ocv = mk(fcv.width, fcv.height);
+  const o = ocv.getContext('2d');
+  for (let a = 0; a < 8; a++) o.drawImage(fcv, Math.cos((a * TAU) / 8) * px, Math.sin((a * TAU) / 8) * px);
+  o.globalCompositeOperation = 'source-in';
+  const c = ROLE.lanternCore;
+  o.fillStyle = `rgb(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255})`; o.fillRect(0, 0, ocv.width, ocv.height);
+  o.globalCompositeOperation = 'destination-out'; o.drawImage(fcv, 0, 0);
+  put(scene, `${key}_o`, ocv);
+  INV[`${key}_o`] = INV[key];
+}
+
+// Elias v2: rig atlas + flat sprite (Low tier, crowd outline source, flicker/death)
+function makeEliasTextures(scene) {
+  const { cv, frames } = buildRigAtlas(mk, ELIAS_FRAMES, 768);
+  const tex = put(scene, 'elias_rig', cv);
+  for (const [name, f] of Object.entries(frames)) {
+    const fr = tex.add(name, 0, f.x, f.y, f.w, f.h);
+    fr.customPivot = true; fr.pivotX = f.ox; fr.pivotY = f.oy;
+  }
+  const fcv = mk(E_FLAT.w * E_FLAT_TEXEL, E_FLAT.h * E_FLAT_TEXEL);
+  const fc = fcv.getContext('2d');
+  fc.scale(E_FLAT_TEXEL, E_FLAT_TEXEL); fc.translate(-E_FLAT.x0, -E_FLAT.y0);
+  drawEliasFlat(fc);
+  put(scene, 'hero_elias', fcv);
+  INV.hero_elias = DU / E_FLAT_TEXEL;
+  crowdOutline(scene, fcv, 'hero_elias');
+}
 
 export function makeRigTextures(scene) {
   const { cv, frames } = buildRigAtlas(mk);
@@ -29,17 +61,8 @@ export function makeRigTextures(scene) {
   drawWrenFlat(fc);
   put(scene, 'hero_wren', fcv);
   INV.hero_wren = DU / FLAT_TEXEL;
-  // crowd outline: cream ring around the silhouette (drawn above everyone when 3+ enemies close in)
-  const px = 1.1 / INV.hero_wren;
-  const ocv = mk(fcv.width, fcv.height);
-  const o = ocv.getContext('2d');
-  for (let a = 0; a < 8; a++) o.drawImage(fcv, Math.cos((a * TAU) / 8) * px, Math.sin((a * TAU) / 8) * px);
-  o.globalCompositeOperation = 'source-in';
-  const c = ROLE.lanternCore;
-  o.fillStyle = `rgb(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255})`; o.fillRect(0, 0, ocv.width, ocv.height);
-  o.globalCompositeOperation = 'destination-out'; o.drawImage(fcv, 0, 0);
-  put(scene, 'hero_wren_o', ocv);
-  INV.hero_wren_o = INV.hero_wren;
+  crowdOutline(scene, fcv, 'hero_wren');
+  makeEliasTextures(scene);
   // flat pups (Low tier): glow baked in
   for (const pose of ['sit', 'run']) {
     const pcv = mk(PUP_FLAT.w * TEX * PUP_K, PUP_FLAT.h * TEX * PUP_K);

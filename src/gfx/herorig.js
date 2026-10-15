@@ -27,7 +27,7 @@ export class HeroRig {
     this.glowInv = o.glowInv;
     this.parts = [this.tail, this.bootF, this.bootN, this.body, this.head, this.ember];
     this.pupParts = [this.pTail, this.pBody, this.pHead];
-    this.active = false;
+    this.active = false; this.flatBox = FLAT; this.hasPup = true; this.id = 'wren';
     this.mode = ''; this.pupMode = ''; this._x = 0; this._y = 0; // '' | 'rig' | 'flat'
     // reusable scratch (no allocation in update)
     this.wp = { leg: 0, lift: 0, lift2: 0, bob: 0, sy: 1, sx: 1, lean: 0, tailSway: 0 };

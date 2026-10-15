@@ -5,7 +5,8 @@ import { app } from '../app.js';
 import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { HeroRig } from '../gfx/herorig.js';
-import { FEET, FLAT } from '../gfx/wrenart.js';
+import { EliasRig } from '../gfx/eliasrig.js';
+import { FEET } from '../gfx/wrenart.js';
 import { heroHaloAlpha } from '../gfx/rigmath.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
@@ -142,7 +143,9 @@ export class RunScene extends Phaser.Scene {
     this.trailAcc = 0; this.trailTick = 0; this.fxTick = 0;
     this.bloom = null;
     this.playerImg = this.add.image(0, 0, 'hero_wren').setVisible(false);
-    this.rig = new HeroRig(this, { depth: D_LIT, glowKey: 'glow', glowInv: inv('glow'), blendAdd: ADD, flat: this.playerImg }); // Wren v2 + pup (A1); Elias keeps the flat sprite
+    const rigOpts = { depth: D_LIT, glowKey: 'glow', glowInv: inv('glow'), blendAdd: ADD, flat: this.playerImg };
+    this.rigs = [new HeroRig(this, rigOpts), new EliasRig(this, rigOpts)]; // Wren v2 + pup (A1), Elias v2 (A2); both share the flat sprite
+    this.rig = this.rigs[0];
     this.followTarget = this.add.zone(0, 0, 1, 1);
     this.gradeNow = gradeAt(0);
 
@@ -267,8 +270,9 @@ export class RunScene extends Phaser.Scene {
     }
     this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv(`hero_${sim.characterId}`)).setOrigin(0.5, 0.5).setVisible(true);
     this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5);
-    this.rig.bind(sim);
-    if (this.rig.active) this.heroOut.setOrigin(-FLAT.x0 / FLAT.w, -FLAT.y0 / FLAT.h);
+    for (const r of this.rigs) r.bind(sim);
+    this.rig = this.rigs.find((r) => r.active) || this.rigs[0];
+    if (this.rig.active) { const fb = this.rig.flatBox; this.heroOut.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroBack.setScale((this.rig.backScale ? this.rig.backScale[0] : 1.15) * inv('glow'), (this.rig.backScale ? this.rig.backScale[1] : 1.5) * inv('glow')); }
     this.heroOutA = 0;
     this.parts.clear();
     this.nums.clear();
@@ -297,7 +301,7 @@ export class RunScene extends Phaser.Scene {
     this.clearDecor();
     this.playerImg.setVisible(false);
     this.heroOut.setVisible(false);
-    this.rig.hide();
+    for (const r of this.rigs) r.hide();
     this.hideAmbient();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
@@ -607,7 +611,7 @@ export class RunScene extends Phaser.Scene {
     if (this.sim) {
       const ha = rig ? heroHaloAlpha(this.quality.tier, this.reducedMotion(), lowHp, sim.time) : 0;
       this.heroHalo.setVisible(ha > 0).setPosition(p.x, p.y + 9).setAlpha(ha);
-      this.heroBack.setVisible(rig).setPosition(p.x, p.y - 6).setDepth(D_LIT + p.y - 0.5);
+      this.heroBack.setVisible(rig).setPosition(p.x, p.y + (this.rig.backY ?? -6)).setDepth(D_LIT + p.y - 0.5);
     }
     if (this.ring.visible) {
       const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
@@ -618,7 +622,7 @@ export class RunScene extends Phaser.Scene {
       this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
       lm.add(lx, ly, this.lanR * fl, ROLE.lantern, 0.9);
-      if (rig) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
+      if (rig && this.rig.hasPup) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
     }
 
     const g = this.groundG;
@@ -756,10 +760,12 @@ export class RunScene extends Phaser.Scene {
         trail(u.x, u.y, ROLE.spiritB, 0.3);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritB, 0.8);
       } else if (u.kind === 'orb') {
-        pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale(1.1 * pl.haloU.inv).setAlpha(0.55);
-        trail(u.x, u.y, PAL.lavender, 0.3);
-        if (lit) lm.add(u.x, u.y, 40, ROLE.spiritC, 0.8);
+        // A2: with Elias the flame ring is render-only smaller / dimmer (hit radius unchanged) so he stays the focal point
+        const eo = this.rig.id === 'elias' && this.rig.active;
+        pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setScale((eo ? 0.8 : 1) * pl.uOrb.inv);
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale((eo ? 0.8 : 1.1) * pl.haloU.inv).setAlpha(eo ? 0.4 : 0.55);
+        trail(u.x, u.y, PAL.lavender, eo ? 0.2 : 0.3);
+        if (lit) lm.add(u.x, u.y, eo ? 32 : 40, ROLE.spiritC, eo ? 0.55 : 0.8);
       }
     }
 

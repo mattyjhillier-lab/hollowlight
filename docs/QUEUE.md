@@ -1,5 +1,6 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+- A2 BUILT on dev 2026-10-15 (Elias v2 Lamplighter rig + flame-ring orb sprite + focal point; docs/screenshots/a2/, scripts/a2.mjs): awaiting Matt's look. Open for A2.1 if he wants: Candle Wheel pole-lowering/planting animation, glad face on level-up, flame count by Holy Orbit rank, side/back views. Next: world (after sheet #2).
 - A1b BUILT on dev 2026-10-15 (Wren focal point: ground pool, dark backing, brighter ember, ghost wolves 12% smaller/dimmer render-only; docs/screenshots/a1b/): awaiting Matt's look; if wolves now feel too small, revert that one line in RunScene (uWolf scale 0.88).
 - A1 BUILT on dev 2026-10-15 (Wren v2 + pup rig, screenshots docs/screenshots/a1/, scripts/a1.mjs): awaiting Matt's look. Open for A1.1 if he wants: pup howl on Pack Howl, pup sleep pose redraw, ears flick, leash line, 4-direction walk views. Next: A2 Elias v2.
 
