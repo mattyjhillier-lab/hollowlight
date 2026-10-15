@@ -1,5 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+## IDENTITY BUILD (Matt 2026-10-15): chunks A1 Wren v2 + pup in game, A2 Elias v2 in game, then world (after sheet #2), then fonts+icons. Run in parallel with the W weapons batch (different files).
+
 ## WAITING ON MATT (reminder list, 2026-10-15)
 ALL BIBLE + WORLD QUESTIONS ANSWERED 2026-10-15 (see docs/LOCKED.md). Remaining open items for Matt: HUD/cards feel (plain chat), name search (his action).
 0000. DECIDED 2026-10-15 (Matt chose recommendation c): hold W2 until W3 built. W2 (Wren Rally the Pack) is BUILT but HELD on branch w2-rally (commit 3ed2ef0; not on dev): Wren win rate fell 18/21 -> 6/6 (random/focus, 96 seeds) because Pack Howl was worth ~+10-12 points; Elias byte-identical; Rally ON within 5 of OFF for Wren (not mandatory) BUT Elias with ability OFF drops 18/21 -> 4/2 (Sanctuary is effectively mandatory: breaks the ability principle, to fix in W3 Candle Wheel). Ravens-call deferred to W8a. DECISION for Matt: (a) merge W2 to dev as is and fold the Wren retune into the planned R1 checkpoint, (b) soften Rally (half the wolves rally / larger radius / bigger bonus which reopens locked +50%), (c) hold W2 until W3 (Candle Wheel) is built so both abilities are rebalanced together. Recommendation: (c).
