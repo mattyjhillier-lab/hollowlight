@@ -28,7 +28,9 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | Hosting | Public GitHub Pages for now (main protected, PR + Matt's yes); later private repo + Cloudflare Pages before outside testers/launch | 2026-10-14 | docs/research/05, 11, 21 |
 | Phone play | PLAYTEST OK 2026-10-15 (Matt: works exactly how it should). TOUCH-1: floating joystick, ability and pause buttons, tappable cards; provisional layout until HUD sheet #1; PWA/installable later | 2026-10-15 | TOUCH-1 BUILT on dev 2026-10-15 (src/input/, docs/screenshots/touch1/); layout provisional; not yet tried on a real phone. PWA-1 BUILT on dev 2026-10-15, NOT LIVE (manifest fullscreen/landscape, code-drawn lantern icons, hand-written versioned SW, install/fullscreen card, update prompt on menus only; docs/screenshots/pwa1/; headless-Chrome checks pass, no real phone/install test yet) |
 | Quality gate | Every chunk: tests + balance check + security + fit + lock-conflict check + true-size screenshots (see CLAUDE.md definition of done) | 2026-10-15 | CLAUDE.md |
-| Front door | Device-only save slots/profiles, Continue/New Game, no accounts or backend at launch; flow cover -> play -> profile -> hero -> map -> run (design sheet #6 pending) | 2026-10-15 | docs/QUEUE.md |
+| W2 Rally the Pack decision | HELD on branch w2-rally until W3 Candle Wheel is built; rebalance both abilities together at the R1 retune checkpoint (Matt 2026-10-15) | 2026-10-15 | docs/QUEUE.md |
+| PWA orientation | Installed app opens LANDSCAPE only (manifest orientation landscape) | 2026-10-15 | public/manifest.webmanifest |
+| Front door | Device-only save slots/profiles (max 3; the profile screen is skipped when only one exists; Matt 2026-10-15), Continue/New Game, no accounts or backend at launch; flow cover -> play -> profile -> hero -> map -> run (design sheet #6 pending) | 2026-10-15 | docs/QUEUE.md |
 | Parked ideas (not locked, research later) | Map challenges/points of interest; minibosses at set times with chest rewards; life-map gameplay link; difficulty tiers/Gloom dial; the other 8 heroes; chapters 2-8; weapon combining | 2026-10-15 | docs/QUEUE.md |
 
 ## Reopened (with reason)
