@@ -46,7 +46,8 @@ export function unlockedAfter(stats) {
 // Data copy where every weapon is tree-gated; the caller passes the allowed weapons via tree.unlocks.weapons.
 export function gatedData(allowedEvos) {
   const weapons = Object.fromEntries(Object.entries(base.weapons).map(([k, w]) => [k, { ...w, treeGate: true }]));
-  const evolutions = Object.fromEntries(Object.entries(base.evolutions).filter(([k]) => allowedEvos.has(k)));
+  // shipped evolutions carry treeGate since G1b; the probe gates them by filtering, so strip the flag (else tree.unlocks.evolutions would be needed too)
+  const evolutions = Object.fromEntries(Object.entries(base.evolutions).filter(([k]) => allowedEvos.has(k)).map(([k, e]) => { const { treeGate, ...rest } = e; return [k, rest]; }));
   return { ...base, weapons, evolutions };
 }
 
