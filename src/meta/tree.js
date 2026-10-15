@@ -154,7 +154,7 @@ export function compileTree(raw, data) {
       ring: n.ring, ang: n.ang, maxRank, cost: { gold, shards }, rankCost,
       requires: n.requires ? [...n.requires] : [], excludes: n.excludes ? [...n.excludes] : [],
       effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null,
-      permanent: false,
+      permanent: false, gateAnc: [],
       hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true,
       x: 0, y: 0,
     };
@@ -191,6 +191,7 @@ export function compileTree(raw, data) {
   // gate nodes: permanent, maxRank 1, hang off the hub (or other gate nodes only), 1:1 with gated content
   const gateIds = new Set();
   const gateNodeFor = { weapon: new Map(), evolution: new Map() };
+  const gateNodeIds = { weapon: new Map(), evolution: new Map() };
   for (const id of list) {
     const n = nodes[id];
     const gates = n.effects.filter((e) => isObj(e) && GATE_KINDS.includes(e.unlock));
@@ -203,6 +204,7 @@ export function compileTree(raw, data) {
       const pool = e.unlock === 'weapon' ? data.weapons : data.evolutions;
       if (!pool[e.id].treeGate) fail(`${id}: unlocks ${e.unlock} "${e.id}" which is not gated`);
       gateNodeFor[e.unlock].set(e.id, (gateNodeFor[e.unlock].get(e.id) || 0) + 1);
+      gateNodeIds[e.unlock].set(e.id, id);
     }
   }
   for (const id of gateIds) for (const r of nodes[id].requires) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
@@ -211,6 +213,21 @@ export function compileTree(raw, data) {
       for (const [gid, g] of Object.entries(pool || {})) {
         if (g && g.treeGate && !gateNodeFor[kind].has(gid)) fail(`gated ${kind} "${gid}" has no unlocking node (unreachable)`);
       }
+    }
+  }
+
+  // Gate-dependency rule: a node that targets a GATED weapon (or sits behind an evolution gate) must
+  // transitively require that item's gate node, so it cannot be bought before the item is unlocked.
+  for (const id of order) {
+    const n = nodes[id];
+    const anc = new Set();
+    for (const r of n.requires) { anc.add(r); for (const a of nodes[r].gateAnc) anc.add(a); }
+    n.gateAnc = [...anc].filter((a) => gateIds.has(a)); // gate nodes among all ancestors (transitive)
+    if (n.permanent || !data) continue;
+    for (const e of n.effects) {
+      if (!isObj(e) || typeof e.weapon !== 'string' || !own(data.weapons, e.weapon) || !data.weapons[e.weapon].treeGate) continue;
+      const gate = gateNodeIds.weapon.get(e.weapon);
+      if (!gate || !n.gateAnc.includes(gate)) fail(`${id}: targets gated weapon "${e.weapon}" so it must (transitively) require its unlock node`);
     }
   }
 
@@ -312,6 +329,18 @@ export function totalCost(def) {
 const rankOf = (tree, id) => (tree && own(tree, id) && fin(tree[id]) ? tree[id] : 0);
 const stJoin = (a) => a.join(', ');
 
+// First unowned gate among a node's ancestors, or null.
+function lockedGate(def, tree, id) {
+  for (const g of def.nodes[id].gateAnc || []) if (rankOf(tree, g) < 1) return g;
+  return null;
+}
+// Weapon gates are visible by design; an evolution gate is never named.
+function gateLockText(def, gid, data) {
+  const e = def.nodes[gid].effects.find((x) => x && x.unlock === 'weapon');
+  if (!e) return 'Locked.';
+  return `Locked: unlock ${data && data.weapons && own(data.weapons, e.id) ? data.weapons[e.id].name : pretty(e.id)} first`;
+}
+
 // state: owned | available | locked (prerequisites) | condition | excluded | teaser
 export function nodeStatus(def, save, id, data) {
   const n = def.nodes[id];
@@ -327,7 +356,12 @@ export function nodeStatus(def, save, id, data) {
     const rival = n.excludes.find((x) => rankOf(tree, x) > 0);
     if (rival) { out.state = 'excluded'; out.reason = `Closed by ${def.nodes[rival].name}.`; return out; }
     const miss = n.requires.filter((r) => rankOf(tree, r) < 1);
-    if (miss.length) { out.state = 'locked'; out.reason = `Requires ${stJoin(miss.map((m) => def.nodes[m].name))}.`; return out; }
+    if (miss.length) {
+      out.state = 'locked';
+      const gm = lockedGate(def, tree, id);
+      out.reason = gm ? gateLockText(def, gm, data) : `Requires ${stJoin(miss.map((m) => def.nodes[m].name))}.`;
+      return out;
+    }
     if (out.cond && !out.cond.done) { out.state = 'condition'; out.reason = 'Unlock condition not met.'; return out; }
   }
   out.state = 'available';
@@ -377,17 +411,30 @@ export function respec(save, def) {
 
 // Strict repair of an untrusted tree map: unknown ids, bad ranks, broken prerequisites,
 // rival (excluded) nodes, teasers and unmet unlock conditions are dropped. Parents are processed first.
-export function sanitizeTree(rawTree, stats, def, data) {
+// Optional `refund` ({gold, shards}) is filled for owned nodes dropped ONLY because their unlock gate is
+// not owned (saves from before the gate-dependency rule): spent gold is never silently lost.
+export function sanitizeTree(rawTree, stats, def, data, refund = null) {
   const clean = {};
   if (!def || !isObj(rawTree)) return clean;
+  const refunded = new Set();
   for (const id of def.order) {
     if (!own(rawTree, id)) continue;
     const n = def.nodes[id];
     const rank = clampInt(rawTree[id], 0, n.maxRank);
     if (rank < 1 || n.teaser) continue;
-    if (n.requires.some((r) => !own(clean, r))) continue;
     if (n.excludes.some((r) => own(clean, r))) continue;
     if (n.unlock && !conditionProgress(n.unlock, stats, def, data).done) continue;
+    const missing = n.requires.filter((r) => !own(clean, r));
+    if (missing.length) {
+      // gate-only breakage: every missing prerequisite is an unowned gate node or a node refunded for that reason
+      if (refund && missing.every((r) => refunded.has(r) || def.nodes[r].permanent)) {
+        refunded.add(id);
+        const c = spentOf({ [id]: rank }, def);
+        refund.gold = (refund.gold || 0) + c.gold;
+        refund.shards = (refund.shards || 0) + c.shards;
+      }
+      continue;
+    }
     clean[id] = rank;
   }
   return clean;
@@ -517,7 +564,16 @@ export function closestUnlocks(def, save, data, count = 3) {
 export function describeNode(def, save, id, data) {
   const n = def.nodes[id];
   const s = nodeStatus(def, save, id, data);
-  const masked = (n.hidden || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
+  let masked = (n.hidden || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
+  // a node behind an evolution gate stays '???' until that gate is owned or has progress
+  if (!masked && s.rank === 0) {
+    for (const g of n.gateAnc || []) {
+      const ge = def.nodes[g].effects.find((x) => x && x.unlock === 'evolution');
+      if (!ge || rankOf(save.tree || {}, g) >= 1) continue;
+      const gc = def.nodes[g].unlock ? conditionProgress(def.nodes[g].unlock, save.stats, def, data) : null;
+      if (!gc || gc.frac <= 0) masked = true;
+    }
+  }
   const lines = masked ? [] : (s.cond ? s.cond.lines : []);
   return {
     ...s,

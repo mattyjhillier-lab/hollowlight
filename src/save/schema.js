@@ -120,15 +120,18 @@ export function sanitize(raw, now = Date.now()) {
     weaponsUsed: countMap(s.weaponsUsed, 32),
     charsUsed: countMap(s.charsUsed, 32),
   };
+  // Owned stat nodes whose weapon gate is not owned (pre-G1e saves) are dropped WITH a full refund.
+  const refund = { gold: 0, shards: 0 };
+  const tree = TREE ? sanitizeTree(raw.tree, stats, TREE, TREE_DATA, refund) : {};
   return {
     version: SAVE_VERSION,
     createdAt: created,
     updatedAt: int(raw.updatedAt, created, 0, 1e14),
-    gold: int(raw.gold, 0),
-    shards: int(raw.shards, 0),
+    gold: Math.min(MAX_NUM, int(raw.gold, 0) + refund.gold),
+    shards: Math.min(MAX_NUM, int(raw.shards, 0) + refund.shards),
     stats,
     unlocks: cleanMap(raw.unlocks),
-    tree: TREE ? sanitizeTree(raw.tree, stats, TREE, TREE_DATA) : {},
+    tree,
     seen: TREE ? sanitizeSeen(raw.seen, TREE) : {},
     settings: {
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),
