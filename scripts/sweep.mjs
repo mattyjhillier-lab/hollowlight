@@ -28,5 +28,9 @@ console.log(`  death times     ${deaths.length ? deaths.sort((a, b) => a - b).ma
 const m = (k) => runs.map((r) => r.marks[k]?.lvl).filter((v) => v != null);
 console.log(`  level @1/3/5/10 min  ${[1, 3, 5, 10].map((k) => med(m(k))).join(' / ')}`);
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+const pcs = (a, p) => (a.length ? [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * p))] : null);
+const fshare = runs.map((r) => (r.levelups ? (100 * r.filler) / r.levelups : 0));
+const ffirst = runs.map((r) => r.marks.filler).filter((v) => v != null);
+console.log(`  FILLER lvl-ups  per run median ${med(runs.map((r) => r.filler))} (p90 ${pcs(runs.map((r) => r.filler), 0.9)}), share median ${med(fshare).toFixed(0)}% (p90 ${pcs(fshare, 0.9).toFixed(0)}%), first filler median ${fmt(med(ffirst))} (p10 ${fmt(pcs(ffirst, 0.1))}), ${ffirst.length}/${seeds} runs had any`);
 console.log(`  hearts/run ${mean(runs.map((r) => r.hearts)).toFixed(1)}  magnets/run ${mean(runs.map((r) => r.magnets)).toFixed(1)}  hits taken/run ${mean(runs.map((r) => r.hurts)).toFixed(0)}  alive@end ${Math.round(mean(runs.map((r) => r.alive)))}`);
 if (process.env.VERBOSE) for (const r of runs) console.log(`    ${r.outcome} ${fmt(r.time)} L${r.level} hearts ${r.hearts} evo [${r.evolved}] w [${r.weaponIds}] hp/en@min ${Object.entries(r.marks).filter(([k]) => k !== 'evo').map(([k, v]) => `${k}:${v.hp}/${v.en}`).join(' ')}`);

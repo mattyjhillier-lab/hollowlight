@@ -1,5 +1,5 @@
 // Rough balance probe: a simple bot plays whole runs headlessly.
-// Usage: node scripts/bot.mjs [characterId] [seeds]   (GATES=starter|all, default all)
+// Usage: node scripts/bot.mjs [characterId] [seeds]   (GATES=starter|all|preset, default starter; META=none|half|full; FOCUS=1)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -11,14 +11,16 @@ const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
 const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
 
 // META=none|half|full buys a preset of the skill tree (ignores unlock conditions) for balance probes.
+// GATES decides the gated content (3 weapons + 9 evolutions, tree gates since G1b):
+//   starter (default) = a brand-new save: only Wolves + Orbit + the 2 starter evolutions;
+//   all     = every gated weapon/evolution open (the pre-G1b base game; META presets then buy non-gate nodes only);
+//   preset  = the META preset also buys the 12 gate nodes (half = cheapest-first, so the cheap gates open first).
+export const GATES = process.env.GATES === 'all' ? 'all' : process.env.GATES === 'preset' ? 'preset' : 'starter';
 const treeDef = compileTree(data.tree, data);
 export function metaTree(name = process.env.META || 'none') {
-  return name === 'none' ? null : aggregateMods(presetTree(treeDef, name), treeDef, data);
+  return name === 'none' ? null : aggregateMods(presetTree(treeDef, name, GATES === 'preset'), treeDef, data);
 }
 
-// GATES=all (default, current behaviour) opens every tree-gated weapon/evolution; GATES=starter opens none.
-// Nothing is gated in the shipped data yet, so both modes are identical until the gate data lands.
-export const GATES = process.env.GATES === 'starter' ? 'starter' : 'all';
 export function withGates(t) {
   if (GATES !== 'all') return t;
   const weapons = Object.keys(data.weapons).filter((i) => data.weapons[i].treeGate);
@@ -76,9 +78,15 @@ export function playRun(charId, seed, opts = {}) {
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;
   const marks = {};
+  let levelups = 0, filler = 0; // filler = level-ups whose first-shown offer was only fallback cards (heal/gold/xp)
   const t0 = Date.now();
   while (sim.state === 'running' || sim.state === 'levelup') {
-    if (sim.state === 'levelup') { sim.pickCard(pick(sim, rng)); continue; }
+    if (sim.state === 'levelup') {
+      levelups++;
+      if (!sim.offer.gold.length && sim.offer.cards.every((c) => c.kind === 'fallback')) { filler++; if (marks.filler === undefined) marks.filler = Math.round(sim.time); }
+      sim.pickCard(pick(sim, rng));
+      continue;
+    }
     sim.step(DT, botInput(sim));
     if (marks.bossKill === undefined && sim.bossKilled) marks.bossKill = Math.round(sim.time);
     if (marks.evo === undefined && sim.weapons.some((w) => w.evo)) marks.evo = Math.round(sim.time);
@@ -87,7 +95,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
@@ -96,6 +104,6 @@ if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
   console.error(`bot: GATES=${GATES} META=${process.env.META || 'none'}`);
   for (let sd = 1; sd <= seeds; sd++) {
     const r = playRun(char, sd);
-    console.log(`${char} seed ${sd}: ${r.outcome} at ${Math.round(r.time)}s, level ${r.level}, kills ${r.kills}, gold ${r.gold}, boss killed ${r.bossKilled}, weapons ${r.weaponIds.join('+')} evolutions [${r.evolved.join(',')}] firstEvo ${r.marks.evo ?? '-'}s (sim ${r.wall.toFixed(1)}s)`);
+    console.log(`${char} seed ${sd}: ${r.outcome} at ${Math.round(r.time)}s, level ${r.level}, kills ${r.kills}, gold ${r.gold}, boss killed ${r.bossKilled}, weapons ${r.weaponIds.join('+')} evolutions [${r.evolved.join(',')}] firstEvo ${r.marks.evo ?? '-'}s filler ${r.filler}/${r.levelups} first@${r.marks.filler ?? '-'}s (sim ${r.wall.toFixed(1)}s)`);
   }
 }
