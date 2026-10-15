@@ -101,3 +101,23 @@ Security: no new deps; no save/schema change; data validated at load, fail close
 Fit: each pick is a lantern/warmth/spirit reward in the quiet card style (never gold); no recipe leak; no stat clones beyond 3; verbs (Last Ember, Bloom Ring) held for M; reject Compass/Pup/Quiet Hours as dead or off-fit.
 
 Right now: BLESS-1 only after Matt's yes. Next: result review, then G1d. Parked: Last Ember, Bloom Ring, Ember Trail.
+
+## BLESS-1 status (built 2026-10-15, dev; run-only, no save/schema change)
+
+Built as approved: 5 Blessings (`src/data/blessings.json`, validated by `src/sim/blessings.js`, fails closed to "none"), Matt's ranks (3,3,3,3,2) with read-time caps (damage x1.06, max HP x1.18, speed x1.06, pickup x1.24, gold x1.24) in a separate `sim.bless` getter (`sim.mods` untouched). Offers fill real cards, then Blessings, then fallbacks (only when all Blessings are maxed). Heal swap: HP<40%, 45 s cooldown starting when the swapped heal is picked, banishing Restoring Light disables it. Text-only "BLESSING" card (quiet cream, rank pips; screenshot docs/screenshots/bless1/blessing-offer.jpg). `?bless=wider_glow:2;...` debug param is validated and disables banking. 15 new tests (134 total) incl. the 13 named ones (determinism: offers identical to the pre-Blessing build until the first short offer). Bot: `BLESS=on|off`, `BLESSPICK=random|defence|offence`, metrics dead/short offers, first short/Blessing offer time, Blessing picks, heal swaps, HP lost, damage. `scripts/bless-sweep.mjs N` prints the table below.
+
+Measured, 250 seeds per cell, GATES=starter, bot (win% +/-6 at 95%). Baseline = commit 3c0fbe8 behaviour:
+
+| cell | win% before | after random / defence / offence | levels | surv(s) | HP lost | dmg(k) | any-fallback offers |
+|---|---|---|---|---|---|---|---|
+| wren random | 23 | 38 / 38 / 38 | 43 -> 43-46 | 724 -> 744 | 235 -> 242 | 148 -> 158 | 28.5% -> 0.6-0.8% |
+| wren focus | 23 | 31 / 30 / 32 | 40 -> 40 | 673 -> 687 | 208 -> 217 | 130 -> 136 | 25.4% -> 0.4-0.7% |
+| elias random | 40 | 54 / 52 / 50 | 45 -> 46 | 755 -> 775 | 403 -> 411 | 161 -> 170 | 28.6% -> 0.7-1.0% |
+| elias focus | 44 | 54 / 53 / 51 | 46 -> 46 | 752 -> 764 | 390 -> 380 | 163 -> 169 | 28.7% -> 0.9-1.0% |
+
+- Dead (all-filler) offers are gone: fallback-containing offers fell from about 28% to under 1% of level-ups (target <5%). Offers with no real card still happen (about 27%) but now hold Blessings, not filler. First short offer (fewer than 3 real cards) at 6:16-7:06, first Blessing offer 6:14-6:52, 8-10 Blessing picks per run. Levels per run unchanged within noise (the removed Soul Surge chain did not matter).
+- Heal swap fires 0.1-0.2 times per run (rare, as intended).
+- SURPRISE (against review B9's expected drop): win rate ROSE about 8-15 points in every cell, outside the +/-6 noise, the same for all three pick policies (spread between policies is within noise). So the five Blessings plus 18% max HP / 6% speed / 6% damage caps are stronger than the "small" budget assumed, and they land in the climax. Not fixed here (numbers are Matt's); options: trim caps (Wrapped Warmth to +12% as the review suggested, 2 ranks) or let G1d hpScale absorb it. G1d must be tuned WITH Blessings on.
+- Not measured: Kind Fortune gold effect on `gates-pace` (max +24% gold, only in the late tail; ablation per Blessing is undetectable by win% per the review). Baseline rerun of the same seeds under `BLESS=off` (40 seeds) is consistent with the baseline within noise; exact equality is covered by the determinism test.
+
+Right now: Matt reviews numbers. Next: decide cap trim vs G1d. Parked: Last Ember, Bloom Ring, Ember Trail, Warm Hands, Lingering Light.
