@@ -1,0 +1,32 @@
+{
+ "desk": {
+  "noBoss": {
+   "viewport": 5.4,
+   "stage": 5.7
+  },
+  "boss": {
+   "viewport": 6.5,
+   "stage": 6.8
+  }
+ },
+ "land": {
+  "noBoss": {
+   "viewport": 10,
+   "stage": 12.2
+  },
+  "boss": {
+   "viewport": 11.6,
+   "stage": 14.1
+  }
+ },
+ "port": {
+  "noBoss": {
+   "viewport": 8.9,
+   "stage": 8.9
+  },
+  "boss": {
+   "viewport": 10.6,
+   "stage": 10.6
+  }
+ }
+}

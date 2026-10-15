@@ -7,7 +7,7 @@ import { Stick, stickRadius } from './stick.js';
 const ZONE_FRAC = 0.55; // left share of the screen that can start the stick (CSS: .touch-zone width)
 
 export class TouchControls {
-  // hooks: { pause(), autoPause() }
+  // hooks: { pause(), autoPause(), tapAt?(x, y) }
   constructor(root, hooks) {
     this.hooks = hooks;
     this.stick = new Stick(stickRadius('medium'));
@@ -32,7 +32,8 @@ export class TouchControls {
     this.ab.setAttribute('aria-label', 'Use ability');
     this.abName = mk('span', 'ta-name');
     this.abState = mk('span', 'ta-state');
-    this.ab.append(this.abName, this.abState);
+    this.face = mk('span', 'ta-face'); // HUD-1: ability emblem (inline SVG) set by setFace()
+    this.ab.append(this.face, this.abName, this.abState);
     this.pauseBtn = mk('button', 'touch-pause', 'II');
     this.pauseBtn.type = 'button';
     this.pauseBtn.setAttribute('aria-label', 'Pause');
@@ -42,6 +43,7 @@ export class TouchControls {
     z.addEventListener('pointerdown', (e) => {
       if (!this.live) return;
       e.preventDefault();
+      if (this.hooks.tapAt) this.hooks.tapAt(e.clientX, e.clientY); // wakes the faded weapon strip (HUD-1)
       if (!this.stick.down(e.pointerId, e.clientX, e.clientY)) return;
       try { z.setPointerCapture(e.pointerId); } catch { /* not supported / already gone */ }
       this.dirty = true;
@@ -145,6 +147,9 @@ export class TouchControls {
     const p = Math.round(Math.max(0, Math.min(1, frac)) * 100);
     if (c.p !== p) { c.p = p; this.ab.style.setProperty('--p', String(p)); }
   }
+
+  // HUD-1: put an SVG node (the ability emblem) inside the button; replaces any previous one.
+  setFace(node) { this.face.replaceChildren(); if (node) this.face.appendChild(node); }
 
   // Draw the stick (only when something changed).
   render() {

@@ -93,6 +93,7 @@ export function playRun(charId, seed, opts = {}) {
       if (real === 0) { dead++; if (marks.dead === undefined) marks.dead = Math.round(sim.time); }
       if (real < 3) { short++; if (marks.short === undefined) marks.short = Math.round(sim.time); }
       if (sim.offer.cards.some((c) => c.kind === 'blessing') && marks.bless === undefined) marks.bless = Math.round(sim.time);
+      if (opts.onOffer) opts.onOffer(sim);
       const key = pick(sim, rng);
       if (key.startsWith('b:')) blessPicks++;
       if (key === 'f:heal' && sim.offer?.cards.some((c) => c.key === key && c.swapped)) healSwaps++;

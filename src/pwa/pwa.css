@@ -1,0 +1,24 @@
+/* PWA-1: install / full-screen card, footer link, update notice. Warm Lantern tokens from palette.js (--plate, --brass, --cream, --flame). */
+.pwa-slot:empty { display: none; }
+.pwa-card { max-width: 34em; margin: 0 auto .8em; padding: .7em 1em; border-radius: .9em; text-align: center; background: var(--plate); border: 1px solid var(--brass-d); box-shadow: 0 0 1.2em rgba(255, 171, 58, .18); color: var(--cream); }
+.pwa-title { color: var(--brass); font-weight: 700; letter-spacing: .04em; }
+.pwa-text { font-size: .9em; margin: .2em 0 .5em; color: var(--text); }
+.pwa-row { display: flex; flex-wrap: wrap; gap: .5em; justify-content: center; }
+.pwa-row .btn { padding: .4em 1.1em; }
+.pwa-no { background: transparent; color: var(--muted); }
+.pwa-steps { display: flex; flex-wrap: wrap; gap: .5em; justify-content: center; margin: 0 0 .6em; text-align: left; }
+.pwa-step { display: flex; align-items: center; gap: .4em; flex: 1 1 9em; max-width: 12em; font-size: .85em; }
+.pwa-ico { flex: none; width: 2em; height: 2em; color: var(--flame); }
+.pwa-num { flex: none; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; background: var(--brass-d); color: var(--cream); font-size: .8em; }
+.pwa-note { flex-basis: 100%; font-size: .8em; color: var(--muted); text-align: center; }
+.pwa-link { position: absolute; left: 1em; bottom: .6em; background: none; border: 0; padding: .3em .2em; color: var(--muted); font: inherit; font-size: .8em; text-decoration: underline; cursor: pointer; }
+.pwa-link:hover, .pwa-link:focus-visible { color: var(--brass); }
+.pwa-entry { margin: .6em 0; text-align: center; }
+.pwa-update { display: flex; gap: .6em; align-items: center; justify-content: center; margin-top: .8em; padding: .3em .8em; border-radius: .8em; background: var(--plate); border: 1px solid var(--brass-d); color: var(--cream); font-size: .9em; }
+.pwa-update .btn { padding: .3em 1em; }
+html.touch .pwa-link { min-height: 44px; }
+@media (max-height: 480px) {
+  .pwa-card { margin-bottom: .3em; padding: .35em .8em; }
+  .pwa-text { margin: .1em 0 .3em; font-size: .8em; }
+  .pwa-steps { margin-bottom: .3em; }
+}

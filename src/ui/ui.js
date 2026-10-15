@@ -8,6 +8,10 @@ const fmtTime = (s) => {
 };
 
 import { TreeScreen } from './treescreen.js';
+import { Hud } from './hud.js';
+import { OfferView } from './cardsui.js';
+import '../cards.css';
+import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
 export class UI {
@@ -49,95 +53,22 @@ export class UI {
     if (this.layers[name]) this.layers[name].style.display = 'none';
   }
 
-  // ------------------------------------------------------------------ HUD
+  // ------------------------------------------------------------------ HUD (HUD-1: src/ui/hud.js, display only)
   buildHud() {
     const hud = this.layer('hud');
-    hud.innerHTML = `
-      <div class="bars">
-        <div class="bar hp"><i></i><span class="hptext"></span></div>
-        <div class="bar xp"><i></i><span class="xptext"></span></div>
-      </div>
-      <div class="timer">00:00</div>
-      <div class="stats"><div>Kills <b class="kills">0</b></div><div>Gold <b class="gold">0</b></div></div>
-      <div class="boss"><div class="bossname"></div><div class="bar"><i></i></div></div>
-      <div class="toast"></div>
-      <div class="bossintro"></div>
-      <div class="slots"></div>
-      <div class="ability"><div class="t"><span class="abname"></span><span class="k">[Space]</span></div><div class="cd"><i></i></div></div>
-      <div class="hurtflash"></div>`;
-    this.hud = {
-      hpFill: hud.querySelector('.bar.hp i'),
-      hpText: hud.querySelector('.hptext'),
-      xpFill: hud.querySelector('.bar.xp i'),
-      xpText: hud.querySelector('.xptext'),
-      timer: hud.querySelector('.timer'),
-      kills: hud.querySelector('.kills'),
-      gold: hud.querySelector('.gold'),
-      boss: hud.querySelector('.boss'),
-      bossName: hud.querySelector('.bossname'),
-      bossFill: hud.querySelector('.boss .bar i'),
-      toast: hud.querySelector('.toast'),
-      bossIntro: hud.querySelector('.bossintro'),
-      slots: hud.querySelector('.slots'),
-      ability: hud.querySelector('.ability'),
-      abName: hud.querySelector('.abname'),
-      abFill: hud.querySelector('.ability .cd i'),
-      flash: hud.querySelector('.hurtflash'),
-    };
+    this.hudView = new Hud(document, hud, {
+      onPause: () => { if (this.handlers.togglePause) this.handlers.togglePause(); },
+      bossName: (type) => this.data.enemies[type].name,
+    });
+    this.hud = { toast: this.hudView.toast, bossIntro: this.hudView.bossIntro, flash: this.hudView.flash };
   }
 
-  showHud() { this.show('hud'); this.hudCache = {}; }
+  showHud() { this.show('hud'); this.hudCache = {}; this.hudView.reset(); }
   hideHud() { this.hide('hud'); }
 
-  setText(key, el, value) {
-    if (this.hudCache[key] !== value) {
-      this.hudCache[key] = value;
-      el.textContent = value;
-    }
-  }
-
-  updateHud(sim) {
-    const h = this.hud;
-    const p = sim.player;
-    h.hpFill.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
-    this.setText('hp', h.hpText, `${Math.ceil(p.hp)} / ${p.maxHp}`);
-    h.xpFill.style.width = `${Math.min(100, (sim.xp / sim.xpNeeded) * 100)}%`;
-    this.setText('xp', h.xpText, `Level ${sim.level}`);
-    this.setText('time', h.timer, fmtTime(Math.max(0, sim.balance.runSeconds - sim.time)));
-    this.setText('kills', h.kills, String(sim.kills));
-    this.setText('gold', h.gold, String(Math.floor(sim.gold)));
-
-    const boss = sim.boss && !sim.boss.dead ? sim.boss : null;
-    if (boss) {
-      h.boss.style.display = 'block';
-      this.setText('bossname', h.bossName, this.data.enemies[boss.type].name);
-      h.bossFill.style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
-    } else if (h.boss.style.display !== 'none') {
-      h.boss.style.display = 'none';
-    }
-
-    const key = sim.weapons.map((w) => `${w.id}:${w.evo || ''}:${Object.values(w.ranks).join('')}`).join('|');
-    if (this.hudCache.slotKey !== key) {
-      this.hudCache.slotKey = key;
-      const max = sim.balance.maxRank * 4;
-      const slots = [];
-      for (let i = 0; i < sim.balance.weaponSlots; i++) {
-        const w = sim.weapons[i];
-        if (!w) { slots.push('<div class="slot empty"><div class="n">empty slot</div><div class="r"><i style="width:0"></i></div></div>'); continue; }
-        const def = this.data.weapons[w.id];
-        const total = Object.values(w.ranks).reduce((a, b) => a + b, 0);
-        const name = w.evo ? this.data.evolutions[w.evo].name : def.name;
-        slots.push(`<div class="slot ${w.evo ? 'evolved' : ''}" style="--c:${def.color}"><div class="n">${name}</div><div class="r"><i style="width:${w.evo ? 100 : (total / max) * 100}%"></i></div></div>`);
-      }
-      h.slots.innerHTML = slots.join('');
-    }
-
-    const a = sim.ability;
-    this.setText('abname', h.abName, a.name);
-    const ready = a.cdLeft <= 0;
-    h.abFill.style.width = `${ready ? 100 : (1 - a.cdLeft / sim.abilityCooldown) * 100}%`;
-    h.ability.classList.toggle('ready', ready);
-  }
+  updateHud(sim) { this.hudView.update(sim, this.data); }
+  // Touch: a tap that lands on the weapon strip wakes it (the touch layer covers it).
+  hudTapAt(x, y) { this.hudView.tapAt(x, y); }
 
   toast(text) {
     const t = this.hud.toast;
@@ -193,6 +124,7 @@ export class UI {
     const bank = this.handlers.getBank ? this.handlers.getBank() : null;
     if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
+    if (this.pwa) { mountInstallCard(document, this.pwa, el, el.querySelector('.bankline')); el.append(updateNotice(document, this.pwa)); }
     if (this.handlers.isFirstRun && this.handlers.isFirstRun()) {
       el.querySelector('.firstrun').style.display = '';
       el.querySelector('.frtext').textContent = FIRST_RUN_HINT;
@@ -208,62 +140,24 @@ export class UI {
 
   hideStart() { this.hide('start'); }
 
-  // ------------------------------------------------------------------ level-up
+  // ------------------------------------------------------------------ level-up (HUD-2: src/ui/cardsui.js, presentation only)
   showLevelUp(sim) {
-    const offer = sim.offer;
-    const all = offer.gold.concat(offer.cards);
-    const maxRank = sim.balance.maxRank;
-    const cardHtml = (c, i) => {
-      const gold = c.kind === 'evolution';
-      let pips = '';
-      if (c.kind === 'stat' || c.kind === 'blessing') {
-        pips = '<div class="pips">' + Array.from({ length: c.maxRank || maxRank }, (_, k) => `<i class="${k < c.rank ? 'on' : k === c.rank ? 'next' : ''}"></i>`).join('') + '</div>';
-      }
-      const ban = sim.banishesLeft > 0 && !gold ? `<button class="btn ban" data-ban="${c.key}">Banish</button>` : '';
-      return `
-        <div class="card k-${c.kind} ${gold ? 'gold' : ''}" data-key="${c.key}" style="--i:${i}" tabindex="0" role="button">
-          ${c.badge ? `<div class="badge">${c.badge}</div>` : ''}
-          <div class="key">${i + 1}</div>
-          <h4>${c.title}</h4>
-          <div class="desc">${c.kind === 'evolution' ? `<i>${c.from} evolves.</i><br>` : ''}${c.desc}</div>
-          ${pips}${ban}
-        </div>`;
-    };
-    const actions = [];
-    if (sim.rerollsLeft > 0) actions.push(`<button class="btn" data-act="reroll">Reroll (R) · ${sim.rerollsLeft} left</button>`);
-    if (sim.banishesLeft > 0) actions.push(`<span class="lu-sub" style="margin:0;align-self:center">Banishes left: ${sim.banishesLeft}</span>`);
-    const el = this.show('levelup', `
-      <div class="lu-title">Level ${sim.level}${sim.pending > 1 ? ` (+${sim.pending - 1} more)` : ''}</div>
-      <div class="lu-sub">Choose one</div>
-      <div class="cards">${all.map(cardHtml).join('')}</div>
-      <div class="lu-actions">${actions.join('')}</div>`);
-    const fresh = toastWeapons(all, this.data, this.toastedWeapons);
+    const el = this.layer('levelup');
+    if (!this.offerView) {
+      this.offerView = new OfferView(document, el, {
+        pick: (k) => this.handlers.pick(k),
+        reroll: () => this.handlers.reroll(),
+        banish: (k) => this.handlers.banish(k),
+      });
+    }
+    this.offerView.render(sim, this.data);
+    this.show('levelup');
+    this.currentCards = this.offerView.cards;
+    const fresh = toastWeapons(this.currentCards, this.data, this.toastedWeapons);
     if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
-    this.currentCards = all;
-    this.cardEls = Array.from(el.querySelectorAll('.card'));
-    this.setSel(0);
-    this.cardEls.forEach((ce, i) => ce.addEventListener('mouseenter', () => this.setSel(i)));
-    el.querySelectorAll('.card').forEach((c) => c.addEventListener('click', (ev) => {
-      if (ev.target.closest('[data-ban]')) return;
-      this.handlers.pick(c.dataset.key);
-    }));
-    el.querySelectorAll('[data-ban]').forEach((b) => b.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      this.handlers.banish(b.dataset.ban);
-    }));
-    const rr = el.querySelector('[data-act="reroll"]');
-    if (rr) rr.addEventListener('click', () => this.handlers.reroll());
   }
 
-  // Keyboard-first selection: arrows move, Enter picks, 1-4 pick directly.
-  setSel(i) {
-    const els = this.cardEls || [];
-    if (!els.length) return;
-    this.selIdx = Math.max(0, Math.min(els.length - 1, i));
-    els.forEach((e, k) => e.classList.toggle('sel', k === this.selIdx));
-  }
-
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; this.cardEls = null; }
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
 
   // ------------------------------------------------------------------ pause / end
   showPause() {
@@ -274,6 +168,11 @@ export class UI {
     el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
     el.querySelector('[data-act="resume"]').addEventListener('click', () => this.handlers.togglePause());
     el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+    if (this.pwa) {
+      const fe = fullscreenEntry(document, this.pwa, 'btn big');
+      if (fe) el.insertBefore(fe, el.querySelector('.row'));
+      el.append(updateNotice(document, this.pwa));
+    }
   }
 
   hidePause() { this.hide('pause'); }
@@ -446,6 +345,8 @@ export class UI {
     const back = mk('div', 'row');
     back.append(bClose);
     el.append(mk('h2', '', 'Settings'), grid, actions, confirmBox, msg, back, file);
+    const fe = this.pwa ? fullscreenEntry(document, this.pwa, 'btn') : null;
+    if (fe) el.insertBefore(fe, actions);
     const note = h.storageNote ? h.storageNote() : null;
     if (note) el.append(mk('div', 'note', note));
     this.show('settings');
@@ -473,22 +374,6 @@ export class UI {
       return;
     }
     const lu = this.layers.levelup;
-    if (lu && lu.style.display !== 'none' && this.currentCards) {
-      const n = parseInt(e.key, 10);
-      if (n >= 1 && n <= this.currentCards.length) {
-        e.preventDefault();
-        this.handlers.pick(this.currentCards[n - 1].key);
-      } else if (e.key === 'r' || e.key === 'R') {
-        this.handlers.reroll();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault(); this.setSel((this.selIdx || 0) - 1);
-      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault(); this.setSel((this.selIdx || 0) + 1);
-      } else if (e.key === 'Enter' && !(e.target && e.target.closest && e.target.closest('button'))) {
-        e.preventDefault();
-        const c = this.currentCards[this.selIdx || 0];
-        if (c) this.handlers.pick(c.key);
-      }
-    }
+    if (lu && lu.style.display !== 'none' && this.currentCards && this.offerView) this.offerView.onKey(e);
   }
 }

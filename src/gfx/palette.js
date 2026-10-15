@@ -11,6 +11,16 @@ export const PAL = {
   gold: 0xffd27a,
   lavender: 0xe8e0ff,
   danger: 0xd9534f, // not in 06; the one warning colour
+  // HUD-1 Warm Lantern roles (docs/mockups/hud-sheet): brass plates/currency, cream thread/text, lantern flame (HP), frost (low HP).
+  // NOT the evolution gold: gold stays reserved for evolutions and the dawn sun.
+  plate: 0x1c1714,
+  brass: 0xd8b26a,
+  brassDark: 0x8d6c34,
+  cream: 0xfff3dc,
+  thread: 0xffe0a0,
+  flame: 0xffab3a,
+  frost: 0xdff1fa,
+  frostDark: 0x8fb6c9,
 };
 
 // Role tokens (docs/research/15 s2): world art, effects and sprites ask for a ROLE, never a hex, so a palette
@@ -48,6 +58,14 @@ export const CSS_VARS = {
   '--hp': PAL.danger,
   '--xp': PAL.teal,
   '--good': PAL.teal,
+  '--plate': PAL.plate,
+  '--brass': PAL.brass,
+  '--brass-d': PAL.brassDark,
+  '--cream': PAL.cream,
+  '--thread': PAL.thread,
+  '--flame': PAL.flame,
+  '--frost': PAL.frost,
+  '--frost-d': PAL.frostDark,
 };
 
 export function applyCssPalette(root) {

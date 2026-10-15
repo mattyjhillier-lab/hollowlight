@@ -54,6 +54,20 @@ export function availableEvolutions(w, data, unlocked) {
   return out;
 }
 
+// EVO-HINT (display only): true when taking this stat card would leave BOTH stats of an unlocked,
+// not-yet-taken evolution pair at max rank. Never exposes which evolution or partner stat.
+export function stirs(w, statKey, data, unlocked) {
+  if (w.evo) return false;
+  const max = data.balance.maxRank;
+  if ((w.ranks[statKey] || 0) + 1 < max) return false;
+  for (const [id, e] of Object.entries(data.evolutions)) {
+    if (e.weapon !== w.id || !e.pair.includes(statKey) || !evoOpen(e, id, unlocked)) continue;
+    const other = e.pair[0] === statKey ? e.pair[1] : e.pair[0];
+    if ((w.ranks[other] || 0) >= max) return true;
+  }
+  return false;
+}
+
 function weaponCard(id, data) {
   const def = data.weapons[id];
   return {
@@ -87,6 +101,7 @@ function statCard(w, statKey, data, unlocked) {
     maxRank: data.balance.maxRank,
     evoHints,
     color: def.color,
+    ...(stirs(w, statKey, data, unlocked) ? { stirs: true } : {}),
   };
 }
 
