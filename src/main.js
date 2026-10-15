@@ -4,11 +4,13 @@ import { app } from './app.js';
 import { UI } from './ui/ui.js';
 import { RunScene } from './scenes/RunScene.js';
 import { applyCssPalette } from './gfx/palette.js';
+import { TouchControls } from './input/touch.js';
 import { STYLE, parseDpr } from './gfx/style.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
 app.save.load();
+app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause() });
 app.applySettings();
 app.ui.setHandlers({
   ...app.settingsHandlers(),

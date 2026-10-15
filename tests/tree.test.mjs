@@ -98,6 +98,7 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
   assert.equal(buy(s, 'sp_reroll1', def, data).ok, false, 'max rank 1 already owned');
   // multi-rank
   const m = richSave();
+  m.tree.gt_raven_flock = 1; // gate owned (G1e: gated-weapon nodes need the unlock)
   ownedPath(m, ['su_bond', 'su_pot', 'rv_talon']);
   assert.equal(buy(m, 'rv_wide', def, data).rank, 1);
   assert.equal(buy(m, 'rv_wide', def, data).rank, 2);
@@ -528,4 +529,83 @@ test('unlock schema: weapon gate and hero gate work with data that opts in (G1b:
   assert.deepEqual(agg.unlocks.abilityUpgrades, ['long_howl']);
   assert.deepEqual(agg.unlocks.modifiers, ['hard_dusk']);
   assert.throws(() => compileTree(raw([node('uh', { effects: [{ unlock: 'hero', id: 'ghost' }] })]), udata), /unknown hero/);
+});
+
+// ---------------------------------------------------------------- G1e: gate dependency + wording
+const gatedNodes = ['rv_talon', 'rv_wide', 'rv_oath', 'bo_pierce', 'bo_swift', 'bo_twin', 'cl_arc', 'cl_power', 'cl_storm'];
+const gateOfWeapon = { raven_flock: 'gt_raven_flock', spirit_bolts: 'gt_spirit_bolts', chain_lightning: 'gt_chain_lightning' };
+
+test('G1e: a node for a gated weapon cannot be bought without its gate; owning the gate allows it', () => {
+  for (const id of gatedNodes) {
+    const wid = def.nodes[id].effects[0].weapon;
+    assert.ok(def.nodes[id].gateAnc.includes(gateOfWeapon[wid]), `${id} requires ${gateOfWeapon[wid]}`);
+  }
+  const s = richSave({ stats: { ...defaultSave().stats, killsByEnemy: { crow: 5000 } } });
+  s.tree = { su_bond: 1, su_pot: 1 };
+  const c = canBuy(s, 'rv_talon', def, data);
+  assert.equal(c.ok, false);
+  assert.equal(c.reason, 'Locked: unlock Raven Flock first');
+  assert.equal(nodeStatus(def, s, 'rv_wide', data).reason, 'Locked: unlock Raven Flock first', 'deep chain nodes show the gate too');
+  assert.equal(buy(s, 'rv_talon', def, data).ok, false);
+  assert.equal(s.tree.rv_talon, undefined);
+  assert.ok(buy(s, 'gt_raven_flock', def, data).ok);
+  assert.ok(buy(s, 'rv_talon', def, data).ok, 'gate owned -> node buyable');
+});
+
+test('G1e: compileTree rejects a node targeting a gated weapon without (transitively) requiring its gate', () => {
+  const d1 = ungated(data);
+  d1.weapons.raven_flock = { ...d1.weapons.raven_flock, treeGate: true };
+  const g = node('gt_rf', { effects: [{ unlock: 'weapon', id: 'raven_flock' }] });
+  const stat = (id, extra) => node(id, { ring: 2, ang: 40, effects: [{ weapon: 'raven_flock', stat: 'power', pct: 5 }], ...extra });
+  assert.throws(() => compileTree(raw([g, stat('rv_x')]), d1), /rv_x: targets gated weapon "raven_flock".*require its unlock node/);
+  assert.throws(() => compileTree(raw([g, node('mid', { ring: 2, ang: 90 }), stat('rv_y', { requires: ['mid'] })]), d1), /rv_y/);
+  assert.ok(compileTree(raw([g, stat('rv_ok', { requires: ['gt_rf'] })]), d1), 'direct gate prerequisite is fine');
+  assert.ok(compileTree(raw([g, stat('rv_a', { requires: ['gt_rf'] }), stat('rv_b', { ring: 3, ang: 80, requires: ['rv_a'] })]), d1), 'transitive is fine');
+});
+
+test('G1e: nodes behind an evolution gate show ??? until that gate has progress or is owned', () => {
+  const d1 = ungated(data);
+  d1.evolutions.dire_alpha = { ...d1.evolutions.dire_alpha, treeGate: true };
+  const g = node('gt_da', { effects: [{ unlock: 'evolution', id: 'dire_alpha' }], unlock: { t: 'totalKills', n: 100 }, hidden: true });
+  const d = compileTree(raw([g, node('after', { ring: 2, ang: 40, requires: ['gt_da'] })]), d1);
+  const none = { ...defaultSave(), tree: {} };
+  const m = describeNode(d, none, 'after', d1);
+  assert.equal(m.masked, true);
+  assert.equal(m.name, '???');
+  assert.ok(!/Dire|Alpha/i.test(JSON.stringify(m)), 'never names the locked evolution');
+  assert.ok(!/Dire|Alpha/i.test(nodeStatus(d, none, 'after', d1).reason), 'reason does not name it either');
+  const prog = { ...defaultSave(), tree: {}, stats: { ...defaultSave().stats, kills: 10 } };
+  assert.equal(describeNode(d, prog, 'after', d1).masked, false, 'progress begun -> revealed');
+});
+
+test('G1e: no non-gate node text names a locked weapon or evolution (data-driven over tree.json)', () => {
+  const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate);
+  const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
+  const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
+  assert.ok(lockedW.length === 3 && lockedE.length === 9);
+  for (const id of def.list) {
+    const n = def.nodes[id];
+    if (n.permanent || n.gateAnc.some((g) => def.nodes[g].effects.some((e) => e.unlock === 'weapon'))) continue; // gate nodes and locked-weapon nodes may name their weapon
+    const text = `${n.name} ${n.desc} ${n.flavour}`.toLowerCase();
+    for (const w of words) assert.ok(!new RegExp(`\\b${w.toLowerCase()}`).test(text), `${id} mentions "${w}": ${text}`);
+  }
+});
+
+test('G1e: old saves that own gated-weapon nodes without the gate are repaired with a full refund', () => {
+  const paid = (ids) => spentOf(Object.fromEntries(ids.map((i) => [i, 1])), def);
+  const raw0 = { ...defaultSave(), gold: 100, shards: 2, tree: { su_bond: 1, su_pot: 1, rv_talon: 1, rv_wide: 2, ma_focus: 1, ma_cast: 1, bo_pierce: 1, bo_swift: 1, cl_arc: 1 } };
+  raw0.stats.killsByEnemy = {};
+  const fixed = sanitize(raw0);
+  assert.deepEqual(Object.keys(fixed.tree).sort(), ['ma_cast', 'ma_focus', 'su_bond', 'su_pot']);
+  const exp = spentOf({ rv_talon: 1, rv_wide: 2, bo_pierce: 1, bo_swift: 1 }, def);
+  assert.equal(fixed.gold, 100 + exp.gold, 'spent gold refunded, not silently deleted');
+  assert.equal(fixed.shards, 2 + exp.shards);
+  // idempotent: a repaired save refunds nothing more
+  assert.equal(sanitize(JSON.parse(JSON.stringify(fixed))).gold, fixed.gold);
+  // save with the gate owned (and its condition met) keeps everything
+  const ok = { ...defaultSave(), gold: 5, tree: { su_bond: 1, su_pot: 1, gt_raven_flock: 1, rv_talon: 1 } };
+  ok.stats.killsByEnemy = { crow: 5000 };
+  assert.deepEqual(sanitize(ok).tree, ok.tree);
+  assert.equal(sanitize(ok).gold, 5);
+  assert.ok(paid(['su_bond']).gold > 0);
 });

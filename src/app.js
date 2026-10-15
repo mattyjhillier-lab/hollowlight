@@ -4,6 +4,7 @@ import data from './data/index.js';
 import { SaveStore } from './save/store.js';
 import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
 import { newlyLines } from './meta/gatewords.js';
+import { parseTouchParam, touchEnabled } from './input/stick.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
@@ -23,6 +24,7 @@ function parseParams() {
     grant: q.get('grant'), // dev: "spirit_bolts:power=5,pierce=5:soul_lance;raven_flock"
     bless: q.get('bless'), // dev: "wider_glow:2;kind_fortune:3" (validated; disables banking)
     debug: q.get('debug') === '1',
+    touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree
   };
 }
@@ -40,6 +42,7 @@ export const app = {
   characterId: null,
   save: new SaveStore(),
   banked: false,
+  touch: null, // TouchControls, created in main.js
 
   startRun(characterId) {
     const p = this.params;
@@ -130,6 +133,7 @@ export const app = {
   // Called every rendered frame by the scene.
   frame(dt) {
     const sim = this.sim;
+    if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
     if (!sim) return;
     if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
 
@@ -153,7 +157,13 @@ export const app = {
     if (this.hudAcc > 0.08) {
       this.hudAcc = 0;
       this.ui.updateHud(sim);
+      if (this.touch) {
+        const a = sim.ability;
+        const cd = sim.abilityCooldown;
+        this.touch.setAbility(a.name, a.cdLeft <= 0, a.cdLeft <= 0 ? 1 : 1 - a.cdLeft / cd, Math.ceil(a.cdLeft));
+      }
     }
+    if (this.touch) this.touch.render();
   },
 
   onEvent(ev) {
@@ -211,6 +221,10 @@ export const app = {
   applySettings() {
     const s = this.save.data.settings;
     document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
+    if (this.touch) {
+      const coarse = typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches);
+      this.touch.configure(touchEnabled(s.touchMode, this.params.touch, coarse, 'ontouchstart' in window), s.stickSize);
+    }
   },
 
   settingsHandlers() {
@@ -239,6 +253,12 @@ export const app = {
     this.paused = !this.paused;
     if (this.paused) this.ui.showPause();
     else this.ui.hidePause();
+  },
+
+  // Focus lost / tab hidden: pause a running game (touch players get interrupted a lot).
+  autoPause() {
+    const sim = this.sim;
+    if (sim && sim.state === 'running' && !this.paused) this.togglePause();
   },
 
   again() {
