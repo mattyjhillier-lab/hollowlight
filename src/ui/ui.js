@@ -221,12 +221,12 @@ export class UI {
       }
       const ban = sim.banishesLeft > 0 && !gold ? `<button class="btn ban" data-ban="${c.key}">Banish</button>` : '';
       return `
-        <div class="card k-${c.kind} ${gold ? 'gold' : ''}" data-key="${c.key}" style="--i:${i}" tabindex="0" role="button">
+        <div class="card k-${c.kind} ${gold ? 'gold' : ''} ${c.stirs ? 'stirs' : ''}" data-key="${c.key}" style="--i:${i}" tabindex="0" role="button">
           ${c.badge ? `<div class="badge">${c.badge}</div>` : ''}
           <div class="key">${i + 1}</div>
           <h4>${c.title}</h4>
           <div class="desc">${c.kind === 'evolution' ? `<i>${c.from} evolves.</i><br>` : ''}${c.desc}</div>
-          ${pips}${ban}
+          ${pips}${c.stirs ? '<div class="stirs-line"></div>' : ''}${ban}
         </div>`;
     };
     const actions = [];
@@ -239,6 +239,7 @@ export class UI {
       <div class="lu-actions">${actions.join('')}</div>`);
     const fresh = toastWeapons(all, this.data, this.toastedWeapons);
     if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
+    el.querySelectorAll('.stirs-line').forEach((n) => { n.textContent = 'Something stirs...'; });
     this.currentCards = all;
     this.cardEls = Array.from(el.querySelectorAll('.card'));
     this.setSel(0);

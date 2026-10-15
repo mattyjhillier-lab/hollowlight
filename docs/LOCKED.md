@@ -13,7 +13,7 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | Progression | Power from unlocking options behind gates; run 1 = Wolves + Orbit + 2 evolutions; Ravens, Bolts, Chain Lightning + 9 evolutions are tree gates; gate nodes permanent; recipes hidden; stat nodes small (1-3%) with a soft cap | 2026-10-14 | docs/design/progression-gates-v1.md (built G1a-c) |
 | Blessings | Run-only quiet cream cards fill the dry late game; 5 Blessings (caps trimmed); heal swap capped | 2026-10-14/15 | docs/design/blessings-review.md (built BLESS-1) |
 | Base difficulty | hpScale 0.46/0.020; no-tree win ~17-30% with Blessings on | 2026-10-15 | docs/research/25-g1d-tuning-log.md (built G1d) |
-| Evolve hint | "Something stirs" gold edge on stat cards that would complete a pair; never names the evolution | 2026-10-15 | this register (to build) |
+| Evolve hint | "Something stirs" gold edge on stat cards that would complete a pair; never names the evolution | 2026-10-15 | BUILT on dev (EVO-HINT): cards.js stirs(), ui.js/style.css, tests/evohint.test.mjs |
 | Elias stats | Speed 76 (heavy tank, about -28% vs Wren's effective 105.6), HP 130, holy damage +15%; fresh-seed win about level with Wren (random/focus 22/23 vs Wren 24/19) | 2026-10-15 | docs/research/26-elias-speed-tuning.md (built) |
 | Skill tree v2 | Per-weapon clusters (emblem constellations), global rings, evolutions inside weapon clusters, locked clusters dim until unlocked | 2026-10-15 | docs/QUEUE.md (design sheet pending) |
 | Design sheet series | One sheet per area, approved before building; first = HUD + cards | 2026-10-15 | docs/DESIGN-SHEETS.md |
