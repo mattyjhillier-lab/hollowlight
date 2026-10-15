@@ -10,6 +10,9 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 
 Task queue / to-do list: docs/QUEUE.md (keep it updated; add items Matt says to save for later). Art decisions log: docs/ART-DECISIONS.md.
 
+## Standing rule: design, lock, then build (set by Matt)
+Design everything fully and get it LOCKED as we go, so we never go back on something we have added unless it no longer fits how the game evolves. Register: docs/LOCKED.md (area, decision, date, source). Process: design sheet/spec -> Matt approves -> record in docs/LOCKED.md -> build exactly that. A locked item is reopened only if (a) a later decision conflicts with it or (b) Matt says so; record the reason in the Reopened list. Bugs (behaviour that contradicts the locked design) are fixed freely; design changes need Matt's explicit reopen. Before proposing anything, check docs/LOCKED.md for conflicts.
+
 ## Standing rule: research, review, then build (set by Matt)
 Everything going forward is researched and reviewed BEFORE it is built, to make sure it is the best fit and makes sense. Process for every chunk, scaled to its size (token rule still applies):
 1. RESEARCH: how do comparable games handle it, what are the options, what are the risks (sources, labelled OFFICIAL/COMMUNITY/OPINION). Small chunks: a quick check of existing docs/research first; big or new areas: a research file.
