@@ -47,3 +47,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 
 ## Reopened (with reason)
 - 2026-10-15: Abilities row: Rally the Pack now also calls Ravens (Matt approved: Ravens become a real summon). Reason: the weapons design makes Ravens summons, so the Wren command should include them.
+
+- 2026-10-15 A1b wolf shrink (12% smaller, fainter) KEPT by Matt.
