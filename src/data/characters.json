@@ -16,8 +16,8 @@
     "color": "#f2f2f2",
     "hp": 110,
     "speed": 84,
-    "traits": { "holyDamage": 1.15 },
-    "traitText": "+15% holy damage",
+    "traits": { "holyDamage": 1.1 },
+    "traitText": "+10% holy damage",
     "weapon": "holy_orbit",
     "ability": { "id": "sanctuary", "name": "Sanctuary", "cooldown": 60, "desc": "6s of consecrated ground: burns enemies and heals you." }
   }

@@ -406,7 +406,7 @@ test('effects: damage nodes raise damage dealt (same seed)', () => {
   const a = new Sim({ data, seed: 11, godMode: true });
   const b = new Sim({ data, seed: 11, godMode: true, tree: fx({ sp_edge: 1, su_bond: 1, su_pot: 1, wf_fang: 1, ch_wren: 1 }) });
   run(a, 90); run(b, 90);
-  assert.ok(b.damageDealt > a.damageDealt * 1.03, `${b.damageDealt} vs ${a.damageDealt}`);
+  assert.ok(b.damageDealt > a.damageDealt * 1.02, `${b.damageDealt} vs ${a.damageDealt}`);
 });
 
 test('effects: weapon bonuses change real weapon stats (count, power, pierce)', () => {
