@@ -10,7 +10,9 @@ import {
   applyCard,
   computeStats,
   xpForLevel,
+  fallbackCard,
 } from './cards.js';
+import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
 import { WEAPON_BEHAVIOURS } from './weapons.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -67,6 +69,13 @@ export class Sim {
       this.player.maxHp = Math.round(this.player.maxHp * T.player.maxHp);
       this.player.hp = this.player.maxHp;
     }
+    this.baseMaxHp = this.player.maxHp;
+    // Blessings (run-only). Validated here so absent/tampered data fails closed to "none".
+    const bdef = validateBlessings(data.blessings);
+    this.blessDef = blessingCount(bdef) ? bdef : null;
+    this.blessRanks = Object.create(null);
+    this._bless = {};
+    this.healSwapReady = 0;
     this.killsByEnemy = {};
 
     this.enemies = [];
@@ -122,7 +131,7 @@ export class Sim {
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).
@@ -132,8 +141,12 @@ export class Sim {
     return Math.max(floor, a.cooldown * this.mods.abilityCd);
   }
 
+  // Read-time clamped Blessing multipliers (separate from this.mods, which stay untouched).
+  get bless() { return blessTotals(this.blessDef, this.blessRanks, this._bless); }
+
   dmgMult(w) {
     let m = this.mods.damage;
+    if (this.data.weapons[w.id].type === 'summon') m *= this.bless.damage;
     if (this.buffs.rush > 0 && this.data.weapons[w.id].type === 'summon') m *= 1 + this.tfx.rush.pct / 100;
     for (const tag of this.data.weapons[w.id].tags) {
       const t = this.character.traits[`${tag}Damage`];
@@ -475,7 +488,7 @@ export class Sim {
     let my = input.y || 0;
     const len = Math.hypot(mx, my);
     if (len > 1) { mx /= len; my /= len; }
-    let spd = p.speed * (this.character.traits.moveSpeed || 1) * this.mods.speed;
+    let spd = p.speed * (this.character.traits.moveSpeed || 1) * this.mods.speed * this.bless.speed;
     if (this.buffs.speedBoost > 0) spd *= this.buffs.speedMult;
     for (const pt of this.patches) {
       const dx = p.x - pt.x;
@@ -575,7 +588,7 @@ export class Sim {
 
   updateGems(dt) {
     const p = this.player;
-    const pick = this.balance.pickupRadius * this.mods.pickup;
+    const pick = this.balance.pickupRadius * this.mods.pickup * this.bless.pickup;
     const keep = [];
     for (const g of this.gems) {
       const dx = p.x - g.x;
@@ -627,7 +640,7 @@ export class Sim {
       const dx = p.x - k.x;
       const dy = p.y - k.y;
       const d = Math.hypot(dx, dy) || 0.001;
-      if (d < this.balance.pickupRadius * this.mods.pickup * 0.6) {
+      if (d < this.balance.pickupRadius * this.mods.pickup * this.bless.pickup * 0.6) {
         const step = Math.min(d, this.balance.magnetSpeed * dt);
         k.x += (dx / d) * step;
         k.y += (dy / d) * step;
@@ -677,7 +690,7 @@ export class Sim {
       this.kills += 1;
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
       this.logHit(e, 0, true);
-      this.gold += e.gold * this.mods.gold;
+      this.gold += e.gold * this.mods.gold * this.bless.gold;
       this.addGem(e.x, e.y, e.xp);
       this.rollDrops(e);
       if (e.boss) {
@@ -725,7 +738,27 @@ export class Sim {
 
   beginLevelUp() {
     this.state = 'levelup';
-    this.offer = generateOffer(this.cardCtx, this.rng);
+    this.offer = this.withHealSwap(generateOffer(this.cardCtx, this.rng));
+  }
+
+  withHealSwap(offer) {
+    const cards = healSwap(offer.cards, this.cardCtx, this.player.hp, this.player.maxHp, this.time, this.healSwapReady, () => fallbackCard('heal', this.data));
+    return cards === offer.cards ? offer : { ...offer, cards };
+  }
+
+  // Sets a Blessing rank (clamped) and re-derives max HP; Wrapped Warmth heals the HP it adds.
+  setBlessRank(id, rank) {
+    const d = this.blessDef && Object.hasOwn(this.blessDef.items, id) ? this.blessDef.items[id] : null;
+    if (!d || !Number.isFinite(rank)) return false;
+    this.blessRanks[id] = Math.min(d.ranks, Math.max(0, Math.floor(rank)));
+    const p = this.player;
+    const nm = Math.round(this.baseMaxHp * this.bless.maxHp);
+    if (nm !== p.maxHp) {
+      const gain = nm - p.maxHp;
+      p.maxHp = nm;
+      p.hp = gain > 0 ? Math.min(nm, p.hp + gain) : Math.min(nm, p.hp);
+    }
+    return true;
   }
 
   canReroll() { return this.state === 'levelup' && this.rerollsLeft > 0; }
@@ -734,7 +767,7 @@ export class Sim {
   reroll() {
     if (!this.canReroll()) return false;
     this.rerollsLeft -= 1;
-    this.offer = rerollOffer(this.cardCtx, this.rng, this.offer);
+    this.offer = this.withHealSwap(rerollOffer(this.cardCtx, this.rng, this.offer));
     return true;
   }
 
@@ -742,7 +775,7 @@ export class Sim {
     if (!this.canBanish()) return false;
     if (!this.offer.cards.some((c) => c.key === key)) return false;
     this.banishesLeft -= 1;
-    this.offer = banishCard(this.cardCtx, this.rng, this.offer, key);
+    this.offer = this.withHealSwap(banishCard(this.cardCtx, this.rng, this.offer, key));
     return true;
   }
 
@@ -751,9 +784,11 @@ export class Sim {
     const card = this.offer.cards.concat(this.offer.gold).find((c) => c.key === key);
     if (!card) return false;
     if (card.kind === 'fallback') {
-      if (card.fallback === 'heal') this.healPlayer(this.player.maxHp * 0.35);
+      if (card.fallback === 'heal') { this.healPlayer(this.player.maxHp * 0.35); if (card.swapped) this.healSwapReady = this.time + this.blessDef.heal.cooldown; }
       else if (card.fallback === 'gold') this.gold += 25;
       else if (card.fallback === 'xp') this.xp += Math.ceil(this.xpNeeded * 0.5);
+    } else if (card.kind === 'blessing') {
+      this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1);
     } else {
       if (card.kind === 'evolution') {
         for (const u of this.units) if (u.owner === card.weaponId) u.dead = true;
@@ -813,6 +848,8 @@ export class Sim {
   }
 
   // Dev/test: give a weapon (or set its ranks) without going through level-ups.
+  debugBless(id, rank) { return this.setBlessRank(id, rank); }
+
   debugGrant(id, ranks = {}, evo = null) {
     if (!Object.hasOwn(this.data.weapons, id)) return null;
     let w = this.weapons.find((x) => x.id === id);

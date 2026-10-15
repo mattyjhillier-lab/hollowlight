@@ -14,6 +14,7 @@ export const data = {
   chapters: load('chapters'),
 };
 data.tree = load('tree');
+data.blessings = load('blessings');
 import { compileTree } from '../src/meta/tree.js';
 import { setTreeDef } from '../src/save/schema.js';
 export const treeDef = compileTree(data.tree, data);

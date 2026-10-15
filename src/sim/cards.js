@@ -1,5 +1,6 @@
 // Pure level-up card logic: pools, offers, rerolls, banishes, evolutions.
 // Nothing in here touches Phaser or the DOM so it can be unit tested in Node.
+import { blessingPool } from './blessings.js';
 
 export function statValue(def, key, rank) {
   const s = def.stats[key];
@@ -179,6 +180,12 @@ export function goldCards(ctx) {
 export function drawNormalCards(ctx, rng, count, exclude = new Set()) {
   const pool = buildPool(ctx).filter((p) => !exclude.has(p.card.key));
   const cards = drawWeighted(pool, count, rng);
+  // Blessings only fill slots the real pool cannot (fewer than `count` real cards left); fallbacks only if those run out too.
+  if (cards.length < count && ctx.blessings) {
+    const have = new Set(cards.map((c) => c.key));
+    const bp = blessingPool(ctx).filter((p) => !exclude.has(p.card.key) && !have.has(p.card.key));
+    cards.push(...drawWeighted(bp, count - cards.length, rng));
+  }
   return fillWithFallbacks(cards, count, ctx.data, rng);
 }
 

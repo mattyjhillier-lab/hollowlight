@@ -21,6 +21,7 @@ function parseParams() {
     rerolls: num('rr', 0),
     banishes: num('ban', 0),
     grant: q.get('grant'), // dev: "spirit_bolts:power=5,pierce=5:soul_lance;raven_flock"
+    bless: q.get('bless'), // dev: "wider_glow:2;kind_fortune:3" (validated; disables banking)
     debug: q.get('debug') === '1',
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree
   };
@@ -53,6 +54,7 @@ export const app = {
       godMode: p.god,
     });
     if (p.grant) this.applyGrants(sim, p.grant);
+    if (p.bless) this.applyBless(sim, p.bless);
     this.sim = sim;
     this.paused = false;
     this.banked = false;
@@ -98,6 +100,13 @@ export const app = {
     this.sim = null;
     this.ui.hideAll();
     this.ui.tree.open(this.treeApi());
+  },
+
+  applyBless(sim, spec) {
+    for (const part of String(spec).slice(0, 300).split(';')) {
+      const [id, r] = part.split(':');
+      if (id && /^[a-z0-9_]{1,32}$/.test(id)) sim.debugBless(id, Number(r)); // unknown ids / bad ranks are ignored inside
+    }
   },
 
   applyGrants(sim, spec) {
@@ -186,7 +195,7 @@ export const app = {
   // Debug URL params never touch the real save.
   isDebugRun() {
     const p = this.params;
-    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.debug || p.seed !== null);
+    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.seed !== null);
   },
 
   bankRun(sim) {

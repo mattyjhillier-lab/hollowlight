@@ -214,8 +214,8 @@ export class UI {
     const cardHtml = (c, i) => {
       const gold = c.kind === 'evolution';
       let pips = '';
-      if (c.kind === 'stat') {
-        pips = '<div class="pips">' + Array.from({ length: maxRank }, (_, k) => `<i class="${k < c.rank ? 'on' : k === c.rank ? 'next' : ''}"></i>`).join('') + '</div>';
+      if (c.kind === 'stat' || c.kind === 'blessing') {
+        pips = '<div class="pips">' + Array.from({ length: c.maxRank || maxRank }, (_, k) => `<i class="${k < c.rank ? 'on' : k === c.rank ? 'next' : ''}"></i>`).join('') + '</div>';
       }
       const ban = sim.banishesLeft > 0 && !gold ? `<button class="btn ban" data-ban="${c.key}">Banish</button>` : '';
       return `

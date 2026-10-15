@@ -9,6 +9,11 @@ import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
 const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
+// BLESS=off drops the Blessing pool (identical to the pre-BLESS-1 game); BLESSPICK=random|defence|offence is the bot's Blessing taste.
+export const BLESS = process.env.BLESS === 'off' ? 'off' : 'on';
+export const BLESSPICK = ['defence', 'offence'].includes(process.env.BLESSPICK) ? process.env.BLESSPICK : 'random';
+try { if (BLESS === 'on') data.blessings = load('blessings'); } catch { /* baseline checkout: no blessings.json */ }
+const BPREF = { defence: { maxHp: 1.2, pickup: 0.6, gold: 0.3, damage: 0.3, speed: 0.8 }, offence: { damage: 1.2, speed: 0.8, maxHp: 0.4, pickup: 0.4, gold: 0.3 } };
 
 // META=none|half|full buys a preset of the skill tree (ignores unlock conditions) for balance probes.
 // GATES decides the gated content (3 weapons + 9 evolutions, tree gates since G1b):
@@ -61,12 +66,12 @@ function pick(sim, rng) {
   const offer = sim.offer;
   if (offer.gold.length) return offer.gold[0].key;
   // Rerolls: redraw a hand with no weapon card and no stat already in progress. Banish: drop fallback cards.
-  if (sim.banishesLeft > 0) { const f = offer.cards.find((c) => c.kind === 'fallback'); if (f && sim.banish(f.key)) return pick(sim, rng); }
+  if (sim.banishesLeft > 0) { const f = offer.cards.find((c) => c.kind === 'fallback' && c.fallback !== 'heal'); if (f && sim.banish(f.key)) return pick(sim, rng); }
   if (sim.rerollsLeft > 0 && !offer.cards.some((c) => c.kind === 'weapon' || (c.kind === 'stat' && c.rank >= 1)) && sim.reroll()) return pick(sim, rng);
   // prefer to finish a stat pair: weight cards toward stats already ranked
   const cards = offer.cards;
   const focus = process.env.FOCUS === '1';
-  const w = cards.map((c) => (c.kind === 'stat' ? (focus ? 1 + c.rank * c.rank * 3 : 1 + c.rank * 1.5) : c.kind === 'weapon' ? (focus ? (sim.weapons.length < 2 ? 3 : 0.2) : 2) : 0.3));
+  const w = cards.map((c) => (c.kind === 'blessing' ? (BPREF[BLESSPICK]?.[c.effect] ?? 0.3) : c.kind === 'stat' ? (focus ? 1 + c.rank * c.rank * 3 : 1 + c.rank * 1.5) : c.kind === 'weapon' ? (focus ? (sim.weapons.length < 2 ? 3 : 0.2) : 2) : 0.3));
   let t = w.reduce((a, b) => a + b, 0) * rng();
   for (let i = 0; i < cards.length; i++) { t -= w[i]; if (t <= 0) return cards[i].key; }
   return cards[0].key;
@@ -78,16 +83,25 @@ export function playRun(charId, seed, opts = {}) {
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;
   const marks = {};
-  let levelups = 0, filler = 0; // filler = level-ups whose first-shown offer was only fallback cards (heal/gold/xp)
+  let levelups = 0, filler = 0, dead = 0, short = 0, blessPicks = 0, healSwaps = 0, hpLost = 0; // filler = level-ups whose first-shown offer was only fallback cards (heal/gold/xp)
   const t0 = Date.now();
   while (sim.state === 'running' || sim.state === 'levelup') {
     if (sim.state === 'levelup') {
       levelups++;
       if (!sim.offer.gold.length && sim.offer.cards.every((c) => c.kind === 'fallback')) { filler++; if (marks.filler === undefined) marks.filler = Math.round(sim.time); }
-      sim.pickCard(pick(sim, rng));
+      const real = sim.offer.cards.filter((c) => c.kind === 'weapon' || c.kind === 'stat' || c.kind === 'evolution').length + sim.offer.gold.length;
+      if (real === 0) { dead++; if (marks.dead === undefined) marks.dead = Math.round(sim.time); }
+      if (real < 3) { short++; if (marks.short === undefined) marks.short = Math.round(sim.time); }
+      if (sim.offer.cards.some((c) => c.kind === 'blessing') && marks.bless === undefined) marks.bless = Math.round(sim.time);
+      const key = pick(sim, rng);
+      if (key.startsWith('b:')) blessPicks++;
+      if (key === 'f:heal' && sim.offer?.cards.some((c) => c.key === key && c.swapped)) healSwaps++;
+      sim.pickCard(key);
       continue;
     }
+    const hp0 = sim.player.hp;
     sim.step(DT, botInput(sim));
+    if (sim.player.hp < hp0) hpLost += hp0 - sim.player.hp;
     if (marks.bossKill === undefined && sim.bossKilled) marks.bossKill = Math.round(sim.time);
     if (marks.evo === undefined && sim.weapons.some((w) => w.evo)) marks.evo = Math.round(sim.time);
     const m = Math.floor(sim.time / 60);
@@ -95,7 +109,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
