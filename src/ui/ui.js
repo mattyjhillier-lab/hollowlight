@@ -9,6 +9,8 @@ const fmtTime = (s) => {
 
 import { TreeScreen } from './treescreen.js';
 import { Hud } from './hud.js';
+import { OfferView } from './cardsui.js';
+import '../cards.css';
 import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
@@ -138,63 +140,24 @@ export class UI {
 
   hideStart() { this.hide('start'); }
 
-  // ------------------------------------------------------------------ level-up
+  // ------------------------------------------------------------------ level-up (HUD-2: src/ui/cardsui.js, presentation only)
   showLevelUp(sim) {
-    const offer = sim.offer;
-    const all = offer.gold.concat(offer.cards);
-    const maxRank = sim.balance.maxRank;
-    const cardHtml = (c, i) => {
-      const gold = c.kind === 'evolution';
-      let pips = '';
-      if (c.kind === 'stat' || c.kind === 'blessing') {
-        pips = '<div class="pips">' + Array.from({ length: c.maxRank || maxRank }, (_, k) => `<i class="${k < c.rank ? 'on' : k === c.rank ? 'next' : ''}"></i>`).join('') + '</div>';
-      }
-      const ban = sim.banishesLeft > 0 && !gold ? `<button class="btn ban" data-ban="${c.key}">Banish</button>` : '';
-      return `
-        <div class="card k-${c.kind} ${gold ? 'gold' : ''} ${c.stirs ? 'stirs' : ''}" data-key="${c.key}" style="--i:${i}" tabindex="0" role="button">
-          ${c.badge ? `<div class="badge">${c.badge}</div>` : ''}
-          <div class="key">${i + 1}</div>
-          <h4>${c.title}</h4>
-          <div class="desc">${c.kind === 'evolution' ? `<i>${c.from} evolves.</i><br>` : ''}${c.desc}</div>
-          ${pips}${c.stirs ? '<div class="stirs-line"></div>' : ''}${ban}
-        </div>`;
-    };
-    const actions = [];
-    if (sim.rerollsLeft > 0) actions.push(`<button class="btn" data-act="reroll">Reroll (R) · ${sim.rerollsLeft} left</button>`);
-    if (sim.banishesLeft > 0) actions.push(`<span class="lu-sub" style="margin:0;align-self:center">Banishes left: ${sim.banishesLeft}</span>`);
-    const el = this.show('levelup', `
-      <div class="lu-title">Level ${sim.level}${sim.pending > 1 ? ` (+${sim.pending - 1} more)` : ''}</div>
-      <div class="lu-sub">Choose one</div>
-      <div class="cards">${all.map(cardHtml).join('')}</div>
-      <div class="lu-actions">${actions.join('')}</div>`);
-    const fresh = toastWeapons(all, this.data, this.toastedWeapons);
+    const el = this.layer('levelup');
+    if (!this.offerView) {
+      this.offerView = new OfferView(document, el, {
+        pick: (k) => this.handlers.pick(k),
+        reroll: () => this.handlers.reroll(),
+        banish: (k) => this.handlers.banish(k),
+      });
+    }
+    this.offerView.render(sim, this.data);
+    this.show('levelup');
+    this.currentCards = this.offerView.cards;
+    const fresh = toastWeapons(this.currentCards, this.data, this.toastedWeapons);
     if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
-    el.querySelectorAll('.stirs-line').forEach((n) => { n.textContent = 'Something stirs...'; });
-    this.currentCards = all;
-    this.cardEls = Array.from(el.querySelectorAll('.card'));
-    this.setSel(0);
-    this.cardEls.forEach((ce, i) => ce.addEventListener('mouseenter', () => this.setSel(i)));
-    el.querySelectorAll('.card').forEach((c) => c.addEventListener('click', (ev) => {
-      if (ev.target.closest('[data-ban]')) return;
-      this.handlers.pick(c.dataset.key);
-    }));
-    el.querySelectorAll('[data-ban]').forEach((b) => b.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      this.handlers.banish(b.dataset.ban);
-    }));
-    const rr = el.querySelector('[data-act="reroll"]');
-    if (rr) rr.addEventListener('click', () => this.handlers.reroll());
   }
 
-  // Keyboard-first selection: arrows move, Enter picks, 1-4 pick directly.
-  setSel(i) {
-    const els = this.cardEls || [];
-    if (!els.length) return;
-    this.selIdx = Math.max(0, Math.min(els.length - 1, i));
-    els.forEach((e, k) => e.classList.toggle('sel', k === this.selIdx));
-  }
-
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; this.cardEls = null; }
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
 
   // ------------------------------------------------------------------ pause / end
   showPause() {
@@ -411,22 +374,6 @@ export class UI {
       return;
     }
     const lu = this.layers.levelup;
-    if (lu && lu.style.display !== 'none' && this.currentCards) {
-      const n = parseInt(e.key, 10);
-      if (n >= 1 && n <= this.currentCards.length) {
-        e.preventDefault();
-        this.handlers.pick(this.currentCards[n - 1].key);
-      } else if (e.key === 'r' || e.key === 'R') {
-        this.handlers.reroll();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault(); this.setSel((this.selIdx || 0) - 1);
-      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault(); this.setSel((this.selIdx || 0) + 1);
-      } else if (e.key === 'Enter' && !(e.target && e.target.closest && e.target.closest('button'))) {
-        e.preventDefault();
-        const c = this.currentCards[this.selIdx || 0];
-        if (c) this.handlers.pick(c.key);
-      }
-    }
+    if (lu && lu.style.display !== 'none' && this.currentCards && this.offerView) this.offerView.onKey(e);
   }
 }
