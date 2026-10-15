@@ -59,7 +59,7 @@ async function open(c, url, w, h, dpr, tier) {
 }
 const inject = (c, n) => c.ev(`(()=>{const s=window.__app.sim;const T=['wolf','crow','root_crawler'];let k=0;while(s.enemies.length<${n}){const a=(k*2.399)%6.2832,d=50+((k*37)%260);s.spawnEnemy(T[k%3],s.player.x+Math.cos(a)*d,s.player.y+Math.sin(a)*d);k++;}return s.enemies.length})()`);
 const autoPick = (c) => c.ev("(()=>{const a=window.__app,s=a.sim;if(s&&s.state==='levelup'&&s.offer&&s.offer.cards[0])a.pick(s.offer.cards[0].key);return 1})()");
-const shot = async (c, file, clip) => { const r = await c.send('Page.captureScreenshot', { format: 'png', ...(clip ? { clip } : {}) }); writeFileSync(file, Buffer.from(r.data, 'base64')); return r.data; };
+const shot = async (c, file, clip) => { const jpg = file.endsWith('.jpg'); const r = await c.send('Page.captureScreenshot', { format: jpg ? 'jpeg' : 'png', ...(jpg ? { quality: 82 } : {}), ...(clip ? { clip } : {}) }); writeFileSync(file, Buffer.from(r.data, 'base64')); return r.data; };
 
 async function perf(dir) {
   const srv = await serve(dir, 4181); const c = await launch(); const rows = [];
@@ -99,19 +99,19 @@ async function shots(dir, out) {
         if (k) await key('keyDown', k);
         await sleep(ms);
         await autoPick(c);
-        await shot(c, join(out, `${name}-${tag}.png`));
-        if (name === 'desk' || name === 'land') {
-          const p = await cropAround(); const half = 45; const clip = { x: Math.max(0, p.x - half), y: Math.max(0, p.y - half), width: half * 2, height: half * 2, scale: 4 };
-          await shot(c, join(out, `crop-${name}-${tag}.png`), clip);
+        await shot(c, join(out, `${name}-${tag}.jpg`));
+        {
+          const p = await cropAround();
+          for (const [z, half] of [[1, 60], [3, 40]]) await shot(c, join(out, `crop${z}x-${name}-${tag}.png`), { x: Math.max(0, p.x - half), y: Math.max(0, p.y - half - 6), width: half * 2, height: half * 2, scale: z });
         }
         if (k) await key('keyUp', k);
       }
       await c.ev('(()=>{const s=window.__app.sim;s.player.hp=Math.max(1,s.player.hp);return 1})()');
-      await inject(c, 40); await sleep(1400); await shot(c, join(out, `${name}-crowd.png`));
+      await inject(c, 40); await sleep(1400); await shot(c, join(out, `${name}-crowd.jpg`));
       if (name === 'desk') {
         // hurt frame: take damage (god mode may block hp loss: force the rig's hurt flag through the sim hook when available)
         await c.ev('window.__app.sim.player.iframes=0;window.__app.sim.player.hp=Math.max(5,window.__app.sim.player.hp-1);true');
-        await sleep(120); await shot(c, join(out, `${name}-hurt.png`));
+        await sleep(120); await shot(c, join(out, `${name}-hurt.jpg`));
       }
     }
   } finally { c.close(); srv.close(); }
@@ -130,7 +130,32 @@ async function atlas(dir, out) {
   } finally { c.close(); srv.close(); }
 }
 
+// node scripts/a1.mjs states <distDir> <outDir>: idle / hurt / death / reduced-motion / Low tier crops at 1280x720 and 390x844@2
+async function states(dir, out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(dir, 4181); const c = await launch();
+  const crop = async (name, half = 40) => {
+    const p = await c.ev('(()=>{const s=window.__app.scene,cam=s.cameras.main,p=window.__app.sim.player;const r=s.scale.canvas.getBoundingClientRect();return {x:r.left+(p.x-cam.worldView.x)*cam.zoom/devicePixelRatio,y:r.top+(p.y-cam.worldView.y)*cam.zoom/devicePixelRatio}})()');
+    await shot(c, join(out, name + '.png'), { x: Math.max(0, p.x - half), y: Math.max(0, p.y - half - 8), width: half * 2, height: half * 2, scale: 4 });
+  };
+  try {
+    for (const [vn, w, h, dpr] of [['desk', 1280, 720, 1], ['port', 390, 844, 2]]) for (const tier of ['high', 'low']) {
+      await open(c, `http://127.0.0.1:4181/?style=a&auto=wren&seed=1&t=6&god=1&debug=1`, w, h, dpr, tier);
+      await sleep(1500);
+      await crop(`st-${vn}-${tier}-idle`);
+      await c.ev('window.__app.scene.rig.triggerHurt();true'); await sleep(90); await crop(`st-${vn}-${tier}-hurt1`); await sleep(120); await crop(`st-${vn}-${tier}-hurt2`);
+      if (tier === 'high') {
+        await c.ev("window.__app.save.setSettings({reducedMotion:true});true"); await sleep(600); await crop(`st-${vn}-reduced`);
+        await c.ev("window.__app.save.setSettings({reducedMotion:false});true");
+      }
+      await c.ev("(()=>{const u=document.getElementById('ui');if(u)u.style.visibility='hidden';const s=window.__app.sim;s.player.hp=0;s.state='defeat';return 1})()");
+      for (const [k, ms] of [['d1', 350], ['d2', 500], ['d3', 900]]) { await sleep(ms); await crop(`st-${vn}-${tier}-death-${k}`); }
+    }
+  } finally { c.close(); srv.close(); }
+}
+
 const [cmd, a1, a2] = process.argv.slice(2);
+if (cmd === 'states') await states(a1, a2);
 if (cmd === 'atlas') await atlas(a1, a2);
 if (cmd === 'perf') await perf(a1);
 if (cmd === 'shots') await shots(a1, a2);

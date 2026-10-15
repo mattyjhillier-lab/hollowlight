@@ -1,5 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+- A1 BUILT on dev 2026-10-15 (Wren v2 + pup rig, screenshots docs/screenshots/a1/, scripts/a1.mjs): awaiting Matt's look. Open for A1.1 if he wants: pup howl on Pack Howl, pup sleep pose redraw, ears flick, leash line, 4-direction walk views. Next: A2 Elias v2.
+
 ## IDENTITY BUILD (Matt 2026-10-15): chunks A1 Wren v2 + pup in game, A2 Elias v2 in game, then world (after sheet #2), then fonts+icons. Run in parallel with the W weapons batch (different files).
 
 ## WAITING ON MATT (reminder list, 2026-10-15)
