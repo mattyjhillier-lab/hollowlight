@@ -63,6 +63,7 @@ Standing rules always apply: security first, token conservation, everything must
 
 ## Big chunk queued (Matt, 2026-10-15): SKILL TREE REDESIGN v2
 - Matt: the tree should flow better; each WEAPON has its own mini skill tree (e.g. wolves: power, speed, count, duration) that you can only spend into once the weapon is unlocked; evolutions unlock inside that weapon's cluster; global rings (survival/economy/magic) around the hub; locked clusters dim until unlocked (Hollow colour-returns idea); nodes small (1-3%) with a power budget/soft cap; look follows the Warm Lantern tree mock-ups (docs/mockups/cartoon-polished/p1-tree.png) in the art pass.
+- EMBLEM CONSTELLATIONS (Matt, 2026-10-15): each weapon cluster's node layout traces that weapon's emblem (wolf head, raven wing, jagged bolt, forked lightning, orbit ring; future: flame for Lantern Wisps, bell, hand...). Evolution gates sit at meaningful points of the shape (e.g. the wolf's eyes). Locked clusters show a faint silhouette teaser until the weapon is unlocked, then light up. Needs ~12-20 nodes per weapon, readable at phone size, upgrade flow must still make sense along the shape.
 - Process: research (how genre games structure per-weapon trees and flow) -> design doc + layout mock-up -> independent review -> build in small chunks. Replaces/absorbs G2 (old tree rescale). Starts AFTER G1e (tree fix) lands, to avoid collisions in tree.json.
 
 ## Ideas parked (do not start without Matt)
