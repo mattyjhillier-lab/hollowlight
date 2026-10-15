@@ -10,6 +10,15 @@ Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Build
 
 Task queue / to-do list: docs/QUEUE.md (keep it updated; add items Matt says to save for later). Art decisions log: docs/ART-DECISIONS.md.
 
+## Standing rule: how to ask Matt questions (set by Matt, 2026-10-15)
+Use the one-tap question format we have been using:
+- Use AskUserQuestion; at most 3 questions per batch; if more are pending, ask the most blocking 3 first, record the answers, then ask the next batch.
+- Each question is self-contained (plain words, no jargon), has 2-4 options, the recommended option FIRST and labelled "(Recommended)", each option with a short description of what happens.
+- Before asking, give a short plain-language summary of what was found and why the decision matters (a few bullets); after the answers, state in one line what was locked.
+- Record every answer immediately in docs/LOCKED.md (and docs/QUEUE.md/design docs as relevant) before continuing.
+- Do not ask about trivial or reversible choices: take the recommended default, say so, and list it so Matt can override. Open feedback (how something feels) is asked as a plain question in chat, not a button question.
+- When Matt returns after being away and prompts, ask the pending questions in this format, most blocking first.
+
 ## Standing rule: definition of done, every chunk (set by Matt, 2026-10-15)
 Every chunk follows the same loop: RESEARCH -> DESIGN -> REVIEW -> LOCK (docs/LOCKED.md, Matt approves) -> BUILD (small chunk) -> VERIFY -> Matt reviews. VERIFY always includes ALL of: (1) tests green + build OK; (2) BALANCE CHECK: run the bot sweeps (scripts/sweep.mjs, bless-sweep.mjs, g1d-sweep.mjs, gates-*.mjs as relevant) with the Blessings and gates in their current state, compare to the locked targets (no-tree random-pick win ~15-30%, no deaths before ~5:00, deaths spread 6-14 min, evolution 1.8-2.3x base with 3x cap, abilities a modest share of power, tree total power inside the soft-cap budget, Wren vs Elias gap small) and report the numbers honestly with seed counts and noise; anything that moves a target needs Matt's decision; (3) SECURITY check (inputs validated, no new deps without review, audit reported, no secrets); (4) FIT check (look/identity + mechanical sense) and a conflict check against docs/LOCKED.md; (5) screenshots at true in-game size and phone size for anything visual; (6) update docs/LOCKED.md, docs/QUEUE.md and the relevant design doc. Report in a few bullets and end with Right now / Next / Parked.
 
