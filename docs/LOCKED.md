@@ -52,3 +52,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 - 2026-10-15 A1b wolf shrink (12% smaller, fainter) KEPT by Matt.
 
 - 2026-10-15 A2 Elias v2 in game: Matt reviewed, 'looks fine'. Polish parked (wheel-planting anim, glad face, flame count by rank, extra views). Heroes stage of identity build DONE; next = world sheet #2.
+
+- 2026-10-16 WORLD SHEET #2 (docs/mockups/world-sheet/) LOCKED by Matt: ground/props = A Meadow Glade + B Deep Forest Floor by zone (A: opening/road/wells; B: grove/thicket/graves/edge); night light lifted ~14% (ARC retune in W6); HUD stays frost-only (no life-map tint). Build chunks W0-W8 per world-sheet README, each needs Matt's go-ahead; W0 = life map + blend spike first.
