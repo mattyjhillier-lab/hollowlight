@@ -66,7 +66,7 @@ export class TreeScreen {
     this.view.tabIndex = 0;
     this.canvas = mk('canvas', 'tree-lines');
     this.world = mk('div', 'tree-world');
-    this.view.append(this.canvas, this.world);
+    this.view.append(this.canvas, this.world, mk('div', 'tree-gatekey', GATE_KEY_TEXT));
     this.buildStatic();
 
     this.panel = mk('div', 'tree-panel');
@@ -80,7 +80,7 @@ export class TreeScreen {
     window.addEventListener('keydown', this.keyHandler);
     this.resize();
     const s = this.view.getBoundingClientRect();
-    this.cam.z = clamp(Math.min(s.width, s.height) / (2 * 4.3 * this.def.ringStep), 0.5, 1);
+    this.cam.z = clamp(Math.min(s.width, s.height) / (2 * 3.4 * this.def.ringStep), 0.66, 1);
     this.cam.x = 0;
     this.cam.y = 0;
     this.refresh();
@@ -106,10 +106,6 @@ export class TreeScreen {
     hub.style.left = '0px';
     hub.style.top = '0px';
     this.world.append(hub);
-    const key = mk('div', 'tree-gatekey', GATE_KEY_TEXT);
-    key.style.left = '0px';
-    key.style.top = '52px';
-    this.world.append(key);
     for (const b of Object.values(this.def.branches)) {
       const rad = (b.angle * Math.PI) / 180;
       const lab = mk('div', 'tree-branch', b.name);
