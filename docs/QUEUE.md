@@ -2,7 +2,7 @@
 
 ## NOW / NEXT / LATER (focus keeper)
 - DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
-- NOW: MATT PLAYTEST of live v0.4.0 (merged to main 2026-10-15: skill tree web, gates, Blessings, tougher base game). Collect feedback in plain words and fix what matters. DONE: G1a-c, BLESS-1 (caps trimmed to +12% HP/+4% speed), G1d (hpScale 0.46/0.020, Elias holy +10%): no-tree win ~17-30%.
+- NOW (from Matt's first playtest of live v0.4.0, 2026-10-15; run 1 felt good): (1) G1e tree fix: stat nodes for locked weapons must require the gate, generic node wording must never name locked weapons (Moon-Touched named bolts/lightning); (2) Elias speed 84 -> ~76 and re-measure; (3) evolve hint "Something stirs" gold edge on stat cards that would complete a pair (no recipe spoilers) because he never got an evolve card in run 1 and nothing teaches the rule; (4) enemy feel: enemies feel blocky/not smooth and act flat (no walk animation or interpolation; all chase straight): research + cheap polish pass, then fold into the enemy redesign.
 - NEXT: G2 (rescale old tree: half tree gives 90-96% wins; node kinds + 3% path-node lint; soft cap); Vite upgrade on dev (Dependabot PRs #4/#5, vite 5.4 -> 8.x: test before merging, never merge blind); boss/Elder Treant redesign (boss-death share >40%, early deaths 4-8%); summons and magic weapons review + Ghost Wolf/raven designs; retune evolutions (Murder Storm outlier etc.); rest of the content review series.
 - LATER: build phases via the GO gate (docs/READINESS.md): art pass in Style v1, audio, enemies/boss, phone/PWA, packaging, launch. Live game = v0.4.0 (placeholder art).
 - PARKING LOT: see bottom.
