@@ -4,6 +4,8 @@ import Phaser from 'phaser';
 import { app } from '../app.js';
 import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
+import { HeroRig } from '../gfx/herorig.js';
+import { FEET, FLAT } from '../gfx/wrenart.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
@@ -136,6 +138,7 @@ export class RunScene extends Phaser.Scene {
     this.trailAcc = 0; this.trailTick = 0; this.fxTick = 0;
     this.bloom = null;
     this.playerImg = this.add.image(0, 0, 'hero_wren').setVisible(false);
+    this.rig = new HeroRig(this, { depth: D_LIT, glowKey: 'glow', glowInv: inv('glow'), blendAdd: ADD, flat: this.playerImg }); // Wren v2 + pup (A1); Elias keeps the flat sprite
     this.followTarget = this.add.zone(0, 0, 1, 1);
     this.gradeNow = gradeAt(0);
 
@@ -258,8 +261,10 @@ export class RunScene extends Phaser.Scene {
       img.setScale(rng.range(0.85, 1.25) * inv('tree'));
       this.decor.push(img);
     }
-    this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv('hero_wren')).setVisible(true);
-    this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv('hero_wren_o'));
+    this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv(`hero_${sim.characterId}`)).setOrigin(0.5, 0.5).setVisible(true);
+    this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5);
+    this.rig.bind(sim);
+    if (this.rig.active) this.heroOut.setOrigin(-FLAT.x0 / FLAT.w, -FLAT.y0 / FLAT.h);
     this.heroOutA = 0;
     this.parts.clear();
     this.nums.clear();
@@ -286,6 +291,7 @@ export class RunScene extends Phaser.Scene {
     this.clearDecor();
     this.playerImg.setVisible(false);
     this.heroOut.setVisible(false);
+    this.rig.hide();
     this.hideAmbient();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
@@ -580,10 +586,16 @@ export class RunScene extends Phaser.Scene {
 
     // player: lantern pool + ground ring (readability) + lantern light
     this.followTarget.setPosition(p.x, p.y);
-    this.playerImg.setPosition(p.x, p.y).setDepth(D_LIT + p.y).setFlipX(p.faceX < 0);
-    this.playerImg.setAlpha(p.iframes > 0 && Math.floor(sim.time * 24) % 2 ? 0.45 : 1);
+    const rig = this.rig.active;
+    if (rig) this.rig.update(sim, this.quality.tier, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, caps, this.parts);
+    else {
+      this.playerImg.setPosition(p.x, p.y).setDepth(D_LIT + p.y).setFlipX(p.faceX < 0);
+      this.playerImg.setAlpha(p.iframes > 0 && Math.floor(sim.time * 24) % 2 ? 0.45 : 1);
+    }
+    const lx = rig ? this.rig.emberX : p.x; // the ember is her lantern light
+    const ly = rig ? this.rig.emberY : p.y - 4;
     const lowHp = p.hp > 0 && p.hp / p.maxHp < 0.3;
-    if (this.playerGlow.visible) this.playerGlow.setPosition(p.x, p.y - 4).setAlpha((lit ? 0.3 : 0.3) + 0.03 * Math.sin(sim.time * 2.5));
+    if (this.playerGlow.visible) this.playerGlow.setPosition(lx, ly).setAlpha((lit ? 0.3 : 0.3) + 0.03 * Math.sin(sim.time * 2.5));
     if (this.ring.visible) {
       const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
       this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : ROLE.lantern).setAlpha(0.45 + 0.2 * pulse);
@@ -592,7 +604,8 @@ export class RunScene extends Phaser.Scene {
       const target = lowHp ? 90 : 130;
       this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
-      lm.add(p.x, p.y - 4, this.lanR * fl, ROLE.lantern, 0.9);
+      lm.add(lx, ly, this.lanR * fl, ROLE.lantern, 0.9);
+      if (rig) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
     }
 
     const g = this.groundG;
@@ -700,7 +713,7 @@ export class RunScene extends Phaser.Scene {
     // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
     const oa = this.heroOutA + ((crowd >= 3 ? 0.7 : 0) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120);
     this.heroOutA = oa;
-    this.heroOut.setVisible(oa > 0.02).setPosition(p.x, p.y).setAlpha(oa).setFlipX(p.faceX < 0);
+    this.heroOut.setVisible(oa > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(oa).setFlipX(p.faceX < 0);
 
     // spirit trails tick at ~30 Hz
     const trailOn = caps.trails > 0 && this.parts.count < this.parts.cap * 0.75 && !this.reducedMotion();

@@ -5,6 +5,7 @@
 // All sizes are in world units (the 640x360 logical space); INV[key] = world units per texel.
 import { INV, VIS, DENS } from './style.js';
 import { ROLE } from './palette.js';
+import { makeRigTextures } from './rigtex.js';
 
 const TAU = Math.PI * 2;
 const ch = (c, s) => (c >> s) & 255;
@@ -554,6 +555,7 @@ export function makeStyleTextures(scene, style) {
       INV[ok] = INV[key];
     }
   }
+  if (style === 'a') makeRigTextures(scene); // Wren v2 rig atlas + flat Wren/pup (replaces the old hero_wren)
   const gcv = style === 'b' ? groundB() : groundA();
   const gt = scene.textures.addCanvas('ground', gcv);
   if (nearest) gt.setFilter(1);
