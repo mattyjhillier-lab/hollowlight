@@ -2,9 +2,9 @@
 
 ## NOW / NEXT / LATER (focus keeper)
 - DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
-- NOW: BLESS-1 BUILT on dev 2026-10-15 (see BLESS-1 status in docs/design/blessings-review.md; win rate rose 8-15 pts, Matt decides cap trim vs G1d). Original scope: BLESS-1 build (approved 2026-10-14): approach A+C per docs/design/blessings-review.md (Blessings fill the slots the normal pool cannot, from when <3 real cards remain; capped heal swap 45s cooldown + HP<40%); 5 Blessings: Wider Glow, Wrapped Warmth, Kindled Spirits, Kind Fortune, Dawnlit Soles; cut Dusk Compass/Quiet Hours/Hearthwarm/Pup Errand/Steadier Flame; defer Last Ember/Bloom Ring/Ember Trail/Warm Hands/Lingering Light. THEN measure, THEN G1d hpScale. DONE: G1a, G1b, G1c (locked, plain styling).
-- NEXT: summons and magic weapons review + Ghost Wolf/raven designs; enemy roster + Elder Treant designs; retune evolutions (Murder Storm outlier etc.); then rest of the content review series.
-- LATER: build phases via the GO gate (docs/READINESS.md): art pass in Style v1, audio, enemies/boss, phone/PWA, packaging, launch. Live game is still v0.2.0; dev has v0.4.0.
+- NOW: MATT PLAYTEST of live v0.4.0 (merged to main 2026-10-15: skill tree web, gates, Blessings, tougher base game). Collect feedback in plain words and fix what matters. DONE: G1a-c, BLESS-1 (caps trimmed to +12% HP/+4% speed), G1d (hpScale 0.46/0.020, Elias holy +10%): no-tree win ~17-30%.
+- NEXT: G2 (rescale old tree: half tree gives 90-96% wins; node kinds + 3% path-node lint; soft cap); Vite upgrade on dev (Dependabot PRs #4/#5, vite 5.4 -> 8.x: test before merging, never merge blind); boss/Elder Treant redesign (boss-death share >40%, early deaths 4-8%); summons and magic weapons review + Ghost Wolf/raven designs; retune evolutions (Murder Storm outlier etc.); rest of the content review series.
+- LATER: build phases via the GO gate (docs/READINESS.md): art pass in Style v1, audio, enemies/boss, phone/PWA, packaging, launch. Live game = v0.4.0 (placeholder art).
 - PARKING LOT: see bottom.
 
 Legend: [ ] queued, [~] in progress, [?] waiting on Matt, [x] done. Parked items are not started without Matt's say-so (CLAUDE.md).
