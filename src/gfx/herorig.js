@@ -152,7 +152,7 @@ export class HeroRig {
     this.emberX = this.es.x; this.emberY = this.es.y;
     const flicker = gentle ? 1 : 1 + 0.045 * Math.sin(this.t * 17) + 0.03 * Math.sin(this.t * 29);
     const emberDim = hf.active && !dead ? 0.65 : 1;
-    this.eGlow.setPosition(this.es.x, this.es.y).setScale((26 / 32) * this.glowInv * flicker * (lowHp ? 0.85 : 1)).setAlpha((dead ? 0.8 * (1 - deadK * 0.2) : 0.7) * emberDim).setVisible(true);
+    this.eGlow.setPosition(this.es.x, this.es.y).setScale((32 / 32) * this.glowInv * flicker * (lowHp ? 0.85 : 1)).setAlpha((dead ? 0.8 * (1 - deadK * 0.2) : 0.85) * emberDim).setVisible(true);
 
     // ----- apply Wren -----
     const dBase = this.depth + p.y;

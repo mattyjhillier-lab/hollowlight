@@ -6,6 +6,7 @@ import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { HeroRig } from '../gfx/herorig.js';
 import { FEET, FLAT } from '../gfx/wrenart.js';
+import { heroHaloAlpha } from '../gfx/rigmath.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
@@ -129,6 +130,9 @@ export class RunScene extends Phaser.Scene {
     this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(ROLE.lantern).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
     this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4000).setScale(inv('hero_wren_o')).setVisible(false);
     this.heroOutA = 0;
+    // A1b hero readability: warm ground pool (additive, lantern colour, off on Low) + soft dark backing so the pale hood separates from pale wolves/ground
+    this.heroHalo = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO + 0.5).setTint(ROLE.lantern).setScale(2.6 * inv('glow'), 1.05 * inv('glow')).setVisible(false);
+    this.heroBack = this.add.image(0, 0, 'glow').setDepth(D_LIT).setTint(0x0a1022).setScale(1.15 * inv('glow'), 1.5 * inv('glow')).setAlpha(0.34).setVisible(false);
     this.ring = this.add.image(0, 0, 'ring').setBlendMode(ADD).setDepth(D_HALO + 1).setScale(inv('ring')).setVisible(false);
     this.flashR = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
     this.flashT = 0; this.flashLife = 1; this.flashA = 0;
@@ -283,6 +287,8 @@ export class RunScene extends Phaser.Scene {
     this.parts.clear();
     this.nums.clear();
     this.playerGlow.setVisible(false);
+    this.heroHalo.setVisible(false);
+    this.heroBack.setVisible(false);
     this.ring.setVisible(false);
     this.flashR.setVisible(false);
     for (const r of this.rings) r.on = false;
@@ -369,6 +375,8 @@ export class RunScene extends Phaser.Scene {
     this.parts.setCap(c.particles);
     this.nums.setCap(c.dmgNums);
     this.playerGlow.setVisible(!!this.sim);
+    this.heroHalo.setVisible(!!this.sim);
+    this.heroBack.setVisible(!!this.sim);
     this.ring.setVisible(!!this.sim);
     // Built-in bloom: High tier only, WebGL only, feature-detected; fails silently.
     const cam = this.cameras.main;
@@ -596,6 +604,11 @@ export class RunScene extends Phaser.Scene {
     const ly = rig ? this.rig.emberY : p.y - 4;
     const lowHp = p.hp > 0 && p.hp / p.maxHp < 0.3;
     if (this.playerGlow.visible) this.playerGlow.setPosition(lx, ly).setAlpha((lit ? 0.3 : 0.3) + 0.03 * Math.sin(sim.time * 2.5));
+    if (this.sim) {
+      const ha = rig ? heroHaloAlpha(this.quality.tier, this.reducedMotion(), lowHp, sim.time) : 0;
+      this.heroHalo.setVisible(ha > 0).setPosition(p.x, p.y + 9).setAlpha(ha);
+      this.heroBack.setVisible(rig).setPosition(p.x, p.y - 6).setDepth(D_LIT + p.y - 0.5);
+    }
     if (this.ring.visible) {
       const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
       this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : ROLE.lantern).setAlpha(0.45 + 0.2 * pulse);
@@ -733,8 +746,8 @@ export class RunScene extends Phaser.Scene {
       if (u.hidden) continue;
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
-        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * pl.uWolf.inv).setAlpha(0.92);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.3 * pl.haloU.inv).setAlpha(0.75);
+        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.12 * pl.haloU.inv).setAlpha(0.62);
         trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'raven') {

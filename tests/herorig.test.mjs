@@ -110,3 +110,10 @@ test('hero scale keeps the old on-screen size and ground contact', () => {
   assert.ok(Math.abs(122 * DU - 18 * 1.43) < 0.1);
   assert.ok(Math.abs(FEET - 7.6 * 1.43) < 0.1);
 });
+
+test('A1b hero halo: off on Low, steady in reduced motion, dimmer at low HP, bounded', () => {
+  assert.equal(M.heroHaloAlpha('low', false, false, 1), 0);
+  assert.equal(M.heroHaloAlpha('high', true, false, 0.3), M.heroHaloAlpha('high', true, false, 9.9));
+  assert.ok(M.heroHaloAlpha('med', true, true, 0) < M.heroHaloAlpha('med', true, false, 0));
+  for (let t = 0; t < 10; t += 0.37) { const a = M.heroHaloAlpha('high', false, false, t); assert.ok(a > 0.3 && a < 0.5); }
+});

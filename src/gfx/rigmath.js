@@ -128,3 +128,11 @@ export function pupTilt(t) {
   const a = Math.sin((k / 0.4) * Math.PI); // 0..1..0
   return a * (hash01(slot + 77) < 0.5 ? 14 : -12);
 }
+
+// A1b: hero readability aids. Pure: returns the halo alpha (warm ground pool) for the frame. Low tier = 0 (ring only);
+// reduced motion = steady; low HP dims it (the danger ring takes over).
+export function heroHaloAlpha(tier, reduced, lowHp, t) {
+  if (tier === 'low') return 0;
+  const base = lowHp ? 0.24 : 0.42;
+  return reduced ? base : base + 0.03 * Math.sin(t * 2.5);
+}

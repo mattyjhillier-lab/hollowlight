@@ -154,9 +154,30 @@ async function states(dir, out) {
   } finally { c.close(); srv.close(); }
 }
 
-const [cmd, a1, a2] = process.argv.slice(2);
+
+// node scripts/a1.mjs focus <distDir> <outDir> <tag>: busy scene (2 ghost wolves, ~20 enemies) at 3 viewports, full frame jpg + 3x hero crop
+async function focus(dir, out, tag) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(dir, 4181); const c = await launch();
+  try {
+    for (const [name, w, h, dpr] of [['desk', 1280, 720, 1], ['land', 844, 390, 2], ['port', 390, 844, 2]]) for (const tier of (process.env.TIERS || 'high').split(',')) {
+      await open(c, `http://127.0.0.1:4181/?style=a&auto=wren&seed=1&t=120&god=1&debug=1&grant=ghost_wolves:speed=1,power=1`, w, h, dpr, tier);
+      await sleep(1500);
+      await c.ev('(()=>{const s=window.__app.sim;s.player.hp=s.player.maxHp;return 1})()');
+      await inject(c, 20); await sleep(1300); await autoPick(c);
+      await shot(c, join(out, `${tag}-${name}-${tier}.jpg`));
+      const p = await c.ev('(()=>{const s=window.__app.scene,cam=s.cameras.main,p=window.__app.sim.player;const r=s.scale.canvas.getBoundingClientRect();return {x:r.left+(p.x-cam.worldView.x)*cam.zoom/devicePixelRatio,y:r.top+(p.y-cam.worldView.y)*cam.zoom/devicePixelRatio}})()');
+      const half = 60;
+      await shot(c, join(out, `${tag}-${name}-${tier}-crop.jpg`), { x: Math.max(0, p.x - half), y: Math.max(0, p.y - half - 6), width: half * 2, height: half * 2, scale: 3 });
+      console.log(name, tier, await c.ev('window.__app.sim.units.filter(u=>u.kind==="wolf").length+" wolves"'));
+    }
+  } finally { c.close(); srv.close(); }
+}
+
+const [cmd, a1, a2, a3] = process.argv.slice(2);
 if (cmd === 'states') await states(a1, a2);
 if (cmd === 'atlas') await atlas(a1, a2);
+if (cmd === 'focus') await focus(a1, a2, a3);
 if (cmd === 'perf') await perf(a1);
 if (cmd === 'shots') await shots(a1, a2);
 process.exit(0);
