@@ -1,5 +1,14 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+## WAITING ON MATT (reminder list, 2026-10-15)
+1. HUD-1 screenshots (docs/screenshots/hud1/): like it / change X? (locks it)
+2. Front-door research (docs/research/27-front-door-flow.md): 3 small questions: cap profiles at 3; skip profile screen when only one; keep audio+touch settings per device.
+3. HUD-2 (cards) + PWA-1 (installable app, full screen, install prompt) being built: review screenshots, then OK to put live (PR to main) so he and his friend can install it.
+4. World bible (docs/BIBLE.md): react to the 10 creative questions and proposed renames (The Unlit instead of Hollow King, brass coins).
+5. Name check: search Hollowlight on itch.io, Steam and UK trademark site before any public launch.
+6. Reference screenshots he loves (esp. Spirit Hunters tree): helpful, not blocking.
+7. Optional: gentler earlier evolve hint (a stirring when partner stat is halfway)? Elias early deaths (11% before 5:00) feel harsh?
+
 ## NOW / NEXT / LATER (focus keeper)
 - DONE (2026-10-14): research 00-23, style recipe, Wren v2 + Elias v2 locked, abilities (Rally the Pack, Candle Wheel), gates design approved, skill tree v1 built (dev v0.4.0).
 - DONE on dev (2026-10-15): HUD-1 in-run frame (Lantern & Thread: lantern flame HP, thread XP + level knot, moon-arc timer, boss bar, brass coin pill, pause, fading weapon strip, ability ring, low-HP frost, safe areas, phone landscape + portrait; screenshots docs/screenshots/hud1/). Awaiting Matt's look + phone test.
