@@ -41,11 +41,9 @@ async function launch() {
 }
 
 
-const sleep0 = sleep;
-const [out, base = 'http://localhost:4173'] = process.argv.slice(2);
 
-const [out, base = 'http://localhost:4173'] = process.argv.slice(2);
-mkdirSync(out, { recursive: true });
+const [outDir, base = 'http://localhost:4173'] = process.argv.slice(2);
+mkdirSync(outDir, { recursive: true });
 const c = await launch();
 try {
   await c.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
@@ -54,11 +52,11 @@ try {
   for (let i = 0; i < 80; i++) { await sleep(250); try { if (await c.ev('!!(window.__app && window.__app.ui)')) break; } catch { /* loading */ } }
   await c.ev("window.__app.showMenu(); window.__app.startRun('wren'); 1"); await sleep(1500);
   await c.ev(`(()=>{const s=window.__app.sim;
-    for (const w of s.weapons) for (const k of Object.keys(w.ranks)) w.ranks[k]=5;
+    s.debugGrant('holy_orbit'); for (const w of s.weapons) for (const k of Object.keys(w.ranks)) w.ranks[k]=5;
     s.weapons[0].ranks.power=2; s.setBlessRank('wider_glow',1); s.player.hp=s.player.maxHp*0.8; s.pending=1; s.xp=0; s.beginLevelUp(); return s.offer.cards.map(c=>c.key)})()`).then((k) => console.log('offer', k));
   await sleep(900);
-  const r = await c.send('Page.captureScreenshot', { format: 'png' });
-  writeFileSync(join(out, 'blessing-offer.png'), Buffer.from(r.data, 'base64'));
+  const r = await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 82 });
+  writeFileSync(join(outDir, 'blessing-offer.jpg'), Buffer.from(r.data, 'base64'));
   console.log(await c.ev("document.querySelector('.layer-levelup, .cards')?.innerText"));
 } finally { c.close(); }
 process.exit(0);
