@@ -135,6 +135,7 @@ export class GroundBlend {
       this.sh = sh;
       this.n = lifeMap.n;
       this.ver = -1;
+      this.fullDone = false;
       this.upload(lifeMap);
       this.ok = true;
       if (gl.getError() !== gl.NO_ERROR) throw new Error('groundblend: GL error after build');
@@ -147,12 +148,31 @@ export class GroundBlend {
     }
   }
 
+  // Perf: after the first full upload only the rows the life map touched this step are sent (texSubImage2D); the texture has no
+  // mipmaps and is never filtered below LINEAR, so Phaser's per-upload texImage2D + generateMipmap was wasted work.
   upload(lifeMap) {
     if (!this.ok && !this.lifeTex) return;
     if (lifeMap.version === this.ver) return;
     this.ver = lifeMap.version;
     const gl = this.gl;
-    this.lifeTex.update(lifeMap.rgba, lifeMap.n, lifeMap.n, false, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE, gl.LINEAR, gl.LINEAR, gl.RGBA);
+    const w = this.lifeTex;
+    const first = !this.fullDone || lifeMap.n !== this.n;
+    if (first || !w.webGLTexture) {
+      w.update(lifeMap.rgba, lifeMap.n, lifeMap.n, false, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE, gl.LINEAR, gl.LINEAR, gl.RGBA);
+      this.fullDone = true;
+      return;
+    }
+    const y0 = lifeMap.dy0;
+    const h = lifeMap.dy1 - y0 + 1;
+    if (h <= 0) return;
+    const n = lifeMap.n;
+    gl.activeTexture(gl.TEXTURE0);
+    const cur = gl.getParameter(gl.TEXTURE_BINDING_2D);
+    gl.bindTexture(gl.TEXTURE_2D, w.webGLTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, y0, n, h, gl.RGBA, gl.UNSIGNED_BYTE, lifeMap.rgba.subarray(y0 * n * 4, (y0 + h) * n * 4));
+    gl.bindTexture(gl.TEXTURE_2D, cur || null);
   }
 
   setTint(col) {

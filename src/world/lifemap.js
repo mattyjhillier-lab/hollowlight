@@ -30,6 +30,11 @@ export class LifeMap {
     this.acc = 0;
     this.dirty = true;
     this.version = 0;
+    // Perf: rows that can still change (life above its floor, or corruption > 0). stamp/stampCorr mark rows; update() only walks
+    // active rows and retires a row once every cell in it is at rest. dy0..dy1 = rows touched by the last update() (sub-upload range).
+    this.rowAct = new Uint8Array(n).fill(1);
+    this.dy0 = 0;
+    this.dy1 = n - 1;
   }
 
   reset() {
@@ -38,6 +43,7 @@ export class LifeMap {
     for (let i = 2; i < this.rgba.length; i += 4) this.rgba[i] = 0;
     this.acc = 0;
     this.dirty = true;
+    this.rowAct.fill(1);
     this.version++;
   }
 
@@ -69,6 +75,7 @@ export class LifeMap {
         if (v > life[row + i]) life[row + i] = v;
       }
     }
+    this.rowAct.fill(1, y0, y1 + 1);
     this.dirty = true;
   }
 
@@ -94,6 +101,7 @@ export class LifeMap {
         corr[k] = v > 1 ? 1 : v;
       }
     }
+    this.rowAct.fill(1, y0, y1 + 1);
     this.dirty = true;
   }
 
@@ -103,7 +111,7 @@ export class LifeMap {
     this.stamp(x, y, r, s);
   }
 
-  clearFloor() { this.floor.fill(0); }
+  clearFloor() { this.floor.fill(0); this.rowAct.fill(1); }
 
   // Trail: stamps along a segment so a fast mover leaves a continuous ribbon.
   stampLine(x0, y0, x1, y1, r, s = 1) {
@@ -122,20 +130,33 @@ export class LifeMap {
     this.acc -= steps * STEP;
     const d = (steps * STEP) / this.decay;
     const cdt = steps * STEP;
-    const { life, rgba, floor, corr } = this;
-    for (let i = 0, j = 0; i < life.length; i++, j += 4) {
-      let v = life[i];
-      const fl = floor[i];
-      if (v > fl) { v -= d; if (v < fl) v = fl; life[i] = v; }
-      rgba[j] = (v * 255 + 0.5) | 0;
-      let c = corr[i];
-      if (c > 0) {
-        c -= (CORR_DECAY + CORR_HEAL * v) * cdt;
-        if (!(c > 0)) c = 0;
-        corr[i] = c;
-      } else if (c !== 0) corr[i] = c = 0; // NaN guard
-      rgba[j + 2] = (c * 255 + 0.5) | 0;
+    const { life, rgba, floor, corr, rowAct, n } = this;
+    let r0 = n;
+    let r1 = -1;
+    for (let j = 0; j < n; j++) {
+      if (!rowAct[j]) continue;
+      if (j < r0) r0 = j;
+      r1 = j;
+      let busy = 0;
+      for (let i = j * n, e = i + n, k = i * 4; i < e; i++, k += 4) {
+        let v = life[i];
+        const fl = floor[i];
+        if (v > fl) { v -= d; if (v < fl) v = fl; life[i] = v; if (v > fl) busy = 1; }
+        rgba[k] = (v * 255 + 0.5) | 0;
+        let c = corr[i];
+        if (c > 0) {
+          c -= (CORR_DECAY + CORR_HEAL * v) * cdt;
+          if (!(c > 0)) c = 0;
+          corr[i] = c;
+          if (c > 0) busy = 1;
+        } else if (c !== 0) corr[i] = c = 0; // NaN guard
+        rgba[k + 2] = (c * 255 + 0.5) | 0;
+      }
+      if (!busy) rowAct[j] = 0;
     }
+    if (r1 < 0) { r0 = 0; r1 = -1; }
+    this.dy0 = r0;
+    this.dy1 = r1;
     this.dirty = false;
     this.version++;
     return true;

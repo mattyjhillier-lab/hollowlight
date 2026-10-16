@@ -84,18 +84,18 @@ class SpritePool {
         if (this.init) this.init(img);
       }
       img.setVisible(true);
-      s = { img, stamp: 0 };
+      s = { img, stamp: 0, id };
       this.map.set(id, s);
     }
     s.stamp = this.stamp;
     return s.img;
   }
   end() {
-    for (const [id, s] of this.map) {
+    for (const s of this.map.values()) {
       if (s.stamp !== this.stamp) {
         s.img.setVisible(false);
         this.free.push(s.img);
-        this.map.delete(id);
+        this.map.delete(s.id);
       }
     }
   }
@@ -120,6 +120,26 @@ export class RunScene extends Phaser.Scene {
   }
 
   create() {
+    // Perf: Phaser re-sorts the whole display list (~1000 objects) with a merge sort every frame because enemies change depth
+    // (y-sorted). Between frames the list is almost sorted, so a stable insertion sort is O(n) there and gives the identical order.
+    // Falls back to Phaser's own sort if a frame reshuffles a lot (first frame, big spawn bursts).
+    const dl = this.sys.displayList;
+    const phaserSort = dl.depthSort;
+    dl.depthSort = function () {
+      if (!this.sortChildrenFlag) return;
+      const a = this.list;
+      let moves = 0;
+      const cap = a.length * 24 + 2000;
+      for (let i = 1; i < a.length; i++) {
+        const x = a[i];
+        const d = x._depth;
+        let j = i - 1;
+        while (j >= 0 && a[j]._depth > d) { a[j + 1] = a[j]; j--; moves++; }
+        a[j + 1] = x;
+        if (moves > cap) { phaserSort.call(this); return; }
+      }
+      this.sortChildrenFlag = false;
+    };
     makeTextures(this);
     const size = app.data.balance.worldSize;
     this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000).setTileScale(inv('ground'));
@@ -230,7 +250,7 @@ export class RunScene extends Phaser.Scene {
     this.secT = new Float64Array(10);
     this.secH = new Float64Array(10);
     this.secA = new Float64Array(10); // bytes allocated per section (only with ?debug=1 on Chrome)
-    this.secMem = !!(app.params.debug && typeof performance !== 'undefined' && performance.memory);
+    this.secMem = !!(new URLSearchParams(location.search).get('mem') === '1' && typeof performance !== 'undefined' && performance.memory);
     this.perfInfo = { sprites: 0, particles: 0, tier: '', mode: '' };
     const ev = this.game.events;
     ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); });
@@ -320,6 +340,7 @@ export class RunScene extends Phaser.Scene {
 
   bindSim(sim) {
     this.sim = sim;
+    this.warmMs = 0;
     this.life.clearFloor();
     this.starterGlade(sim);
     this.life.reset();
@@ -427,7 +448,11 @@ export class RunScene extends Phaser.Scene {
       q.setMode(mode);
       this.applyTier();
     }
-    if (this.sim && this.sim.state === 'running' && !app.paused && q.sample(dt, this.workMs)) this.applyTier();
+    // Auto-tier ignores the first 8 s of a run and the lazy ground-tile build: one-off start-up work (shader/texture uploads, tile slices)
+    // looked like a slow device and dropped a capable PC to the Low look for 15 s+.
+    const lz = this.bState && this.bState.lazy && !this.bState.lazy.done;
+    if (this.sim && this.sim.state === 'running' && !app.paused && dt < 250) this.warmMs = (this.warmMs || 0) + dt;
+    if (this.sim && this.sim.state === 'running' && !app.paused && (this.warmMs || 0) > 8000 && !lz && q.sample(dt, this.workMs)) this.applyTier();
     const info = this.perfInfo;
     info.sprites = this.countSprites();
     info.particles = this.parts.count;
@@ -437,8 +462,9 @@ export class RunScene extends Phaser.Scene {
   }
 
   countSprites() {
+    if (!this.poolList) this.poolList = Object.values(this.pools);
     let n = 1 + (this.sim ? this.fog.length + this.flies.length + this.sway.count : 0);
-    for (const pool of Object.values(this.pools)) n += pool.map.size;
+    for (const pool of this.poolList) n += pool.map.size;
     return n;
   }
 
@@ -676,7 +702,8 @@ export class RunScene extends Phaser.Scene {
     const p = sim.player;
     const pl = this.pools;
     const caps = this.quality.caps;
-    for (const pool of Object.values(pl)) pool.begin();
+    if (!this.poolList) this.poolList = Object.values(pl);
+    for (const pool of this.poolList) pool.begin();
     this.fxTick = (sim.time * 30) | 0;
 
     const wv = this.cameras.main.worldView;
@@ -944,7 +971,7 @@ export class RunScene extends Phaser.Scene {
       if (!lm.ok) this.applyTier(); // lightmap failed at runtime: fall back to the Low look
     }
     this.haloCount = halos;
-    for (const pool of Object.values(pl)) pool.end();
+    for (const pool of this.poolList) pool.end();
   }
 
   // W0 life map: hero lantern paints a ribbon, spirits paint small blooms (10 Hz); decay + GPU upload at 10 Hz. Visual only.
@@ -960,7 +987,7 @@ export class RunScene extends Phaser.Scene {
       if (!near) return;
       b.lazy = makeGroundLazy(this);
     }
-    if (!b.lazy.done) { b.lazy.step(3); if (!b.lazy.done) return; b.fade = 0; }
+    if (!b.lazy.done) { b.lazy.step(this.workMs > 9 ? 1.2 : 3); if (!b.lazy.done) return; b.fade = 0; }
     b.fade += dt;
     b.ready = Math.min(1, b.fade / 0.8);
     this.gb.setBReady(b.ready);

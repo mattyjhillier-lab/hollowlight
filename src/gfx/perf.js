@@ -13,6 +13,10 @@ export class PerfOverlay {
     this.calls = 0;
     this.lastCalls = 0;
     this.hooked = null;
+    this.ring = new Float32Array(600); // last ~10 s of frame intervals (ms) for p95 / long-frame counts
+    this.scratch = new Float32Array(600);
+    this.ri = 0;
+    this.rn = 0;
     this.rec = null; // optional sample recorder for measurement runs
   }
 
@@ -39,6 +43,9 @@ export class PerfOverlay {
 
   // Called once per frame. info = {tier, mode, sprites, particles, nums}. No allocation unless refreshing text.
   update(dtMs, workMs, info) {
+    this.ring[this.ri] = dtMs;
+    this.ri = (this.ri + 1) % 600;
+    if (this.rn < 600) this.rn++;
     this.frames++;
     this.sumMs += dtMs;
     this.sumWork += workMs;
@@ -48,9 +55,15 @@ export class PerfOverlay {
     const n = this.frames;
     const ms = this.sumMs / n;
     const wk = this.sumWork / n;
-    this.rec = { fps: 1000 / ms, ms, work: wk, max: this.maxMs, sprites: info.sprites, particles: info.particles, calls: this.lastCalls, tier: info.tier };
+    const rn = this.rn;
+    this.scratch.set(rn < 600 ? this.ring.subarray(0, rn) : this.ring);
+    const srt = this.scratch.subarray(0, rn).sort();
+    const p95 = srt[Math.min(rn - 1, Math.floor(rn * 0.95))];
+    let slow = 0;
+    for (let i = 0; i < rn; i++) if (srt[i] > 25) slow++;
+    this.rec = { fps: 1000 / ms, ms, p95, slow, work: wk, max: this.maxMs, sprites: info.sprites, particles: info.particles, calls: this.lastCalls, tier: info.tier };
     if (this.on) {
-      this.el.textContent = `${(1000 / ms).toFixed(0)} fps  ${ms.toFixed(1)} ms (max ${this.maxMs.toFixed(0)})\nwork ${wk.toFixed(1)} ms\nsprites ${info.sprites}  particles ${info.particles}\ncalls ${this.lastCalls}\ntier ${info.tier} (${info.mode})`;
+      this.el.textContent = `${(1000 / ms).toFixed(0)} fps  ${ms.toFixed(1)} ms (max ${this.maxMs.toFixed(0)})\np95 ${p95.toFixed(1)} ms  slow(>25ms) ${slow}/${rn}\nwork ${wk.toFixed(1)} ms\nsprites ${info.sprites}  particles ${info.particles}\ncalls ${this.lastCalls}\ntier ${info.tier} (${info.mode})`;
     }
     this.acc = 0; this.frames = 0; this.sumMs = 0; this.sumWork = 0; this.maxMs = 0;
   }

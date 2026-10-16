@@ -143,3 +143,21 @@ test('W3 corruption: sampleClean (what sway uses) is 0 under heavy corruption, u
   m.corr.fill(0.05);
   assert.ok(m.sampleClean(1000, 1000) > 0.95);
 });
+
+test('perf: only active rows are walked; idle rows retire and the dirty row range is reported', () => {
+  const m = new LifeMap({ decay: 1 });
+  m.update(0.1); // initial pass retires every empty row
+  assert.equal(m.update(0.1), true);
+  assert.ok(m.dy1 < m.dy0, 'nothing active -> empty range');
+  m.stamp(2000, 2000, 60, 1);
+  m.update(0.1);
+  assert.ok(m.dy0 > 100 && m.dy1 < 160 && m.dy1 >= m.dy0, 'only rows near the stamp');
+  assert.ok(m.rgba[(128 * 256 + 128) * 4] > 200);
+  for (let i = 0; i < 20; i++) m.update(0.1);
+  assert.equal(m.rgba[(128 * 256 + 128) * 4], 0, 'decayed to rest');
+  m.update(0.1);
+  assert.ok(m.dy1 < m.dy0, 'rows retired again');
+  m.stampCorr(2000, 2000, 40, 0.5);
+  m.update(0.1);
+  assert.ok(m.rgba[(128 * 256 + 128) * 4 + 2] > 0, 'corruption channel still updates');
+});
