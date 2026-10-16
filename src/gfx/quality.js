@@ -3,9 +3,9 @@ export const TIERS = ['low', 'med', 'high'];
 
 // Budget (docs/research/11): <=300 particles, FX/bloom on High only.
 export const CAPS = {
-  low: { particles: 100, halos: 40, gemGlow: 0, trails: 0, dmgNums: 14, vignette: false, lightmap: false, lights: 0, bloom: false, ambient: { total: 2, sway: 0, motes: 0, fireflies: 0, critters: 2, petals: 0, bloom: 0, birds: 4 } },
-  med: { particles: 250, halos: 90, gemGlow: 30, trails: 1, dmgNums: 24, vignette: true, lightmap: true, lights: 40, bloom: false, ambient: { total: 85, sway: 36, motes: 14, fireflies: 10, critters: 3, petals: 4, bloom: 16, birds: 8 } },
-  high: { particles: 300, halos: 160, gemGlow: 60, trails: 2, dmgNums: 24, vignette: true, lightmap: true, lights: 80, bloom: true, ambient: { total: 165, sway: 64, motes: 28, fireflies: 24, critters: 5, petals: 8, bloom: 32, birds: 12 } },
+  low: { ribbon: { lantern: { life: 1.0, pts: 10, w: 11, a: 0.34 }, scarf: { life: 0, pts: 0 }, spirits: { n: 0, life: 0, pts: 0 }, segs: 12 }, particles: 100, halos: 40, gemGlow: 0, trails: 0, dmgNums: 14, vignette: false, lightmap: false, lights: 0, bloom: false, ambient: { total: 2, sway: 0, motes: 0, fireflies: 0, critters: 2, petals: 0, bloom: 0, birds: 4 } },
+  med: { ribbon: { lantern: { life: 1.8, pts: 28, w: 13, a: 0.38 }, scarf: { life: 0.7, pts: 10, w: 5, a: 0.2 }, spirits: { n: 6, life: 0.7, pts: 9, w: 9, a: 0.34 }, segs: 96 }, particles: 250, halos: 90, gemGlow: 30, trails: 1, dmgNums: 24, vignette: true, lightmap: true, lights: 40, bloom: false, ambient: { total: 85, sway: 36, motes: 14, fireflies: 10, critters: 3, petals: 4, bloom: 16, birds: 8 } },
+  high: { ribbon: { lantern: { life: 2.4, pts: 40, w: 14, a: 0.4, core: true }, scarf: { life: 0.9, pts: 14, w: 6, a: 0.28 }, spirits: { n: 12, life: 0.8, pts: 10, w: 9, a: 0.36 }, segs: 240 }, particles: 300, halos: 160, gemGlow: 60, trails: 2, dmgNums: 24, vignette: true, lightmap: true, lights: 80, bloom: true, ambient: { total: 165, sway: 64, motes: 28, fireflies: 24, critters: 5, petals: 8, bloom: 32, birds: 12 } },
 };
 
 const BUCKET_MS = 1000; // 3 one-second buckets = rolling ~3 s window

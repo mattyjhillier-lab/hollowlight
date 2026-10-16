@@ -21,6 +21,7 @@ import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
+import { RibbonSet, RibbonLayer, ribbonCaps } from '../gfx/ribbons.js';
 import { hash as visHash } from '../gfx/wind.js';
 
 const ADD = Phaser.BlendModes.ADD;
@@ -121,6 +122,12 @@ export class RunScene extends Phaser.Scene {
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
     this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // AL-1 grass/flower sway (visual only)
+    this.ribSet = new RibbonSet(240, 12, 48); // W2 trails (visual only)
+    this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 240);
+    this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0 }));
+    this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
+    this.ribKey = '';
+    this.ribCaps = null;
     this.swayPhone = Math.min(window.innerWidth, window.innerHeight) < 500;
     this.gbOn = false;
     this.lifeLast = null;
@@ -299,6 +306,7 @@ export class RunScene extends Phaser.Scene {
     this.life.clearFloor();
     this.starterGlade(sim);
     this.life.reset();
+    this.ribSet.reset(); this.ribLayer.clear();
     this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
@@ -360,6 +368,7 @@ export class RunScene extends Phaser.Scene {
     for (const r of this.rigs) r.hide();
     this.hideAmbient();
     this.sway.clear();
+    this.ribSet.reset(); this.ribLayer.clear();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
     this.fxG.clear();
@@ -807,6 +816,9 @@ export class RunScene extends Phaser.Scene {
       this.trailTick = this.fxTick;
       if (caps.trails === 2 || (this.fxTick & 1) === 0) trailBudget = caps.trails === 2 ? 16 : 7;
     }
+    const ribOn = !!(app.params.trails && this.ribCaps && this.ribCaps.segs > 0 && this.ribCaps.spirits.n > 0);
+    let nSrc = 0;
+    const ribAdd = (u, col, life) => { if (!ribOn || nSrc >= this.ribSrc.length) return; const r = this.ribSrc[nSrc++]; r.id = u.id; r.x = u.x; r.y = u.y + 1; r.col = col; r.life = life; };
     const trail = (x, y, col, s) => {
       if (trailBudget <= 0) return;
       trailBudget--;
@@ -820,22 +832,24 @@ export class RunScene extends Phaser.Scene {
       if (u.kind === 'wolf') {
         pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.12 * pl.haloU.inv).setAlpha(0.62);
-        trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
+        if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
-        trail(u.x, u.y, ROLE.spiritB, 0.3);
+        if (ribOn) ribAdd(u, ROLE.spiritB, this.ribCaps.spirits.life); else trail(u.x, u.y, ROLE.spiritB, 0.3);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritB, 0.8);
       } else if (u.kind === 'orb') {
         // A2: with Elias the flame ring is render-only smaller / dimmer (hit radius unchanged) so he stays the focal point
         const eo = this.rig.id === 'elias' && this.rig.active;
         pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setScale((eo ? 0.8 : 1) * pl.uOrb.inv);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale((eo ? 0.8 : 1.1) * pl.haloU.inv).setAlpha(eo ? 0.4 : 0.55);
-        trail(u.x, u.y, PAL.lavender, eo ? 0.2 : 0.3);
+        if (ribOn) ribAdd(u, PAL.lavender, Math.min(0.35, this.ribCaps.spirits.life)); else trail(u.x, u.y, PAL.lavender, eo ? 0.2 : 0.3);
         if (lit) lm.add(u.x, u.y, eo ? 32 : 40, ROLE.spiritC, eo ? 0.55 : 0.8);
       }
     }
+
+    this.tickRibbons(sim, p, lx, ly, nSrc);
 
     // projectiles
     for (const b of sim.projectiles) {
@@ -924,6 +938,23 @@ export class RunScene extends Phaser.Scene {
   }
 
   // AL-1: grass/flower sway on restored ground only (Med/High with the ground shader; Low keeps the baked still tufts).
+  // W2: glowing ribbon trails (hero lantern + scarf wisp + friendly spirits), additive, under every creature. Visual only.
+  tickRibbons(sim, p, lx, ly, nSrc) {
+    const q = this.quality;
+    const reduced = this.reducedMotion();
+    const key = q.tier + (reduced ? 'r' : '') + (this.swayPhone ? 'p' : '');
+    if (key !== this.ribKey || !this.ribCaps) { this.ribKey = key; this.ribCaps = ribbonCaps(q.caps.ribbon, { phone: this.swayPhone, reduced }); }
+    const caps = this.ribCaps;
+    if (!app.params.trails || caps.segs <= 0 || sim.state === 'dead') { if (this.ribLayer.shown) this.ribLayer.clear(); return; }
+    const h = this.ribHero;
+    h.lx = lx; h.ly = ly;
+    h.sx = p.x - (p.faceX < 0 ? -1 : 1) * 5; h.sy = p.y - 13;
+    const elias = this.rig.id === 'elias';
+    this.ribSet.update(sim.time, caps, h, this.ribSrc, nSrc);
+    const n = this.ribSet.emit(sim.time, caps, ROLE.lantern, elias ? ROLE.eliasTrim : 0xbff3e6);
+    this.ribLayer.render(this.ribSet, n);
+  }
+
   tickSway(sim, p, caps) {
     const on = !!(app.params.sway && this.gbOn && caps.ambient.sway > 0);
     this.sway.setTint(this.lmOn ? 0xffffff : this.gradeNow);
