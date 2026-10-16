@@ -102,7 +102,7 @@ export class SwayLayer {
   }
 
   // on: sway wanted this frame (Med/High, ground shader showing the restored tile). cap from CAPS.<tier>.ambient.sway.
-  update(dt, t, view, hero, lifeMap, { on, cap, phone, reduced, bloom = 0 }) {
+  update(dt, t, view, hero, lifeMap, { on, cap, phone, reduced, bloom = 0, push = null }) {
     const budget = on ? cap : 0;
     this.sparkCap = on && this.glow && !reduced ? Math.floor(bloom * (phone ? PHONE_DENSITY : 1)) : 0;
     if (this.sparkCap === 0 && (this.sparks.length || this.pending.length)) this.clearSparks();
@@ -115,7 +115,7 @@ export class SwayLayer {
     const v = { x0: d.x, y0: d.y, x1: d.right, y1: d.bottom };
     if (this.refreshT >= 0.2) { this.refreshT = 0; this.field.refresh(v, hero, lifeMap); }
     if (this.stepT >= 0.05) {
-      this.field.step(this.stepT, t, hero, lifeMap, reduced);
+      this.field.step(this.stepT, t, hero, lifeMap, reduced, push);
       this.stepT = 0;
       for (const s of this.field.slots.values()) if (s.ref) s.ref.setRotation(s.ang + s.rot).setScale(s.base * s.sc).setAlpha(s.alpha).setVisible(s.alpha > 0.004);
     }

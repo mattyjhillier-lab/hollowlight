@@ -7,6 +7,7 @@
 //   R6 phone: density x0.6 and fewer flowers.
 import { lean, windScale, hash } from './wind.js';
 import { FRAME_COUNT } from './ambatlas.js';
+import { springStep, AMP_TUFT, SPRING_MAX } from './pushfield.js';
 
 export const CELL = 64; // world units per hash-grid cell
 export const ENTER = 0.34; // life needed for a NEW sprite to be placed (just above ALPHA_LO so it fades in from nothing, no pop)
@@ -194,7 +195,8 @@ export class SwayField {
   }
 
   // ~20 Hz: fade with the life map and the hero clear zone, lean with the shared wind. t = sim time (s).
-  step(dt, t, hero, lifeMap, reducedMotion = false) {
+  // push = AL-4 PushField (optional): extra damped-spring lean away from the hero / nearby enemies, x live (the Hollow has no sprites), x reduced scale
+  step(dt, t, hero, lifeMap, reducedMotion = false, push = null) {
     if (this.cap === 0) return;
     const sc = windScale(reducedMotion);
     const k = Math.min(1, (dt > 0 ? dt : 0) * 6);
@@ -213,6 +215,12 @@ export class SwayField {
       const live = 0.5 + 0.5 * sstep(ALPHA_LO, ALPHA_HI, s.life); // amplitude x life value
       const w = sc > 0 ? lean(p.x, p.y, t, 1, sc, 0) / sc : 0; // -1..1 independent of the reduced-motion scale
       s.ang = Math.tanh(w * SHAPE) / SHAPE_NORM * sc * AMP * p.amp * live + WOBBLE * sc * Math.sin(t * 0.9 + p.phase);
+      if (push && push.n > 0) {
+        if (!s.pst) s.pst = { pa: 0, pv: 0 };
+        const tg = push.targetAt(p.x, p.y) * AMP_TUFT * live * (reducedMotion ? sc : 1) * p.amp;
+        springStep(s.pst, tg, d0);
+        s.ang += s.pst.pa;
+      } else if (s.pst && (s.pst.pa !== 0 || s.pst.pv !== 0)) { springStep(s.pst, 0, d0); s.ang += s.pst.pa; }
     }
   }
 }

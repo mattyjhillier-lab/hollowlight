@@ -7,6 +7,7 @@
 //   - a clear start area; per-tier live caps (CAPS.<tier>.props), phone/Low density gates, deterministic placement per zone.
 import { lean, windScale, hash, wind } from './wind.js';
 import { KINDS, kindGeo } from './propatlas.js';
+import { springStep, AMP_BODY, AMP_CROWN, PROP_RS, PUSH_BODY } from './pushfield.js';
 
 export const CELL = 96; // world units per low-prop hash cell
 export const TALL_CELL = CELL * 2; // tall props live on a coarser lattice so trees never touch
@@ -182,7 +183,8 @@ export class PropField {
   }
 
   // ~20 Hz. creatures = [{x, y}] (hero + enemies, read-only) for the crown fade; t = sim time (s).
-  step(dt, t, life, reduced = false, creatures = null, nCreat = 0, hero = null) {
+  // push = AL-4 PushField (optional): bush/fern/bramble bodies and oak/snag crowns lean away from nearby creatures (spring), x restored blend s.r
+  step(dt, t, life, reduced = false, creatures = null, nCreat = 0, hero = null, push = null) {
     if (this.cap === 0) return;
     const d0 = dt > 0 ? (dt > 0.25 ? 0.25 : dt) : 0;
     const kf = 1 - Math.exp(-FADE_RATE * d0);
@@ -199,12 +201,20 @@ export class PropField {
       s.r += (s.tgt - s.r) * kf;
       if (s.r < 0.002) s.r = 0; else if (s.r > 0.998) s.r = 1;
       const K = KINDS[p.kind];
+      const pk = PUSH_BODY[p.kind];
+      const pamp = K.layers.crown ? AMP_CROWN : pk ? AMP_BODY * pk : 0;
+      if (pamp > 0 && this.sway) {
+        if (!s.pst) s.pst = { pa: 0, pv: 0 };
+        const live = push && push.n > 0;
+        if (live || s.pst.pa !== 0 || s.pst.pv !== 0) springStep(s.pst, live ? push.targetAt(p.x, p.y, PROP_RS) * pamp * s.r * (reduced ? windScale(true) : 1) * p.amp : 0, d0);
+      }
       if (K.layers.crown) {
         // AL-3 crown sway: shared wind, amplitude x colour (the Hollow stays still)
         if (sc > 0 && s.r > 0) {
           const w = lean(p.x, p.y, t, 1, sc, 0) / sc;
           s.ang = (Math.tanh(w * SHAPE) / SHAPE_NORM * sc * AMP * p.amp + WOBBLE * sc * Math.sin(t * 0.8 + p.phase)) * s.r;
         } else s.ang = 0;
+        if (s.pst) s.ang += s.pst.pa;
         // creatures standing under the crown: fade it so nothing hides in it or sits on a same-grey mass
         let under = false;
         if ((creatures && nCreat > 0) || hero) {

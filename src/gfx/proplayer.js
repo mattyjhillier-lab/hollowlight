@@ -3,6 +3,7 @@
 // has a Hollow image and a restored image sharing one silhouette; the restored one fades in over the Hollow (crossfade, no pop).
 // Visual only. Cadence: placement ~4 Hz, pose ~20 Hz. AL-3: crowns rotate about their base pivot; petals drift off restored blossoms.
 import { PropField, PetalField, REFRESH_S, PETAL_DEPTH } from './propfield.js';
+import { PUSH_BODY } from './pushfield.js';
 import { KINDS, ATLAS_KEY, TPU, frameName, frameOrigin, PETAL_FRAMES, kindGeo } from './propatlas.js';
 
 export const SHADE_DEPTH = -340; // pillar canopy shadow: a ground decal above the ground/sway layer, below everything standing
@@ -89,7 +90,7 @@ export class PropLayer {
       const ca = layer === 'crown' ? s.crownA : 1;
       if (h) h.setAlpha(ca);
       if (r) r.setAlpha(s.r * ca);
-      if (layer === 'crown') { if (h) h.setRotation(s.ang); if (r) r.setRotation(s.ang); }
+      if (layer === 'crown') { if (h) h.setRotation(s.ang); if (r) r.setRotation(s.ang); } else if (s.pst && PUSH_BODY[s.prop.kind]) { if (h) h.setRotation(s.pst.pa); if (r) r.setRotation(s.pst.pa); } // AL-4: bush/fern/bramble bodies lean about their base
     }
   }
 
@@ -109,7 +110,7 @@ export class PropLayer {
     if (this.refreshT >= REFRESH_S) { this.refreshT = 0; this.field.refresh(v, life); }
     if (this.stepT >= 0.05) {
       const d = this.stepT; this.stepT = 0;
-      this.field.step(d, t, life, st.reduced, st.creatures, st.nCreat | 0, st.hero);
+      this.field.step(d, t, life, st.reduced, st.creatures, st.nCreat | 0, st.hero, st.push || null);
       for (const s of this.field.slots.values()) this.pose(s);
       this.petals.step(d, t, this.field.slots.values(), v, st.reduced);
       this.drawPetals();

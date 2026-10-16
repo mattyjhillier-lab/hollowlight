@@ -22,6 +22,7 @@ import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
 import { PropLayer } from '../gfx/proplayer.js';
+import { PushField, pushBudget } from '../gfx/pushfield.js';
 import { makePropAtlas, ATLAS_KEY as PROP_KEY } from '../gfx/propatlas.js';
 import { START_CLEAR } from '../gfx/propfield.js';
 import { RibbonSet, RibbonLayer, ribbonCaps } from '../gfx/ribbons.js';
@@ -127,6 +128,7 @@ export class RunScene extends Phaser.Scene {
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
     this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size, glow: { key: 'glow', inv: inv('glow'), blend: ADD } }); // AL-1 grass/flower sway (visual only)
+    this.push = new PushField(); // AL-4 creature-reactive foliage sources (visual only: reads creatures, never the sim RNG)
     this.props = new PropLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // W4 props + AL-3 crown sway/petals (visual only)
     this.ribSet = new RibbonSet(600, 12, 64); // W2 trails (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 600);
@@ -971,13 +973,20 @@ export class RunScene extends Phaser.Scene {
   tickProps(sim, p, caps) {
     const ok = app.params.props && sim.state !== 'dead';
     const wv = this.cameras.main.worldView;
-    this.props.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, wv, this.life, ok ? caps : PROPS_OFF, { phone: this.swayPhone, reduced: this.reducedMotion(), hero: p, creatures: sim.enemies, nCreat: sim.enemies.length });
+    this.props.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, wv, this.life, ok ? caps : PROPS_OFF, { phone: this.swayPhone, reduced: this.reducedMotion(), hero: p, creatures: sim.enemies, nCreat: sim.enemies.length, push: this.push });
   }
 
   tickSway(sim, p, caps) {
     const on = !!(app.params.sway && this.gbOn && caps.ambient.sway > 0);
     this.sway.setTint(this.lmOn ? 0xffffff : this.gradeNow);
-    this.sway.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, this.cameras.main.worldView, p, this.life, { on, cap: caps.ambient.sway, bloom: caps.ambient.bloom, phone: this.swayPhone, reduced: this.reducedMotion() });
+    const reduced = this.reducedMotion();
+    const dt = Math.min(this.game.loop.delta, 100) / 1000;
+    const wv = this.cameras.main.worldView;
+    // AL-4 creature-reactive foliage: only while sway or props sway is on (Med/High), hero + capped enemies, calm in reduced motion
+    const pb = app.params.push && sim.state !== 'dead' && (on || (app.params.props && caps.props.sway)) ? pushBudget(caps.ambient.push, { phone: this.swayPhone, reduced }) : 0;
+    this.push.setBudget(pb);
+    if (pb > 0) this.push.update(dt, p, sim.enemies, sim.enemies.length, { x0: wv.x, y0: wv.y, x1: wv.right, y1: wv.bottom }, reduced); else if (this.push.n) this.push.reset();
+    this.sway.update(dt, sim.time, wv, p, this.life, { on, cap: caps.ambient.sway, bloom: caps.ambient.bloom, phone: this.swayPhone, reduced, push: pb > 0 ? this.push : null });
     if (this.gbOn) this.gb.setHero(p.x, p.y);
   }
 
