@@ -2,7 +2,7 @@
 // Rules: display only. A card never names an evolution recipe: stat cards show their own stat and weapon only.
 import { statValue, formatValue } from '../sim/cards.js';
 
-export const CLAMP = { title: 26, unit: 24, tag: 20, desc: 96, num: 7, stirs: 24 };
+export const CLAMP = { title: 26, unit: 24, tag: 20, desc: 96, num: 7, stirs: 24, from: 30, label: 220 };
 export const COUNT_KEYS = new Set(['count', 'chains', 'pierce']); // shown as a new total, not a percentage
 export const STIRS_TEXT = 'Something stirs...';
 export const BLESS_UNIT = { pickup: 'pickup radius', maxHp: 'max HP', damage: 'spirit damage', gold: 'gold', speed: 'move speed' };
@@ -109,7 +109,17 @@ export function cardModel(card, data, maxRank = 5) {
     unit: eff.unit,
     desc: cls === 'blessing' ? '' : clampText(desc, CLAMP.desc),
     stirs: cls === 'stirs' ? STIRS_TEXT : '',
+    from: cls === 'evolve' && card && typeof card.from === 'string' && card.from ? clampText(`from ${card.from}`, CLAMP.from) : '', // whisper line: the base weapon only, never a recipe
     pips: pipsOf(card, maxRank),
     banishable: !!card && card.kind !== 'evolution',
   };
+}
+
+// Screen-reader name for a card: plain clamped text, no markup. Rank is the rank AFTER this pick, as the pips show it.
+export function cardLabel(m) {
+  const kindWord = m.cls === 'evolve' ? 'Evolution' : m.cls === 'new' ? 'New spirit' : m.cls === 'blessing' ? 'Blessing' : '';
+  const rank = m.pips && m.pips.total ? `rank ${m.pips.filled} of ${m.pips.total}` : '';
+  const effect = `${m.num || ''} ${m.unit || ''}`.trim();
+  const weapon = m.tag && m.tag !== 'EVOLVE' && m.tag !== 'NEW' ? m.tag : '';
+  return clampText([kindWord, weapon, m.title, effect, rank, m.desc, m.stirs].filter(Boolean).join('. '), CLAMP.label);
 }

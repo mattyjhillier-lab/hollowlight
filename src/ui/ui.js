@@ -10,6 +10,7 @@ const fmtTime = (s) => {
 import { TreeScreen } from './treescreen.js';
 import { Hud } from './hud.js';
 import { OfferView } from './cardsui.js';
+import { orderOffer } from './cardview.js';
 import '../cards.css';
 import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
 import './kit.css';
@@ -166,14 +167,16 @@ export class UI {
         banish: (k) => this.handlers.banish(k),
       });
     }
-    this.offerView.render(sim, this.data);
+    // The 'Unlocked in the Skill Tree' hint is a whisper line inside this screen (a HUD toast sat hidden under the veil and collided with the title on phones).
+    const fresh = toastWeapons(sim.offer ? orderOffer(sim.offer).all : [], this.data, this.toastedWeapons);
+    this.offerView.render(sim, this.data, fresh.length ? NEW_CARD_TOAST : '');
     this.show('levelup');
     this.currentCards = this.offerView.cards;
-    const fresh = toastWeapons(this.currentCards, this.data, this.toastedWeapons);
-    if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
+    fresh.forEach((w) => this.toastedWeapons.add(w));
+    if (this.layers.hud) this.layers.hud.inert = true; // Tab must not reach the HUD buttons under the offer
   }
 
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; if (this.layers.hud) this.layers.hud.inert = false; }
 
   // ------------------------------------------------------------------ pause / end
   // U4: lantern-glass pause panel over the frozen game (src/ui/pause.js; DOM built with the kit, textContent only).
@@ -299,7 +302,7 @@ export class UI {
   spaceActivate(e) {
     if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
     const a = document.activeElement;
-    if (!a || !a.closest || !a.closest('.overlay.u4') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"]')) return false;
+    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
     e.preventDefault();
     const swallow = (k) => { if (k.key === ' ') { k.preventDefault(); window.removeEventListener('keyup', swallow, true); } };
     window.addEventListener('keyup', swallow, true);

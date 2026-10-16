@@ -1,174 +1,194 @@
-/* ---------- HUD-2: level-up cards, Direction A (docs/mockups/hud-sheet/hud-a-cards*.png) ----------
+/* ---------- U5: level-up / Blessing / evolution cards in Lantern Glass, Lit (UI IDENTITY v2, T1; docs/design/ui-identity-v2.md) ----------
+   The kit (kit.css) paints the pieces: arched lantern-window card (lg-card), leadlight border (lg-lead, EVOLVE only), wax-seal EVOLVE and teal NEW flags
+   (lg-badge), knotted pips (lg-pips), pill buttons (lg-btn), glowing thread (lg-cardrow rail, lg-eyelet). This file only lays them out and scales them.
    One unit --u = 1 sheet pixel (desktop sheet = 1280 wide). Compact stage (< 900px) and phones use 1px.
-   Gold only on EVOLVE (and the 40% hairline of "stirs"); cyan only on NEW; cream = Blessings; red never.
-   NO backdrop-filter / CSS filter: the world is dimmed with a plain dark overlay. */
+   Gold only on EVOLVE (and the hairline of "stirs"); teal only on NEW; cream = Blessings; red never.
+   NO backdrop-filter / CSS filter in this file: the world is dimmed with a plain dark veil. Motion: one short entrance, nothing per frame. */
 .overlay.layer-levelup {
   --u: clamp(.7px, .08cqw, 1.5px);
-  --font-num: "Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif;
-  background: radial-gradient(ellipse at 50% 48%, rgba(23, 18, 15, .5), rgba(8, 6, 5, .9));
-  -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: radial-gradient(ellipse 54% 50% at 50% 46%, rgba(255, 171, 58, .13), transparent 72%), linear-gradient(180deg, rgba(10, 14, 24, .88), rgba(8, 11, 20, .95));
+  -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: center;
   padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
-  gap: calc(12 * var(--u));
+  gap: calc(10 * var(--u));
 }
-.layer-levelup .lu-head { display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); }
-.layer-levelup .lu-title { margin: 0; font-family: var(--font-head); font-style: italic; font-weight: 700; font-size: max(24px, calc(38 * var(--u))); letter-spacing: .02em; color: var(--cream); -webkit-text-stroke: calc(4 * var(--u)) var(--ink); paint-order: stroke fill; text-shadow: 0 0 calc(14 * var(--u)) rgba(255, 200, 120, .25); }
-.layer-levelup .lu-sub { margin: 0; font: 700 max(14px, calc(14 * var(--u))) var(--font-ui); letter-spacing: .16em; color: var(--brass); text-transform: uppercase; }
+.layer-levelup .lu-head { display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); text-align: center; }
+.layer-levelup .lu-title { margin: 0; font: var(--fw-display) max(28px, calc(46 * var(--u)))/1.05 var(--font-display); letter-spacing: .01em; color: var(--lg-text); text-shadow: 0 0 .6em rgba(255, 171, 58, .35), 0 2px 0 rgba(8, 6, 4, .55); }
+.layer-levelup .lu-sub { margin: 0; font: var(--fw-body-bold) max(13px, calc(15 * var(--u)))/1.2 var(--font-body); letter-spacing: .16em; color: var(--lg-brass-text); text-transform: uppercase; }
+.layer-levelup .lu-note { font: italic var(--fw-whisper) max(15px, calc(17 * var(--u)))/1.2 var(--font-whisper); color: var(--thread); }
 
-/* main row: up to 6 cards on ONE row, they shrink instead of wrapping */
-.lu-main { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: calc(14 * var(--u)); width: min(100%, calc(var(--n, 3) * 256 * var(--u))); align-items: center; }
+/* main row: up to 6 cards on ONE row, they shrink instead of wrapping. The glowing thread rail + eyelets hang above it (desktop only). */
+.lu-main { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: calc(16 * var(--u)); width: min(100%, calc(var(--n, 3) * 266 * var(--u))); align-items: stretch; margin-top: calc(44 * var(--u)); }
+.layer-levelup .lu-main.lg-cardrow::before { top: calc(-47 * var(--u)); left: calc(-12px * (7 - var(--n, 3))); right: calc(-12px * (7 - var(--n, 3))); }
 
+/* ---------- the card: arched lantern window on a thread ---------- */
 .layer-levelup .card {
-  --ring: var(--brass);
-  position: relative; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; row-gap: calc(3 * var(--u));
-  min-height: 44px; height: calc(358 * var(--u)); padding: calc(36 * var(--u)) calc(12 * var(--u)) calc(14 * var(--u)); text-align: center; cursor: pointer; overflow: hidden; min-width: 0;
-  color: var(--cream); background: linear-gradient(#2d2520, #17120f); border: calc(2.4 * var(--u)) solid rgba(205, 191, 159, .5); border-radius: calc(20 * var(--u));
-  box-shadow: 0 calc(5 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, .5), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .08);
-  transition: transform .15s ease-out, border-color .15s; -webkit-tap-highlight-color: transparent;
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: calc(3 * var(--u));
+  width: auto; min-width: 0; min-height: 44px; height: calc(378 * var(--u)); padding: calc(28 * var(--u)) calc(16 * var(--u)) calc(14 * var(--u)); text-align: center; cursor: pointer;
+  transform-origin: 50% calc(-36 * var(--u)); transition: transform .15s var(--lg-ease), box-shadow .15s; -webkit-tap-highlight-color: transparent; color: var(--lg-text);
 }
 .layer-levelup .card::before, .layer-levelup .card::after { display: none; }
-.layer-levelup .card.sel { transform: translateY(calc(-6 * var(--u))); border-color: var(--cream); }
-.layer-levelup .card:active { transform: scale(.975); }
-.layer-levelup .card.is-evolve { height: calc(384 * var(--u)); border: calc(3.6 * var(--u)) solid var(--gold); background: linear-gradient(#3a2d1c, #1a130d);
-  box-shadow: 0 0 0 calc(1.5 * var(--u)) rgba(255, 211, 107, .35), 0 0 calc(26 * var(--u)) rgba(255, 211, 107, .32), 0 calc(6 * var(--u)) calc(16 * var(--u)) rgba(0, 0, 0, .55); }
-.layer-levelup .card.is-evolve.sel { border-color: #fff3c8; }
-.layer-levelup .card.is-stirs { border-color: rgba(255, 211, 107, .4); } /* hairline gold edge only: no badge, no glow */
-.layer-levelup .card.is-new { border-color: rgba(127, 240, 255, .5); }
+.layer-levelup .card.sel { transform: translateY(calc(-6 * var(--u))); box-shadow: var(--lg-rim), 0 0 0 3px rgba(255, 214, 140, .5), 0 0 40px rgba(255, 170, 60, .35), 0 14px 26px rgba(0, 0, 0, .5); }
+.layer-levelup .card:active { transform: translateY(1px); }
+.layer-levelup .card.is-evolve { padding-top: calc(22 * var(--u)); }
+.layer-levelup .card.is-evolve.sel { box-shadow: var(--lg-rim), 0 0 0 3px rgba(255, 233, 160, .55), 0 0 52px rgba(255, 200, 90, .5), 0 14px 26px rgba(0, 0, 0, .5); }
+/* "Something stirs": a hairline gold edge only (no badge, no seal, no leadlight) */
+.layer-levelup .card.is-stirs { box-shadow: var(--lg-rim), 0 0 0 2px rgba(255, 211, 107, .5), 0 0 18px rgba(255, 211, 107, .18), 0 14px 26px rgba(0, 0, 0, .5); }
+.layer-levelup .card.is-stirs.sel { box-shadow: var(--lg-rim), 0 0 0 2px rgba(255, 211, 107, .7), 0 0 0 5px rgba(255, 214, 140, .3), 0 0 40px rgba(255, 170, 60, .35), 0 14px 26px rgba(0, 0, 0, .5); }
 
-.c-icon { width: calc(112 * var(--u)); height: calc(112 * var(--u)); margin-top: calc(2 * var(--u)); }
+.layer-levelup .lu-eyelet { top: calc(-37 * var(--u)); }
+.layer-levelup .card > .lg-card__key { top: calc(28 * var(--u)); right: calc(18 * var(--u)); }
+.layer-levelup .card.is-evolve > .lg-card__key { right: calc(14 * var(--u)); }
+.layer-levelup .c-key { z-index: 2; }
+.layer-levelup .card > .lg-card__badge { top: calc(24 * var(--u)); left: -.7em; }
+.layer-levelup .card.is-evolve > .lg-card__badge { top: calc(-8 * var(--u)); left: -1.1em; }
+.layer-levelup .lg-badge--new { height: 28px; }
+.layer-levelup .lg-badge--evolve .lg-badge__seal { width: 36px; height: 36px; }
+
+.layer-levelup .c-icon { order: 1; flex: none; width: calc(96 * var(--u)); height: calc(96 * var(--u)); border-radius: 50%; margin-bottom: calc(3 * var(--u));
+  box-shadow: 0 0 0 2px #3a2412, 0 6px 14px rgba(0, 0, 0, .5), 0 0 22px rgba(255, 170, 60, .25); }
+.layer-levelup .is-evolve .c-icon { box-shadow: 0 0 0 2px #6b4512, 0 6px 14px rgba(0, 0, 0, .5), 0 0 30px rgba(255, 210, 100, .5); }
 .c-icon svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.c-title { margin: calc(4 * var(--u)) 0 0; max-width: 100%; font-family: var(--font-head); font-weight: 700; font-size: max(18px, calc(23 * var(--u))); line-height: 1.12; color: var(--cream);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; -webkit-text-stroke: calc(3 * var(--u)) var(--ink); paint-order: stroke fill; }
-.c-num { font-family: var(--font-num); font-weight: 900; font-size: max(28px, calc(42 * var(--u))); line-height: 1.05; color: var(--cream); font-variant-numeric: tabular-nums; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: clip;
-  -webkit-text-stroke: calc(4 * var(--u)) var(--ink); paint-order: stroke fill; }
+.layer-levelup .c-tag:not(.lg-badge) { order: 2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--fw-body-bold) max(13px, calc(13 * var(--u)))/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--lg-brass-text); }
+.layer-levelup .c-title { order: 3; margin: 0; max-width: 100%; font: var(--fw-display) max(20px, calc(27 * var(--u)))/1.1 var(--font-display); letter-spacing: 0; color: var(--lg-text); text-shadow: 0 1px 0 rgba(8, 6, 4, .5);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.layer-levelup .c-num { order: 4; max-width: 100%; font: var(--fw-body-bold) max(28px, calc(44 * var(--u)))/1.05 var(--font-body); font-feature-settings: var(--num); color: var(--lg-text); white-space: nowrap; overflow: hidden; text-overflow: clip; text-shadow: 0 2px 0 rgba(8, 6, 4, .45); }
 .c-num.long { font-size: max(28px, calc(38 * var(--u))); }
-.is-evolve .c-num { color: var(--gold); text-shadow: 0 0 calc(12 * var(--u)) rgba(255, 211, 107, .5); }
-.c-unit { max-width: 100%; font: 700 max(14px, calc(14 * var(--u))) var(--font-ui); letter-spacing: .1em; text-transform: uppercase; color: #cdbf9f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.c-pips { display: flex; gap: calc(5 * var(--u)); align-items: center; height: calc(14 * var(--u)); min-height: 10px; margin: calc(2 * var(--u)) 0; }
-.c-pips i { width: calc(11 * var(--u)); height: calc(11 * var(--u)); min-width: 8px; min-height: 8px; border-radius: 50%; border: calc(1.6 * var(--u)) solid var(--brass-d); background: rgba(12, 9, 8, .7); box-sizing: border-box; }
-.c-pips i.on { background: var(--thread); border-color: var(--brass); }
-.c-pips i.fresh { box-shadow: 0 0 0 calc(2 * var(--u)) var(--cream); border-color: var(--cream); }
-.is-evolve .c-pips i.on { background: var(--gold); border-color: #fff3c8; }
-.c-desc { margin: calc(2 * var(--u)) 0 0; max-width: 100%; font: 400 max(14px, calc(15 * var(--u))) / 1.3 var(--font-ui); color: #e3d8bd; overflow-wrap: anywhere;
+.is-evolve .c-num { color: var(--lg-evo); text-shadow: 0 0 .5em rgba(255, 200, 90, .55), 0 2px 0 rgba(40, 20, 4, .6); text-transform: lowercase; }
+.is-evolve .c-num::first-letter { text-transform: uppercase; }
+.layer-levelup .c-unit { order: 5; max-width: 100%; font: var(--fw-body) max(14px, calc(15 * var(--u)))/1.2 var(--font-body); font-feature-settings: var(--num); color: var(--lg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layer-levelup .c-pips { order: 6; margin: calc(7 * var(--u)) 0 calc(5 * var(--u)); }
+.layer-levelup .c-pips .lg-pip.fresh { box-shadow: 0 0 0 1.5px var(--lg-text), 0 0 0 3px #2a1a0c, 0 0 8px rgba(255, 243, 220, .6); }
+.layer-levelup .c-pips .lg-pip.on.fresh { box-shadow: 0 0 0 1.5px var(--lg-text), 0 0 0 3px #2a1a0c, 0 0 11px var(--flame); }
+.layer-levelup .c-desc { order: 7; margin: 0; max-width: 100%; font: var(--fw-body) max(14px, calc(16 * var(--u)))/1.3 var(--font-body); color: var(--lg-dim); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.c-stirs { margin-top: calc(2 * var(--u)); font: italic 400 max(14px, calc(15 * var(--u))) var(--font-head); color: #e0b563; }
+.layer-levelup .c-from { order: 8; max-width: 100%; margin-top: auto; font: italic var(--fw-whisper) max(14px, calc(15 * var(--u)))/1.2 var(--font-whisper); color: var(--lg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layer-levelup .c-stirs { order: 9; margin-top: auto; font: italic var(--fw-whisper) max(15px, calc(17 * var(--u)))/1.2 var(--font-whisper); color: var(--lg-evo); }
 
-.c-key { position: absolute; top: calc(10 * var(--u)); right: calc(12 * var(--u)); width: calc(30 * var(--u)); height: calc(30 * var(--u)); min-width: 22px; min-height: 22px; display: grid; place-items: center; border-radius: 50%;
-  background: rgba(0, 0, 0, .55); border: calc(1.8 * var(--u)) solid var(--brass-d); font: 900 max(14px, calc(16 * var(--u))) var(--font-num); color: var(--cream); }
-.c-tag { position: absolute; top: calc(12 * var(--u)); left: calc(14 * var(--u)); max-width: calc(100% - 64 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 max(14px, calc(14 * var(--u))) var(--font-ui); letter-spacing: .12em; text-transform: uppercase; color: #cdbf9f; }
-.c-tag.t-evolve { top: calc(11 * var(--u)); left: calc(11 * var(--u)); padding: calc(3 * var(--u)) calc(12 * var(--u)); border-radius: calc(9 * var(--u)); color: #3a2a08; font-weight: 900; background: linear-gradient(#ffe9a8, var(--gold)); }
-.c-tag.t-new { top: calc(11 * var(--u)); left: 0; padding: calc(3 * var(--u)) calc(20 * var(--u)) calc(3 * var(--u)) calc(14 * var(--u)); color: #062a33; font-weight: 900; background: #7ff0ff; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); }
-
-/* quiet Blessing row: its own smaller cream row, never wrapped into the main row */
+/* ---------- Blessings: a quiet row of cream pills (no arch, no gold, no eyelet) ---------- */
 .lu-foot { display: flex; flex-direction: column; align-items: center; gap: calc(10 * var(--u)); width: 100%; }
-.lu-quietwrap { display: flex; flex-direction: column; align-items: center; gap: calc(4 * var(--u)); width: min(100%, calc(var(--n2, 2) * 320 * var(--u))); }
-.lu-qlabel { align-self: stretch; display: flex; align-items: center; gap: calc(10 * var(--u)); font: italic 700 max(14px, calc(14 * var(--u))) var(--font-ui); letter-spacing: .12em; color: #cdbf9f; }
-.lu-qlabel::after { content: ""; flex: 1; height: 1px; background: rgba(205, 191, 159, .35); }
+.lu-quietwrap { display: flex; flex-direction: column; align-items: center; gap: calc(4 * var(--u)); width: min(100%, calc(var(--n2, 2) * 330 * var(--u))); }
+.lu-qlabel { align-self: stretch; display: flex; align-items: center; gap: calc(10 * var(--u)); font: var(--fw-body-bold) max(13px, calc(13 * var(--u)))/1.2 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--lg-brass-text); }
+.lu-qlabel::after { content: ""; flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--thread) 0 7px, transparent 7px 12px); opacity: .5; }
 .lu-quiet { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: calc(12 * var(--u)); width: 100%; }
-.layer-levelup .card.quiet { height: auto; min-height: 44px; padding: calc(7 * var(--u)) calc(44 * var(--u)) calc(7 * var(--u)) calc(10 * var(--u)); grid-template-columns: calc(44 * var(--u)) minmax(0, 1fr); column-gap: calc(10 * var(--u)); row-gap: 0; justify-items: start; align-items: center; text-align: left;
-  border: calc(2 * var(--u)) solid rgba(232, 217, 168, .55); border-radius: calc(16 * var(--u)); background: linear-gradient(rgba(45, 37, 32, .9), rgba(23, 18, 15, .9)); box-shadow: none; }
-.card.quiet .c-icon { grid-row: 1 / span 2; width: max(36px, calc(46 * var(--u))); height: max(36px, calc(46 * var(--u))); margin: 0; }
-.card.quiet .c-title { grid-column: 2; margin: 0; font-size: max(16px, calc(19 * var(--u))); -webkit-line-clamp: 1; }
-.card.quiet .c-unit { grid-column: 2; text-transform: none; letter-spacing: .02em; font-weight: 400; font-size: max(14px, calc(15 * var(--u))); color: #e3d8bd; }
-.card.quiet .c-key { top: 50%; transform: translateY(-50%); right: calc(10 * var(--u)); }
-.card.quiet.sel { transform: translateY(calc(-3 * var(--u))); }
+.layer-levelup .card.quiet {
+  display: grid; grid-template-columns: max(36px, calc(46 * var(--u))) minmax(0, 1fr); column-gap: calc(10 * var(--u)); row-gap: 0; align-items: center; justify-items: start; text-align: left;
+  height: auto; min-height: 54px; padding: 4px calc(46 * var(--u)) 4px 14px; transform-origin: 50% 50%;
+  border: 6px solid transparent; border-image: var(--lg-a-pill) 22 / 22px stretch; border-radius: 22px; background-clip: padding-box;
+  background-image: radial-gradient(90% 150% at 6% 50%, rgba(255, 226, 170, .22), transparent 70%), linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b));
+  box-shadow: var(--lg-rim), 0 8px 16px rgba(0, 0, 0, .4);
+}
+.layer-levelup .card.quiet.sel { transform: translateY(calc(-3 * var(--u))); box-shadow: var(--lg-rim), 0 0 0 3px rgba(255, 233, 190, .4), 0 0 26px rgba(255, 200, 120, .3), 0 8px 16px rgba(0, 0, 0, .4); }
+.card.quiet .c-icon { grid-row: 1 / span 2; grid-column: 1; width: max(36px, calc(46 * var(--u))); height: max(36px, calc(46 * var(--u))); margin: 0; box-shadow: 0 0 0 2px #3a2412; }
+.layer-levelup .card.quiet .c-title { grid-column: 2; margin: 0; font-size: max(18px, calc(21 * var(--u))); -webkit-line-clamp: 1; }
+.layer-levelup .card.quiet .c-unit { grid-column: 2; font-size: max(14px, calc(15 * var(--u))); color: var(--lg-dim); text-overflow: ellipsis; }
+.layer-levelup .card.quiet > .lg-card__key { top: 50%; transform: translateY(-50%); right: calc(14 * var(--u)); }
 
+/* ---------- Reroll / Banish: the kit's pill buttons ---------- */
 .lu-actions { display: flex; gap: calc(14 * var(--u)); justify-content: center; flex-wrap: wrap; }
-.layer-levelup .lu-btn { min-height: 44px; min-width: 44px; padding: 0 calc(18 * var(--u)); display: inline-flex; align-items: center; gap: calc(9 * var(--u)); border-radius: 999px; border: calc(2 * var(--u)) solid var(--brass); background: linear-gradient(#2d2520, #17120f); color: var(--cream);
-  font: 700 max(15px, calc(17 * var(--u))) var(--font-ui); cursor: pointer; box-shadow: none; transform: none; -webkit-tap-highlight-color: transparent; }
-.layer-levelup .lu-btn::before { display: none; }
-.layer-levelup .lu-btn:hover, .layer-levelup .lu-btn:focus-visible { color: var(--cream); background: linear-gradient(#3a302a, #1f1814); box-shadow: none; transform: none; }
-.layer-levelup .lu-btn:active { transform: scale(.97); }
-.lu-kbd { display: grid; place-items: center; width: max(24px, calc(28 * var(--u))); height: max(24px, calc(28 * var(--u))); border-radius: 50%; border: calc(1.8 * var(--u)) solid var(--brass-d); font: 900 max(14px, calc(15 * var(--u))) var(--font-num); }
-.lu-cnt { font-family: var(--font-num); font-weight: 900; color: var(--thread); }
-.layer-levelup .lu-btn.on { border-color: var(--cream); background: linear-gradient(#4a3a2c, #251c15); box-shadow: 0 0 0 calc(2 * var(--u)) rgba(255, 243, 220, .35); }
-.banishing .card { outline: 2px dashed rgba(255, 243, 220, .55); outline-offset: -7px; }
-.banishing .card.is-evolve { opacity: .45; cursor: not-allowed; outline: none; }
+.layer-levelup .lu-btn { width: auto; flex: none; min-height: 52px; padding: .15em .8em .15em .5em; gap: .45em; }
+.layer-levelup .lu-btn .lg-btn__label { font-size: max(17px, calc(19 * var(--u))); }
+.lu-cnt { font: var(--fw-body-bold) max(15px, calc(16 * var(--u)))/1 var(--font-body); color: var(--thread); }
+.layer-levelup .lu-btn.on { background-image: radial-gradient(130% 160% at 10% 50%, rgba(255, 190, 100, .5), rgba(90, 50, 20, .55) 70%), linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); box-shadow: var(--lg-rim), 0 0 0 3px rgba(255, 233, 190, .35), 0 0 24px rgba(255, 170, 60, .4), 0 8px 16px rgba(0, 0, 0, .4); }
+.layer-levelup .lu-btn.on .lg-btn__flame { background: var(--lg-a-flame) 50% 52% / 52% no-repeat, radial-gradient(circle at 45% 40%, #fff6d8, #ffcf7a 55%, #e08a2a); box-shadow: 0 0 0 2px #5a2e0e, 0 0 12px #fff0b0; }
+.banishing .card:not(.is-evolve) { outline: 2px dashed rgba(255, 243, 220, .7); outline-offset: 5px; }
+.banishing .card.is-evolve { opacity: .45; cursor: not-allowed; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .layer-levelup .card { animation: cardIn .2s ease-out backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+  .layer-levelup .card { animation: luIn .3s var(--lg-ease) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
 }
-@keyframes cardIn { from { opacity: 0; transform: translateY(calc(14 * var(--u))); } }
-@media (prefers-reduced-motion: reduce) { .layer-levelup .card { transition: none; animation: none; } }
+@keyframes luIn { from { opacity: 0; transform: translateY(calc(-12 * var(--u))) rotate(-2deg); } 65% { transform: translateY(0) rotate(.8deg); } }
+@media (prefers-reduced-motion: reduce) { .layer-levelup .card, .layer-levelup .lu-eyelet { transition: none; animation: none; } }
 html.touch .c-key { display: none; }
-html.touch .c-tag { max-width: calc(100% - 22 * var(--u)); }
-html.touch .layer-levelup .card.sel { transform: none; border-color: rgba(205, 191, 159, .5); }
-html.touch .layer-levelup .card.is-evolve.sel { border-color: var(--gold); }
 
-/* compact stage (phone landscape, small windows): 4 compact cards, description hidden, blessings + reroll/banish share ONE 44px strip */
+/* ---------- compact stage (phone landscape, small windows): 4 compact cards, description hidden, blessings + reroll/banish share ONE strip ---------- */
 @container (max-width: 899px) {
   .overlay.layer-levelup { --u: 1px; gap: 6px; }
-  .layer-levelup .lu-head { flex-direction: row; align-items: baseline; gap: 12px; }
-  .layer-levelup .lu-title { font-size: 24px; }
-  .lu-main { width: min(100%, calc(var(--n, 3) * 160px)); gap: 8px; }
-  .layer-levelup .card { height: 208px; padding: 28px 6px 6px; row-gap: 1px; border-radius: 16px; }
-  .layer-levelup .card.is-evolve { height: 220px; }
-  .c-icon { width: 54px; height: 54px; margin-top: 0; }
-  .c-title { font-size: 18px; margin-top: 2px; }
-  .c-num { font-size: 30px; } .c-num.long { font-size: 26px; }
-  .c-desc { display: none; }
-  .c-tag { top: 8px; left: 9px; }
-  .c-tag.t-evolve, .c-tag.t-new { top: 7px; }
-  .c-tag.t-evolve { left: 7px; padding: 2px 9px; }
-  .c-key { top: 6px; right: 7px; }
+  .layer-levelup .lu-head { flex-direction: row; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .layer-levelup .lu-title { font-size: 26px; }
+  .layer-levelup .lu-note { display: none; }
+  .lu-main { width: min(100%, calc(var(--n, 3) * 164px)); gap: 8px; margin-top: 0; }
+  .layer-levelup .lu-eyelet, .layer-levelup .lu-main.lg-cardrow::before { display: none; }
+  .layer-levelup .card { height: 214px; padding: 20px 6px 6px; gap: 1px; transform-origin: 50% 0;
+    border-image-width: 44px 56px 18px 56px; border-radius: 56px 56px 18px 18px / 44px 44px 18px 18px; }
+  .layer-levelup .card.is-evolve { height: 222px; padding-top: 14px; border-image-width: 44px 56px 24px 56px; }
+  .layer-levelup .c-icon { width: 54px; height: 54px; margin-bottom: 1px; }
+  .layer-levelup .c-title { font-size: 19px; }
+  .layer-levelup .c-num { font-size: 30px; } .c-num.long { font-size: 26px; }
+  .layer-levelup .c-desc, .layer-levelup .c-from { display: none; }
+  .layer-levelup .c-pips { margin: 4px 0 2px; }
+  .layer-levelup .card > .lg-card__key { top: 22px; right: 12px; }
+  .layer-levelup .card > .lg-card__badge { top: 18px; }
+  .layer-levelup .card.is-evolve > .lg-card__badge { top: -8px; }
+  .layer-levelup .lg-badge--evolve .lg-badge__seal { width: 30px; height: 30px; }
+  .layer-levelup .lg-badge--new { height: 24px; min-width: 3.6em; padding-right: 1.2em; }
+  .layer-levelup .c-stirs { font-size: 15px; margin-top: 2px; }
   .lu-foot { flex-direction: row; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
   .lu-quietwrap { width: auto; flex-direction: row; }
   .lu-qlabel { display: none; }
   .lu-quiet { display: flex; gap: 8px; }
-  .layer-levelup .card.quiet { padding: 4px 36px 4px 8px; min-width: 0; }
-  html.touch .layer-levelup .card.quiet { padding-right: 10px; }
-  .layer-levelup .lu-btn { padding: 0 14px; }
-  .card.quiet .c-icon { width: 36px; height: 36px; }
+  .layer-levelup .card.quiet { padding: 0 36px 0 12px; min-width: 0; min-height: 48px; column-gap: 6px; }
+  html.touch .layer-levelup .card.quiet { padding-right: 6px; }
+  .layer-levelup .lu-btn { min-height: 48px; padding: 0 10px 0 4px; }
+  .layer-levelup .lu-btn .lg-btn__flame { width: 26px; height: 26px; }
+  .layer-levelup .lu-btn .lg-btn__label { font-size: 17px; }
+  .card.quiet .c-icon { width: 30px; height: 30px; }
+  .layer-levelup .card.quiet { grid-template-columns: 30px minmax(0, 1fr); }
+  .layer-levelup .card.quiet .c-title { font-size: 16px; }
+  .layer-levelup .card.quiet .c-unit { font-size: 13px; }
   .lu-actions { gap: 8px; flex-wrap: nowrap; }
 }
+
+/* ---------- row layout: portrait phones, and 5-6 cards on a compact landscape stage. Rounded windows (kit panel frame), icon | words | number ---------- */
 @media (min-aspect-ratio: 1/1) {
   @container (max-width: 899px) {
-    /* 5-6 main cards on a compact landscape stage: switch to two columns of wide row cards (keeps 18px titles) */
-    .lu-main.many { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 700px); gap: 6px 8px; }
-    .lu-main.many .card, .lu-main.many .card.is-evolve { height: auto; min-height: 72px; padding: 8px 12px 8px 10px; grid-template-columns: 60px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips stirs"; column-gap: 12px; row-gap: 0; justify-items: start; align-items: center; text-align: left; border-radius: 16px; }
-    .lu-main.many .card.is-evolve { border-width: 3px; }
-    .lu-main.many .c-icon { grid-area: icon; width: 60px; height: 60px; align-self: center; }
-    .lu-main.many .c-tag, .lu-main.many .c-tag.t-evolve, .lu-main.many .c-tag.t-new { position: static; grid-area: tag; margin: 0 0 2px; max-width: 100%; }
-    .lu-main.many .c-tag.t-new { padding: 1px 16px 1px 8px; }
-    .lu-main.many .c-tag.t-evolve { padding: 1px 9px; }
-    .lu-main.many .c-title { grid-area: title; margin: 0; font-size: 18px; text-align: left; -webkit-line-clamp: 2; }
-    .lu-main.many .c-unit { grid-area: unit; text-align: left; }
-    .lu-main.many .c-num { grid-area: num; font-size: 30px; justify-self: end; align-self: center; } .lu-main.many .c-num.long { font-size: 28px; }
-    .lu-main.many .c-pips { grid-area: pips; margin: 3px 0 0; }
-    .lu-main.many .c-stirs { grid-area: stirs; justify-self: end; margin: 0; }
-    .lu-main.many .c-desc { display: none; }
+    .lu-main.many { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 720px); gap: 6px 8px; }
+    .lu-main.many .card, .lu-main.many .card.is-evolve { height: auto; min-height: 64px; padding: 6px 10px 6px 12px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon stirs num"; column-gap: 8px; row-gap: 0; align-items: center; justify-items: start; text-align: left;
+      border-image: var(--lg-a-panel) 26 / 20px stretch; border-width: 6px; border-radius: 20px; }
+    .lu-main.many .card.is-evolve { border-image: var(--lg-a-lead) 36 / 26px round; border-width: 12px; padding: 0 2px; }
+    .lu-main.many .c-icon { grid-area: icon; width: 50px; height: 50px; align-self: center; }
+    .lu-main.many .c-tag, .lu-main.many .card > .lg-card__badge { position: static !important; grid-area: tag; margin: 0; }
+    .lu-main.many .c-title { grid-area: title; text-align: left; font-size: 18px; }
     .lu-main.many .c-unit { display: none; }
-    .lu-main.many .card, .lu-main.many .card.is-evolve { padding: 5px 10px 5px 10px; min-height: 0; }
-    .lu-main.many .c-pips { margin: 2px 0 0; }
+    .lu-main.many .c-num { grid-area: num; justify-self: end; align-self: center; font-size: 26px; } .lu-main.many .c-num.long { font-size: 24px; }
+    .lu-main.many .c-pips { grid-area: pips; margin: 2px 0 0; }
+    .lu-main.many .c-stirs { grid-area: stirs; justify-self: start; margin: 0; font-size: 15px; }
+    .lu-main.many .lg-badge--evolve .lg-badge__seal { width: 24px; height: 24px; }
+    .lu-main.many .lg-badge--new { height: 20px; min-width: 3.6em; font-size: 12px; }
+    .lu-main.many .lg-card__key { display: none; }
+    .lu-main.many .card.is-evolve .c-pips { display: none; } /* an evolved weapon is always full: the pips add nothing in a tight row */
   }
 }
-/* portrait phones: stacked wide rows (icon | name + unit | big number); blessings as two half-width chips; Reroll/Banish low, where the thumb rests */
 @media (max-aspect-ratio: 1/1) {
   .overlay.layer-levelup { --u: 1px; gap: 10px; justify-content: center; }
   .layer-levelup .lu-head { flex-direction: column; gap: 2px; }
-  .layer-levelup .lu-title { font-size: 28px; }
-  .lu-main { grid-template-columns: minmax(0, 1fr); width: min(100%, 440px); gap: 8px; }
-  .layer-levelup .card, .layer-levelup .card.is-evolve { height: auto; min-height: 72px; padding: 8px 12px 8px 10px; grid-template-columns: 60px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips stirs"; column-gap: 12px; row-gap: 0; justify-items: start; align-items: center; text-align: left; border-radius: 16px; }
-  .layer-levelup .card.is-evolve { border-width: 3px; }
-  .c-icon { grid-area: icon; width: 60px; height: 60px; align-self: center; }
-  .c-tag, .c-tag.t-evolve, .c-tag.t-new { position: static; grid-area: tag; margin: 0 0 2px; max-width: 100%; }
-  .c-tag.t-new { padding: 1px 16px 1px 8px; }
-  .c-tag.t-evolve { padding: 1px 9px; }
-  .c-title { grid-area: title; margin: 0; font-size: 18px; text-align: left; -webkit-line-clamp: 2; }
-  .c-unit { grid-area: unit; text-align: left; }
-  .c-num { grid-area: num; font-size: 30px; justify-self: end; align-self: center; } .c-num.long { font-size: 28px; }
-  .c-pips { grid-area: pips; margin: 3px 0 0; }
-  .c-stirs { grid-area: stirs; justify-self: end; margin: 0; }
-  .c-desc { display: none; }
+  .layer-levelup .lu-title { font-size: 32px; }
+  .lu-main { grid-template-columns: minmax(0, 1fr); width: min(100%, 440px); gap: 8px; margin-top: 0; }
+  .layer-levelup .lu-eyelet, .layer-levelup .lu-main.lg-cardrow::before { display: none; }
+  .layer-levelup .card, .layer-levelup .card.is-evolve { height: auto; min-height: 72px; padding: 6px 12px 6px 14px; display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon stirs num"; column-gap: 10px; row-gap: 0; align-items: center; justify-items: start; text-align: left; transform-origin: 50% 0; }
+  .layer-levelup .card { border-image: var(--lg-a-panel) 26 / 20px stretch; border-width: 6px; border-radius: 20px; }
+  .layer-levelup .card.is-evolve { border-image: var(--lg-a-lead) 36 / 26px round; border-width: 12px; padding: 0 2px 0 4px; }
+  .layer-levelup .card.quiet { min-height: 56px; padding: 2px 8px 2px 6px; grid-template-columns: 38px minmax(0, 1fr); grid-template-areas: none; column-gap: 8px; }
+  .layer-levelup .c-icon { grid-area: icon; width: 52px; height: 52px; align-self: center; }
+  .layer-levelup .card .c-tag, .layer-levelup .card > .lg-card__badge { position: static !important; grid-area: tag; margin: 0 0 2px; }
+  .layer-levelup .lg-badge--evolve .lg-badge__seal { width: 28px; height: 28px; }
+  .layer-levelup .lg-badge--new { height: 22px; }
+  .layer-levelup .c-title { grid-area: title; text-align: left; font-size: 20px; }
+  .layer-levelup .c-unit { grid-area: unit; text-align: left; }
+  .layer-levelup .c-num { grid-area: num; font-size: 30px; justify-self: end; align-self: center; } .c-num.long { font-size: 28px; }
+  .layer-levelup .c-pips { grid-area: pips; margin: 3px 0 0; }
+  .layer-levelup .c-stirs { grid-area: stirs; justify-self: start; margin: 0; font-size: 16px; }
+  .layer-levelup .c-desc, .layer-levelup .c-from { display: none; }
+  .lg-card__key { display: none; }
+  .lu-main.many .card.is-evolve .c-pips { display: none; } /* an evolved weapon is always full: the pips add nothing in a tight row */
   .lu-foot { flex-direction: column; gap: 10px; width: min(100%, 440px); }
   .lu-quietwrap { width: 100%; flex-direction: column; }
-  .lu-qlabel { display: flex; }
   .lu-quiet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .layer-levelup .card.quiet { min-width: 0; padding: 4px 8px; display: grid; grid-template-columns: 38px minmax(0, 1fr); grid-template-areas: none; min-height: 52px; }
-  .card.quiet .c-title { font-size: 16px; -webkit-line-clamp: 2; line-height: 1.1; } .card.quiet .c-unit { font-size: 14px; white-space: normal; line-height: 1.15; }
-  .card.quiet .c-key { display: none; }
   .card.quiet .c-icon, .card.quiet .c-title, .card.quiet .c-unit { grid-area: auto; }
-  .card.quiet .c-icon { grid-row: 1 / span 2; grid-column: 1; width: 38px; height: 38px; }
+  .card.quiet .c-icon { grid-row: 1 / span 2; grid-column: 1; width: 36px; height: 36px; }
   .card.quiet .c-title, .card.quiet .c-unit { grid-column: 2; }
+  .layer-levelup .card.quiet .c-title { font-size: 18px; -webkit-line-clamp: 2; line-height: 1.05; }
+  .layer-levelup .card.quiet .c-unit { font-size: 14px; white-space: normal; line-height: 1.15; }
   .lu-actions { width: 100%; gap: 10px; flex-wrap: nowrap; }
-  .layer-levelup .lu-btn { flex: 1; justify-content: center; min-height: 48px; }
+  .layer-levelup .lu-btn { flex: 1; justify-content: center; min-height: 52px; }
+  .layer-levelup .lu-btn .lg-btn__text { flex: none; }
 }
