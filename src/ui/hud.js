@@ -147,6 +147,7 @@ export class Hud {
       if (this.frostSrc) this.frost.style.backgroundImage = `url(${this.frostSrc})`;
     }
     this.sty('frost', this.frost, 'opacity', fa.toFixed(2));
+    this.frost.classList.toggle('on', fa > 0);
 
     const xf = xpFrac(sim.xp, sim.xpNeeded);
     this.sty('xp', this.threadFill, 'width', `${(xf * 100).toFixed(1)}%`);
