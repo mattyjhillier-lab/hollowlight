@@ -126,3 +126,5 @@ Standing rules always apply: security first, token conservation, everything must
 Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 characters, prestige, codex, touch controls beyond P8, gameplay link for the life map (restored ground empowers summons), "summon mastery/commands" idea from the review, kill-streak/other systems.
 
 - FEEDBACK 2026-10-16 (Matt, on W0): "world needs to feel more alive". Fold into W1-W5 spec as an "ambient life" pass (sway, motes, critters, wind, reactive foliage); design it before building W1. Waiting for Matt's go on W1.
+
+- FEEDBACK 2026-10-16 (Matt, live dev playtest): (1) foliage reaction "seems good" but wants it MORE INTERACTIVE: e.g. lighting a tree makes it bloom with flowers, same for bushes; brainstorm more ways (AL-4b/ambient v1.1 design, needs research/design/lock before build). (2) URGENT: game "doesn't feel smooth, feels quite laggy" on his PC -> perf investigation agent running (frame-pacing percentiles with real GPU, bisect layers, fix). Perf takes priority over W5.
