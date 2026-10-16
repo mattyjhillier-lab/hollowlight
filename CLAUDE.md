@@ -47,6 +47,9 @@ Every chunk ends with its honest weak-spot list. By default FIX the fixable weak
 ## Standing rule: new content = three options, Matt picks (set by Matt, 2026-10-16)
 Whenever new gameplay content is added (weapon, evolution, hero, ability, enemy, boss, status effect, power-up, tree node group), design THREE genuinely different options for each piece, recommended first, with plain-words fantasy/verb, how it looks and sounds, estimated numbers, fit with the weapon/hero stats and recipe pairs, risks. Present as one-tap questions (max 3 per batch, one weapon or hero at a time), Matt picks, record each pick in docs/LOCKED.md, then build in small chunks. Keep every piece consistent with its siblings (same counts per weapon, distinct verbs, different recipe pairs).
 
+## Standing rule: keep going without asking for go (set by Matt, 2026-10-16)
+Matt does NOT need to say go for each chunk. Chunks that are already designed and locked (docs/LOCKED.md, docs/QUEUE.md build order) are started back to back as soon as an agent slot is free (max 2 agents), each still fully verified (tests, sweeps, screenshots, security, fit). Ask Matt only when truly needed: a new design decision or taste call (use the three-options question format), a change to something locked, anything outward-facing or irreversible (publish, push to main, settings, deletes, downloads of new files), security-sensitive choices, or results that move a locked balance target. Notify his phone (PushNotification) when something is ready for review or a decision is needed. Keep the Right now / Next / Parked footer.
+
 ## Standing rule: small chunks, never get ahead (set by Matt)
 Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
 - One chunk = one small, clearly described piece with a visible result and a done-check (tests green, screenshot/numbers, security + fit check). State the chunk before starting; finish and show it before starting the next.
