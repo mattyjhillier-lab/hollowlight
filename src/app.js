@@ -31,6 +31,10 @@ function parseParams() {
     props: q.get('props') !== '0', // dev: ?props=0 turns the W4 props layer off (A/B perf)
     push: q.get('push') !== '0', // dev: ?push=0 turns the AL-4 creature-reactive foliage off (A/B perf)
     sway: q.get('sway') !== '0', // dev: ?sway=0 turns the AL-1 grass sway layer off (A/B perf)
+    corr: q.get('corr') !== '0', // dev: ?corr=0 stops enemies staining the ground (A/B perf)
+    bloom: q.get('bloom') !== '0', // dev: ?bloom=0 turns the High-tier bloom post effect off (A/B perf)
+    lm: q.get('lm') !== '0', // dev: ?lm=0 turns the lightmap (and with it the ground shader) off (A/B perf)
+    nums: q.get('nums') !== '0', // dev: ?nums=0 turns damage numbers off (A/B perf)
     touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree
   };

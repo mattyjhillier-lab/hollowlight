@@ -64,5 +64,8 @@ export default defineConfig({
   base: './',
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [inlineSingleFile(), stampServiceWorker()],
+  // Dev server: only watch what the game loads. docs/ holds ~150 mockup .html files and screenshots that agents write while Matt
+  // plays; any change there made the dev server full-reload his open game page.
+  server: { watch: { ignored: ['**/docs/**', '**/scripts/**', '**/tests/**', '**/dist/**', '**/.claude/**', '**/*.log'] } },
   build: { chunkSizeWarningLimit: 4000, assetsInlineLimit: 100000000 },
 });

@@ -226,6 +226,11 @@ export class RunScene extends Phaser.Scene {
     this.lastStep = 0;
     this.frameMs = 16.7;
     this.workMs = 0;
+    this.sec = new Float64Array(10);
+    this.secT = new Float64Array(10);
+    this.secH = new Float64Array(10);
+    this.secA = new Float64Array(10); // bytes allocated per section (only with ?debug=1 on Chrome)
+    this.secMem = !!(app.params.debug && typeof performance !== 'undefined' && performance.memory);
     this.perfInfo = { sprites: 0, particles: 0, tier: '', mode: '' };
     const ev = this.game.events;
     ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); });
@@ -440,11 +445,11 @@ export class RunScene extends Phaser.Scene {
   applyTier() {
     const c = this.quality.caps;
     // Lightmap on Med/High if WebGL accepts it; otherwise the Low look (tinted ground + trees, halo pools).
-    if (c.lightmap && !this.lm.rt) this.lm.build(this.scale.width, this.scale.height, this.baseZoom);
-    this.lmOn = !!(c.lightmap && this.lm.ok);
+    if (c.lightmap && app.params.lm && !this.lm.rt) this.lm.build(this.scale.width, this.scale.height, this.baseZoom);
+    this.lmOn = !!(c.lightmap && app.params.lm && this.lm.ok);
     this.lm.setVisible(this.lmOn);
     // ground blend shader on Med/High when WebGL accepts it; otherwise flat Hollow tile + warm pool sprites
-    const wantGb = !!(c.lightmap && !app.params.flat);
+    const wantGb = !!(c.lightmap && app.params.lm && !app.params.flat);
     if (wantGb && !this.gb.sh) this.gb.build(app.data.balance.worldSize, this.life);
     this.gbOn = !!(wantGb && this.gb.ok);
     this.gb.setVisible(this.gbOn);
@@ -464,8 +469,8 @@ export class RunScene extends Phaser.Scene {
     // Built-in bloom: High tier only, WebGL only, feature-detected; fails silently.
     const cam = this.cameras.main;
     try {
-      if (this.bloom && !c.bloom) { cam.postFX.remove(this.bloom); this.bloom = null; }
-      if (c.bloom && !this.bloom && this.renderer.type === Phaser.WEBGL && cam.postFX && typeof cam.postFX.addBloom === 'function') {
+      if (this.bloom && !(c.bloom && app.params.bloom)) { cam.postFX.remove(this.bloom); this.bloom = null; }
+      if (c.bloom && app.params.bloom && !this.bloom && this.renderer.type === Phaser.WEBGL && cam.postFX && typeof cam.postFX.addBloom === 'function') {
         this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 1, 0.55, 2);
       }
     } catch (err) { this.bloom = null; }
@@ -611,7 +616,7 @@ export class RunScene extends Phaser.Scene {
     const sim = this.sim;
     const cam = this.cameras.main;
     const st = app.save.data.settings;
-    this.nums.enabled = !!st.damageNumbers;
+    this.nums.enabled = !!st.damageNumbers && app.params.nums;
     this.nums.reduced = !!st.reducedMotion;
     this.parts.update(dt);
     this.nums.update(dt);
@@ -642,6 +647,10 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
+  // Debug section timers (ms per frame, indexed by SEC_*); cheap performance.now pairs, read by scripts/pace.mjs.
+  sec0(i) { this.secT[i] = performance.now(); if (this.secMem) this.secH[i] = performance.memory.usedJSHeapSize; }
+  sec1(i) { this.sec[i] = performance.now() - this.secT[i]; if (this.secMem) { const d = performance.memory.usedJSHeapSize - this.secH[i]; if (d > 0) this.secA[i] += d; } }
+
   update(time, delta) {
     this.measure();
     if (this.keys && Phaser.Input.Keyboard.JustDown(this.keys.ESC)) app.togglePause();
@@ -649,10 +658,16 @@ export class RunScene extends Phaser.Scene {
     this.hitCool = Math.max(0, this.hitCool - dt);
     app.freeze = this.hitStop > 0;
     if (this.hitStop > 0) this.hitStop -= dt;
+    this.sec0(0);
     app.frame(dt);
+    this.sec1(0);
     if (this.sim) {
+      this.sec0(1);
       this.draw();
+      this.sec1(1);
+      this.sec0(7);
       this.tickFx(dt);
+      this.sec1(7);
     }
   }
 
@@ -679,9 +694,9 @@ export class RunScene extends Phaser.Scene {
 
     // player: lantern pool + ground ring (readability) + lantern light
     this.followTarget.setPosition(p.x, p.y);
-    this.tickLife(sim, p);
-    this.tickSway(sim, p, caps);
-    this.tickProps(sim, p, caps);
+    this.sec0(2); this.tickLife(sim, p); this.sec1(2);
+    this.sec0(3); this.tickSway(sim, p, caps); this.sec1(3);
+    this.sec0(4); this.tickProps(sim, p, caps); this.sec1(4);
     const rig = this.rig.active;
     if (rig) this.rig.update(sim, this.quality.tier, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, caps, this.parts);
     else {
@@ -863,7 +878,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    this.tickRibbons(sim, p, lx, ly, nSrc);
+    this.sec0(5); this.tickRibbons(sim, p, lx, ly, nSrc); this.sec1(5);
 
     // projectiles
     for (const b of sim.projectiles) {
@@ -925,7 +940,7 @@ export class RunScene extends Phaser.Scene {
         d.t += dt;
         lm.add(d.x, d.y, 30, ROLE.enemyRim, 0.8 * Math.max(0, 1 - d.t / 0.2));
       }
-      lm.flush(this.ambient);
+      this.sec0(6); lm.flush(this.ambient); this.sec1(6);
       if (!lm.ok) this.applyTier(); // lightmap failed at runtime: fall back to the Low look
     }
     this.haloCount = halos;
@@ -1001,7 +1016,7 @@ export class RunScene extends Phaser.Scene {
     const us = sim.units;
     if (this.lifeAcc === undefined || this.lifeAcc >= 0.1) { this.lifeAcc = 0; for (let i = 0, n = Math.min(us.length, 30); i < n; i++) { const u = us[i]; if (!u.dead) life.stamp(u.x, u.y, 36, 0.9); } }
     this.lifeAcc += this.game.loop.delta / 1000;
-    if (this.corrAcc === undefined || this.corrAcc >= 0.1) { this.corrAcc = 0; this.tickCorruption(sim); }
+    if (this.corrAcc === undefined || this.corrAcc >= 0.1) { this.corrAcc = 0; if (app.params.corr) this.tickCorruption(sim); }
     this.corrAcc += this.game.loop.delta / 1000;
     if (!life.update(this.game.loop.delta / 1000)) return;
     if (this.gbOn) this.gb.upload(life);
