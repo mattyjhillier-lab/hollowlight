@@ -1,5 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+- UI VISUAL + VOICE SHEET DESIGNED 2026-10-16 (awaiting Matt; NOT in LOCKED): docs/design/ui-identity-v1.md + docs/research/32-ui-identity.md + docs/mockups/ui-identity/ (2 takes: A Wick & Vellum, B Lantern Glass; title, hero select, level-up cards, pause, settings, results re-skinned; 1280x720, 844x390@2x, 390x844@2x; audit of current screens in audit/). Recommendation: B skeleton + A thread/seal/flag. Matt decides: (1) look, (2) OK to download OFL fonts, (3) button-copy voice. Build chunks U1-U9 listed in the sheet, none started.
+
 - RESULTS SCREEN SHEET DESIGNED 2026-10-16 (awaiting Matt; NOT in LOCKED): docs/research/31-results-screens.md + docs/mockups/results-sheet/ (defeat + dawn at 1280x720, 844x390, 390x844, no scroll, buttons always visible). 3 decisions: lantern dims not out (BIBLE conflict), Tree shortcut on results, weapon damage-share summary (needs Sim counters). Build chunks R1 layout, R2 damage counters, R3 motion+keys, R4 nudge/tree, R5 in-world beat; none started.
 
 - AL-4 REACTIVE FOLIAGE BUILT on dev 2026-10-16 (awaiting Matt's look; see LOCKED AL-4): tufts, bushes, ferns, brambles and tree crowns lean away from the moving hero and a few nearby enemies, then spring back (restored ground only; Med/High; reduced motion calm). Walk through grass and a swarm: does it read, too much or too little? Real-phone check outstanding. Next: W5 air / AL-5 (need go).
