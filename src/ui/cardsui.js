@@ -9,6 +9,7 @@ export const TITLE_TEXT = 'The light stirs';
 export const QUIET_LABEL = 'Quiet gifts';
 export const QUIET_WHISPER = 'Take one. They ask nothing.';
 export const WHISPER_MAX = 48;
+export const DESC_MAX = 64;
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export class OfferView {
@@ -149,7 +150,11 @@ export class OfferView {
     if (quiet) {
       // Blessing chip: one quiet line "+3% move speed · 1/2" (rank after this pick)
       const rank = m.pips.total ? ` · ${m.pips.filled}/${m.pips.total}` : '';
-      node.appendChild(this.el('div', 'c-unit', clampText(`${m.num} ${m.unit}`.trim() + rank, 34)));
+      // effect-first line (what the Blessing DOES) + rank; the compact number line is kept for the tight landscape strip (CSS swaps them)
+      const unit = this.el('div', 'c-unit');
+      const ed = clampText(c.desc, DESC_MAX);
+      unit.append(this.el('span', 'u-long', ed ? ed + rank : clampText(`${m.num} ${m.unit}`.trim() + rank, 34)), this.el('span', 'u-short', clampText(`${m.num} ${m.unit}`.trim() + rank, 34)));
+      node.appendChild(unit);
       const bd = data && data.blessings && data.blessings.items && Object.hasOwn(data.blessings.items, c.blessId) ? data.blessings.items[c.blessId] : null;
       const wh = bd && typeof bd.whisper === 'string' ? clampText(bd.whisper, WHISPER_MAX) : '';
       if (wh) node.appendChild(this.el('div', 'c-whisper', wh));

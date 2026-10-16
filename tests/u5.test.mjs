@@ -221,3 +221,14 @@ test('Blessing copy: whisper shown under the effect line via textContent, clampe
   assert.equal(all(host, 'lu-qwhisper')[0]._text, 'Take one. They ask nothing.');
   assert.equal(QUIET_LABEL, 'Quiet gifts');
 });
+
+test('Blessing pill shows the effect-first line plus rank; compact line kept for the landscape strip; hostile desc inert', () => {
+  const evil = '<img src=x onerror=alert(1)>' + 'Z'.repeat(300);
+  const { host } = setup({ gold: [], cards: [blessingCard('wider_glow', data.blessings, 0), { ...blessingCard('kind_fortune', data.blessings, 1), desc: evil }] });
+  const longs = all(host, 'u-long'), shorts = all(host, 'u-short');
+  assert.equal(longs.length, 2);
+  assert.equal(longs[0]._text, data.blessings.items.wider_glow.desc + ' · 1/3');
+  assert.match(shorts[0]._text, /^\+8% pickup radius · 1\/3$/);
+  assert.ok(longs[1]._text.length <= 64 + 6 && /2\/3$/.test(longs[1]._text));
+  assert.ok(!/innerHTML/.test(readFileSync('src/ui/cardsui.js', 'utf8').replace(/\/\/.*$/gm, '')));
+});
