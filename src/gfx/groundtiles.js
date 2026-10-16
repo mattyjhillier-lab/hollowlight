@@ -47,7 +47,7 @@ function kit(cv, seed) {
     if (line) { c.lineWidth = lw || 1; c.strokeStyle = line; c.stroke(); }
   });
   // tuft: n blades fanning from (x,y), tinted outline stroke under the fill stroke
-  const tuft = (x, y, h, n, cols, line, a) => {
+  const tuft = (x, y, h, n, cols, line, a, wm = 1) => {
     const bl = [];
     for (let i = 0; i < n; i++) {
       const t = n === 1 ? 0 : i / (n - 1) - 0.5;
@@ -58,7 +58,7 @@ function kit(cv, seed) {
       c.lineCap = 'round';
       for (const pass of [0, 1]) for (const b of bl) {
         c.strokeStyle = pass === 0 ? rgb(line, a) : rgb(b[3], a);
-        c.lineWidth = pass === 0 ? 3.4 : 1.8;
+        c.lineWidth = (pass === 0 ? 3.4 : 1.8) * wm;
         c.beginPath(); c.moveTo(px + b[0] * 0.3, py); c.quadraticCurveTo(px + b[0] + b[2] * 0.2, py - b[1] * 0.55, px + b[0] + b[2], py - b[1]); c.stroke();
       }
     });
@@ -104,7 +104,16 @@ function kit(cv, seed) {
     for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * amp; d[i] += n; d[i + 1] += n; d[i + 2] += n * 1.1; }
     c.putImageData(id, 0, 0);
   };
-  return { c, r, N, wrap, blot, ellipse, tuft, flower, stone, root, grain, fill: (col) => { c.fillStyle = rgb(col); c.fillRect(0, 0, N, N); } };
+  // same pixel/RNG order as grain(), but one strip at a time so a generator can yield between strips (spread build)
+  const grainStrips = function* (amp, rows = 64) {
+    for (let y0 = 0; y0 < N; y0 += rows) {
+      const id = c.getImageData(0, y0, N, rows); const d = id.data;
+      for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * amp; d[i] += n; d[i + 1] += n; d[i + 2] += n * 1.1; }
+      c.putImageData(id, 0, y0);
+      yield;
+    }
+  };
+  return { c, r, N, grainStrips, wrap, blot, ellipse, tuft, flower, stone, root, grain, fill: (col) => { c.fillStyle = rgb(col); c.fillRect(0, 0, N, N); } };
 }
 
 // A, Hollow: blue-grey drained meadow: dead pale tufts with grey outline, grey buds, faint cracks. Stays still and quiet.
@@ -140,55 +149,65 @@ export function drawRestoredA(cv) {
   k.blot(46, 90, 230, [[140, 206, 106], [92, 160, 76], [124, 190, 94]], 0.3, 0.55);
   k.blot(18, 70, 160, [[176, 204, 104]], 0.12, 0.24); // warm sun patches
   k.blot(14, 70, 150, [[70, 130, 70]], 0.1, 0.2); // cool shade
-  const blade = [[92, 156, 72], [140, 204, 98], [74, 134, 66]];
-  const line = [58, 108, 54];
-  for (let i = 0; i < 230; i++) k.tuft(r() * N, r() * N, 10 + r() * 14, 3 + ((r() * 4) | 0), blade, line, 0.4);
-  const flowers = [[[214, 124, 142], [226, 205, 140]], [[172, 142, 204], [226, 205, 140]], [[206, 184, 96], [150, 120, 70]], [[200, 148, 150], [226, 205, 140]]];
-  for (let d = 0; d < 20; d++) { // drifts: 4-8 flowers in a loose cluster
+  const blade = [[96, 160, 74], [132, 196, 96], [80, 140, 68]];
+  const line = [88, 144, 80];
+  for (let i = 0; i < 340; i++) k.tuft(r() * N, r() * N, 11 + r() * 15, 4 + ((r() * 4) | 0), blade, line, 0.4, 1.35); // denser, thicker tufts (W1b)
+  const flowers = [[[206, 128, 140], [186, 172, 120]], [[166, 142, 196], [186, 172, 120]], [[196, 178, 100], [150, 120, 70]], [[194, 148, 150], [186, 172, 120]]];
+  for (let d = 0; d < 30; d++) { // drifts: 4-8 flowers in a loose cluster
     const cx = r() * N; const cy = r() * N; const cnt = 4 + ((r() * 5) | 0); const f = flowers[(r() * flowers.length) | 0];
     for (let i = 0; i < cnt; i++) {
       const a = r() * TAU; const rr = r() * 52;
-      k.flower(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.8, 4.2 + r() * 2.6, f[0], f[1], 0.68);
+      k.flower(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.8, 4.2 + r() * 2.6, f[0], f[1], 0.6);
     }
   }
-  for (let i = 0; i < 10; i++) k.stone(r() * N, r() * N, 6 + r() * 6, 4.5 + r() * 3.5, [148, 176, 136], 0.7);
+  for (let i = 0; i < 10; i++) k.stone(r() * N, r() * N, 6 + r() * 6, 4.5 + r() * 3.5, [148, 176, 136], 0.5);
   k.grain(6);
   return cv;
 }
 
 // B, Hollow: slate floor: grey leaf litter, dark roots, grey fern strokes. A little darker than A.
-export function drawHollowB(cv) {
+export function* genHollowB(cv) {
   const k = kit(cv, 303); const { r, N } = k;
   k.fill([98, 112, 130]);
-  k.blot(46, 90, 230, [[84, 98, 118], [114, 126, 144], [92, 106, 124]], 0.3, 0.55);
-  k.blot(16, 70, 160, [[130, 142, 158]], 0.1, 0.18);
+  yield;
+  for (let q = 0; q < 23; q++) { k.blot(2, 90, 230, [[84, 98, 118], [114, 126, 144], [92, 106, 124]], 0.3, 0.55); yield; }
+  for (let q = 0; q < 8; q++) { k.blot(2, 70, 160, [[130, 142, 158]], 0.1, 0.18); yield; }
   for (let i = 0; i < 280; i++) { // grey litter, leaf-shaped ellipses, a notch lighter or darker than the floor
     const lt = r() < 0.5;
     k.ellipse(r() * N, r() * N, 5 + r() * 4, 2.4 + r() * 1.6, r() * TAU, rgb(lt ? [112, 124, 142] : [86, 100, 118], 0.55), rgb([76, 88, 106], 0.3), 1);
+    if (i % 30 === 29) yield;
   }
-  for (let i = 0; i < 14; i++) k.root(r() * N, r() * N, 60 + r() * 110, 4 + r() * 3, [82, 94, 112], 0.8);
+  yield;
+  for (let i = 0; i < 14; i++) { k.root(r() * N, r() * N, 60 + r() * 110, 4 + r() * 3, [82, 94, 112], 0.8); if (i % 3 === 2) yield; }
+  yield;
   const fern = [[112, 126, 146], [96, 110, 130]];
-  for (let i = 0; i < 40; i++) k.tuft(r() * N, r() * N, 12 + r() * 10, 5, fern, [66, 78, 98], 0.45);
+  for (let i = 0; i < 40; i++) { k.tuft(r() * N, r() * N, 12 + r() * 10, 5, fern, [66, 78, 98], 0.45); if (i % 14 === 13) yield; }
   for (let i = 0; i < 8; i++) k.stone(r() * N, r() * N, 7 + r() * 6, 5 + r() * 4, [118, 130, 148], 0.7);
-  k.grain(6);
+  yield;
+  yield* k.grainStrips(6);
   return cv;
 }
 
 // B, Restored: living forest floor: moss, amber/rust litter (luminance matched), ferns, brown roots, soft dapple light.
-export function drawRestoredB(cv) {
+export function* genRestoredB(cv) {
   const k = kit(cv, 404); const { r, N } = k;
   k.fill([80, 124, 72]);
-  k.blot(46, 90, 230, [[98, 148, 84], [62, 102, 62], [86, 132, 76]], 0.3, 0.55);
-  k.blot(22, 120, 240, [[170, 204, 120]], 0.07, 0.14); // dapples
+  yield;
+  for (let q = 0; q < 23; q++) { k.blot(2, 90, 230, [[98, 148, 84], [62, 102, 62], [86, 132, 76]], 0.3, 0.55); yield; }
+  for (let q = 0; q < 11; q++) { k.blot(2, 120, 240, [[170, 204, 120]], 0.07, 0.14); yield; } // dapples
   for (let i = 0; i < 300; i++) {
     const hue = r(); const col = hue < 0.45 ? [164, 116, 64] : hue < 0.8 ? [150, 96, 62] : [128, 128, 66];
-    k.ellipse(r() * N, r() * N, 5 + r() * 4, 2.4 + r() * 1.6, r() * TAU, rgb(col, 0.66), rgb(shade(col, 0.72), 0.4), 1);
+    k.ellipse(r() * N, r() * N, 5 + r() * 4, 2.4 + r() * 1.6, r() * TAU, rgb(col, 0.6), rgb(shade(col, 0.8), 0.35), 1);
+    if (i % 30 === 29) yield;
   }
-  for (let i = 0; i < 14; i++) k.root(r() * N, r() * N, 60 + r() * 110, 4 + r() * 3, [108, 90, 62], 0.8);
+  yield;
+  for (let i = 0; i < 14; i++) { k.root(r() * N, r() * N, 60 + r() * 110, 4 + r() * 3, [112, 96, 66], 0.62); if (i % 3 === 2) yield; }
+  yield;
   const fern = [[96, 158, 82], [70, 124, 66], [118, 176, 92]];
-  for (let i = 0; i < 56; i++) k.tuft(r() * N, r() * N, 13 + r() * 12, 5 + ((r() * 3) | 0), fern, [50, 92, 52], 0.55);
+  for (let i = 0; i < 56; i++) { k.tuft(r() * N, r() * N, 13 + r() * 12, 5 + ((r() * 3) | 0), fern, [64, 110, 62], 0.55); if (i % 14 === 13) yield; }
   for (let i = 0; i < 8; i++) k.stone(r() * N, r() * N, 7 + r() * 6, 5 + r() * 4, [124, 146, 112], 0.7);
-  k.grain(6);
+  yield;
+  yield* k.grainStrips(6);
   return cv;
 }
 
@@ -211,4 +230,8 @@ export function detailContrast(data, n, R = 12, pct = 0.99) {
   return 1;
 }
 
+// Sync wrappers (tests, style-b, tools). The game builds the B tiles incrementally via TILE_GEN (see RunScene groundLazy).
+export const drawHollowB = (cv) => { for (const _ of genHollowB(cv)) { /* run to completion */ } return cv; };
+export const drawRestoredB = (cv) => { for (const _ of genRestoredB(cv)) { /* run to completion */ } return cv; };
 export const TILE_DRAW = { hollowA: drawHollowA, restoredA: drawRestoredA, hollowB: drawHollowB, restoredB: drawRestoredB };
+export const TILE_GEN = { hollowB: genHollowB, restoredB: genRestoredB };

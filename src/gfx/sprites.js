@@ -4,7 +4,7 @@
 //     lit top-left edge, flat shadow) and sampled NEAREST.
 // All sizes are in world units (the 640x360 logical space); INV[key] = world units per texel.
 import { INV, VIS, DENS } from './style.js';
-import { TILE_DRAW, TILE_PX } from './groundtiles.js';
+import { TILE_DRAW, TILE_GEN, TILE_PX } from './groundtiles.js';
 import { ROLE } from './palette.js';
 import { makeRigTextures } from './rigtex.js';
 
@@ -524,11 +524,18 @@ export function makeStyleTextures(scene, style) {
     const t = scene.textures.addCanvas(key, cv);
     if (nearest) t.setFilter(1);
   };
+  scene.bState = { lazy: null, ready: style === 'b' ? 1 : 0, t: 0 }; // W1b: set B tile readiness (see RunScene.tickGround)
   if (style === 'b') {
     const gcv = groundB();
     for (const key of ['ground', 'groundR', 'groundBH', 'groundBR']) setTex(key, gcv);
   } else {
-    for (const [key, name] of [['ground', 'hollowA'], ['groundR', 'restoredA'], ['groundBH', 'hollowB'], ['groundBR', 'restoredB']]) setTex(key, TILE_DRAW[name](mkCanvas(TILE_PX, TILE_PX)));
+    // Meadow (A) tiles are built now; Deep Forest Floor (B) tiles start as flat-colour placeholders and are painted
+    // later in small slices by makeGroundLazy() (W1b), so the boot has no long stall.
+    for (const [key, name] of [['ground', 'hollowA'], ['groundR', 'restoredA']]) setTex(key, TILE_DRAW[name](mkCanvas(TILE_PX, TILE_PX)));
+    for (const [key, col] of [['groundBH', '#627082'], ['groundBR', '#507c48']]) {
+      const cv = mkCanvas(TILE_PX, TILE_PX); const g = cv.getContext('2d'); g.fillStyle = col; g.fillRect(0, 0, TILE_PX, TILE_PX);
+      setTex(key, cv);
+    }
   }
   INV.ground = 0.5;
   vignette(scene);
@@ -545,4 +552,30 @@ export function makeStyleTextures(scene, style) {
   scene.textures.addCanvas('dot', dot);
   INV.dot = 1;
   return 1 / INV.digits;
+}
+
+// W1b: paints the B ground tiles into their placeholder canvases in slices. step(ms) runs generator work for at most ~ms,
+// returns true when both tiles are finished and uploaded to the GPU (texture source update). Visual only.
+export function makeGroundLazy(scene) {
+  const jobs = [['groundBH', TILE_GEN.hollowB], ['groundBR', TILE_GEN.restoredB]].map(([key, gen]) => {
+    const tex = scene.textures.get(key);
+    const cv = tex.getSourceImage();
+    return { tex, cx: cv.getContext('2d'), it: gen(cv), done: false };
+  });
+  return {
+    done: false,
+    step(ms) {
+      const t0 = performance.now();
+      for (const j of jobs) {
+        while (!j.done && performance.now() - t0 < ms) {
+          const fin = j.it.next().done;
+          j.cx.getImageData(0, 0, 1, 1); // forces the canvas to flush this slice now (GPU canvases defer work), keeps the cost inside the budget
+          if (fin) { j.done = true; j.tex.source[0].update(); }
+        }
+        if (performance.now() - t0 >= ms) break;
+      }
+      this.done = jobs.every((j) => j.done);
+      return this.done;
+    },
+  };
 }

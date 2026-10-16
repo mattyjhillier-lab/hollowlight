@@ -32,6 +32,7 @@ uniform sampler2D iChannel3; // set B Hollow tile (Deep Forest Floor)
 uniform sampler2D iChannel4; // set B restored tile
 uniform vec3 uTint;
 uniform float uTime;
+uniform float uBReady; // 0 until the set B tiles are painted, then fades to 1 (no pop)
 varying vec2 vTile;
 varying vec2 vLife;
 float h2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -46,6 +47,7 @@ void main () {
   float zb = lz.g;
   vec3 hol = texture2D(iChannel0, t).rgb;
   vec3 res = texture2D(iChannel1, t).rgb;
+  zb *= uBReady;
   if (zb > 0.004) { // zone set B: only pay for the extra reads inside / near B zones
     hol = mix(hol, texture2D(iChannel3, t).rgb, zb);
     res = mix(res, texture2D(iChannel4, t).rgb, zb);
@@ -56,6 +58,8 @@ void main () {
   vec3 col = mix(hol, res, m) + rim * vec3(0.10, 0.08, 0.02);
   // very low-frequency value drift (+-4%) hides the 512-unit tile repeat; never touches hue
   col *= 0.96 + 0.08 * vn(vTile * 1.7 + 11.0);
+  // W1b: a second, much larger low-contrast value layer (periods ~1300 and ~600 world units, +-5%) so the 512-unit tile repeat does not read
+  col *= 0.95 + 0.10 * (0.65 * vn(vLife * 3.1 + 5.0) + 0.35 * vn(vLife * 6.7 + 17.0));
   gl_FragColor = vec4(col * uTint, 1.0);
 }`;
 
@@ -79,6 +83,7 @@ export class GroundBlend {
       const gl = scene.renderer.gl;
       const base = new Phaser.Display.BaseShader('groundblend', FRAG, VERT, {
         uWorld: { type: '1f', value: size },
+        uBReady: { type: '1f', value: (scene.bState && scene.bState.ready) || 0 },
         uTint: { type: '3f', value: { x: 1, y: 1, z: 1 } },
         iChannel4: { type: 'sampler2D', value: null, textureData: { repeat: true } },
       });
@@ -121,6 +126,8 @@ export class GroundBlend {
     const u = this.sh.uniforms.uTint.value;
     u.x = ((col >> 16) & 255) / 255; u.y = ((col >> 8) & 255) / 255; u.z = (col & 255) / 255;
   }
+
+  setBReady(v) { if (this.sh) this.sh.uniforms.uBReady.value = v; }
 
   setVisible(v) { if (this.sh) this.sh.setVisible(v); }
 

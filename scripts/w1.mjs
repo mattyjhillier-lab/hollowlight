@@ -122,14 +122,15 @@ async function tiles(dir, out) {
   const srv = await serve(dir, 4184); const c = await launch();
   try {
     await open(c, `${URL0}?style=a&auto=elias&seed=1&t=20&god=1&debug=1`, 1280, 720, 1, 'high');
+    for (let i = 0; i < 60 && !(await c.ev('window.__app.scene.bState.ready>=1')); i++) await sleep(250); // B tiles are painted lazily
     const src = readFileSync('src/gfx/groundtiles.js', 'utf8');
-    const fn = src.slice(src.indexOf('export function detailContrast')).replace('export function', 'function').split('export const TILE_DRAW')[0];
+    const fn = src.slice(src.indexOf('export function detailContrast')).replace(/export /g, '').split('const drawHollowB')[0];
     const res = await c.ev(`(()=>{${fn}
       const T=window.__app.scene.textures; const o={};
       for (const k of ['ground','groundR','groundBH','groundBR']) { const im=T.get(k).getSourceImage(); const g=im.getContext('2d').getImageData(0,0,im.width,im.height); o[k]={px:im.width, c99:detailContrast(g.data,im.width,12,0.99), c999:detailContrast(g.data,im.width,12,0.999)}; }
       return JSON.stringify(o)})()`);
     console.log(res);
-    const bt = await c.ev(`(()=>{${src.replace(/export /g, '')}; const t0=performance.now(); const o={}; for (const [k,f] of Object.entries(TILE_DRAW)) { const a=performance.now(); const cv=document.createElement('canvas'); cv.width=cv.height=1024; f(cv); o[k]=Math.round(performance.now()-a); } o.total=Math.round(performance.now()-t0); return JSON.stringify(o)})()`);
+    const bt = await c.ev(`(()=>{${src.replace(/export /g, '')}; const t0=performance.now(); const o={}; for (const [k,f] of Object.entries(TILE_DRAW)) { const a=performance.now(); const cv=document.createElement('canvas'); cv.width=cv.height=1024; f(cv); o[k]=Math.round(performance.now()-a); } o.total=Math.round(performance.now()-t0); const sl=[]; for (const g of [genHollowB, genRestoredB]) { const cv=document.createElement('canvas'); cv.width=cv.height=1024; const it=g(cv); for(;;){const a=performance.now(); const d=it.next().done; cv.getContext('2d').getImageData(0,0,1,1); sl.push(performance.now()-a); if(d)break;} } o.bSliceMaxMs=Math.round(Math.max(...sl)); o.bSlices=sl.length; return JSON.stringify(o)})()`);
     console.log('tile build ms', bt);
     for (const k of ['ground', 'groundR', 'groundBH', 'groundBR']) {
       const d = await c.ev(`window.__app.scene.textures.get('${k}').getSourceImage().toDataURL('image/png')`);
@@ -138,7 +139,41 @@ async function tiles(dir, out) {
   } finally { c.close(); srv.close(); }
 }
 
+// node scripts/w1.mjs zones dist out: teleport the hero to all 9 zone centres, the edge band and the A/B borders, stamp a restored patch, shoot
+const ZONE_SHOTS = [['z-NW-deadgrove', 667, 667], ['z-N-meadowrun', 2000, 667], ['z-NE-rootthicket', 3333, 667], ['z-W-mossyhollow', 667, 2000], ['z-C-start', 2000, 2000], ['z-E-oldroad', 3333, 2000],
+  ['z-SW-graves', 667, 3333], ['z-S-meadow', 2000, 3333], ['z-SE-chapel', 3333, 3333], ['edge-west', 120, 2000], ['edge-south', 2000, 3880], ['edge-corner', 150, 150],
+  ['border-NW-N', 1333, 667], ['border-N-NE', 2667, 667], ['border-W-SW', 667, 2667], ['border-SW-S', 1333, 3333], ['border-edge-meadow', 300, 2000]];
+async function zones(dir, out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(dir, 4184); const c = await launch();
+  try {
+    for (const [vn, w, h, dpr] of [['desk', 1280, 720, 1], ['land', 844, 390, 2]]) {
+      await open(c, `${URL0}?style=a&auto=elias&seed=1&t=20&god=1&debug=0`, w, h, dpr, 'high');
+      await sleep(800);
+      for (const [name, x, y] of ZONE_SHOTS) {
+        await c.ev(`(()=>{const a=window.__app,p=a.sim.player;p.x=${x};p.y=${y};a.scene.life.stamp(${x},${y},${process.env.R || 330},1);return 1})()`);
+        await sleep(1200); await autoPick(c);
+        for (let i = 0; i < 40 && !(await c.ev('window.__app.scene.bState.ready>=1')); i++) await sleep(250);
+        await shot(c, join(out, `${name}-${vn}.jpg`));
+      }
+      console.log(vn, 'done', await c.ev('JSON.stringify({gb:window.__app.scene.gbOn,ready:window.__app.scene.bState.ready})'));
+    }
+  } finally { c.close(); srv.close(); }
+}
+
+// node scripts/w1.mjs probe: paint the four tiles straight from source in a blank page (no build) and print contrast p99/p99.9 + ms
+async function probe() {
+  const c = await launch();
+  try {
+    const src = readFileSync('src/gfx/groundtiles.js', 'utf8').replace(/export /g, '');
+    const res = await c.ev(`(()=>{${src}; const o={}; for (const [k,f] of Object.entries(TILE_DRAW)) { const a=performance.now(); const cv=document.createElement('canvas'); cv.width=cv.height=1024; f(cv); const ms=Math.round(performance.now()-a); const g=cv.getContext('2d').getImageData(0,0,1024,1024); o[k]={ms,c99:detailContrast(g.data,1024,12,0.99),c999:detailContrast(g.data,1024,12,0.999)}; } return JSON.stringify(o)})()`);
+    console.log(res);
+    console.log('slices', await c.ev(`(()=>{${src}; const o=[]; for (const g of [genHollowB, genRestoredB]) { const cv=document.createElement('canvas'); cv.width=cv.height=1024; const it=g(cv); const t=[]; for(;;){const a=performance.now(); const d=it.next().done; cv.getContext('2d').getImageData(0,0,1,1); t.push(Math.round(performance.now()-a)); if(d)break;} o.push(t.join(',')); } return o.join(' | ')})()`));
+  } finally { c.close(); }
+}
 const [cmd, a1, a2] = process.argv.slice(2);
+if (cmd === 'zones') await zones(a1, a2);
+if (cmd === 'probe') await probe();
 if (cmd === 'tiles') await tiles(a1, a2);
 if (cmd === 'perf') await perf(a1);
 if (cmd === 'shots') await shots(a1, a2);

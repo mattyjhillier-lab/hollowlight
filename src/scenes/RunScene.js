@@ -18,7 +18,7 @@ import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
 import { STYLE, inv, zoomFor } from '../gfx/style.js';
-import { makeStyleTextures } from '../gfx/sprites.js';
+import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -881,7 +881,26 @@ export class RunScene extends Phaser.Scene {
   }
 
   // W0 life map: hero lantern paints a ribbon, spirits paint small blooms (10 Hz); decay + GPU upload at 10 Hz. Visual only.
+  // W1b: Deep Forest Floor (B) tiles are painted in ~3 ms slices once the hero nears a B zone, or 2.5 s after the run starts,
+  // then fade in via the shader's uBReady (until then the shader uses the Meadow tile, so there is no pop). Visual only.
+  tickGround(p, dt) {
+    const b = this.bState;
+    if (!b || b.ready >= 1 || !this.gbOn) return;
+    if (!b.lazy) {
+      b.t += dt;
+      let near = b.t > 2.5;
+      if (!near) for (let k = 0; k < 8 && !near; k++) { const a = k * 0.7854; near = zoneB(p.x + Math.cos(a) * 1000, p.y + Math.sin(a) * 1000, app.data.balance.worldSize) > 0.004; }
+      if (!near) return;
+      b.lazy = makeGroundLazy(this);
+    }
+    if (!b.lazy.done) { b.lazy.step(3); if (!b.lazy.done) return; b.fade = 0; }
+    b.fade += dt;
+    b.ready = Math.min(1, b.fade / 0.8);
+    this.gb.setBReady(b.ready);
+  }
+
   tickLife(sim, p) {
+    this.tickGround(p, this.game.loop.delta / 1000);
     const life = this.life;
     const last = this.lifeLast;
     if (last && Math.abs(p.x - last.x) + Math.abs(p.y - last.y) < 400) life.stampLine(last.x, last.y, p.x, p.y, 70, 1);
