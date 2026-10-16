@@ -136,17 +136,18 @@ export function bakeFrost(doc) {
     const x = c.getContext('2d');
     if (!x) return '';
     let s = 41; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    const v = x.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, W * 0.62);
-    v.addColorStop(0, 'rgba(223,241,250,0)'); v.addColorStop(0.62, 'rgba(223,241,250,0.2)'); v.addColorStop(1, 'rgba(223,241,250,0.78)');
-    x.fillStyle = v; x.fillRect(0, 0, W, H);
+    // edge-only veil (centre and mid-screen stay clear): thin linear falloff from each edge, strongest in the corners
+    const band = (x0, y0, x1, y1, a) => { const g = x.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, `rgba(223,241,250,${a})`); g.addColorStop(1, 'rgba(223,241,250,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H); };
+    band(0, 0, 0, H * 0.16, 0.34); band(0, H, 0, H * 0.84, 0.34); band(0, 0, W * 0.1, 0, 0.34); band(W, 0, W * 0.9, 0, 0.34);
+    for (const [cx, cy] of [[0, 0], [W, 0], [0, H], [W, H]]) { const g = x.createRadialGradient(cx, cy, 0, cx, cy, H * 0.42); g.addColorStop(0, 'rgba(223,241,250,0.4)'); g.addColorStop(1, 'rgba(223,241,250,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
     // mottling: many soft blobs, denser toward the edge
     for (let i = 0; i < 420; i++) {
       const px = r() * W, py = r() * H;
       const e = Math.max(Math.abs(px / W - 0.5), Math.abs(py / H - 0.5)) * 2; // 0 centre .. 1 edge
-      if (r() > e * e) continue;
+      if (e < 0.72 || r() > e * e * e) continue;
       const rad = 3 + r() * 11;
       const g = x.createRadialGradient(px, py, 0, px, py, rad);
-      g.addColorStop(0, `rgba(240,250,255,${0.18 + r() * 0.3})`); g.addColorStop(1, 'rgba(240,250,255,0)');
+      g.addColorStop(0, `rgba(240,250,255,${0.1 + r() * 0.16})`); g.addColorStop(1, 'rgba(240,250,255,0)');
       x.fillStyle = g; x.beginPath(); x.arc(px, py, rad, 0, 6.283); x.fill();
     }
     // corner crystals
@@ -156,10 +157,10 @@ export function bakeFrost(doc) {
       x.lineTo(cx + Math.cos(a - 0.2) * l * 0.5 + Math.cos(a + 1.57) * wd, cy + Math.sin(a - 0.2) * l * 0.5 + Math.sin(a + 1.57) * wd);
       x.lineTo(...p(0, 1));
       x.lineTo(cx + Math.cos(a + 0.2) * l * 0.5 - Math.cos(a + 1.57) * wd, cy + Math.sin(a + 0.2) * l * 0.5 - Math.sin(a + 1.57) * wd);
-      x.closePath(); x.fillStyle = 'rgba(232,246,255,0.82)'; x.fill(); x.strokeStyle = 'rgba(159,196,214,0.9)'; x.lineWidth = 1; x.stroke();
+      x.closePath(); x.fillStyle = 'rgba(232,246,255,0.5)'; x.fill(); x.strokeStyle = 'rgba(159,196,214,0.6)'; x.lineWidth = 1; x.stroke();
     };
     const u = H / 360;
-    for (const [cx, cy, a0] of [[0, 0, 0.78], [W, 0, 2.36], [0, H, -0.78], [W, H, -2.36]]) for (let i = 0; i < 8; i++) crystal(cx + (r() - 0.5) * 20 * u, cy + (r() - 0.5) * 20 * u, a0 + (r() - 0.5) * 1.3, (40 + r() * 70) * u);
+    for (const [cx, cy, a0] of [[0, 0, 0.78], [W, 0, 2.36], [0, H, -0.78], [W, H, -2.36]]) for (let i = 0; i < 5; i++) crystal(cx + (r() - 0.5) * 20 * u, cy + (r() - 0.5) * 20 * u, a0 + (r() - 0.5) * 1.3, (24 + r() * 38) * u);
     return c.toDataURL('image/png');
   } catch { return ''; }
 }

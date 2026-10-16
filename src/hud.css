@@ -6,7 +6,8 @@
   --font-num: "Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif; }
 .hud svg { overflow: visible; display: block; }
 .h-num { font-family: var(--font-num); font-weight: 900; color: var(--cream); font-variant-numeric: tabular-nums; line-height: 1; -webkit-text-stroke: calc(3.4 * var(--hu)) var(--ink); paint-order: stroke fill; letter-spacing: .01em; }
-.h-frost { position: absolute; inset: 0; opacity: 0; background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none; transition: opacity .8s ease-out; }
+.h-frost { position: absolute; inset: 0; opacity: 0; background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none; transition: opacity .8s ease-out; animation: h-frostpulse 2.4s ease-in-out infinite; }
+@keyframes h-frostpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 .h-lantern { position: absolute; left: var(--ml); top: var(--mt); width: calc(250 * var(--hu)); height: calc(70 * var(--hu)); }
 .h-plate { position: absolute; inset: 0; border-radius: calc(18 * var(--hu)); background: linear-gradient(rgba(45, 37, 32, .82), rgba(23, 18, 15, .82)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4), inset 0 calc(2 * var(--hu)) 0 rgba(255, 255, 255, .1); }
 .h-lamp { position: absolute; left: calc(5 * var(--hu)); top: calc(-10 * var(--hu)); width: calc(62 * var(--hu)); height: calc(84 * var(--hu)); }
@@ -71,7 +72,7 @@
 .hud .toast.show { opacity: 1; transform: translateX(-50%); }
 .hurtflash { position: absolute; inset: 0; box-shadow: inset 0 0 6em 1.5em rgba(217, 83, 79, .6); opacity: 0; transition: opacity .35s; pointer-events: none; }
 .hurtflash.on { opacity: 1; transition: none; }
-@media (prefers-reduced-motion: reduce) { .h-strip, .h-frost, .h-tfill, .h-bfill { transition: none; } .h-knot.flare, .h-ability.ready::before, .h-lantern.low .h-lamp { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .h-strip, .h-frost, .h-tfill, .h-bfill { transition: none; } .h-frost { animation: none; } .h-knot.flare, .h-ability.ready::before, .h-lantern.low .h-lamp { animation: none; } }
 
 /* compact landscape (phones and small windows): the sheet's phone-landscape layout at 1px per unit */
 @container (max-width: 899px) {
