@@ -100,6 +100,7 @@ export class Sim {
     // R2 counters (read-only stats for the results screen; never feed back into the sim).
     this._src = null;
     this.dmgBy = {};
+    this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
     this.killsBy = {};
     this.boss = null;
     this.bossSpawned = false;
@@ -304,7 +305,7 @@ export class Sim {
       state: 'run', stT: 0, dx: 0, dy: 0, tele: false,
       chargeCd: this.rng.range(1, 3.5), slamCd: 5,
       phase: this.rng.range(0, 6.28), cd: {},
-      bleedT: 0, bleedDps: 0, fearT: 0, flash: 0, dead: false, faceX: 1,
+      bleedT: 0, bleedDps: 0, bleedTot: 0, fearT: 0, flash: 0, dead: false, faceX: 1,
     };
     this.enemies.push(e);
     return e;
@@ -362,7 +363,9 @@ export class Sim {
       if (e.bleedT > 0) {
         e.bleedT -= dt;
         this._src = e.bleedSrc || null;
-        this.hurt(e, e.bleedDps * dt, { silent: true });
+        const dealt = this.hurt(e, e.bleedDps * dt, { silent: true });
+        e.bleedTot += dealt; // running total the renderer batches into small numbers (counter only)
+        if (this._src) this.dotBy[this._src] = (this.dotBy[this._src] || 0) + dealt;
         this._src = null;
         if (e.dead) continue;
       }

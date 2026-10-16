@@ -2,11 +2,11 @@
 // Display-only: fed from sim hit records and HUD-side deltas, never writes to the sim. Fixed slot array, no allocation per call.
 // Rules (docs/research/28 s3, hud-proof-4): cream by default, bigger + warmer for big hits (never gold), sum rapid hits per
 // target per 120ms, hard cap on live numbers (drop the SMALLEST first), heal soft teal '+30', damage taken light red '-9'.
-export const KIND = { DMG: 0, BIG: 1, HEAL: 2, HURT: 3 };
+export const KIND = { DMG: 0, BIG: 1, HEAL: 2, HURT: 3, BLEED: 4 }; // BLEED: batched damage-over-time tick, small, pale blue, first to be dropped
 export const MERGE_WINDOW = 0.12; // s
 export const MAX_SLOTS = 40;
-const LIFE = [0.5, 0.7, 0.9, 0.9]; // per kind, seconds
-const RISE = [20, 22, 16, 16]; // px of float (none when reduced motion)
+const LIFE = [0.5, 0.7, 0.9, 0.9, 0.7]; // per kind, seconds
+const RISE = [20, 22, 16, 16, 14]; // px of float (none when reduced motion)
 
 const fin = (v, d = 0) => (Number.isFinite(v) ? v : d);
 
@@ -43,6 +43,9 @@ export class HitRef {
   get ref() { return this.n >= 8 ? this.v : 0; }
 }
 
+// Lower number = more expendable: bleed ticks first, then hits by size; player lanes (heal/hurt) outrank any damage number.
+export function prioOf(kind, val) { return kind === KIND.BLEED ? val - 1e6 : kind === KIND.HEAL || kind === KIND.HURT ? 1e12 + val : val; }
+
 export class NumPool {
   constructor(cap = 24) {
     this.slots = Array.from({ length: MAX_SLOTS }, () => ({ on: false, age: 0, life: 0.5, val: 0, eid: 0, kind: 0, mul: 1, x: 0, y: 0, ref: 0, dirty: false, sign: '' }));
@@ -64,7 +67,7 @@ export class NumPool {
   jit() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return (this.seed >>> 8) / 16777216 - 0.5; }
 
   // Lower number = more expendable. Player lanes (heal/hurt) outrank any damage number.
-  prio(s) { return s.kind >= KIND.HEAL ? 1e12 + s.val : s.val; }
+  prio(s) { return prioOf(s.kind, s.val); }
 
   smallest() {
     let bi = -1, bp = Infinity;
@@ -104,7 +107,7 @@ export class NumPool {
     }
     if (this.alive >= this.cap) {
       const i = this.smallest();
-      const cand = dmg ? val : 1e12 + val;
+      const cand = prioOf(kind, val);
       if (i < 0 || cand <= this.prio(S[i])) return null; // new one is the smallest: drop it
       this.dropSmallest();
     } else if (dmg && kind === KIND.DMG && this.alive > this.cap * 0.6 && val < 3 && !force) return null; // crowded: skip tiny hits
@@ -124,7 +127,8 @@ export class NumPool {
       const m = force ? Math.max(1.4, sizeMul(n.val, n.ref)) : sizeMul(n.val, n.ref);
       n.mul = m;
       n.kind = m > 1 ? KIND.BIG : KIND.DMG;
-    } else n.mul = 1.15; // player lanes: slightly larger than a normal hit so they read near the hero
+    } else if (n.kind === KIND.BLEED) n.mul = 0.8;
+    else n.mul = 1.15; // player lanes: slightly larger than a normal hit so they read near the hero
     n.life = LIFE[n.kind];
   }
 

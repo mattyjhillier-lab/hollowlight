@@ -823,6 +823,8 @@ export class RunScene extends Phaser.Scene {
     // enemies (culled to the view; boss always drawn)
     let crowd = 0;
     let cold = 0;
+    let dripN = 0, bleedNums = 0;
+    const dripCap = this.reducedMotion() ? 0 : caps.drips;
     const coldCap = this.gbOn ? (caps.halos >= 160 ? 80 : 40) : 0;
     const life = this.life;
     for (const e of sim.enemies) {
@@ -850,11 +852,30 @@ export class RunScene extends Phaser.Scene {
       if (img.tq !== tq) {
         img.tq = tq;
         if (tq === 100) img.setTintFill(0xffffff);
-        else if (tq === 101) img.setTint(0xff9a9a);
+        else if (tq === 101) img.setTint(ROLE.bleedTint); // wolf-light pale blue, never red (red = danger only)
         else if (tq === 0) img.clearTint();
         else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
       }
       if (lit && e.boss) lm.add(e.x, e.y - 10, 90, ROLE.bossEye, 0.8);
+      // bleed readout (visual only; reads the sim's running bleedTot): ~2 small pale-blue numbers a second per bleeding enemy
+      // (batched, never per tick), plus drips of wolf light while it bleeds (not on Low, not with reduced motion)
+      if (img.bid !== e.id) { img.bid = e.id; img.bLast = e.bleedTot; img.bNext = sim.time + 0.5; }
+      if (e.bleedT > 0) {
+        if (dripN < dripCap) {
+          dripN++;
+          const ph = (sim.time * 1.6 + e.id * 0.37) % 1;
+          const dx0 = ((e.id * 7) % 9) - 4;
+          fx.fillStyle(ROLE.bleed, 0.85 * (1 - ph)).fillRect(Math.round(e.x + dx0), Math.round(e.y - 4 + ph * 12), 1, 2);
+        }
+        if (sim.time >= img.bNext && bleedNums < 6) { // at most 6 per frame; the pool caps the rest and drops these first
+          const d = e.bleedTot - img.bLast;
+          if (d >= 1) { img.bLast = e.bleedTot; img.bNext = sim.time + 0.5; bleedNums++; this.nums.spawn(e.x, e.y - e.r - 2, d, e.id + 0.5, KIND.BLEED, 0, false); }
+          else img.bNext = sim.time + 0.25;
+        }
+      } else if (img.bLast !== e.bleedTot) {
+        const d = e.bleedTot - img.bLast; img.bLast = e.bleedTot; // the last short tail after the bleed ends
+        if (d >= 1 && bleedNums < 6) { bleedNums++; this.nums.spawn(e.x, e.y - e.r - 2, d, e.id + 0.5, KIND.BLEED, 0, false); }
+      }
       if (e.tele) {
         if (e.boss) {
           g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
