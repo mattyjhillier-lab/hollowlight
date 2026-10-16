@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cellProps, SwayField, ALPHA_LO, ALPHA_HI, EXIT, CELL, HERO_CLEAR, SPAWN_MARGIN, KEEP_MARGIN, AMP, WOBBLE, PHONE_DENSITY, ENTER } from '../src/gfx/swayfield.js';
+import { easeOutBack, BLOOM_ON, BLOOM_OFF, BLOOM_T, BLOOM_RATE, BUD_FLOWER, BUD_TUFT, TUFT_T, HERO_SEE, cellProps, SwayField, ALPHA_LO, ALPHA_HI, EXIT, CELL, HERO_CLEAR, SPAWN_MARGIN, KEEP_MARGIN, AMP, WOBBLE, PHONE_DENSITY, ENTER } from '../src/gfx/swayfield.js';
 import { SwayLayer, SWAY_DEPTH } from '../src/gfx/swaylayer.js';
 import { drawAmbAtlas, FRAME_NAMES, FRAME_COUNT, ATLAS_COLS, ATLAS_ROWS, FRAME_PX } from '../src/gfx/ambatlas.js';
 import { CAPS } from '../src/gfx/quality.js';
@@ -211,4 +211,124 @@ test('AL-1b: lean is capped ~18 deg, readable (typical > old), alpha ramp is nar
   const med = angs[angs.length >> 1];
   assert.ok(med * 57.3 > 5, 'median lean deg ' + med * 57.3);
   assert.ok(angs[angs.length - 1] * 57.3 <= 18.5);
+});
+
+// ---- AL-2 restore-bloom ----
+const lifeAt = (v) => ({ v, sample() { return this.v; } });
+const run = (f, secs, life, hero = null, t0 = 0, reduced = false) => { for (let i = 0; i < secs * 20; i++) f.step(0.05, t0 + i * 0.05, hero, life, reduced); };
+
+test('AL-2: easeOutBack is bounded, slight overshoot, ends at exactly 1', () => {
+  assert.equal(easeOutBack(0), 0);
+  assert.equal(easeOutBack(1), 1);
+  let mx = 0;
+  for (let u = 0; u <= 1.0001; u += 0.01) { const v = easeOutBack(u); assert.ok(Number.isFinite(v) && v >= 0 && v <= 1.15); mx = Math.max(mx, v); }
+  assert.ok(mx > 1.02 && mx < 1.12, 'slight overshoot ' + mx);
+  assert.equal(Number.isNaN(easeOutBack(NaN)), false);
+});
+
+test('AL-2: ground that becomes restored makes buds that pop open, driven by the life rise (not by time)', () => {
+  const f = mk(64); const v = view(1000, 1000);
+  f.refresh(v, null, lifeAt(0)); // sees the unrestored ground
+  assert.equal(f.count, 0);
+  const life = lifeAt(0.4); // alive enough to place, not enough to bloom
+  f.refresh(v, null, life);
+  assert.ok(f.count > 10);
+  for (const s of f.slots.values()) { assert.equal(s.bloomed, false); assert.equal(s.sc, s.prop.flower ? BUD_FLOWER : BUD_TUFT); }
+  run(f, 5, life);
+  for (const s of f.slots.values()) assert.equal(s.bloomed, false, 'time alone does not bloom');
+  life.v = 1; // the ground comes alive
+  run(f, 0.05, life);
+  assert.ok([...f.slots.values()].filter((s) => s.bloomed).length > 0);
+  run(f, 4, life);
+  for (const s of f.slots.values()) { assert.equal(s.bloomed, true); assert.equal(s.sc, 1); assert.equal(s.rot, 0); }
+});
+
+test('AL-2: scrolled-in ground (already restored) is simply open: no pop', () => {
+  const f = mk(64); let pops = 0; f.onPop = () => pops++;
+  f.refresh(view(1000, 1000), null, lifeAt(1));
+  run(f, 2, lifeAt(1));
+  for (const s of f.slots.values()) { assert.equal(s.bloomed, true); assert.equal(s.sc, 1); }
+  assert.equal(pops, 0);
+});
+
+test('AL-2: pop curve bud -> overshoot -> exactly 1; flowers rate-limited', () => {
+  const f = mk(64); const v = view(1000, 1000);
+  f.refresh(v, null, lifeAt(0)); f.refresh(v, null, lifeAt(0.4));
+  const life = lifeAt(1); let pops = 0; f.onPop = () => pops++;
+  const flowers = [...f.slots.values()].filter((s) => s.prop.flower);
+  assert.ok(flowers.length > 3);
+  f.tokens = 0;
+  const scs = [];
+  for (let i = 0; i < 40; i++) {
+    f.step(0.05, i * 0.05, null, life);
+    const n = flowers.filter((s) => s.bloomed).length;
+    assert.ok(n <= Math.ceil((i + 1) * 0.05 * BLOOM_RATE) + 1, 'rate limit ' + n + ' at ' + i);
+    const first = flowers.find((s) => s.bloomed);
+    if (first && first.pop >= 0) scs.push(first.sc);
+  }
+  assert.equal(pops, flowers.filter((s) => s.bloomed).length);
+  assert.ok(scs.length > 2 && scs[0] < 0.8);
+  assert.ok(Math.max(...scs) > 1.0 && Math.max(...scs) < 1.1);
+  run(f, 4, life, null, 3);
+  for (const s of f.slots.values()) if (s.prop.flower) assert.equal(s.sc, 1);
+  assert.ok(BLOOM_T > 0.3 && BLOOM_T <= 0.6 && TUFT_T <= BLOOM_T);
+});
+
+test('AL-2: no popping on life decay; hysteresis re-arms only when invisible', () => {
+  const f = mk(64); const v = view(1000, 1000);
+  f.refresh(v, null, lifeAt(0)); f.refresh(v, null, lifeAt(0.4));
+  const life = lifeAt(1); run(f, 4, life);
+  let pops = 0; f.onPop = () => pops++;
+  for (let i = 0; i < 25 * 20; i++) { // linear fade 1 -> 0 over 25 s
+    life.v = Math.max(0, 1 - i / (25 * 20));
+    f.step(0.05, i * 0.05, null, life);
+    for (const s of f.slots.values()) if (s.alpha > 0.06) assert.ok(s.sc === 1 && s.bloomed && s.pop === -1, 'steady while visible');
+  }
+  assert.equal(pops, 0);
+  const f2 = mk(64); f2.refresh(v, null, lifeAt(1)); let p2 = 0; f2.onPop = () => p2++;
+  for (let i = 0; i < 400; i++) { life.v = 0.5 + 0.05 * Math.sin(i); f2.step(0.05, i * 0.05, null, life); }
+  assert.equal(p2, 0, 'threshold jitter never re-pops');
+  const f3 = mk(64); f3.refresh(v, null, lifeAt(0)); f3.refresh(v, null, lifeAt(0.4));
+  life.v = 1; run(f3, 4, life); life.v = 0.1; run(f3, 3, life);
+  for (const s of f3.slots.values()) if (s.alpha < 0.06) assert.equal(s.bloomed, false);
+  assert.ok(BLOOM_ON > BLOOM_OFF);
+});
+
+test('AL-2: no pop starts under the hero clear zone; reduced motion instant; Hollow stays still', () => {
+  const f = mk(64); const v = view(1000, 1000);
+  f.refresh(v, null, lifeAt(0)); f.refresh(v, null, lifeAt(0.4));
+  const hero = { x: 1280, y: 1160 };
+  run(f, 0.5, lifeAt(1), hero);
+  for (const s of f.slots.values()) if (Math.hypot(s.prop.x - hero.x, s.prop.y - hero.y) < 90) assert.equal(s.bloomed, false, 'hidden near the hero');
+  assert.ok(HERO_SEE > 0 && HERO_SEE < 1);
+  const g = mk(64); g.refresh(v, null, lifeAt(0)); g.refresh(v, null, lifeAt(0.4)); let p = 0; g.onPop = () => p++;
+  run(g, 0.1, lifeAt(1), null, 0, true);
+  for (const s of g.slots.values()) assert.ok(s.bloomed && s.sc === 1 && s.pop === -1);
+  assert.equal(p, 0);
+  const h = mk(64); h.refresh(v, null, lifeAt(0)); run(h, 2, lifeAt(0)); assert.equal(h.count, 0);
+});
+
+test('AL-2: caps hold (sparkles Low 0 / Med 16 / High 32), no NaN, reduced motion has no sparkles', () => {
+  assert.equal(CAPS.high.ambient.bloom, 32); assert.equal(CAPS.med.ambient.bloom, 16); assert.equal(CAPS.low.ambient.bloom, 0);
+  let made = 0;
+  const chain = () => { const o = new Proxy({}, { get(t, k) { return (...a) => { for (const x of a) if (typeof x === 'number' && !Number.isFinite(x)) throw new Error('NaN in ' + String(k)); return o; }; } }); return o; };
+  const scene = { add: { image: () => { made++; return chain(); } } };
+  const wv = (x, y) => ({ x, y, right: x + 560, bottom: y + 320 });
+  for (const [tier, bcap, scap] of [['high', 32, 64], ['med', 16, 36], ['low', 0, 0]]) {
+    made = 0;
+    const lay = new SwayLayer(scene, { seed: 1, glow: { key: 'glow', inv: 0.25, blend: 1 } });
+    const L = lifeAt(0);
+    let maxSparks = 0;
+    for (let i = 0; i < 400; i++) {
+      L.v = i < 20 ? 0 : i < 40 ? 0.4 : (i % 120 < 60 ? 1 : 0.1);
+      lay.update(0.05, i * 0.05, wv(1000, 1000), { x: 1700, y: 1700 }, L, { on: scap > 0, cap: scap, bloom: bcap, phone: false, reduced: false });
+      maxSparks = Math.max(maxSparks, lay.sparks.length);
+    }
+    assert.ok(maxSparks <= bcap, tier + ' sparks ' + maxSparks);
+    assert.ok(made <= scap + bcap, tier + ' images ' + made);
+    if (tier === 'low') assert.equal(made, 0); else assert.ok(maxSparks > 0, tier + ' sparkles appear');
+  }
+  const lay = new SwayLayer(scene, { seed: 1, glow: { key: 'glow', inv: 0.25 } });
+  lay.update(0.05, 0, wv(0, 0), null, lifeAt(0), { on: true, cap: 36, bloom: 16, phone: false, reduced: true });
+  assert.equal(lay.sparks.length, 0);
 });

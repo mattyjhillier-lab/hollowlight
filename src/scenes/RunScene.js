@@ -121,7 +121,7 @@ export class RunScene extends Phaser.Scene {
     // W0 life map (visual only): hero + spirits paint life, it fades in ~25 s; the ground shader (Med/High) or warm pool sprites (Low) show it
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
-    this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // AL-1 grass/flower sway (visual only)
+    this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size, glow: { key: 'glow', inv: inv('glow'), blend: ADD } }); // AL-1 grass/flower sway (visual only)
     this.ribSet = new RibbonSet(600, 12, 64); // W2 trails (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 600);
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
@@ -958,7 +958,7 @@ export class RunScene extends Phaser.Scene {
   tickSway(sim, p, caps) {
     const on = !!(app.params.sway && this.gbOn && caps.ambient.sway > 0);
     this.sway.setTint(this.lmOn ? 0xffffff : this.gradeNow);
-    this.sway.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, this.cameras.main.worldView, p, this.life, { on, cap: caps.ambient.sway, phone: this.swayPhone, reduced: this.reducedMotion() });
+    this.sway.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, this.cameras.main.worldView, p, this.life, { on, cap: caps.ambient.sway, bloom: caps.ambient.bloom, phone: this.swayPhone, reduced: this.reducedMotion() });
     if (this.gbOn) this.gb.setHero(p.x, p.y);
   }
 

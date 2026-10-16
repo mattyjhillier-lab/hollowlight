@@ -22,9 +22,30 @@ export const AMP = 0.29; // max lean (radians, ~16.6 deg) about the base (AL-1b:
 export const SHAPE = 1.5; // soft gain on the wind (tanh): small winds read, peaks never exceed AMP
 export const WOBBLE = 0.025;
 export const PHONE_DENSITY = 0.6;
+// AL-2 restore-bloom: a prop that appears because the ground BECAME restored (its life sample rose from below ENTER while it was in view)
+// starts as a bud and pops open when life crosses BLOOM_ON (and it is visible: outside the hero clear zone). Props that scroll in already
+// restored are simply open (no pop). Hysteresis: re-armed only after life falls below BLOOM_OFF and the sprite has faded out.
+export const BLOOM_ON = 0.5;
+export const BLOOM_OFF = 0.3;
+export const BLOOM_T = 0.5; // flower pop length (s)
+export const TUFT_T = 0.38; // tuft sprout length (s)
+export const BUD_FLOWER = 0.4; // bud scale (x full size)
+export const BUD_TUFT = 0.6;
+export const BLOOM_RATE = 6; // flower pops per second (token bucket), tufts are not limited (no extra sprites)
+export const BLOOM_BURST = 3;
+export const OVERSHOOT = 1.70158; // ease-out-back: ~10% overshoot of the growth range (~4-6% of the sprite)
+export const POP_SPIN = 0.5; // radians of rotate-in
+export const HERO_SEE = 0.35; // hero clear-zone visibility needed before a pop starts (so it is seen, not wasted under the hero)
 
 const TAU = Math.PI * 2;
 const SHAPE_NORM = Math.tanh(SHAPE);
+export function easeOutBack(u) {
+  if (!(u > 0)) return 0;
+  if (u >= 1) return 1;
+  const c3 = OVERSHOOT + 1;
+  const v = u - 1;
+  return 1 + c3 * v * v * v + OVERSHOOT * v * v;
+}
 const sstep = (a, b, v) => { const t = v <= a ? 0 : v >= b ? 1 : (v - a) / (b - a); return t * t * (3 - 2 * t); };
 
 // Deterministic props of one hash-grid cell (1-2, rarely 3). Frames: 0-2 meadow tuft, 3-5 fern tuft, 6-9 flower.
@@ -66,6 +87,10 @@ export class SwayField {
     this.onAdd = null; // (slot) -> void   (the renderer attaches a sprite)
     this.onRemove = null; // (slot) -> void
     this.refreshes = 0;
+    this.mem = new Map(); // id -> last life sampled while the prop was in view and unplaced (AL-2: tells a rise from a scroll-in)
+    this.tokens = BLOOM_BURST;
+    this.onPop = null; // (slot) -> void   (flowers only: the renderer may add a petal sparkle)
+    this.pops = 0;
   }
 
   get count() { return this.slots.size; }
@@ -76,6 +101,7 @@ export class SwayField {
   }
 
   clear() {
+    this.mem.clear();
     if (this.onRemove) for (const s of this.slots.values()) this.onRemove(s);
     this.slots.clear();
   }
@@ -100,37 +126,71 @@ export class SwayField {
   // ~5 Hz: recycle by camera view, place new sprites where the life map is alive. view = {x0,y0,x1,y1}; lifeMap.sample(x,y).
   refresh(view, hero, lifeMap) {
     this.refreshes++;
-    if (this.cap === 0 || !view || !lifeMap) return;
+    if (this.cap === 0 || !view || !lifeMap) { this.mem.clear(); return; }
     const keep = KEEP_MARGIN;
     for (const s of [...this.slots.values()]) {
       const p = s.prop;
       if (p.x < view.x0 - keep || p.x > view.x1 + keep || p.y < view.y0 - keep || p.y > view.y1 + keep) this.drop(s);
       else if (s.life < EXIT && s.alpha < 0.02) this.drop(s);
     }
-    if (this.slots.size >= this.cap) return;
     const sm = SPAWN_MARGIN;
     const c0 = Math.floor((view.x0 - sm) / CELL); const c1 = Math.floor((view.x1 + sm) / CELL);
     const r0 = Math.floor((view.y0 - sm) / CELL); const r1 = Math.floor((view.y1 + sm) / CELL);
     const cand = [];
+    const mem = this.mem; const nextMem = new Map();
     for (let cj = r0; cj <= r1; cj++) for (let ci = c0; ci <= c1; ci++) {
       for (const p of cellProps(ci, cj, this.seed, this.zone, this.world)) {
         if (this.slots.has(p.id) || p.d >= this.density) continue;
         if (p.flower && this.density < 1 && p.prio < 0.5) continue; // phone: drop half the (smallest-looking) flowers
         if (p.x < view.x0 - sm || p.x > view.x1 + sm || p.y < view.y0 - sm || p.y > view.y1 + sm) continue;
-        if (hero && Math.hypot(p.x - hero.x, p.y - hero.y) < HERO_CLEAR) continue;
         const lf = lifeMap.sample(p.x, p.y);
+        nextMem.set(p.id, lf);
+        if (hero && Math.hypot(p.x - hero.x, p.y - hero.y) < HERO_CLEAR) continue;
         if (lf < ENTER) continue;
-        cand.push({ p, lf });
+        cand.push({ p, lf, rose: mem.has(p.id) && mem.get(p.id) < ENTER });
       }
     }
+    this.mem = nextMem;
     if (!cand.length) return;
     cand.sort((a, b) => a.p.prio - b.p.prio || a.p.id - b.p.id);
-    for (const { p, lf } of cand) {
+    for (const { p, lf, rose } of cand) {
       if (this.slots.size >= this.cap) break;
-      const s = { prop: p, alpha: 0, tgt: 0, ang: 0, life: lf, ref: null };
+      // rose = the ground was seen unrestored and has now come alive: start as a bud (it pops when life crosses BLOOM_ON)
+      const bud = !!rose;
+      const s = { prop: p, alpha: 0, tgt: 0, ang: 0, life: lf, ref: null, bloomed: !bud, pop: -1, sc: bud ? (p.flower ? BUD_FLOWER : BUD_TUFT) : 1, rot: 0 };
       this.slots.set(p.id, s);
       if (this.onAdd) this.onAdd(s);
     }
+  }
+
+  // AL-2: bud -> pop (ease-out-back scale + rotate-in) -> open. Never reverses on life decay (the sprite just fades out).
+  bloom(s, dt, hf, reduced) {
+    const p = s.prop;
+    if (s.bloomed) {
+      if (s.pop >= 0) {
+        s.pop += dt;
+        const T = p.flower ? BLOOM_T : TUFT_T;
+        const u = s.pop / T;
+        if (u >= 1) { s.pop = -1; s.sc = 1; s.rot = 0; } else {
+          const bud = p.flower ? BUD_FLOWER : BUD_TUFT;
+          s.sc = bud + (1 - bud) * easeOutBack(u);
+          s.rot = (p.phase > 3.14 ? 1 : -1) * POP_SPIN * (1 - u) * (1 - u);
+        }
+      } else if (s.life < BLOOM_OFF && s.alpha < 0.06) {
+        // faded out below the hysteresis threshold: re-arm as a bud (invisible), so a later rise pops again
+        s.bloomed = false; s.sc = p.flower ? BUD_FLOWER : BUD_TUFT; s.rot = 0;
+      }
+      return;
+    }
+    if (s.life < BLOOM_ON || hf < HERO_SEE) return;
+    if (reduced) { s.bloomed = true; s.sc = 1; s.rot = 0; return; } // reduced motion: instant
+    if (p.flower) {
+      if (this.tokens < 1) return;
+      this.tokens -= 1;
+      this.pops++;
+      s.bloomed = true; s.pop = 0;
+      if (this.onPop) this.onPop(s);
+    } else { s.bloomed = true; s.pop = 0; }
   }
 
   // ~20 Hz: fade with the life map and the hero clear zone, lean with the shared wind. t = sim time (s).
@@ -138,11 +198,15 @@ export class SwayField {
     if (this.cap === 0) return;
     const sc = windScale(reducedMotion);
     const k = Math.min(1, (dt > 0 ? dt : 0) * 6);
+    const d0 = dt > 0 ? (dt > 0.25 ? 0.25 : dt) : 0;
+    this.tokens = Math.min(BLOOM_BURST, this.tokens + d0 * BLOOM_RATE);
     for (const s of this.slots.values()) {
       const p = s.prop;
       s.life = lifeMap ? lifeMap.sample(p.x, p.y) : 0;
       let tgt = sstep(ALPHA_LO, ALPHA_HI, s.life) * MAX_ALPHA;
-      if (hero) tgt *= sstep(HERO_CLEAR, HERO_FADE, Math.hypot(p.x - hero.x, p.y - hero.y));
+      let hf = 1;
+      if (hero) { hf = sstep(HERO_CLEAR, HERO_FADE, Math.hypot(p.x - hero.x, p.y - hero.y)); tgt *= hf; }
+      this.bloom(s, d0, hf, reducedMotion);
       s.tgt = tgt;
       s.alpha += (tgt - s.alpha) * k;
       if (s.alpha < 0.004) s.alpha = 0;
