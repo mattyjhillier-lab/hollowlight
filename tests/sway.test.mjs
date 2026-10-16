@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cellProps, SwayField, CELL, HERO_CLEAR, SPAWN_MARGIN, KEEP_MARGIN, AMP, WOBBLE, PHONE_DENSITY, ENTER } from '../src/gfx/swayfield.js';
+import { cellProps, SwayField, ALPHA_LO, ALPHA_HI, EXIT, CELL, HERO_CLEAR, SPAWN_MARGIN, KEEP_MARGIN, AMP, WOBBLE, PHONE_DENSITY, ENTER } from '../src/gfx/swayfield.js';
 import { SwayLayer, SWAY_DEPTH } from '../src/gfx/swaylayer.js';
 import { drawAmbAtlas, FRAME_NAMES, FRAME_COUNT, ATLAS_COLS, ATLAS_ROWS, FRAME_PX } from '../src/gfx/ambatlas.js';
 import { CAPS } from '../src/gfx/quality.js';
@@ -199,3 +199,16 @@ test('SwayLayer pool: images created <= cap, reused after recycling, Low makes n
 });
 
 test('enter threshold sane', () => { assert.ok(ENTER > 0.2 && ENTER < 0.6); });
+
+test('AL-1b: lean is capped ~18 deg, readable (typical > old), alpha ramp is narrow (no ghostly half-alpha band), enter above the ramp start', () => {
+  assert.ok(AMP + WOBBLE <= 0.32, 'cap ~18 deg');
+  assert.ok(ALPHA_HI - ALPHA_LO <= 0.2);
+  assert.ok(ENTER >= ALPHA_LO && ENTER < ALPHA_HI && EXIT < ENTER && EXIT <= ALPHA_LO);
+  const f = mk(64); f.refresh(view(1000, 1000), null, alive);
+  const angs = [];
+  for (let i = 0; i < 2400; i++) { f.step(0.05, i * 0.05, null, alive, false); if (i % 20 === 0) for (const s of f.slots.values()) angs.push(Math.abs(s.ang)); }
+  angs.sort((a, b) => a - b);
+  const med = angs[angs.length >> 1];
+  assert.ok(med * 57.3 > 5, 'median lean deg ' + med * 57.3);
+  assert.ok(angs[angs.length - 1] * 57.3 <= 18.5);
+});

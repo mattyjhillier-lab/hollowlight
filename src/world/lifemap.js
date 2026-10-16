@@ -12,6 +12,7 @@ export class LifeMap {
     this.cell = world / n;
     this.decay = decay > 0 ? decay : 25;
     this.life = new Float32Array(n * n);
+    this.floor = new Float32Array(n * n); // AL-1b starter glade: life never decays below this (all zero = old behaviour)
     this.rgba = new Uint8Array(n * n * 4);
     for (let i = 3; i < this.rgba.length; i += 4) this.rgba[i] = 255;
     // G channel = ground zone weight (0 set A .. 1 set B) from zone(x, y), written once; update() only touches R
@@ -25,18 +26,19 @@ export class LifeMap {
   }
 
   reset() {
-    this.life.fill(0);
+    this.life.set(this.floor);
     this.acc = 0;
     this.dirty = true;
     this.version++;
   }
 
   // Max-blend a soft disc: strength s (0..1) at the centre falling smoothly to 0 at radius r (world units).
-  stamp(x, y, r, s = 1) {
+  stamp(x, y, r, s = 1, arr = this.life) {
     if (!(r > 0) || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(s)) return;
     s = s > 1 ? 1 : s;
     if (s <= 0) return;
-    const { n, cell, life } = this;
+    const { n, cell } = this;
+    const life = arr;
     const cx = x / cell - 0.5;
     const cy = y / cell - 0.5;
     const rc = r / cell;
@@ -61,6 +63,14 @@ export class LifeMap {
     this.dirty = true;
   }
 
+  // AL-1b: a permanent soft patch (max-blended into the floor and the live map). Visual only.
+  stampFloor(x, y, r, s = 1) {
+    this.stamp(x, y, r, s, this.floor);
+    this.stamp(x, y, r, s);
+  }
+
+  clearFloor() { this.floor.fill(0); }
+
   // Trail: stamps along a segment so a fast mover leaves a continuous ribbon.
   stampLine(x0, y0, x1, y1, r, s = 1) {
     if (![x0, y0, x1, y1].every(Number.isFinite)) return;
@@ -77,10 +87,11 @@ export class LifeMap {
     const steps = Math.floor(this.acc / STEP);
     this.acc -= steps * STEP;
     const d = (steps * STEP) / this.decay;
-    const { life, rgba } = this;
+    const { life, rgba, floor } = this;
     for (let i = 0, j = 0; i < life.length; i++, j += 4) {
       let v = life[i];
-      if (v > 0) { v -= d; if (v < 0) v = 0; life[i] = v; }
+      const fl = floor[i];
+      if (v > fl) { v -= d; if (v < fl) v = fl; life[i] = v; }
       rgba[j] = (v * 255 + 0.5) | 0;
     }
     this.dirty = false;

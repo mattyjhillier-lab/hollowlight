@@ -104,7 +104,7 @@ async function shots(dir, out) {
       if (tier !== 'high' && tier !== 'low') continue;
       if (tier === 'low') continue;
       // motion strip: follow the most visible sprite far from the hero, crop 3 frames 0.9 s apart at 3x, label the lean angle
-      const tgt = await c.ev(`(()=>{const s=window.__app.scene,cam=s.cameras.main,f=s.sway.field;let b=null;for(const k of f.slots.values()){const sx=(k.prop.x-cam.worldView.x)*cam.zoom/${dpr},sy=(k.prop.y-cam.worldView.y)*cam.zoom/${dpr};if(sx<60||sy<60||sx>${w}-60||sy>${h}-40)continue;const dd=Math.hypot(k.prop.x-s.sim.player.x,k.prop.y-s.sim.player.y);if(k.alpha<0.8||dd<95)continue;if(!b||dd<b.dd){b={id:k.prop.id,sx,sy,dd};}}return b?JSON.stringify(b):null})()`);
+      const tgt = await c.ev(`(()=>{const s=window.__app.scene,cam=s.cameras.main,f=s.sway.field;let b=null;for(const k of f.slots.values()){const R=s.game.canvas.getBoundingClientRect(),wv=cam.worldView,sx=R.left+(k.prop.x-wv.x)/wv.width*R.width,sy=R.top+(k.prop.y-wv.y)/wv.height*R.height;if(sx<60||sy<60||sx>${w}-60||sy>${h}-40)continue;const dd=Math.hypot(k.prop.x-s.sim.player.x,k.prop.y-s.sim.player.y);if(k.alpha<0.8||dd<95)continue;if(!b||dd<b.dd){b={id:k.prop.id,sx,sy,dd};}}return b?JSON.stringify(b):null})()`);
       if (!tgt) continue;
       const T = JSON.parse(tgt); const frames = [];
       const cw = Math.min(150, w / 2), ch = Math.min(100, h / 2);
@@ -148,3 +148,17 @@ if (cmd === 'dbg') {
     console.log(await c.ev(`(()=>{const s=window.__app.scene,f=s.sway.field,p=s.sim.player;const wv=s.cameras.main.worldView;let lifeMax=0;for(let i=0;i<s.life.life.length;i++)lifeMax=Math.max(lifeMax,s.life.life[i]);return JSON.stringify({cap:f.cap,refreshes:f.refreshes,wv:[wv.x,wv.y,wv.right,wv.bottom],p:[p.x,p.y],lifeHere:s.life.sample(p.x,p.y),lifeMax,slots:f.count,pool:s.sway.all.length,on:window.__app.params.sway,gbOn:s.gbOn})})()`));
   } finally { c.close(); srv.close(); }
 }
+// start: the first seconds of a run (no walking, no enemies): shows the AL-1b starter glade
+if (cmd === 'start') {
+  mkdirSync(a2, { recursive: true });
+  const srv = await serve(a1, 4190); const c = await launch();
+  try {
+    for (const [name, w, h, dpr] of [['desk', 1280, 720, 1], ['land', 844, 390, 2], ['port', 390, 844, 2]]) {
+      await open(c, `${URL0}?style=a&auto=elias&seed=3&god=1&debug=0`, w, h, dpr, 'high');
+      await sleep(1500);
+      await shot(c, join(out0(a2), `${process.env.NAME || ''}start-${name}-high.jpg`));
+      console.log(name, await swayInfo(c));
+    }
+  } finally { c.close(); srv.close(); }
+}
+function out0(d) { return d; }

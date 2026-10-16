@@ -21,6 +21,7 @@ import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
+import { hash as visHash } from '../gfx/wind.js';
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -280,8 +281,23 @@ export class RunScene extends Phaser.Scene {
     for (const f of this.flies) f.img.setVisible(false);
   }
 
+  // AL-1b: a small seeded restored patch around the spawn so the run starts with some colour and sway (visual only: life map floor, never decays;
+  // a few soft blobs, not a disc, so the world is still the grey Hollow a few steps away). Own hash from the run seed; the sim RNG is untouched.
+  starterGlade(sim) {
+    const sd = (sim.seed | 0) ^ 0x61ade;
+    const px = sim.player.x; const py = sim.player.y;
+    this.life.stampFloor(px, py, 95, 0.7);
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4 + 0.15 * visHash(sd + k * 7)) * Math.PI * 2 + visHash(sd) * 1.2;
+      const d = 85 + 55 * visHash(sd + k * 13 + 1);
+      this.life.stampFloor(px + Math.cos(a) * d, py + Math.sin(a) * d * 0.8, 70 + 40 * visHash(sd + k * 29 + 2), 0.85);
+    }
+  }
+
   bindSim(sim) {
     this.sim = sim;
+    this.life.clearFloor();
+    this.starterGlade(sim);
     this.life.reset();
     this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
     this.lifeLast = null;

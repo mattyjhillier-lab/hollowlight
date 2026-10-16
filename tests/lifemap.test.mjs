@@ -70,3 +70,20 @@ test('stampLine leaves a continuous ribbon', () => {
   m.stampLine(1000, 1000, 1600, 1000, 40, 1);
   for (let x = 1000; x <= 1600; x += 10) assert.ok(m.sample(x, 1000) > 0.7, `gap at ${x}`);
 });
+
+test('AL-1b starter glade floor: never decays below the floor, survives reset, clearFloor restores old behaviour', () => {
+  const m = new LifeMap({ decay: 25 });
+  m.stampFloor(1000, 1000, 100, 0.8);
+  const v0 = m.sample(1000, 1000);
+  assert.ok(v0 > 0.7);
+  for (let t = 0; t < 60; t += 1 / 60) m.update(1 / 60);
+  assert.ok(Math.abs(m.sample(1000, 1000) - v0) < 1e-6, 'floor holds');
+  m.stamp(1000, 1000, 100, 1); // the hero can still push above the floor, then it decays back to it
+  for (let t = 0; t < 60; t += 1 / 60) m.update(1 / 60);
+  assert.ok(Math.abs(m.sample(1000, 1000) - v0) < 1e-3);
+  m.reset();
+  assert.ok(Math.abs(m.sample(1000, 1000) - v0) < 1e-6, 'reset keeps the glade');
+  assert.equal(m.sample(1500, 1000), 0, 'small: nothing far away');
+  m.clearFloor(); m.reset();
+  assert.equal(m.sample(1000, 1000), 0);
+});

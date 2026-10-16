@@ -38,7 +38,7 @@ function blade(c, x0, y0, x1, y1, cx, cy, w, pal) {
   const out = shade(pal[0], OUT_K);
   c.lineCap = 'round';
   c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1);
-  c.lineWidth = w + 2.6; c.strokeStyle = rgb(out); c.stroke();
+  c.lineWidth = w + 3; c.strokeStyle = rgb(out); c.stroke();
   const g = c.createLinearGradient(x0, y0, x1, y1);
   g.addColorStop(0, rgb(pal[0])); g.addColorStop(1, rgb(pal[1]));
   c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1);
@@ -52,12 +52,12 @@ function drawTuft(c, ox, oy, seed, pal, n, h, spread) {
   const bl = [];
   for (let i = 0; i < n; i++) {
     const t = n === 1 ? 0 : i / (n - 1) - 0.5;
-    bl.push({ t, h: h * (0.72 + r() * 0.42) * (1 - Math.abs(t) * 0.45), bend: (r() - 0.5) * 6 });
+    bl.push({ t, h: h * (0.78 + r() * 0.42) * (1 - Math.abs(t) * 0.45), bend: (r() - 0.5) * 6 });
   }
   bl.sort((a, b) => Math.abs(b.t) - Math.abs(a.t)); // outer blades first, tall centre blades in front
   for (const b of bl) {
     const x1 = ox + b.t * spread + b.bend * 0.4;
-    blade(c, ox + b.t * 7, oy, x1, oy - b.h, ox + b.t * spread * 0.45 + b.bend, oy - b.h * 0.55, 4.2, pal);
+    blade(c, ox + b.t * 7, oy, x1, oy - b.h, ox + b.t * spread * 0.45 + b.bend, oy - b.h * 0.55, 5, pal);
   }
 }
 
@@ -66,9 +66,9 @@ function drawFlower(c, ox, oy, seed, pet) {
   const gp = MEADOW[seed % 3];
   drawTuft(c, ox, oy, seed + 7, gp, 4, 15, 15); // little grass skirt
   const lean = (r() - 0.5) * 5;
-  const hx = ox + lean; const hy = oy - 33 - r() * 3; // flower head
-  blade(c, ox, oy - 2, hx, hy + 3, ox + lean * 0.3, oy - 17, 2.6, [[116, 180, 94], [124, 188, 100]]); // stem
-  const rot = r() * TAU; const sz = 6.6;
+  const hx = ox + lean; const hy = oy - 34 - r() * 3; // flower head
+  blade(c, ox, oy - 2, hx, hy + 3, ox + lean * 0.3, oy - 17, 3.2, [[116, 180, 94], [124, 188, 100]]); // stem
+  const rot = r() * TAU; const sz = 7.6;
   const line = shade(pet.petal, 0.92);
   for (const pass of [0, 1]) {
     for (let i = 0; i < 5; i++) {
