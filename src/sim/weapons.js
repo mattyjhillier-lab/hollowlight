@@ -2,6 +2,8 @@
 // w = { id, ranks, evo, s (computed stats), rt (runtime scratch) }.
 // Evolutions are handled inside each weapon by branching on w.evo.
 
+import { BLEED_RATE } from './cards.js';
+
 const TAU = Math.PI * 2;
 
 // Evolution tuning lives in evolutions.json under "tune"; the second argument is the fallback.
@@ -49,7 +51,7 @@ const ghostWolves = {
     if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.4); bleedDur *= 1.5; }
-    const bleedDps = dmg * 0.35;
+    const bleedDps = dmg * BLEED_RATE;
     const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.5) : 0.6) / howl;
 
     if (evo === 'howling_legion') {

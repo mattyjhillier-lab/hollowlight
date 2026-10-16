@@ -1,6 +1,6 @@
 // HUD-2: pure view-model helpers for the level-up cards (no DOM, no Phaser; unit-testable in Node).
 // Rules: display only. A card never names an evolution recipe: stat cards show their own stat and weapon only.
-import { statValue, formatValue } from '../sim/cards.js';
+import { statValue, formatValue, hintText } from '../sim/cards.js';
 
 export const CLAMP = { title: 26, unit: 24, tag: 20, desc: 96, num: 7, stirs: 24, from: 30, label: 220 };
 export const COUNT_KEYS = new Set(['count', 'chains', 'pierce']); // shown as a new total, not a percentage
@@ -98,7 +98,7 @@ export function cardModel(card, data, maxRank = 5) {
   const weaponName = card && card.weaponId && data.weapons[card.weaponId] ? data.weapons[card.weaponId].name : '';
   let title = card && card.title;
   let desc = card && card.desc;
-  if (card && card.kind === 'stat' && data.weapons[card.weaponId]) { const st = data.weapons[card.weaponId].stats[card.stat]; title = st.name; desc = st.hint; }
+  if (card && card.kind === 'stat' && data.weapons[card.weaponId]) { const st = data.weapons[card.weaponId].stats[card.stat]; title = st.name; desc = hintText(data.weapons[card.weaponId], card.stat, card.rank); }
   const tag = cls === 'evolve' ? 'EVOLVE' : cls === 'new' ? 'NEW' : cls === 'stat' || cls === 'stirs' ? weaponName : '';
   return {
     cls,

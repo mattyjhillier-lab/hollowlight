@@ -19,6 +19,21 @@ export function computeStats(def, ranks, bonus) {
   return out;
 }
 
+// Wolf bleed: share of a bite dealt per second (weapons.js uses this; card text quotes it).
+export const BLEED_RATE = 0.35;
+
+// Card hint text is a template over the real per-rank numbers so it stays true if the data changes.
+// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedPct}.
+export function hintText(def, key, rank) {
+  const s = def.stats[key];
+  const cur = statValue(def, key, rank);
+  const nxt = statValue(def, key, rank + 1);
+  const pct = Math.abs(cur) > 0 ? `${nxt >= cur ? '+' : '-'}${Math.round(Math.abs((nxt - cur) / cur) * 100)}%` : '';
+  const upct = pct ? pct.slice(1) : '';
+  const vals = { upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedPct: String(Math.round(BLEED_RATE * 100)) };
+  return String(s.hint).replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : ''));
+}
+
 export function formatValue(fmt, v) {
   if (fmt === 'sec') return `${(Math.round(v * 100) / 100).toString()}s`;
   if (fmt === 'dec') return (Math.round(v * 100) / 100).toString();
@@ -95,7 +110,7 @@ function statCard(w, statKey, data, unlocked) {
     weaponId: w.id,
     stat: statKey,
     title: `${def.name}: ${s.name}`,
-    desc: `${formatValue(s.fmt, statValue(def, statKey, rank))} → ${formatValue(s.fmt, statValue(def, statKey, next))}  (${s.hint})`,
+    desc: hintText(def, statKey, rank),
     rank,
     nextRank: next,
     maxRank: data.balance.maxRank,

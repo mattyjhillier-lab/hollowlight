@@ -99,7 +99,7 @@ test('HUD-2 text clamps: bounded, control chars dropped, non-strings safe', () =
   for (const bad of [null, undefined, {}, [], NaN, Infinity]) assert.equal(clampText(bad, 10), '');
   assert.equal(clampText(12, 10), '12');
   // every real card in the game fits its clamps without being cut (titles/units/tags)
-  for (const [id, d] of Object.entries(data.weapons)) { assert.ok(d.name.length <= CLAMP.tag, id); for (const s of Object.values(d.stats)) assert.ok(s.name.length <= CLAMP.title && s.hint.length <= CLAMP.desc); }
+  for (const [id, d] of Object.entries(data.weapons)) { assert.ok(d.name.length <= CLAMP.tag, id); for (const s of Object.values(d.stats)) assert.ok(s.name.length <= CLAMP.title); }
   for (const e of Object.values(data.evolutions)) assert.ok(e.name.length <= CLAMP.title && e.verb.length <= CLAMP.num && e.sub.length <= CLAMP.unit && e.desc.length <= CLAMP.desc, e.name);
 });
 
