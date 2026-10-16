@@ -29,7 +29,7 @@ precision mediump float;
 #endif
 uniform sampler2D iChannel0; // Hollow tile
 uniform sampler2D iChannel1; // restored tile
-uniform sampler2D iChannel2; // life map: R = life, G = ground zone weight (0 set A .. 1 set B)
+uniform sampler2D iChannel2; // life map: R = life, G = ground zone weight (0 set A .. 1 set B), B = corruption (W3)
 uniform sampler2D iChannel3; // set B Hollow tile (Deep Forest Floor)
 uniform sampler2D iChannel4; // set B restored tile
 uniform vec3 uTint;
@@ -78,6 +78,21 @@ void main () {
   col *= 0.96 + 0.08 * vn(vTile * 1.7 + 11.0);
   // W1b: a second, much larger low-contrast value layer (periods ~1300 and ~600 world units, +-5%) so the 512-unit tile repeat does not read
   col *= 0.95 + 0.10 * (0.65 * vn(vLife * 3.1 + 5.0) + 0.35 * vn(vLife * 6.7 + 17.0));
+  // W3 corruption: ink-dark ground with faint cold-violet cracks, grown from the B channel; restored ground (life) pushes it back.
+  // Static (no flashing), never red; crack detail kept low contrast so enemies, pickups and numbers stay readable on top.
+  float cc = lz.b * (1.0 - smoothstep(0.35, 0.75, l));
+  if (cc > 0.02) {
+    float nn = vn(vTile * 22.0) * 0.55 + vn(vTile * 57.0) * 0.45;
+    float cm = smoothstep(0.16, 0.5, cc + (nn - 0.5) * 0.3) * smoothstep(0.02, 0.1, cc);
+    float v1 = abs(vn(vTile * 38.0 + 3.0 + nn * 1.5) - 0.5);
+    float v2 = abs(vn(vTile * 91.0 + 7.0) - 0.5);
+    float vein = (1.0 - smoothstep(0.0, 0.03, v1)) + 0.5 * (1.0 - smoothstep(0.0, 0.045, v2));
+    vein = min(vein, 1.0) * smoothstep(0.3, 0.8, cc);
+    vec3 ink = vec3(0.085, 0.090, 0.150) * (0.92 + 0.16 * nn);
+    vec3 crk = vec3(0.225, 0.195, 0.335);
+    float rim = cm * (1.0 - cm) * 4.0;
+    col = mix(col, ink + vein * (crk - ink) + rim * vec3(0.045, 0.030, 0.085), cm * 0.94);
+  }
   gl_FragColor = vec4(col * uTint, 1.0);
 }`;
 

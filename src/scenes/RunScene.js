@@ -135,6 +135,9 @@ export class RunScene extends Phaser.Scene {
     this.lifeDbg = app.params.life ? makeLifeDebug(document.getElementById('stage') || document.body) : null;
     this.lowPool = Array.from({ length: 14 }, () => this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(-450).setTint(ROLE.lantern).setScale(5.5 * inv('glow')).setAlpha(0).setVisible(false));
     this.lowPoolI = 0;
+    // W3 Low fallback: a few soft dark ink blobs (no cracks) under the densest enemy groups; Med/High use the ground shader instead
+    this.corrBlobs = Array.from({ length: 10 }, () => this.add.image(0, 0, 'glow').setDepth(-380).setTint(0x080914).setScale(12 * inv('glow')).setAlpha(0).setVisible(false));
+    this.corrBin = new Map();
     this.lowPoolT = 0;
     this.fxG = this.add.graphics().setDepth(D_FX).setBlendMode(Phaser.BlendModes.ADD);
 
@@ -165,6 +168,7 @@ export class RunScene extends Phaser.Scene {
       bolt: new SpritePool(this, 'bolt'),
       haloU: new SpritePool(this, 'glow', (i) => i.setBlendMode(ADD).setDepth(D_HALO)),
       haloG: new SpritePool(this, 'glow', (i) => i.setBlendMode(ADD).setDepth(D_HALO)),
+      haloC: new SpritePool(this, 'glow', (i) => i.setBlendMode(ADD).setDepth(D_HALO - 2).setTint(0x6a78d8)), // W3: faint cold glow under enemies standing on corruption
     };
     makeDigitFont(this);
     this.parts = new Particles(this, D_PART);
@@ -767,10 +771,17 @@ export class RunScene extends Phaser.Scene {
 
     // enemies (culled to the view; boss always drawn)
     let crowd = 0;
+    let cold = 0;
+    const coldCap = this.gbOn ? (caps.halos >= 160 ? 80 : 40) : 0;
+    const life = this.life;
     for (const e of sim.enemies) {
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
+      if (cold < coldCap) { // W3 cold enemy glow: only on ink-dark ground, soft, steady (no flicker); helps dark enemies separate from the ink
+        const cc = life.sampleCorr(e.x, e.y) * (1 - Math.min(1, life.sample(e.x, e.y) * 1.5));
+        if (cc > 0.25) { cold++; pl.haloC.get(e.id).setPosition(e.x, e.y + 2).setScale((e.boss ? 3 : 1.1) * pl.haloC.inv).setAlpha(Math.min(0.3, (cc - 0.2) * 0.45)); }
+      }
       // lit state: white flash > bleed > distance tint (min 0.62, 16 steps so setTint only runs on change)
       let tq;
       const ddx = e.x - p.x;
@@ -973,6 +984,8 @@ export class RunScene extends Phaser.Scene {
     const us = sim.units;
     if (this.lifeAcc === undefined || this.lifeAcc >= 0.1) { this.lifeAcc = 0; for (let i = 0, n = Math.min(us.length, 30); i < n; i++) { const u = us[i]; if (!u.dead) life.stamp(u.x, u.y, 36, 0.9); } }
     this.lifeAcc += this.game.loop.delta / 1000;
+    if (this.corrAcc === undefined || this.corrAcc >= 0.1) { this.corrAcc = 0; this.tickCorruption(sim); }
+    this.corrAcc += this.game.loop.delta / 1000;
     if (!life.update(this.game.loop.delta / 1000)) return;
     if (this.gbOn) this.gb.upload(life);
     if (this.lifeDbg) drawLifeDebug(this.lifeDbg, life, p);
@@ -993,6 +1006,33 @@ export class RunScene extends Phaser.Scene {
         const v = im.dropAt === undefined ? 0 : life.sample(im.x, im.y);
         im.setVisible(v > 0.02).setAlpha(0.3 * v);
       }
+    }
+  }
+
+  // W3 corruption (visual only): enemies slowly stain the ground around them (10 Hz), bosses much wider. Low draws soft dark blobs instead.
+  tickCorruption(sim) {
+    if (!this.life || sim.state === 'dead') return;
+    const es = sim.enemies;
+    const bin = this.corrBin;
+    const low = !this.gbOn;
+    if (low) bin.clear();
+    for (let i = 0, n = Math.min(es.length, 400); i < n; i++) {
+      const e = es[i];
+      if (e.dead || e.hp <= 0) continue;
+      if (e.boss) this.life.stampCorr(e.x, e.y, 130, 0.03); else this.life.stampCorr(e.x, e.y, 42, 0.011);
+      if (low) { const k = ((e.x / 180) | 0) * 64 + ((e.y / 180) | 0); const b = bin.get(k); if (b) { b.n++; b.x += e.x; b.y += e.y; } else bin.set(k, { n: 1, x: e.x, y: e.y }); }
+    }
+    if (!low) { for (const b of this.corrBlobs) if (b.visible) b.setVisible(false); return; }
+    // Low: keep up to 10 blobs; a blob sits where a group of 4+ gathered, its alpha follows the corruption map and it frees itself when that fades
+    const bl = this.corrBlobs;
+    for (const b of bl) if (b.visible) { const c = this.life.sampleCorr(b.x, b.y); const a = Math.min(1, c * 1.8); b.setAlpha(a); if (c < 0.04) b.setVisible(false); }
+    for (const g of bin.values()) {
+      if (g.n < 4) continue;
+      const gx = g.x / g.n; const gy = g.y / g.n;
+      let near = false;
+      let free = null;
+      for (const b of bl) { if (!b.visible) { free = free || b; continue; } if (Math.abs(b.x - gx) + Math.abs(b.y - gy) < 130) near = true; }
+      if (!near && free) free.setPosition(gx, gy).setVisible(true).setAlpha(0);
     }
   }
 

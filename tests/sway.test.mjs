@@ -332,3 +332,24 @@ test('AL-2: caps hold (sparkles Low 0 / Med 16 / High 32), no NaN, reduced motio
   lay.update(0.05, 0, wv(0, 0), null, lifeAt(0), { on: true, cap: 36, bloom: 16, phone: false, reduced: true });
   assert.equal(lay.sparks.length, 0);
 });
+
+test('W3: no sway sprites are placed on corrupted ground and existing ones fade out; they return when it heals', async () => {
+  const { LifeMap } = await import('../src/world/lifemap.js');
+  const m = new LifeMap();
+  m.stamp(2000, 2000, 400, 1);
+  const f = mk(64);
+  const v = view(1800, 1850);
+  f.refresh(v, null, m);
+  const before = f.slots.size;
+  assert.ok(before > 5);
+  m.corr.fill(1);
+  for (let i = 0; i < 60; i++) f.step(0.05, i * 0.05, null, m);
+  for (const s of f.slots.values()) assert.ok(s.alpha < 0.01, 'faded out on corrupt ground');
+  f.refresh(v, null, m);
+  assert.equal(f.slots.size, 0, 'released');
+  f.refresh(v, null, m);
+  assert.equal(f.slots.size, 0, 'none placed while corrupted');
+  m.corr.fill(0);
+  f.refresh(v, null, m);
+  assert.ok(f.slots.size > 5, 'returns on healed ground');
+});

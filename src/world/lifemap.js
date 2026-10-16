@@ -4,6 +4,12 @@
 // converted to an 8-bit RGBA buffer (R = life) for upload to the GPU at ~10 Hz.
 const STEP = 0.1; // decay step (s) = upload cadence
 const MAX_SEG = 48; // cap on stamps per line segment
+// W3 corruption (visual only): a second float channel in the same map, uploaded in the same texture (B channel).
+// Enemies stamp it slowly; it fades on its own over ~60 s and is pushed back hard by restored ground (life), so the hero's
+// lantern, trails and spirits heal it. Never read by src/sim.
+export const CORR_DECAY = 1 / 60; // per second, untouched
+export const CORR_HEAL = 1.6; // per second per unit of life (life 1 clears a cell in ~0.6 s)
+const sst = (a, b, v) => { const t = v <= a ? 0 : v >= b ? 1 : (v - a) / (b - a); return t * t * (3 - 2 * t); };
 
 export class LifeMap {
   constructor({ n = 256, world = 4000, decay = 25, zone = null } = {}) {
@@ -12,6 +18,7 @@ export class LifeMap {
     this.cell = world / n;
     this.decay = decay > 0 ? decay : 25;
     this.life = new Float32Array(n * n);
+    this.corr = new Float32Array(n * n); // W3 corruption 0..1
     this.floor = new Float32Array(n * n); // AL-1b starter glade: life never decays below this (all zero = old behaviour)
     this.rgba = new Uint8Array(n * n * 4);
     for (let i = 3; i < this.rgba.length; i += 4) this.rgba[i] = 255;
@@ -27,6 +34,8 @@ export class LifeMap {
 
   reset() {
     this.life.set(this.floor);
+    this.corr.fill(0);
+    for (let i = 2; i < this.rgba.length; i += 4) this.rgba[i] = 0;
     this.acc = 0;
     this.dirty = true;
     this.version++;
@@ -63,6 +72,31 @@ export class LifeMap {
     this.dirty = true;
   }
 
+  // W3: add corruption in a soft disc. s = amount added at the centre (0..1) per call, scaled down on restored ground.
+  stampCorr(x, y, r, s = 0.01) {
+    if (!(r > 0) || !(s > 0) || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(s)) return;
+    if (s > 1) s = 1;
+    const { n, cell, corr, life } = this;
+    const cx = x / cell - 0.5; const cy = y / cell - 0.5; const rc = r / cell;
+    const x0 = Math.max(0, Math.floor(cx - rc)); const x1 = Math.min(n - 1, Math.ceil(cx + rc));
+    const y0 = Math.max(0, Math.floor(cy - rc)); const y1 = Math.min(n - 1, Math.ceil(cy + rc));
+    if (x0 > x1 || y0 > y1) return;
+    const inv = 1 / rc;
+    for (let j = y0; j <= y1; j++) {
+      const dy = j - cy; const row = j * n;
+      for (let i = x0; i <= x1; i++) {
+        const dx = i - cx;
+        const d = Math.sqrt(dx * dx + dy * dy) * inv;
+        if (d >= 1) continue;
+        const t = 1 - d;
+        const k = row + i;
+        const v = corr[k] + s * t * t * (3 - 2 * t) * (1 - sst(0.2, 0.7, life[k]));
+        corr[k] = v > 1 ? 1 : v;
+      }
+    }
+    this.dirty = true;
+  }
+
   // AL-1b: a permanent soft patch (max-blended into the floor and the live map). Visual only.
   stampFloor(x, y, r, s = 1) {
     this.stamp(x, y, r, s, this.floor);
@@ -87,12 +121,20 @@ export class LifeMap {
     const steps = Math.floor(this.acc / STEP);
     this.acc -= steps * STEP;
     const d = (steps * STEP) / this.decay;
-    const { life, rgba, floor } = this;
+    const cdt = steps * STEP;
+    const { life, rgba, floor, corr } = this;
     for (let i = 0, j = 0; i < life.length; i++, j += 4) {
       let v = life[i];
       const fl = floor[i];
       if (v > fl) { v -= d; if (v < fl) v = fl; life[i] = v; }
       rgba[j] = (v * 255 + 0.5) | 0;
+      let c = corr[i];
+      if (c > 0) {
+        c -= (CORR_DECAY + CORR_HEAL * v) * cdt;
+        if (!(c > 0)) c = 0;
+        corr[i] = c;
+      } else if (c !== 0) corr[i] = c = 0; // NaN guard
+      rgba[j + 2] = (c * 255 + 0.5) | 0;
     }
     this.dirty = false;
     this.version++;
@@ -100,9 +142,10 @@ export class LifeMap {
   }
 
   // Bilinear sample at a world position; 0 outside the world.
-  sample(x, y) {
+  sample(x, y, arr = this.life) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return 0;
-    const { n, cell, life } = this;
+    const { n, cell } = this;
+    const life = arr;
     const fx = x / cell - 0.5;
     const fy = y / cell - 0.5;
     if (fx < -1 || fy < -1 || fx > n || fy > n) return 0;
@@ -115,4 +158,9 @@ export class LifeMap {
     const b = g(ix, iy + 1) * (1 - tx) + g(ix + 1, iy + 1) * tx;
     return a * (1 - ty) + b * ty;
   }
+
+  sampleCorr(x, y) { return this.sample(x, y, this.corr); }
+
+  // Restored colour that is not buried under corruption: what sway/bloom use (they only live on clean restored ground).
+  sampleClean(x, y) { return this.sample(x, y) * (1 - sst(0.1, 0.4, this.sample(x, y, this.corr))); }
 }

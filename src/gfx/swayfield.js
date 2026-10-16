@@ -143,7 +143,7 @@ export class SwayField {
         if (this.slots.has(p.id) || p.d >= this.density) continue;
         if (p.flower && this.density < 1 && p.prio < 0.5) continue; // phone: drop half the (smallest-looking) flowers
         if (p.x < view.x0 - sm || p.x > view.x1 + sm || p.y < view.y0 - sm || p.y > view.y1 + sm) continue;
-        const lf = lifeMap.sample(p.x, p.y);
+        const lf = lifeMap.sampleClean ? lifeMap.sampleClean(p.x, p.y) : lifeMap.sample(p.x, p.y);
         nextMem.set(p.id, lf);
         if (hero && Math.hypot(p.x - hero.x, p.y - hero.y) < HERO_CLEAR) continue;
         if (lf < ENTER) continue;
@@ -202,7 +202,7 @@ export class SwayField {
     this.tokens = Math.min(BLOOM_BURST, this.tokens + d0 * BLOOM_RATE);
     for (const s of this.slots.values()) {
       const p = s.prop;
-      s.life = lifeMap ? lifeMap.sample(p.x, p.y) : 0;
+      s.life = lifeMap ? (lifeMap.sampleClean ? lifeMap.sampleClean(p.x, p.y) : lifeMap.sample(p.x, p.y)) : 0;
       let tgt = sstep(ALPHA_LO, ALPHA_HI, s.life) * MAX_ALPHA;
       let hf = 1;
       if (hero) { hf = sstep(HERO_CLEAR, HERO_FADE, Math.hypot(p.x - hero.x, p.y - hero.y)); tgt *= hf; }

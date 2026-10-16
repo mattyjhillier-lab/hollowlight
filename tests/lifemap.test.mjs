@@ -87,3 +87,59 @@ test('AL-1b starter glade floor: never decays below the floor, survives reset, c
   m.clearFloor(); m.reset();
   assert.equal(m.sample(1000, 1000), 0);
 });
+
+// ---- W3 corruption ----
+test('W3 corruption: blooms slowly, caps at 1, fades on its own', () => {
+  const m = new LifeMap();
+  m.stampCorr(2000, 2000, 42, 0.011);
+  const first = m.sampleCorr(2000, 2000);
+  assert.ok(first > 0 && first < 0.05, 'one enemy-tick is a small stain');
+  for (let i = 0; i < 400; i++) m.stampCorr(2000, 2000, 42, 0.011);
+  assert.equal(Math.max(...m.corr), 1, 'clamped at 1');
+  for (const v of m.corr) assert.ok(v >= 0 && v <= 1);
+  for (let t = 0; t < 30; t += 1 / 60) m.update(1 / 60);
+  const mid = m.sampleCorr(2000, 2000);
+  assert.ok(mid > 0.3 && mid < 0.7, `mid ${mid}`);
+  for (let t = 0; t < 40; t += 1 / 60) m.update(1 / 60);
+  assert.equal(m.corr.reduce((a, b) => a + b, 0), 0, 'gone after ~60 s');
+  assert.equal(Math.max(...m.rgba.filter((_, i) => i % 4 === 2)), 0);
+});
+
+test('W3 corruption: restored ground resists and pushes it back; trails heal it', () => {
+  const a = new LifeMap(); const b = new LifeMap();
+  b.stamp(2000, 2000, 120, 1);
+  for (let i = 0; i < 30; i++) { a.stampCorr(2000, 2000, 60, 0.05); b.stampCorr(2000, 2000, 60, 0.05); }
+  assert.ok(a.sampleCorr(2000, 2000) > 0.9);
+  assert.ok(b.sampleCorr(2000, 2000) < 0.1, 'life blocks new corruption');
+  // heal: corrupt, then the hero walks through
+  a.stampLine(1800, 2000, 2200, 2000, 70, 1);
+  for (let t = 0; t < 3; t += 1 / 60) a.update(1 / 60);
+  assert.ok(a.sampleCorr(2000, 2000) < 0.05, 'trail healed it');
+  assert.ok(a.sampleCorr(2000, 2200) < 0.5);
+});
+
+test('W3 corruption: bounds, NaN and edges are safe; channel B in the texture buffer', () => {
+  const m = new LifeMap();
+  for (const [x, y, r, s] of [[NaN, 5, 40, 0.1], [5, Infinity, 40, 0.1], [0, 0, 60, 0.5], [4000, 4000, 60, 0.5], [-300, 50, 80, 1], [9999, 9999, 80, 1], [100, 100, NaN, 1], [100, 100, 40, NaN], [100, 100, 40, -1], [100, 100, -4, 1]]) m.stampCorr(x, y, r, s);
+  m.corr[777] = NaN;
+  m.update(0.2);
+  for (const v of m.corr) assert.ok(Number.isFinite(v) && v >= 0 && v <= 1);
+  assert.ok(m.sampleCorr(1, 1) > 0);
+  assert.equal(m.sampleCorr(-5000, 0), 0);
+  assert.equal(m.sampleCorr(NaN, 0), 0);
+  m.stampCorr(2000, 2000, 60, 1); m.update(0.2);
+  const j = (Math.floor(2000 / m.cell) * 256 + Math.floor(2000 / m.cell)) * 4;
+  assert.ok(m.rgba[j + 2] > 200 && m.rgba[j + 3] === 255);
+  m.reset();
+  assert.equal(m.corr.reduce((a, b) => a + b, 0), 0);
+});
+
+test('W3 corruption: sampleClean (what sway uses) is 0 under heavy corruption, unchanged on clean ground', () => {
+  const m = new LifeMap();
+  m.stamp(1000, 1000, 100, 1); m.stamp(2000, 2000, 100, 1);
+  assert.ok(Math.abs(m.sampleClean(1000, 1000) - m.sample(1000, 1000)) < 1e-9);
+  m.corr.fill(1);
+  assert.equal(m.sampleClean(2000, 2000), 0);
+  m.corr.fill(0.05);
+  assert.ok(m.sampleClean(1000, 1000) > 0.95);
+});
