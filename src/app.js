@@ -263,7 +263,7 @@ export const app = {
     const sim = this.sim;
     if (!sim || sim.state !== 'running') return;
     this.paused = !this.paused;
-    if (this.paused) this.ui.showPause();
+    if (this.paused) this.ui.showPause(sim);
     else this.ui.hidePause();
   },
 

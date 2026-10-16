@@ -1,0 +1,140 @@
+/* U4: pause + settings in Lantern Glass, Lit (UI IDENTITY v2). Scoped under .overlay.u4 / .u4-*; the kit (kit.css) supplies the panel, buttons, wick toggle, thread slider,
+   tabs, pips and divider. Pause shows the frozen game through a lighter veil; settings sits on a darker one. No raster, no backdrop-filter. */
+html.touch .overlay.u4, .overlay.u4 {
+  padding: calc(env(safe-area-inset-top, 0px) + 28px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  overflow: hidden; align-items: center; justify-content: center; text-align: left; z-index: 2; touch-action: manipulation;
+  background: radial-gradient(ellipse 50% 46% at 50% 44%, rgba(255, 171, 58, .12), transparent 72%), linear-gradient(180deg, rgba(10, 14, 24, .66), rgba(8, 11, 20, .78));
+}
+html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-index: 5; background: radial-gradient(ellipse 55% 48% at 50% 44%, rgba(255, 171, 58, .14), transparent 72%), linear-gradient(180deg, rgba(12, 17, 30, .93), rgba(8, 11, 20, .95)); }
+.overlay.u4 .u4-wrap { width: 100%; display: flex; justify-content: center; padding: 0 clamp(14px, 3vw, 24px); min-height: 0; }
+.overlay.u4 .lg-panel { width: min(100%, 500px); max-height: 100%; min-height: 0; }
+.overlay.u4 .lg-panel__title { font-size: clamp(30px, 5vh, 42px); text-align: center; }
+.overlay.u4 .lg-panel__whisper { text-align: center; }
+.overlay.u4 .lg-panel .lg-divider { margin: .5em 0; }
+.overlay.u4 p { max-width: none; margin: 0; }
+.overlay.u4 h3 { margin: 0; font-family: var(--font-body); letter-spacing: normal; font-size: var(--fs-body); }
+.overlay.u4 .lg-panel__body > * + * { margin-top: .6em; }
+
+/* while settings is open, the screen under it (pause, title, hero select) is inert and hidden so it cannot ghost through or take Tab */
+.overlay[inert] > .lg-kit { visibility: hidden; }
+
+/* ---- pause ---- */
+.overlay.u4 .u4-sum { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.overlay.u4 .u4-sum__line { display: flex; align-items: baseline; justify-content: center; gap: .6em; font: var(--fw-body-strong) var(--fs-body)/1.2 var(--font-body); color: var(--lg-text); font-feature-settings: var(--num); }
+.overlay.u4 .u4-sum__dot { color: var(--thread); }
+.overlay.u4 .u4-sum__lvl { color: var(--lg-brass-text); }
+.overlay.u4 .u4-weps { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+.overlay.u4 .u4-wep { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 1px; min-width: 0; padding: 4px 8px; border-radius: 12px; background: rgba(8, 11, 20, .34); box-shadow: inset 0 0 0 1px rgba(216, 178, 106, .22); }
+.overlay.u4 .u4-wep.is-evo { box-shadow: inset 0 0 0 1px rgba(255, 211, 107, .6); }
+.overlay.u4 .u4-emb { grid-row: 1 / span 2; width: 28px; height: 28px; }
+.overlay.u4 .u4-wep__name { flex: 1; min-width: 0; font: var(--fw-body) var(--fs-small)/1.15 var(--font-body); color: var(--lg-text); grid-column: 2; }
+.overlay.u4 .u4-wep .lg-pips { grid-column: 2; justify-self: start; }
+.overlay.u4 .u4-act { display: flex; flex-direction: column; gap: 8px; }
+.overlay.u4 .u4-menu { display: flex; flex-direction: column; gap: 10px; }
+.overlay.u4 .u4-menu .lg-btn--primary { min-height: 64px; }
+.overlay.u4 .u4-extras { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.overlay.u4 .u4-extras:empty { display: none; }
+.overlay.u4 .u4-extras .pwa-entry { display: flex; justify-content: center; }
+.overlay.u4 .u4-confirm { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; background: rgba(8, 11, 20, .45); box-shadow: inset 0 0 0 1.5px rgba(255, 154, 143, .55); }
+.overlay.u4 .u4-confirm[hidden] { display: none; }
+.overlay.u4 .u4-confirm__h { color: var(--lg-danger-text); font: var(--fw-display-strong) var(--fs-card)/1.1 var(--font-display); }
+.overlay.u4 .u4-confirm__t { color: var(--lg-text); font: var(--fw-body) var(--fs-body)/1.35 var(--font-body); }
+.overlay.u4 .u4-confirm__row { display: flex; gap: 10px; flex-wrap: wrap; }
+.overlay.u4 .u4-confirm__row > * { flex: 1 1 140px; width: auto; }
+
+/* update notice + full screen entry from card.js (its buttons keep class .btn) */
+.overlay.u4 .pwa-update { margin: 0; width: 100%; padding: 6px 12px; border: 2px solid #c99a4e; border-radius: 18px; color: var(--lg-text); font: var(--fw-body) var(--fs-small)/1.3 var(--font-body); display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); }
+.overlay.u4 .btn { white-space: nowrap; min-height: var(--lg-tap); min-width: var(--lg-tap); padding: 0 18px; border: 2px solid #c99a4e; border-radius: 22px; color: var(--lg-text); cursor: pointer;
+  font: var(--fw-display) 17px/1 var(--font-display); background: linear-gradient(180deg, #3a4560, #1e2638); box-shadow: var(--lg-rim), 0 4px 10px rgba(0, 0, 0, .4); transform: none; }
+.overlay.u4 .btn::before { display: none; }
+.overlay.u4 .btn:hover, .overlay.u4 .btn:focus-visible { color: var(--lg-text); transform: none; box-shadow: var(--lg-rim), inset 0 0 18px rgba(255, 170, 70, .3), 0 0 16px rgba(255, 170, 60, .35); }
+.overlay.u4 .btn:focus-visible { outline: 2px solid var(--thread); outline-offset: 3px; }
+
+/* ---- settings ---- */
+.overlay.u4.u4-settingsscreen .lg-panel { width: min(100%, 560px); }
+.overlay.u4 .u4-body { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.overlay.u4 .u4-body .lg-tabs { flex-wrap: nowrap; justify-content: center; gap: 6px; }
+.overlay.u4 .u4-body .lg-tab { flex: 1 1 0; min-width: 0; padding: .1em .4em; }
+.overlay.u4 .u4-panes { display: block; min-height: 0; }
+.overlay.u4 .u4-grid { display: flex; flex-direction: column; gap: 6px; }
+.overlay.u4 .u4-grid[hidden] { display: none; }
+.overlay.u4 .u4-row { display: flex; flex-direction: column; gap: 2px; padding: 2px 2px 6px; border-bottom: 1px solid rgba(216, 178, 106, .18); }
+.overlay.u4 .u4-row__label { font: var(--fw-body-strong) var(--fs-body)/var(--lh-body) var(--font-body); color: var(--lg-text); }
+.overlay.u4 .u4-row__help { font: var(--fw-body) var(--fs-small)/1.3 var(--font-body); color: var(--lg-dim); }
+.overlay.u4 .u4-row--slider .lg-slider { padding: 0; }
+.overlay.u4 .u4-row--slider .lg-range { height: var(--lg-tap); }
+.overlay.u4 .u4-row--fs { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; }
+.overlay.u4 .u4-row--fs > .u4-row__label { grid-column: 1; grid-row: 1; align-self: end; }
+.overlay.u4 .u4-row--fs > .u4-row__help { grid-column: 1; grid-row: 2; align-self: start; }
+.overlay.u4 .u4-row--fs > .lg-btn { grid-column: 2; grid-row: 1 / span 2; }
+.overlay.u4 .u4-row--fs > .u4-note { grid-column: 1 / -1; }
+.overlay.u4 .u4-note { font: var(--fw-body) var(--fs-small)/1.35 var(--font-body); color: var(--lg-dim); }
+.overlay.u4 .u4-note--warn { color: var(--lg-danger-text); }
+.overlay.u4 .u4-grid > .lg-switch { padding: 2px; }
+.overlay.u4 .u4-seg { display: flex; gap: 6px; margin-top: 4px; }
+.overlay.u4 .u4-seg__opt { flex: 1 1 0; min-width: 0; min-height: var(--lg-tap); padding: 0 .4em; display: inline-flex; align-items: center; justify-content: center; gap: .4em; cursor: pointer;
+  font: var(--fw-display-strong) var(--fs-body)/1.1 var(--font-display); color: var(--lg-dim); border-radius: 18px; border: 2px solid rgba(216, 178, 106, .45);
+  background: linear-gradient(180deg, rgba(34, 44, 66, .9), rgba(18, 24, 38, .9)); -webkit-tap-highlight-color: transparent; }
+.overlay.u4 .u4-seg__opt:hover { color: var(--thread); }
+.overlay.u4 .u4-seg__opt.is-on { color: var(--lg-seal-ink); border-color: #fff0c4; background: radial-gradient(120% 140% at 30% 20%, #ffe3a0, #ffb04a 50%, #d97a22); box-shadow: 0 0 16px rgba(255, 166, 60, .45), inset 0 2px 0 rgba(255, 250, 230, .7); }
+.overlay.u4 .u4-seg__opt.is-on::before { content: ""; width: .5em; height: .5em; border-radius: 50%; background: #5a2e0e; flex: none; } /* shape marks the choice, not only colour */
+.overlay.u4 .u4-seg__opt:focus-visible { outline: 2px solid var(--thread); outline-offset: 3px; }
+.overlay.u4 .u4-saverow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.overlay.u4 .u4-saverow .lg-btn { padding-left: .8em; padding-right: .5em; }
+.overlay.u4 .u4-saverow .lg-btn__flame { display: none; }
+.overlay.u4 .u4-saverow .lg-btn__label { font-size: var(--fs-body); }
+.overlay.u4 .u4-saverow .lg-btn__whisper { font-size: var(--fs-small); }
+.overlay.u4 .u4-msg { min-height: 1.3em; color: var(--lg-brass-text); font: var(--fw-body) var(--fs-body)/1.3 var(--font-body); }
+.overlay.u4 .u4-msg:empty { min-height: 0; }
+.overlay.u4 .u4-msg.bad { color: var(--lg-danger-text); }
+.overlay.u4 .u4-file[hidden] { display: none; }
+.overlay.u4 .u4-foot { display: flex; justify-content: center; }
+.overlay.u4 .u4-foot .lg-btn { width: min(100%, 320px); }
+
+/* ---- portrait phones ---- */
+@media (orientation: portrait) {
+  html.touch .overlay.u4, .overlay.u4 { padding-top: calc(env(safe-area-inset-top, 0px) + 22px); }
+  .overlay.u4 .u4-weps { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .overlay.u4 .u4-wep { display: flex; gap: 8px; }
+  .overlay.u4 .u4-wep__name { flex: 1; }
+  .overlay.u4 .lg-panel__title { font-size: 30px; }
+  .overlay.u4 .lg-panel { padding-top: 24px; }
+  .overlay.u4 .u4-saverow { grid-template-columns: minmax(0, 1fr); }
+  .overlay.u4 .u4-body .lg-tab { font-size: 15px; }
+}
+
+/* ---- landscape phones (short): pause as two columns, settings tabs and rows compacted; tabs carry the length so nothing scrolls ---- */
+@media (max-height: 430px) and (orientation: landscape) {
+  html.touch .overlay.u4, .overlay.u4 { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); padding-bottom: 6px; }
+  .overlay.u4 .lg-panel { padding: 14px 16px 10px; }
+  .overlay.u4 .lg-panel__whisper, .overlay.u4 .lg-panel .lg-divider { display: none; }
+  .overlay.u4 .lg-panel__title { font-size: 26px; text-align: left; }
+  .overlay.u4.u4-pausescreen .lg-panel { width: min(100%, 700px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; row-gap: 4px; align-items: start; }
+  .overlay.u4.u4-pausescreen .lg-panel__title { grid-column: 1; grid-row: 1; }
+  .overlay.u4.u4-pausescreen .lg-panel__body { display: contents; }
+  .overlay.u4.u4-pausescreen .u4-sum { grid-column: 1; grid-row: 2; align-items: flex-start; }
+  .overlay.u4.u4-pausescreen .u4-sum__line { justify-content: flex-start; }
+  .overlay.u4.u4-pausescreen .u4-weps { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .overlay.u4.u4-pausescreen .u4-wep { padding: 2px 8px; display: flex; gap: 8px; }
+  .overlay.u4.u4-pausescreen .u4-wep__name { flex: 1; }
+  .overlay.u4.u4-pausescreen .u4-act { grid-column: 2; grid-row: 1 / span 3; align-self: center; margin: 0; }
+  .overlay.u4 .u4-menu { gap: 8px; }
+  .overlay.u4 .u4-menu .lg-btn--primary { min-height: 56px; }
+  html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { padding-top: calc(env(safe-area-inset-top, 0px) + 6px); }
+  .overlay.u4.u4-settingsscreen .lg-cap { display: none; }
+  .overlay.u4.u4-settingsscreen .lg-panel { width: min(100%, 760px); padding-top: 10px; }
+  .overlay.u4.u4-settingsscreen .lg-panel__title { text-align: center; }
+  .overlay.u4 .u4-body { gap: 8px; }
+  .overlay.u4 .u4-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 18px; align-items: start; }
+  .overlay.u4 .u4-grid[hidden] { display: none; }
+  .overlay.u4 .u4-row { padding-bottom: 2px; }
+  .overlay.u4 .u4-row--keys .u4-row__label { display: none; }
+  .overlay.u4 .u4-grid > .lg-switch { min-height: var(--lg-tap); padding: 0 2px; }
+  .overlay.u4 .u4-grid > .lg-switch .lg-switch__help { font-size: 12px; line-height: 1.15; }
+  .overlay.u4 .u4-grid > .u4-saverow, .overlay.u4 .u4-grid > .u4-confirm, .overlay.u4 .u4-grid > .u4-msg, .overlay.u4 .u4-grid > .u4-note { grid-column: 1 / -1; }
+  .overlay.u4 .u4-foot { margin-top: 2px; }
+  .overlay.u4 .u4-foot .lg-btn { min-height: 48px; }
+}
+@media (prefers-reduced-motion: reduce) { .overlay.u4 .lg-panel { animation: none; } }
+.reduced-motion .overlay.u4 .lg-panel { animation: none; }

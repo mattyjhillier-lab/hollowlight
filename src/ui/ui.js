@@ -16,6 +16,10 @@ import './kit.css';
 import './title.css';
 import { buildTitle, buildHeroSelect } from './title.js';
 import { heroView } from './titlecopy.js';
+import { buildPause } from './pause.js';
+import { buildSettings } from './settings.js';
+import { pauseView } from './u4copy.js';
+import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
@@ -172,22 +176,30 @@ export class UI {
   hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
 
   // ------------------------------------------------------------------ pause / end
-  showPause() {
-    const el = this.show('pause', `
-      <h2>Paused</h2>
-      <div class="orient-hint">Landscape recommended</div>
-      <div class="row"><button class="btn big" data-act="resume">Resume (Esc)</button><button class="btn big" data-act="settings">Settings</button><button class="btn big" data-act="menu">Quit to menu</button></div>`);
-    el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
-    el.querySelector('[data-act="resume"]').addEventListener('click', () => this.handlers.togglePause());
-    el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+  // U4: lantern-glass pause panel over the frozen game (src/ui/pause.js; DOM built with the kit, textContent only).
+  showPause(sim) {
+    const h = this.handlers;
+    const extras = [];
     if (this.pwa) {
-      const fe = fullscreenEntry(document, this.pwa, 'btn big');
-      if (fe) el.insertBefore(fe, el.querySelector('.row'));
-      el.append(updateNotice(document, this.pwa));
+      const fe = fullscreenEntry(document, this.pwa, 'btn');
+      if (fe) extras.push(fe);
+      extras.push(updateNotice(document, this.pwa));
     }
+    this.pauseView = buildPause({
+      view: sim ? pauseView(sim, this.data) : undefined,
+      onResume: () => h.togglePause(),
+      onSettings: () => h.openSettings(),
+      onQuit: () => h.menu(),
+      extras,
+    });
+    const el = this.layer('pause');
+    el.className = 'overlay layer-pause u4 u4-pausescreen';
+    el.replaceChildren(this.pauseView.root);
+    this.show('pause');
+    this.pauseView.focusResume();
   }
 
-  hidePause() { this.hide('pause'); }
+  hidePause() { this.hide('pause'); this.pauseView = null; }
 
   showEnd(sim, bank) {
     const r = sim.result();
@@ -243,133 +255,36 @@ export class UI {
   }
 
   // ------------------------------------------------------------------ settings
-  // Built with DOM APIs and textContent only. Values come from the sanitised save.
-  showSettings(message) {
+  // U4: tabs (Sound, Picture, Controls, Saves) of wick toggles, thread sliders and segmented choices (src/ui/settings.js). Values come from the sanitised save.
+  showSettings(message, tab) {
     const h = this.handlers;
-    const st = h.getSettings();
     const el = this.layer('settings');
-    el.classList.add('settings');
-    el.replaceChildren();
+    el.className = 'overlay layer-settings settings u4 u4-settingsscreen';
+    if (!this.settingsOpen) this.settingsFrom = this.pauseView && this.layers.pause && this.layers.pause.style.display !== 'none' ? 'pause' : 'title';
     this.settingsOpen = true;
-    const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
-    const grid = mk('div', 'setgrid');
-    const row = (label, ctl) => { grid.append(mk('label', '', label), ctl); };
-    const slider = (key) => {
-      const i = mk('input');
-      i.type = 'range'; i.min = '0'; i.max = '100'; i.step = '5'; i.value = String(Math.round(st[key] * 100));
-      i.addEventListener('input', () => h.setSetting({ [key]: Number(i.value) / 100 }));
-      return i;
-    };
-    const check = (key) => {
-      const i = mk('input');
-      i.type = 'checkbox'; i.checked = !!st[key];
-      i.addEventListener('change', () => h.setSetting({ [key]: i.checked }));
-      return i;
-    };
-    row('Music volume', slider('musicVol'));
-    row('Sound effects volume', slider('sfxVol'));
-    row('Screen shake', check('screenShake'));
-    row('Reduced motion', check('reducedMotion'));
-    row('Damage numbers', check('damageNumbers'));
-    const sel = mk('select');
-    for (const [v, t] of [['auto', 'Auto'], ['low', 'Low'], ['med', 'Medium'], ['high', 'High']]) {
-      const o = mk('option', '', t);
-      o.value = v;
-      if (st.quality === v) o.selected = true;
-      sel.append(o);
-    }
-    sel.addEventListener('change', () => h.setSetting({ quality: sel.value }));
-    row('Quality', sel);
-    const choice = (key, opts) => {
-      const s = mk('select');
-      for (const [v, t] of opts) {
-        const o = mk('option', '', t);
-        o.value = v;
-        if (st[key] === v) o.selected = true;
-        s.append(o);
-      }
-      s.addEventListener('change', () => h.setSetting({ [key]: s.value }));
-      return s;
-    };
-    row('Touch controls', choice('touchMode', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]));
-    row('Joystick size', choice('stickSize', [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']]));
-
-    const msg = mk('div', 'setmsg', message || '');
-    const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
-    const actions = mk('div', 'row');
-    const bExp = mk('button', 'btn', 'Export save');
-    const bImp = mk('button', 'btn', 'Import save');
-    const bRes = mk('button', 'btn', 'Reset save');
-    const bClose = mk('button', 'btn big', 'Back (Esc)');
-    const file = mk('input');
-    file.type = 'file'; file.accept = '.json,application/json'; file.style.display = 'none';
-    const confirmBox = mk('div', 'setconfirm');
-    const clearConfirm = () => { confirmBox.replaceChildren(); };
-    const ask = (text, yesLabel, onYes) => {
-      clearConfirm();
-      const y = mk('button', 'btn', yesLabel);
-      const n = mk('button', 'btn', 'Cancel');
-      y.addEventListener('click', () => { clearConfirm(); onYes(); });
-      n.addEventListener('click', () => { clearConfirm(); say(''); });
-      confirmBox.append(mk('span', '', text), y, n);
-    };
-    bExp.addEventListener('click', () => {
-      try {
-        const url = URL.createObjectURL(new Blob([h.exportSave()], { type: 'application/json' }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'hollowlight-save.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        say('Save exported.');
-      } catch { say('Could not export the save.', true); }
+    for (const n of ['start', 'hero', 'pause']) if (this.layers[n]) this.layers[n].setAttribute('inert', ''); // keep Tab inside settings
+    const s = buildSettings({
+      settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
+      storageNote: h.storageNote ? h.storageNote() : null,
+      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave },
+      onBack: () => this.hideSettings(),
+      onRebuild: (m, t) => this.showSettings(m, t),
     });
-    bImp.addEventListener('click', () => { clearConfirm(); file.value = ''; file.click(); });
-    file.addEventListener('change', async () => {
-      const f = file.files && file.files[0];
-      if (!f) return;
-      if (f.size > h.maxSaveBytes) { say('Save file is too large.', true); return; }
-      let text;
-      try { text = await f.text(); } catch { say('Could not read that file.', true); return; }
-      const res = h.checkImport(text);
-      if (!res.ok) { say(res.error, true); return; }
-      say('');
-      ask('Replace your current save with this file?', 'Replace save', () => { h.applyImport(res.save); this.showSettings('Save imported.'); });
-    });
-    let armed = false;
-    let armTimer = null;
-    bRes.addEventListener('click', () => {
-      if (!armed) {
-        armed = true;
-        bRes.textContent = 'Really reset? Click again';
-        armTimer = setTimeout(() => { armed = false; bRes.textContent = 'Reset save'; }, 4000);
-        return;
-      }
-      clearTimeout(armTimer);
-      armed = false;
-      bRes.textContent = 'Reset save';
-      ask('This erases all gold, shards and stats. It cannot be undone.', 'Erase everything', () => { h.resetSave(); this.showSettings('Save reset.'); });
-    });
-    bClose.addEventListener('click', () => this.hideSettings());
-    actions.append(bExp, bImp, bRes);
-    const back = mk('div', 'row');
-    back.append(bClose);
-    el.append(mk('h2', '', 'Settings'), grid, actions, confirmBox, msg, back, file);
-    const fe = this.pwa ? fullscreenEntry(document, this.pwa, 'btn') : null;
-    if (fe) el.insertBefore(fe, actions);
-    const note = h.storageNote ? h.storageNote() : null;
-    if (note) el.append(mk('div', 'note', note));
+    el.replaceChildren(s.root);
     this.show('settings');
-    bClose.focus();
+    this.settingsView = s;
+    if (message) s.buttons.reset.focus(); else s.focusFirst();
   }
 
   hideSettings() {
     if (!this.settingsOpen) return;
     this.settingsOpen = false;
+    this.settingsView = null;
     this.hide('settings');
-    if (this.handlers.closeSettings) this.handlers.closeSettings();
+    for (const n of ['start', 'hero', 'pause']) if (this.layers[n]) this.layers[n].removeAttribute('inert');
+    if (this.handlers.closeSettings) this.handlers.closeSettings(); // title: rebuilds the menu (Continue state may have changed)
+    if (this.settingsFrom === 'pause' && this.pauseView) this.pauseView.focusSettings();
+    else if (this.screen && this.screen.id === 'title') this.screen.title.settings.focus({ preventScroll: true });
   }
 
   hideEnd() { this.hide('end'); }
@@ -379,12 +294,28 @@ export class UI {
   }
 
   // ------------------------------------------------------------------ keys
+  // The game captures Space (and arrows) with preventDefault, which stops a focused button, switch or radio from activating on Space. In the pause and
+  // settings screens Space must work like on any web control, so activate it here and swallow the matching keyup so it cannot fire a second click.
+  spaceActivate(e) {
+    if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
+    const a = document.activeElement;
+    if (!a || !a.closest || !a.closest('.overlay.u4') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"]')) return false;
+    e.preventDefault();
+    const swallow = (k) => { if (k.key === ' ') { k.preventDefault(); window.removeEventListener('keyup', swallow, true); } };
+    window.addEventListener('keyup', swallow, true);
+    a.click();
+    return true;
+  }
+
   onKey(e) {
     if (this.tree.isOpen) return; // the tree screen handles its own keys
+    if (this.spaceActivate(e)) return;
     if (this.settingsOpen) {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
     }
+    const pv = this.pauseView;
+    if (pv && e.key === 'Escape' && this.layers.pause && this.layers.pause.style.display !== 'none' && pv.cancelConfirm()) { this.escAt = performance.now(); return; } // Esc backs out of "Leave this run?"
     const sc = this.screen;
     if (sc) {
       const vis = (n) => this.layers[n] && this.layers[n].style.display !== 'none';

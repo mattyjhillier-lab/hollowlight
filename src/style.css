@@ -162,14 +162,6 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 
 /* ---------- settings, results, version ---------- */
 .overlay.settings { z-index: 5; background: rgba(7, 7, 13, .95); }
-.setgrid { display: grid; grid-template-columns: 12em 12em; gap: .7em 1.2em; align-items: center; text-align: left; margin-bottom: 1em; }
-.setgrid input[type="range"], .setgrid select { width: 100%; font: inherit; accent-color: var(--teal); }
-.setgrid input[type="checkbox"] { width: 1.3em; height: 1.3em; justify-self: start; accent-color: var(--teal); }
-.setgrid select { background: var(--glass-solid); color: var(--text); border: 1px solid rgba(94, 230, 255, .35); border-radius: .5em; padding: .3em; }
-.setconfirm { margin-top: .8em; display: flex; gap: .6em; align-items: center; justify-content: center; flex-wrap: wrap; }
-.setconfirm:empty { display: none; }
-.setmsg { min-height: 1.4em; margin-top: .6em; color: var(--good); }
-.setmsg.bad { color: #ff8b95; }
 .newbest { color: var(--gold); font-weight: 700; letter-spacing: .12em; margin: -.3em 0 .5em; text-shadow: 0 0 .7em var(--glow-gold); }
 .newbest:empty { display: none; }
 .note.warn { color: #ff8b95; }
@@ -260,18 +252,14 @@ html.touch #ui { font-size: clamp(11px, 1.7cqw, 20px); }
 .touch-ability.ready { box-shadow: 0 0 18px var(--glow-violet); }
 .touch-ability.down { transform: scale(.94); }
 .touch-pause { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 10px); top: calc(env(safe-area-inset-top, 0px) + 10px); width: 48px; height: 48px; padding: 0; border: 1px solid rgba(184, 242, 255, .4); border-radius: 12px; pointer-events: auto; touch-action: none; background: var(--glass); color: var(--text); font: 700 16px var(--font-ui); letter-spacing: 2px; }
-.touchkeys, .orient-hint { display: none; }
+.touchkeys { display: none; }
 html.touch .touchkeys { display: block; color: var(--muted); margin-top: 1.2em; }
 html.touch .keys { display: none; }
-@media (orientation: portrait) { html.touch .orient-hint { display: block; color: var(--gold); margin-top: .8em; } }
 /* menus: scroll if tall, 44px hit targets, no hover dependence */
 html.touch .overlay { overflow-y: auto; justify-content: safe center; touch-action: pan-y; padding-left: max(2em, env(safe-area-inset-left)); padding-right: max(2em, env(safe-area-inset-right)); padding-bottom: max(2em, env(safe-area-inset-bottom)); }
 html.touch .overlay.layer-tree { padding: 0; touch-action: none; }
 html.touch .btn, html.touch .tree-zoom { min-height: 44px; min-width: 44px; }
 html.touch .card .ban { min-height: 44px; padding: .25em 1em; }
-html.touch .setgrid { grid-template-columns: minmax(8em, 1fr) minmax(8em, 1fr); }
-html.touch .setgrid select, html.touch .setgrid input[type="range"] { min-height: 44px; }
-html.touch .setgrid input[type="checkbox"] { width: 30px; height: 30px; }
 html.touch .charcard { min-height: 44px; }
 html.touch .tree-view { touch-action: none; }
 html.touch .tree-panel { touch-action: pan-y; }

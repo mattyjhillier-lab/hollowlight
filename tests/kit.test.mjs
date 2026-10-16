@@ -42,7 +42,7 @@ test('U2 source rules: no innerHTML / insertAdjacentHTML / outerHTML / eval / ex
   const body = kitCss.replace(/\/\* ART:BEGIN[\s\S]*ART:END \*\//, '');
   assert.ok(!/@import|url\(/.test(body), 'kit.css body has no url(); art lives only in the generated ART block');
   const art = kitCss.match(/\/\* ART:BEGIN[\s\S]*ART:END \*\//)[0];
-  const props = [...art.matchAll(/--lg-a-[a-z-]+:\s*([^;]*);\n/g)];
+  const props = [...art.matchAll(/--lg-a-[a-z-]+:\s*([^;]*);\r?\n/g)];
   assert.ok(props.length >= 15, 'art properties present');
   for (const m of props) assert.ok(/^url\("data:image\/svg\+xml,%3Csvg xmlns='http:\/\/www\.w3\.org\/2000\/svg'/.test(m[1]) && !/<script|onload|onerror|href='http|javascript:|<image|foreignObject/i.test(decodeURIComponent(m[1])), 'art is inline svg only');
   assert.ok(!/backdrop-filter|filter: url|feDisplacementMap|feTurbulence/.test(kitCss.replace(/\/\*[\s\S]*?\*\//g, '')), 'no backdrop-filter, no live SVG filter (the wobble is baked)');
