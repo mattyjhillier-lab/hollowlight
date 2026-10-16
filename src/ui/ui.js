@@ -20,6 +20,9 @@ import { heroView } from './titlecopy.js';
 import { buildPause } from './pause.js';
 import { buildSettings } from './settings.js';
 import { pauseView } from './u4copy.js';
+import { buildResults } from './results.js';
+import { resultsView } from './resultscopy.js';
+import './results.css';
 import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
@@ -62,6 +65,7 @@ export class UI {
   }
 
   hide(name) {
+    if (name === 'end' && this.endView) { this.endView.destroy(); this.endView = null; }
     if (this.layers[name]) this.layers[name].style.display = 'none';
   }
 
@@ -204,57 +208,18 @@ export class UI {
 
   hidePause() { this.hide('pause'); this.pauseView = null; }
 
+  // U6: results in Lantern Glass, Lit (src/ui/results.js). One screen, no scrolling; Again R/Enter, Main menu Esc, Tree T. Keys are handled in onKey below.
   showEnd(sim, bank) {
-    const r = sim.result();
-    const d = this.data;
-    const won = r.outcome === 'victory';
-    const evos = r.weapons.filter((w) => w.evo).map((w) => d.evolutions[w.evo].name);
-    const el = this.show('end', `
-      <h2 style="color:${won ? 'var(--good)' : 'var(--hp)'}">${won ? 'You survived the night' : 'You were overrun'}</h2>
-      <div class="newbest"></div>
-      <dl class="endstats">
-        <dt>Time survived</dt><dd>${fmtTime(r.time)}</dd>
-        <dt>Level reached</dt><dd>${r.level}</dd>
-        <dt>Enemies slain</dt><dd>${r.kills}</dd>
-        <dt>Gold earned</dt><dd class="g"></dd>
-        <dt>Soul shards</dt><dd class="sh"></dd>
-        <dt>Best time</dt><dd class="bt"></dd>
-        <dt>Evolutions</dt><dd>${evos.length ? evos.join(', ') : 'none this run'}</dd>
-      </dl>
-      <div class="note warn"></div>
-      <div class="endtree"></div>
-      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="tree">Spend gold</button><button class="btn big" data-act="menu">Main menu</button></div>`);
-    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
-    this.fillEndTree(el.querySelector('.endtree'), bank);
-    const set = (sel, t) => { el.querySelector(sel).textContent = t; };
-    if (bank) {
-      set('.g', `+${r.gold} (bank ${bank.gold})`);
-      set('.sh', `+${r.shards} (bank ${bank.shards})${r.bossKilled ? ' · Elder Treant slain' : ''}`);
-      set('.bt', fmtTime(bank.bestTime));
-      if (bank.newBest) set('.newbest', 'New best!');
-      if (bank.note) set('.warn', bank.note);
-    } else {
-      set('.g', String(r.gold));
-      set('.sh', String(r.shards));
-      set('.bt', '-');
-      set('.warn', 'Debug run: not saved.');
-    }
-    el.querySelector('[data-act="again"]').addEventListener('click', () => this.handlers.again());
-    el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
-  }
-
-  // Accomplishment feedback: newly unlocked nodes and the closest locked ones (textContent only).
-  fillEndTree(box, bank) {
-    if (!bank) return;
-    const mkEl = (cls, text) => { const n = document.createElement('div'); n.className = cls; n.textContent = text; return n; };
-    if (bank.newly && bank.newly.length) {
-      box.append(mkEl('et-head good', 'New in the Skill Tree'));
-      for (const line of bank.newly.slice(0, 6)) box.append(mkEl('et-row', line));
-    }
-    if (bank.closest && bank.closest.length) {
-      box.append(mkEl('et-head', 'Closest unlocks'));
-      for (const c of bank.closest) box.append(mkEl('et-row', `${c.gate ? 'Gate: ' : ''}${c.name} · ${c.text} (${Math.floor(c.frac * 100)}%)`));
-    }
+    const h = this.handlers;
+    this.endView?.destroy();
+    const view = resultsView(sim.result(), bank, this.data);
+    const reduced = document.documentElement.classList.contains('reduced-motion') || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.endView = buildResults({ view, reduced, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
+    const el = this.layer('end');
+    el.className = `overlay layer-end u6 ${view.won ? 'u6-won' : 'u6-lost'}`;
+    el.replaceChildren(this.endView.root);
+    this.show('end');
+    this.endView.mounted();
   }
 
   // ------------------------------------------------------------------ settings
@@ -302,7 +267,7 @@ export class UI {
   spaceActivate(e) {
     if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
     const a = document.activeElement;
-    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
+    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
     e.preventDefault();
     const swallow = (k) => { if (k.key === ' ') { k.preventDefault(); window.removeEventListener('keyup', swallow, true); } };
     window.addEventListener('keyup', swallow, true);
@@ -317,6 +282,7 @@ export class UI {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
     }
+    if (this.endView && this.layers.end && this.layers.end.style.display !== 'none') { this.endView.onKey(e); return; }
     const pv = this.pauseView;
     if (pv && e.key === 'Escape' && this.layers.pause && this.layers.pause.style.display !== 'none' && pv.cancelConfirm()) { this.escAt = performance.now(); return; } // Esc backs out of "Leave this run?"
     const sc = this.screen;

@@ -352,7 +352,7 @@ The word is lettered half grey, half lit: "Hollow" in flat grey, "light" warm. A
 7. **Boss phase change.** A one-second freeze frame, a crack of light through the treant's bark, the music shifts down a key.
 8. **Low HP.** Edges of the screen frost grey, colour drains from the ground around the hero, the hero's lantern flame flickers smaller, and the heartbeat is the only sound under the music.
 9. **Dawn victory.** The sun crests the screen edge; a wave of full colour rolls across the whole map, grey enemies crumble to ash and blow away, and the hero sits down on the grass with their spirits around them.
-10. **Defeat.** The hero's lantern goes out; the screen goes fully grey; the spirits stay, standing guard over the hero, and fade slowly. Results appear on a grey card: "The night is long. Try again."
+10. **Defeat.** The hero's lantern dims, not out (Matt, 2026-10-16: reopened, see LOCKED Reopened list): a small flame still burns in a dim amber pool; the screen goes quiet and grey-warm; the spirits stay, standing guard over the hero, and fade slowly. Results appear on a lantern-glass card: "The light dwindles. The night is long. The lantern still burns, a little."
 11. **New hero unlock.** A grey silhouette on the hero select screen fills with colour from the bottom up, and their tell (scarf, bell, book) lights first.
 12. **Chapter clear (map).** On the world map, the cleared chapter's region floods with colour and stays that way forever; a thin light-path draws to the next grey region.
 
