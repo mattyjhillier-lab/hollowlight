@@ -4,6 +4,7 @@
 //     lit top-left edge, flat shadow) and sampled NEAREST.
 // All sizes are in world units (the 640x360 logical space); INV[key] = world units per texel.
 import { INV, VIS, DENS } from './style.js';
+import { TILE_DRAW, TILE_PX } from './groundtiles.js';
 import { ROLE } from './palette.js';
 import { makeRigTextures } from './rigtex.js';
 
@@ -415,49 +416,6 @@ function rnd(seed) {
   return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-// A: 512-unit seamless tile at 2 texels/unit: soft moss blotches, mist, grain, faint blades.
-function groundA() {
-  const N = 1024;
-  const cv = mkCanvas(N, N);
-  const c = cv.getContext('2d');
-  const r = rnd(7);
-  c.fillStyle = '#1f3042'; c.fillRect(0, 0, N, N);
-  const wrap = (fn) => { for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) fn(dx, dy); };
-  const blot = (n, rmin, rmax, cols, amin, amax) => {
-    for (let i = 0; i < n; i++) {
-      const x = r() * N; const y = r() * N; const rad = rmin + r() * (rmax - rmin);
-      const col = cols[(r() * cols.length) | 0]; const a = amin + r() * (amax - amin);
-      wrap((dx, dy) => {
-        if (x + dx < -rad || x + dx > N + rad || y + dy < -rad || y + dy > N + rad) return;
-        c.fillStyle = rg(c, x + dx, y + dy, 0, rad, [[0, `rgba(${col},${a})`], [1, `rgba(${col},0)`]]);
-        c.fillRect(x + dx - rad, y + dy - rad, rad * 2, rad * 2);
-      });
-    }
-  };
-  blot(46, 90, 220, ['38,56,74', '27,42,58', '16,26,40'], 0.35, 0.7);
-  blot(60, 50, 150, ['56,92,90', '44,84,78', '48,72,92'], 0.16, 0.34);
-  blot(26, 60, 140, ['8,12,22'], 0.25, 0.5);
-  blot(22, 30, 80, ['90,140,150'], 0.06, 0.12);
-  c.lineCap = 'round';
-  for (let i = 0; i < 700; i++) {
-    const x = r() * N; const y = r() * N; const hgt = 6 + r() * 12; const lean = (r() - 0.5) * 8;
-    const col = r() < 0.6 ? '58,92,86' : '84,128,116'; const a = 0.1 + r() * 0.2;
-    wrap((dx, dy) => {
-      if (x + dx < -20 || x + dx > N + 20 || y + dy < -20 || y + dy > N + 20) return;
-      c.strokeStyle = `rgba(${col},${a})`; c.lineWidth = 1.4 + r() * 0.8;
-      c.beginPath(); c.moveTo(x + dx, y + dy); c.quadraticCurveTo(x + dx + lean * 0.3, y + dy - hgt * 0.5, x + dx + lean, y + dy - hgt); c.stroke();
-    });
-  }
-  const id = c.getImageData(0, 0, N, N);
-  const d = id.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const n = (r() - 0.5) * 7;
-    d[i] = d[i] * 1.75 + n; d[i + 1] = d[i + 1] * 1.75 + n; d[i + 2] = d[i + 2] * 1.75 + n * 1.2; // mid-value ground: darkness comes from the lightmap
-  }
-  c.putImageData(id, 0, 0);
-  return cv;
-}
-
 // B: 128-unit tile at 2 texels/unit, hard pixels: noise clusters, stones, grass tufts, moss.
 function groundB() {
   const N = 256;
@@ -559,19 +517,20 @@ export function makeStyleTextures(scene, style) {
     }
   }
   if (style === 'a') makeRigTextures(scene); // Wren v2 rig atlas + flat Wren/pup (replaces the old hero_wren)
-  const gcv = style === 'b' ? groundB() : groundA();
-  const gt = scene.textures.addCanvas('ground', gcv);
-  if (nearest) gt.setFilter(1);
-  INV.ground = style === 'b' ? 0.5 : 0.5;
-  // W0 placeholder restored tile (same seamless layout as the Hollow tile, warmed and brightened). Real tiles come in W1.
-  if (scene.textures.exists('groundR')) scene.textures.remove('groundR');
-  const rcv = mkCanvas(gcv.width, gcv.height);
-  const rc = rcv.getContext('2d');
-  rc.drawImage(gcv, 0, 0);
-  rc.globalCompositeOperation = 'soft-light'; rc.fillStyle = '#8fd06a'; rc.globalAlpha = 0.9; rc.fillRect(0, 0, rcv.width, rcv.height);
-  rc.globalCompositeOperation = 'screen'; rc.fillStyle = '#2a3a2c'; rc.globalAlpha = 1; rc.fillRect(0, 0, rcv.width, rcv.height);
-  rc.globalCompositeOperation = 'source-over';
-  scene.textures.addCanvas('groundR', rcv);
+  // W1 ground: style a = four code-painted daylight tiles (src/gfx/groundtiles.js); style b keeps the old pixel tile.
+  // 'ground' = Hollow A (also the Low tier flat tile), 'groundR' = restored A, 'groundBH'/'groundBR' = Deep Forest Floor Hollow/restored.
+  const setTex = (key, cv) => {
+    if (scene.textures.exists(key)) scene.textures.remove(key);
+    const t = scene.textures.addCanvas(key, cv);
+    if (nearest) t.setFilter(1);
+  };
+  if (style === 'b') {
+    const gcv = groundB();
+    for (const key of ['ground', 'groundR', 'groundBH', 'groundBR']) setTex(key, gcv);
+  } else {
+    for (const [key, name] of [['ground', 'hollowA'], ['groundR', 'restoredA'], ['groundBH', 'hollowB'], ['groundBR', 'restoredB']]) setTex(key, TILE_DRAW[name](mkCanvas(TILE_PX, TILE_PX)));
+  }
+  INV.ground = 0.5;
   vignette(scene);
   for (const [key, brass] of [['digits', false], ['digitsB', true]]) {
     const dg = digitsCanvas(style, brass);

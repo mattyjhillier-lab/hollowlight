@@ -13,6 +13,7 @@ import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
 import { GroundBlend } from '../gfx/groundblend.js';
 import { LifeMap } from '../world/lifemap.js';
+import { zoneB } from '../world/zones.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
@@ -97,6 +98,9 @@ class SpritePool {
   }
 }
 
+const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
+const dimTint = (c, k) => (((c >> 16 & 255) * k | 0) << 16) | (((c >> 8 & 255) * k | 0) << 8) | ((c & 255) * k | 0);
+
 export class RunScene extends Phaser.Scene {
   constructor() {
     super('run');
@@ -110,7 +114,7 @@ export class RunScene extends Phaser.Scene {
     this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000).setTileScale(inv('ground'));
     this.groundG = this.add.graphics().setDepth(-400);
     // W0 life map (visual only): hero + spirits paint life, it fades in ~25 s; the ground shader (Med/High) or warm pool sprites (Low) show it
-    this.life = new LifeMap({ n: 256, world: size, decay: 25 });
+    this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
     this.gbOn = false;
     this.lifeLast = null;
@@ -548,7 +552,7 @@ export class RunScene extends Phaser.Scene {
   setGround(col) {
     if (col === this.gradeTint) return;
     this.gradeTint = col;
-    this.ground.setTint(col);
+    this.ground.setTint(this.lmOn ? col : dimTint(col, LOW_GROUND_K)); // W1: the flat tile is authored at daylight brightness, so Low darkens it a little more than the trees
     this.gb.setTint(col);
     for (const d of this.decor) d.setTint(col);
   }

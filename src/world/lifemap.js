@@ -6,7 +6,7 @@ const STEP = 0.1; // decay step (s) = upload cadence
 const MAX_SEG = 48; // cap on stamps per line segment
 
 export class LifeMap {
-  constructor({ n = 256, world = 4000, decay = 25 } = {}) {
+  constructor({ n = 256, world = 4000, decay = 25, zone = null } = {}) {
     this.n = n;
     this.world = world;
     this.cell = world / n;
@@ -14,6 +14,11 @@ export class LifeMap {
     this.life = new Float32Array(n * n);
     this.rgba = new Uint8Array(n * n * 4);
     for (let i = 3; i < this.rgba.length; i += 4) this.rgba[i] = 255;
+    // G channel = ground zone weight (0 set A .. 1 set B) from zone(x, y), written once; update() only touches R
+    if (typeof zone === 'function') {
+      const cell = world / n;
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const z = zone((i + 0.5) * cell, (j + 0.5) * cell); this.rgba[(j * n + i) * 4 + 1] = z > 0 ? (z >= 1 ? 255 : (z * 255 + 0.5) | 0) : 0; }
+    }
     this.acc = 0;
     this.dirty = true;
     this.version = 0;
