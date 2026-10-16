@@ -1,0 +1,48 @@
+t1-hero-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-hero-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-hero-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-kit-1280x720 {"overflow":[],"under12":[],"minTarget":44,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-levelup-1280x720 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-levelup-390x844 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-levelup-844x390 {"overflow":[],"under12":[],"minTarget":44,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-pause-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-pause-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-pause-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-results-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-results-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-results-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-title-1280x720 {"overflow":[],"under12":[],"minTarget":58,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-title-390x844 {"overflow":[],"under12":[],"minTarget":55,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t1-title-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Hollowlight Chancery+Alegreya Sans"}
+t2-hero-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-hero-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-hero-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-kit-1280x720 {"overflow":[],"under12":[],"minTarget":44,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-levelup-1280x720 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-levelup-390x844 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-levelup-844x390 {"overflow":[],"under12":[],"minTarget":44,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-pause-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-pause-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-pause-844x390 {"overflow":[],"under12":[],"minTarget":50,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-results-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-results-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-results-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-title-1280x720 {"overflow":[],"under12":[],"minTarget":58,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-title-390x844 {"overflow":[],"under12":[],"minTarget":55,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t2-title-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Alegreya+Alegreya Sans"}
+t3-hero-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-hero-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-hero-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-kit-1280x720 {"overflow":[],"under12":[],"minTarget":44,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-levelup-1280x720 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-levelup-390x844 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-levelup-844x390 {"overflow":[],"under12":[],"minTarget":44,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-pause-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-pause-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-pause-844x390 {"overflow":[],"under12":[],"minTarget":50,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-results-1280x720 {"overflow":[],"under12":[],"minTarget":56,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-results-390x844 {"overflow":[],"under12":[],"minTarget":54,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-results-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-title-1280x720 {"overflow":[],"under12":[],"minTarget":58,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-title-390x844 {"overflow":[],"under12":[],"minTarget":55,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
+t3-title-844x390 {"overflow":[],"under12":[],"minTarget":46,"scroll":false,"fonts":"Fraunces+Alegreya Sans"}
