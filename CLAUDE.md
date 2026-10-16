@@ -44,6 +44,9 @@ Matt sometimes runs away with ideas and loses track of what matters next. Claude
 ## Standing rule: fix the weak spots (set by Matt, 2026-10-16)
 Every chunk ends with its honest weak-spot list. By default FIX the fixable weak spots before presenting the chunk (same chunk or an immediate small follow-up), not just list them. Only leave one open if it needs Matt (real-phone test, design/taste call with a recommendation, a locked decision, or a different chunk owns it); say which and why. Do not ship a chunk and ask Matt whether to fix its known flaws.
 
+## Standing rule: new content = three options, Matt picks (set by Matt, 2026-10-16)
+Whenever new gameplay content is added (weapon, evolution, hero, ability, enemy, boss, status effect, power-up, tree node group), design THREE genuinely different options for each piece, recommended first, with plain-words fantasy/verb, how it looks and sounds, estimated numbers, fit with the weapon/hero stats and recipe pairs, risks. Present as one-tap questions (max 3 per batch, one weapon or hero at a time), Matt picks, record each pick in docs/LOCKED.md, then build in small chunks. Keep every piece consistent with its siblings (same counts per weapon, distinct verbs, different recipe pairs).
+
 ## Standing rule: small chunks, never get ahead (set by Matt)
 Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
 - One chunk = one small, clearly described piece with a visible result and a done-check (tests green, screenshot/numbers, security + fit check). State the chunk before starting; finish and show it before starting the next.
