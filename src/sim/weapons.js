@@ -50,9 +50,9 @@ const ghostWolves = {
     let bleedDur = s.duration;
     if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
-    if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.4); bleedDur *= 1.5; }
+    if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
     const bleedDps = dmg * BLEED_RATE;
-    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.5) : 0.6) / howl;
+    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl;
 
     if (evo === 'howling_legion') {
       rt.howlCd = (rt.howlCd ?? 4) - dt;
@@ -101,7 +101,7 @@ const ghostWolves = {
           u.y = t.y + 2;
           u.faceX = u.slot % 2 ? -1 : 1;
           u.maulCd -= dt;
-          if (u.maulCd <= 0) { u.maulCd = 0.2; sim.hurt(t, dmg * tune(sim, w, 'maul', 0.3)); }
+          if (u.maulCd <= 0) { u.maulCd = 0.2; sim.hurt(t, dmg * tune(sim, w, 'maul', 0.45)); }
           if (!t.boss) t.heldT = Math.max(t.heldT || 0, 0.15);
         }
         if (u.maul > 0) continue;
@@ -122,7 +122,7 @@ const ghostWolves = {
         const d = Math.hypot(dx, dy) || 0.001;
         if (evo === 'phantom_stampede' && u.dashCd <= 0 && d > 12 && d < 110) {
           u.leap = { sx: u.x, sy: u.y, tx: t.x, ty: t.y, target: t, t: 0 };
-          u.dashCd = tune(sim, w, 'leapCd', 3.2);
+          u.dashCd = tune(sim, w, 'leapCd', 1.8);
           continue;
         }
         if (d > t.r + u.r) {
@@ -132,12 +132,12 @@ const ghostWolves = {
           if (evo === 'dire_alpha') {
             for (const e of sim.enemies) {
               if (e.dead) continue;
-              if (Math.hypot(e.x - u.x, e.y - u.y) < e.r + tune(sim, w, 'cleave', 28)) {
+              if (Math.hypot(e.x - u.x, e.y - u.y) < e.r + tune(sim, w, 'cleave', 24)) {
                 sim.hurt(e, dmg);
                 sim.bleed(e, bleedDps, bleedDur);
               }
             }
-            sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: tune(sim, w, 'cleave', 28), ttl: 0.15, color: '#9fd8ff' });
+            sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: tune(sim, w, 'cleave', 24), ttl: 0.15, color: '#9fd8ff' });
           } else {
             sim.hurt(t, dmg);
             sim.bleed(t, bleedDps, bleedDur);
@@ -226,7 +226,7 @@ const ravenFlock = {
           sim.hurt(e, dmg);
           // W1a: bosses are never frightened; an enemy that was frightened cannot be re-frightened until 1.5 s after it recovers.
           if (fear && !e.boss) {
-            const fdur = tune(sim, w, 'fear', 1.2);
+            const fdur = tune(sim, w, 'fear', 0.3);
             if (sim.canHit(e, 'stormFear', fdur + 1.5)) e.fearT = Math.max(e.fearT, fdur);
           }
         }
@@ -253,7 +253,7 @@ const spiritBolts = {
     let explode = false;
     let life = 2.4;
     if (evo === 'spirit_tempest') { count = 8; cd = tune(sim, w, 'cd', 0.8); speed *= 1.4; explode = true; dmg *= tune(sim, w, 'dmg', 1); }
-    if (evo === 'soul_lance') { count = 1; dmg *= tune(sim, w, 'dmg', 5); pierce = Infinity; speed *= 1.3; r = tune(sim, w, 'r', 8); homing = false; cd = tune(sim, w, 'cd', 1.4); life = 1.6; }
+    if (evo === 'soul_lance') { count = 1; dmg *= tune(sim, w, 'dmg', 8); pierce = Infinity; speed *= 1.3; r = tune(sim, w, 'r', 12); homing = false; cd = tune(sim, w, 'cd', 1.1); life = 1.6; }
 
     const targets = sim.nearestEnemies(p.x, p.y, 210, Math.max(1, count));
     if (!targets.length) { rt.cd = 0.15; return; }
@@ -297,7 +297,7 @@ const chainLightning = {
     if (evo === 'static_storm') {
       rt.cd = (rt.cd ?? 0.2) - dt;
       if (rt.cd > 0) return;
-      rt.cd = Math.max(0.1, 0.3 * (s.cooldown / 1.6)) * sim.mods.cooldown;
+      rt.cd = Math.max(0.1, 0.3 * (s.cooldown / 1.6) * sim.mods.cooldown); // floor after tree cooldown mods (B5)
       const strikes = tune(sim, w, 'strikes', 4);
       const radius = 110 + area * 0.8;
       const pool = sim.enemies.filter((e) => !e.dead && Math.hypot(e.x - p.x, e.y - p.y) < radius);
@@ -315,9 +315,16 @@ const chainLightning = {
         rt.jCd = tune(sim, w, 'cd', 3);
         let n = 0;
         const cap = tune(sim, w, 'cap', 30);
+        // Nearest first, on screen only (view half-height 180): never a far, off-screen enemy while a near one is skipped (B4).
+        const near = [];
         for (const e of sim.enemies) {
-          if (e.dead || n >= cap) continue;
-          if (Math.hypot(e.x - p.x, e.y - p.y) > 260) continue;
+          if (e.dead) continue;
+          const dd = Math.hypot(e.x - p.x, e.y - p.y);
+          if (dd <= 180) near.push({ e, dd });
+        }
+        near.sort((a, b) => a.dd - b.dd || a.e.id - b.e.id);
+        for (const { e } of near) {
+          if (n >= cap) break;
           n++;
           sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.9));
           sim.addFx({ kind: 'bolt', pts: [{ x: e.x, y: e.y - 80 }, { x: e.x, y: e.y }], ttl: 0.2, color: '#b8f2ff' });
@@ -379,7 +386,7 @@ const holyOrbit = {
         if (evo === 'judgement_wheel') {
           for (const o of sim.enemies) {
             if (o.dead) continue;
-            if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34) sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.8));
+            if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34 && sim.canHit(o, 'wheelblast', 0.1)) sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.8));
           }
           sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: 34, ttl: 0.2, color: '#e8e0ff' });
           u.disabledT = tune(sim, w, 'rest', 1.0);

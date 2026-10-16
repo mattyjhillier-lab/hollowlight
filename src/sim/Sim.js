@@ -367,6 +367,7 @@ export class Sim {
         e.bleedTot += dealt; // running total the renderer batches into small numbers (counter only)
         if (this._src) this.dotBy[this._src] = (this.dotBy[this._src] || 0) + dealt;
         this._src = null;
+        if (e.bleedT <= 0) e.bleedDps = 0; // potency ends with the bleed (B3)
         if (e.dead) continue;
       }
 
