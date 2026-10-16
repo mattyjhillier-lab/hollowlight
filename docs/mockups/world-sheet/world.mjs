@@ -350,6 +350,7 @@ export function worldFrame(w, h, u, cfg) {
   for (const [cx, cy, rr, sd] of life.corr || []) o += corruption(X(cx), Y(cy), rr * u, u, sd || 4);
   // contested edge sparks (light eating corruption)
   for (const [sx, sy, sr] of cfg.sparks || []) o += sparkle(X(sx), Y(sy), sr * u, '#fff3c8');
+  if (cfg.ambGround) o += cfg.ambGround(X, Y, u); // ambient-life mock hook (ground level: tufts, flowers; lit by the lightmap, under creatures)
   // 3. props: scatter + authored
   const items = [];
   const add = (type, wx, wy, s = 1, extra = {}) => { const sx = X(wx), sy = Y(wy); if (sx < -220 * u || sx > w + 220 * u || sy < -60 * u || sy > h + 900 * u) return; items.push({ type, wx, wy, sx, sy, s, ...extra }); };
