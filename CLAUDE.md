@@ -41,6 +41,9 @@ Matt sometimes runs away with ideas and loses track of what matters next. Claude
 - If several things are open, name the ONE most important next step and why; do not offer a menu of many.
 - Be honest if an idea would delay the launch or add scope; recommend, but Matt decides.
 
+## Standing rule: fix the weak spots (set by Matt, 2026-10-16)
+Every chunk ends with its honest weak-spot list. By default FIX the fixable weak spots before presenting the chunk (same chunk or an immediate small follow-up), not just list them. Only leave one open if it needs Matt (real-phone test, design/taste call with a recommendation, a locked decision, or a different chunk owns it); say which and why. Do not ship a chunk and ask Matt whether to fix its known flaws.
+
 ## Standing rule: small chunks, never get ahead (set by Matt)
 Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
 - One chunk = one small, clearly described piece with a visible result and a done-check (tests green, screenshot/numbers, security + fit check). State the chunk before starting; finish and show it before starting the next.
