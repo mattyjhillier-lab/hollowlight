@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { hintText, statValue, formatValue, BLEED_RATE } from '../src/sim/cards.js';
+import { hintText, statValue, formatValue, BLEED_TIME } from '../src/sim/cards.js';
 import { CLAMP, cardModel } from '../src/ui/cardview.js';
 
 const weapons = JSON.parse(readFileSync(new URL('../src/data/weapons.json', import.meta.url)));
@@ -45,9 +45,12 @@ test('E1 every stat hint at every rank: fits the card clamp, no leftover tokens,
   }
 });
 
-test('E1 bleed hint quotes the sim bleed rate; card view uses the same text', () => {
-  assert.equal(BLEED_RATE, 0.35);
-  assert.ok(hintText(weapons.ghost_wolves, 'duration', 0).includes('35%'));
+test('E1/E3 Rend hint quotes the real per-rank potency and the fixed time; card view uses the same text', () => {
+  assert.equal(BLEED_TIME, 4);
+  assert.equal(weapons.ghost_wolves.stats.duration.name, 'Rend');
+  const h = hintText(weapons.ghost_wolves, 'duration', 0);
+  assert.ok(h.includes('15% → 19%') && h.includes('4s'), h);
+  assert.ok(hintText(weapons.ghost_wolves, 'duration', 4).includes('31% → 35%'));
   const card = { kind: 'stat', weaponId: 'holy_orbit', stat: 'radius', rank: 2, nextRank: 3, maxRank: 5 };
   assert.equal(cardModel(card, data).desc, hintText(weapons.holy_orbit, 'radius', 2));
 });

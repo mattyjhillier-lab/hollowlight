@@ -403,11 +403,16 @@ const run = (sim, secs, input = { x: 0, y: 0 }) => {
 };
 const fx = (owned) => aggregateMods(owned, def, data);
 
-test('effects: damage nodes raise damage dealt (same seed)', () => {
-  const a = new Sim({ data, seed: 11, godMode: true });
-  const b = new Sim({ data, seed: 11, godMode: true, tree: fx({ sp_edge: 1, su_bond: 1, su_pot: 1, wf_fang: 1, ch_wren: 1 }) });
-  run(a, 90); run(b, 90);
-  assert.ok(b.damageDealt > a.damageDealt * 1.01, `${b.damageDealt} vs ${a.damageDealt}`);
+test('effects: damage nodes raise damage dealt (summed over 6 seeds: one seed is chaotic)', () => {
+  let da = 0;
+  let db = 0;
+  for (let seed = 11; seed < 17; seed++) {
+    const a = new Sim({ data, seed, godMode: true });
+    const b = new Sim({ data, seed, godMode: true, tree: fx({ sp_edge: 1, su_bond: 1, su_pot: 1, wf_fang: 1, ch_wren: 1 }) });
+    run(a, 25); run(b, 25);
+    da += a.damageDealt; db += b.damageDealt;
+  }
+  assert.ok(db > da * 1.01, `${db} vs ${da}`);
 });
 
 test('effects: weapon bonuses change real weapon stats (count, power, pierce)', () => {

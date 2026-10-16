@@ -65,6 +65,7 @@ export function effectOf(card, data) {
       const cur = statValue(data.weapons[card.weaponId], card.stat, card.rank);
       const nxt = statValue(data.weapons[card.weaponId], card.stat, card.rank + 1);
       const arrow = `${formatValue(s.fmt, cur)} → ${formatValue(s.fmt, nxt)}`;
+      if (s.fmt === 'pct') return { mode: 'percent', num: pct((nxt - cur) * 100), unit: clampText(arrow, CLAMP.unit) }; // points, not a % of a %
       if (s.fmt === 'sec') return { mode: 'seconds', num: secs(nxt - cur), unit: clampText(arrow, CLAMP.unit) };
       if (COUNT_KEYS.has(card.stat) || !(Math.abs(cur) > 0)) return { mode: 'count', num: clampText(formatValue(s.fmt, nxt), CLAMP.num), unit: clampText(arrow, CLAMP.unit) };
       return { mode: 'percent', num: clampText(pct(((nxt - cur) / Math.abs(cur)) * 100), CLAMP.num), unit: clampText(arrow, CLAMP.unit) };

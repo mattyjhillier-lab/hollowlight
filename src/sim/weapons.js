@@ -2,7 +2,7 @@
 // w = { id, ranks, evo, s (computed stats), rt (runtime scratch) }.
 // Evolutions are handled inside each weapon by branching on w.evo.
 
-import { BLEED_RATE } from './cards.js';
+import { BLEED_TIME } from './cards.js';
 
 const TAU = Math.PI * 2;
 
@@ -47,11 +47,11 @@ const ghostWolves = {
     const howl = sim.buffs.packHowl > 0 ? 2 : 1;
     let dmg = s.power * sim.dmgMult(w) * howl;
     let speed = s.speed * howl;
-    let bleedDur = s.duration;
+    let bleedDur = BLEED_TIME; // Rend (s.duration) is the potency; the time is fixed
     if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
-    const bleedDps = dmg * BLEED_RATE;
+    const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl;
 
     if (evo === 'howling_legion') {

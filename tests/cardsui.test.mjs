@@ -20,8 +20,8 @@ test('HUD-2 effect numbers: percent / count / seconds / label per stat kind', ()
   const count = statCard(w, 'count', { count: 1 }); // 3 wolves total
   assert.equal(effectOf(count, data).mode, 'count');
   assert.equal(effectOf(count, data).num, '4');
-  const dur = statCard(w, 'duration'); // seconds: signed delta
-  assert.deepEqual(effectOf(dur, data), { mode: 'seconds', num: '+0.5s', unit: '1.5s → 2s' });
+  const dur = statCard(w, 'duration'); // Rend: percentage POINTS of a bite per second, not a percent of a percent
+  assert.deepEqual(effectOf(dur, data), { mode: 'percent', num: '+4%', unit: '15% → 19%' });
   const chain = newWeapon('chain_lightning', data.weapons.chain_lightning);
   const cd = statCard(chain, 'cooldown');
   assert.equal(effectOf(cd, data).num, '-0.15s');
