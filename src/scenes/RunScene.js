@@ -435,6 +435,12 @@ export class RunScene extends Phaser.Scene {
     return o;
   }
 
+  // Swallow any pending Space press while paused (stops it queuing an ability on resume).
+  drainAbilityKey() {
+    const k = this.keys;
+    if (k && k.SPACE) Phaser.Input.Keyboard.JustDown(k.SPACE);
+  }
+
   // Measure frame interval + CPU work; auto-tier decisions; refresh overlay.
   measure() {
     const now = performance.now();
