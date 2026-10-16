@@ -23,6 +23,7 @@ export const E_ANCHOR = {
   neck: [0, -60], // head pivot
   hand: [STAFF_X, -48], // the hand that grips the pole; the staff swings about it
   lantern: [STAFF_X, LAN_Y + 8.6], // the lantern flame (his light)
+  hem: [-20, -30], // W2b: back of the coat, where the trim wisp trails from (trail anchor only, draws nothing)
   crown: [STAFF_X, RING_Y - 6], // the candle wheel's glow centre
   staffBack: [STAFF_X, -60], staffFront: [STAFF_X, RING_Y], // atlas pivots (inside their frames)
 };

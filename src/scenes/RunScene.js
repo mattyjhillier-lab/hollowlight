@@ -122,9 +122,9 @@ export class RunScene extends Phaser.Scene {
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
     this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // AL-1 grass/flower sway (visual only)
-    this.ribSet = new RibbonSet(240, 12, 48); // W2 trails (visual only)
-    this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 240);
-    this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0 }));
+    this.ribSet = new RibbonSet(600, 12, 64); // W2 trails (visual only)
+    this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 600);
+    this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
     this.ribKey = '';
     this.ribCaps = null;
@@ -818,7 +818,7 @@ export class RunScene extends Phaser.Scene {
     }
     const ribOn = !!(app.params.trails && this.ribCaps && this.ribCaps.segs > 0 && this.ribCaps.spirits.n > 0);
     let nSrc = 0;
-    const ribAdd = (u, col, life) => { if (!ribOn || nSrc >= this.ribSrc.length) return; const r = this.ribSrc[nSrc++]; r.id = u.id; r.x = u.x; r.y = u.y + 1; r.col = col; r.life = life; };
+    const ribAdd = (u, col, life, fast) => { if (!ribOn || nSrc >= this.ribSrc.length) return; const r = this.ribSrc[nSrc++]; r.id = u.id; r.x = u.x; r.y = u.y + 1; r.col = col; r.life = life; r.fast = !!fast; };
     const trail = (x, y, col, s) => {
       if (trailBudget <= 0) return;
       trailBudget--;
@@ -832,7 +832,7 @@ export class RunScene extends Phaser.Scene {
       if (u.kind === 'wolf') {
         pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.12 * pl.haloU.inv).setAlpha(0.62);
-        if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
+        if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life * 1.15, true); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
@@ -948,7 +948,7 @@ export class RunScene extends Phaser.Scene {
     if (!app.params.trails || caps.segs <= 0 || sim.state === 'dead') { if (this.ribLayer.shown) this.ribLayer.clear(); return; }
     const h = this.ribHero;
     h.lx = lx; h.ly = ly;
-    h.sx = p.x - (p.faceX < 0 ? -1 : 1) * 5; h.sy = p.y - 13;
+    if (this.rig && this.rig.active) { h.sx = this.rig.scarfX; h.sy = this.rig.scarfY; } else { h.sx = p.x - (p.faceX < 0 ? -1 : 1) * 5; h.sy = p.y - 13; }
     const elias = this.rig.id === 'elias';
     this.ribSet.update(sim.time, caps, h, this.ribSrc, nSrc);
     const n = this.ribSet.emit(sim.time, caps, ROLE.lantern, elias ? ROLE.eliasTrim : 0xbff3e6);

@@ -27,7 +27,7 @@ export class EliasRig {
     this.wp = { leg: 0, lift: 0, lift2: 0, bob: 0, sy: 1, sx: 1, lean: 0, tailSway: 0 };
     this.hf = { tint: 0, sx: 1, sy: 1, lean: 0, active: false };
     this.df = { k: 0, alpha: 1, rise: 0, sy: 1, sx: 1, light: 0, emberY: -80 };
-    this._x = 0; this._y = 0; this.emberX = 0; this.emberY = 0;
+    this._x = 0; this._y = 0; this.emberX = 0; this.emberY = 0; this.scarfX = 0; this.scarfY = 0;
     this.reset();
   }
 
@@ -136,6 +136,7 @@ export class EliasRig {
       this._x = this.deadX; this._y = this.deadY;
     }
     this.emberX = this._x; this.emberY = this._y;
+    this.at(fx, fy, E_ANCHOR.hem[0], E_ANCHOR.hem[1], ca, sa, sx, sy, bob); this.scarfX = this._x; this.scarfY = this._y; // W2b trail anchor
     const flicker = gentle ? 1 : 1 + 0.04 * Math.sin(this.t * 15) + 0.025 * Math.sin(this.t * 27);
     const dim = hf.active && !dead ? 0.6 : 1;
     this.lGlow.setPosition(this._x, this._y).setScale(this.glowInv * flicker * (lowHp ? 0.85 : 1)).setAlpha((dead ? 0.8 * (1 - deadK * 0.2) : 0.85) * dim).setVisible(true);

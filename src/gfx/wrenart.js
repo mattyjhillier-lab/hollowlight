@@ -87,6 +87,7 @@ export const ANCHOR = {
   neck: [0, -66], // head pivot
   ember: [33, -80], // ember rest position (her lantern)
   hand: [16, -47], // the hand the ember hangs from
+  scarf: [-13, -57], // W2b: back of the shoulders, where the scarf wisp trails from (trail anchor only, draws nothing)
 };
 
 export function drawWrenBody(c) {

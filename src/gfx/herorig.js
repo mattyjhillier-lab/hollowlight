@@ -37,7 +37,7 @@ export class HeroRig {
     this.ps = { x: 0, y: 0, vx: 0, vy: 0 }; // pup spring (world, ground contact)
     this.heel = { x: 0, y: 0 };
     this.pst = { run: false, still: 0 };
-    this.emberX = 0; this.emberY = 0; this.pupX = 0; this.pupY = 0;
+    this.emberX = 0; this.emberY = 0; this.scarfX = 0; this.scarfY = 0; this.pupX = 0; this.pupY = 0;
     this.reset();
   }
 
@@ -150,6 +150,7 @@ export class HeroRig {
     this.at(fx, fy, ANCHOR.ember[0] * (lowHp ? 0.8 : 1), eAnchorY + eBob, ca, sa, sx, sy, bob);
     if (gentle) { this.es.x = this._x; this.es.y = this._y; this.es.vx = this.es.vy = 0; } else M.springStep(this.es, this._x, this._y, dt, 900, 0.5, 60);
     this.emberX = this.es.x; this.emberY = this.es.y;
+    this.at(fx, fy, ANCHOR.scarf[0], ANCHOR.scarf[1], ca, sa, sx, sy, bob); this.scarfX = this._x; this.scarfY = this._y; // W2b trail anchor
     const flicker = gentle ? 1 : 1 + 0.045 * Math.sin(this.t * 17) + 0.03 * Math.sin(this.t * 29);
     const emberDim = hf.active && !dead ? 0.65 : 1;
     this.eGlow.setPosition(this.es.x, this.es.y).setScale((32 / 32) * this.glowInv * flicker * (lowHp ? 0.85 : 1)).setAlpha((dead ? 0.8 * (1 - deadK * 0.2) : 0.85) * emberDim).setVisible(true);

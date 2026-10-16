@@ -5,8 +5,8 @@ import { CAPS } from '../src/gfx/quality.js';
 
 const finite = (set) => { for (let i = 0; i < set.count; i++) for (const a of [set.sx, set.sy, set.sl, set.sr, set.sw, set.sa]) assert.ok(Number.isFinite(a[i]), 'finite'); };
 const sim = (caps, secs, opts = {}) => {
-  const set = new RibbonSet(240, 12, 48);
-  const units = Array.from({ length: opts.units ?? 30 }, (_, i) => ({ id: i + 1, x: 0, y: 0, col: 0x9fe8ff, life: caps.spirits.life }));
+  const set = new RibbonSet(600, 12, 64);
+  const units = Array.from({ length: opts.units ?? 30 }, (_, i) => ({ id: i + 1, x: 0, y: 0, col: 0x9fe8ff, life: caps.spirits.life, fast: i % 3 === 0 }));
   let maxCount = 0; let maxSlots = 0;
   for (let t = 0; t < secs; t += 1 / 60) {
     const hx = t * 100;
@@ -23,12 +23,12 @@ const sim = (caps, secs, opts = {}) => {
 test('tier caps: low is the cheapest, med/high within budget, low has no spirit/scarf ribbons', () => {
   const R = (t) => ribbonCaps(CAPS[t].ribbon);
   assert.equal(R('low').spirits.n, 0); assert.equal(R('low').scarf.life, 0);
-  assert.ok(R('low').segs <= 12 && R('low').lantern.life > 0 && R('low').lantern.life <= 1.2);
-  assert.ok(R('med').segs <= 96 && R('high').segs <= 240);
+  assert.ok(R('low').segs <= 24 && R('low').lantern.life >= 1.4 && R('low').lantern.life <= 1.6);
+  assert.ok(R('med').segs <= 260 && R('high').segs <= 600);
   assert.ok(R('low').segs < R('med').segs && R('med').segs < R('high').segs);
   assert.ok(R('high').spirits.n <= 12 && R('med').spirits.n <= 6);
   for (const t of ['low', 'med', 'high']) assert.ok(R(t).lantern.pts <= 48 && R(t).spirits.pts <= 48 && R(t).scarf.pts <= 48, 'fits the ring buffers');
-  assert.ok(R('high').lantern.life <= 2.5, 'short enough to stay readable');
+  assert.ok(R('high').lantern.life >= 3.8 && R('high').lantern.life <= 4.2 && R('med').lantern.life >= 2.8 && R('med').lantern.life <= 3.2, 'W2b lantern lengths');
   assert.ok(RIBBON_DEPTH < 55000, 'under halos and every creature');
 });
 
@@ -79,7 +79,7 @@ test('ring buffer wraps without growth', () => {
 
 test('stationary source adds no points; spirits beyond the slot cap get none (stable, no flicker)', () => {
   const caps = ribbonCaps(CAPS.med.ribbon);
-  const set = new RibbonSet(240, 12, 48);
+  const set = new RibbonSet(600, 12, 64);
   const units = Array.from({ length: 20 }, (_, i) => ({ id: i + 1, x: i, y: 0, col: 1, life: 0.7 }));
   for (let t = 0; t < 2; t += 0.05) set.update(t, caps, { lx: 5, ly: 5, sx: 5, sy: 5 }, units, units.length);
   assert.equal(set.hero.n, 1); assert.equal(set.activeSlots(), caps.spirits.n);
@@ -99,4 +99,22 @@ test('layer pools images: created never exceeds the cap and is reused', () => {
   layer.render(set, 5); layer.render(set, set.count);
   assert.equal(layer.created, before, 'reused');
   layer.clear(); assert.equal(layer.shown, 0);
+});
+
+test('W2b: fast spirits are sampled at a higher rate and drawn wider; spirits get a lighter core layer', () => {
+  const caps = ribbonCaps(CAPS.high.ribbon);
+  const mk = (fast) => { const set = new RibbonSet(600, 12, 64); let t = 0; for (; t < 1; t += 1 / 60) set.update(t, caps, null, [{ id: 1, x: t * 260, y: 0, col: 0x9fe8ff, life: 1.4, fast }], 1); return { set, t }; };
+  const a = mk(true); const b = mk(false);
+  assert.ok(a.set.slots[0].rib.n > b.set.slots[0].rib.n * 1.5, 'more points per second for fast sources');
+  assert.ok(a.set.slots[0].wm > b.set.slots[0].wm);
+  const n = a.set.emit(a.t, caps, 1, 2);
+  assert.ok(n > 0 && n <= caps.segs);
+  const cols = new Set(); for (let i = 0; i < n; i++) cols.add(a.set.sc[i]);
+  assert.ok(cols.size >= 2, 'body + lighter core');
+});
+
+test('W2b: rigs expose a scarf/hem trail anchor (draws nothing)', async () => {
+  const w = await import('../src/gfx/wrenart.js'); const e = await import('../src/gfx/eliasart.js');
+  assert.ok(Array.isArray(w.ANCHOR.scarf) && w.ANCHOR.scarf.every(Number.isFinite) && w.ANCHOR.scarf[0] < 0, 'behind the shoulders');
+  assert.ok(Array.isArray(e.E_ANCHOR.hem) && e.E_ANCHOR.hem.every(Number.isFinite) && e.E_ANCHOR.hem[0] < 0);
 });

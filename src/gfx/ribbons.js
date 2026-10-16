@@ -2,6 +2,8 @@
 // Ribbons are short-lived point histories (ring buffers) drawn as stretched additive glow sprites UNDER every creature/halo, so they never
 // hide enemies, pickups or numbers. The long ~25 s mural is the life map (already stamped by hero + spirits); ribbons are the bright head of it.
 // Warm cream-amber = hero lantern; scarf wisp = pale scarf colour; spirits keep their own friendly role colour. Enemies get nothing; gold (evolutions) is never used.
+const FAST_DT = 0.035; // W2b: fast spirits (wolves) are sampled at ~28 Hz so a pounce/sprint leaves a continuous streak
+const lighten = (c, k) => { const r = (c >> 16) & 255; const g = (c >> 8) & 255; const b = c & 255; return ((r + (255 - r) * k) << 16) | ((g + (255 - g) * k) << 8) | (b + (255 - b) * k); };
 export const RIBBON_DEPTH = 54000; // below D_HALO (55000) and every lit sprite (60000+), above ground/sway/decals
 const JUMP = 90; // a step larger than this (pounce, teleport) breaks the ribbon instead of drawing a streak
 const MIN_STEP = 1.5; // world units the source must move before a point is added
@@ -58,7 +60,7 @@ export class RibbonSet {
     this.maxPts = maxPts;
     this.hero = new Ribbon(maxPts);
     this.scarf = new Ribbon(maxPts);
-    this.slots = Array.from({ length: maxSlots }, () => ({ id: -1, rib: new Ribbon(maxPts), seen: 0, col: 0, life: 0 }));
+    this.slots = Array.from({ length: maxSlots }, () => ({ id: -1, rib: new Ribbon(maxPts), seen: 0, col: 0, life: 0, wm: 1, pts: 8 }));
     this.byId = new Map();
     this.drawn = { hero: 0, scarf: 0, spirits: 0 }; // last emit: segments per group (tests/perf)
   }
@@ -90,7 +92,10 @@ export class RibbonSet {
         s.id = u.id; s.rib.reset(); this.byId.set(u.id, s);
       }
       s.seen = now; s.col = u.col; s.life = u.life;
-      s.rib.push(u.x, u.y, now, Math.max(0.04, u.life / Math.max(4, P.pts - 2)));
+      const fast = u.fast ? 1 : 0;
+      const dt = fast ? FAST_DT : Math.max(0.04, u.life / Math.max(4, P.pts - 2));
+      s.wm = fast ? 1.45 : 1; s.pts = Math.min(this.maxPts, Math.ceil(u.life / dt) + 2);
+      s.rib.push(u.x, u.y, now, dt);
     }
     for (const s of this.slots) {
       if (s.id >= 0 && now - s.seen > 0.05 && (s.rib.empty(now, s.life) || P.n <= 0)) { this.byId.delete(s.id); s.id = -1; s.rib.reset(); }
@@ -113,9 +118,9 @@ export class RibbonSet {
       const q = this.count++;
       this.sx[q] = 0.5 * (rib.x[k0] + rib.x[k1]); this.sy[q] = 0.5 * (rib.y[k0] + rib.y[k1]);
       this.sl[q] = len; this.sr[q] = Math.atan2(dy, dx);
-      this.sw[q] = w * (0.3 + 0.7 * f) * (core ? 0.38 : 1);
-      this.sa[q] = a * Math.pow(f, 1.4) * (core ? 1.6 : 1);
-      this.sc[q] = core ? 0xfff1c8 : col;
+      this.sw[q] = w * (0.22 + 0.78 * f) * (core ? (core === 2 ? 0.34 : 0.38) : 1);
+      this.sa[q] = a * Math.pow(f, 1.25) * (core ? 1.6 : 1);
+      this.sc[q] = core ? (core === 2 ? lighten(col, 0.6) : 0xfff1c8) : col;
       n++;
     }
     return n;
@@ -127,11 +132,15 @@ export class RibbonSet {
     const L = caps.lantern; const S = caps.scarf; const P = caps.spirits;
     let h = 0; let sc = 0; let sp = 0;
     if (L.life > 0) {
-      h = this.seg(this.hero, now, L.life, L.w, L.a, heroCol, L.pts, limit, false);
-      if (L.core) h += this.seg(this.hero, now, L.life, L.w, L.a * 0.55, heroCol, L.pts, limit, true);
+      h = this.seg(this.hero, now, L.life, L.w, L.a, heroCol, L.pts, limit, 0);
+      if (L.core) h += this.seg(this.hero, now, L.life, L.w, L.a * 0.55, heroCol, L.pts, limit, 1);
     }
-    if (S.life > 0) sc = this.seg(this.scarf, now, S.life, S.w, S.a, scarfCol, S.pts, limit, false);
-    if (P.n > 0) for (const s of this.slots) if (s.id >= 0) sp += this.seg(s.rib, now, s.life, P.w, P.a, s.col, P.pts, limit, false);
+    if (S.life > 0) sc = this.seg(this.scarf, now, S.life, S.w, S.a, scarfCol, S.pts, limit, 0);
+    if (P.n > 0) for (const s of this.slots) if (s.id >= 0) {
+      const w = P.w * s.wm; const pc = s.pts;
+      sp += this.seg(s.rib, now, s.life, w, P.a, s.col, pc, limit, 0); // soft wide body
+      sp += this.seg(s.rib, now, s.life, w, P.a * 0.6, s.col, pc, limit, 2); // W2b: brighter lighter-tint core so it reads on bright restored ground
+    }
     this.drawn.hero = h; this.drawn.scarf = sc; this.drawn.spirits = sp;
     return this.count;
   }
