@@ -97,6 +97,10 @@ export class Sim {
     this.gold = 0;
     this.shards = 0;
     this.damageDealt = 0;
+    // R2 counters (read-only stats for the results screen; never feed back into the sim).
+    this._src = null;
+    this.dmgBy = {};
+    this.killsBy = {};
     this.boss = null;
     this.bossSpawned = false;
     this.bossKilled = false;
@@ -184,8 +188,9 @@ export class Sim {
     if (e.dead || amount <= 0) return 0;
     e.hp -= amount;
     this.damageDealt += amount;
+    if (this._src) this.dmgBy[this._src] = (this.dmgBy[this._src] || 0) + amount;
     if (!opts.silent) { e.flash = 0.08; this.logHit(e, amount, false); }
-    if (e.hp <= 0) e.dead = true;
+    if (e.hp <= 0) { e.dead = true; e.killer = this._src; }
     return amount;
   }
 
@@ -196,6 +201,7 @@ export class Sim {
 
   bleed(e, dps, dur) {
     if (e.dead) return;
+    e.bleedSrc = this._src;
     e.bleedDps = Math.max(e.bleedDps, dps);
     e.bleedT = Math.max(e.bleedT, dur);
   }
@@ -274,12 +280,12 @@ export class Sim {
     this.projectiles.push({
       id: this.nextId++, kind: 'bolt', x, y,
       vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-      ang, speed, dmg, pierce, r, homing, explode, life, target, color, hit: new Set(),
+      ang, speed, dmg, pierce, r, homing, explode, life, target, color, hit: new Set(), src: this._src,
     });
   }
 
   spawnZone(z) {
-    this.zones.push({ id: this.nextId++, tick: 0, ...z });
+    this.zones.push({ id: this.nextId++, tick: 0, src: this._src, ...z });
   }
 
   // ------------------------------------------------------------------ enemies
@@ -355,7 +361,9 @@ export class Sim {
 
       if (e.bleedT > 0) {
         e.bleedT -= dt;
+        this._src = e.bleedSrc || null;
         this.hurt(e, e.bleedDps * dt, { silent: true });
+        this._src = null;
         if (e.dead) continue;
       }
 
@@ -507,7 +515,11 @@ export class Sim {
   }
 
   updateWeapons(dt) {
-    for (const w of this.weapons) WEAPON_BEHAVIOURS[w.id].update(this, w, dt);
+    for (const w of this.weapons) {
+      this._src = w.id;
+      WEAPON_BEHAVIOURS[w.id].update(this, w, dt);
+    }
+    this._src = null;
   }
 
   updateProjectiles(dt) {
@@ -535,7 +547,9 @@ export class Sim {
         const dy = e.y - b.y;
         const rr = e.r + b.r;
         if (dx * dx + dy * dy < rr * rr) {
+          this._src = b.src || null;
           this.hurt(e, b.dmg);
+          this._src = null;
           b.hit.add(e.id);
           if (b.pierce <= 0) {
             b.dead = true;
@@ -554,10 +568,12 @@ export class Sim {
   }
 
   explodeBolt(b) {
+    this._src = b.src || null;
     for (const e of this.enemies) {
       if (e.dead) continue;
       if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + 22) this.hurt(e, b.dmg * 0.6);
     }
+    this._src = null;
     this.addFx({ kind: 'ring', x: b.x, y: b.y, r: 22, ttl: 0.18, color: '#7ff0ff' });
   }
 
@@ -571,7 +587,7 @@ export class Sim {
         z.tick = 0.25;
         if (z.dps > 0) for (const e of this.enemies) {
           if (e.dead) continue;
-          if (Math.hypot(e.x - z.x, e.y - z.y) < z.r + e.r) this.hurt(e, z.dps * 0.25, { silent: true });
+          if (Math.hypot(e.x - z.x, e.y - z.y) < z.r + e.r) { this._src = z.src || null; this.hurt(e, z.dps * 0.25, { silent: true }); this._src = null; }
         }
       }
       if (z.heal && Math.hypot(p.x - z.x, p.y - z.y) < z.r) this.healPlayer(z.heal * dt);
@@ -693,6 +709,7 @@ export class Sim {
       any = true;
       this.kills += 1;
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
+      if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
       this.logHit(e, 0, true);
       this.gold += e.gold * this.mods.gold * this.bless.gold;
       this.addGem(e.x, e.y, e.xp);
@@ -847,7 +864,8 @@ export class Sim {
       character: this.characterId,
       killsByEnemy: { ...this.killsByEnemy },
       bossId: this.bossKilled ? this.chapter.bossId : null,
-      weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks } })),
+      weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks }, damage: this.dmgBy[w.id] || 0, kills: this.killsBy[w.id] || 0 })),
+      damageDealt: this.damageDealt,
     };
   }
 
