@@ -51,25 +51,26 @@
 
 /* UI IDENTITY v1 / U1 (docs/design/ui-identity-v1.md): self-hosted OFL fonts (docs/CREDITS.md). Latin subset woff2 from src/assets/fonts;
    Vite inlines them as data URIs so the single-file build and the PWA offline cache carry them. No CDN. */
-@font-face { font-family: "Cormorant Garamond"; src: url("./assets/fonts/cormorant-garamond.woff2") format("woff2"); font-weight: 500 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Figtree"; src: url("./assets/fonts/figtree.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Caveat"; src: url("./assets/fonts/caveat.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Hollowlight Chancery"; src: url("./assets/fonts/hollowlight-chancery.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Hollowlight Chancery"; src: url("./assets/fonts/hollowlight-chancery-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("./assets/fonts/alegreya-sans-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("./assets/fonts/alegreya-sans-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 
 /* Lantern Glass type + role tokens. Additive: --font-head/--font-ui and every token above keep working (HUD A is unchanged).
-   Display = headings/names/big numerals (large only; 500 floor, never lighter). Body = labels/descriptions/numerals. Whisper = flavour lines only. */
+   Display = headings/names only (one weight; its digits are old-style, so ALL numerals use the body face, .ty-big included). Body = labels/descriptions/numerals. Whisper = flavour lines only. */
 :root {
-  --font-display: "Cormorant Garamond", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  --font-whisper: "Caveat", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
-  --fw-display: 600; --fw-display-soft: 500; --fw-display-strong: 700;
-  --fw-body: 400; --fw-body-strong: 600; --fw-body-bold: 700; --fw-whisper: 500;
-  /* Scale (16 px rem base). Floors: small >= 11 px, body >= 12 px (13 px portrait), whisper >= 15 px, so nothing drops below legibility on phones. */
+  --font-display: "Hollowlight Chancery", "Alegreya Sans", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; /* Fondamento subset, renamed (Reserved Font Name); one weight, so no faux bold; arrows fall through to Alegreya Sans */
+  --font-body: "Alegreya Sans", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-whisper: "Hollowlight Chancery", "Alegreya Sans", Georgia, serif; /* used with font-style: italic */
+  --fw-display: 400; --fw-display-soft: 400; --fw-display-strong: 400; /* Fondamento has a single weight */
+  --fw-body: 400; --fw-body-strong: 700; --fw-body-bold: 700; --fw-whisper: 400;
+  /* Scale (16 px rem base). Floors: small >= 12 px, body >= 13 px (14 px portrait; Alegreya Sans runs small and narrow), whisper >= 15 px, so nothing drops below legibility on phones. */
   --fs-wordmark: clamp(2.6rem, 1.2rem + 5vw, 5rem);
   --fs-title: clamp(1.5rem, 1rem + 1.6vw, 2.2rem);
   --fs-big: clamp(1.7rem, 1.1rem + 2vw, 2.5rem);
   --fs-card: clamp(1.1rem, .9rem + .6vw, 1.3rem);
-  --fs-body: max(12px, 1rem);
-  --fs-small: max(11px, .8rem);
+  --fs-body: max(13px, 1.06rem);
+  --fs-small: max(12px, .84rem);
   --fs-whisper: max(15px, 1.05rem);
   --lh-tight: 1.1; --lh-body: 1.4;
   --ls-caps: .14em; --ls-title: .04em;
@@ -80,18 +81,18 @@
   --lg-leak: rgba(255, 171, 58, .14);
   --lg-text-dim: rgba(255, 243, 220, .68);
 }
-@media (orientation: portrait) { :root { --fs-body: max(13px, 1rem); } }
+@media (orientation: portrait) { :root { --fs-body: max(14px, 1.06rem); } }
 
 /* Type roles (specimen now; screens adopt them in U2+). */
 .ty-wordmark { font: var(--fw-display-strong) var(--fs-wordmark)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
 .ty-title { font: var(--fw-display) var(--fs-title)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
 .ty-card { font: var(--fw-display) var(--fs-card)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
-.ty-big { font: var(--fw-display-strong) var(--fs-big)/var(--lh-tight) var(--font-display); font-feature-settings: var(--num); }
+.ty-big { font: var(--fw-body-bold) var(--fs-big)/var(--lh-tight) var(--font-body); font-feature-settings: var(--num); }
 .ty-body { font: var(--fw-body) var(--fs-body)/var(--lh-body) var(--font-body); font-feature-settings: var(--num); }
 .ty-label { font: var(--fw-body-strong) var(--fs-body)/var(--lh-body) var(--font-body); font-feature-settings: var(--num); }
 .ty-small { font: var(--fw-body) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: .02em; font-feature-settings: var(--num); }
 .ty-kicker { font: var(--fw-body-strong) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: var(--ls-caps); text-transform: uppercase; }
-.ty-whisper { font: var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); }
+.ty-whisper { font: italic var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }

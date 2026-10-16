@@ -92,7 +92,7 @@
 .lg-btn__flame { flex: none; width: 1.1em; height: 1.3em; background: var(--flame); -webkit-mask: var(--lg-flame-mask) center / contain no-repeat; mask: var(--lg-flame-mask) center / contain no-repeat; opacity: 0; transform-origin: 50% 90%; filter: drop-shadow(0 0 .3em var(--flame)); transition: opacity 120ms; }
 .lg-btn__text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .lg-btn__label { font: var(--fw-display-strong) var(--fs-card)/var(--lh-tight) var(--font-display); letter-spacing: .1em; text-transform: uppercase; }
-.lg-btn__whisper { font: var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); color: var(--lg-text-dim); text-transform: none; letter-spacing: 0; margin-top: .1em; }
+.lg-btn__whisper { font: italic var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); color: var(--lg-text-dim); text-transform: none; letter-spacing: 0; margin-top: .1em; }
 .lg-btn__key { flex: none; font: var(--fw-body-strong) var(--fs-small)/1.5 var(--font-body); min-width: 1.9em; padding: 0 .4em; text-align: center; color: var(--brass); border: 1px solid rgba(216, 178, 106, .6); }
 .lg-btn--primary { background: linear-gradient(rgba(255, 171, 58, .3), rgba(255, 171, 58, .08)); border-color: rgba(255, 171, 58, .75); box-shadow: 0 0 1.4em rgba(255, 171, 58, .22), inset 0 0 1.1em rgba(255, 171, 58, .12); }
 .lg-btn--primary .lg-btn__flame, .lg-btn:hover .lg-btn__flame, .lg-btn.is-hover .lg-btn__flame, .lg-btn:focus-visible .lg-btn__flame, .lg-btn.is-focus .lg-btn__flame { opacity: 1; }
@@ -176,7 +176,7 @@
 .lg-tip__name { font: var(--fw-display-strong) var(--fs-card)/var(--lh-tight) var(--font-display); letter-spacing: .04em; }
 .lg-tip__verb { font: var(--fw-body) var(--fs-body)/var(--lh-body) var(--font-body); }
 .lg-tip__rank { font: var(--fw-body-strong) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: .06em; color: var(--brass); }
-.lg-tip__flavour { font: var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); color: var(--thread); }
+.lg-tip__flavour { font: italic var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); color: var(--thread); }
 
 /* ---------- card (level-up style): hanging eyelet, badge corner, pips, evolve variant ---------- */
 .lg-card { --lg-brk-len: 12px; position: relative; display: flex; flex-direction: column; align-items: center; gap: .35em; width: 100%; min-height: 12em; padding: 1.3em .9em 1em; text-align: center; cursor: pointer;

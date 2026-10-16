@@ -39,7 +39,7 @@ export function mountKit(root) {
   wrap.appendChild(panel({
     kicker: 'Chapter 1 - The Cursed Forest', title: 'Lantern Glass', whisper: 'Pick a hero and walk the Hollow',
     body: [el('p', 'ty-body', 'One calm glass surface with brass corner brackets, a thread divider and a soft light leak.'),
-      divider({ kind: 'hair', text: 'Hairline' }), el('p', 'ty-small', 'Small text stays at 11 px or more.')],
+      divider({ kind: 'hair', text: 'Hairline' }), el('p', 'ty-small', 'Small text stays at 12 px or more.')],
   }));
 
   const btnPanel = panel({ title: 'Buttons', body: [] });

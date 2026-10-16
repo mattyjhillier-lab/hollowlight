@@ -69,7 +69,7 @@ if (tag === 'after') {
     if (!m.ok) { fail('kit page missing ' + name); continue; }
     if (m.fonts.some((x) => !x.endsWith('loaded'))) fail('fonts not loaded ' + m.fonts.join(','));
     if (m.small.length) fail(`tap targets < 44px: ${JSON.stringify(m.small)}`);
-    if (m.minFont < 11) fail('text under 11px ' + m.minFont);
+    if (m.minFont < 12) fail('text under 12px ' + m.minFont);
     if (m.hscroll) fail('horizontal scroll');
     if (m.ext.length) fail('external requests ' + m.ext);
     await ev("document.activeElement && document.activeElement.blur(); document.getElementById('kitpage').scrollTop = 0");

@@ -47,7 +47,7 @@ if (tag === 'after') {
     await sleep(1500);
     const st = await ev(`(async()=>{await document.fonts.ready;const f=[...document.fonts].map(x=>x.family+' '+x.weight+' '+x.status);const r=document.getElementById('specimen');return {f,ok:!!r,min:r?Math.min(...[...r.querySelectorAll('[data-size]')].map(e=>parseFloat(getComputedStyle(e).fontSize))):0,hscroll:document.documentElement.scrollWidth>innerWidth+1}})()`);
     console.log(`specimen ${name}`, JSON.stringify(st));
-    if (!st.ok || st.hscroll || st.f.some((x) => !x.endsWith('loaded')) || st.min < 11) { fails++; console.log('FAIL specimen', name); }
+    if (!st.ok || st.hscroll || st.f.some((x) => !x.endsWith('loaded')) || st.min < 12) { fails++; console.log('FAIL specimen', name); }
     await shot(`specimen-${name}`);
     const full = await ev("document.getElementById('specimen').scrollHeight");
     if (full > h) { await send('Emulation.setDeviceMetricsOverride', { width: w, height: Math.min(full, 3000), deviceScaleFactor: dpr, mobile }); await sleep(400); await shot(`specimen-${name}-full`); }

@@ -41,28 +41,28 @@ export function mountSpecimen(root) {
   wrap.appendChild(head);
 
   const a = el('div', 'pane');
-  a.append(el('div', 'ty-kicker dim', 'Display: Cormorant Garamond', { 'data-size': '' }),
+  a.append(el('div', 'ty-kicker dim', 'Display: Fondamento (shipped as Hollowlight Chancery)', { 'data-size': '' }),
     el('div', 'ty-title', 'Choose your keeper', { 'data-size': '' }),
     el('div', 'ty-card', 'Ghost Wolves - Pouncing Pack', { 'data-size': '' }),
     el('div', 'ty-big', '0123456789 12:48 x2.1', { 'data-size': '' }),
     el('div', 'rule'),
-    el('div', 'ty-card', 'Weights 500 / 600 / 700', { 'data-size': '' }));
+    el('div', 'ty-card', 'One weight (400); no faux bold', { 'data-size': '' }));
   const w = el('div', 'wrow');
-  for (const n of [500, 600, 700]) w.appendChild(el('span', 'ty-card', 'Lantern ' + n, { 'data-size': '', style: 'font-weight:' + n }));
+  for (const n of [400]) w.appendChild(el('span', 'ty-card', 'Lantern ' + n, { 'data-size': '' }));
   a.appendChild(w);
   wrap.appendChild(a);
 
   const b = el('div', 'pane');
-  b.append(el('div', 'ty-kicker dim', 'Body: Figtree', { 'data-size': '' }),
+  b.append(el('div', 'ty-kicker dim', 'Body: Alegreya Sans', { 'data-size': '' }),
     el('div', 'ty-label', 'Begin the night', { 'data-size': '' }),
     el('div', 'ty-body', 'Wolves of light hunt the nearest corruption. Each rank sharpens one stat: power, speed, reach or bite.', { 'data-size': '' }),
-    el('div', 'ty-small dim', 'Small print: 1,234 gold - 56 shards - level 12 - Esc to pause (11px floor)', { 'data-size': '' }),
+    el('div', 'ty-small dim', 'Small print: 1,234 gold - 56 shards - level 12 - Esc to pause (12px floor)', { 'data-size': '' }),
     el('div', 'ty-body', 'Tabular numerals: 1111 / 8888 / 0000', { 'data-size': '' }),
     el('div', 'ty-body', 'Latin-1: café naïve über — “quoted” … × · ← →', { 'data-size': '' }));
   wrap.appendChild(b);
 
   const c = el('div', 'pane');
-  c.append(el('div', 'ty-kicker dim', 'Whisper: Caveat (flavour only)', { 'data-size': '' }),
+  c.append(el('div', 'ty-kicker dim', 'Whisper: Fondamento Italic (flavour only)', { 'data-size': '' }),
     el('div', 'ty-whisper', 'Pick a hero and walk the Hollow', { 'data-size': '' }),
     el('div', 'ty-whisper dim', 'The light remembers who carried it.', { 'data-size': '' }),
     el('div', 'rule'),
