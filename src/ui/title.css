@@ -1,0 +1,149 @@
+/* U3: title screen + hero select in Lantern Glass, Lit (UI IDENTITY v2). Scoped under .u3 / .overlay.u3 .u3-*; the kit (kit.css) supplies buttons, pips, wick, eyelet.
+   The live game canvas shows through a dark Hollow veil with a warm lantern pool, so the menu sits in the same world as the run. No raster except the two
+   hero portraits (static webp crops of the approved sheets), no backdrop-filter. */
+html.touch .overlay.u3, .overlay.u3 {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); overflow: hidden; align-items: stretch; justify-content: stretch; text-align: left; z-index: 2;
+  background: radial-gradient(ellipse 55% 48% at 50% 46%, rgba(255, 171, 58, .16), transparent 72%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 45%, rgba(6, 9, 16, .55)),
+    linear-gradient(180deg, rgba(14, 20, 34, .7), rgba(10, 14, 24, .86));
+}
+.overlay.u3 .u3-wrap { position: relative; flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: safe center;
+  gap: clamp(12px, 2.6vh, 22px); padding: clamp(10px, 2.4vh, 30px) clamp(14px, 3vw, 40px) 52px; overflow-x: hidden; overflow-y: auto; }
+
+.overlay.u3 h1 { background: none; -webkit-background-clip: border-box; background-clip: border-box; filter: none; letter-spacing: normal; font-weight: 400; }
+.overlay.u3 p { max-width: none; }
+
+/* ---- title ---- */
+.overlay.u3 .u3-col { display: flex; flex-direction: column; align-items: center; gap: clamp(12px, 3.2vh, 30px); width: 100%; max-width: 640px; }
+.overlay.u3 .u3-brand { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; text-align: center; }
+.overlay.u3 .u3-kicker { color: var(--lg-brass-text); text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+.overlay.u3 .u3-h1 { margin: 0; width: min(100%, 600px); padding-top: 0; }
+.overlay.u3 .u3-h1 .lg-wordmark { width: 100%; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .55)) drop-shadow(0 0 26px rgba(255, 171, 58, .22)); }
+.overlay.u3 .u3-tagline { margin: 0; font: italic var(--fw-whisper) clamp(21px, 3.4vh, 30px)/1.15 var(--font-whisper); color: var(--thread); text-shadow: 0 0 .8em rgba(255, 171, 58, .4), 0 1px 0 rgba(0, 0, 0, .6); }
+.overlay.u3 .u3-side { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.overlay.u3 .u3-menu { display: flex; flex-direction: column; gap: 12px; width: min(100%, 400px); }
+.overlay.u3 .u3-hint { margin: 0; max-width: 32em; text-align: center; color: var(--lg-dim); }
+.overlay.u3 .u3-orient { display: none; margin: 0; color: var(--thread); }
+@media (orientation: portrait) { html.touch .overlay.u3 .u3-orient { display: block; } }
+.overlay.u3 .u3-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px clamp(10px, 2vw, 20px) 6px; pointer-events: none; }
+.overlay.u3 .u3-ver { color: var(--lg-dim); }
+.overlay.u3 .u3-foot > * { pointer-events: auto; }
+.u3 .pwa-link { position: static; display: inline-flex; align-items: center; min-height: var(--lg-tap); min-width: var(--lg-tap); padding: 0 10px; margin-left: auto; color: var(--lg-brass-text);
+  font: var(--fw-body) var(--fs-small)/1 var(--font-body); text-decoration: underline; text-underline-offset: 3px; }
+.u3 .pwa-link:hover, .u3 .pwa-link:focus-visible { color: var(--lg-text); }
+.u3 .pwa-link:focus-visible { outline: 2px solid var(--thread); outline-offset: 2px; border-radius: 8px; }
+
+/* install / full screen card + update notice, restyled for the title (card.js untouched; its buttons keep class .btn) */
+.u3 .pwa-slot { width: min(100%, 400px); }
+.u3 .pwa-card { margin: 0; max-width: none; padding: 12px 14px; border: 2px solid #c99a4e; border-radius: 18px; text-align: center; color: var(--lg-text);
+  background: radial-gradient(110% 80% at 50% -10%, var(--lg-warm), transparent 70%), linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b));
+  box-shadow: var(--lg-rim), 0 10px 20px rgba(0, 0, 0, .45), 0 0 30px rgba(255, 170, 80, .12); }
+.u3 .pwa-title { color: var(--lg-brass-text); font: var(--fw-display) 21px/1.1 var(--font-display); letter-spacing: .02em; }
+.u3 .pwa-text { margin: 4px 0 8px; color: var(--lg-dim); font: var(--fw-body) var(--fs-small)/1.35 var(--font-body); }
+.u3 .pwa-step { font: var(--fw-body) var(--fs-small)/1.3 var(--font-body); }
+.u3 .pwa-ico { color: var(--flame); }
+.u3 .pwa-num { width: 20px; height: 20px; line-height: 20px; font-size: 12px; background: var(--thread); color: #2a1608; }
+.u3 .pwa-note { color: var(--lg-dim); font: var(--fw-body) var(--fs-small)/1.3 var(--font-body); }
+.u3 .pwa-row { gap: 8px; }
+.u3 .btn { white-space: nowrap; min-height: var(--lg-tap); min-width: var(--lg-tap); padding: 0 18px; border: 2px solid #c99a4e; border-radius: 22px; color: var(--lg-text); cursor: pointer;
+  font: var(--fw-display) 17px/1 var(--font-display); background: linear-gradient(180deg, #3a4560, #1e2638); box-shadow: var(--lg-rim), 0 4px 10px rgba(0, 0, 0, .4); transform: none; }
+.u3 .btn::before { display: none; }
+.u3 .btn:hover, .u3 .btn:focus-visible { color: var(--lg-text); transform: none; box-shadow: var(--lg-rim), inset 0 0 18px rgba(255, 170, 70, .3), 0 0 16px rgba(255, 170, 60, .35); }
+.u3 .btn:focus-visible { outline: 2px solid var(--thread); outline-offset: 3px; }
+.u3 .btn.pwa-no { background: none; border-color: transparent; box-shadow: none; color: var(--lg-dim); text-decoration: underline; text-underline-offset: 3px; }
+.u3 .pwa-update { margin: 0; width: min(100%, 400px); padding: 6px 12px; border: 2px solid #c99a4e; border-radius: 18px; color: var(--lg-text); font: var(--fw-body) var(--fs-small)/1.3 var(--font-body);
+  background: linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); }
+
+/* ---- hero select ---- */
+.overlay.u3 .u3-hero-screen { gap: clamp(8px, 1.8vh, 16px); }
+.overlay.u3 .u3-hero-screen { padding-bottom: clamp(10px, 2vh, 18px); padding-top: clamp(8px, 1.8vh, 20px); }
+.overlay.u3 .u3-head { display: flex; flex-direction: column; align-items: center; gap: 4px; width: min(100%, 640px); text-align: center; }
+.overlay.u3 .u3-head .u3-htitle { margin: 0; color: var(--lg-text); font-size: clamp(28px, 5.2vh, 46px); text-shadow: 0 0 .7em rgba(255, 171, 58, .3), 0 2px 0 rgba(0, 0, 0, .6); }
+.overlay.u3 .u3-goal { margin: 0; color: var(--thread); text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+.overlay.u3 .u3-head .lg-divider { margin: 6px 0 0; max-width: 340px; }
+.overlay.u3 .u3-heroes { --por-w: clamp(84px, 13vw, 190px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: clamp(20px, 3vw, 40px) clamp(16px, 2.4vw, 32px);
+  width: min(100%, 1120px); padding-top: 44px; }
+.overlay.u3 .u3-hero { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: clamp(12px, 1.8vw, 22px); min-height: 0; width: 100%; text-align: left;
+  padding: clamp(18px, 3.4vh, 30px) clamp(16px, 2.4vw, 30px) clamp(14px, 2.4vh, 22px) clamp(22px, 3vw, 40px); cursor: pointer; }
+.overlay.u3 .u3-hero > .lg-eyelet { top: -37px; }
+.overlay.u3 .u3-hero.is-chosen { box-shadow: var(--lg-rim), 0 0 0 3px rgba(255, 214, 140, .5), 0 0 44px rgba(255, 170, 60, .38), 0 14px 26px rgba(0, 0, 0, .5); }
+.overlay.u3 .u3-hero.is-chosen > .lg-eyelet { filter: drop-shadow(0 0 12px rgba(255, 190, 80, .95)); }
+.overlay.u3 .u3-por { flex: none; width: var(--por-w); aspect-ratio: 150 / 200; overflow: hidden; background: #1a2030; border: 4px solid #3a2412; border-radius: 50% 50% 14px 14px / 34% 34% 14px 14px;
+  box-shadow: 0 0 0 3px #d9ab5c, 0 0 0 5px #3a2412, 0 6px 14px rgba(0, 0, 0, .45); transition: filter 120ms; filter: saturate(.8) brightness(.82); }
+.overlay.u3 .u3-hero.is-chosen .u3-por, .overlay.u3 .u3-hero:hover .overlay.u3 .u3-por { filter: none; box-shadow: 0 0 0 3px #ffe0a0, 0 0 0 5px #3a2412, 0 0 24px rgba(255, 170, 60, .55), 0 6px 14px rgba(0, 0, 0, .45); }
+.overlay.u3 .u3-por__img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; pointer-events: none; -webkit-user-drag: none; }
+.overlay.u3 .u3-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.overlay.u3 .u3-state { display: flex; align-items: center; gap: 6px; color: var(--lg-brass-text); }
+.overlay.u3 .u3-state .lg-wick { width: 22px; height: 30px; flex: none; }
+.overlay.u3 .u3-name { font: var(--fw-display) clamp(30px, 5.2vh, 46px)/1 var(--font-display); color: var(--lg-text); text-shadow: 0 0 .6em rgba(255, 171, 58, .28), 0 2px 0 rgba(0, 0, 0, .55); }
+.overlay.u3 .u3-epithet { font: italic var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); color: var(--thread); }
+.overlay.u3 .u3-line { margin: 2px 0 4px; color: var(--lg-dim); }
+.overlay.u3 .u3-stat { display: flex; align-items: center; gap: 12px; }
+.overlay.u3 .u3-stat__l { flex: none; min-width: 4.6em; color: var(--lg-brass-text); }
+.overlay.u3 .u3-stat .lg-pips { gap: 8px; }
+.overlay.u3 .u3-kit { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.overlay.u3 .u3-kit__row { display: flex; align-items: center; gap: 10px; color: var(--lg-text); }
+.overlay.u3 .u3-emb { flex: none; width: 28px; height: 28px; }
+.overlay.u3 .u3-kit__row .lg-ic { flex: none; width: 24px; height: 28px; }
+.overlay.u3 .u3-gift { margin: 4px 0 0; color: var(--thread); }
+.overlay.u3 .u3-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.overlay.u3 .u3-bar { display: flex; gap: 14px; justify-content: center; width: min(100%, 640px); }
+.overlay.u3 .u3-bar > :first-child { flex: 0 1 190px; }
+.overlay.u3 .u3-bar > :last-child { flex: 1 1 300px; }
+.overlay.u3 .u3-help { margin: 0; max-width: 62em; text-align: center; color: var(--lg-dim); }
+.overlay.u3 .u3-touchkeys { display: none; }
+html.touch .overlay.u3 .u3-touchkeys { display: inline; }
+html.touch .overlay.u3 .u3-keys { display: none; }
+.overlay.u3 .u3-kbd { display: inline-block; min-width: 1.7em; margin: 0 2px; padding: 0 .35em; text-align: center; font: var(--fw-body-strong) var(--fs-small)/1.5 var(--font-body); color: #ffe0a0;
+  border-radius: 7px; background: linear-gradient(#4a3826, #26190f); box-shadow: 0 0 0 1.5px #c99a4e, 0 0 0 3px #2a1a0c; }
+
+/* ---- portrait phones: one column, rounded windows (the kit already drops the hanging cap) ---- */
+@media (orientation: portrait) {
+  .overlay.u3 .u3-heroes { --por-w: 100px; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 0; }
+  .overlay.u3 .u3-hero { padding: 14px 14px 14px 18px; gap: 12px; align-items: flex-start; }
+  .overlay.u3 .u3-line { display: none; }
+  .overlay.u3 .u3-head .u3-htitle { font-size: 30px; }
+  .overlay.u3 .u3-info { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 3px; align-content: start; }
+  .overlay.u3 .u3-info > * { grid-column: 1 / -1; }
+  .overlay.u3 .u3-info > .u3-name { grid-column: 1; grid-row: 1; align-self: center; }
+  .overlay.u3 .u3-info > .u3-state { grid-column: 2; grid-row: 1; align-self: center; }
+  .overlay.u3 .u3-name { font-size: 30px; }
+  .overlay.u3 .u3-kit__row { gap: 8px; }
+  .overlay.u3 .u3-wrap { padding-top: 14px; padding-bottom: 12px; }
+  .overlay.u3 .u3-title.u3-wrap { padding-bottom: 52px; }
+  .overlay.u3 .u3-goal { font-size: 15px; }
+}
+
+/* ---- landscape phones (short): two columns on the title, compact cards, secondary lines dropped by priority instead of scrolling ---- */
+@media (max-height: 430px) and (orientation: landscape) {
+  .overlay.u3 .u3-wrap { gap: 6px; padding: 8px 14px 46px; }
+  .overlay.u3 .u3-col { flex-direction: row; max-width: none; justify-content: center; align-items: center; gap: clamp(16px, 4vw, 36px); }
+  .overlay.u3 .u3-brand { flex: 1 1 48%; min-width: 0; }
+  .overlay.u3 .u3-h1 { width: min(100%, 340px); padding-top: 8px; }
+  .overlay.u3 .u3-tagline { font-size: 20px; }
+  .overlay.u3 .u3-side { flex: 0 1 min(46%, 330px); gap: 8px; }
+  .overlay.u3 .u3-menu { gap: 8px; }
+  .overlay.u3 .u3-hint { display: none; }
+  .overlay.u3 .u3-head .u3-kicker, .overlay.u3 .u3-head .lg-divider, .overlay.u3 .u3-goal, .overlay.u3 .u3-line, .overlay.u3 .u3-help, .overlay.u3 .u3-hero > .lg-eyelet { display: none; }
+  .overlay.u3 .u3-head .u3-htitle { font-size: 24px; }
+  .overlay.u3 .u3-heroes { --por-w: 74px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-top: 0; }
+  .overlay.u3 .u3-hero { padding: 10px 12px 10px 16px; gap: 10px; }
+  .overlay.u3 .u3-name { font-size: 26px; }
+  .overlay.u3 .u3-info { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 2px; align-content: start; }
+  .overlay.u3 .u3-info > * { grid-column: 1 / -1; }
+  .overlay.u3 .u3-info > .u3-name { grid-column: 1; grid-row: 1; align-self: center; }
+  .overlay.u3 .u3-info > .u3-state { grid-column: 2; grid-row: 1; align-self: center; }
+  .overlay.u3 .u3-kit__row { gap: 8px; }
+  .overlay.u3 .u3-kit { margin-top: 2px; gap: 2px; }
+  .overlay.u3 .u3-emb, .overlay.u3 .u3-kit__row .lg-ic { height: 24px; }
+  .overlay.u3 .u3-emb { width: 24px; }
+  .overlay.u3 .u3-gift { margin-top: 2px; }
+  .u3 .pwa-card { padding: 6px 10px; }
+  .u3 .pwa-row { flex-wrap: nowrap; gap: 4px; }
+  .u3 .btn { padding: 0 10px; font-size: 16px; }
+  .u3 .pwa-text { font-size: 12px; }
+  .u3 .pwa-title { font-size: 18px; }
+  .u3 .pwa-text { margin: 2px 0 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .overlay.u3 .u3-por { transition: none; } }
+.reduced-motion .overlay.u3 .u3-por { transition: none; }

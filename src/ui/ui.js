@@ -12,6 +12,13 @@ import { Hud } from './hud.js';
 import { OfferView } from './cardsui.js';
 import '../cards.css';
 import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
+import './kit.css';
+import './title.css';
+import { buildTitle, buildHeroSelect } from './title.js';
+import { heroView } from './titlecopy.js';
+import wrenPortrait from '../assets/heroes/wren.webp';
+import eliasPortrait from '../assets/heroes/elias.webp';
+const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
 export class UI {
@@ -92,53 +99,58 @@ export class UI {
     requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
   }
 
-  // ------------------------------------------------------------------ menus
+  // ------------------------------------------------------------------ menus (U3: title and hero select are two screens)
+  // Title: wordmark + Begin/Continue, Skill Tree, Settings. Begin opens hero select; Start there runs onPick(heroId).
   showStart(onPick) {
-    const chars = Object.entries(this.data.characters).filter(([id]) => !this.handlers.heroUnlocked || this.handlers.heroUnlocked(id));
-    const cards = chars.map(([id, c]) => `
-      <div class="charcard" data-id="${id}" tabindex="0" role="button">
-        <h3><span class="swatch" style="background:${c.color};color:${c.color}"></span>${c.name}</h3>
-        <div class="blurb">${c.blurb}</div>
-        <dl>
-          <dt>Health</dt><dd>${c.hp}</dd>
-          <dt>Speed</dt><dd>${c.speed}</dd>
-          <dt>Trait</dt><dd>${c.traitText}</dd>
-          <dt>Weapon</dt><dd>${this.data.weapons[c.weapon].name}</dd>
-          <dt>Ability</dt><dd>${c.ability.name} (${c.ability.cooldown}s)</dd>
-        </dl>
-      </div>`).join('');
-    const el = this.show('start', `
-      <h1>Hollowlight</h1>
-      <div class="sub">Spirits of the Dusk · Chapter 1: Cursed Forest · prototype</div>
-      <div class="bankline"></div>
-      <div class="firstrun" style="display:none"><span class="frtext"></span> <button class="btn" data-act="frtree">See the Skill Tree</button></div>
-      <div class="row">${cards}</div>
-      <div class="touchkeys">Left thumb: move · weapons fire on their own · right button: ability · II: pause · tap cards to pick</div>
-      <div class="orient-hint">Landscape recommended</div>
-      <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
-      <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
-      <div class="row"><button class="btn" data-act="tree">Skill Tree</button><button class="btn" data-act="settings">Settings</button></div>
-      <div class="vlabel"></div>`);
-    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
-    el.querySelector('.vlabel').textContent = typeof __APP_VERSION__ !== 'undefined' ? `v${__APP_VERSION__}` : '';
-    const bank = this.handlers.getBank ? this.handlers.getBank() : null;
-    if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
-    el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
-    if (this.pwa) { mountInstallCard(document, this.pwa, el, el.querySelector('.bankline')); el.append(updateNotice(document, this.pwa)); }
-    if (this.handlers.isFirstRun && this.handlers.isFirstRun()) {
-      el.querySelector('.firstrun').style.display = '';
-      el.querySelector('.frtext').textContent = FIRST_RUN_HINT;
-      el.querySelector('[data-act="frtree"]').addEventListener('click', () => this.handlers.openTree());
-    }
-    el.querySelectorAll('.charcard').forEach((c) => {
-      c.addEventListener('click', () => onPick(c.dataset.id));
-      c.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onPick(c.dataset.id); } });
+    this.onPick = onPick;
+    const h = this.handlers;
+    const t = buildTitle({
+      hasProgress: !!(h.hasProgress && h.hasProgress()),
+      firstRun: !!(h.isFirstRun && h.isFirstRun()),
+      bank: h.getBank ? h.getBank() : null,
+      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
+      onBegin: () => this.showHeroSelect(),
+      onTree: () => h.openTree(),
+      onSettings: () => h.openSettings(),
     });
-    const firstCard = el.querySelector('.charcard');
-    if (firstCard) firstCard.focus({ preventScroll: true });
+    const el = this.layer('start');
+    el.className = 'overlay layer-start u3';
+    el.replaceChildren(t.root);
+    this.hide('hero');
+    this.show('start');
+    if (this.pwa) {
+      mountInstallCard(document, this.pwa, t.side, t.menu);
+      const link = t.side.querySelector('.pwa-link');
+      if (link) t.foot.appendChild(link);
+      t.side.append(updateNotice(document, this.pwa));
+    }
+    this.screen = { id: 'title', title: t };
+    t.begin.focus({ preventScroll: true });
   }
 
-  hideStart() { this.hide('start'); }
+  showHeroSelect() {
+    const h = this.handlers;
+    const ids = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id));
+    const heroes = ids.map((id) => {
+      const c = this.data.characters[id];
+      const w = this.data.weapons[c.weapon];
+      return { ...heroView(id, c, w ? w.name : ''), weaponId: c.weapon };
+    });
+    const hs = buildHeroSelect({
+      heroes, portraits: PORTRAITS, selected: this.lastHero,
+      onStart: (id) => { this.lastHero = id; if (this.onPick) this.onPick(id); },
+      onBack: () => this.showStart(this.onPick),
+    });
+    const el = this.layer('hero');
+    el.className = 'overlay layer-hero u3';
+    el.replaceChildren(hs.root);
+    this.hide('start');
+    this.show('hero');
+    this.screen = { id: 'hero', hero: hs };
+    hs.focusSelected();
+  }
+
+  hideStart() { this.hide('start'); this.hide('hero'); this.screen = null; }
 
   // ------------------------------------------------------------------ level-up (HUD-2: src/ui/cardsui.js, presentation only)
   showLevelUp(sim) {
@@ -372,6 +384,18 @@ export class UI {
     if (this.settingsOpen) {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
+    }
+    const sc = this.screen;
+    if (sc) {
+      const vis = (n) => this.layers[n] && this.layers[n].style.display !== 'none';
+      if (sc.id === 'hero' && vis('hero')) { sc.hero.onKey(e); return; }
+      if (sc.id === 'title' && vis('start') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const a = document.activeElement;
+        const onBtn = a && a.closest && a.closest('.lg-btn');
+        const t = sc.title;
+        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); }
+        return;
+      }
     }
     const lu = this.layers.levelup;
     if (lu && lu.style.display !== 'none' && this.currentCards && this.offerView) this.offerView.onKey(e);

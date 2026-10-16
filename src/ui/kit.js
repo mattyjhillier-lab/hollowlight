@@ -272,39 +272,50 @@ const SK = { // skeletons, 100-unit cap height, slightly bent so no stroke is ru
 };
 const WORD = 'HOLLOWLIGHT';
 const OUT = '#3a2412';
-/** The wordmark as an inline SVG. Accessible name is "Hollowlight" (role=img); everything inside is decorative. */
+// Hand-made feel baked in: each letter sits a hair off the baseline and a hair off-square (fixed numbers, so the mark never changes between loads).
+const DY = [0, -2, 1.5, -1, 2, 0, -2, 1, 0, -1.5, 1];
+const ROT = [-0.8, 0.5, -0.4, 0.7, -0.6, 0.4, -0.7, 0.4, -0.5, 0.6, -0.3];
+/** The wordmark as an inline SVG. Accessible name is "Hollowlight" (role=img); everything inside is decorative. The viewBox leaves headroom for the
+ *  lantern caps and the candle flame, so nothing depends on overflow:visible to avoid clipping. */
 export function wordmark({ label = 'Hollowlight' } = {}) {
   const id = nextId('lg-wm');
   const gap = 10; let x = 0; const pos = [];
   for (const ch of WORD) { pos.push([ch, x]); x += (ch === 'O' ? 80 : SK[ch].w) + gap; }
-  const W = x - gap + 24, H = 160;
+  const W = x - gap + 24, TOP = 14, H = 172 + TOP;
   const stop = (o, c, a) => sv('stop', { offset: o, 'stop-color': c, ...(a != null ? { 'stop-opacity': a } : {}) });
   const defs = sv('defs', {},
     sv('linearGradient', { id: `${id}b`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#fff0c4'), stop(0.45, '#e2b866'), stop(1, '#9b6a2c')),
     sv('linearGradient', { id: `${id}g`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#3b4b66'), stop(1, '#1e2738')),
     sv('radialGradient', { id: `${id}f` }, stop(0, '#ffd27a', 0.95), stop(0.6, '#ff9a2e', 0.35), stop(1, '#ff9a2e', 0)),
-    sv('radialGradient', { id: `${id}h` }, stop(0, '#ffab3a', 0.45), stop(1, '#ffab3a', 0)));
-  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'lg-wordmark', role: 'img', 'aria-label': String(label) }, defs);
-  const stroke = (d, w, s, extra) => sv('path', { d, fill: 'none', stroke: s, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', ...extra });
+    sv('radialGradient', { id: `${id}h` }, stop(0, '#ffab3a', 0.5), stop(1, '#ffab3a', 0)));
+  const svg = sv('svg', { viewBox: `0 ${-TOP} ${W} ${H}`, class: 'lg-wordmark', role: 'img', 'aria-label': String(label) }, defs);
+  const stroke = (d, w, s2, extra) => sv('path', { d, fill: 'none', stroke: s2, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', ...extra });
+  const flame = (cls, tr, big) => sv('g', { class: cls, transform: tr },
+    sv('path', { d: 'M0 -14C6 -6 8 -2 6 4C4 9 -4 9 -6 4C-8 -2 -6 -6 0 -14Z', fill: '#ffab3a', stroke: '#8a3f10', 'stroke-width': 2 }),
+    sv('path', { d: big ? 'M0 -6C4 -1 4 3 0 7C-4 3 -4 -1 0 -6Z' : 'M0 -4C3 0 3 3 0 6C-3 3 -3 0 0 -4Z', fill: '#fff6d8' }));
+  let i = 0;
   for (const [ch, px] of pos) {
-    const g = sv('g', { transform: `translate(${px + 12} 30)`, 'aria-hidden': 'true' });
+    const k = i++;
+    const g = sv('g', { transform: `translate(${R1(px + 12)} ${R1(30 + DY[k])}) rotate(${ROT[k]} 40 50)`, 'aria-hidden': 'true' });
     if (ch === 'O') {
       g.append(
-        stroke('M28 -8Q40 -20 52 -8', 7, OUT), stroke('M28 -8Q40 -20 52 -8', 3, `url(#${id}b)`),
+        sv('ellipse', { cx: 40, cy: 104, rx: 36, ry: 6, fill: '#000', opacity: 0.28 }),
+        sv('rect', { x: 14, y: 93, width: 52, height: 9, rx: 4, fill: OUT }), sv('rect', { x: 17, y: 94, width: 46, height: 5.5, rx: 2.5, fill: `url(#${id}b)` }),
+        stroke('M26 -6Q40 -22 54 -6', 7, OUT), stroke('M26 -6Q40 -22 54 -6', 3, `url(#${id}b)`),
+        sv('circle', { cx: 40, cy: -17, r: 4.2, fill: 'none', stroke: OUT, 'stroke-width': 3.4 }), sv('circle', { cx: 40, cy: -17, r: 4.2, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 1.6 }),
         sv('rect', { x: 6, y: 2, width: 68, height: 96, rx: 30, fill: OUT }), sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: `url(#${id}g)` }),
         sv('circle', { cx: 40, cy: 58, r: 34, fill: `url(#${id}f)` }),
-        sv('path', { d: 'M40 34C50 46 53 54 50 64C48 71 32 71 30 64C27 54 30 46 40 34Z', fill: '#ffab3a' }),
-        sv('path', { d: 'M40 50C45 56 45 61 40 66C35 61 35 56 40 50Z', fill: '#fff6d8' }),
+        flame('lg-wm-flame', 'translate(40 56) scale(1.05)', true),
         stroke('M40 7V93', 3, OUT, { opacity: 0.5 }),
         sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 6 }),
-        stroke('M18 30Q17 50 19 72', 3, '#fff', { 'stroke-opacity': 0.55 }));
+        stroke('M18 30Q17 50 19 72', 3, '#fff', { 'stroke-opacity': 0.55 }), stroke('M62 26Q64 36 63 44', 2, '#fff', { 'stroke-opacity': 0.3 }));
     } else {
       const d = SK[ch].d;
-      g.append(stroke(d, 22, OUT), stroke(d, 15, `url(#${id}b)`), stroke(d, 2.5, '#fff8e0', { 'stroke-opacity': 0.7, transform: 'translate(-3 -3)' }));
-      if (ch === 'I') g.append(sv('g', { transform: 'translate(11 -14)' },
-        sv('circle', { r: 17, fill: `url(#${id}h)` }),
-        sv('path', { d: 'M0 -14C6 -6 8 -2 6 4C4 9 -4 9 -6 4C-8 -2 -6 -6 0 -14Z', fill: '#ffab3a', stroke: '#8a3f10', 'stroke-width': 2 }),
-        sv('path', { d: 'M0 -4C3 0 3 3 0 6C-3 3 -3 0 0 -4Z', fill: '#fff6d8' })));
+      g.append(stroke(d, 22, OUT), stroke(d, 15, `url(#${id}b)`), stroke(d, 2.5, '#fff8e0', { 'stroke-opacity': 0.7, transform: 'translate(-3 -3)' }), stroke(d, 2, '#6b4512', { 'stroke-opacity': 0.4, transform: 'translate(3.2 3.2)' }));
+      if (ch === 'I') g.append(
+        sv('ellipse', { cx: 11, cy: -1, rx: 10, ry: 4, fill: OUT }), sv('ellipse', { cx: 11, cy: -2, rx: 7.5, ry: 2.6, fill: '#fff0c4' }),
+        sv('path', { d: 'M5 -2Q4 4 6.5 7', fill: 'none', stroke: '#fff0c4', 'stroke-width': 2.6, 'stroke-linecap': 'round' }),
+        sv('g', { transform: 'translate(11 -17)' }, sv('circle', { r: 19, fill: `url(#${id}h)` }), flame('lg-wm-flame', 'translate(0 0)', false)));
     }
     svg.appendChild(g);
   }

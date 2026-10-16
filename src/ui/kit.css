@@ -238,6 +238,8 @@
 
 /* ---------- drawn wordmark (lantern Os, candle I); code-drawn SVG built by wordmark() ---------- */
 .lg-wordmark { display: block; width: min(100%, 470px); height: auto; overflow: visible; }
+.lg-wm-flame path { transform-box: fill-box; transform-origin: 50% 100%; animation: lg-wmf 2.4s ease-in-out infinite alternate; }
+@keyframes lg-wmf { from { transform: scale(1, 1); } to { transform: scale(.94, 1.07) skewX(-2deg); } }
 
 /* ---------- phone rules: drop secondary lines by priority instead of scrolling (landscape phones) ---------- */
 @media (max-height: 430px) and (orientation: landscape) {
