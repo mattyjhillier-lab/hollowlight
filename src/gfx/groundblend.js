@@ -13,10 +13,12 @@ uniform float uWorld;
 attribute vec2 inPosition;
 varying vec2 vTile;
 varying vec2 vLife;
+varying vec2 vWorld;
 void main () {
   gl_Position = uProjectionMatrix * uViewMatrix * vec4(inPosition, 1.0, 1.0);
   vTile = inPosition / ${TILE_UNITS}.0;
   vLife = inPosition / uWorld;
+  vWorld = inPosition;
 }`;
 
 const FRAG = `
@@ -33,8 +35,10 @@ uniform sampler2D iChannel4; // set B restored tile
 uniform vec3 uTint;
 uniform float uTime;
 uniform float uBReady; // 0 until the set B tiles are painted, then fades to 1 (no pop)
+uniform vec2 uHero; // hero world position (AL-1: baked ground flowers/tufts calm down near the hero)
 varying vec2 vTile;
 varying vec2 vLife;
+varying vec2 vWorld;
 float h2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn(vec2 p) {
   vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -51,6 +55,20 @@ void main () {
   if (zb > 0.004) { // zone set B: only pay for the extra reads inside / near B zones
     hol = mix(hol, texture2D(iChannel3, t).rgb, zb);
     res = mix(res, texture2D(iChannel4, t).rgb, zb);
+  }
+  // AL-1 clear zone: within ~78 units of the hero the restored tile is blurred toward its local mean (flowers lose most of their
+  // contrast, no hard disc), fully back to normal by ~125 units. Only pixels near the hero pay for the 4 extra taps.
+  float hd = distance(vWorld, uHero);
+  float hc = 1.0 - smoothstep(78.0, 125.0, hd);
+  if (hc > 0.004) {
+    float s = 6.0 / 1024.0;
+    vec3 bl = texture2D(iChannel1, t + vec2(s, s)).rgb + texture2D(iChannel1, t + vec2(-s, s)).rgb + texture2D(iChannel1, t + vec2(s, -s)).rgb + texture2D(iChannel1, t + vec2(-s, -s)).rgb;
+    bl *= 0.25;
+    if (zb > 0.004) {
+      vec3 b2 = texture2D(iChannel4, t + vec2(s, s)).rgb + texture2D(iChannel4, t + vec2(-s, s)).rgb + texture2D(iChannel4, t + vec2(s, -s)).rgb + texture2D(iChannel4, t + vec2(-s, -s)).rgb;
+      bl = mix(bl, b2 * 0.25, zb);
+    }
+    res = mix(res, mix(res, bl, 0.85), hc);
   }
   float n = vn(vTile * 14.0) * 0.6 + vn(vTile * 33.0) * 0.4 - 0.5;
   float m = smoothstep(0.14, 0.72, l + n * 0.3);
@@ -83,6 +101,7 @@ export class GroundBlend {
       const gl = scene.renderer.gl;
       const base = new Phaser.Display.BaseShader('groundblend', FRAG, VERT, {
         uWorld: { type: '1f', value: size },
+        uHero: { type: '2f', value: { x: -9999, y: -9999 } },
         uBReady: { type: '1f', value: (scene.bState && scene.bState.ready) || 0 },
         uTint: { type: '3f', value: { x: 1, y: 1, z: 1 } },
         iChannel4: { type: 'sampler2D', value: null, textureData: { repeat: true } },
@@ -126,6 +145,8 @@ export class GroundBlend {
     const u = this.sh.uniforms.uTint.value;
     u.x = ((col >> 16) & 255) / 255; u.y = ((col >> 8) & 255) / 255; u.z = (col & 255) / 255;
   }
+
+  setHero(x, y) { if (this.sh) { const u = this.sh.uniforms.uHero.value; u.x = x; u.y = y; } }
 
   setBReady(v) { if (this.sh) this.sh.uniforms.uBReady.value = v; }
 

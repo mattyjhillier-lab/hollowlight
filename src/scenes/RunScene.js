@@ -17,8 +17,10 @@ import { zoneB } from '../world/zones.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
-import { STYLE, inv, zoomFor } from '../gfx/style.js';
+import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
+import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
+import { SwayLayer } from '../gfx/swaylayer.js';
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -51,6 +53,7 @@ const hex = (s) => parseInt(s.slice(1), 16);
 
 function makeTextures(scene) {
   makeStyleTextures(scene, STYLE);
+  INV[ATLAS_KEY] = makeAmbAtlas(scene, (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // AL-1 sway atlas
 }
 
 class SpritePool {
@@ -116,6 +119,8 @@ export class RunScene extends Phaser.Scene {
     // W0 life map (visual only): hero + spirits paint life, it fades in ~25 s; the ground shader (Med/High) or warm pool sprites (Low) show it
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
+    this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // AL-1 grass/flower sway (visual only)
+    this.swayPhone = Math.min(window.innerWidth, window.innerHeight) < 500;
     this.gbOn = false;
     this.lifeLast = null;
     this.lifeFrames = 0;
@@ -278,6 +283,7 @@ export class RunScene extends Phaser.Scene {
   bindSim(sim) {
     this.sim = sim;
     this.life.reset();
+    this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
     const size = app.data.balance.worldSize;
@@ -337,6 +343,7 @@ export class RunScene extends Phaser.Scene {
     this.heroOut.setVisible(false);
     for (const r of this.rigs) r.hide();
     this.hideAmbient();
+    this.sway.clear();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
     this.fxG.clear();
@@ -395,7 +402,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   countSprites() {
-    let n = 1 + (this.sim ? this.fog.length + this.flies.length : 0);
+    let n = 1 + (this.sim ? this.fog.length + this.flies.length + this.sway.count : 0);
     for (const pool of Object.values(this.pools)) n += pool.map.size;
     return n;
   }
@@ -642,6 +649,7 @@ export class RunScene extends Phaser.Scene {
     // player: lantern pool + ground ring (readability) + lantern light
     this.followTarget.setPosition(p.x, p.y);
     this.tickLife(sim, p);
+    this.tickSway(sim, p, caps);
     const rig = this.rig.active;
     if (rig) this.rig.update(sim, this.quality.tier, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, caps, this.parts);
     else {
@@ -897,6 +905,14 @@ export class RunScene extends Phaser.Scene {
     b.fade += dt;
     b.ready = Math.min(1, b.fade / 0.8);
     this.gb.setBReady(b.ready);
+  }
+
+  // AL-1: grass/flower sway on restored ground only (Med/High with the ground shader; Low keeps the baked still tufts).
+  tickSway(sim, p, caps) {
+    const on = !!(app.params.sway && this.gbOn && caps.ambient.sway > 0);
+    this.sway.setTint(this.lmOn ? 0xffffff : this.gradeNow);
+    this.sway.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, this.cameras.main.worldView, p, this.life, { on, cap: caps.ambient.sway, phone: this.swayPhone, reduced: this.reducedMotion() });
+    if (this.gbOn) this.gb.setHero(p.x, p.y);
   }
 
   tickLife(sim, p) {

@@ -27,6 +27,7 @@ function parseParams() {
     debug: q.get('debug') === '1',
     life: q.get('life') === '1', // dev: show the life map
     flat: q.get('ground') === 'flat', // dev: force the Low ground fallback (no shader)
+    sway: q.get('sway') !== '0', // dev: ?sway=0 turns the AL-1 grass sway layer off (A/B perf)
     touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree
   };

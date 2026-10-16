@@ -20,7 +20,7 @@ export function visualRng(seed = 1) {
   };
 }
 
-function hash(n) { // integer -> 0..1, stateless
+export function hash(n) { // integer -> 0..1, stateless
   let h = (n | 0) ^ 0x9e3779b9;
   h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
