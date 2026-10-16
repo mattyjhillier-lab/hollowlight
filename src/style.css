@@ -22,6 +22,13 @@
   --flame: #ffab3a;
   --frost: #dff1fa;
   --frost-d: #8fb6c9;
+  /* Lantern Glass roles (U1); mirrored in palette.js CSS_VARS */
+  --lg-evo: #ffd36b;
+  --lg-ember: #996829;
+  --lg-wick-dark: #3a2d24;
+  --lg-danger: #d9534f;
+  --lg-glass-solid: #1c1714;
+  --lg-text: #fff3dc;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #07070d; }
@@ -41,6 +48,50 @@
   --glow-violet: rgba(139, 108, 255, 0.35);
   --glow-gold: rgba(255, 211, 107, 0.5);
 }
+
+/* UI IDENTITY v1 / U1 (docs/design/ui-identity-v1.md): self-hosted OFL fonts (docs/CREDITS.md). Latin subset woff2 from src/assets/fonts;
+   Vite inlines them as data URIs so the single-file build and the PWA offline cache carry them. No CDN. */
+@font-face { font-family: "Cormorant Garamond"; src: url("./assets/fonts/cormorant-garamond.woff2") format("woff2"); font-weight: 500 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Figtree"; src: url("./assets/fonts/figtree.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Caveat"; src: url("./assets/fonts/caveat.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+
+/* Lantern Glass type + role tokens. Additive: --font-head/--font-ui and every token above keep working (HUD A is unchanged).
+   Display = headings/names/big numerals (large only; 500 floor, never lighter). Body = labels/descriptions/numerals. Whisper = flavour lines only. */
+:root {
+  --font-display: "Cormorant Garamond", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-whisper: "Caveat", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --fw-display: 600; --fw-display-soft: 500; --fw-display-strong: 700;
+  --fw-body: 400; --fw-body-strong: 600; --fw-body-bold: 700; --fw-whisper: 500;
+  /* Scale (16 px rem base). Floors: small >= 11 px, body >= 12 px (13 px portrait), whisper >= 15 px, so nothing drops below legibility on phones. */
+  --fs-wordmark: clamp(2.6rem, 1.2rem + 5vw, 5rem);
+  --fs-title: clamp(1.5rem, 1rem + 1.6vw, 2.2rem);
+  --fs-big: clamp(1.7rem, 1.1rem + 2vw, 2.5rem);
+  --fs-card: clamp(1.1rem, .9rem + .6vw, 1.3rem);
+  --fs-body: max(12px, 1rem);
+  --fs-small: max(11px, .8rem);
+  --fs-whisper: max(15px, 1.05rem);
+  --lh-tight: 1.1; --lh-body: 1.4;
+  --ls-caps: .14em; --ls-title: .04em;
+  --num: "tnum" 1, "lnum" 1;
+  /* Lantern Glass roles (extend the HUD A plate/brass/cream/thread/flame tokens; gold stays evolution only). */
+  --lg-glass: rgba(28, 23, 20, .78);
+  --lg-hairline: rgba(216, 178, 106, .45);
+  --lg-leak: rgba(255, 171, 58, .14);
+  --lg-text-dim: rgba(255, 243, 220, .68);
+}
+@media (orientation: portrait) { :root { --fs-body: max(13px, 1rem); } }
+
+/* Type roles (specimen now; screens adopt them in U2+). */
+.ty-wordmark { font: var(--fw-display-strong) var(--fs-wordmark)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
+.ty-title { font: var(--fw-display) var(--fs-title)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
+.ty-card { font: var(--fw-display) var(--fs-card)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
+.ty-big { font: var(--fw-display-strong) var(--fs-big)/var(--lh-tight) var(--font-display); font-feature-settings: var(--num); }
+.ty-body { font: var(--fw-body) var(--fs-body)/var(--lh-body) var(--font-body); font-feature-settings: var(--num); }
+.ty-label { font: var(--fw-body-strong) var(--fs-body)/var(--lh-body) var(--font-body); font-feature-settings: var(--num); }
+.ty-small { font: var(--fw-body) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: .02em; font-feature-settings: var(--num); }
+.ty-kicker { font: var(--fw-body-strong) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: var(--ls-caps); text-transform: uppercase; }
+.ty-whisper { font: var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
@@ -102,7 +153,6 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .keys { margin-top: 1.2em; color: var(--muted); }
 .keys b { color: var(--text); border: 1px solid rgba(94, 230, 255, .35); border-radius: .4em; padding: 0 .4em; margin: 0 .1em; background: rgba(94, 230, 255, .06); }
 
-  box-shadow: 0 0 1.2em var(--glow), 0 .6em 1.4em rgba(0, 0, 0, .45); transition: transform .2s cubic-bezier(.2, .9, .3, 1.35), box-shadow .2s; animation: cardIn .35s cubic-bezier(.2, .9, .3, 1.2) backwards; animation-delay: calc(var(--i, 0) * 70ms); }
 
 .endstats { display: grid; grid-template-columns: auto auto; gap: .25em 1.8em; text-align: left; margin: .6em 0 1em; padding: 1em 1.6em; border-radius: 1em; background: var(--glass); }
 .endstats dt { color: var(--muted); }

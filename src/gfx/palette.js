@@ -21,6 +21,9 @@ export const PAL = {
   flame: 0xffab3a,
   frost: 0xdff1fa,
   frostDark: 0x8fb6c9,
+  // UI IDENTITY v1 / U1 Lantern Glass roles (docs/design/ui-identity-v1.md). Evolution gold #ffd36b is ROLE.evo; ember = flame at ~55% on plate.
+  ember: 0x996829,
+  wickDark: 0x3a2d24,
 };
 
 // Role tokens (docs/research/15 s2): world art, effects and sprites ask for a ROLE, never a hex, so a palette
@@ -40,6 +43,7 @@ export const ROLE = {
   uiA: 0x5ee6ff, uiB: 0x8b6cff, uiText: 0xe8e0ff, uiMuted: 0x9fb3c8,
 };
 
+const ROLE_EVO = ROLE.evo;
 export const hexStr = (n) => `#${n.toString(16).padStart(6, '0')}`;
 
 // CSS variable name -> palette colour. style.css :root must match (tests/palette.test.mjs).
@@ -66,6 +70,12 @@ export const CSS_VARS = {
   '--flame': PAL.flame,
   '--frost': PAL.frost,
   '--frost-d': PAL.frostDark,
+  '--lg-evo': ROLE_EVO,
+  '--lg-ember': PAL.ember,
+  '--lg-wick-dark': PAL.wickDark,
+  '--lg-danger': PAL.danger,
+  '--lg-glass-solid': PAL.plate,
+  '--lg-text': PAL.cream,
 };
 
 export function applyCssPalette(root) {
