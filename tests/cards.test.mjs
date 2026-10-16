@@ -110,7 +110,35 @@ test('taking an evolution replaces the base weapon and removes the other choices
   assert.equal(w.evo, 'dire_alpha');
   assert.deepEqual(availableEvolutions(w, data, ctx.unlockedEvolutions), []);
   assert.deepEqual(goldCards(ctx), []);
-  assert.ok(!buildPool(ctx).some((p) => p.card.kind === 'stat' && p.card.weaponId === 'ghost_wolves'));
+  // D1 (Matt 2026-10-16): non-recipe stats keep appearing; recipe stats are maxed so they have left the pool.
+  const stats = buildPool(ctx).filter((p) => p.card.kind === 'stat' && p.card.weaponId === 'ghost_wolves').map((p) => p.card.stat).sort();
+  assert.deepEqual(stats, ['count', 'speed'].sort().filter((k) => w.ranks[k] < data.balance.maxRank));
+});
+
+test('D1: evolved weapon offers only its non-recipe stat cards, with no nudge, no stirs, no evo hints, never the weapon or an evolution card', () => {
+  for (const [evoId, evo] of Object.entries(data.evolutions)) {
+    const ctx = mkOpen(evo.weapon);
+    const w = ctx.weapons[0];
+    maxStat(w, evo.pair[0]); maxStat(w, evo.pair[1]);
+    applyCard(ctx, goldCards(ctx).find((c) => c.evoId === evoId));
+    assert.equal(w.evo, evoId);
+    const rest = Object.keys(data.weapons[evo.weapon].stats).filter((k) => !evo.pair.includes(k));
+    const pool = buildPool(ctx);
+    const mine = pool.filter((p) => p.card.weaponId === evo.weapon);
+    assert.deepEqual(mine.map((p) => p.card.stat).sort(), rest.sort(), `${evoId} offers exactly the non-recipe stats`);
+    for (const p of mine) {
+      assert.equal(p.card.kind, 'stat');
+      assert.equal(p.w, 1, `${evoId} ${p.card.stat}: nudge off`);
+      assert.equal(p.card.stirs, undefined);
+      assert.equal(p.card.evoHints, 0);
+    }
+    assert.ok(!pool.some((p) => p.card.kind === 'weapon' && p.card.weaponId === evo.weapon), 'weapon card not re-offered');
+    assert.deepEqual(goldCards(ctx), [], 'no further evolution');
+    // taking the cards ranks the stat up and removes it at max
+    for (const k of rest) { for (let i = 0; i < data.balance.maxRank; i++) applyCard(ctx, buildPool(ctx).find((p) => p.card.key === `s:${evo.weapon}:${k}`).card); assert.equal(w.ranks[k], data.balance.maxRank); }
+    assert.ok(!buildPool(ctx).some((p) => p.card.weaponId === evo.weapon), 'all maxed -> weapon leaves the pool (fallbacks cover)');
+    assert.equal(w.evo, evoId, 'still evolved, cannot re-evolve');
+  }
 });
 
 test('weapon cards are weighted up so new weapons show up reasonably often', () => {

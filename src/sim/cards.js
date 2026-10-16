@@ -102,7 +102,8 @@ function statCard(w, statKey, data, unlocked) {
   const s = def.stats[statKey];
   const rank = w.ranks[statKey];
   const next = rank + 1;
-  const evoHints = Object.entries(data.evolutions)
+  // Evolved weapons cannot evolve again: no recipe hints (D1).
+  const evoHints = w.evo ? 0 : Object.entries(data.evolutions)
     .filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, unlocked))
     .length;
   return {
@@ -156,10 +157,10 @@ export function buildPool(ctx) {
     }
   }
   for (const w of weapons) {
-    if (w.evo) continue; // evolved weapons are final
+    // D1: an evolved weapon keeps offering its remaining (non-recipe) stat cards as normal; no nudge, no 'stirs' (it cannot evolve again).
     for (const statKey of Object.keys(data.weapons[w.id].stats)) {
       if (w.ranks[statKey] >= data.balance.maxRank) continue;
-      const pairs = Object.entries(data.evolutions).filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, ctx.unlockedEvolutions)).map(([, e]) => e);
+      const pairs = w.evo ? [] : Object.entries(data.evolutions).filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, ctx.unlockedEvolutions)).map(([, e]) => e);
       const nudge = data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
       let wt = pairs.length ? nudge.pair * (ctx.evoLuck || 1) : 1;
       // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
