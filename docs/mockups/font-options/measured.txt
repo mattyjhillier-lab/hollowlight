@@ -1,0 +1,72 @@
+u1-title-1280x720 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-title-844x390 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-title-390x844 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-hero-1280x720 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-hero-844x390 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-hero-390x844 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-levelup-1280x720 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-levelup-844x390 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree"]}
+u1-levelup-390x844 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-results-1280x720 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-results-844x390 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-results-390x844 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-wordmark-1280x720 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-wordmark-844x390 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Caveat"]}
+u1-wordmark-390x844 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-hud-1280x720 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-hud-844x390 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+u1-hud-390x844 {"overflow":[],"small":[],"loaded":["Cormorant Garamond","Figtree","Caveat"]}
+a-title-1280x720 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-title-844x390 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-title-390x844 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-hero-1280x720 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-hero-844x390 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-hero-390x844 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-levelup-1280x720 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-levelup-844x390 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-levelup-390x844 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-results-1280x720 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-results-844x390 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-results-390x844 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-wordmark-1280x720 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-wordmark-844x390 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-wordmark-390x844 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-hud-1280x720 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-hud-844x390 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+a-hud-390x844 {"overflow":[],"small":[],"loaded":["Fondamento","Alegreya Sans"]}
+b-title-1280x720 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-title-844x390 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-title-390x844 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-hero-1280x720 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-hero-844x390 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-hero-390x844 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-levelup-1280x720 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-levelup-844x390 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito"]}
+b-levelup-390x844 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-results-1280x720 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-results-844x390 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-results-390x844 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-wordmark-1280x720 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-wordmark-844x390 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-wordmark-390x844 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-hud-1280x720 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-hud-844x390 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+b-hud-390x844 {"overflow":[],"small":[],"loaded":["Fraunces","Nunito","Kalam"]}
+c-title-1280x720 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-title-844x390 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-title-390x844 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-hero-1280x720 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-hero-844x390 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-hero-390x844 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-levelup-1280x720 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-levelup-844x390 {"overflow":[],"small":[],"loaded":["IM Fell English SC","Alegreya"]}
+c-levelup-390x844 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-results-1280x720 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-results-844x390 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-results-390x844 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-wordmark-1280x720 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-wordmark-844x390 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-wordmark-390x844 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-hud-1280x720 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-hud-844x390 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}
+c-hud-390x844 {"overflow":[],"small":[],"loaded":["IM Fell English SC","IM Fell English","Alegreya"]}

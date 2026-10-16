@@ -1,0 +1,7 @@
+# Hollowlight font options (static proofs, NOT game code)
+Research + recommendation: docs/research/33-fonts.md. Skeleton = Lantern Glass (docs/mockups/ui-identity B take); ONLY the type changes between options.
+- `u1-*` current locked trio (Cormorant Garamond / Figtree / Caveat). `a-*` Chancery Storybook (Fondamento / Alegreya Sans / Fondamento Italic). `b-*` Soft Wonk Cosy (Fraunces / Nunito / Kalam). `c-*` Old Print, Haunted (IM Fell English SC / Alegreya / IM Fell Italic).
+- Screens: `wordmark` (wordmark + type ladder), `title`, `hero` (Wren + Elias), `levelup` (evolution / stat / new + Blessings), `results`, `hud` (timer, gold, level, damage numbers, whisper toast). Files `<opt>-<screen>.html` and `<opt>-<screen>-<1280x720|844x390|390x844>.png` (the two phone sizes are 2x).
+- `candidates.png` = contact sheet of all ~35 faces tried (display / body / whisper). `measured.txt` = overflow, text under 11 px and loaded families per frame (all clean).
+- Regenerate: `node build.mjs [u1|a|b|c] [screen]` (all four options is slow, about 4 min; own headless Chrome, Node built-ins only), `node candidates.mjs`. Proof pages load fonts from fonts.googleapis.com, so re-rendering and opening the html needs internet; the PNGs are static. Nothing is shipped or downloaded into the repo.
+- Note: mock-up digits use each font's DEFAULT figures (U1's Cormorant shows old-style digits here; the real U1 tokens force lining numerals).
