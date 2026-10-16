@@ -67,8 +67,9 @@
 /* ---------- Blessings: a quiet row of cream pills (no arch, no gold, no eyelet) ---------- */
 .lu-foot { display: flex; flex-direction: column; align-items: center; gap: calc(10 * var(--u)); width: 100%; }
 .lu-quietwrap { display: flex; flex-direction: column; align-items: center; gap: calc(4 * var(--u)); width: min(100%, calc(var(--n2, 2) * 330 * var(--u))); }
-.lu-qlabel { align-self: stretch; display: flex; align-items: center; gap: calc(10 * var(--u)); font: var(--fw-body-bold) max(13px, calc(13 * var(--u)))/1.2 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--lg-brass-text); }
-.lu-qlabel::after { content: ""; flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--thread) 0 7px, transparent 7px 12px); opacity: .5; }
+.lu-qlabel { align-self: stretch; display: flex; align-items: baseline; gap: calc(10 * var(--u)); font: var(--fw-body-bold) max(14px, calc(15 * var(--u)))/1.2 var(--font-body); letter-spacing: .04em; color: var(--lg-brass-text); }
+.lu-qwhisper { font-weight: 400; font-style: italic; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.lu-qlabel::after { content: ""; flex: 1; align-self: center; height: 2px; background: repeating-linear-gradient(90deg, var(--thread) 0 7px, transparent 7px 12px); opacity: .5; }
 .lu-quiet { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: calc(12 * var(--u)); width: 100%; }
 .layer-levelup .card.quiet {
   display: grid; grid-template-columns: max(36px, calc(46 * var(--u))) minmax(0, 1fr); column-gap: calc(10 * var(--u)); row-gap: 0; align-items: center; justify-items: start; text-align: left;
@@ -81,6 +82,10 @@
 .card.quiet .c-icon { grid-row: 1 / span 2; grid-column: 1; width: max(36px, calc(46 * var(--u))); height: max(36px, calc(46 * var(--u))); margin: 0; box-shadow: 0 0 0 2px #3a2412; }
 .layer-levelup .card.quiet .c-title { grid-column: 2; margin: 0; font-size: max(18px, calc(21 * var(--u))); -webkit-line-clamp: 1; }
 .layer-levelup .card.quiet .c-unit { grid-column: 2; font-size: max(14px, calc(15 * var(--u))); color: var(--lg-dim); text-overflow: ellipsis; }
+.layer-levelup .card.quiet:has(.c-whisper) .c-title { grid-row: 1; }
+.layer-levelup .card.quiet:has(.c-whisper) .c-unit { grid-row: 2; }
+.layer-levelup .card.quiet .c-whisper { grid-column: 2; grid-row: 3; max-width: calc(100% + 34 * var(--u)); margin-right: calc(-34 * var(--u)); justify-self: stretch; font: italic 400 max(13px, calc(13 * var(--u)))/1.2 var(--font-body); color: var(--lg-brass-text); opacity: .9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.layer-levelup .card.quiet:has(.c-whisper) .c-icon { grid-row: 1 / span 3; }
 .layer-levelup .card.quiet > .lg-card__key { top: 50%; transform: translateY(-50%); right: calc(14 * var(--u)); }
 
 /* ---------- Reroll / Banish: the kit's pill buttons ---------- */
@@ -125,6 +130,7 @@ html.touch .c-key { display: none; }
   .lu-foot { flex-direction: row; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
   .lu-quietwrap { width: auto; flex-direction: row; }
   .lu-qlabel { display: none; }
+  .layer-levelup .card.quiet .c-whisper { display: none; }
   .lu-quiet { display: flex; gap: 8px; }
   .layer-levelup .card.quiet { padding: 0 36px 0 12px; min-width: 0; min-height: 48px; column-gap: 6px; }
   html.touch .layer-levelup .card.quiet { padding-right: 6px; }
@@ -186,6 +192,7 @@ html.touch .c-key { display: none; }
   .card.quiet .c-icon, .card.quiet .c-title, .card.quiet .c-unit { grid-area: auto; }
   .card.quiet .c-icon { grid-row: 1 / span 2; grid-column: 1; width: 36px; height: 36px; }
   .card.quiet .c-title, .card.quiet .c-unit { grid-column: 2; }
+  .layer-levelup .card.quiet .c-whisper { display: none; } /* half-width pills: no room for a third line */
   .layer-levelup .card.quiet .c-title { font-size: 18px; -webkit-line-clamp: 2; line-height: 1.05; }
   .layer-levelup .card.quiet .c-unit { font-size: 14px; white-space: normal; line-height: 1.15; }
   .lu-actions { width: 100%; gap: 10px; flex-wrap: nowrap; }

@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { data } from './helpers.mjs';
-import { OfferView, INPUT_LOCK_MS } from '../src/ui/cardsui.js';
+import { OfferView, INPUT_LOCK_MS, QUIET_LABEL } from '../src/ui/cardsui.js';
 import { cardModel, cardLabel, CLAMP, clampText } from '../src/ui/cardview.js';
 import { blessingCard } from '../src/sim/blessings.js';
 import { fallbackCard } from '../src/sim/cards.js';
@@ -193,4 +193,31 @@ test('U5 contrast >= 4.5:1: card text on arched glass (with lantern leak), on th
   assert.ok(ratio(evo, leak) >= 4.5 && ratio(evo, evoBrown) >= 4.5, 'gold effect number / stirs whisper');
   assert.ok(ratio(thread, leak) >= 4.5, 'thread note');
   assert.ok(ratio(tok('--lg-ink', kit), tok('--teal', style)) >= 4.5, 'NEW label');
+});
+
+// Blessing copy chunk: effect-first lines stay true to the numbers; whispers present, clamped, inert.
+test('Blessing copy: effect lines match perRank/caps; whispers present and plain', () => {
+  const b = data.blessings;
+  const pctOf = (x) => Math.round(x * 100);
+  for (const [id, d] of Object.entries(b.items)) {
+    assert.ok(typeof d.whisper === 'string' && d.whisper.length > 0 && d.whisper.length <= 48 && !/[<>&"`]/.test(d.whisper), id);
+    const nums = (d.desc.match(/\d+(?:\.\d+)?(?=%)/g) || []).map(Number);
+    assert.deepEqual(nums, [pctOf(d.perRank)], `${id} desc number must equal perRank`);
+    assert.ok(1 + d.perRank * d.ranks <= b.caps[d.effect] + 1e-9, `${id} ranks within cap`);
+  }
+});
+
+test('Blessing copy: whisper shown under the effect line via textContent, clamped; label is two-part; hostile whisper inert', () => {
+  const evil = '<img src=x onerror=alert(1)>' + 'Z'.repeat(300);
+  const d2 = { ...data, blessings: { ...data.blessings, items: { ...data.blessings.items, wider_glow: { ...data.blessings.items.wider_glow, whisper: evil }, kind_fortune: { ...data.blessings.items.kind_fortune, whisper: 42 } } } };
+  const doc = fakeDoc(), host = doc.createElement('div');
+  const v = new OfferView(doc, host, { pick() {}, reroll() {}, banish() {} });
+  v.render(mkSim({ gold: [], cards: [blessingCard('wider_glow', data.blessings, 0), blessingCard('kind_fortune', data.blessings, 0), blessingCard('dawnlit_soles', data.blessings, 0)] }), d2);
+  const w = all(host, 'c-whisper');
+  assert.equal(w.length, 2); // numeric whisper dropped, others shown
+  assert.ok(w[0]._text.length <= 48);
+  assert.equal(w[1]._text, data.blessings.items.dawnlit_soles.whisper);
+  assert.equal(all(host, 'lu-qtitle')[0]._text, 'Quiet gifts');
+  assert.equal(all(host, 'lu-qwhisper')[0]._text, 'Take one. They ask nothing.');
+  assert.equal(QUIET_LABEL, 'Quiet gifts');
 });

@@ -6,7 +6,9 @@ import { cardIcon } from './cardicons.js';
 
 export const INPUT_LOCK_MS = 250; // ignore picks right after the screen opens (mis-tap guard, research 28)
 export const TITLE_TEXT = 'The light stirs';
-export const QUIET_LABEL = 'BLESSINGS · quiet gifts';
+export const QUIET_LABEL = 'Quiet gifts';
+export const QUIET_WHISPER = 'Take one. They ask nothing.';
+export const WHISPER_MAX = 48;
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export class OfferView {
@@ -69,7 +71,9 @@ export class OfferView {
     if (quiet.length) {
       const wrap = this.el('div', 'lu-quietwrap');
       wrap.style.setProperty('--n2', String(Math.min(3, quiet.length)));
-      wrap.append(this.el('div', 'lu-qlabel', QUIET_LABEL), quietRow);
+      const ql = this.el('div', 'lu-qlabel');
+      ql.append(this.el('span', 'lu-qtitle', QUIET_LABEL), this.el('span', 'lu-qwhisper', QUIET_WHISPER));
+      wrap.append(ql, quietRow);
       foot.appendChild(wrap);
     }
     const actions = this.el('div', 'lu-actions');
@@ -146,6 +150,9 @@ export class OfferView {
       // Blessing chip: one quiet line "+3% move speed · 1/2" (rank after this pick)
       const rank = m.pips.total ? ` · ${m.pips.filled}/${m.pips.total}` : '';
       node.appendChild(this.el('div', 'c-unit', clampText(`${m.num} ${m.unit}`.trim() + rank, 34)));
+      const bd = data && data.blessings && data.blessings.items && Object.hasOwn(data.blessings.items, c.blessId) ? data.blessings.items[c.blessId] : null;
+      const wh = bd && typeof bd.whisper === 'string' ? clampText(bd.whisper, WHISPER_MAX) : '';
+      if (wh) node.appendChild(this.el('div', 'c-whisper', wh));
     } else {
       if (m.num) node.appendChild(this.el('div', `c-num${m.num.length > 4 ? ' long' : ''}`, m.num));
       if (m.unit) node.appendChild(this.el('div', 'c-unit', m.unit));

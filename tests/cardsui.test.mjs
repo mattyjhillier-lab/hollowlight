@@ -178,7 +178,7 @@ test('HUD-2 OfferView on a fake DOM: structure, order, quiet row, keys, banish m
   assert.ok(main.children[1].className.includes('is-stirs') && main.children[1].className.includes('stirs'));
   assert.ok(main.children[2].className.includes('is-new'));
   assert.ok(quiet.children.every((c) => c.className.includes('quiet')));
-  assert.ok(textOf(host).includes('The light stirs') && textOf(host).includes('LEVEL 8') && textOf(host).includes('BLESSINGS'));
+  assert.ok(textOf(host).includes('The light stirs') && textOf(host).includes('LEVEL 8') && textOf(host).includes('Quiet gifts'));
   assert.ok(textOf(main.children[1]).includes(STIRS_TEXT));
   assert.ok(!textOf(main.children[0]).includes('NaN'));
   assert.equal(all(host, 'c-key').map((k) => k._text).join(''), '12345'); // keys 1..5 follow display order
