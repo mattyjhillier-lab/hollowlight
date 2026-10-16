@@ -1,11 +1,12 @@
 // Quality tiers + auto tier selection. Pure JS (no DOM/Phaser) so it is unit-testable.
 export const TIERS = ['low', 'med', 'high'];
 
+// W4 props: live = max live decor props (sprites <= ~2 per prop layer), density = placement gate, sway = AL-3 crown sway (Low = static, no petals).
 // Budget (docs/research/11): <=300 particles, FX/bloom on High only.
 export const CAPS = {
-  low: { ribbon: { lantern: { life: 1.5, pts: 18, w: 11, a: 0.34 }, scarf: { life: 0, pts: 0 }, spirits: { n: 0, life: 0, pts: 0 }, segs: 20 }, particles: 100, halos: 40, gemGlow: 0, trails: 0, dmgNums: 14, vignette: false, lightmap: false, lights: 0, bloom: false, ambient: { total: 2, sway: 0, motes: 0, fireflies: 0, critters: 2, petals: 0, bloom: 0, birds: 4 } },
-  med: { ribbon: { lantern: { life: 3.0, pts: 40, w: 13, a: 0.38 }, scarf: { life: 1.0, pts: 14, w: 6, a: 0.24 }, spirits: { n: 6, life: 1.1, pts: 14, w: 11, a: 0.4 }, segs: 260 }, particles: 250, halos: 90, gemGlow: 30, trails: 1, dmgNums: 24, vignette: true, lightmap: true, lights: 40, bloom: false, ambient: { total: 85, sway: 36, motes: 14, fireflies: 10, critters: 3, petals: 4, bloom: 16, birds: 8 } },
-  high: { ribbon: { lantern: { life: 4.0, pts: 48, w: 14, a: 0.4, core: true }, scarf: { life: 1.3, pts: 18, w: 6, a: 0.3 }, spirits: { n: 12, life: 1.3, pts: 18, w: 11, a: 0.44 }, segs: 600 }, particles: 300, halos: 160, gemGlow: 60, trails: 2, dmgNums: 24, vignette: true, lightmap: true, lights: 80, bloom: true, ambient: { total: 165, sway: 64, motes: 28, fireflies: 24, critters: 5, petals: 8, bloom: 32, birds: 12 } },
+  low: { ribbon: { lantern: { life: 1.5, pts: 18, w: 11, a: 0.34 }, scarf: { life: 0, pts: 0 }, spirits: { n: 0, life: 0, pts: 0 }, segs: 20 }, particles: 100, halos: 40, gemGlow: 0, trails: 0, dmgNums: 14, vignette: false, lightmap: false, lights: 0, bloom: false, ambient: { total: 2, sway: 0, motes: 0, fireflies: 0, critters: 2, petals: 0, bloom: 0, birds: 4 }, props: { live: 40, density: 0.6, sway: false } },
+  med: { ribbon: { lantern: { life: 3.0, pts: 40, w: 13, a: 0.38 }, scarf: { life: 1.0, pts: 14, w: 6, a: 0.24 }, spirits: { n: 6, life: 1.1, pts: 14, w: 11, a: 0.4 }, segs: 260 }, particles: 250, halos: 90, gemGlow: 30, trails: 1, dmgNums: 24, vignette: true, lightmap: true, lights: 40, bloom: false, ambient: { total: 85, sway: 36, motes: 14, fireflies: 10, critters: 3, petals: 4, bloom: 16, birds: 8 }, props: { live: 80, density: 1, sway: true } },
+  high: { ribbon: { lantern: { life: 4.0, pts: 48, w: 14, a: 0.4, core: true }, scarf: { life: 1.3, pts: 18, w: 6, a: 0.3 }, spirits: { n: 12, life: 1.3, pts: 18, w: 11, a: 0.44 }, segs: 600 }, particles: 300, halos: 160, gemGlow: 60, trails: 2, dmgNums: 24, vignette: true, lightmap: true, lights: 80, bloom: true, ambient: { total: 165, sway: 64, motes: 28, fireflies: 24, critters: 5, petals: 8, bloom: 32, birds: 12 }, props: { live: 120, density: 1, sway: true } },
 };
 
 const BUCKET_MS = 1000; // 3 one-second buckets = rolling ~3 s window

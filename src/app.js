@@ -28,6 +28,7 @@ function parseParams() {
     life: q.get('life') === '1', // dev: show the life map
     flat: q.get('ground') === 'flat', // dev: force the Low ground fallback (no shader)
     trails: q.get('trails') !== '0', // dev: ?trails=0 turns the W2 ribbon trails off (A/B perf)
+    props: q.get('props') !== '0', // dev: ?props=0 turns the W4 props layer off (A/B perf)
     sway: q.get('sway') !== '0', // dev: ?sway=0 turns the AL-1 grass sway layer off (A/B perf)
     touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree

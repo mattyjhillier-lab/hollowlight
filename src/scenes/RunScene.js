@@ -21,6 +21,9 @@ import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
+import { PropLayer } from '../gfx/proplayer.js';
+import { makePropAtlas, ATLAS_KEY as PROP_KEY } from '../gfx/propatlas.js';
+import { START_CLEAR } from '../gfx/propfield.js';
 import { RibbonSet, RibbonLayer, ribbonCaps } from '../gfx/ribbons.js';
 import { hash as visHash } from '../gfx/wind.js';
 
@@ -55,6 +58,7 @@ const hex = (s) => parseInt(s.slice(1), 16);
 
 function makeTextures(scene) {
   makeStyleTextures(scene, STYLE);
+  INV[PROP_KEY] = makePropAtlas(scene, (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // W4 prop atlas
   INV[ATLAS_KEY] = makeAmbAtlas(scene, (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // AL-1 sway atlas
 }
 
@@ -103,6 +107,7 @@ class SpritePool {
   }
 }
 
+const PROPS_OFF = { props: { live: 0, density: 1, sway: false }, ambient: { petals: 0 } };
 const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
 const dimTint = (c, k) => (((c >> 16 & 255) * k | 0) << 16) | (((c >> 8 & 255) * k | 0) << 8) | ((c & 255) * k | 0);
 
@@ -122,6 +127,7 @@ export class RunScene extends Phaser.Scene {
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
     this.gb = new GroundBlend(this);
     this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size, glow: { key: 'glow', inv: inv('glow'), blend: ADD } }); // AL-1 grass/flower sway (visual only)
+    this.props = new PropLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // W4 props + AL-3 crown sway/petals (visual only)
     this.ribSet = new RibbonSet(600, 12, 64); // W2 trails (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 600);
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
@@ -328,14 +334,7 @@ export class RunScene extends Phaser.Scene {
       const img = this.add.image(pt.x, pt.y, 'patch').setScale(((pt.r * 2) / 64) * inv('patch')).setDepth(-500);
       this.decor.push(img);
     }
-    for (let i = 0; i < 520; i++) {
-      const x = rng.range(20, size - 20);
-      const y = rng.range(30, size - 10);
-      if (Math.hypot(x - sim.player.x, y - sim.player.y) < 90) continue;
-      const img = this.add.image(x, y, 'tree').setOrigin(0.5, 0.92).setDepth(y);
-      img.setScale(rng.range(0.85, 1.25) * inv('tree'));
-      this.decor.push(img);
-    }
+    this.props.reset(((sim.seed | 0) ^ 0x9e0b5) | 0, [{ x: sim.player.x, y: sim.player.y, tall: START_CLEAR.tall, low: START_CLEAR.low }]); // W4: visual seed from the run seed, sim RNG untouched
     this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv(`hero_${sim.characterId}`)).setOrigin(0.5, 0.5).setVisible(true);
     this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5);
     for (const r of this.rigs) r.bind(sim);
@@ -591,6 +590,7 @@ export class RunScene extends Phaser.Scene {
     this.ground.setTint(this.lmOn ? col : dimTint(col, LOW_GROUND_K)); // W1: the flat tile is authored at daylight brightness, so Low darkens it a little more than the trees
     this.gb.setTint(col);
     for (const d of this.decor) d.setTint(col);
+    this.props.setTint(this.lmOn ? 0xffffff : col);
   }
 
   // Colour-grade for the current point in the run. Quantised so we only touch objects when it changes.
@@ -679,6 +679,7 @@ export class RunScene extends Phaser.Scene {
     this.followTarget.setPosition(p.x, p.y);
     this.tickLife(sim, p);
     this.tickSway(sim, p, caps);
+    this.tickProps(sim, p, caps);
     const rig = this.rig.active;
     if (rig) this.rig.update(sim, this.quality.tier, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, caps, this.parts);
     else {
@@ -964,6 +965,13 @@ export class RunScene extends Phaser.Scene {
     this.ribSet.update(sim.time, caps, h, this.ribSrc, nSrc);
     const n = this.ribSet.emit(sim.time, caps, ROLE.lantern, elias ? ROLE.eliasTrim : 0xbff3e6);
     this.ribLayer.render(this.ribSet, n);
+  }
+
+  // W4 props + AL-3 crowns/petals: decor under every creature; Low = static props (no sway, no petals), fewer.
+  tickProps(sim, p, caps) {
+    const ok = app.params.props && sim.state !== 'dead';
+    const wv = this.cameras.main.worldView;
+    this.props.update(Math.min(this.game.loop.delta, 100) / 1000, sim.time, wv, this.life, ok ? caps : PROPS_OFF, { phone: this.swayPhone, reduced: this.reducedMotion(), hero: p, creatures: sim.enemies, nCreat: sim.enemies.length });
   }
 
   tickSway(sim, p, caps) {
