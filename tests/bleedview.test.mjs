@@ -50,12 +50,10 @@ test('E2 bleed numbers: own kind, first to be dropped, never merged, player lane
   assert.equal(s.spawn(0, 0, 3, 1, KIND.BLEED), null, 'respects the damage-numbers setting');
 });
 
-test('E2 colour rules: bleed is pale blue (wolf light), not red; tint + number + drip share it', () => {
+test('E2 colour rules: bleed is blood red (Matt 2026-10-16); tint + number + drip share one palette entry', () => {
   const ch = (c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
-  for (const c of [ROLE.bleed, ROLE.bleedTint]) { const [r, g, b] = ch(c); assert.ok(b > g && g > r && b > 200, `blue-dominant ${c.toString(16)}`); }
-  assert.equal(ROLE.bleed, parseInt(data.weapons.ghost_wolves.color.slice(1), 16), 'matches the wolf colour #9fd8ff');
+  for (const c of [ROLE.bleed, ROLE.bleedTint]) { const [r, g, b] = ch(c); assert.ok(r > 200 && r > g + 60 && r > b + 60, `red-dominant ${c.toString(16)}`); }
   const scene = readFileSync(new URL('../src/scenes/RunScene.js', import.meta.url), 'utf8');
-  assert.ok(!/0xff9a9a/.test(scene), 'the pinkish-red bleed tint is gone');
   assert.ok(/tq === 101\) img\.setTint\(ROLE\.bleedTint\)/.test(scene));
   const nums = readFileSync(new URL('../src/gfx/dmgnums.js', import.meta.url), 'utf8');
   assert.ok(/ROLE\.bleed\]/.test(nums));

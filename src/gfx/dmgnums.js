@@ -7,7 +7,7 @@ import { NumPool, KIND, fmtSigned } from './numpool.js';
 import { PAL, ROLE } from './palette.js';
 
 export const GLYPHS = '0123456789k+-.M';
-const TINT = [PAL.cream, 0xffdcae, 0x8fe3c8, 0xff8078, ROLE.bleed]; // normal, big (warmer, never gold), heal (soft teal), taken (light red), bleed tick (wolf-light pale blue)
+const TINT = [PAL.cream, 0xffdcae, 0x8fe3c8, 0xff8078, ROLE.bleed]; // normal, big (warmer, never gold), heal (soft teal), taken (light red), bleed tick (blood red)
 
 export function makeDigitFont(scene) {
   for (const key of ['digits', 'digitsB']) {

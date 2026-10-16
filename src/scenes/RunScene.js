@@ -852,7 +852,7 @@ export class RunScene extends Phaser.Scene {
       if (img.tq !== tq) {
         img.tq = tq;
         if (tq === 100) img.setTintFill(0xffffff);
-        else if (tq === 101) img.setTint(ROLE.bleedTint); // wolf-light pale blue, never red (red = danger only)
+        else if (tq === 101) img.setTint(ROLE.bleedTint); // blood red (Matt 2026-10-16), shared with bleed numbers and drips
         else if (tq === 0) img.clearTint();
         else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
       }
