@@ -127,3 +127,4 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 - 2026-10-16 STANDING RULE (Matt): all future new content (weapons, evolutions, heroes, abilities, enemies, bosses, statuses, etc.) is discussed the same way: three options each, Matt picks one-tap, recorded here, consistent with siblings. In CLAUDE.md.
 
 - 2026-10-16 BLEED COLOUR (Matt): bleed numbers, drips and the enemy bleed tint are BLOOD RED (palette ROLE.bleed 0xe5484d, bleedTint 0xff8a82), replacing E2's pale blue. REOPENS the 'red = danger only' line for bleed specifically (still distinct from heart rose and from the light-red player-hit numbers).
+- 2026-10-16 Matt's answers: (1) NOT going live yet: finish evolutions first (phone check still pending); (2) next build = evolution bug fixes (B1) + wolf Rend (E3); (3) Blessing flavour lines: Claude drafts, Matt edits.
