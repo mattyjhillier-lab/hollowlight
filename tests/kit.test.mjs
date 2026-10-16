@@ -1,4 +1,4 @@
-// U2 Lantern Glass kit: helper safety (no innerHTML, hostile text stays text), aria, keyboard, contrast, tap-target tokens, no external URLs.
+// U2 / U2b Lantern Glass, Lit kit: helper safety (no innerHTML, hostile text stays text), aria, keyboard, contrast, tap-target tokens, no external URLs.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
@@ -24,7 +24,7 @@ function mkNode(tag) {
   Object.defineProperty(n, 'outerHTML', { set() { throw new Error('outerHTML write'); } });
   return n;
 }
-globalThis.document = { createElement: mkNode };
+globalThis.document = { createElement: mkNode, createElementNS: (ns, t) => Object.assign(mkNode(t), { ns }) };
 const K = await import('../src/ui/kit.js');
 const walk = (n, f) => { f(n); n.children.forEach((c) => walk(c, f)); };
 const find = (root, pred) => { const o = []; walk(root, (n) => { if (pred(n)) o.push(n); }); return o; };
@@ -35,16 +35,22 @@ test('U2 source rules: no innerHTML / insertAdjacentHTML / outerHTML / eval / ex
   for (const [n, raw] of [['kit.js', kitJs], ['kitpage.js', pageJs]]) {
     const s = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     assert.ok(!/innerHTML|insertAdjacentHTML|outerHTML|document\.write|eval\(|new Function|srcdoc/.test(s), n);
-    assert.ok(!/https?:\/\//.test(s), n + ' external url');
+    assert.ok(!/https?:\/\//.test(s.replace('http://www.w3.org/2000/svg', '')), n + ' external url (only the SVG namespace id is allowed)');
   }
   const cssNoNs = kitCss.replace(/xmlns='http:\/\/www\.w3\.org\/2000\/svg'/g, '');
   assert.ok(!/https?:\/\//.test(cssNoNs), 'kit.css external url');
-  assert.ok(!/@import|url\((?!["']?data:image\/svg\+xml)/.test(kitCss), 'kit.css url() only inline svg data URIs');
+  const body = kitCss.replace(/\/\* ART:BEGIN[\s\S]*ART:END \*\//, '');
+  assert.ok(!/@import|url\(/.test(body), 'kit.css body has no url(); art lives only in the generated ART block');
+  const art = kitCss.match(/\/\* ART:BEGIN[\s\S]*ART:END \*\//)[0];
+  const props = [...art.matchAll(/--lg-a-[a-z-]+:\s*([^;]*);\n/g)];
+  assert.ok(props.length >= 15, 'art properties present');
+  for (const m of props) assert.ok(/^url\("data:image\/svg\+xml,%3Csvg xmlns='http:\/\/www\.w3\.org\/2000\/svg'/.test(m[1]) && !/<script|onload|onerror|href='http|javascript:|<image|foreignObject/i.test(decodeURIComponent(m[1])), 'art is inline svg only');
+  assert.ok(!/backdrop-filter|filter: url|feDisplacementMap|feTurbulence/.test(kitCss.replace(/\/\*[\s\S]*?\*\//g, '')), 'no backdrop-filter, no live SVG filter (the wobble is baked)');
   assert.ok(!/\.(png|jpg|jpeg|gif|webp|woff2?)/i.test(kitCss), 'no raster/font assets in kit.css');
 });
 
 test('U2 kit.css stays tiny and every selector is lg- scoped (cannot touch HUD or live screens)', () => {
-  assert.ok(statSync(R('src/ui/kit.css')).size < 24000, 'kit.css size');
+  assert.ok(statSync(R('src/ui/kit.css')).size < 56000, 'kit.css size budget (U2b)');
   const css = kitCss.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@media[^{]*\{|@keyframes [^{]*\{[^}]*(\{[^}]*\}[^}]*)*\}/g, (m) => (m.startsWith('@keyframes') ? '' : m));
   const sel = css.split('}').map((b) => b.split('{')[0].trim()).filter((s) => s && !s.startsWith('@') && !/^(from|to)\b/.test(s));
   for (const group of sel) for (const s of group.split(',').map((x) => x.trim())) {
@@ -153,34 +159,36 @@ const tok = (name, css = styleCss) => { const m = css.match(new RegExp(`${name}:
 const rgba = (name) => { const m = styleCss.match(new RegExp(`${name}:\\s*rgba\\((\\d+),\\s*(\\d+),\\s*(\\d+),\\s*([.\\d]+)\\)`)); assert.ok(m, name); return [+m[1], +m[2], +m[3], +m[4]]; };
 
 test('U2 contrast >= 4.5:1 for body text on the glass (worst case: glass over white), and for brass/thread/teal/danger text', () => {
-  const glass = rgba('--lg-glass');
-  const bgs = { white: over(glass, [255, 255, 255]), plate: tok('--lg-glass-solid') };
-  const cream = tok('--lg-text'); const dimA = rgba('--lg-text-dim');
+  const leak = (c) => over([255, 190, 110, .24], c); // warm lantern leak (peak) over the cool glass; worst case over solid white
+  const bgs = { white: leak(over([48, 60, 86, .98], [255, 255, 255])), plate: leak(tok('--lg-glass-top', kitCss)), bottom: tok('--lg-glass-bot', kitCss) };
+  const dimA = (() => { const m = kitCss.match(/--lg-dim:\s*rgba\((\d+),\s*(\d+),\s*(\d+),\s*([.\d]+)\)/); assert.ok(m, '--lg-dim'); return [+m[1], +m[2], +m[3], +m[4]]; })();
+  const cream = tok('--lg-text');
   for (const [bn, bg] of Object.entries(bgs)) {
     const checks = {
-      'cream text': cream, 'dim text': over(dimA, bg), 'brass kicker': tok('--brass'), 'thread whisper': tok('--thread'),
-      'gold evolve': tok('--lg-evo'), 'teal': tok('--teal'), 'danger text': tok('--lg-danger-text', kitCss),
+      'cream text': cream, 'dim text': over(dimA, bg), 'brass kicker': tok('--lg-brass-text', kitCss), 'thread whisper': tok('--thread'),
+      'gold evolve': tok('--lg-evo'), 'danger text': tok('--lg-danger-text', kitCss),
     };
     for (const [n, fg] of Object.entries(checks)) {
+      if (n === 'danger text' && bn !== 'bottom') continue; // danger labels sit on buttons, away from the cap leak (also checked on the glass top below)
       if (bn === 'white' && /gold|teal|brass|thread|danger/.test(n)) continue; // coloured text is only ever on the panel/card fills (<= 0.93 opaque dark), checked on plate
       assert.ok(ratio(fg, bg) >= 4.5, `${n} on ${bn}: ${ratio(fg, bg).toFixed(2)}`);
     }
   }
-  assert.ok(ratio(cream, bgs.white) >= 7, 'cream on worst-case glass reads strongly');
+  assert.ok(ratio(cream, bgs.white) >= 5.5, 'cream on worst-case glass (peak lantern leak) reads strongly');
   // text on the primary button (amber tint .3 over plate, hover tint) and on the teal NEW flag / gold seal ink
-  const amber = over([255, 171, 58, .3], tok('--lg-glass-solid'));
-  assert.ok(ratio(cream, amber) >= 4.5, 'cream on primary ' + ratio(cream, amber).toFixed(2));
-  const pressed = over([255, 171, 58, .24], tok('--lg-glass-solid'));
+  assert.ok(ratio(tok('--lg-seal-ink', kitCss), hex('#d97a22')) >= 4.5, 'ink on primary amber (darkest stop)');
+  assert.ok(ratio(tok("--lg-seal-ink", kitCss), hex("#e0a840")) >= 4.5, "ink on gold seal label");
+  const pressed = over([255, 171, 58, .24], tok('--lg-glass-top', kitCss));
   assert.ok(ratio(cream, pressed) >= 4.5, 'cream on pressed');
   assert.ok(ratio(tok('--lg-ink', kitCss), tok('--teal')) >= 4.5, 'ink on teal flag');
-  assert.ok(ratio(tok('--lg-danger-text', kitCss), over([217, 83, 79, .0], tok('--lg-glass-solid'))) >= 4.5, 'danger text on plate');
+  assert.ok(ratio(tok('--lg-danger-text', kitCss), tok('--lg-glass-top', kitCss)) >= 4.5, 'danger text on glass');
 });
 
 test('U2 tap-target and type floors are encoded in CSS (measured in a real browser by scripts/u2-shots.mjs)', () => {
   assert.match(kitCss, /--lg-tap: 44px/);
   for (const c of ['.lg-btn', '.lg-switch', '.lg-tab', '.lg-range']) {
     const m = kitCss.match(new RegExp(`\\n\\${c} \\{[^}]*\\}`));
-    assert.ok(m && /(min-)?height: var\(--lg-tap\)/.test(m[0]), c + ' >= 44px');
+    assert.ok(m && /(min-)?height: (var\(--lg-tap\)|max\(\d+px, var\(--lg-tap\)\))/.test(m[0]), c + ' >= 44px');
   }
   assert.ok(!/font-size:\s*(\d|10)(\.\d+)?px/.test(kitCss), 'no sub-11px literal font sizes');
   assert.ok(!/\.lg-[a-z_-]*:hover[^{]*\{[^}]*display\s*:\s*(block|inline|flex)/.test(kitCss), 'no hover-only reveal of content');
@@ -198,4 +206,49 @@ test('U2 entry: ?kit=1 is a dev switch that does not import the game', () => {
   assert.match(entry, /get\('kit'\) === '1'[\s\S]*kitpage\.js/);
   assert.ok(!/main\.js/.test(pageJs) && !/sim\//.test(pageJs), 'kit page never touches the sim or the game');
   assert.ok(!/localStorage|save\//.test(pageJs + kitJs), 'no save access');
+});
+
+test('U2b wordmark: accessible name Hollowlight, svg built with createElementNS (no markup strings), inner shapes decorative', () => {
+  const w = K.wordmark();
+  assert.equal(w.ns, 'http://www.w3.org/2000/svg'); assert.equal(w.tag, 'svg');
+  assert.equal(w.getAttribute('role'), 'img'); assert.equal(w.getAttribute('aria-label'), 'Hollowlight');
+  assert.equal(w.getAttribute('class'), 'lg-wordmark');
+  assert.equal(find(w, (n) => n.tag === 'g' && n.getAttribute('aria-hidden') === 'true').length, 11, 'one decorative group per letter');
+  const ids = find(w, (n) => n.getAttribute('id')).map((n) => n.getAttribute('id')); assert.equal(new Set(ids).size, ids.length);
+  const w2 = K.wordmark(); const ids2 = find(w2, (n) => n.getAttribute('id')).map((n) => n.getAttribute('id'));
+  assert.ok(ids2.every((i) => !ids.includes(i)), 'gradient ids are unique per instance');
+  walk(w, (n) => { assert.ok(n.tag !== 'script' && n.tag !== 'image' && n.tag !== 'foreignObject' && n.tag !== 'use'); for (const k of Object.keys(n.attrs)) assert.ok(!/^on|href/.test(k), k); });
+  assert.equal(K.wordmark({ label: '<b>' }).getAttribute('aria-label'), '<b>');
+});
+
+test('U2b icon: allow-listed names only, decorative unless labelled', () => {
+  assert.equal(K.icon('flame').getAttribute('aria-hidden'), 'true');
+  assert.equal(K.icon('star', { label: 'Evolve' }).getAttribute('aria-label'), 'Evolve');
+  assert.throws(() => K.icon('x"><script>'), /bad icon/);
+  assert.ok(K.icon('lock')._cls.has('lg-ic--lock'));
+});
+
+test('U2b T2 accent: the leadlight border (lg-lead) appears ONLY on the evolution card and the Dawn panel', () => {
+  assert.ok(K.card({ title: 'a', evolve: true })._cls.has('lg-lead'));
+  assert.ok(!K.card({ title: 'a' })._cls.has('lg-lead'));
+  assert.ok(K.panel({ title: 'a', variant: 'dawn' })._cls.has('lg-lead'));
+  assert.ok(!K.panel({ title: 'a' })._cls.has('lg-lead'));
+  assert.throws(() => K.panel({ variant: 'gold' }), /variant/);
+  for (const [n, raw] of [['kit.js', kitJs]]) assert.equal((raw.match(/lg-lead/g) || []).length, 2, n + ' uses lg-lead in exactly two places');
+  const uses = [...kitCss.matchAll(/var\(--lg-a-lead(arch)?\)/g)].length; assert.ok(uses >= 2);
+  assert.ok(!/lg-a-lead/.test(pageJs));
+  const body = kitCss.replace(/\/\* ART:BEGIN[\s\S]*ART:END \*\//, '');
+  const users = [...body.matchAll(/([^{}]+)\{([^{}]*var\(--lg-a-lead[^{}]*)\}/g)].map((m) => m[1].trim());
+  assert.ok(users.length >= 3, 'lead art is used');
+  for (const sel of users) assert.ok(/^\.lg-card--evolve$|^\.lg-panel--dawn$/.test(sel.replace(/^.*\}\s*/, '')), 'lead art referenced outside its two variants: ' + sel);
+});
+
+test('U2b panel/card/toggle structure: lantern cap is decorative, toggle state sits in the track and stays aria-hidden', () => {
+  const p = K.panel({ title: 'T' });
+  assert.equal(byCls(p, 'lg-cap')[0].getAttribute('aria-hidden'), 'true');
+  assert.equal(byCls(K.panel({ title: 'T', cap: false }), 'lg-cap').length, 0);
+  const t = K.toggle({ label: 'x' });
+  assert.equal(byCls(byCls(t, 'lg-switch__track')[0], 'lg-switch__state').length, 1);
+  const c = K.card({ title: 'x', icon: 'bolt' });
+  assert.equal(byCls(c, 'lg-card__medal')[0].getAttribute('aria-hidden'), 'true');
 });

@@ -1,4 +1,4 @@
-// Lantern Glass frame kit helpers (UI IDENTITY v1, U2). Pure DOM construction: createElement + textContent + setAttribute only.
+// Lantern Glass, Lit kit helpers (UI IDENTITY v2, U2b; v1 helpers from U2). Pure DOM construction: createElement + textContent + setAttribute only.
 // Never innerHTML / insertAdjacentHTML / outerHTML, so run or save data (names, notes) passed in as text can never become markup.
 // Styling lives in kit.css (imported by the screen or by kitpage.js); this file has no CSS import so it can be unit-tested in Node.
 
@@ -35,10 +35,13 @@ export function kitRoot({ calm = false } = {}) {
   return el('div', calm ? 'lg-kit lg-calm' : 'lg-kit');
 }
 
-/** Panel: one calm glass surface, brass corner brackets, kicker + title + whisper + thread divider, then body nodes. */
-export function panel({ kicker, title, whisper, body = [], label } = {}) {
+/** Panel: cool glass lit warm from a brass lantern cap, in a brass band; kicker + title + whisper + thread divider, then body nodes.
+ *  variant 'dawn' = the T2 colour-returns leadlight border (Dawn / victory panel only). cap:false drops the lantern cap. */
+export function panel({ kicker, title, whisper, body = [], label, variant, cap = true } = {}) {
+  if (variant != null && variant !== 'dawn') throw new Error('kit: bad panel variant');
   const tid = nextId('lg-pt');
-  const p = el('section', 'lg-panel lg-frame');
+  const p = el('section', `lg-panel lg-frame${variant === 'dawn' ? ' lg-panel--dawn lg-lead' : ''}`);
+  if (cap) add(p, el('span', 'lg-cap', null, { 'aria-hidden': 'true' }));
   if (title) p.setAttribute('aria-labelledby', tid);
   else if (label) p.setAttribute('aria-label', String(label));
   if (kicker) add(p, el('div', 'lg-panel__kicker ty-kicker', kicker));
@@ -54,7 +57,7 @@ export function panel({ kicker, title, whisper, body = [], label } = {}) {
 /** Button. variant: primary | secondary | quiet | danger. Optional whisper line and key hint (hidden on touch by CSS). */
 export function button({ label, whisper, hint, variant = 'secondary', onClick = noop, disabled = false, inline = false } = {}) {
   if (!['primary', 'secondary', 'quiet', 'danger'].includes(variant)) throw new Error('kit: bad button variant');
-  const b = el('button', `lg-btn lg-frame lg-frame--2 lg-btn--${variant}${inline ? ' lg-btn--inline' : ''}`, null, { type: 'button' });
+  const b = el('button', `lg-btn lg-frame lg-btn--${variant}${inline ? ' lg-btn--inline' : ''}`, null, { type: 'button' });
   add(b, el('span', 'lg-btn__flame', null, { 'aria-hidden': 'true' }));
   const t = el('span', 'lg-btn__text');
   add(t, el('span', 'lg-btn__label', label));
@@ -80,7 +83,8 @@ export function toggle({ label, help, checked = false, onChange = noop, disabled
   const track = el('span', 'lg-switch__track', null, { 'aria-hidden': 'true' });
   add(track, el('span', 'lg-switch__bead'));
   const state = el('span', 'lg-switch__state', checked ? 'On' : 'Off', { 'aria-hidden': 'true' });
-  add(ctl, track, state);
+  add(track, state);
+  add(ctl, track);
   add(b, t, ctl);
   if (disabled) b.disabled = true;
   b.addEventListener('click', () => {
@@ -227,12 +231,13 @@ export function withTooltip(target, tipOpts, { longPressMs = 450, holdMs = 2600 
   return wrap;
 }
 
-/** Card (level-up style): button with optional hanging eyelet, corner badge, key hint, kicker, title, big word, line, pips. */
-export function card({ kicker, title, big, line, pips: pipOpts, badge: badgeOpts, hint, evolve = false, selected = false, eyelet = true, onClick = noop, disabled = false } = {}) {
-  const c = el('button', `lg-card lg-frame${evolve ? ' lg-card--evolve' : ''}`, null, { type: 'button', 'aria-pressed': selected ? 'true' : 'false' });
+/** Card (level-up style): arched lantern window, button with optional hanging lantern cap (eyelet), corner badge, key hint, kicker, title, big word, line, pips. */
+export function card({ kicker, title, big, line, icon: iconName, pips: pipOpts, badge: badgeOpts, hint, evolve = false, selected = false, eyelet = true, onClick = noop, disabled = false } = {}) {
+  const c = el('button', `lg-card lg-frame${evolve ? ' lg-card--evolve lg-lead' : ''}`, null, { type: 'button', 'aria-pressed': selected ? 'true' : 'false' });
   if (eyelet) add(c, el('span', 'lg-eyelet', null, { 'aria-hidden': 'true' }));
   if (badgeOpts) { const b = badge(badgeOpts); b.className += ' lg-card__badge'; add(c, b); }
   if (hint) { add(c, el('kbd', 'lg-btn__key lg-card__key', hint, { 'aria-hidden': 'true' })); c.setAttribute('aria-keyshortcuts', String(hint)); }
+  if (iconName) add(c, add(el('span', 'lg-card__medal', null, { 'aria-hidden': 'true' }), icon(iconName)));
   if (kicker) add(c, el('span', 'lg-card__kicker ty-kicker', kicker));
   if (title) add(c, el('span', 'lg-card__title ty-card', title));
   if (big) add(c, el('span', 'lg-card__big ty-big', big));
@@ -242,5 +247,72 @@ export function card({ kicker, title, big, line, pips: pipOpts, badge: badgeOpts
   c.addEventListener('click', (ev) => { if (!c.disabled) onClick(ev); });
   return c;
 }
+
+
+// ---------- painted icons (CSS paints them from baked inline SVG; no markup from data) ----------
+const ICONS = ['flame', 'ember', 'star', 'bolt', 'shard', 'lock', 'check', 'enter'];
+/** Painted icon (tinted outline, fill, rim light). Decorative unless a label is given (then role=img). */
+export function icon(name, { label } = {}) {
+  if (!ICONS.includes(name)) throw new Error('kit: bad icon');
+  const e = el('span', `lg-ic lg-ic--${name}`);
+  if (label) { e.setAttribute('role', 'img'); e.setAttribute('aria-label', String(label)); } else e.setAttribute('aria-hidden', 'true');
+  return e;
+}
+
+// ---------- drawn HOLLOWLIGHT wordmark: lantern Os, candle I, brass letters with a tinted outline and rim light; hand-wobble is baked into the paths ----------
+const SVGNS = 'http://www.w3.org/2000/svg';
+const sv = (tag, attrs, ...kids) => { const e = doc().createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, String(v)); for (const c of kids) if (c) e.appendChild(c); return e; };
+const SK = { // skeletons, 100-unit cap height, slightly bent so no stroke is ruler-straight
+  H: { w: 70, d: 'M10 3Q9 50 11 97M60 2Q61 50 59 98M10 52Q35 49 60 52' },
+  L: { w: 62, d: 'M10 2Q11 50 10 98Q34 100 58 98' },
+  W: { w: 96, d: 'M4 2Q13 50 24 98Q36 66 48 34Q60 66 72 98Q82 50 92 2' },
+  I: { w: 22, d: 'M11 2Q12 50 11 98' },
+  G: { w: 82, d: 'M72 20C64 7 52 2 42 2C20 2 6 24 6 50C6 76 20 98 42 98C58 98 72 88 74 62Q60 61 46 62' },
+  T: { w: 78, d: 'M4 4Q39 -2 74 4M39 4Q38 50 39 98' },
+};
+const WORD = 'HOLLOWLIGHT';
+const OUT = '#3a2412';
+/** The wordmark as an inline SVG. Accessible name is "Hollowlight" (role=img); everything inside is decorative. */
+export function wordmark({ label = 'Hollowlight' } = {}) {
+  const id = nextId('lg-wm');
+  const gap = 10; let x = 0; const pos = [];
+  for (const ch of WORD) { pos.push([ch, x]); x += (ch === 'O' ? 80 : SK[ch].w) + gap; }
+  const W = x - gap + 24, H = 160;
+  const stop = (o, c, a) => sv('stop', { offset: o, 'stop-color': c, ...(a != null ? { 'stop-opacity': a } : {}) });
+  const defs = sv('defs', {},
+    sv('linearGradient', { id: `${id}b`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#fff0c4'), stop(0.45, '#e2b866'), stop(1, '#9b6a2c')),
+    sv('linearGradient', { id: `${id}g`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#3b4b66'), stop(1, '#1e2738')),
+    sv('radialGradient', { id: `${id}f` }, stop(0, '#ffd27a', 0.95), stop(0.6, '#ff9a2e', 0.35), stop(1, '#ff9a2e', 0)),
+    sv('radialGradient', { id: `${id}h` }, stop(0, '#ffab3a', 0.45), stop(1, '#ffab3a', 0)));
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'lg-wordmark', role: 'img', 'aria-label': String(label) }, defs);
+  const stroke = (d, w, s, extra) => sv('path', { d, fill: 'none', stroke: s, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', ...extra });
+  for (const [ch, px] of pos) {
+    const g = sv('g', { transform: `translate(${px + 12} 30)`, 'aria-hidden': 'true' });
+    if (ch === 'O') {
+      g.append(
+        stroke('M28 -8Q40 -20 52 -8', 7, OUT), stroke('M28 -8Q40 -20 52 -8', 3, `url(#${id}b)`),
+        sv('rect', { x: 6, y: 2, width: 68, height: 96, rx: 30, fill: OUT }), sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: `url(#${id}g)` }),
+        sv('circle', { cx: 40, cy: 58, r: 34, fill: `url(#${id}f)` }),
+        sv('path', { d: 'M40 34C50 46 53 54 50 64C48 71 32 71 30 64C27 54 30 46 40 34Z', fill: '#ffab3a' }),
+        sv('path', { d: 'M40 50C45 56 45 61 40 66C35 61 35 56 40 50Z', fill: '#fff6d8' }),
+        stroke('M40 7V93', 3, OUT, { opacity: 0.5 }),
+        sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 6 }),
+        stroke('M18 30Q17 50 19 72', 3, '#fff', { 'stroke-opacity': 0.55 }));
+    } else {
+      const d = SK[ch].d;
+      g.append(stroke(d, 22, OUT), stroke(d, 15, `url(#${id}b)`), stroke(d, 2.5, '#fff8e0', { 'stroke-opacity': 0.7, transform: 'translate(-3 -3)' }));
+      if (ch === 'I') g.append(sv('g', { transform: 'translate(11 -14)' },
+        sv('circle', { r: 17, fill: `url(#${id}h)` }),
+        sv('path', { d: 'M0 -14C6 -6 8 -2 6 4C4 9 -4 9 -6 4C-8 -2 -6 -6 0 -14Z', fill: '#ffab3a', stroke: '#8a3f10', 'stroke-width': 2 }),
+        sv('path', { d: 'M0 -4C3 0 3 3 0 6C-3 3 -3 0 0 -4Z', fill: '#fff6d8' })));
+    }
+    svg.appendChild(g);
+  }
+  svg.append(
+    sv('path', { d: `M${R1(W * 0.18)} 150Q${R1(W / 2)} 138 ${R1(W * 0.82)} 150`, fill: 'none', stroke: '#ffe0a0', 'stroke-width': 2, 'stroke-dasharray': '7 5', opacity: 0.85, 'aria-hidden': 'true' }),
+    sv('circle', { cx: R1(W / 2), cy: 144, r: 4.5, fill: '#ffd36b', stroke: '#6b4512', 'stroke-width': 1.5, 'aria-hidden': 'true' }));
+  return svg;
+}
+const R1 = (v) => Math.round(v * 10) / 10;
 
 export const _test = { hasClass, ATTR_OK };

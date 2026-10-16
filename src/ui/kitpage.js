@@ -1,20 +1,25 @@
-// Dev view (?kit=1): every Lantern Glass kit component in every state. Static strings only, built with the kit helpers (no innerHTML).
+// Dev view (?kit=1): every Lantern Glass, Lit kit component in every state. Static strings only, built with the kit helpers (no innerHTML).
 // Never starts the game, the sim or touches the save. Forced states use the .is-* mirror classes so hover/focus/pressed show at once.
 import '../style.css';
 import './kit.css';
 import { applyCssPalette } from '../gfx/palette.js';
-import { el, kitRoot, panel, button, toggle, tabs, slider, divider, badge, pips, wick, withTooltip, tooltip, card } from './kit.js';
+import { el, kitRoot, panel, button, toggle, tabs, slider, divider, badge, pips, wick, withTooltip, tooltip, card, icon, wordmark } from './kit.js';
 
 const STYLE = `
 #kitpage { position: fixed; inset: 0; overflow: auto; color: var(--lg-text); padding: max(16px, env(safe-area-inset-top)) 16px 40px;
-  background: radial-gradient(ellipse 60% 45% at 18% 8%, rgba(255, 171, 58, .22), transparent 70%), radial-gradient(ellipse 90% 70% at 70% 90%, #1d2433, transparent 75%), linear-gradient(180deg, #3b4558, #202838 60%, #151a24); }
+  background: radial-gradient(ellipse 60% 45% at 18% 8%, rgba(255, 171, 58, .18), transparent 70%), radial-gradient(ellipse 90% 70% at 70% 90%, #1d2433, transparent 75%), linear-gradient(180deg, #232b3c, #161c2a 60%, #0e121b); }
+#kitpage .head { max-width: 1180px; margin: 0 auto 30px; display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: center; justify-content: space-between; }
+#kitpage .head .lg-wordmark { width: min(100%, 470px); }
+#kitpage .head h1 { margin: 0; font: var(--fw-display) var(--fs-title)/1.1 var(--font-display); }
+#kitpage .head p { margin: .3em 0 0; font: italic var(--fw-whisper) var(--fs-whisper)/1.3 var(--font-whisper); color: var(--lg-text-dim); max-width: 26em; }
 #kitpage .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
 #kitpage .full { grid-column: 1 / -1; }
 #kitpage .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 #kitpage .col { display: grid; gap: 12px; }
 #kitpage .cap { font: var(--fw-body-strong) var(--fs-small)/1.2 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--lg-text-dim); }
-#kitpage .cards { display: grid; gap: 22px 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); padding-top: 36px; }
+#kitpage .cards { display: grid; gap: 30px 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); padding-top: 72px; }
 @media (orientation: portrait) { #kitpage .cards { padding-top: 0; } }
+#kitpage .ic { display: inline-flex; align-items: center; gap: .45em; min-width: 5.6em; }
 #kitpage .tipbox { min-height: 9em; display: flex; align-items: flex-end; }
 `;
 
@@ -36,10 +41,17 @@ export function mountKit(root) {
   kit.appendChild(wrap);
   page.appendChild(kit);
 
+  const head = el('div', 'head');
+  const hl = el('div');
+  hl.append(el('div', 'cap', 'Kit sheet - U2b'), el('h1', null, 'Lantern Glass, Lit'), el('p', null, 'Chunky lantern windows, tinted outline, rim light, cool glass lit warm.'));
+  head.append(hl, wordmark());
+  kit.insertBefore(head, wrap);
+
   wrap.appendChild(panel({
-    kicker: 'Chapter 1 - The Cursed Forest', title: 'Lantern Glass', whisper: 'Pick a hero and walk the Hollow',
-    body: [el('p', 'ty-body', 'One calm glass surface with brass corner brackets, a thread divider and a soft light leak.'),
-      divider({ kind: 'hair', text: 'Hairline' }), el('p', 'ty-small', 'Small text stays at 12 px or more.')],
+    kicker: 'Panel', title: 'Lantern-lit surface', whisper: 'Pick a hero and walk the Hollow',
+    body: [el('p', 'ty-body', 'Cool Hollow glass, lit warm from the lantern cap. Brass band with a dark tinted outline and a bright top edge, hand-wobbled.'),
+      divider({ kind: 'hair', text: 'Hairline' }), el('p', 'ty-small', 'Small text stays at 12 px or more.'),
+      rowOf(wick({ state: 'lit', label: 'Sanctuary' }), el('span', 'ty-small', 'lit'), wick({ state: 'ember', label: 'Sanctuary' }), el('span', 'ty-small', 'ember'), wick({ state: 'dark', label: 'Sanctuary' }), el('span', 'ty-small', 'dark'))],
   }));
 
   const btnPanel = panel({ title: 'Buttons', body: [] });
@@ -75,6 +87,15 @@ export function mountKit(root) {
     group('Wick-flame: lit / available / locked', rowOf(wick({ state: 'lit', label: 'Sanctuary' }), wick({ state: 'ember', label: 'Sanctuary' }), wick({ state: 'dark', label: 'Sanctuary' }))));
   wrap.appendChild(marks);
 
+  const icons = panel({ title: 'Icons', body: [] });
+  const ir = el('div', 'row');
+  for (const n of ['flame', 'ember', 'star', 'bolt', 'shard', 'lock', 'check', 'enter']) { const w = el('span', 'ic'); w.append(icon(n, { label: n }), el('span', 'ty-small', n)); ir.append(w); }
+  icons.querySelector('.lg-panel__body').append(group('Painted: tinted outline, fill, rim light', ir));
+  wrap.appendChild(icons);
+
+  wrap.appendChild(panel({ kicker: 'Dawn', title: 'Colour returns', variant: 'dawn', whisper: 'Grey far from the light, warm colour near it',
+    body: [el('p', 'ty-body', 'Leadlight border for the Dawn / victory panel and evolution cards only. Static: no per-frame work.')] }));
+
   const tipPanel = panel({ title: 'Tooltip', body: [] });
   const tipData = { name: 'Ghost Wolves', verb: 'Wolves hunt separate foes.', rank: 'Rank 2 of 5 - next: +1 wolf', flavour: 'They remember the pack.' };
   const st = tooltip(tipData); st.classList.add('lg-tip--static'); st.removeAttribute('id');
@@ -85,13 +106,13 @@ export function mountKit(root) {
 
   const cp = panel({ kicker: 'Level 7 - choose one gift', title: 'The light stirs', body: [] });
   cp.classList.add('full');
-  const cg = el('div', 'cards');
+  const cg = el('div', 'cards lg-cardrow');
   cg.append(
-    card({ kicker: 'Stat', title: 'Wider orbit', big: '+12%', line: '50 to 56 reach', pips: { total: 5, filled: 2 }, hint: '1' }),
-    card({ kicker: 'Spirit', title: 'Spirit Bolts', big: 'Bolt', line: 'Homing orbs seek the nearest foe.', badge: { kind: 'new' }, hint: '2', pips: { total: 5, filled: 0 } }),
-    card({ kicker: 'from Ghost Wolves', title: 'Pouncing Pack', big: 'Leap', line: 'Pin and maul.', badge: { kind: 'evolve' }, evolve: true, hint: '3', pips: { total: 5, filled: 5, evolve: true } }),
-    forced(card({ kicker: 'Stat', title: 'Selected', big: '+8%', line: 'Hover or focus lights the border.', selected: true, eyelet: false }), 'is-focus'),
-    card({ kicker: 'Locked', title: 'Not yet', big: '-', line: 'Someone is still out there.', disabled: true, eyelet: false }));
+    card({ kicker: 'Stat', title: 'Wider orbit', icon: 'star', big: '+12%', line: '50 to 56 reach', pips: { total: 5, filled: 2 }, hint: '1' }),
+    card({ kicker: 'Spirit', title: 'Spirit Bolts', icon: 'bolt', big: 'Bolt', line: 'Homing orbs seek the nearest foe.', badge: { kind: 'new' }, hint: '2', pips: { total: 5, filled: 0 } }),
+    card({ kicker: 'from Ghost Wolves', title: 'Pouncing Pack', icon: 'flame', big: 'Leap', line: 'Pin and maul.', badge: { kind: 'evolve' }, evolve: true, hint: '3', pips: { total: 5, filled: 5, evolve: true } }),
+    forced(card({ kicker: 'Stat', title: 'Selected', icon: 'shard', big: '+8%', line: 'Hover or focus lights the border.', selected: true, eyelet: false }), 'is-focus'),
+    card({ kicker: 'Locked', title: 'Not yet', icon: 'lock', big: '-', line: 'Someone is still out there.', disabled: true, eyelet: false }));
   cp.querySelector('.lg-panel__body').appendChild(cg);
   wrap.appendChild(cp);
 
