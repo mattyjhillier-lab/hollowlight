@@ -172,3 +172,88 @@ test('Talon Mark is deterministic and draws no RNG', () => {
   assert.equal(a.damageDealt, b.damageDealt);
   assert.equal(a.rng.next(), b.rng.next());
 });
+
+// ---------------------------------------------------------------- Spearhead (spearhead)
+const SPEAR = data.evolutions.spearhead.tune;
+const wedgeOf = (sim) => sim.units.filter((u) => u.kind === 'raven' && u.wedge && !u.dead);
+// a thick crowd on one side of the hero, walking in slowly and unkillable so the wedge always has a lane to clear
+const crowdRight = (sim, n = 12, hp = 1e9) => Array.from({ length: n }, (_, i) => {
+  const e = sim.spawnEnemy('crow', sim.player.x + 70 + (i % 4) * 14, sim.player.y + (Math.floor(i / 4) - 1) * 16);
+  e.hp = e.maxHp = hp; e.speed = 0; e.dmg = 0;
+  return e;
+});
+
+test('Spearhead: the base scout flock is unchanged and ceil(count / 2) extra ravens (max 4) are added', () => {
+  for (const [count, extra] of [[2, 1], [3, 2], [4, 2], [5, 3], [6, 3], [7, 4]]) {
+    const sim = mk({ ...MAXR, count: count - 2 }, 'spearhead');
+    run(sim, 0.5);
+    assert.equal(wedgeOf(sim).length, extra, `count ${count}`);
+    assert.equal(ravensOf(sim).filter((u) => !u.wedge).length, count);
+    assert.ok(wedgeOf(sim).length <= SPEAR.max);
+  }
+  // scouts behave exactly as the base flock: same scout states over time with and without the evolution
+  const a = mk(MAXR, 'spearhead'), b = mk(MAXR, null);
+  for (const sim of [a, b]) place(sim, 'dummy', 1, 40, 40);
+  for (let i = 0; i < 300; i++) {
+    a.step(DT, {}); b.step(DT, {});
+    const sa = ravensOf(a).filter((u) => !u.wedge).map((u) => u.st + ':' + Math.round(u.x)).join();
+    const sb = ravensOf(b).map((u) => u.st + ':' + Math.round(u.x)).join();
+    assert.equal(sa, sb, `scout flock differs at frame ${i}`);
+  }
+});
+
+test('Spearhead: the wedge points at the thickest crowd (not where you walk), parks beside you with fewer than 3 foes', () => {
+  const sim = mk(MAXR, 'spearhead');
+  crowdRight(sim);
+  run(sim, 2);
+  const w = sim.weapons[0], p = sim.player;
+  assert.equal(w.rt.wedgeOn, true);
+  assert.ok(w.rt.hx > 0.9, `heading ${w.rt.hx.toFixed(2)}`);
+  const lead = SPEAR.lead + SPEAR.leadK * w.s.range * sim.mods.area;
+  const tip = wedgeOf(sim).reduce((m, u) => Math.max(m, Math.hypot(u.x - p.x, u.y - p.y)), 0);
+  assert.ok(tip > lead * 0.6 && tip <= lead + 40, `wedge reaches ${tip.toFixed(0)} px, lead ${lead.toFixed(0)}`);
+  // walking LEFT does not turn the wedge away from the crowd
+  const sim2 = mk(MAXR, 'spearhead'); crowdRight(sim2);
+  for (let i = 0; i < 120; i++) sim2.step(DT, { x: -1, y: 0 });
+  assert.ok(sim2.weapons[0].rt.hx > 0.5, 'wedge follows the crowd, not the walk direction');
+  const lone = mk(MAXR, 'spearhead'); place(lone, 'dummy', 2, 60, 80);
+  run(lone, 1);
+  assert.equal(lone.weapons[0].rt.wedgeOn, false);
+});
+
+test('Spearhead: lane contact hits are 0.7x a peck with a 0.8 s per-foe gate, no control, never targeted by toughness', () => {
+  const sim = mk(MAXR, 'spearhead');
+  const crowd = crowdRight(sim);
+  const peck = sim.weapons[0].s.power * sim.dmgMult(sim.weapons[0]);
+  const hits = new Map();
+  const o = sim.hurt.bind(sim);
+  sim.hurt = (e, a, x) => { const r = o(e, a, x); if (a > 0 && Math.abs(a - peck * SPEAR.dmg) < 1e-6) { (hits.get(e) || hits.set(e, []).get(e)).push(sim.time); } return r; };
+  run(sim, 10);
+  assert.ok(hits.size > 0, 'the wedge never made a lane hit');
+  // gate: one wedge raven hits a given foe at most once per 0.8 s, so over 10 s a foe takes at most (wedge ravens x 13) lane hits
+  for (const ts of hits.values()) assert.ok(ts.length <= wedgeOf(sim).length * Math.ceil(10 / SPEAR.gate), 'lane hits exceed the per-foe gate');
+  for (const e of crowd) { assert.equal(e.fearT, 0); assert.ok(!(e.heldT > 0)); assert.equal(e.markT, 0); }
+  const boss = mk(MAXR, 'spearhead');
+  const b = boss.spawnEnemy('elder_treant', boss.player.x + 70, boss.player.y); b.hp = b.maxHp = 1e12;
+  crowdRight(boss);
+  run(boss, 10, () => { assert.equal(b.fearT, 0); assert.ok(!(b.heldT > 0)); });
+});
+
+test('Spearhead: kite crowd gain, never below base, every raven stat live after evolving, deterministic', () => {
+  const crowdDps = (evo, ranks) => { const sim = mk(ranks, evo); crowdRight(sim, 14); let tot = 0; const o = sim.hurt.bind(sim); sim.hurt = (e, a, x) => { const r = o(e, a, x); tot += r; return r; }; run(sim, 12); return tot / 12; };
+  const base = crowdDps(null, MAXR), evo = crowdDps('spearhead', MAXR);
+  assert.ok(evo >= base * 0.98, 'never below base');
+  assert.ok(evo > base * 1.05, `crowd gain ${(evo / base).toFixed(2)}x`);
+  const mid = { count: 2, power: 2, range: 2, speed: 2 };
+  const ref = crowdDps('spearhead', mid);
+  for (const k of ['count', 'power']) assert.ok(crowdDps('spearhead', { ...mid, [k]: 4 }) > ref * 1.02, `${k} is a dead stat on Spearhead`);
+  const lead = (range) => { const sim = mk({ ...mid, range }, 'spearhead'); crowdRight(sim); run(sim, 2); const p = sim.player; return wedgeOf(sim).reduce((m, u) => Math.max(m, Math.hypot(u.x - p.x, u.y - p.y)), 0); };
+  assert.ok(lead(5) > lead(0) + 10, 'Watch is a dead stat on Spearhead');
+  const sweep = (speed) => { const sim = mk({ ...mid, speed }, 'spearhead'); crowdRight(sim); run(sim, 4); return sim.weapons[0].rt.ph; };
+  assert.ok(sweep(5) > sweep(0) * 1.3, 'Wingbeat is a dead stat on Spearhead (sweep rate)');
+  const a = mk(MAXR, 'spearhead'); crowdRight(a);
+  const b = mk(MAXR, 'spearhead'); crowdRight(b);
+  run(a, 10); run(b, 10);
+  assert.equal(a.damageDealt, b.damageDealt);
+  assert.equal(a.rng.next(), b.rng.next());
+});

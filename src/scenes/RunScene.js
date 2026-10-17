@@ -1084,6 +1084,10 @@ export class RunScene extends Phaser.Scene {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
         if (rvEvo) fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved flock only: thin gold rim (never on enemies)
+        if (u.wedge && rvw.rt.wedgeOn && caps.drips > 0) { // W9 Spearhead: short violet wake behind each wedge raven while the wedge flies (none on Low)
+          fx.lineStyle(2, ROLE.spiritB, 0.16).lineBetween(u.x, u.y, u.x - rvw.rt.hx * 16, u.y - rvw.rt.hy * 16);
+          fx.lineStyle(1, ROLE.spiritB2, 0.5).lineBetween(u.x, u.y, u.x - rvw.rt.hx * 12, u.y - rvw.rt.hy * 12);
+        }
         if (u.tellK > 0 && u.target && !u.target.dead) { // W9 Talon Mark tell: a violet shadow grows under the foe for 0.4 s (full size, still, under reduced motion)
           const k = this.reducedMotion() ? 1 : u.tellK, tr = u.target.r * (u.target.boss ? 0.8 : 1);
           const sx = u.target.x, sy = u.target.y + tr * 0.55, sw = 8 + (tr * 2 + 6) * k, sh = 3 + (tr + 2) * 0.55 * k;

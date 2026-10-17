@@ -8,8 +8,8 @@ import { defaultSave } from '../src/save/schema.js';
 
 const gates = def.list.filter((i) => def.nodes[i].permanent);
 
-test('G1c gateOf/gateTag: exactly the 12 permanent nodes are gates', () => {
-  assert.equal(gates.length, 12);
+test('G1c gateOf/gateTag: exactly the 13 permanent nodes are gates', () => {
+  assert.equal(gates.length, 13);
   for (const id of gates) assert.ok(gateOf(def, id) && gateTag(def, id) === 'GATE');
   assert.equal(gateTag(def, 'hub'), '');
   assert.equal(gateOf(def, 'nope'), null);

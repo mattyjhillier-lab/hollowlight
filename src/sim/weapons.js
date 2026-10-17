@@ -302,6 +302,7 @@ const ravenFlock = {
     });
 
     if (evo === 'murder_storm') ravenWall(sim, w, dmg, dt);
+    if (evo === 'spearhead') ravenWedge(sim, w, dmg, dt);
   },
 };
 
@@ -350,6 +351,75 @@ function ravenWall(sim, w, dmg, dt) {
         sim.hurt(e, hit);
         if (!e.boss && !e.dead && sim.canHit(e, 'stormFear', fdur + immune)) e.fearT = Math.max(e.fearT, fdur);
       }
+    }
+  });
+}
+
+// Spearhead (spearhead, W9): the scout flock is UNCHANGED; ceil(count / 2) extra ravens (max 4) fly a wedge at the thickest crowd near you
+// (centroid of the 10 nearest foes inside Watch + 60 px; needs 3+ foes, otherwise they ride beside your hero ring) and clear a lane by
+// contact: 0.7x a peck, 5 px + foe radius, 0.8 s per-foe gate, no control, no targeting by toughness. Watch = how far they look and lead,
+// Wingbeat = how fast the wedge sweeps side to side, Flock size = more wedge ravens, Peck power = lane damage. No RNG is drawn.
+function ravenWedge(sim, w, dmg, dt) {
+  const { s, rt } = w;
+  const p = sim.player;
+  const watch = s.range * sim.mods.area;
+  const n = Math.min(tune(sim, w, 'max', 4), Math.ceil(s.count * tune(sim, w, 'extraK', 0.5)));
+  const list = rt.wedge || (rt.wedge = []);
+  while (list.length > n) list.pop().dead = true;
+  while (list.length < n) {
+    const u = sim.makeUnit(w, 'raven', { r: 4, st: 'wedge', target: null, faceX: 1, wedge: true });
+    list.push(u);
+    sim.units.push(u);
+  }
+  if (rt.hx === undefined) { rt.hx = 1; rt.hy = 0; rt.ph = 0; }
+  const near = sim.nearestEnemies(p.x, p.y, watch + tune(sim, w, 'crowdPad', 60), tune(sim, w, 'crowdN', 10));
+  let on = false;
+  if (near.length >= tune(sim, w, 'crowdMin', 3)) {
+    let cx = 0, cy = 0;
+    for (const e of near) { cx += e.x; cy += e.y; }
+    cx = cx / near.length - p.x;
+    cy = cy / near.length - p.y;
+    const d = Math.hypot(cx, cy);
+    if (d > 12) {
+      const k = Math.min(1, dt * 8);
+      rt.hx += (cx / d - rt.hx) * k;
+      rt.hy += (cy / d - rt.hy) * k;
+      const m = Math.hypot(rt.hx, rt.hy) || 1;
+      rt.hx /= m;
+      rt.hy /= m;
+      on = true;
+    }
+  }
+  rt.wedgeOn = on;
+  const lead = tune(sim, w, 'lead', 40) + tune(sim, w, 'leadK', 0.6) * watch;
+  const spread = tune(sim, w, 'spread', 12) + tune(sim, w, 'spreadK', 0.06) * watch;
+  rt.ph += Math.max(0.2, s.speed) * dt;
+  const sweep = Math.sin(rt.ph) * tune(sim, w, 'sweep', 22);
+  const nx = -rt.hy;
+  const ny = rt.hx;
+  const hit = dmg * tune(sim, w, 'dmg', 0.7);
+  const gate = tune(sim, w, 'gate', 0.8);
+  const cr = tune(sim, w, 'cr', 5);
+  list.forEach((u, i) => {
+    const row = Math.ceil(i / 2);
+    const side = i === 0 ? 0 : i % 2 ? 1 : -1;
+    let tx, ty;
+    if (on) {
+      tx = p.x + rt.hx * (lead - row * spread * 0.8) + nx * (side * row * spread + sweep);
+      ty = p.y + rt.hy * (lead - row * spread * 0.8) + ny * (side * row * spread + sweep);
+    } else {
+      const a = (rt.ang || 0) + (i * TAU) / Math.max(1, n);
+      tx = p.x + Math.cos(a) * 44;
+      ty = p.y + Math.sin(a) * 44;
+    }
+    moveToward(u, tx, ty, on ? 360 : 300, dt);
+    if (!on) return;
+    for (const e of sim.enemies) {
+      if (e.dead) continue;
+      const rr = e.r + cr;
+      const dx = e.x - u.x;
+      const dy = e.y - u.y;
+      if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `vg${i}`, gate)) sim.hurt(e, hit);
     }
   });
 }

@@ -33,6 +33,7 @@ export const GATES = [
   { id: 'soul_lance', kind: 'evo', cond: { t: 'all', of: [{ t: 'bossKill', id: 'elder_treant', n: 2 }, { t: 'evolveWeapon', id: 'spirit_bolts', n: 1 }] } },
   { id: 'static_storm', kind: 'evo', cond: { t: 'evolveWeapon', id: 'any', n: 12 } },
   { id: 'thunder_judgment', kind: 'evo', cond: { t: 'all', of: [{ t: 'clearChapter', id: 'cursed_forest', n: 3 }, { t: 'evolveWeapon', id: 'chain_lightning', n: 1 }] } },
+  { id: 'spearhead', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'raven_flock', n: 3 }, { t: 'killEnemy', id: 'crow', n: 20000 }] } }, // W9: late gate 13 (counts estimated)
 ];
 
 export function unlockedAfter(stats) {

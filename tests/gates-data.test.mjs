@@ -1,5 +1,5 @@
 // G1b: the shipped data flip. Run 1 = Ghost Wolves + Holy Orbit + 2 starter evolutions; the rest is behind
-// 12 permanent gate nodes (docs/design/progression-gates-v1.md, g1-review.md T11-T16).
+// 13 permanent gate nodes (docs/design/progression-gates-v1.md, g1-review.md T11-T16).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { data, treeDef as def } from './helpers.mjs';
@@ -24,16 +24,16 @@ test('T11 starter pool: Wren sees only holy_orbit as a weapon card, Elias only g
   assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'elias', seed: 3 }))], ['ghost_wolves']);
 });
 
-test('T12 starter evolutions are exactly howling_legion + sanctum_halo; 3 weapons + 9 evolutions are gated; heroes open', () => {
+test('T12 starter evolutions are exactly howling_legion + sanctum_halo; 3 weapons + 10 evolutions are gated; heroes open', () => {
   const open = Object.keys(data.evolutions).filter((e) => !data.evolutions[e].treeGate).sort();
   assert.deepEqual(open, ['howling_legion', 'sanctum_halo']);
   assert.deepEqual(gatedW, ['chain_lightning', 'raven_flock', 'spirit_bolts']);
-  assert.equal(gatedE.length, 9);
+  assert.equal(gatedE.length, 10);
   assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'Wren + Elias are both open at launch');
 });
 
 test('T13 every gated weapon/evolution has exactly one gate node; gate nodes are permanent, hub-attached, cheap, no shards', () => {
-  assert.equal(gateNodes.length, 12);
+  assert.equal(gateNodes.length, 13);
   for (const w of gatedW) assert.equal(gateOf('weapon', w).length, 1, w);
   for (const e of gatedE) assert.equal(gateOf('evolution', e).length, 1, e);
   for (const id of gateNodes) {
