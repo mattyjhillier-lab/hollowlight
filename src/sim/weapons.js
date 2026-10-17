@@ -435,8 +435,12 @@ const spiritBolts = {
     rt.cd = (rt.cd ?? 0.3) - dt;
     if (rt.cd > 0) return;
 
+    // W10a: Swiftness = bolt speed + turn rate + a slightly shorter volley gap (1.1 s -> 1.0 s at rank 5)
+    const sdef = sim.data.weapons.spirit_bolts;
+    const rs = w.ranks.speed || 0;
+    const turn = (sdef.stats.speed.turn0 ?? 5) + (sdef.stats.speed.turnPer ?? 0.6) * rs;
     let count = s.count;
-    let cd = 1.1;
+    let cd = 1.1 / rateMult(sdef, 'speed', rs);
     let speed = s.speed;
     let dmg = s.power * sim.dmgMult(w);
     let pierce = s.pierce;
@@ -456,7 +460,7 @@ const spiritBolts = {
       if (evo === 'spirit_tempest') ang = rt.spin + (i * TAU) / 8;
       else if (i >= targets.length) ang += (i - targets.length + 1) * 0.18 * (i % 2 ? 1 : -1);
       sim.spawnBolt({
-        x: p.x, y: p.y, ang, speed, dmg, pierce, r, homing, explode, life, target: homing ? tgt : null,
+        x: p.x, y: p.y, ang, speed, dmg, pierce, r, homing, explode, life, turn, target: homing ? tgt : null,
         color: evo === 'soul_lance' ? '#d6f7ff' : '#7ff0ff',
       });
     }

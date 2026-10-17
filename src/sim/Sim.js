@@ -323,11 +323,11 @@ export class Sim {
     }
   }
 
-  spawnBolt({ x, y, ang, speed, dmg, pierce, r, homing, explode, life, target, color }) {
+  spawnBolt({ x, y, ang, speed, dmg, pierce, r, homing, explode, life, target, color, turn = 5, ...extra }) {
     this.projectiles.push({
       id: this.nextId++, kind: 'bolt', x, y,
       vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-      ang, speed, dmg, pierce, r, homing, explode, life, target, color, hit: new Set(), src: this._src,
+      ang, speed, dmg, pierce, r, homing, explode, life, turn, target, color, hit: new Set(), src: this._src, ...extra,
     });
   }
 
@@ -595,7 +595,7 @@ export class Sim {
           let diff = want - b.ang;
           while (diff > Math.PI) diff -= 2 * Math.PI;
           while (diff < -Math.PI) diff += 2 * Math.PI;
-          b.ang += clamp(diff, -5 * dt, 5 * dt);
+          b.ang += clamp(diff, -b.turn * dt, b.turn * dt);
           b.vx = Math.cos(b.ang) * b.speed;
           b.vy = Math.sin(b.ang) * b.speed;
         }
