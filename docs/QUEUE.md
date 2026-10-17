@@ -206,3 +206,4 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - 2026-10-17 V1 SCOPE: 5 weapons / 15 evolutions only; weapon roster review + Matt's new weapon/summon ideas = AFTER v1. Launch checklist accepted. Finish what is in the game to its best before publishing.
 
 - 2026-10-17 FIX-EVERYTHING-FLAGGED chunk queued (starts when an agent slot frees): triage LAUNCH-CHECKLIST section F + all open weak spots -> fix batches -> close each in the checklist.
+- FIX-EVERYTHING-FLAGGED TRIAGE DONE 2026-10-17: docs/design/flagged-triage.md (every section-F item bucketed; 15 fixed, 12 NEEDS MATT with options, 4 NEEDS PHONE, 9 AFTER-R1, 17 ACCEPTED, 7 QUEUED CHUNK); first fixes: flaky test, src/params.js URL param validation, Space drain, doc/CLAUDE.md consistency, AL-6 shots. Remaining FIX NOW: W12 Calm/Low + WL6 phone Med/Low shots (machine too loaded). LAUNCH-CHECKLIST section F carries the buckets.

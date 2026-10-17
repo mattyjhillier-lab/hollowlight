@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync, mkdtempSync, existsSync, statSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const CHROME = [process.env.CHROME, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => p && existsSync(p));
-const PORT = 9391;
+const PORT = Number(process.env.CDP || 9391);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const dir = mkdtempSync(join(tmpdir(), 'hl-w11-'));
 const proc = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${dir}`, '--no-first-run', '--disable-extensions',
@@ -47,8 +47,11 @@ async function load(w, h, mobile, query) {
   await send('Page.enable'); await send('Runtime.enable');
   await send('Page.navigate', { url: base + '/' + query });
   for (let i = 0; i < 80; i++) { await sleep(250); try { if (await ev('!!(window.__app && window.__app.sim && window.__app.ui && window.__app.ui.hudView)')) break; } catch { /* loading */ } }
+  if (process.env.QUALITY) await ev(`(() => { const sc = window.__app.scene; sc.quality.setMode('${process.env.QUALITY}'); sc.applyTier(); })()`); // QUALITY=high|med|low forces the tier
+  if (process.env.CALM === '1') await ev("window.__app.save.setSettings({reducedMotion:true}); document.documentElement.classList.add('reduced-motion'); true"); // CALM=1 reduced motion
   await sleep(600);
 }
+const SUF = (process.env.QUALITY ? '-' + process.env.QUALITY : '') + (process.env.CALM === '1' ? '-calm' : '');
 
 const GRANT = 'grant=' + encodeURIComponent('holy_orbit:count=4,power=4,radius=5,speed=5:vesper_tide');
 const VIEWS = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true]];
@@ -73,7 +76,7 @@ try {
           got = true;
           await ev('(() => { const s = window.__app.sim; s.__step = s.step; s.step = () => {}; })()');
           await sleep(250);
-          await zoom(`swell-${mname}-${tag}-zoom`, w, h, mobile); if (mname === '2-crest') await shot(`swell-${mname}-${tag}-full`);
+          await zoom(`swell-${mname}-${tag}${SUF}-zoom`, w, h, mobile); if (mname === '2-crest') await shot(`swell-${mname}-${tag}${SUF}-full`);
           await ev('(() => { const s = window.__app.sim; s.step = s.__step; })()');
         } else await sleep(8);
       }

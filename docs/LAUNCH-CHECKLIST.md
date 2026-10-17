@@ -244,55 +244,57 @@ Open decisions that block C items (all from sections B/F): Rally softening, Elia
 
 ## F. KNOWN LIMITS / WEAK SPOTS STILL OPEN
 
+TRIAGED 2026-10-17 (FIX-EVERYTHING-FLAGGED): every line below carries its bucket in bold at the end (FIXED / NEEDS MATT / NEEDS PHONE / AFTER-R1 / ACCEPTED / QUEUED CHUNK); full table, option lists and the new items in docs/design/flagged-triage.md. Zero unclassified items.
+
 ### F1. Balance (bot sweeps; noise about +-5 to +-10 points at 96 seeds)
-- STARTER (no tree) win rates: Wren ~56% random / 64% FOCUS, Elias ~30% / 34%. Target is 15-30% for both: R1 owns it (Matt: leave it until R1). Cause chain: D1, E3, W4 guard, W7rem.
-- GATES=all (everything open): Wren random 8-18% / FOCUS 29-45%, Elias random 8-17% / FOCUS 11-14%. No locked target for GATES=all.
-- Wren-Elias gap ~26 points at starter (target small).
-- Talon Mark: boss home 1.41x is under the 1.6 target; its own raven damage is about 3.0x base (TEAM measure is the locked yardstick); TEAM standing swarm 0.94x. Alternatives in LOCKED W9b.
-- Static Storm swarm home 1.78x (0.02 under the 1.8 floor), accepted as noise; pinched by the pick cap.
-- The Alpha: kite margin 1.41x vs gate 1.4x (thin); numbers differ from the sheet (tuned values + 2 alternatives in LOCKED W7c).
-- Light Trails: swarm/kite cap@pick 3.12x/3.01x mortal saturation (not a gate); name provisional.
-- Judgement Wheel: exempt from the stream40 cap@pick (documented exception).
-- Spirit Tempest pop 0.12x per hit and Soul Lance 2.0x+0.07x deviate from the locked numbers (defaults, overridable).
-- Vesper Tide: breathing 1.5x (locked 1.0x misses band); swarm 1.04x, boss 1.04x (barely above base).
-- Raven Watch only matters in thin waves; ravens crowd DPS 0.65-0.75x of wolves.
-- Wall of Wings does not reduce hits taken (standing 200 vs 210 hits); card makes no safety promise.
-- Bleed share 38% for swarm at Rend r5 with other stats r2 (slightly over the 35% gate).
-- Gate counts for gates 13-16 (Spearhead, Returning Pages, Storm Tether, Vesper Tide) are ESTIMATES; gates-pace not re-run.
-- Elder Treant fight 40-49 s (target 60-120 s); boss-death share and early deaths (4-8%) flagged in the old queue; Murder Storm wall does ~0 damage to a boss (inner ring only; redesign belongs to boss chunk).
-- W2 Rally the Pack is NOT on dev (branch `w2-rally`); Pack Howl x2 wolf bite is still outside the amp clamp.
-- Elias without Sanctuary-style carry: Candle Wheel is modest (on vs off within 1-2 points), so Elias depends on base kit until R1.
-- Bot never builds bolts-first; no with/without-evolution comparison for bolts evolutions.
+- STARTER (no tree) win rates: Wren ~56% random / 64% FOCUS, Elias ~30% / 34%. Target is 15-30% for both: R1 owns it (Matt: leave it until R1). Cause chain: D1, E3, W4 guard, W7rem. **[AFTER-R1 R-1]**
+- GATES=all (everything open): Wren random 8-18% / FOCUS 29-45%, Elias random 8-17% / FOCUS 11-14%. No locked target for GATES=all. **[ACCEPTED A16 no target; AFTER-R1 R-2]**
+- Wren-Elias gap ~26 points at starter (target small). **[AFTER-R1 R-1]**
+- Talon Mark: boss home 1.41x is under the 1.6 target; its own raven damage is about 3.0x base (TEAM measure is the locked yardstick); TEAM standing swarm 0.94x. Alternatives in LOCKED W9b. **[NEEDS MATT N1]**
+- Static Storm swarm home 1.78x (0.02 under the 1.8 floor), accepted as noise; pinched by the pick cap. **[NEEDS MATT N6]**
+- The Alpha: kite margin 1.41x vs gate 1.4x (thin); numbers differ from the sheet (tuned values + 2 alternatives in LOCKED W7c). **[NEEDS MATT N2]**
+- Light Trails: swarm/kite cap@pick 3.12x/3.01x mortal saturation (not a gate); name provisional. **[ACCEPTED A10; name: NEEDS MATT N9; AFTER-R1 R-9]**
+- Judgement Wheel: exempt from the stream40 cap@pick (documented exception). **[ACCEPTED A1, Matt chose Alt 1]**
+- Spirit Tempest pop 0.12x per hit and Soul Lance 2.0x+0.07x deviate from the locked numbers (defaults, overridable). **[NEEDS MATT N4 (Tempest) and N3 (Lance)]**
+- Vesper Tide: breathing 1.5x (locked 1.0x misses band); swarm 1.04x, boss 1.04x (barely above base). **[NEEDS MATT N5]**
+- Raven Watch only matters in thin waves; ravens crowd DPS 0.65-0.75x of wolves. **[AFTER-R1 R-7]**
+- Wall of Wings does not reduce hits taken (standing 200 vs 210 hits); card makes no safety promise. **[ACCEPTED A9: the card promises no safety]**
+- Bleed share 38% for swarm at Rend r5 with other stats r2 (slightly over the 35% gate). **[AFTER-R1 R-3]**
+- Gate counts for gates 13-16 (Spearhead, Returning Pages, Storm Tether, Vesper Tide) are ESTIMATES; gates-pace not re-run. **[AFTER-R1 R-4]**
+- Elder Treant fight 40-49 s (target 60-120 s); boss-death share and early deaths (4-8%) flagged in the old queue; Murder Storm wall does ~0 damage to a boss (inner ring only; redesign belongs to boss chunk). **[AFTER-R1 R-5; boss chunk]**
+- W2 Rally the Pack is NOT on dev (branch `w2-rally`); Pack Howl x2 wolf bite is still outside the amp clamp. **[QUEUED CHUNK W2; A15]**
+- Elias without Sanctuary-style carry: Candle Wheel is modest (on vs off within 1-2 points), so Elias depends on base kit until R1. **[AFTER-R1 R-6]**
+- Bot never builds bolts-first; no with/without-evolution comparison for bolts evolutions. **[FIXED X11: PREFER_W=spirit_bolts bot; evolution-vs-base is scripts/evo-home.mjs, covered by the W10 sweeps]**
 
 ### F2. Visual / readability
-- Protan/tritan: root crawler at 220 units on portrait phone in daylight misses G1|G2 (10 of 4860 cells; eyes 2.83-2.99:1); options in docs/design/visibility-arc-measured.md. Needs Matt's choice (darker daylight body vs G3 floor).
-- Strict daylight reading (every enemy needs |dL*| >= 6 after 11:00) misses 366 of 4860 cells, 289 of them on corrupted ground.
-- Last 30 s flood rises 0.009 Y/s (sheet claimed 0.0027); kept as locked.
-- Saturation flush is clipped by the top vibrancy level at 15:00 (shows mostly on ground).
-- Med and phone-portrait shots not taken for AL-6 (same code path).
-- Pup sleep/howl/back poses not built; Elias has no side/front/back views, no glad face, no flame count by rank.
-- Snag blossoms are cream/peach not pink; lamp posts not built (W8 POIs); oak 0.8x and pillar 0.9x of sheet size; crown sway max ~1.7 deg (sheet's 0.8 deg invisible).
-- Moths circle a home spot (no lamps).
-- Low tier shows no sway, no critters (reserved for dawn birds), no ground shader; ~2 ambient sprites.
-- Quality tier flapping: fixed in perf pass, UNVERIFIED on Matt's PC after the fix (he was asked to read p95/slow lines).
+- Protan/tritan: root crawler at 220 units on portrait phone in daylight misses G1|G2 (10 of 4860 cells; eyes 2.83-2.99:1); options in docs/design/visibility-arc-measured.md. Needs Matt's choice (darker daylight body vs G3 floor). **[NEEDS MATT N10: measured, no safe knob; see flagged-triage.md]**
+- Strict daylight reading (every enemy needs |dL*| >= 6 after 11:00) misses 366 of 4860 cells, 289 of them on corrupted ground. **[NEEDS MATT N10]**
+- Last 30 s flood rises 0.009 Y/s (sheet claimed 0.0027); kept as locked. **[ACCEPTED A2]**
+- Saturation flush is clipped by the top vibrancy level at 15:00 (shows mostly on ground). **[ACCEPTED A3]**
+- Med and phone-portrait shots not taken for AL-6 (same code path). **[FIXED X15: shots taken, docs/screenshots/al6/]**
+- Pup sleep/howl/back poses not built; Elias has no side/front/back views, no glad face, no flame count by rank. **[QUEUED CHUNK: A2 polish, parked by Matt]**
+- Snag blossoms are cream/peach not pink; lamp posts not built (W8 POIs); oak 0.8x and pillar 0.9x of sheet size; crown sway max ~1.7 deg (sheet's 0.8 deg invisible). **[ACCEPTED A4; lamp posts QUEUED (W8 POIs)]**
+- Moths circle a home spot (no lamps). **[ACCEPTED A6]**
+- Low tier shows no sway, no critters (reserved for dawn birds), no ground shader; ~2 ambient sprites. **[ACCEPTED A5]**
+- Quality tier flapping: fixed in perf pass, UNVERIFIED on Matt's PC after the fix (he was asked to read p95/slow lines). **[FIXED X12 here (0 tier changes in 6 runs); Matt's PC: NEEDS PHONE P3]**
 
 ### F3. Performance and devices
-- Low-tier perf UNMEASURED on a real phone; shader ground on a phone GPU not proven; ambient/trail/night layers measured only in headless Chrome on the RTX 3060.
-- High-tier night-look cost +1.3 ms whole-frame work vs 0.6 budget (noisy machine): re-measure on a quiet machine / real phone.
-- Frame hitches in the original lag report came from CPU contention; ~450 glow objects on High (parked).
-- No iOS test; no Android install test.
+- Low-tier perf UNMEASURED on a real phone; shader ground on a phone GPU not proven; ambient/trail/night layers measured only in headless Chrome on the RTX 3060. **[NEEDS PHONE P1]**
+- High-tier night-look cost +1.3 ms whole-frame work vs 0.6 budget (noisy machine): re-measure on a quiet machine / real phone. **[RE-MEASURED 2026-10-17, still inconclusive: machine at 100% CPU; see flagged-triage.md 4b; NEEDS PHONE P1 / quiet machine]**
+- Frame hitches in the original lag report came from CPU contention; ~450 glow objects on High (parked). **[ACCEPTED A7]**
+- No iOS test; no Android install test. **[NEEDS PHONE P2]**
 
 ### F4. UI and copy
-- Settings: sound/music sliders have no audio to preview (no audio exists).
-- Space-on-resume ability queueing: fixed in b6db61e for pause buttons (pre-existing Phaser JustDown issue; UNVERIFIED for all paths).
-- Blessing label caps ("BLESSINGS - QUIET GIFTS") in single string; Wider Glow uses comma not colon (TEXT_RE).
-- Results copy is placeholder; no profile UI yet (hostile-profile tests cover hero names, bank, version only).
-- Skill tree screen is still the plain v1 styling; full tree makes the bot win ~100% until rebalanced.
+- Settings: sound/music sliders have no audio to preview (no audio exists). **[ACCEPTED A11; audio QUEUED]**
+- Space-on-resume ability queueing: fixed in b6db61e for pause buttons (pre-existing Phaser JustDown issue; UNVERIFIED for all paths). **[FIXED X4: also level-up/end-screen path]**
+- Blessing label caps ("BLESSINGS - QUIET GIFTS") in single string; Wider Glow uses comma not colon (TEXT_RE). **[ACCEPTED A8]**
+- Results copy is placeholder; no profile UI yet (hostile-profile tests cover hero names, bank, version only). **[NEEDS MATT N11; profile UI QUEUED]**
+- Skill tree screen is still the plain v1 styling; full tree makes the bot win ~100% until rebalanced. **[QUEUED CHUNK: tree v2; AFTER-R1 R-8]**
 
 ### F5. Process and repo hygiene
-- Test suite: 629 tests at the last full count in LOCKED (one failure then: cardsui 'HUD-2 text clamps', fixed by shortening W11 card text; current run UNVERIFIED). Run `npm test` and `npm audit` before any merge.
-- `docs/research/37-enemy-design.md` is untracked in the working tree (another agent's/Matt's file; not committed by this checklist).
-- Live site (main) is v0.4.0-era plus PWA/HUD-1/HUD-2; dev is far ahead.
-- tests/visibility-pins and docs/design/visibility-arc-measured.md: the harness test depends on that report existing (it was missing during one in-flight run; present now).
-- No audio, no tutorial, no profiles, no codex, no About page exist yet (all in section C).
-- Name clash risk (Hollowlight vs Hollow Knight / "Hollow Light") unchecked.
+- Test suite: 629 tests at the last full count in LOCKED (one failure then: cardsui 'HUD-2 text clamps', fixed by shortening W11 card text; current run UNVERIFIED). Run `npm test` and `npm audit` before any merge. **[FIXED X1/X10: flaky test fixed, suite green, count in flagged-triage.md]**
+- `docs/research/37-enemy-design.md` is untracked in the working tree (another agent's/Matt's file; not committed by this checklist). **[FIXED X9: committed in 285caa9]**
+- Live site (main) is v0.4.0-era plus PWA/HUD-1/HUD-2; dev is far ahead. **[NEEDS MATT N12: 'ship it']**
+- tests/visibility-pins and docs/design/visibility-arc-measured.md: the harness test depends on that report existing (it was missing during one in-flight run; present now). **[ACCEPTED A12]**
+- No audio, no tutorial, no profiles, no codex, no About page exist yet (all in section C). **[QUEUED CHUNK, section C]**
+- Name clash risk (Hollowlight vs Hollow Knight / "Hollow Light") unchecked. **[NEEDS MATT N12: his own search]**

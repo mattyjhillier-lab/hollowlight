@@ -1,5 +1,5 @@
 // Rough balance probe: a simple bot plays whole runs headlessly.
-// Usage: node scripts/bot.mjs [characterId] [seeds]   (ABILITY=off never triggers the active ability; GATES=starter|all|preset, default starter; META=none|half|full; FOCUS=1)
+// Usage: node scripts/bot.mjs [characterId] [seeds]   (ABILITY=off never triggers the active ability; GATES=starter|all|preset, default starter; META=none|half|full; FOCUS=1; PREFER_W=<weapon id> takes that weapon first)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -10,6 +10,7 @@ const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
 const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
 // BLESS=off drops the Blessing pool (identical to the pre-BLESS-1 game); BLESSPICK=random|defence|offence is the bot's Blessing taste.
+export const PREFER_W = /^[a-z_]{1,32}$/.test(process.env.PREFER_W || '') ? process.env.PREFER_W : null;
 export const BLESS = process.env.BLESS === 'off' ? 'off' : 'on';
 export const BLESSPICK = ['defence', 'offence'].includes(process.env.BLESSPICK) ? process.env.BLESSPICK : 'random';
 try { if (BLESS === 'on') data.blessings = load('blessings'); } catch { /* baseline checkout: no blessings.json */ }
@@ -72,6 +73,7 @@ function pick(sim, rng) {
   const cards = offer.cards;
   const focus = process.env.FOCUS === '1';
   const w = cards.map((c) => (c.kind === 'blessing' ? (BPREF[BLESSPICK]?.[c.effect] ?? 0.3) : c.kind === 'stat' ? (focus ? 1 + c.rank * c.rank * 3 : 1 + c.rank * 1.5) : c.kind === 'weapon' ? (focus ? (sim.weapons.length < 2 ? 3 : 0.2) : 2) : 0.3));
+  if (PREFER_W) for (let i = 0; i < cards.length; i++) if (cards[i].kind === 'weapon' && cards[i].weaponId === PREFER_W) w[i] *= 30; // PREFER_W=spirit_bolts: a weapon-first bot (default off, rng use unchanged)
   let t = w.reduce((a, b) => a + b, 0) * rng();
   for (let i = 0; i < cards.length; i++) { t -= w[i]; if (t <= 0) return cards[i].key; }
   return cards[0].key;
