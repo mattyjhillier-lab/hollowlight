@@ -382,7 +382,12 @@ const holyOrbit = {
     let radius = s.radius * sim.mods.area;
     let spin = s.speed;
     const dmg = s.power * sim.dmgMult(w);
-    if (evo === 'sanctum_halo') { count = Math.min(14, s.count * 2); radius *= 1.6; }
+    let contact = 1;
+    if (evo === 'sanctum_halo') { // W5 Consecrated Ring: lights x2 (cap 12), ring = Orbit size x1.5, soft contact; the ground inside burns
+      count = Math.min(12, s.count * 2);
+      radius *= tune(sim, w, 'ring', 1.5);
+      contact = tune(sim, w, 'contact', 0.6);
+    }
     if (evo === 'judgement_wheel') spin *= 1.8;
     const units = syncUnits(sim, w, 'orb', count, () => ({ r: 4, disabledT: 0, hidden: false }));
     rt.ang = (rt.ang || 0) + spin * dt;
@@ -430,22 +435,32 @@ const holyOrbit = {
           break;
         }
         if (sim.canHit(e, `orb${i}`, gap)) {
-          const dealt = sim.hurt(e, dmg * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
+          const dealt = sim.hurt(e, dmg * contact * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
           if (burnOk) sim.burn(e, dealt);
           if (rt.gK > 0) { u.guardCd = gap; break; } // contracted: one foe per light per gap (a guard, not a crowd grinder)
         }
       }
     });
 
-    // Burn hook: the Sanctum Halo ground applies Burn instead of its own zone damage in a later chunk (W5); not yet.
-    if (evo === 'sanctum_halo' && units.length) {
-      rt.zCd = (rt.zCd ?? 1) - dt;
-      if (rt.zCd <= 0) {
-        rt.zCd = 1.5;
-        const u = units[sim.rng.int(units.length)];
-        sim.spawnZone({ x: u.x, y: u.y, r: 22, ttl: 4, dps: dmg, heal: 0.8, color: '#e8e0ff' });
+    // Sanctum Halo ground: the disc inside the ring (it contracts WITH the ring, foes' bodies count) sets up to 20 foes alight
+    // every tick. Burn INSTEAD of separate zone damage (no double DoT) and no heal until W5b. Not while the Candle Wheel stands.
+    if (evo === 'sanctum_halo') {
+      rt.ground = wheel ? null : { r: radius };
+      rt.zCd = (rt.zCd ?? 0) - dt;
+      if (rt.zCd <= 0 && !wheel) {
+        rt.zCd = tune(sim, w, 'tick', 0.5);
+        const hit = dmg * tune(sim, w, 'ground', 3);
+        let n = 0;
+        const cap = tune(sim, w, 'max', 20);
+        for (const e of sim.enemies) {
+          if (e.dead) continue;
+          const dx = e.x - p.x, dy = e.y - p.y, rr = radius + e.r;
+          if (dx * dx + dy * dy >= rr * rr) continue;
+          sim.burn(e, hit);
+          if (++n >= cap) break;
+        }
       }
-    }
+    } else rt.ground = null;
   },
 };
 

@@ -27,7 +27,7 @@ function run(ranks, evo, mode) {
   const type = mode === 'boss' ? 'elder_treant' : 'dummy';
   const e = sim.spawnEnemy(type, sim.player.x, sim.player.y);
   e.hp = e.maxHp = 1e9; e.speed = 0;
-  const ringR = w.s.radius * sim.mods.area * (evo === 'sanctum_halo' ? 1.6 : 1);
+  const ringR = w.s.radius * sim.mods.area * (evo === 'sanctum_halo' ? 1.5 : 1);
   e.x = sim.player.x + (mode === 'ring' ? ringR : e.r + sim.player.r + 2); e.y = sim.player.y;
   const h0 = e.hp;
   for (let i = 0; i < SECS / DT; i++) sim.step(DT, {});
