@@ -1148,13 +1148,23 @@ export class RunScene extends Phaser.Scene {
 
     this.sec0(5); this.tickRibbons(sim, p, lx, ly, nSrc); this.sec1(5);
 
-    // projectiles
+    // projectiles. W10 Spirit Bolts evolutions (visual only, reads the sim): a thin gold rim on the EVOLVED glyph only (never on enemies, nearest caps.halos);
+    // Spirit Tempest draws a short thread from each seeking glyph to its own prey (cap halos/5, none under reduced motion).
+    let rimN = 0, thrN = 0;
+    const thrCap = Math.round(caps.halos / 5), still = this.reducedMotion();
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
       pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((b.r / 3) * pl.bolt.inv);
       if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale((b.r / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
       trail(b.x, b.y, PAL.ice, 0.28);
       if (lit) lm.add(b.x, b.y, 24, ROLE.bolt, 0.8);
+      if (b.evo === 'spirit_tempest') {
+        if (rimN++ < caps.halos) fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(b.x, b.y, 4.5);
+        if (!(b.seek > 0) && b.target && !b.target.dead && !still && thrN++ < thrCap) { // short thread (<= 34 px) pointing at its prey
+          const tx = b.target.x - b.x, ty = b.target.y - b.y, tk = Math.min(1, 34 / (Math.hypot(tx, ty) || 1));
+          fx.lineStyle(1, ROLE.bolt, 0.4).lineBetween(b.x, b.y, b.x + tx * tk, b.y + ty * tk);
+        }
+      }
     }
 
     // transient effects (additive: glow comes for free)

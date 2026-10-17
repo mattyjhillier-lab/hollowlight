@@ -1,5 +1,6 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
+- W10b DONE 2026-10-17 (awaiting Matt's look; see LOCKED W10b): Spirit Tempest = Burst and Seek (8-glyph ring, distinct prey per glyph, pop only on a hit). DECISION FOR MATT (default kept): pop is 0.12x on every hit instead of the locked 0.6x on the last hit (the locked version breaks the 3x cap at pick); alternatives in the LOCKED row. Next: W10c Soul Lance, W10d Returning Pages.
 - W10a DONE 2026-10-17 (awaiting Matt's look; see LOCKED W10a): Spirit Bolts base = Swiftness (speed + turn + volley gap), power +3.5/rank, honest hint. Next: W10b Spirit Tempest, W10c Soul Lance, W10d Returning Pages.
 - W11a/b DONE 2026-10-17 (awaiting Matt's look; see LOCKED W11a/b): Chain Lightning base (first strike 1.5x, Power +6, Arc) and Thunder Judgment (smite 0.72x, sky pillars). Next: W11c Static Storm, W11d Storm Tether.
 

@@ -443,6 +443,43 @@ function ravenWedge(sim, w, dmg, dt) {
 }
 
 // ---------------------------------------------------------------- Spirit Bolts
+// W10b Spirit Tempest ('Burst and Seek'): a ring of glyphs blooms from the hero, then each one is given its OWN prey (claim set per volley;
+// the set is only shared when there are fewer foes than glyphs). Called by Sim.updateProjectiles when a glyph's burst timer runs out.
+export function boltSeek(sim, b) {
+  const v = b.vol;
+  if (!v) { b.homing = true; return; }
+  if (!v.assign) {
+    v.assign = new Map();
+    const p = sim.player;
+    const cands = sim.nearestEnemies(p.x, p.y, v.range, Math.max(8, v.bolts.length));
+    let claimed = new Set();
+    for (const g of v.bolts) {
+      if (g.dead || !cands.length) continue;
+      if (claimed.size >= cands.length) claimed = new Set(); // fewer foes than glyphs: share, evenly
+      let best = null, bd = Infinity;
+      for (const e of cands) {
+        if (e.dead || claimed.has(e.id)) continue;
+        const d = (e.x - g.x) ** 2 + (e.y - g.y) ** 2;
+        if (d < bd) { bd = d; best = e; }
+      }
+      if (best) { claimed.add(best.id); v.assign.set(g.id, best); }
+    }
+  }
+  b.target = v.assign.get(b.id) || null;
+  b.homing = true;
+}
+// A seeking glyph whose prey died takes the nearest foe that no other glyph of its volley is chasing (else the nearest).
+export function boltRetarget(sim, b) {
+  const v = b.vol;
+  if (v) {
+    const taken = new Set();
+    for (const g of v.bolts) if (!g.dead && g !== b && g.target && !g.target.dead) taken.add(g.target.id);
+    const e = sim.nearestEnemy(b.x, b.y, 180, (x) => !taken.has(x.id));
+    if (e) return e;
+  }
+  return sim.nearestEnemy(b.x, b.y, 180);
+}
+
 const spiritBolts = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
@@ -463,21 +500,29 @@ const spiritBolts = {
     let homing = true;
     let explode = false;
     let life = 2.4;
-    if (evo === 'spirit_tempest') { count = 8; cd = tune(sim, w, 'cd', 0.8); speed *= 1.4; explode = true; dmg *= tune(sim, w, 'dmg', 1); }
+    if (evo === 'spirit_tempest') {
+      // Burst and Seek: eight glyphs (ring), each re-homes to its own foe; blast only on a hit; Swiftness shortens the gap 0.02 s per rank
+      count = 8; cd = tune(sim, w, 'cd', 0.85) + tune(sim, w, 'cdPer', 0.02) * (sim.data.balance.maxRank - rs);
+      speed *= tune(sim, w, 'speedK', 1.4); explode = true; dmg *= tune(sim, w, 'dmg', 1);
+    }
     if (evo === 'soul_lance') { count = 1; dmg *= tune(sim, w, 'dmg', 8); pierce = Infinity; speed *= 1.3; r = tune(sim, w, 'r', 12); homing = false; cd = tune(sim, w, 'cd', 1.1); life = 1.6; }
 
     const targets = sim.nearestEnemies(p.x, p.y, 210, Math.max(1, count));
     if (!targets.length) { rt.cd = 0.15; return; }
     rt.spin = (rt.spin || 0) + 0.4;
+    const vol = evo === 'spirit_tempest' ? { bolts: [], assign: null, range: 240 } : null;
+    if (vol && sim.fx.length < 48) sim.addFx({ kind: 'ring', x: p.x, y: p.y, r: 46, ttl: 0.24, color: '#7ff0ff' }); // the ring blooms from the hero
     for (let i = 0; i < count; i++) {
       const tgt = targets[i % targets.length];
       let ang = Math.atan2(tgt.y - p.y, tgt.x - p.x);
       if (evo === 'spirit_tempest') ang = rt.spin + (i * TAU) / 8;
       else if (i >= targets.length) ang += (i - targets.length + 1) * 0.18 * (i % 2 ? 1 : -1);
       sim.spawnBolt({
-        x: p.x, y: p.y, ang, speed, dmg, pierce, r, homing, explode, life, turn, target: homing ? tgt : null,
+        x: p.x, y: p.y, ang, speed, dmg, pierce, r, homing: vol ? false : homing, explode, life, turn, target: homing && !vol ? tgt : null,
         color: evo === 'soul_lance' ? '#d6f7ff' : '#7ff0ff',
+        ...(vol ? { vol, seek: tune(sim, w, 'burst', 0.22), evo, blast: tune(sim, w, 'blast', 0.12), blastR: tune(sim, w, 'blastR', 22), blastEach: tune(sim, w, 'each', 1) === 1 } : {}),
       });
+      if (vol) vol.bolts.push(sim.projectiles[sim.projectiles.length - 1]);
     }
     rt.cd = cd * sim.mods.cooldown;
   },

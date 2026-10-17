@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Sim } from '../src/sim/Sim.js';
 import { hintText } from '../src/sim/cards.js';
-import { data } from '../scripts/evo-same-ranks.mjs';
+import { data, measureRatios } from '../scripts/evo-same-ranks.mjs';
 import { run as runRanks } from '../scripts/stat-ranks.mjs';
 
 const DT = 1 / 60;
@@ -79,4 +79,105 @@ test('W10a Spirit Bolts base is deterministic', () => {
   const b = mk({ count: 3, power: 3, speed: 3, pierce: 2 }); place(b, 12, 50, 160, 'dummy');
   run(a, 8); run(b, 8);
   assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+});
+
+// ---------------------------------------------------------------- W10b Spirit Tempest (Burst and Seek)
+const TEMP = { count: 5, power: 5, speed: 5, pierce: 5 };
+const tempest = (ranks = TEMP, seed = 3) => mk(ranks, 'spirit_tempest', seed);
+const volleyOf = (sim) => sim.projectiles.filter((b) => b.vol);
+
+test('Tempest: a volley is a ring of 8 glyphs, 45 degrees apart, that bursts radially first (no homing yet)', () => {
+  const sim = tempest(); place(sim, 10, 90, 150);
+  let gl = [];
+  for (let i = 0; i < 60 && gl.length < 8; i++) { sim.step(DT, {}); gl = volleyOf(sim); }
+  assert.equal(gl.length, 8);
+  assert.equal(new Set(gl.map((b) => b.vol)).size, 1);
+  const angs = gl.map((b) => Math.atan2(b.vy, b.vx)).sort((a, b) => a - b);
+  for (let i = 1; i < 8; i++) assert.ok(Math.abs(angs[i] - angs[i - 1] - Math.PI / 4) < 0.05, `gap ${i}`);
+  assert.ok(gl.every((b) => b.homing === false && b.seek > 0), 'burst phase: straight, no homing');
+});
+
+test('Tempest re-homing: with 8+ foes every glyph of a volley takes a DISTINCT foe (claim set)', () => {
+  const sim = tempest(); place(sim, 12, 60, 150);
+  let checked = 0;
+  for (let i = 0; i < 90 && !checked; i++) {
+    sim.step(DT, {});
+    const gl = volleyOf(sim);
+    if (gl.length === 8 && gl.every((b) => b.seek <= 0 && b.target)) {
+      assert.equal(new Set(gl.map((b) => b.target.id)).size, 8, 'distinct prey');
+      checked++;
+    }
+  }
+  assert.equal(checked, 1, 'never saw a fully re-homed volley');
+});
+
+test('Tempest re-homing: with fewer foes than glyphs the prey is shared as evenly as possible', () => {
+  const sim = tempest(); place(sim, 3, 80, 140);
+  let seen = false;
+  for (let i = 0; i < 90 && !seen; i++) {
+    sim.step(DT, {});
+    const gl = volleyOf(sim);
+    if (gl.length === 8 && gl.every((b) => b.seek <= 0)) {
+      const cnt = new Map(); for (const b of gl) if (b.target) cnt.set(b.target.id, (cnt.get(b.target.id) || 0) + 1);
+      assert.equal(cnt.size, 3);
+      assert.ok(Math.max(...cnt.values()) - Math.min(...cnt.values()) <= 1, [...cnt.values()].join(','));
+      seen = true;
+    }
+  }
+  assert.ok(seen);
+});
+
+test('Tempest blast only on a hit: glyphs that fade in empty air never explode; a hit pops (0.12x, r22)', () => {
+  const sim = tempest({ ...TEMP, pierce: 0 }); const [d] = place(sim, 1, 120, 120);
+  let pops = 0; const o = sim.explodeBolt.bind(sim); sim.explodeBolt = (b) => { pops++; return o(b); };
+  run(sim, 1.2);
+  assert.ok(pops > 0, 'a hit should pop');
+  d.dead = true; sim.enemies.length = 0; pops = 0;
+  run(sim, 5);
+  assert.equal(pops, 0, 'no pops once there is nothing to hit');
+  assert.equal(data.evolutions.spirit_tempest.tune.blast, 0.12);
+});
+
+test('Tempest: volley gap 0.85 s at Swiftness 5 and 0.02 s longer per missing rank', () => {
+  const gapAt = (rs) => {
+    const sim = tempest({ ...TEMP, speed: rs }); const d = place(sim, 1, 150, 150)[0]; d.hp = d.maxHp = 1e12;
+    const times = []; const o = sim.spawnBolt.bind(sim);
+    sim.spawnBolt = (b) => { if (!times.length || sim.time - times[times.length - 1] > 0.3) times.push(sim.time); return o(b); };
+    run(sim, 12); return (times[times.length - 1] - times[1]) / (times.length - 2);
+  };
+  assert.ok(Math.abs(gapAt(5) - 0.85) < 0.02, String(gapAt(5)));
+  assert.ok(Math.abs(gapAt(0) - 0.95) < 0.02, String(gapAt(0)));
+});
+
+test('Tempest wasted glyphs <= 25% on a single target (glyphs that never hit anything)', () => {
+  const sim = tempest(); place(sim, 1, 30, 30);
+  const all = new Map();
+  for (let i = 0; i < 12 * 60; i++) { sim.step(DT, {}); for (const b of sim.projectiles) all.set(b.id, b); }
+  // ignore the volley still in the air at the end
+  const done = [...all.values()].filter((b) => b.dead || b.life <= 0 || b.hit.size > 0);
+  const wasted = done.filter((b) => b.hit.size === 0).length / done.length;
+  assert.ok(done.length >= 40);
+  assert.ok(wasted <= 0.25, `wasted ${(wasted * 100).toFixed(0)}%`);
+});
+
+test('Tempest: no dead stat after evolving (Bolt power and Pierce still move DPS; recipe stats are maxed)', () => {
+  const crowdDps = (r) => { const sim = tempest(r); for (const e of place(sim, 30, 40, 170, 'dummy')) e.speed = 0; return dps(sim, 12); };
+  const mid = { count: 5, speed: 5, power: 2, pierce: 2 };
+  assert.ok(crowdDps({ ...mid, power: 4 }) > crowdDps(mid) * 1.1, 'power');
+  assert.ok(crowdDps({ ...mid, pierce: 4 }) > crowdDps(mid) * 1.1, 'pierce');
+});
+
+test('Tempest is deterministic', () => {
+  const a = tempest(); place(a, 14, 50, 170, 'wolf', 400);
+  const b = tempest(); place(b, 14, 50, 170, 'wolf', 400);
+  run(a, 8); run(b, 8);
+  assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+});
+
+test('Tempest gates: stream40 <= 2.4x at max, single >= 1.5x at max, cap at pick <= 3.0x (single, stream10, stream40), never below base', () => {
+  const res = measureRatios({ secs: 10, seeds: [1], only: 'spirit_tempest' }).spirit_tempest;
+  assert.ok(res.max.stream40.ratio <= 2.4, `stream40 ${res.max.stream40.ratio.toFixed(2)}x`);
+  assert.ok(res.max.single.ratio >= 1.5, `single ${res.max.single.ratio.toFixed(2)}x`);
+  for (const [sc, c] of Object.entries(res.pair)) assert.ok(c.ratio <= 3.0, `${sc} cap@pick ${c.ratio.toFixed(2)}x`);
+  for (const mode of ['max', 'pair']) for (const [sc, c] of Object.entries(res[mode])) assert.ok(c.ratio >= 0.98, `${mode} ${sc} ${c.ratio.toFixed(2)}x`);
 });

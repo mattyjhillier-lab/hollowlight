@@ -15,7 +15,7 @@ import {
   BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
-import { WEAPON_BEHAVIOURS } from './weapons.js';
+import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget } from './weapons.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -588,8 +588,9 @@ export class Sim {
     const size = this.balance.worldSize;
     for (const b of this.projectiles) {
       if (b.dead) continue;
+      if (b.seek > 0) { b.seek -= dt; if (b.seek <= 0) boltSeek(this, b); } // W10b: burst phase over, take your own prey
       if (b.homing) {
-        if (!b.target || b.target.dead) b.target = this.nearestEnemy(b.x, b.y, 180);
+        if (!b.target || b.target.dead) b.target = b.vol ? boltRetarget(this, b) : this.nearestEnemy(b.x, b.y, 180);
         if (b.target) {
           const want = Math.atan2(b.target.y - b.y, b.target.x - b.x);
           let diff = want - b.ang;
@@ -613,6 +614,7 @@ export class Sim {
           this.hurt(e, b.dmg);
           this._src = null;
           b.hit.add(e.id);
+          if (b.explode && b.blastEach && b.pierce > 0) this.explodeBolt(b);
           if (b.pierce <= 0) {
             b.dead = true;
             if (b.explode) this.explodeBolt(b);
@@ -622,8 +624,7 @@ export class Sim {
         }
       }
       if (!b.dead && (b.life <= 0 || b.x < 0 || b.y < 0 || b.x > size || b.y > size)) {
-        b.dead = true;
-        if (b.explode && b.life <= 0) this.explodeBolt(b);
+        b.dead = true; // W10b: a blast needs a hit; a glyph that fades in empty air just fades
       }
     }
     this.projectiles = this.projectiles.filter((b) => !b.dead);
@@ -633,10 +634,10 @@ export class Sim {
     this._src = b.src || null;
     for (const e of this.enemies) {
       if (e.dead) continue;
-      if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + 22) this.hurt(e, b.dmg * 0.6);
+      if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + (b.blastR ?? 22)) this.hurt(e, b.dmg * (b.blast ?? 0.6));
     }
     this._src = null;
-    this.addFx({ kind: 'ring', x: b.x, y: b.y, r: 22, ttl: 0.18, color: '#7ff0ff' });
+    if (this.fx.length < 48) this.addFx({ kind: 'ring', x: b.x, y: b.y, r: b.blastR ?? 22, ttl: 0.18, color: '#7ff0ff' });
   }
 
   updateZones(dt) {
