@@ -1,0 +1,20 @@
+cells: 720
+G1|G2 (eyes>=3:1 OR |dL*|>=6) all: 718/720; strict daylight reading: 683/720
+  bright=clear: 718/720 (strict 683/720)
+  view=desk: 360/360 (strict 350/360)
+  view=port: 358/360 (strict 333/360)
+  tier=high: 358/360 (strict 330/360)
+  tier=low: 360/360 (strict 353/360)
+  ground=hollow: 360/360 (strict 345/360)
+  ground=restored: 358/360 (strict 338/360)
+  cb=none: 360/360 (strict 340/360)
+  cb=protan: 358/360 (strict 343/360)
+  t=30: 144/144 (strict 144/144)
+  t=240: 144/144 (strict 144/144)
+  t=480: 144/144 (strict 144/144)
+  t=690: 143/144 (strict 111/144)
+  t=870: 143/144 (strict 140/144)
+G1 eyes alone >= 3:1 (moments up to 8:00): 423/432
+G3 enemy pixels below RGB 12: 0
+misses: clear/port/high/11m30/restored/protan/r220(eye 2.91, dL -2.4); clear/port/high/14m30/restored/protan/r220(eye 2.84, dL -3)
+strict misses: clear/desk/high/11m30/hollow/none/c140(eye 5.2, dL -4.9); clear/desk/high/11m30/hollow/none/r70(eye 4.06, dL -5.9); clear/desk/high/11m30/hollow/protan/c140(eye 5.02, dL -5.6); clear/desk/low/11m30/hollow/none/w70(eye 8.29, dL -3.9); clear/desk/low/11m30/hollow/none/c70(eye 5.82, dL -4.8); clear/desk/low/11m30/hollow/none/r70(eye 8.91, dL -5.4); clear/desk/low/11m30/hollow/protan/w70(eye 8.19, dL -4.4); clear/desk/low/11m30/hollow/protan/c70(eye 5.85, dL -5.3); clear/desk/low/11m30/restored/none/w70(eye 8.39, dL -3.6); clear/desk/low/11m30/restored/protan/w70(eye 8.29, dL -4.3); clear/port/high/11m30/hollow/none/w70(eye 5.62, dL -5); clear/port/high/11m30/hollow/none/r70(eye 5.4, dL -5.5); clear/port/high/11m30/hollow/none/r220(eye 5.28, dL -1); clear/port/high/11m30/hollow/protan/w70(eye 5.47, dL -5.5); clear/port/high/11m30/hollow/protan/r220(eye 5.13, dL -1.4); clear/port/high/11m30/restored/none/w70(eye 5.02, dL 1.6); clear/port/high/11m30/restored/none/w140(eye 6.14, dL -0.5); clear/port/high/11m30/restored/none/w220(eye 5.37, dL -3); clear/port/high/11m30/restored/none/c70(eye 3.04, dL -0.5); clear/port/high/11m30/restored/none/c140(eye 5.55, dL 5.3); clear/port/high/11m30/restored/none/c220(eye 4.92, dL 1.9); clear/port/high/11m30/restored/none/r70(eye 5.01, dL 2.4); clear/port/high/11m30/restored/none/r140(eye 5.89, dL 1.9); clear/port/high/11m30/restored/none/r220(eye 3.29, dL -1.3); clear/port/high/11m30/restored/protan/w70(eye 4.87, dL 1.2); clear/port/high/11m30/restored/protan/w140(eye 5.97, dL -0.9); clear/port/high/11m30/restored/protan/w220(eye 5.21, dL -3.4); clear/port/high/11m30/restored/protan/c70(eye 3, dL -2.2); clear/port/high/11m30/restored/protan/c140(eye 5.42, dL 4.4); clear/port/high/11m30/restored/protan/c220(eye 4.77, dL 1.2); clear/port/high/11m30/restored/protan/r70(eye 4.87, dL 1.8); clear/port/high/11m30/restored/protan/r140(eye 5.72, dL 1.1); clear/port/high/11m30/restored/protan/r220(eye 2.91, dL -2.4); clear/port/high/14m30/hollow/none/r220(eye 5.27, dL 4); clear/port/high/14m30/hollow/protan/r220(eye 5.11, dL 4); clear/port/high/14m30/restored/none/r220(eye 3.22, dL -0.6); clear/port/high/14m30/restored/protan/r220(eye 2.84, dL -3)

@@ -3,7 +3,7 @@
 // preallocated, images are created lazily and reused (docs/design/visibility-arc-v1.md sections 3, 4, 7). Visual only.
 import Phaser from 'phaser';
 import {
-  EYE_DEFS, BOSS_EYES, BOSS_CORE, BOSS_HALO, EYE_CORE_TINT, EYE_HALO_TINT, RIM_TINT, LIT_STEPS,
+  EYE_DEFS, DARK_FLOOR, DARK_FLOOR_DAY, DARK_OFF, DARK_DAY_K, BOSS_EYES, BOSS_CORE, BOSS_HALO, EYE_CORE_TINT, EYE_HALO_TINT, RIM_TINT, LIT_STEPS,
   eyeCap, rimCap, spiritCap, litLevel, bandOf, fillTintTable, blinkMul, eyeAlpha, rimAlpha, planEyes, slotsOf,
   eyeAnim, makeEyeOut, streakCap,
 } from './nightlook.js';
@@ -39,7 +39,8 @@ export class NightLayer {
     this.near = new Uint8Array(MAXE);
     this.kinds = new Uint8Array(MAXE);
     this.plan = new Int16Array(MAXE);
-    this.tab = new Int32Array(LIT_STEPS + 1);
+    this.tab = new Int32Array(2 * (LIT_STEPS + 1)); // [0..16] normal far tint, [17..33] with the dark-type floor (WL6d)
+    this.tq = new Uint8Array(MAXE); // tint index per enemy: lit level (+17 for dark types)
     this.ver = 0; // bumps when the tint table changes (enemies re-apply their tint)
     this.tabKey = -1;
     this.lights = new Float32Array(32);
@@ -71,7 +72,7 @@ export class NightLayer {
   // Before the enemy loop: tint table, nearby spirit lights, lit level per enemy (index = position in sim.enemies).
   prepare(sim, lx, ly, R, tier, arc) {
     const key = Math.round(arc.farV * 1000) * 1000 + Math.round(arc.bodyK * 1000);
-    if (key !== this.tabKey) { this.tabKey = key; fillTintTable(arc.farV, arc.bodyK, this.tab); this.ver++; }
+    if (key !== this.tabKey) { this.tabKey = key; fillTintTable(arc.farV, arc.bodyK, this.tab); fillTintTable(Math.max(arc.farV * DARK_DAY_K, DARK_FLOOR.root_crawler, DARK_FLOOR_DAY / arc.bodyK), arc.bodyK, this.tab, DARK_OFF); this.ver++; }
     // spirit lights (wolves, ravens, orbs): the first few visible ones also light the enemies beside them
     let nl = 0;
     const cap = Math.min(spiritCap(tier), 16);
@@ -102,6 +103,7 @@ export class NightLayer {
         if (sx * sx + sy * sy < SPIRIT_R2) { ns = true; break; }
       }
       this.lit[i] = e.boss ? LIT_STEPS : litLevel(Math.sqrt(d2), R, ns);
+      this.tq[i] = this.lit[i] + (DARK_FLOOR[e.type] ? DARK_OFF : 0);
     }
   }
 

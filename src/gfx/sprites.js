@@ -10,6 +10,8 @@ import { makeRigTextures } from './rigtex.js';
 
 const TAU = Math.PI * 2;
 const ch = (c, s) => (c >> s) & 255;
+// WL6d: the night eye core is the authored cream pushed 35% toward white (luminance carries the eye for protan viewers: measured 2.96:1 -> above 3:1 on the root crawler)
+const EYE_NIGHT_CORE = (() => { const f = (s) => { const v = (ROLE.eyeCore >> s) & 255; return Math.round(v + (255 - v) * 0.35); }; return (f(16) << 16) | (f(8) << 8) | f(0); })();
 const css = (c, a = 1) => `rgba(${ch(c, 16)},${ch(c, 8)},${ch(c, 0)},${a})`;
 // f<1 darkens, f>1 lightens toward white.
 const sh = (c, f) => {
@@ -298,7 +300,7 @@ const SPRITES = {
     draw: (c) => {
       c.fillStyle = rg(c, 16, 16, 0, 16, [[0, css(ROLE.eye, 0.95)], [0.45, css(ROLE.eye, 0.55)], [1, css(ROLE.eye, 0)]]);
       c.fillRect(0, 0, 32, 32);
-      c.fillStyle = rg(c, 16, 16, 0, 7.5, [[0, css(ROLE.eyeCore, 1)], [0.72, css(ROLE.eyeCore, 1)], [1, css(ROLE.eyeCore, 0)]]);
+      c.fillStyle = rg(c, 16, 16, 0, 7.5, [[0, css(EYE_NIGHT_CORE, 1)], [0.72, css(EYE_NIGHT_CORE, 1)], [1, css(EYE_NIGHT_CORE, 0)]]);
       c.fillRect(0, 0, 32, 32);
     },
   },

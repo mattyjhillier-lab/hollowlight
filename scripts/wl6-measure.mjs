@@ -1,19 +1,21 @@
 // WL6 measurement harness on the REAL build (no runtime override; the arc and night look are in src/). Reads dist/ (npm run build first).
 // Own Chrome process (debug port 9483), own static server (4201); closes only what it opened. Headless Chrome, software GL, so timings are not perf data (use scripts/pace.mjs).
 //   node scripts/wl6-measure.mjs shots   <outDir>            true-size + phone frames at the 5 moments (Wren/Elias, swarm), JPEG
-//   node scripts/wl6-measure.mjs contrast <outDir>           contrast gates G1/G2/G3: 5 moments x 3 enemy types x 3 distances x tier x size -> contrast.csv/json
+//   node scripts/wl6-measure.mjs contrast <outDir>           contrast gates G1/G2/G3 (WL6d full matrix): 5 moments x 3 enemy types x 3 distances x tier x size x ground (GROUNDS=hollow,restored,corrupt) x colour-blind sim (CBS=none,protan,deutan,tritan) -> <outDir>/cells.jsonl (resumable) + printed summary
+//   node scripts/wl6-measure.mjs summary  <outDir>           re-read <outDir>/cells.jsonl (+ DIRS=a,b) and print/write the gate summary (summary.txt)
 //   node scripts/wl6-measure.mjs strip    <outDir>           4-frame strip per moment (0:30, 4:00, 8:00) showing eye motion (WL6b2), zoomed crop around the hero
 //   node scripts/wl6-measure.mjs vib      <outDir>           WL6c vibrancy: restored meadow with vibrancy on vs the same spot with ?vib=0 at 4:00 / 8:00 / 11:30 / 14:30 (desk + phone), mean chroma of ground+props vs enemy interiors
 //   node scripts/wl6-measure.mjs settings <outDir>           Settings > Picture screenshots (desktop + phone)
-// env: DIST (default dist), TIERS (high,low), SIZES (desk,land,port), TS (30,240,480,690,870), BRIGHT (normal|brighter|clear|auto, default normal), PARAMS (extra url query), ONLY (name filter), HERO.
+// env: DIST (default dist), TIERS (high,low; use high,med,low), GROUNDS, CBS, SIZES (desk,land,port), TS (30,240,480,690,870), BRIGHT (normal|brighter|clear|auto, default normal), PARAMS (extra url query), ONLY (name filter), HERO.
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdirSync, writeFileSync, mkdtempSync, existsSync, readFileSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync, mkdtempSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, extname, resolve } from 'node:path';
 
 const CHROME = [process.env.CHROME, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => p && existsSync(p));
-const PORT = 9483, HTTP = 4201;
+const SLOT = Number(process.env.SLOT || 0); // parallel slices: SLOT=1,2 use other ports (run each with its own SIZES/TS, same outDir is fine)
+const PORT = 9483 + SLOT, HTTP = 4201 + SLOT;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
 const GRANT = 'holy_orbit:power=3;ghost_wolves:speed=3,power=3';
@@ -48,7 +50,7 @@ async function launch() {
     if (d.method === 'Runtime.exceptionThrown') console.error('PAGE EXC', d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
     if (d.id && pending.has(d.id)) { const p = pending.get(d.id); pending.delete(d.id); d.error ? p.rej(new Error(d.error.message)) : p.res(d.result); }
   });
-  const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; pending.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params })); });
+  const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; const to = setTimeout(() => { pending.delete(i); rej(new Error('cdp timeout: ' + method)); }, 90000); pending.set(i, { res: (v) => { clearTimeout(to); res(v); }, rej: (e) => { clearTimeout(to); rej(e); } }); ws.send(JSON.stringify({ id: i, method, params })); }); // 90 s timeout: a hung Chrome becomes a retry instead of a stuck run
   const ev = async (expr) => { const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.text + ' ' + (r.exceptionDetails.exception?.description || '')); return r.result.value; };
   const close = () => { try { ws.close(); } catch { /* ignore */ } try { proc.kill(); } catch { /* ignore */ } setTimeout(() => { try { rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ } }, 1500); };
   return { send, ev, close };
@@ -110,13 +112,26 @@ async function shots(out) {
 }
 
 // ---- contrast ----
-const MEASURE = `(async (b64, b64g, pts, dpr) => {
+// Colour-blindness simulation matrices (Machado et al. 2009, severity 1.0, applied to LINEAR RGB), used to re-measure eye/body contrast as a protan/deutan/tritan viewer would see it.
+const CB = {
+  none: null,
+  protan: [0.152286, 1.052583, -0.204868, 0.114503, 0.786281, 0.099216, -0.003882, -0.048116, 1.051998],
+  deutan: [0.367322, 0.860646, -0.227968, 0.280085, 0.672501, 0.047413, -0.011820, 0.042940, 0.968881],
+  tritan: [1.255528, -0.076749, -0.178779, -0.078411, 0.930809, 0.147602, 0.004733, 0.691367, 0.303900],
+};
+const NL = String.fromCharCode(10);
+const MEASURE = `(async (b64, b64g, pts, dpr, cbm) => {
   const load = (b) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + b; });
   const [im, ig] = await Promise.all([load(b64), load(b64g)]);
   const mk = (i) => { const cv = document.createElement('canvas'); cv.width = i.width; cv.height = i.height; const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0); return g; };
   const g = mk(im), gg = mk(ig);
   const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-  const L = (d, i) => 0.2126 * lin(d[i]) + 0.7152 * lin(d[i + 1]) + 0.0722 * lin(d[i + 2]);
+  const cl = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const L = (d, i) => {
+    let r = lin(d[i]), gg2 = lin(d[i + 1]), b = lin(d[i + 2]);
+    if (cbm) { const r2 = cl(cbm[0] * r + cbm[1] * gg2 + cbm[2] * b), g2 = cl(cbm[3] * r + cbm[4] * gg2 + cbm[5] * b), b2 = cl(cbm[6] * r + cbm[7] * gg2 + cbm[8] * b); r = r2; gg2 = g2; b = b2; }
+    return 0.2126 * r + 0.7152 * gg2 + 0.0722 * b;
+  };
   const cr = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   const Ls = (y) => (y > 0.008856 ? 116 * Math.cbrt(y) - 16 : 903.3 * y);
   const out = [];
@@ -137,46 +152,92 @@ const MEASURE = `(async (b64, b64g, pts, dpr) => {
   return JSON.stringify(out);
 })`;
 
+// Full matrix: view x moment x tier x ground (hollow | restored | corrupt) x colour-blind simulation, 3 enemy types x 3 distances per capture.
+// Resumable: every finished capture is appended to <out>/cells.jsonl and skipped on the next run (RESUME=0 to redo); each capture retries up to 3 times with a fresh Chrome.
+// env: SIZES, TS, TIERS (high,med,low), GROUNDS (hollow,restored,corrupt), CBS (none,protan,deutan,tritan), BRIGHT, DIST
 async function contrast(out) {
   mkdirSync(out, { recursive: true });
-  const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
-  const rows = [];
+  const file = join(out, 'cells.jsonl');
+  const done = new Set(); const rows = [];
+  if (existsSync(file) && process.env.RESUME !== '0') for (const l of readFileSync(file, 'utf8').split(NL)) { if (!l.trim()) continue; const r = JSON.parse(l); rows.push(r); done.add(r.key); }
+  const srv = await serve(process.env.DIST || 'dist'); let c = await launch();
+  const grounds = (process.env.GROUNDS || 'hollow').split(','); const cbs = (process.env.CBS || 'none').split(',');
   try {
-    for (const view of (process.env.SIZES || 'desk,land,port').split(',')) for (const t of (process.env.TS || '30,240,480,690,870').split(',').map(Number)) for (const tier of (process.env.TIERS || 'high,low').split(',')) {
+    for (const view of (process.env.SIZES || 'desk,land,port').split(',')) for (const t of (process.env.TS || '30,240,480,690,870').split(',').map(Number)) for (const tier of (process.env.TIERS || 'high,low').split(',')) for (const ground of grounds) {
+      const key = `${BRIGHT}|${view}|${t}|${tier}|${ground}`;
+      if (done.has(key + '|' + cbs[0])) continue;
       const [w, h, dpr] = VIEWS[view];
       const portrait = h > w;
-      await open(c, q('wren', t), w, h, dpr, tier);
-      await sleep(600); await setup(c, 2600, 2600, t, 0); await sleep(1200);
-      await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=['wolf','crow','root_crawler'];
-        for(let i=0;i<3;i++)for(let j=0;j<3;j++){s.spawnEnemy(T[i],p.x+100,p.y);s.enemies[s.enemies.length-1]._va=i*3+j;}return s.enemies.length})()`);
-      const POS = `(()=>{const s=window.__app.sim,p=s.player;const D=[70,140,220];s.enemies=s.enemies.filter(e=>e._va!=null);for(const e of s.enemies){const i=(e._va/3)|0,j=e._va%3;
-        ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}s.time=${t};return s.enemies.length})()`;
-      for (let i = 0; i < 8; i++) { await c.ev(POS); await sleep(50); }
-      await c.ev(POS); await sleep(60);
-      const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();const D=[70,140,220];return JSON.stringify(s.enemies.filter(e=>e._va!=null).map(e=>({type:e.type,dist:D[e._va%3],x:R.left+(e.x-wv.x)/wv.width*R.width,y:R.top+(e.y-wv.y)/wv.height*R.height,r:e.r*R.width/wv.width*1.05})))})()`));
-      const b64 = await shot(c, process.env.KEEP ? join(out, `contrast-${view}-${fmt(t)}-${tier}.png`) : null, false);
-      await c.ev('(()=>{window.__app.sim.enemies.length=0;return 1})()'); await sleep(150);
-      const b64g = (await c.send('Page.captureScreenshot', { format: 'png' })).data;
-      const res = JSON.parse(await c.ev(`(${MEASURE})(${JSON.stringify(b64)}, ${JSON.stringify(b64g)}, ${JSON.stringify(pts)}, ${dpr})`));
-      for (const r of res) rows.push({ view, t, tier, type: r.type, dist: r.dist, mask: r.mask, ground: r.ground, body: r.body, peak: r.peak, eyeCR: r.eyeCR, bodyCR: r.bodyCR, dL: r.dL, dark: r.dark });
-      console.log('contrast', view, fmt(t), tier);
+      let res = null;
+      for (let attempt = 0; attempt < 3 && !res; attempt++) {
+        try {
+          await open(c, q('wren', t), w, h, dpr, tier);
+          const cx = 2600, cy = 2600;
+          await sleep(600); await setup(c, cx, cy, t, ground === 'restored' ? 420 : 0); await sleep(1200);
+          if (ground === 'corrupt') await c.ev(`(()=>{const l=window.__app.scene.life;for(let k=0;k<4;k++)l.stampCorr(${cx},${cy},460,1);return 1})()`);
+          await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=['wolf','crow','root_crawler'];
+            for(let i=0;i<3;i++)for(let j=0;j<3;j++){s.spawnEnemy(T[i],p.x+100,p.y);s.enemies[s.enemies.length-1]._va=i*3+j;}return s.enemies.length})()`);
+          const POS = `(()=>{const s=window.__app.sim,p=s.player;const D=[70,140,220];s.enemies=s.enemies.filter(e=>e._va!=null);for(const e of s.enemies){const i=(e._va/3)|0,j=e._va%3;
+            ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}s.time=${t + 0.37 * attempt};return s.enemies.length})()`;
+          for (let i = 0; i < 8; i++) { await c.ev(POS); await sleep(50); }
+          await c.ev(POS); await sleep(60);
+          const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();const D=[70,140,220];return JSON.stringify(s.enemies.filter(e=>e._va!=null).map(e=>({type:e.type,dist:D[e._va%3],x:R.left+(e.x-wv.x)/wv.width*R.width,y:R.top+(e.y-wv.y)/wv.height*R.height,r:e.r*R.width/wv.width*1.05})))})()`));
+          const b64 = await shot(c, process.env.KEEP ? join(out, `contrast-${view}-${fmt(t)}-${tier}-${ground}.png`) : null, false);
+          await c.ev('(()=>{window.__app.sim.enemies.length=0;return 1})()'); await sleep(150);
+          const b64g = (await c.send('Page.captureScreenshot', { format: 'png' })).data;
+          res = {};
+          for (const cb of cbs) res[cb] = JSON.parse(await c.ev(`(${MEASURE})(${JSON.stringify(b64)}, ${JSON.stringify(b64g)}, ${JSON.stringify(pts)}, ${dpr}, ${JSON.stringify(CB[cb])})`));
+          // a frame is only valid if every enemy rendered (mask > 0) and, for the unsimulated pass, no eye is caught mid-blink (a blink is 0.12 s of every >= 3 s, so
+          // a miss that disappears at another held time is a harness frame, not a player-visible gap): retry at a shifted sim time (new blink phase), up to 2 times
+          const bad = res[cbs[0]].some((x) => !x.mask || (x.eyeCR < 3 && Math.abs(x.dL) < 6));
+          if (bad && attempt < 2 && !process.env.NO_BLINK_RETRY) throw new Error('retry: unrendered enemy or blink-dim eye in the frame');
+        } catch (err) {
+          console.error(`retry ${attempt + 1} for ${key}: ${err.message}`); res = null;
+          if (!String(err.message).startsWith('retry:')) { try { c.close(); } catch { /* ignore */ } await sleep(1500); c = await launch(); }
+        }
+      }
+      if (!res) { console.error('GAVE UP ' + key); continue; }
+      for (const cb of cbs) {
+        const r = { key: key + '|' + cb, bright: BRIGHT, view, t, tier, ground, cb, cells: res[cb].map((x) => ({ type: x.type, dist: x.dist, mask: x.mask, ground: x.ground, body: x.body, peak: x.peak, eyeCR: x.eyeCR, bodyCR: x.bodyCR, dL: x.dL, dark: x.dark })) };
+        appendFileSync(file, JSON.stringify(r) + NL); rows.push(r); done.add(r.key);
+      }
+      console.log('contrast', view, fmt(t), tier, ground, cbs.join('/'));
     }
-  } finally { c.close(); srv.close(); }
-  writeFileSync(join(out, 'contrast.json'), JSON.stringify(rows, null, 1));
-  writeFileSync(join(out, 'contrast.csv'), ['view,t,tier,type,dist,mask,ground,body,peak,eyeCR,bodyCR,dL,darkPx', ...rows.map((r) => [r.view, r.t, r.tier, r.type, r.dist, r.mask, r.ground, r.body, r.peak, r.eyeCR, r.bodyCR, r.dL, r.dark].join(','))].join('\n'));
-  // gate summary
-  const ok = (r) => r.mask > 0 && (r.eyeCR >= 3 || Math.abs(r.dL) >= 6);
-  const strict = (r) => (r.t >= 690 ? r.mask > 0 && Math.abs(r.dL) >= 6 : ok(r));
-  const sum = (f, flt = () => true) => { const a = rows.filter(flt); return `${a.filter(f).length}/${a.length}`; };
-  const lines = [`BRIGHT=${BRIGHT} PARAMS=${process.env.PARAMS || ''}`, `G1|G2 (eyes>=3:1 OR |dL*|>=6): all ${sum(ok)}, outside pool(220) ${sum(ok, (r) => r.dist === 220)}, inside(70) ${sum(ok, (r) => r.dist === 70)}`, `strict (>=11:30 needs silhouette): ${sum(strict)}`];
-  for (const view of new Set(rows.map((r) => r.view))) for (const tier of new Set(rows.map((r) => r.tier))) lines.push(`${view} ${tier}: ${sum(ok, (r) => r.view === view && r.tier === tier)}`);
-  lines.push(`G3 enemy pixels below RGB 12: ${rows.reduce((a, r) => a + (r.dark || 0), 0)}`);
-  lines.push('strict misses: ' + rows.filter((r) => !strict(r)).map((r) => `${r.view}/${r.tier}/${fmt(r.t)}/${r.type[0]}${r.dist}(eye ${r.eyeCR}, dL ${r.dL})`).join('; '));
-  lines.push('misses: ' + rows.filter((r) => !ok(r)).map((r) => `${r.view}/${r.tier}/${fmt(r.t)}/${r.type[0]}${r.dist}(eye ${r.eyeCR}, dL ${r.dL}${r.mask ? '' : ', NO MASK'})`).join('; '));
-  writeFileSync(join(out, 'summary.txt'), lines.join('\n'));
-  console.log(lines.join('\n'));
+  } finally { try { c.close(); } catch { /* ignore */ } srv.close(); }
+  console.log(summarise(rows).join(NL));
 }
 
+// ---- gate summary over cells.jsonl rows ----
+const okCell = (t, x) => x.mask > 0 && (x.eyeCR >= 3 || Math.abs(x.dL) >= 6);
+const strictCell = (t, x) => (t >= 690 ? x.mask > 0 && Math.abs(x.dL) >= 6 : okCell(t, x));
+function summarise(rows) {
+  const flat = [];
+  const uniq = new Map(); for (const r of rows) uniq.set(r.key, r); // slices may overlap: last write wins
+  for (const r of uniq.values()) for (const x of r.cells) flat.push({ ...x, bright: r.bright, view: r.view, t: r.t, tier: r.tier, ground: r.ground, cb: r.cb }); // run-level fields win over the cell's own luminance 'ground'
+  const cnt = (flt, f = okCell) => { const a = flat.filter(flt); return `${a.filter((x) => f(x.t, x)).length}/${a.length}`; };
+  const L = [`cells: ${flat.length}`];
+  L.push(`G1|G2 (eyes>=3:1 OR |dL*|>=6) all: ${cnt(() => true)}; strict daylight reading: ${cnt(() => true, strictCell)}`);
+  for (const k of ['bright', 'view', 'tier', 'ground', 'cb', 't']) for (const v of new Set(flat.map((x) => x[k]))) L.push(`  ${k}=${v}: ${cnt((x) => x[k] === v)} (strict ${cnt((x) => x[k] === v, strictCell)})`);
+  L.push(`G1 eyes alone >= 3:1 (moments up to 8:00): ${cnt((x) => x.t <= 480, (t, x) => x.mask > 0 && x.eyeCR >= 3)}`);
+  L.push(`G3 enemy pixels below RGB 12: ${flat.reduce((a, x) => a + (x.dark || 0), 0)}`);
+  const miss = flat.filter((x) => !okCell(x.t, x));
+  L.push('misses: ' + (miss.map((x) => `${x.bright}/${x.view}/${x.tier}/${fmt(x.t)}/${x.ground}/${x.cb}/${x.type[0]}${x.dist}(eye ${x.eyeCR}, dL ${x.dL}${x.mask ? '' : ', NO MASK'})`).join('; ') || 'none'));
+  const sm = flat.filter((x) => !strictCell(x.t, x));
+  L.push('strict misses: ' + (sm.map((x) => `${x.bright}/${x.view}/${x.tier}/${fmt(x.t)}/${x.ground}/${x.cb}/${x.type[0]}${x.dist}(eye ${x.eyeCR}, dL ${x.dL})`).join('; ') || 'none'));
+  return L;
+}
+
+// node scripts/wl6-measure.mjs summary <outDir>  (extra dirs via DIRS=a,b): re-reads cells.jsonl and prints/writes the gate summary (summary.txt)
+async function summary(out) {
+  const rows = [];
+  for (const d of [out, ...(process.env.DIRS ? process.env.DIRS.split(',') : [])]) {
+    const f = join(d, 'cells.jsonl');
+    if (existsSync(f)) for (const l of readFileSync(f, 'utf8').split(NL)) if (l.trim()) rows.push(JSON.parse(l));
+  }
+  const lines = summarise(rows);
+  writeFileSync(join(out, 'summary.txt'), lines.join(NL));
+  console.log(lines.join(NL));
+}
 
 async function strip(out) {
   mkdirSync(out, { recursive: true });
@@ -282,10 +343,11 @@ async function settingsShots(out) {
 }
 
 const [cmd, out] = process.argv.slice(2);
-if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|strip|vib|settings <outDir>'); process.exit(1); }
+if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|summary|strip|vib|settings <outDir>'); process.exit(1); }
 if (cmd === 'shots') await shots(out);
 else if (cmd === 'contrast') await contrast(out);
 else if (cmd === 'vib') await vibrancy(out);
+else if (cmd === 'summary') await summary(out);
 else if (cmd === 'strip') await strip(out);
 else if (cmd === 'settings') await settingsShots(out);
 process.exit(0);

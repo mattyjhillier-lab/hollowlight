@@ -1,0 +1,20 @@
+cells: 720
+G1|G2 (eyes>=3:1 OR |dL*|>=6) all: 720/720; strict daylight reading: 716/720
+  bright=brighter: 720/720 (strict 716/720)
+  view=desk: 360/360 (strict 360/360)
+  view=port: 360/360 (strict 356/360)
+  tier=high: 360/360 (strict 360/360)
+  tier=low: 360/360 (strict 356/360)
+  ground=hollow: 360/360 (strict 358/360)
+  ground=restored: 360/360 (strict 358/360)
+  cb=none: 360/360 (strict 358/360)
+  cb=protan: 360/360 (strict 358/360)
+  t=30: 144/144 (strict 144/144)
+  t=240: 144/144 (strict 144/144)
+  t=480: 144/144 (strict 144/144)
+  t=690: 144/144 (strict 140/144)
+  t=870: 144/144 (strict 144/144)
+G1 eyes alone >= 3:1 (moments up to 8:00): 426/432
+G3 enemy pixels below RGB 12: 0
+misses: none
+strict misses: brighter/port/low/11m30/hollow/none/r220(eye 5.27, dL -1.2); brighter/port/low/11m30/hollow/protan/r220(eye 5.11, dL -1.6); brighter/port/low/11m30/restored/none/r220(eye 5.3, dL 3.5); brighter/port/low/11m30/restored/protan/r220(eye 5.16, dL 3.3)

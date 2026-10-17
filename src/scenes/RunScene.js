@@ -925,7 +925,7 @@ export class RunScene extends Phaser.Scene {
       if (e.flash > 0) tq = 100;
       else if (e.bleedT > 0) tq = 101;
       else if (e.markT > 0 && !e.boss) tq = 102; // W8b Mark: light violet body tint (all tiers, static; boss only gets the omen)
-      else if (nlOn && !e.boss && ei < 512) tq = 200 + nl.lit[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
+      else if (nlOn && !e.boss && ei < 512) tq = 200 + nl.tq[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
       else if (lit && !e.boss) {
         tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
       } else tq = 0;
