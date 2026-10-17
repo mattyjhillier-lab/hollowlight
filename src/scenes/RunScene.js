@@ -208,6 +208,7 @@ export class RunScene extends Phaser.Scene {
       root_crawler: new SpritePool(this, 'root'),
       elder_treant: new SpritePool(this, 'treant'),
       uWolf: new SpritePool(this, 'wolfU'),
+      uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves
       uRaven: new SpritePool(this, 'raven'),
       uOrb: new SpritePool(this, 'orb'),
       gem: new SpritePool(this, 'gem'),
@@ -981,6 +982,7 @@ export class RunScene extends Phaser.Scene {
     };
 
     // summons: bright (above the grade) + additive halo
+    let echoN = 0;
     for (const u of sim.units) {
       if (u.hidden) { if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6); continue; } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
@@ -989,6 +991,16 @@ export class RunScene extends Phaser.Scene {
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.12 * pl.haloU.inv).setAlpha(0.62);
         if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life * 1.15, true); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
+      } else if (u.kind === 'echo') {
+        // W6 Howling Legion echo: pale-blue translucent wolf, no gold rim; rises from the fallen foe, fades at the end. Nearest `caps.echoes` only.
+        if (echoN++ >= caps.echoes) continue;
+        const rm = this.reducedMotion();
+        const rise = u.rise > 0 ? 1 - u.rise / 0.35 : 1;
+        const fade = Math.min(1, u.life / 0.8);
+        const a = 0.5 * fade * (rm ? 1 : 0.35 + 0.65 * rise);
+        pl.uEcho.get(u.id).setPosition(u.x, u.y - (rm ? 0 : (1 - rise) * -3)).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uEcho.inv).setTint(0xbfe6ff).setAlpha(a);
+        if (caps.trails > 0 && !rm && trailBudget > 0 && ((sim.time * 60 + u.id) | 0) % 5 === 0) { trailBudget--; this.parts.emit(u.x, u.y - 3, 0, -16, 0.55, 0.5, 0.05, 0x9fe8ff, 0.5); } // blue wisp rising from the body
+        if (caps.halos > 40 && halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 0.9 * pl.haloU.inv).setAlpha(0.3 * fade);
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);

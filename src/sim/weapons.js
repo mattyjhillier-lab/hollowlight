@@ -32,13 +32,63 @@ function moveToward(u, tx, ty, speed, dt) {
   return d;
 }
 
+// ---------------------------------------------------------------- Howling Legion: Echo Pack (W6)
+// Prey the pack fells (wolf-tagged kills incl. bleed kills, never a boss, never an echo's own kill) rises as a pale echo
+// wolf for Rend time x1.25. Echoes bite at 0.7x, never bleed, share the wolves' target claims, and are capped at Pack size.
+// No RNG is drawn. Echoes are plain units (kind 'echo'); nothing else in the wolf code touches them.
+function echoUpdate(sim, w, wolves, dmg, speed, biteGap, dt) {
+  const { rt, s } = w;
+  const list = rt.echoes || (rt.echoes = []);
+  for (let i = list.length - 1; i >= 0; i--) if (list[i].dead) list.splice(i, 1);
+  const life = BLEED_TIME * tune(sim, w, 'echoLife', 1.25);
+  const cap = Math.max(1, s.count);
+  for (const f of sim.fallen) {
+    if (list.length >= cap) break;
+    const u = sim.makeUnit(w, 'echo', { x: f.x, y: f.y, r: 4, rise: 0.35, life, maxLife: life, atkCd: 0, target: null, retarget: 0, faceX: 1, slot: list.length });
+    list.push(u);
+    sim.units.push(u);
+    sim.pushEvent('echo');
+  }
+  sim.fallen.length = 0;
+  const p = sim.player;
+  const edmg = dmg * tune(sim, w, 'echoDmg', 0.7);
+  for (const u of list) {
+    u.life -= dt;
+    if (u.life <= 0) { u.dead = true; continue; }
+    if (u.rise > 0) { u.rise -= dt; continue; }
+    u.atkCd -= dt;
+    u.retarget -= dt;
+    if (!u.target || u.target.dead || u.retarget <= 0) {
+      const taken = new Set();
+      for (const o of wolves) if (o.target && !o.target.dead) taken.add(o.target.id);
+      for (const o of list) if (o !== u && o.target && !o.target.dead) taken.add(o.target.id);
+      const near = (e) => Math.hypot(e.x - p.x, e.y - p.y) < 150;
+      u.target = sim.nearestEnemy(u.x, u.y, 170, (e) => near(e) && !taken.has(e.id)) || sim.nearestEnemy(u.x, u.y, 170, near);
+      u.retarget = 0.4;
+    }
+    const t = u.target;
+    if (t) {
+      const d = Math.hypot(t.x - u.x, t.y - u.y);
+      if (d > t.r + u.r) moveToward(u, t.x, t.y, speed, dt);
+      else if (u.atkCd <= 0) {
+        u.atkCd = biteGap;
+        const alive = !t.dead;
+        sim.hurt(t, edmg);
+        if (alive && t.dead) t.echoKill = true;
+      }
+    } else {
+      moveToward(u, p.x + Math.cos((sim.time || 0) * 0.8 + u.slot * 2.1) * 30, p.y + Math.sin((sim.time || 0) * 0.8 + u.slot * 2.1) * 30, Math.max(speed, 110) * 1.2, dt);
+    }
+  }
+  return list;
+}
+
 // ---------------------------------------------------------------- Ghost Wolves
 const ghostWolves = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
     const p = sim.player;
     let count = s.count;
-    if (evo === 'howling_legion') count = Math.round(s.count * 1.4) + 1;
     if (evo === 'dire_alpha') count = 1;
     const units = syncUnits(sim, w, 'wolf', count, (i) => ({
       r: 4, atkCd: 0, target: null, retarget: 0, dash: 0, dashCd: 0.1 + i * 0.25, slot: i, hit: null, faceX: 1,
@@ -49,20 +99,13 @@ const ghostWolves = {
     let speed = s.speed * howl;
     let bleedDur = BLEED_TIME; // Rend (s.duration) is the potency; the time is fixed
     if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
-    if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
+    if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.2); } // W6 Echo Pack: no extra live wolves, the pack bites x1.2
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank
     const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl / rate;
 
-    if (evo === 'howling_legion') {
-      rt.howlCd = (rt.howlCd ?? 4) - dt;
-      if (rt.howlCd <= 0) {
-        rt.howlCd = 6;
-        sim.addSpeedBoost(1.2, 3);
-        sim.pushEvent('howl');
-      }
-    }
+    const echoes = evo === 'howling_legion' ? echoUpdate(sim, w, units, dmg, speed, biteGap, dt) : null;
     rt.ang = (rt.ang || 0) + 0.8 * dt;
 
     for (const u of units) {
@@ -112,6 +155,7 @@ const ghostWolves = {
         // Hunt close to the player so loot and gems stay within reach.
         const taken = new Set();
         for (const o of units) if (o !== u && o.target && !o.target.dead) taken.add(o.target.id);
+        if (echoes) for (const o of echoes) if (o.target && !o.target.dead) taken.add(o.target.id);
         const near = (e) => Math.hypot(e.x - p.x, e.y - p.y) < 150;
         u.target = sim.nearestEnemy(u.x, u.y, 170, (e) => near(e) && !taken.has(e.id)) || sim.nearestEnemy(u.x, u.y, 170, near);
         u.retarget = 0.4;

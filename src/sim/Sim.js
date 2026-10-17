@@ -101,6 +101,7 @@ export class Sim {
     this.damageDealt = 0;
     // R2 counters (read-only stats for the results screen; never feed back into the sim).
     this._src = null;
+    this.fallen = []; // W6: prey felled by the pack, consumed by Howling Legion (empty unless it is owned)
     this.dmgBy = {};
     this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
     this.burnBy = {}; // the Burn part of dotBy (counter only)
@@ -738,6 +739,7 @@ export class Sim {
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
       if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
       this.logHit(e, 0, true);
+      if (e.killer === 'ghost_wolves' && !e.boss && !e.echoKill && this.fallen.length < 16 && this.weapons.some((w) => w.evo === 'howling_legion')) this.fallen.push({ x: e.x, y: e.y });
       this.gold += e.gold * this.mods.gold * this.bless.gold;
       this.addGem(e.x, e.y, e.xp);
       this.rollDrops(e);
