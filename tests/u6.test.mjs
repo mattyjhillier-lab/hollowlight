@@ -82,7 +82,7 @@ test('chips: level, slain, evolved count and names', () => {
   assert.equal(v.chips.level, 9);
   assert.equal(v.chips.slain, 412);
   assert.equal(v.chips.evolved, 2);
-  assert.match(v.chips.evolvedNames, /Pouncing Pack/);
+  assert.match(v.chips.evolvedNames, /Lightfoot Pack/);
   assert.equal(mkView().chips.evolved, 0);
 });
 
@@ -101,7 +101,7 @@ test('damage shares: top 3 by damage, rounded percent of weapon damage, evolved 
   const s = C.weaponShares([W('raven_flock', 1400), W('ghost_wolves', 6200, 'phantom_stampede'), W('holy_orbit', 2400), W('spirit_bolts', 10)], data);
   assert.deepEqual(s.map((x) => x.id), ['ghost_wolves', 'holy_orbit', 'raven_flock']);
   assert.deepEqual(s.map((x) => x.pct), [62, 24, 14]);
-  assert.equal(s[0].name, 'Pouncing Pack');
+  assert.equal(s[0].name, 'Lightfoot Pack');
   assert.equal(s[0].evo, true);
   const z = C.weaponShares([W('ghost_wolves', 0), W('holy_orbit', 0)], data);
   assert.deepEqual(z.map((x) => x.pct), [0, 0]);

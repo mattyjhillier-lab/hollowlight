@@ -43,7 +43,7 @@ export function mountSpecimen(root) {
   const a = el('div', 'pane');
   a.append(el('div', 'ty-kicker dim', 'Display: Fondamento (shipped as Hollowlight Chancery)', { 'data-size': '' }),
     el('div', 'ty-title', 'Choose your keeper', { 'data-size': '' }),
-    el('div', 'ty-card', 'Ghost Wolves - Pouncing Pack', { 'data-size': '' }),
+    el('div', 'ty-card', 'Ghost Wolves - Lightfoot Pack', { 'data-size': '' }),
     el('div', 'ty-big', '0123456789 12:48 x2.1', { 'data-size': '' }),
     el('div', 'rule'),
     el('div', 'ty-card', 'One weight (400); no faux bold', { 'data-size': '' }));

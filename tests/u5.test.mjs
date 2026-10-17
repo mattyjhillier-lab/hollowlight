@@ -34,7 +34,7 @@ const all = (root, cls) => { const o = []; walk(root, (n) => { if (n._cls && n._
 const textOf = (n) => { let t = n._text; n.children.forEach((c) => { t += ' ' + textOf(c); }); return t; };
 const mkSim = (offer, extra = {}) => ({ level: 4, pending: 1, balance: data.balance, rerollsLeft: 1, banishesLeft: 1, offer, ...extra });
 const stat = (extra = {}) => ({ key: 's:ghost_wolves:power', kind: 'stat', weaponId: 'ghost_wolves', stat: 'power', rank: 1, nextRank: 2, maxRank, title: 'x', desc: 'x', ...extra });
-const evo = (extra = {}) => ({ key: 'e:phantom_stampede', kind: 'evolution', weaponId: 'ghost_wolves', evoId: 'phantom_stampede', title: 'Pouncing Pack', desc: 'Leap', from: 'Ghost Wolves', ...extra });
+const evo = (extra = {}) => ({ key: 'e:phantom_stampede', kind: 'evolution', weaponId: 'ghost_wolves', evoId: 'phantom_stampede', title: 'Lightfoot Pack', desc: 'Trails', from: 'Ghost Wolves', ...extra });
 const wpn = () => ({ key: 'w:spirit_bolts', kind: 'weapon', weaponId: 'spirit_bolts', title: 'Spirit Bolts', desc: 'x' });
 const setup = (offer, extra) => { const doc = fakeDoc(), host = doc.createElement('div'); const log = []; const v = new OfferView(doc, host, { pick: (k) => log.push(['pick', k]), reroll: () => log.push(['reroll']), banish: (k) => log.push(['banish', k]) }); v.render(mkSim(offer, extra), data); return { doc, host, v, log }; };
 

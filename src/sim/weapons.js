@@ -83,6 +83,51 @@ function echoUpdate(sim, w, wolves, dmg, speed, biteGap, dt) {
   return list;
 }
 
+// ---------------------------------------------------------------- Lightfoot Pack: Light Trails (W7b, id phantom_stampede)
+// Each wolf drops a trail point every `space` px it moves; a point lives ttl = 1.2 + 0.22 x Wolf speed rank s and is half-width 5 + 0.8 x s px.
+// A foe whose centre is nearer than its radius + half-width to any live point takes 0.24 x bite and Rend bleed (one instance, strongest wins),
+// at most once per 0.4 s per foe (one gate shared by every point, so overlapping trails never stack). Control is never applied (bosses take damage only).
+// Live points are capped (oldest dropped). Hit test: 24 px spatial hash rebuilt per step. No RNG is drawn; order follows array order, so it is deterministic.
+const TRAIL_CELL = 24;
+function trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt) {
+  const { rt, ranks } = w;
+  const list = rt.trail || (rt.trail = []);
+  const ttl = tune(sim, w, 'ttl0', 1.2) + tune(sim, w, 'ttlPer', 0.22) * (ranks.speed || 0);
+  const hw = tune(sim, w, 'hw0', 5) + tune(sim, w, 'hwPer', 0.8) * (ranks.speed || 0);
+  const space = tune(sim, w, 'space', 7);
+  let k = 0;
+  for (let i = 0; i < list.length; i++) { const q = list[i]; q.t -= dt; if (q.t > 0) list[k++] = q; }
+  list.length = k;
+  for (const u of units) {
+    if (u.dead) continue;
+    if (u.lx === undefined) { u.lx = u.x; u.ly = u.y; continue; }
+    if (Math.hypot(u.x - u.lx, u.y - u.ly) >= space) { list.push({ x: u.x, y: u.y, t: ttl, l: ttl, hw, id: u.id }); u.lx = u.x; u.ly = u.y; }
+  }
+  const cap = tune(sim, w, 'cap', 360);
+  if (list.length > cap) list.splice(0, list.length - cap);
+  if (!list.length) return;
+  const grid = new Map();
+  for (const q of list) {
+    const key = Math.floor(q.x / TRAIL_CELL) * 10007 + Math.floor(q.y / TRAIL_CELL);
+    const b = grid.get(key);
+    if (b) b.push(q); else grid.set(key, [q]);
+  }
+  const hit = dmg * tune(sim, w, 'trailHit', 0.24);
+  const gate = tune(sim, w, 'gate', 0.4);
+  for (const e of sim.enemies) {
+    if (e.dead) continue;
+    const cx = Math.floor(e.x / TRAIL_CELL);
+    const cy = Math.floor(e.y / TRAIL_CELL);
+    let on = false;
+    for (let ix = cx - 1; ix <= cx + 1 && !on; ix++) for (let iy = cy - 1; iy <= cy + 1 && !on; iy++) {
+      const cell = grid.get(ix * 10007 + iy);
+      if (!cell) continue;
+      for (const q of cell) { const rr = e.r + q.hw; if ((e.x - q.x) ** 2 + (e.y - q.y) ** 2 < rr * rr) { on = true; break; } }
+    }
+    if (on && sim.canHit(e, 'trail', gate)) { sim.hurt(e, hit); sim.bleed(e, bleedDps, bleedDur); }
+  }
+}
+
 // ---------------------------------------------------------------- Ghost Wolves
 const ghostWolves = {
   update(sim, w, dt) {
@@ -91,14 +136,14 @@ const ghostWolves = {
     let count = s.count;
     if (evo === 'dire_alpha') count = 1;
     const units = syncUnits(sim, w, 'wolf', count, (i) => ({
-      r: 4, atkCd: 0, target: null, retarget: 0, dash: 0, dashCd: 0.1 + i * 0.25, slot: i, hit: null, faceX: 1,
+      r: 4, atkCd: 0, target: null, retarget: 0, slot: i, hit: null, faceX: 1,
     }));
 
     const howl = sim.buffs.packHowl > 0 ? 2 : 1;
     let dmg = s.power * sim.dmgMult(w) * howl;
     let speed = s.speed * howl;
     let bleedDur = BLEED_TIME; // Rend (s.duration) is the potency; the time is fixed
-    if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
+    if (evo === 'phantom_stampede') speed *= tune(sim, w, 'speed', 1.1); // Light Trails: fast wolves, bite code unchanged
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.4); } // W6 Echo Pack: no extra live wolves, the pack bites x1.4 (Alt A)
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
@@ -111,45 +156,7 @@ const ghostWolves = {
     for (const u of units) {
       u.r = evo === 'dire_alpha' ? 11 : 4;
       u.atkCd -= dt;
-      u.dashCd -= dt;
       u.retarget -= dt;
-
-      if (u.leap) {
-        const L = u.leap;
-        L.t += dt;
-        const k = Math.min(1, L.t / 0.28);
-        u.x = L.sx + (L.tx - L.sx) * k;
-        u.y = L.sy + (L.ty - L.sy) * k;
-        u.faceX = L.tx >= L.sx ? 1 : -1;
-        if (k >= 1) {
-          u.leap = null;
-          const t = L.target;
-          if (t && !t.dead) {
-            sim.hurt(t, dmg * tune(sim, w, 'leapHit', 1.8));
-            sim.bleed(t, bleedDps, bleedDur);
-            if (!t.boss) t.heldT = 1.0;
-            u.maul = 1.0;
-            u.maulCd = 0;
-            u.target = t;
-            sim.addFx({ kind: 'ring', x: t.x, y: t.y, r: 14, ttl: 0.15, color: '#9fd8ff' });
-          }
-        }
-        continue;
-      }
-      if (u.maul > 0) {
-        u.maul -= dt;
-        const t = u.target;
-        if (!t || t.dead) u.maul = 0;
-        else {
-          u.x = t.x + (u.slot % 2 ? 5 : -5);
-          u.y = t.y + 2;
-          u.faceX = u.slot % 2 ? -1 : 1;
-          u.maulCd -= dt;
-          if (u.maulCd <= 0) { u.maulCd = 0.2; sim.hurt(t, dmg * tune(sim, w, 'maul', 0.45)); }
-          if (!t.boss) t.heldT = Math.max(t.heldT || 0, 0.15);
-        }
-        if (u.maul > 0) continue;
-      }
 
       if (!u.target || u.target.dead || u.retarget <= 0) {
         // Hunt close to the player so loot and gems stay within reach.
@@ -165,11 +172,6 @@ const ghostWolves = {
         const dx = t.x - u.x;
         const dy = t.y - u.y;
         const d = Math.hypot(dx, dy) || 0.001;
-        if (evo === 'phantom_stampede' && u.dashCd <= 0 && d > 12 && d < 110) {
-          u.leap = { sx: u.x, sy: u.y, tx: t.x, ty: t.y, target: t, t: 0 };
-          u.dashCd = tune(sim, w, 'leapCd', 1.8);
-          continue;
-        }
         if (d > t.r + u.r) {
           moveToward(u, t.x, t.y, speed, dt);
         } else if (u.atkCd <= 0) {
@@ -194,6 +196,7 @@ const ghostWolves = {
         moveToward(u, p.x + Math.cos(a) * rad, p.y + Math.sin(a) * rad, Math.max(speed, 110) * 1.2, dt);
       }
     }
+    if (evo === 'phantom_stampede') trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt);
   },
 };
 

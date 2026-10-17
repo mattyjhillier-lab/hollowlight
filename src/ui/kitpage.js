@@ -110,7 +110,7 @@ export function mountKit(root) {
   cg.append(
     card({ kicker: 'Stat', title: 'Wider orbit', icon: 'star', big: '+12%', line: '50 to 56 reach', pips: { total: 5, filled: 2 }, hint: '1' }),
     card({ kicker: 'Spirit', title: 'Spirit Bolts', icon: 'bolt', big: 'Bolt', line: 'Homing orbs seek the nearest foe.', badge: { kind: 'new' }, hint: '2', pips: { total: 5, filled: 0 } }),
-    card({ kicker: 'from Ghost Wolves', title: 'Pouncing Pack', icon: 'flame', big: 'Leap', line: 'Pin and maul.', badge: { kind: 'evolve' }, evolve: true, hint: '3', pips: { total: 5, filled: 5, evolve: true } }),
+    card({ kicker: 'from Ghost Wolves', title: 'Lightfoot Pack', icon: 'flame', big: 'Trails', line: 'Light that bleeds.', badge: { kind: 'evolve' }, evolve: true, hint: '3', pips: { total: 5, filled: 5, evolve: true } }),
     forced(card({ kicker: 'Stat', title: 'Selected', icon: 'shard', big: '+8%', line: 'Hover or focus lights the border.', selected: true, eyelet: false }), 'is-focus'),
     card({ kicker: 'Locked', title: 'Not yet', icon: 'lock', big: '-', line: 'Someone is still out there.', disabled: true, eyelet: false }));
   cp.querySelector('.lg-panel__body').appendChild(cg);

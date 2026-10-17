@@ -118,7 +118,7 @@ function fakeDoc() {
 const walk = (n, f) => { f(n); n.children.forEach((c) => walk(c, f)); };
 const find = (root, cls) => { let hit = null; walk(root, (n) => { if (!hit && n._cls && n._cls.has(cls)) hit = n; }); return hit; };
 
-const DATA = { weapons: { ghost_wolves: { name: 'Ghost Wolves' }, spirit_bolts: { name: 'Spirit Bolts' } }, evolutions: { pouncing: { name: 'Pouncing Pack' } }, enemies: { elder_treant: { name: 'Elder Treant' } } };
+const DATA = { weapons: { ghost_wolves: { name: 'Ghost Wolves' }, spirit_bolts: { name: 'Spirit Bolts' } }, evolutions: { pouncing: { name: 'Lightfoot Pack' } }, enemies: { elder_treant: { name: 'Elder Treant' } } };
 const mkSim = (o = {}) => ({
   time: 100, xp: 5, xpNeeded: 10, level: 3, gold: 12.9, boss: null,
   player: { hp: 60, maxHp: 120 },

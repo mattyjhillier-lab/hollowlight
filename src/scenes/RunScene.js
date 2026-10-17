@@ -162,8 +162,8 @@ export class RunScene extends Phaser.Scene {
     this.props = new PropLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // W4 props + AL-3 crown sway/petals (visual only)
     this.air = new AirLayer(this, { world: size, glowKey: 'glow', blendAdd: ADD }); // W5 fog + fireflies/motes + edge wall (visual only, own hash stream)
     this.critters = new CritterLayer(this, { world: size, glowKey: 'glow' }); // AL-5 critters (visual only, never touches the sim)
-    this.ribSet = new RibbonSet(600, 12, 64); // W2 trails (visual only)
-    this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 600);
+    this.ribSet = new RibbonSet(1000, 12, 64); // W2 trails (+ W7b Lightfoot trail segments) (visual only)
+    this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
     this.ribKey = '';
@@ -1062,12 +1062,19 @@ export class RunScene extends Phaser.Scene {
 
     // summons: bright (above the grade) + additive halo
     let echoN = 0;
+    const wwv = sim.weapons.find((w) => w.id === 'ghost_wolves');
+    const wEvo = wwv ? wwv.evo : null;
+    if (wEvo === 'phantom_stampede' && caps.trail && caps.trail.dots > 0 && wwv.rt.trail) { // Low tier: faint paw dots instead of ribbons (hit zone unchanged)
+      const tr = wwv.rt.trail;
+      for (let i = tr.length - 1, k = 0; i >= 0 && k < caps.trail.dots; i -= 3, k++) fx.fillStyle(ROLE.spiritA, 0.3 * (tr[i].t / (tr[i].l || 1))).fillCircle(tr[i].x, tr[i].y, 2);
+    }
     for (const u of sim.units) {
       if (u.hidden) { if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6); continue; } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
         pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.12 * pl.haloU.inv).setAlpha(0.62);
+        if (wEvo === 'phantom_stampede') fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved wolves only: thin gold rim (never on enemies)
         if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life * 1.15, true); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'echo') {
@@ -1208,7 +1215,14 @@ export class RunScene extends Phaser.Scene {
     if (this.rig && this.rig.active) { h.sx = this.rig.scarfX; h.sy = this.rig.scarfY; } else { h.sx = p.x - (p.faceX < 0 ? -1 : 1) * 5; h.sy = p.y - 13; }
     const elias = this.rig.id === 'elias';
     this.ribSet.update(sim.time, caps, h, this.ribSrc, nSrc);
-    const n = this.ribSet.emit(sim.time, caps, ROLE.lantern, elias ? ROLE.eliasTrim : 0xbff3e6);
+    let n = this.ribSet.emit(sim.time, caps, ROLE.lantern, elias ? ROLE.eliasTrim : 0xbff3e6);
+    // W7b Lightfoot Pack: the evolved wolves' trail, pale wolf blue with a warm lantern core; tier-capped (Low draws dots instead), under every creature
+    const ww = sim.weapons.find((w) => w.evo === 'phantom_stampede');
+    if (ww && ww.rt.trail && ww.rt.trail.length) {
+      const tc = q.caps.trail || { body: 0, core: 0 };
+      const ph = this.swayPhone ? 0.6 : 1;
+      n = this.ribSet.addTrail(ww.rt.trail, { body: Math.floor(tc.body * ph), core: Math.floor(tc.core * ph) }, ROLE.spiritA, 0xfff1c8);
+    }
     this.ribLayer.render(this.ribSet, n);
   }
 
@@ -1243,6 +1257,11 @@ export class RunScene extends Phaser.Scene {
     else { last.x = p.x; last.y = p.y; }
     const us = sim.units;
     if (this.lifeAcc === undefined || this.lifeAcc >= 0.1) { this.lifeAcc = 0; for (let i = 0, n = Math.min(us.length, 30); i < n; i++) { const u = us[i]; if (!u.dead) life.stamp(u.x, u.y, 36, 0.9); } }
+    if (this.lifeAcc === 0) { // W7b: the evolved pack's trail also warms the ground it crosses (every 4th live point, newest 24)
+      const wl = sim.weapons.find((w) => w.evo === 'phantom_stampede');
+      const tr = wl && wl.rt.trail;
+      if (tr) for (let i = tr.length - 1, k = 0; i >= 0 && k < 24; i -= 4, k++) life.stamp(tr[i].x, tr[i].y, 22, 0.8);
+    }
     this.lifeAcc += this.game.loop.delta / 1000;
     if (this.corrAcc === undefined || this.corrAcc >= 0.1) { this.corrAcc = 0; if (app.params.corr) this.tickCorruption(sim); }
     this.corrAcc += this.game.loop.delta / 1000;

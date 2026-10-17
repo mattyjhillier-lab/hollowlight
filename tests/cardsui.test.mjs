@@ -32,7 +32,7 @@ test('HUD-2 effect numbers: percent / count / seconds / label per stat kind', ()
   const evo = goldCards({ weapons: [Object.assign(wolves(), { ranks: { count: 5, power: 5, speed: 5, duration: 5 } })], data, unlockedEvolutions: new Set(Object.keys(data.evolutions)) });
   assert.ok(evo.length >= 1);
   const e = effectOf(evo.find((c) => c.evoId === 'phantom_stampede'), data);
-  assert.deepEqual([e.mode, e.num, e.unit], ['label', 'LEAP', 'pin and maul']);
+  assert.deepEqual([e.mode, e.num, e.unit], ['label', 'TRAILS', 'light that bleeds']);
   const nw = effectOf({ kind: 'weapon', weaponId: 'spirit_bolts' }, data);
   assert.deepEqual([nw.num, nw.unit], ['1', 'Bolt count']);
   assert.equal(effectOf(blessingCard('dawnlit_soles', data.blessings, 0), data).num, '+2%');
@@ -212,7 +212,7 @@ test('HUD-2 OfferView: no reroll/banish buttons when none left; 6 main cards + 3
   const v = new OfferView(doc, host, { pick() {}, reroll() {}, banish() {} });
   const sim = mkSim({ rerollsLeft: 0, banishesLeft: 0 });
   const stat = sim.offer.cards[0];
-  sim.offer = { gold: [{ kind: 'evolution', key: 'e:1', weaponId: 'ghost_wolves', evoId: 'phantom_stampede', title: 'Pouncing Pack', desc: 'x' }, { kind: 'evolution', key: 'e:2', weaponId: 'ghost_wolves', evoId: 'howling_legion', title: 'Howling Legion', desc: 'x' }, { kind: 'evolution', key: 'e:3', weaponId: 'ghost_wolves', evoId: 'dire_alpha', title: 'Dire Alpha', desc: 'x' }],
+  sim.offer = { gold: [{ kind: 'evolution', key: 'e:1', weaponId: 'ghost_wolves', evoId: 'phantom_stampede', title: 'Lightfoot Pack', desc: 'x' }, { kind: 'evolution', key: 'e:2', weaponId: 'ghost_wolves', evoId: 'howling_legion', title: 'Howling Legion', desc: 'x' }, { kind: 'evolution', key: 'e:3', weaponId: 'ghost_wolves', evoId: 'dire_alpha', title: 'Dire Alpha', desc: 'x' }],
     cards: [stat, { ...stat, key: 'x2' }, fallbackCard('gold', data), blessingCard('wider_glow', data.blessings, 0), blessingCard('kind_fortune', data.blessings, 0), blessingCard('kindled_spirits', data.blessings, 0)] };
   const els = v.render(sim, data);
   assert.equal(els.length, 9);

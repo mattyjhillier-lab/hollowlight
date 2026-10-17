@@ -126,6 +126,37 @@ export class RibbonSet {
     return n;
   }
 
+  // W7b Lightfoot Pack: draw the sim's wolf trail points (visual only; the sim is never written). pts = [{x,y,t,l,hw,id}] in drop order;
+  // consecutive points of the same wolf make one segment. Pale-blue body (+ warm cream core when caps.core > 0) on the newest caps.body points.
+  // Appended after emit(): never above this.cap. Returns the new total count.
+  addTrail(pts, caps, bodyCol, coreCol) {
+    const n = pts ? pts.length : 0;
+    const bodyN = Math.min(n, Math.max(0, caps.body | 0));
+    const coreN = Math.min(bodyN, Math.max(0, caps.core | 0));
+    if (!bodyN) return this.count;
+    const last = new Map();
+    const prev = new Int32Array(n);
+    for (let i = 0; i < n; i++) { const q = pts[i]; const j = last.get(q.id); prev[i] = j === undefined ? -1 : j; last.set(q.id, i); }
+    const from = n - bodyN;
+    for (let i = from; i < n && this.count < this.cap; i++) {
+      const j = prev[i];
+      if (j < 0) continue;
+      const q = pts[i]; const o = pts[j];
+      const dx = q.x - o.x; const dy = q.y - o.y; const len = Math.hypot(dx, dy);
+      if (!(len > 0.01) || len > JUMP) continue;
+      const f = Math.max(0, Math.min(1, q.t / (q.l || 1)));
+      const k = this.count++;
+      this.sx[k] = 0.5 * (q.x + o.x); this.sy[k] = 0.5 * (q.y + o.y); this.sl[k] = len; this.sr[k] = Math.atan2(dy, dx);
+      this.sw[k] = q.hw * 2 * (0.45 + 0.55 * f); this.sa[k] = 0.3 * (0.2 + 0.8 * f); this.sc[k] = bodyCol;
+      if (i >= n - coreN && this.count < this.cap) {
+        const c = this.count++;
+        this.sx[c] = this.sx[k]; this.sy[c] = this.sy[k]; this.sl[c] = len; this.sr[c] = this.sr[k];
+        this.sw[c] = q.hw * 0.8 * (0.45 + 0.55 * f); this.sa[c] = 0.55 * f; this.sc[c] = coreCol;
+      }
+    }
+    return this.count;
+  }
+
   emit(now, caps, heroCol, scarfCol) {
     this.count = 0;
     const limit = Math.min(this.cap, caps.segs);

@@ -246,15 +246,16 @@ test('pacing: expected XP over 15 minutes lands near 38-50 level-ups (docs/resea
   assert.ok(t30 >= 240 && t30 <= 480, `25th level-up at ${t30}s`);
 });
 
-test('pouncing pack: a wolf leaps, pins the enemy and kills it', () => {
+test('lightfoot pack: wolves leave a trail, no leap/pin/maul', () => {
   const sim = mk({ characterId: 'wren', godMode: true });
   sim.debugGrant('ghost_wolves', { speed: 5, power: 5 }, 'phantom_stampede');
   const p = sim.player;
   const e = sim.spawnEnemy('root_crawler', p.x + 80, p.y);
   e.hp = e.maxHp = 400;
-  let held = false;
-  for (let i = 0; i < 240 && !e.dead; i++) { sim.step(DT, {}); if (e.heldT > 0) held = true; }
-  assert.ok(held, 'enemy was pinned');
+  let pinned = false;
+  for (let i = 0; i < 240 && !e.dead; i++) { sim.step(DT, {}); if (e.heldT > 0) pinned = true; }
+  assert.ok(!pinned, 'nothing is pinned');
+  assert.ok(sim.weapons[0].rt.trail.length > 0, 'wolves laid a trail');
 });
 
 test('heart drop heals, magnet drop pulls every gem', () => {

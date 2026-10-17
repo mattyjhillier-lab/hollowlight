@@ -1,6 +1,6 @@
 // Stat-rank probe (read-only, analysis only): for every base weapon and every stat, DPS at ranks 0..5
 // with the other three stats held at a mid-run rank (default 2), in single / swarm / kite scenarios.
-// Also reports the bleed share of Ghost Wolves damage, and Pouncing Pack coverage (distinct targets, leap/maul time).
+// Also reports the bleed share of Ghost Wolves damage, and Lightfoot Pack coverage (distinct targets).
 // Usage: node scripts/stat-ranks.mjs [others=2] [seeds=2] [filter]
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -49,7 +49,7 @@ export function run(wid, ranks, evo, scen, seed) {
   sim.weapons.length = 0; sim.patches = []; sim.ability.cdLeft = 1e9; sim.rollDrops = () => {};
   sim.debugGrant(wid, ranks, evo);
   sc.setup(sim);
-  const m = { eff: 0, bleed: 0, hitsTaken: 0, frames: 0, distinct: 0, wolfFrames: 0, leap: 0, maul: 0, unitFrames: 0 };
+  const m = { eff: 0, bleed: 0, hitsTaken: 0, frames: 0, distinct: 0, wolfFrames: 0, unitFrames: 0 };
   const orig = sim.hurt.bind(sim);
   sim.hurt = (e, a, o = {}) => {
     if (!e.dead && a > 0) { const eff = Math.min(a, Math.max(0, e.hp)); m.eff += eff; if (o.silent) m.bleed += eff; }
@@ -65,14 +65,13 @@ export function run(wid, ranks, evo, scen, seed) {
     const wolves = sim.units.filter((u) => !u.dead && u.kind === 'wolf');
     if (wolves.length) {
       const tg = new Set();
-      for (const u of wolves) { m.unitFrames++; if (u.leap) m.leap++; else if (u.maul > 0) m.maul++; if (u.target && !u.target.dead) tg.add(u.target.id); }
+      for (const u of wolves) { m.unitFrames++; if (u.target && !u.target.dead) tg.add(u.target.id); }
       m.distinct += tg.size; m.wolfFrames++;
     }
   }
   const secs = m.frames * DT;
   return { dps: m.eff / secs, bleedShare: m.eff ? m.bleed / m.eff : 0, taken: m.hitsTaken / secs,
-    distinct: m.wolfFrames ? m.distinct / m.wolfFrames : 0, units: m.wolfFrames ? m.unitFrames / m.wolfFrames : 0,
-    leap: m.unitFrames ? m.leap / m.unitFrames : 0, maul: m.unitFrames ? m.maul / m.unitFrames : 0 };
+    distinct: m.wolfFrames ? m.distinct / m.wolfFrames : 0, units: m.wolfFrames ? m.unitFrames / m.wolfFrames : 0 };
 }
 const avg = (f) => { let a = null; for (let s = 1; s <= SEEDS; s++) { const r = f(s); if (!a) a = { ...r }; else for (const k in r) a[k] += r[k]; } for (const k in a) a[k] /= SEEDS; return a; };
 
@@ -96,11 +95,11 @@ if (process.argv[1] && process.argv[1].endsWith('stat-ranks.mjs')) {
     }
   }
   if (!FILTER || FILTER.includes('wolves')) {
-    console.log('\n== Wolves coverage (all stats max): distinct targets held by the pack, share of wolf-time leaping / mauling, hits taken/s');
+    console.log('\n== Wolves coverage (all stats max): distinct targets held by the pack, hits taken/s');
     const max = Object.fromEntries(Object.keys(data.weapons.ghost_wolves.stats).map((k) => [k, 5]));
     for (const evo of [null, 'phantom_stampede', 'howling_legion', 'dire_alpha']) for (const scen of ['swarm', 'kite']) {
       const x = avg((sd) => run('ghost_wolves', max, evo, scen, sd));
-      console.log(`  ${(evo || 'base').padEnd(17)} ${scen.padEnd(6)} dps ${Math.round(x.dps).toString().padStart(4)}  wolves ${x.units.toFixed(1)}  distinct targets ${x.distinct.toFixed(1)}  leap ${Math.round(x.leap * 100)}%  maul ${Math.round(x.maul * 100)}%  bleed ${Math.round(x.bleedShare * 100)}%  taken/s ${x.taken.toFixed(2)}`);
+      console.log(`  ${(evo || 'base').padEnd(17)} ${scen.padEnd(6)} dps ${Math.round(x.dps).toString().padStart(4)}  wolves ${x.units.toFixed(1)}  distinct targets ${x.distinct.toFixed(1)}  bleed ${Math.round(x.bleedShare * 100)}%  taken/s ${x.taken.toFixed(2)}`);
     }
   }
 }
