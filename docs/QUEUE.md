@@ -199,3 +199,5 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - RELEASE GATE 2026-10-17 (Matt): see docs/LOCKED.md 'RELEASE GATE'. NOW: R1 retune prep + enemies design sheet #4. NEXT: R1 build, enemies build, skill tree v2 (design -> build), boss sheet, front door + tutorial, audio sheet, final verification, private test, merge (Matt's explicit yes).
 
 - 2026-10-17 V1 SCOPE: 5 weapons / 15 evolutions only; weapon roster review + Matt's new weapon/summon ideas = AFTER v1. Launch checklist accepted. Finish what is in the game to its best before publishing.
+
+- 2026-10-17 FIX-EVERYTHING-FLAGGED chunk queued (starts when an agent slot frees): triage LAUNCH-CHECKLIST section F + all open weak spots -> fix batches -> close each in the checklist.
