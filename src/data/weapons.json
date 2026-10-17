@@ -8,7 +8,7 @@
     "stats": {
       "count":    { "name": "Pack size",     "base": 2,   "perRank": 1,   "fmt": "int",  "hint": "One more wolf joins the hunt" },
       "power":    { "name": "Bite power",    "base": 7,   "perRank": 3,   "fmt": "int",  "hint": "Each bite hits harder, and bleed grows with it" },
-      "speed":    { "name": "Wolf speed",    "base": 110, "perRank": 12,  "fmt": "int",  "hint": "Wolves run {old} → {new}: they keep up and catch runners" },
+      "speed":    { "name": "Wolf speed",    "base": 110, "perRank": 12,  "fmt": "int",  "rate": 0.04, "hint": "Wolves run {old} → {new} and bite {rate} faster" },
       "duration": { "name": "Rend",          "base": 0.15, "perRank": 0.04, "fmt": "pct", "hint": "Bleed drains {old} → {new} of a bite every second, for {bleedSec}s" }
     }
   },

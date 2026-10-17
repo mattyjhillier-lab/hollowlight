@@ -2,7 +2,7 @@
 // w = { id, ranks, evo, s (computed stats), rt (runtime scratch) }.
 // Evolutions are handled inside each weapon by branching on w.evo.
 
-import { BLEED_TIME } from './cards.js';
+import { BLEED_TIME, rateMult } from './cards.js';
 
 const TAU = Math.PI * 2;
 
@@ -52,7 +52,8 @@ const ghostWolves = {
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.25); }
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
-    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl;
+    const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank
+    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl / rate;
 
     if (evo === 'howling_legion') {
       rt.howlCd = (rt.howlCd ?? 4) - dt;

@@ -23,14 +23,16 @@ export function computeStats(def, ranks, bonus) {
 export const BLEED_TIME = 4;
 
 // Card hint text is a template over the real per-rank numbers so it stays true if the data changes.
-// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds).
+// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds), {rate} (attack-rate bonus per rank, stat.rate).
+// rateMult: speed stats with a `rate` shorten the weapon's hit gap: gap / (1 + rate x rank).
+export const rateMult = (def, key, rank) => 1 + (def?.stats?.[key]?.rate || 0) * rank;
 export function hintText(def, key, rank) {
   const s = def.stats[key];
   const cur = statValue(def, key, rank);
   const nxt = statValue(def, key, rank + 1);
   const pct = Math.abs(cur) > 0 ? `${nxt >= cur ? '+' : '-'}${Math.round(Math.abs((nxt - cur) / cur) * 100)}%` : '';
   const upct = pct ? pct.slice(1) : '';
-  const vals = { upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedSec: String(BLEED_TIME) };
+  const vals = { upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedSec: String(BLEED_TIME), rate: `${Math.round((s.rate || 0) * 100)}%` };
   return String(s.hint).replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : ''));
 }
 
