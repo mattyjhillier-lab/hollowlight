@@ -14,6 +14,8 @@ import { orderOffer } from './cardview.js';
 import '../cards.css';
 import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
 import './kit.css';
+import { EvoPlate, plateModel } from './evoplate.js';
+import './evoplate.css';
 import './title.css';
 import { buildTitle, buildHeroSelect } from './title.js';
 import { heroView } from './titlecopy.js';
@@ -77,6 +79,7 @@ export class UI {
       bossName: (type) => this.data.enemies[type].name,
     });
     this.hud = { toast: this.hudView.toast, bossIntro: this.hudView.bossIntro, flash: this.hudView.flash };
+    this.evoPlate = null; // E9: one pooled evolution name plate, built on the first evolution (keeps the HUD DOM identical until then)
   }
 
   showHud() { this.show('hud'); this.hudCache = {}; this.hudView.reset(); }
@@ -92,6 +95,14 @@ export class UI {
     t.classList.add('show');
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // E9: name + codex line (+ the recipe on the first ever take). Replaces the old 'Evolved: X' toast.
+  evolvePlate(evoId, first, calm) {
+    const m = plateModel(evoId, this.data, first);
+    if (!m) return;
+    if (!this.evoPlate) this.evoPlate = new EvoPlate(this.layer('hud'));
+    this.evoPlate.show(m, calm);
   }
 
   bossIntro(name, animate) {

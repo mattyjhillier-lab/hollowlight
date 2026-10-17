@@ -197,7 +197,11 @@ export const app = {
       this.scene.bossIntro();
     } else if (ev.type === 'levelup') this.scene.levelBurst();
     else if (ev.type === 'swarm') this.ui.toast(ev.enemy === 'wolf' ? 'A wolf pack closes in' : 'A murder of crows descends');
-    else if (ev.type === 'evolve') { this.ui.toast(`Evolved: ${d.evolutions[ev.id].name}`); this.scene.evolveMoment(); }
+    else if (ev.type === 'evolve') {
+      const ev0 = this.save.data.stats.evolved; // E9: recipe shown only the first time this evolution is ever taken (recorded in stats.evolved at run end)
+      this.ui.evolvePlate(ev.id, !(ev0 && Object.hasOwn(ev0, ev.id) && ev0[ev.id] > 0), !!this.save.data.settings.reducedMotion);
+      this.scene.evolveMoment(ev.id);
+    }
     else if (ev.type === 'heart') { this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
     else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
     else if (ev.type === 'howl') this.ui.toast('Pack Howl');

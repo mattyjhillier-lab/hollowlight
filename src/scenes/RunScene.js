@@ -246,6 +246,7 @@ export class RunScene extends Phaser.Scene {
     this.rings = Array.from({ length: 10 }, () => ({ on: false, x: 0, y: 0, t: 0, life: 1, r0: 0, r1: 1, col: 0, w: 2 }));
     this.zoomT = 9; this.zoomAmp = 0; this.zoomDur = 1;
     this.hitStop = 0; this.hitCool = 0;
+    this.evoBeat = null;
     this.trailAcc = 0; this.trailTick = 0; this.fxTick = 0;
     this.bloom = null;
     this.playerImg = this.add.image(0, 0, 'hero_wren').setVisible(false);
@@ -447,6 +448,7 @@ export class RunScene extends Phaser.Scene {
     this.watch.reset(sim);
     this.fbPing.gem = this.fbPing.magnet = this.fbPing.aoe = -9;
     for (const r of this.rings) r.on = false;
+    this.evoBeat = null;
     this.gradeTint = -1;
     this.updateGrade(sim.time / app.data.balance.runSeconds);
     this.applyTier();
@@ -464,6 +466,7 @@ export class RunScene extends Phaser.Scene {
     this.flashR.setVisible(false);
     this.skyR.setVisible(false);
     for (const r of this.rings) r.on = false;
+    this.evoBeat = null;
     this.cameras.main.setZoom(this.baseZoom);
     app.freeze = false;
     this.clearDecor();
@@ -671,15 +674,20 @@ export class RunScene extends Phaser.Scene {
     if (f.gold && hud) hud.tickCoin();
   }
 
-  evolveMoment() {
+  // E9 evolution pick beat (render-only, ~0.55 s): a soft pulse ring from the hero in the weapon's role colour, a faint gold flash, and a thin gold
+  // rim on the evolved weapon's units (drawn in draw(), never on enemies). Calm motion: no ring, flash, particles or rim (the HUD plate carries it).
+  evolveMoment(evoId) {
     const p = this.sim.player;
-    this.flash(PAL.gold, 0.32, 0.6);
-    this.addRing(p.x, p.y, 8, 220, 1.0, PAL.gold, 3);
-    this.addRing(p.x, p.y, 8, 150, 0.8, PAL.lavender, 2, 0.15);
-    this.burst(p.x, p.y, 34, PAL.gold, 150, 1.0, 0.7);
-    this.zoomPunch(0.07, 1.0);
-    this.stop(0.06);
-    this.shake(220, 0.006);
+    const evo = evoId && app.data.evolutions[evoId];
+    const wdef = evo && app.data.weapons[evo.weapon];
+    const col = wdef && /^#[0-9a-f]{6}$/i.test(wdef.color) ? hex(wdef.color) : PAL.gold;
+    if (this.reducedMotion()) { this.evoBeat = null; return; }
+    this.flash(PAL.gold, 0.12, 0.35);
+    this.addRing(p.x, p.y, 8, 150, 0.55, col, 3);
+    this.addRing(p.x, p.y, 8, 100, 0.45, ROLE.evo, 1, 0.08);
+    if (this.quality.tier !== 'low') this.burst(p.x, p.y, 14, col, 110, 0.6, 0.6);
+    this.zoomPunch(0.03, 0.5);
+    this.evoBeat = { w: evo ? evo.weapon : '', t: 0, life: 0.55 };
   }
 
   bossIntro() {
@@ -904,6 +912,26 @@ export class RunScene extends Phaser.Scene {
       g.lineStyle(1, 0xffd27a, 0.32).strokeCircle(p.x, p.y, hr);
       if (lit) lm.add(p.x, p.y, hr, 0xffb35c, 0.35);
     }
+
+    // W12 Vesper Tide (render only, reads rt.tide): a thin gold rim on the EVOLVED ring only (never on enemies), a soft lilac halo that swells
+    // with the ring, and a fading ripple left at the crest as the ring draws back. Calm motion: rim only (no halo growth, no ripple). Low: rim + faint halo, no ripple.
+    const tw = sim.weapons.find((w2) => w2.evo === 'vesper_tide');
+    if (tw && tw.rt.tide) {
+      const T = tw.rt.tide, calm = this.reducedMotion(), grow = Math.max(0, Math.min(1, (T.r - 14) / 100));
+      g.lineStyle(1, 0xffd27a, T.out ? 0.5 : 0.28).strokeCircle(p.x, p.y, T.r);
+      if (!calm) {
+        g.fillStyle(ROLE.spiritC, (T.out ? 0.05 : 0.025) + 0.07 * grow).fillCircle(p.x, p.y, T.r);
+        if (this.tideWas && !T.out && caps.drips > 0 && T.r > 30) this.tideRip = { r: T.r, t0: sim.time };
+        const rip = this.tideRip;
+        if (rip && caps.drips > 0) {
+          const k = (sim.time - rip.t0) / 0.5;
+          if (k >= 1) this.tideRip = null;
+          else g.lineStyle(2, ROLE.spiritC, 0.45 * (1 - k)).strokeCircle(p.x, p.y, Math.max(8, rip.r - 28 * k));
+        }
+      }
+      this.tideWas = T.out;
+      if (lit) lm.add(p.x, p.y, T.r + 14, ROLE.spiritC, 0.25 + 0.2 * grow);
+    } else { this.tideWas = false; this.tideRip = null; }
 
     // gems: culled to the view, gently pulsing with a soft halo (Med/High)
     let gemGlow = 0;
@@ -1141,6 +1169,10 @@ export class RunScene extends Phaser.Scene {
         const eo = this.rig.id === 'elias' && this.rig.active;
         pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setScale((eo ? 0.8 : 1) * pl.uOrb.inv);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale((eo ? 0.8 : 1.1) * pl.haloU.inv).setAlpha(eo ? 0.4 : 0.55);
+        if (tw && tw.rt.tide && tw.rt.tide.out && caps.drips > 0 && !this.reducedMotion()) { // Vesper Tide swell: each light stretches into a short bright streak back toward Elias
+          const sd = Math.hypot(u.x - p.x, u.y - p.y) || 1;
+          fx.lineStyle(2, 0xf3eaff, 0.6).lineBetween(u.x, u.y, u.x - ((u.x - p.x) / sd) * 7, u.y - ((u.y - p.y) / sd) * 7);
+        }
         if (ribOn) ribAdd(u, PAL.lavender, Math.min(0.35, this.ribCaps.spirits.life)); else trail(u.x, u.y, PAL.lavender, eo ? 0.2 : 0.3);
         if (lit) lm.add(u.x, u.y, eo ? 32 : 40, ROLE.spiritC, eo ? 0.55 : 0.8);
       }
@@ -1290,6 +1322,21 @@ export class RunScene extends Phaser.Scene {
       if (k >= 1) { r.on = false; continue; }
       const e = 1 - (1 - k) * (1 - k);
       fx.lineStyle(r.w, r.col, 0.9 * (1 - k)).strokeCircle(r.x, r.y, r.r0 + (r.r1 - r.r0) * e);
+    }
+    const eb = this.evoBeat; // E9: gold rim on the evolved weapon's units (pooled graphics, no allocation)
+    if (eb) {
+      eb.t += dt;
+      if (eb.t >= eb.life) this.evoBeat = null;
+      else {
+        const ga = 0.9 * (1 - eb.t / eb.life);
+        let n = 0;
+        for (const u of sim.units) {
+          if (u.owner !== eb.w || u.hidden || u.dead) continue;
+          if (n++ >= 40) break;
+          fx.lineStyle(3, ROLE.evo, ga * 0.35).strokeCircle(u.x, u.y, u.r * 1.4 + 2);
+          fx.lineStyle(1, ROLE.evoHot, ga).strokeCircle(u.x, u.y, u.r * 1.4 + 2);
+        }
+      }
     }
 
     if (lit) {
