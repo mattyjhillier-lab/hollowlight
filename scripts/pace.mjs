@@ -98,7 +98,7 @@ try {
   const fr = o.fr; let tc = 0; for (let i = 1; i < fr.length; i++) if (fr[i][12] !== fr[i - 1][12]) tc++;
   console.log('tier changes', tc, 'frames', fr.length);
   console.log('SECTION ms avg/p95/max  [sim draw life sway props rib lmflush fx]:');
-  const names = ['sim', 'draw', 'life', 'sway', 'props', 'rib', 'lmfl', 'fx'];
+  const names = ['sim', 'draw', 'life', 'sway', 'props', 'rib', 'lmfl', 'fx', 'air'];
   console.log(names.map((n, k) => { const a = fr.map((r) => r[2 + k]); return n + ' ' + (a.reduce((x, y) => x + y, 0) / a.length).toFixed(2) + '/' + pct(a, 0.95).toFixed(1) + '/' + Math.max(...a).toFixed(1); }).join('  '));
   if (false) {} const work = fr.map((r) => r[1]); console.log('work avg/p95/p99/max', (work.reduce((x, y) => x + y, 0) / work.length).toFixed(2), pct(work, 0.95), pct(work, 0.99), Math.max(...work));
   let shown = 0; for (let i = 1; i < fr.length && shown < 14; i++) if (fr[i][0] > 25) { shown++; const f = fr[i], q = fr[i - 1]; console.log(' spike', f[0], 'ms | prev work', q[1], 'sec', q.slice(2, 10).join(','), '| this work', f[1], 'sec', f.slice(2, 10).join(','), f[12]); }

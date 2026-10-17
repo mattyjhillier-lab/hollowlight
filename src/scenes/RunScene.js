@@ -26,6 +26,9 @@ import { PushField, pushBudget } from '../gfx/pushfield.js';
 import { makePropAtlas, ATLAS_KEY as PROP_KEY } from '../gfx/propatlas.js';
 import { START_CLEAR } from '../gfx/propfield.js';
 import { RibbonSet, RibbonLayer, ribbonCaps } from '../gfx/ribbons.js';
+import { AirLayer, makeEdgeTextures } from '../gfx/airlayer.js'; // W5 fog, fireflies/motes, edge wall (visual only)
+import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
+import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
 
 const ADD = Phaser.BlendModes.ADD;
@@ -61,6 +64,9 @@ function makeTextures(scene) {
   makeStyleTextures(scene, STYLE);
   INV[PROP_KEY] = makePropAtlas(scene, (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // W4 prop atlas
   INV[ATLAS_KEY] = makeAmbAtlas(scene, (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // AL-1 sway atlas
+  const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
+  INV[CRIT_KEY] = makeCritterAtlas(scene, mk); // AL-5 critter atlas
+  makeEdgeTextures(scene, mk); // W5 edge-wall fade ramps
 }
 
 class SpritePool {
@@ -150,6 +156,8 @@ export class RunScene extends Phaser.Scene {
     this.sway = new SwayLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size, glow: { key: 'glow', inv: inv('glow'), blend: ADD } }); // AL-1 grass/flower sway (visual only)
     this.push = new PushField(); // AL-4 creature-reactive foliage sources (visual only: reads creatures, never the sim RNG)
     this.props = new PropLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // W4 props + AL-3 crown sway/petals (visual only)
+    this.air = new AirLayer(this, { world: size, glowKey: 'glow', blendAdd: ADD }); // W5 fog + fireflies/motes + edge wall (visual only, own hash stream)
+    this.critters = new CritterLayer(this, { world: size, glowKey: 'glow' }); // AL-5 critters (visual only, never touches the sim)
     this.ribSet = new RibbonSet(600, 12, 64); // W2 trails (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 600);
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
@@ -157,6 +165,9 @@ export class RunScene extends Phaser.Scene {
     this.ribKey = '';
     this.ribCaps = null;
     this.swayPhone = Math.min(window.innerWidth, window.innerHeight) < 500;
+    this.airView = { x0: 0, y0: 0, x1: 0, y1: 0 }; // reused each frame (no allocation)
+    this.airSt = { caps: null, phone: false, reduced: false, fog: true, motes: true, edge: true };
+    this.critSt = { on: false, cap: 0, phone: false, reduced: false };
     this.gbOn = false;
     this.lifeLast = null;
     this.lifeFrames = 0;
@@ -284,45 +295,30 @@ export class RunScene extends Phaser.Scene {
     this.applyTier();
   }
 
-  // Faint ambient life: drifting fog banks and fireflies (Med/High). World-space, wrapped around the view.
-  buildAmbient() {
-    this.fog = [];
-    this.flies = [];
-    for (let i = 0; i < 6; i++) {
-      this.fog.push({ img: this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO - 5).setTint(i & 1 ? 0x4a7a9a : 0x5a4a9a).setAlpha(0.06).setScale(22 * inv('glow') + (i % 3) * 4 * inv('glow')).setVisible(false), ph: i * 1.7, sx: 6 + i * 2.5 });
-    }
-    for (let i = 0; i < 24; i++) {
-      this.flies.push({ img: this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO - 4).setTint(i % 3 ? 0xc8ff9a : 0x9affd8).setScale(0.22 * inv('glow')).setVisible(false), fx: (i * 0.6180339) % 1, fy: (i * 0.4142136 + 0.3) % 1, ph: i * 2.3, sp: 3 + (i % 5) * 1.5 });
-    }
-  }
+  buildAmbient() {} // W5: fog / fireflies / motes / edge live in AirLayer, critters in CritterLayer (built in create)
 
+  // W5 air + AL-5 critters (visual only; hero + enemies are only READ). Fog Med/High, fireflies/motes Med/High, critters need the restored-ground look (ground shader).
   tickAmbient(sim) {
     const caps = this.quality.caps;
-    const nFlies = caps.vignette ? (caps.bloom ? 24 : 10) : 0;
-    const nFog = caps.vignette ? 6 : 0;
     const wv = this.cameras.main.worldView;
-    const t = sim.time;
-    const w = wv.width + 40;
-    const h = wv.height + 40;
-    for (let i = 0; i < this.fog.length; i++) {
-      const f = this.fog[i];
-      if (i >= nFog) { f.img.setVisible(false); continue; }
-      const x = wv.x - 20 + ((((i * 0.37 + t * f.sx * 0.002) % 1) + 1) % 1) * w;
-      const y = wv.y - 20 + (0.2 + 0.6 * ((i * 0.53) % 1)) * h + Math.sin(t * 0.3 + f.ph) * 12;
-      f.img.setVisible(true).setPosition(x, y);
-    }
-    for (let i = 0; i < this.flies.length; i++) {
-      const f = this.flies[i];
-      if (i >= nFlies) { f.img.setVisible(false); continue; }
-      const x = wv.x - 20 + ((((f.fx + t * f.sp * 0.004) % 1) + 1) % 1) * w + Math.sin(t * 0.9 + f.ph) * 6;
-      const y = wv.y - 20 + ((((f.fy - t * f.sp * 0.002) % 1) + 1) % 1) * h + Math.cos(t * 1.1 + f.ph) * 5;
-      f.img.setVisible(true).setPosition(x, y).setAlpha(0.35 + 0.5 * Math.max(0, Math.sin(t * 1.7 + f.ph)));
-    }
+    const dt = Math.min(this.game.loop.delta, 100) / 1000;
+    const reduced = this.reducedMotion();
+    const view = this.airView;
+    view.x0 = wv.x; view.y0 = wv.y; view.x1 = wv.right; view.y1 = wv.bottom;
+    const live = sim.state !== 'dead';
+    const P = app.params;
+    this.airSt.caps = caps; this.airSt.phone = this.swayPhone; this.airSt.reduced = reduced;
+    this.airSt.fog = P.fog && live; this.airSt.motes = P.motes && live; this.airSt.edge = P.edge;
+    this.air.update(dt, sim.time, view, this.life, this.airSt);
+    const cs = this.critSt;
+    cs.on = !!(P.critters && this.gbOn && live && caps.ambient.critters > 0); cs.cap = caps.ambient.critters; cs.phone = this.swayPhone; cs.reduced = reduced;
+    this.critters.setTint(this.lmOn ? 0xffffff : this.gradeNow);
+    this.critters.update(dt, sim.time, view, sim.player, this.life, sim.enemies, sim.enemies.length, cs);
   }
 
   hideAmbient() {
-    for (const f of this.fog) f.img.setVisible(false);
-    for (const f of this.flies) f.img.setVisible(false);
+    this.air.hideAll();
+    this.critters.hideAll();
   }
 
   // AL-1b: a small seeded restored patch around the spawn so the run starts with some colour and sway (visual only: life map floor, never decays;
@@ -346,6 +342,8 @@ export class RunScene extends Phaser.Scene {
     this.life.reset();
     this.ribSet.reset(); this.ribLayer.clear();
     this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
+    this.air.reset(((sim.seed | 0) ^ 0xa1f10) | 0); // W5 fog / fireflies / motes (own hash stream)
+    this.critters.reset(((sim.seed | 0) ^ 0xc41773) | 0); // AL-5 critters (own hash stream)
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
     const size = app.data.balance.worldSize;
@@ -469,7 +467,7 @@ export class RunScene extends Phaser.Scene {
 
   countSprites() {
     if (!this.poolList) this.poolList = Object.values(this.pools);
-    let n = 1 + (this.sim ? this.fog.length + this.flies.length + this.sway.count : 0);
+    let n = 1 + (this.sim ? this.air.count + this.critters.count + this.sway.count : 0);
     for (const pool of this.poolList) n += pool.map.size;
     return n;
   }
@@ -720,7 +718,7 @@ export class RunScene extends Phaser.Scene {
     let halos = 0;
 
     this.updateGrade(sim.time / app.data.balance.runSeconds);
-    this.tickAmbient(sim);
+    this.sec0(8); this.tickAmbient(sim); this.sec1(8);
     const lm = this.lm;
     const lit = this.lmOn;
     if (lit) lm.begin(wv.centerX, wv.centerY, this.cameras.main.zoom, caps.lights);
@@ -875,6 +873,27 @@ export class RunScene extends Phaser.Scene {
       } else if (img.bLast !== e.bleedTot) {
         const d = e.bleedTot - img.bLast; img.bLast = e.bleedTot; // the last short tail after the bleed ends
         if (d >= 1 && bleedNums < 6) { bleedNums++; this.nums.spawn(e.x, e.y - e.r - 2, d, e.id + 0.5, KIND.BLEED, 0, false); }
+      }
+      // burn readout (Elias; visual only, reads burnT / burnTot): 1-2 lilac flame licks rising off the foe (share the drip tier cap,
+      // none with reduced motion, Low = none) plus ~2 small lilac numbers a second (batched)
+      if (img.uid !== e.id) { img.uid = e.id; img.uLast = e.burnTot; img.uNext = sim.time + 0.5; }
+      if (e.burnT > 0) {
+        if (dripN < dripCap) {
+          dripN++;
+          const ph = (sim.time * 2.2 + e.id * 0.31) % 1;
+          const lx = Math.round(e.x + ((e.id * 5) % 7) - 3);
+          const ly = Math.round(e.y - e.r * 0.4 - ph * 9);
+          fx.fillStyle(ROLE.burn, 0.9 * (1 - ph)).fillRect(lx, ly, 2, 3);
+          fx.fillStyle(ROLE.burnHot, 0.8 * (1 - ph)).fillRect(lx, ly + 1, 1, 1);
+        }
+        if (sim.time >= img.uNext && bleedNums < 6) {
+          const d = e.burnTot - img.uLast;
+          if (d >= 1) { img.uLast = e.burnTot; img.uNext = sim.time + 0.5; bleedNums++; this.nums.spawn(e.x, e.y - e.r - 6, d, e.id + 0.25, KIND.BURN, 0, false); }
+          else img.uNext = sim.time + 0.25;
+        }
+      } else if (img.uLast !== e.burnTot) {
+        const d = e.burnTot - img.uLast; img.uLast = e.burnTot;
+        if (d >= 1 && bleedNums < 6) { bleedNums++; this.nums.spawn(e.x, e.y - e.r - 6, d, e.id + 0.25, KIND.BURN, 0, false); }
       }
       if (e.tele) {
         if (e.boss) {

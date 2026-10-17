@@ -169,3 +169,5 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - Blessing copy chunk done 2026-10-17 (see LOCKED); open: allow ':' in blessings.js TEXT_RE then restore Wider Glow colon.
 
 - 2026-10-17 D1 done (evolved weapons keep non-recipe stat cards). REPORT FOR MATT: starter win rate jumped (Wren ~25% -> ~65-70%, Elias 3-6% -> 13-19%); decision needed whether to retune at R1 (planned). Per-evolution chunks must make Pack size (Dire Alpha/Alpha), Bolt count (Soul Lance), Chains (Static Storm) and Judgment cooldown do something or drop them for that weapon.
+
+- DONE on dev (2026-10-17): W5-world (fog, fireflies/motes, edge wall) + AL-5 critters, see LOCKED row; awaiting Matt's look. Not started: W6-world (lighting arc), AL-6 dawn chorus (birds use the Low 2 / 12-8-4 bird caps). Parked: moths circling lit lamps (needs W8 POI lamps); critter sounds (audio chunk). Open note: tests/bleedview.test.mjs (E2 colour rule) was failing in the shared tree from another agent's in-progress dmgnums/numpool edits, not from W5.
