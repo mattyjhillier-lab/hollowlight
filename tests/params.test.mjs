@@ -61,3 +61,18 @@ test('params: prototype keys cannot leak into the parsed result', () => {
   assert.equal(Object.keys(p).includes('__proto__'), false);
   assert.equal(p.constructor, Object);
 });
+
+import { sanitize, defaultSettings } from '../src/save/schema.js';
+test('settings: every setting key survives hostile values (object, string, NaN, array, null) by falling back to a valid default', () => {
+  const d = defaultSettings();
+  for (const bad of [{ a: 1 }, 'x'.repeat(50), NaN, [1], null, 1e99, -1e99, '__proto__']) {
+    const settings = {}; for (const k of Object.keys(d)) settings[k] = bad;
+    const out = sanitize({ version: 2, settings }).settings;
+    assert.deepEqual(Object.keys(out).sort(), Object.keys(d).sort());
+    for (const k of Object.keys(d)) {
+      assert.equal(typeof out[k], typeof d[k], k);
+      if (typeof d[k] === 'number') assert.ok(Number.isFinite(out[k]) && out[k] >= 0 && out[k] <= 1, k);
+      if (typeof d[k] === 'string') assert.equal(out[k], d[k], k + ' must fall back to its default for ' + String(bad).slice(0, 10));
+    }
+  }
+});
