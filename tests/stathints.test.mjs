@@ -57,5 +57,5 @@ test('E1/E3 Rend hint quotes the real per-rank potency and the fixed time; card 
 
 test('E1 honest text: no heal / burn claims the sim does not keep', () => {
   assert.ok(!/heal/i.test(evolutions.sanctum_halo.desc + evolutions.sanctum_halo.sub));
-  assert.ok(!/burn anything/i.test(weapons.holy_orbit.desc));
+  assert.ok(/burn/i.test(weapons.holy_orbit.desc) && !/scorch/i.test(weapons.holy_orbit.desc), 'Burn is real now (W4)');
 });

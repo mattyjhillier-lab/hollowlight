@@ -21,6 +21,9 @@ export function computeStats(def, ranks, bonus) {
 
 // Wolf bleed (Rend stat = share of a bite dealt per second, 15% -> 35%) lasts a fixed time (weapons.js uses this; card text quotes it).
 export const BLEED_TIME = 4;
+// Elias's Burn (Holy Orbit hits): 20% of the triggering hit per second for 2 s; one per enemy, strongest wins, time refreshes.
+export const BURN_RATE = 0.2;
+export const BURN_TIME = 2;
 
 // Card hint text is a template over the real per-rank numbers so it stays true if the data changes.
 // Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds), {rate} (attack-rate bonus per rank, stat.rate).

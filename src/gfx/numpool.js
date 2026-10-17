@@ -2,11 +2,11 @@
 // Display-only: fed from sim hit records and HUD-side deltas, never writes to the sim. Fixed slot array, no allocation per call.
 // Rules (docs/research/28 s3, hud-proof-4): cream by default, bigger + warmer for big hits (never gold), sum rapid hits per
 // target per 120ms, hard cap on live numbers (drop the SMALLEST first), heal soft teal '+30', damage taken light red '-9'.
-export const KIND = { DMG: 0, BIG: 1, HEAL: 2, HURT: 3, BLEED: 4 }; // BLEED: batched damage-over-time tick, small, pale blue, first to be dropped
+export const KIND = { DMG: 0, BIG: 1, HEAL: 2, HURT: 3, BLEED: 4, BURN: 5 }; // BLEED: batched damage-over-time tick, small, pale blue, first to be dropped
 export const MERGE_WINDOW = 0.12; // s
 export const MAX_SLOTS = 40;
-const LIFE = [0.5, 0.7, 0.9, 0.9, 0.7]; // per kind, seconds
-const RISE = [20, 22, 16, 16, 14]; // px of float (none when reduced motion)
+const LIFE = [0.5, 0.7, 0.9, 0.9, 0.7, 0.7]; // per kind, seconds
+const RISE = [20, 22, 16, 16, 14, 14]; // px of float (none when reduced motion)
 
 const fin = (v, d = 0) => (Number.isFinite(v) ? v : d);
 
@@ -44,7 +44,7 @@ export class HitRef {
 }
 
 // Lower number = more expendable: bleed ticks first, then hits by size; player lanes (heal/hurt) outrank any damage number.
-export function prioOf(kind, val) { return kind === KIND.BLEED ? val - 1e6 : kind === KIND.HEAL || kind === KIND.HURT ? 1e12 + val : val; }
+export function prioOf(kind, val) { return kind === KIND.BLEED || kind === KIND.BURN ? val - 1e6 : kind === KIND.HEAL || kind === KIND.HURT ? 1e12 + val : val; }
 
 export class NumPool {
   constructor(cap = 24) {
@@ -127,7 +127,7 @@ export class NumPool {
       const m = force ? Math.max(1.4, sizeMul(n.val, n.ref)) : sizeMul(n.val, n.ref);
       n.mul = m;
       n.kind = m > 1 ? KIND.BIG : KIND.DMG;
-    } else if (n.kind === KIND.BLEED) n.mul = 0.8;
+    } else if (n.kind === KIND.BLEED || n.kind === KIND.BURN) n.mul = 0.8;
     else n.mul = 1.15; // player lanes: slightly larger than a normal hit so they read near the hero
     n.life = LIFE[n.kind];
   }

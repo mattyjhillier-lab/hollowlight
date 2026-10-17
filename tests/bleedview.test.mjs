@@ -56,7 +56,7 @@ test('E2 colour rules: bleed is blood red (Matt 2026-10-16); tint + number + dri
   const scene = readFileSync(new URL('../src/scenes/RunScene.js', import.meta.url), 'utf8');
   assert.ok(/tq === 101\) img\.setTint\(ROLE\.bleedTint\)/.test(scene));
   const nums = readFileSync(new URL('../src/gfx/dmgnums.js', import.meta.url), 'utf8');
-  assert.ok(/ROLE\.bleed\]/.test(nums));
+  assert.ok(/ROLE\.bleed[\],]/.test(nums));
 });
 
 test('E2 perf caps: drips are capped per tier and absent on Low; a frame spawns at most 6 bleed numbers', async () => {

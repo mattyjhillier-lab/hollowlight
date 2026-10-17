@@ -11,6 +11,8 @@ import {
   computeStats,
   xpForLevel,
   fallbackCard,
+  BURN_RATE,
+  BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
 import { WEAPON_BEHAVIOURS } from './weapons.js';
@@ -101,6 +103,7 @@ export class Sim {
     this._src = null;
     this.dmgBy = {};
     this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
+    this.burnBy = {}; // the Burn part of dotBy (counter only)
     this.killsBy = {};
     this.boss = null;
     this.bossSpawned = false;
@@ -207,6 +210,15 @@ export class Sim {
     e.bleedT = Math.max(e.bleedT, dur);
   }
 
+  // Burn (Elias, Holy Orbit hits only): 20% of the triggering hit per second for 2 s. One instance per enemy:
+  // potency = strongest, time refreshes to 2 s, potency ends with the burn. Sim-only state (never saved).
+  burn(e, hit) {
+    if (e.dead || !(hit > 0)) return;
+    e.burnSrc = this._src;
+    e.burnDps = Math.max(e.burnDps, hit * BURN_RATE);
+    e.burnT = Math.max(e.burnT, BURN_TIME);
+  }
+
   nearestEnemy(x, y, maxR, pred) {
     let best = null;
     let bestD = maxR * maxR;
@@ -305,7 +317,7 @@ export class Sim {
       state: 'run', stT: 0, dx: 0, dy: 0, tele: false,
       chargeCd: this.rng.range(1, 3.5), slamCd: 5,
       phase: this.rng.range(0, 6.28), cd: {},
-      bleedT: 0, bleedDps: 0, bleedTot: 0, fearT: 0, flash: 0, dead: false, faceX: 1,
+      bleedT: 0, bleedDps: 0, bleedTot: 0, burnT: 0, burnDps: 0, burnTot: 0, burnSrc: null, fearT: 0, flash: 0, dead: false, faceX: 1,
     };
     this.enemies.push(e);
     return e;
@@ -368,6 +380,17 @@ export class Sim {
         if (this._src) this.dotBy[this._src] = (this.dotBy[this._src] || 0) + dealt;
         this._src = null;
         if (e.bleedT <= 0) e.bleedDps = 0; // potency ends with the bleed (B3)
+        if (e.dead) continue;
+      }
+
+      if (e.burnT > 0) {
+        e.burnT -= dt;
+        this._src = e.burnSrc || null;
+        const dealt = this.hurt(e, e.burnDps * dt, { silent: true });
+        e.burnTot += dealt; // running total the renderer batches into small numbers (counter only)
+        if (this._src) { this.dotBy[this._src] = (this.dotBy[this._src] || 0) + dealt; this.burnBy[this._src] = (this.burnBy[this._src] || 0) + dealt; }
+        this._src = null;
+        if (e.burnT <= 0) e.burnDps = 0;
         if (e.dead) continue;
       }
 

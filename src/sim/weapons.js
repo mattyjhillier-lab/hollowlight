@@ -344,6 +344,36 @@ const chainLightning = {
 };
 
 // ---------------------------------------------------------------- Holy Orbit
+// W4 guard contraction: when a foe's EDGE distance to Elias stays < 8 px for 0.2 s the ring closes to 14 px (0.25 s), holds
+// >= 0.8 s once closed, then opens over 0.4 s. The Candle Wheel wins while it stands (no contraction). orbitRadius() is the
+// one place the ring radius is decided, so Sanctum Halo and Judgement Wheel inherit it.
+export const GUARD = { edge: 8, touch: 0.2, to: 14, close: 0.25, hold: 0.8, open: 0.4 };
+const smooth = (k) => k * k * (3 - 2 * k);
+export function orbitRadius(sim, rt, dt, radius, suppressed) {
+  const p = sim.player;
+  let touching = false;
+  if (!suppressed) {
+    for (const e of sim.enemies) {
+      if (e.dead) continue;
+      const lim = e.r + p.r + GUARD.edge;
+      const dx = e.x - p.x, dy = e.y - p.y;
+      if (dx * dx + dy * dy < lim * lim) { touching = true; break; }
+    }
+  }
+  rt.gTouch = touching ? (rt.gTouch || 0) + dt : 0;
+  const was = rt.gHold > 0;
+  if (suppressed) rt.gHold = 0;
+  else if (rt.gTouch >= GUARD.touch) rt.gHold = GUARD.close + GUARD.hold; // re-armed while the foe stays
+  else if (rt.gHold > 0) rt.gHold = Math.max(0, rt.gHold - dt);
+  if (!was && rt.gHold > 0) sim.addFx({ kind: 'ring', x: p.x, y: p.y, r: 22, ttl: 0.2, color: '#e8e0ff' });
+  const k0 = rt.gK || 0;
+  rt.gK = rt.gHold > 0 ? Math.min(1, k0 + dt / GUARD.close) : Math.max(0, k0 - dt / GUARD.open);
+  return radius + (Math.min(radius, GUARD.to) - radius) * smooth(rt.gK);
+}
+
+// Holy Orbit hit gap per light per foe: 0.5 s, shortened by the Orbit speed rate (+5% hits per rank).
+export const ORBIT_GAP = 0.5;
+
 const holyOrbit = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
@@ -358,11 +388,14 @@ const holyOrbit = {
     rt.ang = (rt.ang || 0) + spin * dt;
 
     // Candle Wheel (Elias's ability): while a wheel stands the orb lights glide out and lock into sockets on its ring,
-    // then glide back as it fades. Locked lights keep burning what touches them.
+    // then glide back as it fades. Locked lights keep burning what touches them (but never apply Burn: the ability stays modest).
     const wheel = sim.zones.find((z) => z.wheel);
     let lock = 0;
     if (wheel) { const k = Math.min(1, wheel.age / 0.5, Math.max(0, wheel.ttl) / 0.5); lock = k * k * (3 - 2 * k); }
     rt.lock = lock;
+    radius = orbitRadius(sim, rt, dt, radius, !!wheel);
+    const gap = ORBIT_GAP / rateMult(sim.data.weapons.holy_orbit, 'speed', w.ranks.speed || 0);
+    const burnOk = !wheel;
     units.forEach((u, i) => {
       const a = rt.ang + (i * TAU) / count;
       u.x = p.x + Math.cos(a) * radius;
@@ -385,6 +418,7 @@ const holyOrbit = {
         const rr = e.r + u.r + 1;
         if (dx * dx + dy * dy >= rr * rr) continue;
         if (evo === 'judgement_wheel') {
+          // Burn hook: Judgement Wheel blasts apply Burn in a later chunk (W4 blasts); not yet.
           for (const o of sim.enemies) {
             if (o.dead) continue;
             if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34 && sim.canHit(o, 'wheelblast', 0.1)) sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.8));
@@ -393,10 +427,14 @@ const holyOrbit = {
           u.disabledT = tune(sim, w, 'rest', 1.0);
           break;
         }
-        if (sim.canHit(e, `orb${i}`, 0.5)) sim.hurt(e, dmg);
+        if (sim.canHit(e, `orb${i}`, gap)) {
+          const dealt = sim.hurt(e, dmg);
+          if (burnOk) sim.burn(e, dealt);
+        }
       }
     });
 
+    // Burn hook: the Sanctum Halo ground applies Burn instead of its own zone damage in a later chunk (W5); not yet.
     if (evo === 'sanctum_halo' && units.length) {
       rt.zCd = (rt.zCd ?? 1) - dt;
       if (rt.zCd <= 0) {

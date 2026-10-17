@@ -59,12 +59,12 @@
     "type": "magic",
     "tags": ["holy"],
     "color": "#e8e0ff",
-    "desc": "Holy orbs circle you and scorch anything they touch.",
+    "desc": "Holy orbs circle you and burn anything they touch.",
     "stats": {
       "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more candle light circles you" },
       "power":  { "name": "Orb power",  "base": 10,   "perRank": 4,    "fmt": "int", "hint": "Each light hits harder" },
-      "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "hint": "Ring reaches {old} → {new} out; foes pressed close slip inside it" },
-      "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "hint": "Lights circle {upct} faster, but each hits a foe only twice a second" }
+      "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
+      "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
     }
   }
 }

@@ -210,7 +210,7 @@ test('HUD-3 FbWatch: NaN / Infinity / missing sim never throws and never reports
 test('HUD-3 colour rules in code: no evolution gold on numbers or pickup effects; red only for damage taken', () => {
   const src = readFileSync(new URL('../src/gfx/dmgnums.js', import.meta.url), 'utf8');
   assert.ok(!/PAL\.gold|ROLE\.evo/.test(src), 'numbers never use gold');
-  assert.ok(src.includes('TINT = [PAL.cream, 0xffdcae, 0x8fe3c8, 0xff8078, ROLE.bleed]'));
+  assert.ok(src.includes('TINT = [PAL.cream, 0xffdcae, 0x8fe3c8, 0xff8078, ROLE.bleed, ROLE.burn]'));
   const scene = readFileSync(new URL('../src/scenes/RunScene.js', import.meta.url), 'utf8');
   const fx = scene.slice(scene.indexOf('  levelBurst() {'), scene.indexOf('  evolveMoment() {'));
   assert.ok(fx.length > 200 && !/PAL\.gold|ROLE\.evo|PAL\.danger/.test(fx), 'level-up / heart / magnet / gem feedback is not gold or red');
