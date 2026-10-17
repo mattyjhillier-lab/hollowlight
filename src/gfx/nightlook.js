@@ -59,13 +59,67 @@ export function fillTintTable(farV, bodyK, tab) {
   return tab;
 }
 
-// Blink: once per 4-7 s per enemy, one short moment (0.08 s) at alpha 0.2. Calm motion: never. Allocation-free hash of the enemy id.
+// WL6b2 blink: slow and irregular. Time is cut into 3 s cells; each enemy blinks in about 55% of them, at a hashed moment 0.3-2.4 s into the cell,
+// so two blinks are never closer than 0.6 s (max ~1.7 flickers/s per eye, well under the 3/s photosensitivity line) and the mean is one per ~5.5 s.
+// One blink = 0.12 s at alpha 0.2. Calm motion: never. Allocation-free hash of (enemy id, cell).
+export const BLINK_CELL = 3;
+export const BLINK_LEN = 0.12;
 export function blinkMul(time, id, calm) {
   if (calm) return 1;
-  const h = Math.imul((id | 0) ^ 0x9e3779b9, 0x85ebca6b) >>> 0;
-  const period = 4 + (h % 3000) / 1000; // 4..7 s
-  const ph = (time + (h >>> 12) % 1000 / 100) % period;
-  return ph < 0.08 ? BLINK_ALPHA : 1;
+  const cell = Math.floor(time / BLINK_CELL);
+  const h = Math.imul(Math.imul((id | 0) ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(cell, 0xc2b2ae35), 0x27d4eb2f) >>> 0;
+  if ((h & 255) >= 140) return 1; // 55%
+  const at = 0.3 + ((h >>> 8) % 2100) / 1000; // 0.3..2.4 s into the cell
+  const ph = time - cell * BLINK_CELL - at;
+  return ph >= 0 && ph < BLINK_LEN ? BLINK_ALPHA : 1;
+}
+
+// WL6b2 eye life (the eyes carry the night read; silhouettes are quiet). One call per drawn eye set, fills `out`:
+//   ox, oy  look offset in world units (drifts toward the hero, clamped to LOOK_MAX)
+//   sc      size multiplier (slow pulse +-5%, up to +25% as the enemy closes in)
+//   am      alpha multiplier (slow glint +-10%) and ab alpha boost (+0.18 when closing in): alpha = min(1, base * am + ab)
+//   sl, sa, sx, sy  streak length / alpha / unit direction behind a fast mover
+// Calm motion: static (no drift, pulse or streak), the closing-in cue stays (it is a threat cue, not motion).
+export const LOOK_MAX = 1.0;
+export const PULSE_SIZE = 0.05;
+export const PULSE_ALPHA = 0.1;
+export const CLOSE_FAR = 260; // distance to the hero (world units) where the closing-in cue starts
+export const CLOSE_NEAR = 40;
+export const CLOSE_SIZE = 0.25;
+export const CLOSE_ALPHA = 0.18;
+export const STREAK_MIN_SPEED = 35;
+export const STREAK_MAX_LEN = 16;
+export const STREAK_CAPS = { high: 60, med: 30, low: 0 };
+export const streakCap = (tier) => STREAK_CAPS[tier] ?? 0;
+export function makeEyeOut() { return { ox: 0, oy: 0, sc: 1, am: 1, ab: 0, sl: 0, sa: 0, sx: 0, sy: 0 }; }
+export function eyeAnim(time, id, hdx, hdy, speed, vx, vy, calm, out) {
+  const h = Math.imul((id | 0) ^ 0x7f4a7c15, 0x9e3779b1) >>> 0;
+  const dist = Math.sqrt(hdx * hdx + hdy * hdy);
+  const ck = dist >= CLOSE_FAR ? 0 : dist <= CLOSE_NEAR ? 1 : (CLOSE_FAR - dist) / (CLOSE_FAR - CLOSE_NEAR);
+  out.ab = CLOSE_ALPHA * ck;
+  out.sl = 0; out.sa = 0; out.sx = 0; out.sy = 0;
+  if (calm) { out.ox = 0; out.oy = 0; out.sc = 1 + CLOSE_SIZE * ck; out.am = 1; return out; }
+  const per = 2.4 + (h & 1023) / 640; // 2.4..4 s glint period (<= 0.42 Hz)
+  const ph = (h >>> 10) / 4194304; // 0..1 per-enemy phase offset, so crowds shimmer instead of pulsing in sync
+  const s = Math.sin(6.2831853 * (time / per + ph));
+  out.sc = 1 + PULSE_SIZE * s + CLOSE_SIZE * ck;
+  out.am = 1 + PULSE_ALPHA * s;
+  // look: toward the hero with a slow irregular drift (two slow sines), clamped
+  let lx = 0; let ly = 0;
+  if (dist > 1) { lx = hdx / dist * 0.75; ly = hdy / dist * 0.75; }
+  const w = time * 0.6 + ph * 6.2831853;
+  lx += 0.25 * Math.sin(w * 1.3 + 1.7); ly += 0.25 * Math.sin(w * 0.9);
+  const m = Math.sqrt(lx * lx + ly * ly);
+  const k = m > LOOK_MAX ? LOOK_MAX / m : 1;
+  out.ox = lx * k; out.oy = ly * k;
+  if (speed > STREAK_MIN_SPEED) {
+    const sp = Math.sqrt(vx * vx + vy * vy);
+    if (sp > 1) {
+      const f = Math.min(1, (speed - STREAK_MIN_SPEED) / 40);
+      out.sl = 4 + (STREAK_MAX_LEN - 4) * f; out.sa = 0.4 * f; out.sx = vx / sp; out.sy = vy / sp;
+    }
+  }
+  return out;
 }
 
 // Eye alpha for an enemy at lit level L (0..16): the arc's alpha beyond the pool, the floor inside it, blended between.
@@ -75,7 +129,7 @@ export function eyeAlpha(eyeA, L, floorK) {
 }
 
 // Rim alpha for an enemy at lit level L: only outside the pool (design: rimA * (1 - lit) * 0.75).
-export const rimAlpha = (rimA, L, k) => rimA * (1 - L / LIT_STEPS) * 0.75 * k;
+export const rimAlpha = (rimA, L, k) => rimA * (1 - L / LIT_STEPS) * 0.75 * k; // WL6b2: the arc's rimA column is now much lower (quiet silhouettes)
 
 // Eye plan: three passes by distance band from the lantern ember (inside R, then inside 1.8 R, then the rest; no sort), so under cap pressure the nearest
 // enemies keep their eyes. The cap counts ENEMIES (one eye set each; a root crawler draws two eyes for one slot), so a full swarm still covers the near band.

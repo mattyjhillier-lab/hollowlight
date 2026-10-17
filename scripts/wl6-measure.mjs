@@ -2,6 +2,7 @@
 // Own Chrome process (debug port 9483), own static server (4201); closes only what it opened. Headless Chrome, software GL, so timings are not perf data (use scripts/pace.mjs).
 //   node scripts/wl6-measure.mjs shots   <outDir>            true-size + phone frames at the 5 moments (Wren/Elias, swarm), JPEG
 //   node scripts/wl6-measure.mjs contrast <outDir>           contrast gates G1/G2/G3: 5 moments x 3 enemy types x 3 distances x tier x size -> contrast.csv/json
+//   node scripts/wl6-measure.mjs strip    <outDir>           4-frame strip per moment (0:30, 4:00, 8:00) showing eye motion (WL6b2), zoomed crop around the hero
 //   node scripts/wl6-measure.mjs settings <outDir>           Settings > Picture screenshots (desktop + phone)
 // env: DIST (default dist), TIERS (high,low), SIZES (desk,land,port), TS (30,240,480,690,870), BRIGHT (normal|brighter|clear|auto, default normal), PARAMS (extra url query), ONLY (name filter), HERO.
 import { spawn } from 'node:child_process';
@@ -175,6 +176,37 @@ async function contrast(out) {
   console.log(lines.join('\n'));
 }
 
+
+async function strip(out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
+  try {
+    for (const [t, n, rr] of [[30, 40, 0], [240, 70, 220], [480, 110, 330]]) {
+      const [w, h, dpr] = VIEWS.desk;
+      await open(c, q('wren', t), w, h, dpr, 'high');
+      await sleep(600); await setup(c, 2000, 2000, t, rr); await sleep(1200);
+      await autoPick(c); await inject(c, n, 50, 240); await sleep(250); await autoPick(c);
+      await settle(c, t);
+      await c.ev("(()=>{window.__app.sim.player.speed=0;return 1})()");
+      const frames = [];
+      for (let k = 0; k < 4; k++) {
+        for (let i = 0; i < 12; i++) { if (await c.ev("window.__app.sim.state==='running'")) break; await autoPick(c); await sleep(60); }
+        await c.ev("(()=>{const s=window.__app.sim;s.xpNeeded=1e9;s.state==='running'&&(s.player.hp=s.player.maxHp);return 1})()");
+        const clip = { x: w / 2 - 230, y: h / 2 - 130, width: 460, height: 260, scale: 2 };
+        const r = await c.send('Page.captureScreenshot', { format: 'png', clip });
+        frames.push(r.data);
+        await sleep(700);
+      }
+      const sheet = await c.ev(`(async (fr) => { const ims = await Promise.all(fr.map((b) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + b; })));
+        const cv = document.createElement('canvas'); cv.width = ims[0].width * 2; cv.height = ims[0].height * 2; const g = cv.getContext('2d');
+        ims.forEach((i, k) => g.drawImage(i, (k % 2) * i.width, ((k / 2) | 0) * i.height)); return cv.toDataURL('image/jpeg', 0.85).split(',')[1]; })(${JSON.stringify(frames)})`);
+      writeFileSync(join(out, `eye-strip-${fmt(t)}.jpg`), Buffer.from(sheet, 'base64'));
+      writeFileSync(join(out, `after-${fmt(t)}-wren-desk-high.jpg`), Buffer.from((await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 86 })).data, 'base64'));
+      console.log('strip', fmt(t));
+    }
+  } finally { c.close(); srv.close(); }
+}
+
 async function settingsShots(out) {
   mkdirSync(out, { recursive: true });
   const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
@@ -197,8 +229,9 @@ async function settingsShots(out) {
 }
 
 const [cmd, out] = process.argv.slice(2);
-if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|settings <outDir>'); process.exit(1); }
+if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|strip|settings <outDir>'); process.exit(1); }
 if (cmd === 'shots') await shots(out);
 else if (cmd === 'contrast') await contrast(out);
+else if (cmd === 'strip') await strip(out);
 else if (cmd === 'settings') await settingsShots(out);
 process.exit(0);

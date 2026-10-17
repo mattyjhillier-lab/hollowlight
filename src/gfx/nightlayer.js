@@ -3,8 +3,9 @@
 // preallocated, images are created lazily and reused (docs/design/visibility-arc-v1.md sections 3, 4, 7). Visual only.
 import Phaser from 'phaser';
 import {
-  EYE_DEFS, BOSS_EYES, BOSS_CORE, BOSS_HALO, EYE_CORE_TINT, RIM_TINT, LIT_STEPS,
+  EYE_DEFS, BOSS_EYES, BOSS_CORE, BOSS_HALO, EYE_CORE_TINT, EYE_HALO_TINT, RIM_TINT, LIT_STEPS,
   eyeCap, rimCap, spiritCap, litLevel, bandOf, fillTintTable, blinkMul, eyeAlpha, rimAlpha, planEyes, slotsOf,
+  eyeAnim, makeEyeOut, streakCap,
 } from './nightlook.js';
 import { ROLE } from './palette.js';
 
@@ -23,6 +24,17 @@ export class NightLayer {
     this.prevEyes = 0;
     this.prevBoss = 0;
     this.prevRims = 0;
+    this.streak = []; // WL6b2: pooled trailing streaks behind fast movers
+    this.prevStreak = 0;
+    this.streaks = 0;
+    this.ea = makeEyeOut();
+    // per-enemy motion memory (by id, 1024 slots): position at the last draw, smoothed velocity
+    this.mId = new Int32Array(1024).fill(-1);
+    this.mT = new Float32Array(1024);
+    this.mX = new Float32Array(1024);
+    this.mY = new Float32Array(1024);
+    this.mVx = new Float32Array(1024);
+    this.mVy = new Float32Array(1024);
     this.lit = new Uint8Array(MAXE);
     this.near = new Uint8Array(MAXE);
     this.kinds = new Uint8Array(MAXE);
@@ -106,19 +118,54 @@ export class NightLayer {
     }
     const cnt = planEyes(n, this.near, this.kinds, eyeCap(tier), this.plan);
     let slot = 0;
+    let ns = 0;
+    const sc = streakCap(tier);
+    const ea = this.ea;
+    const calm = c.calm;
     for (let k = 0; k < cnt; k++) {
       const i = this.plan[k];
       const e = es[i];
       const d = EYE_DEFS[e.type];
       const fl = e.faceX < 0 ? -1 : 1;
-      const a = eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * blinkMul(c.time, e.id, c.calm);
+      // motion memory (smoothed velocity from the last drawn position; reset when the enemy was not drawn for a while)
+      const m = e.id & 1023;
+      let spd = 0;
+      if (this.mId[m] !== e.id || c.time - this.mT[m] > 0.25 || c.time < this.mT[m]) {
+        this.mId[m] = e.id; this.mT[m] = c.time; this.mX[m] = e.x; this.mY[m] = e.y; this.mVx[m] = 0; this.mVy[m] = 0;
+      } else {
+        const dt = c.time - this.mT[m];
+        if (dt > 0.001) {
+          const ivx = (e.x - this.mX[m]) / dt;
+          const ivy = (e.y - this.mY[m]) / dt;
+          this.mVx[m] += (ivx - this.mVx[m]) * 0.3;
+          this.mVy[m] += (ivy - this.mVy[m]) * 0.3;
+          this.mT[m] = c.time; this.mX[m] = e.x; this.mY[m] = e.y;
+        }
+      }
+      const mvx = this.mVx[m];
+      const mvy = this.mVy[m];
+      spd = Math.sqrt(mvx * mvx + mvy * mvy);
+      eyeAnim(c.time, e.id, c.hx - e.x, c.hy - e.y, spd, mvx, mvy, calm, ea);
+      const a = Math.min(1, eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * ea.am * blinkMul(c.time, e.id, calm) + ea.ab);
+      const size = d.halo * ea.sc;
       for (let j = 0; j < d.pts.length; j++) {
-        const x = e.x + d.pts[j][0] * fl;
-        const y = e.y + d.pts[j][1];
-        this.place(this.eyeImg(this.core, slot, 0xffffff, this.depth, 'eyen'), x, y, d.halo, a);
+        const x = e.x + d.pts[j][0] * fl + ea.ox;
+        const y = e.y + d.pts[j][1] + ea.oy;
+        this.place(this.eyeImg(this.core, slot, 0xffffff, this.depth, 'eyen'), x, y, size, a);
         slot++;
+        if (ea.sl > 0 && ns < sc && j === 0) {
+          let st = this.streak[ns];
+          if (!st) { st = this.scene.add.image(0, 0, 'glow').setBlendMode(ADD).setTint(EYE_HALO_TINT).setDepth(this.depth - 0.5); st.dw = 0; this.streak[ns] = st; }
+          st.setDisplaySize(ea.sl + 3, 3.2);
+          st.x = x - ea.sx * ea.sl * 0.5; st.y = y - ea.sy * ea.sl * 0.5; st.rotation = Math.atan2(ea.sy, ea.sx); st.alpha = ea.sa * a;
+          if (!st.visible) st.visible = true;
+          ns++;
+        }
       }
     }
+    for (let i = ns; i < this.prevStreak; i++) if (this.streak[i]) this.streak[i].setVisible(false);
+    this.prevStreak = ns;
+    this.streaks = ns;
     for (let i = slot; i < this.prevEyes; i++) if (this.core[i]) this.core[i].setVisible(false);
     this.prevEyes = slot;
     this.eyeSlots = slot;
@@ -178,6 +225,8 @@ export class NightLayer {
     for (let i = 0; i < this.prevEyes; i++) if (this.core[i]) this.core[i].setVisible(false);
     for (let i = 0; i < this.prevBoss; i++) { this.bHalo[i].setVisible(false); this.bCore[i].setVisible(false); }
     for (const key in this.rims) for (const im of this.rims[key].arr) im.setVisible(false);
+    for (let i = 0; i < this.prevStreak; i++) this.streak[i].setVisible(false);
+    this.prevStreak = 0; this.streaks = 0;
     this.prevEyes = 0; this.prevBoss = 0; this.eyeSlots = 0; this.rimCount = 0;
   }
 }

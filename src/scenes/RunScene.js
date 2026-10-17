@@ -192,7 +192,7 @@ export class RunScene extends Phaser.Scene {
     this.arc = makeArcOut(); // WL6a: current arc sample (ambient, Low tint, lantern radius, enemy tint/eye/rim values, dawn wash)
     this.arcKey = -1;
     this.nl = new NightLayer(this, D_VIG + 1); // WL6b: eyes / rims / boss eyes, above the vignette
-    this.nlc = { tier: 'med', calm: false, time: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT };
+    this.nlc = { tier: 'med', calm: false, time: 0, hx: 0, hy: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT };
     this.nlOn = false;
     this.teleG = this.add.graphics().setDepth(D_VIG + 3); // telegraphs (charge line, boss ring) sit above the vignette so the screen edge never hides a threat
     this.phone = false;
@@ -775,9 +775,9 @@ export class RunScene extends Phaser.Scene {
     {
       const target = app.params.arc ? lanternTarget(this.arc.lan, lowHp, this.arc.y) : (lowHp ? 90 : 130);
       this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
-      const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
     }
     if (lit) {
+      const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
       lm.add(lx, ly, this.lanR * fl, ROLE.lantern, 0.9);
       if (rig && this.rig.hasPup) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
     }
@@ -786,13 +786,13 @@ export class RunScene extends Phaser.Scene {
     const fx = this.fxG;
     g.clear();
     fx.clear();
-
     this.teleG.clear();
     const nl = this.nl;
     const nlOn = !!(app.params.arc && app.params.night);
     if (nlOn) nl.prepare(sim, lx, ly, this.lanR, this.quality.tier, this.arc);
     else if (this.nlOn) nl.hide();
     this.nlOn = nlOn;
+
     // drain hit/kill records into numbers + puffs + hit-stop
     const nh = sim.hitN;
     sim.hitN = 0;
@@ -867,10 +867,10 @@ export class RunScene extends Phaser.Scene {
     const dripCap = this.reducedMotion() ? 0 : caps.drips;
     const coldCap = this.gbOn ? (caps.halos >= 160 ? 80 : 40) : 0;
     const life = this.life;
-    for (const e of sim.enemies) {
     let ei = -1;
-      if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
+    for (const e of sim.enemies) {
       ei++;
+      if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
       if (cold < coldCap) { // W3 cold enemy glow: only on ink-dark ground, soft, steady (no flicker); helps dark enemies separate from the ink
@@ -888,8 +888,8 @@ export class RunScene extends Phaser.Scene {
       }
       if (e.flash > 0) tq = 100;
       else if (e.bleedT > 0) tq = 101;
-      else if (lit && !e.boss) {
       else if (nlOn && !e.boss && ei < 512) tq = 200 + nl.lit[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
+      else if (lit && !e.boss) {
         tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
       } else tq = 0;
       if (img.tq !== tq || (tq >= 200 && img.tv !== nl.ver)) {
@@ -953,14 +953,14 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
     if (nlOn) {
       const nc = this.nlc;
-      nc.tier = this.quality.tier; nc.calm = this.reducedMotion(); nc.time = sim.time;
+      nc.tier = this.quality.tier; nc.calm = this.reducedMotion(); nc.time = sim.time; nc.hx = p.x; nc.hy = p.y;
       nc.vx0 = vx0; nc.vy0 = vy0; nc.vx1 = vx1; nc.vy1 = vy1;
       nl.draw(sim, nc);
     }
 
+    // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
     const oa = this.heroOutA + ((crowd >= 3 ? 0.7 : 0) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120);
     this.heroOutA = oa;
     this.heroOut.setVisible(oa > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(oa).setFlipX(p.faceX < 0);

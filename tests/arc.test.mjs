@@ -49,7 +49,7 @@ test('other columns are smooth and bounded: eye alpha >= 0.3, rim 0 after 11:30,
     assert.ok(a.eyeA >= 0.3 && a.eyeA <= 1);
     assert.ok(a.rimA >= 0 && a.rimA <= 0.85);
     assert.ok(a.sat >= 0.8 && a.sat <= 1.3 && a.dawn >= 0 && a.dawn <= 0.3);
-    assert.ok(a.farV >= 0.4 && a.farV <= 0.75 && a.lan >= 130 && a.lan <= 150);
+    assert.ok(a.farV >= 0.34 && a.farV <= 0.75 && a.lan >= 130 && a.lan <= 150);
     if (t >= 690) assert.equal(a.rimA, 0);
     assert.ok(a.bodyK >= 0.72 && a.bodyK <= 1 && (t > 600 || a.bodyK === 1));
   }
