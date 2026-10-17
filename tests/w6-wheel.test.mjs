@@ -1,6 +1,7 @@
 // Wheel A: Judgement Wheel = Bursting Lights (docs/design/evolutions-second-review.md 4.5, LOCKED): spin x1.8, blast 34 px + 3 px per
 // Orbit size rank, dmg 1.5x, rest 1.2 s, per-foe blast gate 0.1 s, Burn from blasts, guard contraction inherited, a burst ring never a planted wheel.
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { Sim } from '../src/sim/Sim.js';
 import { data, measureRatios } from '../scripts/evo-same-ranks.mjs';
@@ -42,7 +43,7 @@ test('Wheel: a blast hits a foe near the light but not touching it, and sets it 
   assert.ok((sim.burnBy.holy_orbit || 0) > 0, 'Burn from blasts is tagged to Holy Orbit');
 });
 
-test('Wheel: each light rests 1.2 s after a burst and the ring never plants anything', () => {
+test('Wheel: each light rests 1.3 s after a burst and the ring never plants anything', () => {
   const sim = mk(R({ count: 0 }));
   dummy(sim, 38 + 6 + 3, 0);
   let t0 = null, rest = 0;
@@ -54,7 +55,7 @@ test('Wheel: each light rests 1.2 s after a burst and the ring never plants anyt
     for (const x of u) assert.ok(Math.hypot(x.x - s.player.x, x.y - s.player.y) <= 60, 'lights stay on the ring');
   });
   assert.ok(t0 !== null, 'a light burst');
-  assert.ok(Math.abs(rest - 1.2) < 0.03, `rest ${rest}`);
+  assert.ok(Math.abs(rest - 1.3) < 0.03, `rest ${rest}`);
 });
 
 test('Wheel: the guard contraction is inherited (ring closes on a hugging foe), the Candle Wheel never applies Burn', () => {
@@ -95,12 +96,14 @@ test('Wheel: boss >= 1.0x of the base ring at max ranks, hug DPS >= 25% of ring 
   for (const m of ['pair', 'max']) for (const [sc, c] of Object.entries(res[m])) assert.ok(c.ratio >= 0.98, `${m} ${sc} ${c.ratio}`);
 });
 
-// Cap at pick (pair 5, others 1): <= 3.0x in the immortal stream scenarios. The Wheel's AoE blast against a one-light base ring is far over
-// it in stream40 (LOCKED W6 records the measured numbers and two alternatives). Listed so the guard flips to failing if it changes.
-test('Wheel: cap at pick is known over 3x only in stream40 (flips when the alternatives are applied)', () => {
-  const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair'], only: ['judgement_wheel'] }).judgement_wheel.pair;
-  assert.ok(res.single.ratio <= 3.0 && res.stream10.ratio <= 3.0, `single/stream10 ${res.single.ratio} ${res.stream10.ratio}`);
-  assert.ok(res.stream40.ratio > 3.0, `stream40 now ${res.stream40.ratio}: it passes the cap, remove this expectation`);
+// LOCKED exception (Matt, Alt 1): the Wheel is EXEMPT from the cap-at-pick stream40 gate (its pick-time base is one light, the blast is AoE).
+// It is gated on kite home 1.8-2.3x, boss >= base, never below base, hug >= 25% instead.
+test('Wheel: kite home in 1.8-2.3x and boss >= 1.0x (scripts/evo-home.mjs, 5 seeds, max ranks)', () => {
+  const out = execFileSync(process.execPath, ['scripts/evo-home.mjs', '5', '5', 'judgement'], { encoding: 'utf8' });
+  const row = (sc) => Number(new RegExp(sc + String.raw`\s+[\d.]+x \| ([\d.]+)x`).exec(out)[1]);
+  const kite = row('kite'), boss = row('boss');
+  assert.ok(kite >= 1.8 && kite <= 2.3, `kite home ${kite}x`);
+  assert.ok(boss >= 1.0, `boss home ${boss}x`);
 });
 
 test('Wheel is deterministic', () => {

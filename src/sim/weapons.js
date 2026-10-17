@@ -471,18 +471,18 @@ const holyOrbit = {
         if (evo === 'judgement_wheel') {
           // W6 Bursting Lights: blast 34 px + 3 px per Orbit size rank, one blast per foe per 0.1 s, applies Burn (never from the Candle Wheel lock)
           const br = tune(sim, w, 'blast', 34) + tune(sim, w, 'blastPer', 3) * (w.ranks.radius || 0);
-          // optional what-if knobs (off by default, see LOCKED W6 alternatives): 'maxHits' foes per blast (nearest first), 'boss' damage x on bosses
-          const maxHits = tune(sim, w, 'maxHits', 0), bossX = tune(sim, w, 'boss', 1);
+          // 'boss' = blast damage x on bosses (Alt 1, locked); 'maxHits' foes per blast, nearest first (off, probe only)
+          const maxHits = tune(sim, w, 'maxHits', 0), bossX = tune(sim, w, 'boss', 1.7);
           let hit = sim.enemies.filter((o) => !o.dead && Math.hypot(o.x - u.x, o.y - u.y) < o.r + br);
           if (maxHits > 0 && hit.length > maxHits) hit = hit.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y)).slice(0, maxHits);
           for (const o of hit) {
             if (!sim.canHit(o, 'wheelblast', 0.1)) continue;
-            const dealt = sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.5) * (o.boss ? bossX : 1));
+            const dealt = sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.0) * (o.boss ? bossX : 1));
             if (burnOk) sim.burn(o, dealt);
           }
           sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: br, ttl: 0.2, color: '#c79bff' });
           sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: br + 3, ttl: 0.14, color: '#ffd98a' }); // gold rim on the blast only
-          u.disabledT = tune(sim, w, 'rest', 1.2);
+          u.disabledT = tune(sim, w, 'rest', 1.3);
           break;
         }
         if (sim.canHit(e, `orb${i}`, gap)) {
