@@ -188,3 +188,82 @@ test('W11c cap at pick: Static Storm <= 3.0x its base (pair 5 + others rank 1) i
   const a = mkc(), b = mkc(); run(a, 6); run(b, 6);
   assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
 });
+
+// ---------------------------------------------------------------- W11d Storm Tether
+const tw = (sim) => sim.weapons[0].rt;
+test('W11d Storm Tether data: recipe Chains + Arc, up to 4 arcs, fork once, tick 0.25 s, treeGate', () => {
+  const e = data.evolutions.storm_tether;
+  assert.deepEqual([...e.pair].sort(), ['area', 'chains']);
+  assert.equal(e.weapon, 'chain_lightning'); assert.equal(e.treeGate, true);
+  assert.equal(e.tune.cap, 4); assert.equal(e.tune.tick, 0.25);
+  assert.ok(e.tune.fork > 0 && e.tune.fork < 0.5 + 1e-9);
+});
+
+test('W11d arcs = min(4, ceil(Chains/2)) held on distinct nearest foes inside 120 + 0.6 x Arc; one arc per foe', () => {
+  for (let rk = 0; rk <= 5; rk++) {
+    const sim = mk({ chains: rk, cooldown: 3, area: 3 }, 'storm_tether');
+    crowd(sim, 40);
+    run(sim, 0.5);
+    const T = tw(sim).tethers;
+    const reach = 120 + 0.6 * (60 + 10 * 3);
+    assert.equal(T.length, Math.min(4, Math.ceil((2 + rk) / 2)), `Chains rank ${rk}`);
+    assert.equal(new Set(T.map((t) => t.e.id)).size, T.length, 'one arc per foe');
+    for (const t of T) {
+      assert.ok(Math.hypot(t.e.x - sim.player.x, t.e.y - sim.player.y) <= reach + 1e-9, 'inside reach');
+      if (t.f) assert.ok(!T.some((o) => o.e === t.f) && t.f !== t.e, 'fork never on an arc holder');
+    }
+  }
+});
+
+test('W11d a lone foe only ever gets ONE arc (no doubling) and no fork; damage = 0.45 x power per tick', () => {
+  const sim = mk({ chains: 5, cooldown: 5, area: 5 }, 'storm_tether');
+  put(sim, 70, 0);
+  const log = spy(sim);
+  run(sim, 2);
+  assert.equal(tw(sim).tethers.length, 1);
+  const w = sim.weapons[0], pw = w.s.power * sim.dmgMult(w);
+  assert.ok(log.length > 8);
+  for (const h of log) assert.ok(Math.abs(h.a - pw * 0.45) < 1e-6, `tick damage ${h.a}`);
+  const ts = [...new Set(log.map((h) => h.t))];
+  for (let i = 1; i < ts.length; i++) assert.ok(ts[i] - ts[i - 1] >= 0.1 - 1e-9);
+});
+
+test('W11d the arc re-locks at once when its foe dies or leaves reach, and the tick never runs under 0.1 s with extreme tree mods', () => {
+  const sim = mk({ chains: 3, cooldown: 5, area: 3 }, 'storm_tether');
+  sim.mods.cooldown = 0.05;
+  const a = put(sim, 60, 0), b = put(sim, 0, 90);
+  run(sim, 0.4);
+  const T = tw(sim).tethers;
+  assert.equal(T.length, 2);
+  a.dead = true; // killed
+  run(sim, 0.05);
+  assert.ok(!tw(sim).tethers.some((t) => t.e === a), 'dead foe dropped');
+  const c = put(sim, -50, -40);
+  run(sim, 0.05);
+  assert.ok(tw(sim).tethers.some((t) => t.e === c), 'a fresh foe takes the free arc');
+  b.x = sim.player.x + 400; // leaves reach
+  run(sim, 0.05);
+  assert.ok(!tw(sim).tethers.some((t) => t.e === b), 'out-of-reach foe dropped');
+  const log = spy(sim); run(sim, 2);
+  const ts = [...new Set(log.map((h) => h.t))];
+  for (let i = 1; i < ts.length; i++) assert.ok(ts[i] - ts[i - 1] >= 0.1 - 1e-9, 'tick floor');
+});
+
+test('W11d cap at pick: Storm Tether <= 3.0x its base (pair 5 + others rank 1) in single, stream10, stream40; never below base; deterministic', () => {
+  const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair', 'max'], only: 'storm_tether' });
+  for (const [sc, c] of Object.entries(res.storm_tether.pair)) assert.ok(c.ratio <= 3.0, `${sc}: ${c.ratio.toFixed(2)}x at pick`);
+  for (const mode of ['pair', 'max']) for (const [sc, c] of Object.entries(res.storm_tether[mode])) assert.ok(c.ratio >= 0.98, `${mode} ${sc}: ${c.ratio.toFixed(2)}x below base`);
+  const mkc = () => { const s = mk({ chains: 4, cooldown: 3, area: 4 }, 'storm_tether'); crowd(s, 50); return s; };
+  const a = mkc(), b = mkc(); run(a, 6); run(b, 6);
+  assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+});
+
+test('W11 no dead stat after evolving: every non-recipe stat of each Chain evolution still moves DPS (D1)', () => {
+  const avg = (evo, ranks, sc) => { let t = 0; for (let sd = 1; sd <= 3; sd++) t += runRanks('chain_lightning', ranks, evo, sc, sd).dps; return t / 3; };
+  const mid = { chains: 2, power: 2, cooldown: 2, area: 2 };
+  const nonRecipe = { thunder_judgment: ['cooldown', 'area'], static_storm: ['chains', 'power'], storm_tether: ['power', 'cooldown'] };
+  for (const [evo, stats] of Object.entries(nonRecipe)) for (const st of stats) {
+    const best = Math.max(...['single', 'sparse', 'kite'].map((sc) => avg(evo, { ...mid, [st]: 5 }, sc) / avg(evo, { ...mid, [st]: 1 }, sc)));
+    assert.ok(best >= 1.03, `${evo}: ${st} is dead (${best.toFixed(3)})`);
+  }
+});

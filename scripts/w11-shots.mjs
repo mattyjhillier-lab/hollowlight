@@ -63,7 +63,7 @@ const zoom = async (name, w, h, mobile, z = 3) => {
 const MOMENTS = {
   thunder: [['tell', `(() => { const s = window.__app.sim; const t = s.fx.find((f) => f.kind === 'judgetell'); return { ok: !!t && t.ttl < 0.12 && s.enemies.length > 8, n: t ? t.ttl : -1 }; })()`],
     ['pillars', `(() => { const s = window.__app.sim; return { ok: s.fx.filter((f) => f.pillar).length >= 3 && s.fx.filter((f) => f.pillar)[0].ttl > 0.12, n: s.fx.filter((f) => f.pillar).length }; })()`]],
-  static: [['field', `(() => { const s = window.__app.sim; const n = s.fx.filter((f) => f.kind === 'bolt' && f.field).length; return { ok: n >= 3 && s.enemies.length > 12, n }; })()`]],
+  static: [['field', `(() => { const s = window.__app.sim; const n = s.fx.filter((f) => f.kind === 'bolt' && f.field).length; return { ok: n >= 4 && s.enemies.length > 12, n }; })()`]],
   tether: [['arcs', `(() => { const s = window.__app.sim; const w = s.weapons.find((x) => x.id === 'chain_lightning'); return { ok: !!(w && w.rt.tethers && w.rt.tethers.length >= 3), n: w && w.rt.tethers ? w.rt.tethers.length : 0 }; })()`]],
 };
 const STATE = `(() => { const s = window.__app.sim; return s.state; })()`;

@@ -1207,6 +1207,28 @@ export class RunScene extends Phaser.Scene {
       fx.lineStyle(1, PAL.gold, 0.09 + pulse * 0.5).strokeCircle(pr.x, pr.y, stW.rt.fieldR - 3);
     }
     const rmFx = this.reducedMotion(), tierFx = this.quality.tier;
+    const tthW = sim.weapons.find((x) => x.id === 'chain_lightning' && x.evo === 'storm_tether');
+    if (tthW && tthW.rt.tethers && tthW.rt.tethers.length) { // W11d Storm Tether: steady arcs hero -> foe (+ one short fork); Low = straight lines, reduced motion = no flicker
+      const pr = sim.player, flick = !rmFx && tierFx !== 'low', seed0 = Math.floor(sim.time * 20) * 7919;
+      const arc = (x0, y0, x1, y1, wpx, a, sd) => {
+        const n = flick ? Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 14)) : 1;
+        for (let pass = 0; pass < 3; pass++) {
+          if (pass === 0) fx.lineStyle(wpx + 3, PAL.violet, 0.22 * a);
+          else if (pass === 1) fx.lineStyle(wpx, PAL.ice, 0.85 * a);
+          else fx.lineStyle(1, PAL.gold, 0.5 * a); // gold core hairline (evolved effect)
+          fx.beginPath().moveTo(x0, y0);
+          for (let k = 1; k < n; k++) { const t = k / n, q = seed0 + sd * 131 + k * 17; fx.lineTo(x0 + (x1 - x0) * t + jit(q) * 4, y0 + (y1 - y0) * t + jit(q + 5003) * 4); }
+          fx.lineTo(x1, y1).strokePath();
+        }
+      };
+      let ai = 0;
+      for (const t of tthW.rt.tethers) {
+        if (t.e.dead) continue;
+        arc(pr.x, pr.y - 10, t.e.x, t.e.y - 4, 2, 1, ++ai);
+        if (t.f && !t.f.dead) { arc(t.e.x, t.e.y - 4, t.f.x, t.f.y - 4, 1, 0.6, ai + 40); fx.fillStyle(0xffffff, 0.8).fillRect(Math.round(t.f.x) - 1, Math.round(t.f.y) - 5, 2, 2); }
+        if (lit) lm.add(t.e.x, t.e.y, 40, ROLE.lightning, 0.7);
+      }
+    }
     for (const f of sim.fx) {
       fi++;
       if (f.kind === 'judgetell' || f.kind === 'judgeflash') { // W11b Thunder Judgment: tell = a faint cyan radius ring (all tiers) + sky darkening (Med/High, not in reduced motion)

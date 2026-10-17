@@ -35,6 +35,7 @@ export const GATES = [
   { id: 'thunder_judgment', kind: 'evo', cond: { t: 'all', of: [{ t: 'clearChapter', id: 'cursed_forest', n: 3 }, { t: 'evolveWeapon', id: 'chain_lightning', n: 1 }] } },
   { id: 'spearhead', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'raven_flock', n: 3 }, { t: 'killEnemy', id: 'crow', n: 20000 }] } }, // W9: late gate 13 (counts estimated)
   { id: 'returning_pages', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'spirit_bolts', n: 2 }, { t: 'clearChapter', id: 'cursed_forest', n: 2 }] } }, // W10d: late gate (counts per third-evolutions.md section 7, estimated)
+  { id: 'storm_tether', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'chain_lightning', n: 2 }, { t: 'bossKill', id: 'elder_treant', n: 5 }] } }, // W11d: late gate 15 (counts estimated)
 ];
 
 export function unlockedAfter(stats) {

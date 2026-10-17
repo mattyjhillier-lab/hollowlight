@@ -691,6 +691,38 @@ const chainLightning = {
       return;
     }
 
+    if (evo === 'storm_tether') {
+      // W11d Storm Tether: ceil(Chains / 2) arcs (max 4) HOLD on the nearest foes inside 120 + 0.6 x Arc and burn them every tick
+      // (0.45x power, tick 0.25 s x Cooldown / 1.6, floor 0.1 s AFTER tree mods); each arc forks once at 0.2x to a foe within Arc of its
+      // target. An arc keeps its foe until it dies or leaves the reach, then re-locks at once. One arc per foe: a lone foe only
+      // ever gets one arc (no doubling), and a fork never lands on a foe that holds an arc.
+      const reach = tune(sim, w, 'reach', 120) + tune(sim, w, 'reachK', 0.6) * area;
+      const n = Math.min(tune(sim, w, 'cap', 4), Math.ceil(s.chains / 2));
+      const T = (rt.tethers ||= []);
+      for (let i = T.length - 1; i >= 0; i--) {
+        const e = T[i].e;
+        if (e.dead || Math.hypot(e.x - p.x, e.y - p.y) > reach || i >= n) T.splice(i, 1);
+      }
+      while (T.length < n) {
+        const e = sim.nearestEnemy(p.x, p.y, reach, (q) => !T.some((t) => t.e === q));
+        if (!e) break;
+        T.push({ e, f: null });
+        sim.addFx({ kind: 'ring', x: e.x, y: e.y, r: 12, ttl: 0.18, color: '#b8f2ff' }); // one crack on lock
+      }
+      rt.cd = (rt.cd ?? 0.2) - dt;
+      if (rt.cd > 0) return;
+      rt.cd = Math.max(0.1, tune(sim, w, 'tick', 0.25) * (s.cooldown / 1.6) * sim.mods.cooldown);
+      const k = tune(sim, w, 'k', 0.45), fk = tune(sim, w, 'fork', 0.2);
+      for (const t of T) {
+        if (t.e.dead) continue;
+        sim.hurt(t.e, dmg * k);
+        t.f = null;
+        const f = sim.nearestEnemy(t.e.x, t.e.y, area, (q) => q !== t.e && !T.some((o) => o.e === q));
+        if (f) { t.f = f; sim.hurt(f, dmg * k * fk); }
+      }
+      return;
+    }
+
     if (evo === 'thunder_judgment') {
       rt.jCd = (rt.jCd ?? 1.5) - dt;
       // W11b: 0.3 s sky-darkening tell (visual only; the render hook decides what to draw per tier / reduced motion)

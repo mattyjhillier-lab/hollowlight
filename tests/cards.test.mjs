@@ -24,8 +24,8 @@ test('data sanity: every evolution points at a real weapon and real stats', () =
     for (const s of evo.pair) assert.ok(def.stats[s], `${id} stat ${s} exists`);
     assert.notEqual(evo.pair[0], evo.pair[1]);
   }
-  // 5 weapons, 2-3 evolutions each, 12 total in this build
-  assert.equal(Object.keys(data.evolutions).length, 13);
+  // 5 weapons, 2-3 evolutions each, 14 total in this build
+  assert.equal(Object.keys(data.evolutions).length, 14);
 });
 
 test('open slots: starter run offers only the two starter weapons; unlocked weapons join the pool (rewritten G1b)', () => {
