@@ -37,6 +37,8 @@ function kite(sim) {
 }
 const SCEN = {
   single: { secs: 20, setup: (s) => ring(s, 'dummy', 1, 30, 30), input: () => ({}) },
+  // sparse: six static foes 95-145 px out (an early, thin wave): shows reach stats (Raven Watch) that crowds hide
+  sparse: { secs: 20, setup: (s) => ring(s, 'dummy', 6, 95, 145), input: () => ({}) },
   swarm: { secs: 25, setup: (s) => { s.time = 480; refill(s, 60); }, tick: (s) => refill(s, 60), input: () => ({}) },
   kite: { secs: 25, setup: (s) => { s.time = 480; refill(s, 60); }, tick: (s) => refill(s, 60), input: (s) => kite(s) },
 };

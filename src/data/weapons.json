@@ -18,12 +18,12 @@
     "type": "summon",
     "tags": [],
     "color": "#b79cff",
-    "desc": "A flock of ravens circles you and pecks anything that gets close.",
+    "desc": "Ravens perch by you, then swoop on foes they spot, peck, and fly back.",
     "stats": {
       "count": { "name": "Flock size",   "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more raven joins the flock" },
-      "power": { "name": "Peck power",   "base": 5,   "perRank": 2.5,  "fmt": "int", "hint": "Each peck hits harder" },
-      "range": { "name": "Flock radius", "base": 40,  "perRank": 7,    "fmt": "int", "hint": "Flock circles {old} → {new} out: reaches further, misses foes at your feet" },
-      "speed": { "name": "Flight speed", "base": 2.2, "perRank": 0.4,  "fmt": "dec", "hint": "Flock spins {upct} faster: only a small change in damage" }
+      "power": { "name": "Peck power",   "base": 7,   "perRank": 3,    "fmt": "int", "hint": "Each peck hits harder" },
+      "range": { "name": "Watch",        "base": 90,  "perRank": 12,   "fmt": "int", "hint": "Ravens spot foes {old} → {new} out from you" },
+      "speed": { "name": "Wingbeat",     "base": 1.0, "perRank": 0.15, "fmt": "dec", "hint": "Ravens swoop {upct} more often and fly faster" }
     }
   },
   "spirit_bolts": {

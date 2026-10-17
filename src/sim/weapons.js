@@ -197,88 +197,144 @@ const ghostWolves = {
   },
 };
 
-// ---------------------------------------------------------------- Raven Flock
+// ---------------------------------------------------------------- Raven Flock (W8a: scouts)
+// Each raven perches near the player, rests (Wingbeat), then swoops at a foe it spots within Watch of the player, pecks it
+// PECKS times and flies back. Targets are claimed one raven per foe; when none is unclaimed the flock shares (a lone foe or
+// the boss takes the whole flock). States: perch -> dive (swoop out) -> peck -> return -> perch. Wingbeat: swoops come
+// 1.6 s / wingbeat apart and the flight speed rises 260 -> 320 px/s. No RNG is drawn.
+const RAVEN_REST = 1.6;
+const RAVEN_PECKS = 3;
+const RAVEN_PECK_GAP = 0.15;
+const raven = {
+  claimed(units, self) {
+    const c = new Set();
+    for (const o of units) if (o !== self && (o.st === 'dive' || o.st === 'peck') && o.target && !o.target.dead) c.add(o.target.id);
+    return c;
+  },
+  pick(sim, w, u, units, watch) {
+    const p = sim.player;
+    const claimed = raven.claimed(units, u);
+    const toughest = w.evo === 'dive_bombers';
+    if (toughest) return sim.toughestEnemy(p.x, p.y, watch, (e) => !claimed.has(e.id)) || sim.toughestEnemy(p.x, p.y, watch);
+    return sim.nearestEnemy(p.x, p.y, watch, (e) => !claimed.has(e.id)) || sim.nearestEnemy(p.x, p.y, watch);
+  },
+};
+
 const ravenFlock = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
     const p = sim.player;
-    let count = s.count;
-    let range = s.range * sim.mods.area;
-    let spin = s.speed;
     const dmg = s.power * sim.dmgMult(w);
-    const fear = evo === 'murder_storm';
-    if (fear) {
-      count = Math.min(16, s.count * 2);
-      range *= 1.8;
-      spin *= 1.1;
-    }
-    const units = syncUnits(sim, w, 'raven', count, (i) => ({
-      r: 4, st: 'orbit', diveCd: 1.5 + i * 0.35, target: null, faceX: 1,
+    const watch = s.range * sim.mods.area;
+    const wing = Math.max(0.2, s.speed);
+    const rest = RAVEN_REST / wing;
+    const flight = Math.min(320, 260 + 80 * (wing - 1));
+    const units = syncUnits(sim, w, 'raven', s.count, (i) => ({
+      r: 4, st: 'perch', rest: 0.3 + i * 0.35, target: null, pecks: 0, pt: 0, slot: i, faceX: 1,
     }));
-    rt.ang = (rt.ang || 0) + spin * dt;
+    rt.ang = (rt.ang || 0) + 1.3 * dt;
+    const n = units.length;
 
     units.forEach((u, i) => {
-      const ring = fear && i % 2 ? range * 0.55 : range;
-      const a = rt.ang * (fear && i % 2 ? -1 : 1) + (i * TAU) / count;
-      const ox = p.x + Math.cos(a) * ring;
-      const oy = p.y + Math.sin(a) * ring;
+      u.slot = i;
+      const a = rt.ang + (i * TAU) / n;
+      const bob = Math.sin(sim.time * 5 + i * 1.7) * 2.5;
+      const px = p.x + Math.cos(a) * 24;
+      const py = p.y + Math.sin(a) * 18 - 8 + bob;
 
+      if (u.st === 'perch') {
+        u.x = px;
+        u.y = py;
+        u.rest -= dt;
+        if (u.rest > 0) return;
+        const t = raven.pick(sim, w, u, units, watch);
+        if (!t) { u.rest = 0.25; return; }
+        u.target = t;
+        u.st = 'dive';
+        return;
+      }
+      if (u.st === 'return') {
+        if (moveToward(u, px, py, flight * 1.15, dt) < 6) { u.st = 'perch'; u.rest = rest; u.target = null; }
+        return;
+      }
+      // dive / peck need a live target inside the (slightly stretched) watch; otherwise look for another or go home
+      let t = u.target;
+      if (!t || t.dead || Math.hypot(t.x - p.x, t.y - p.y) > watch * 1.35 + t.r) {
+        t = raven.pick(sim, w, u, units, watch);
+        if (t && Math.hypot(t.x - u.x, t.y - u.y) > 70 + t.r) t = null;
+        u.target = t;
+        if (!t) { u.st = 'return'; return; }
+      }
+      if (u.st === 'dive') {
+        if (moveToward(u, t.x, t.y, flight, dt) < t.r + u.r + 1) {
+          u.st = 'peck';
+          u.pecks = evo === 'dive_bombers' ? 1 : RAVEN_PECKS;
+          u.pt = 0;
+        }
+        return;
+      }
+      // peck
+      u.x += (t.x - u.x) * Math.min(1, 14 * dt);
+      u.y += (t.y - 2 - u.y) * Math.min(1, 14 * dt);
+      u.pt -= dt;
+      if (u.pt > 0) return;
+      u.pt = RAVEN_PECK_GAP;
       if (evo === 'dive_bombers') {
-        if (u.st === 'dive') {
-          const t = u.target;
-          if (!t || t.dead) {
-            u.st = 'return';
-          } else if (moveToward(u, t.x, t.y, 230, dt) < t.r + 5) {
-            const big = dmg * 6;
-            sim.hurt(t, big);
-            for (const e of sim.enemies) {
-              if (e.dead || e === t) continue;
-              if (Math.hypot(e.x - t.x, e.y - t.y) < e.r + 18) sim.hurt(e, dmg * 2);
-            }
-            sim.addFx({ kind: 'ring', x: t.x, y: t.y, r: 18, ttl: 0.2, color: '#b79cff' });
-            u.st = 'return';
-          }
-          return;
+        sim.hurt(t, dmg * 6);
+        for (const e of sim.enemies) {
+          if (e.dead || e === t) continue;
+          if (Math.hypot(e.x - t.x, e.y - t.y) < e.r + 18) sim.hurt(e, dmg * 2);
         }
-        if (u.st === 'return') {
-          if (moveToward(u, ox, oy, Math.max(240, range * spin * 1.4), dt) < 8) u.st = 'orbit';
-          return;
-        }
-        u.diveCd -= dt;
-        if (u.diveCd <= 0) {
-          // W1a: claim set, ravens already diving keep their target; fall back to shared only when nothing unclaimed is in range.
-          const claimed = new Set();
-          for (const o of units) if (o !== u && o.st === 'dive' && o.target && !o.target.dead) claimed.add(o.target.id);
-          const t = sim.toughestEnemy(p.x, p.y, 170, (e) => !claimed.has(e.id)) || sim.toughestEnemy(p.x, p.y, 170);
-          if (t) {
-            u.st = 'dive';
-            u.target = t;
-            u.diveCd = 2.4;
-          } else {
-            u.diveCd = 0.5;
-          }
-        }
+        sim.addFx({ kind: 'ring', x: t.x, y: t.y, r: 18, ttl: 0.2, color: '#b79cff' });
+      } else {
+        sim.hurt(t, dmg);
       }
-
-      u.x = ox;
-      u.y = oy;
-      for (const e of sim.enemies) {
-        if (e.dead) continue;
-        const dx = e.x - u.x;
-        const dy = e.y - u.y;
-        const rr = e.r + u.r + 1;
-        if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `raven${i}`, 0.55)) {
-          sim.hurt(e, dmg);
-          // W1a: bosses are never frightened; an enemy that was frightened cannot be re-frightened until 1.5 s after it recovers.
-          if (fear && !e.boss) {
-            const fdur = tune(sim, w, 'fear', 0.3);
-            if (sim.canHit(e, 'stormFear', fdur + 1.5)) e.fearT = Math.max(e.fearT, fdur);
-          }
-        }
-      }
+      u.pecks--;
+      if (u.pecks <= 0) u.st = 'return';
     });
+
+    if (evo === 'murder_storm') ravenWall(sim, w, dmg, dt);
   },
 };
+
+// Murder Storm (until its W9 rebuild): an orbiting wall of extra ravens that peck on contact and frighten (W1a rules),
+// on top of the scout flock. Wall ranks use the old flock-radius numbers (40 + 7 per Watch rank, spin 2.2 + 0.4 per Wingbeat rank).
+function ravenWall(sim, w, dmg, dt) {
+  const { s, rt } = w;
+  const p = sim.player;
+  const ranks = w.ranks || {};
+  const base = 40 + 7 * (ranks.range || 0);
+  const range = base * 1.8 * sim.mods.area;
+  const spin = (2.2 + 0.4 * (ranks.speed || 0)) * 1.1;
+  const count = Math.min(s.count, 12 - s.count); // flock doubles, cap 12
+  const list = rt.wall || (rt.wall = []);
+  while (list.length > count) list.pop().dead = true;
+  while (list.length < count) {
+    const u = sim.makeUnit(w, 'raven', { r: 4, st: 'orbit', target: null, faceX: 1, wall: true });
+    list.push(u);
+    sim.units.push(u);
+  }
+  rt.wang = (rt.wang || 0) + spin * dt;
+  list.forEach((u, i) => {
+    const ring = i % 2 ? range * 0.55 : range;
+    const a = rt.wang * (i % 2 ? -1 : 1) + (i * TAU) / count;
+    u.x = p.x + Math.cos(a) * ring;
+    u.y = p.y + Math.sin(a) * ring;
+    for (const e of sim.enemies) {
+      if (e.dead) continue;
+      const dx = e.x - u.x;
+      const dy = e.y - u.y;
+      const rr = e.r + u.r + 1;
+      if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `wall${i}`, 0.55)) {
+        sim.hurt(e, dmg);
+        if (!e.boss) {
+          const fdur = tune(sim, w, 'fear', 0.3);
+          if (sim.canHit(e, 'stormFear', fdur + 1.5)) e.fearT = Math.max(e.fearT, fdur);
+        }
+      }
+    }
+  });
+}
 
 // ---------------------------------------------------------------- Spirit Bolts
 const spiritBolts = {
