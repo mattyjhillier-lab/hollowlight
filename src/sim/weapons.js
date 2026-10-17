@@ -808,6 +808,7 @@ const holyOrbit = {
       contact = tune(sim, w, 'contact', 0.6);
     }
     if (evo === 'judgement_wheel') spin *= tune(sim, w, 'spin', 1.8);
+    const tide = evo === 'vesper_tide';
     const units = syncUnits(sim, w, 'orb', count, () => ({ r: 4, disabledT: 0, hidden: false }));
     rt.ang = (rt.ang || 0) + spin * dt;
 
@@ -817,7 +818,24 @@ const holyOrbit = {
     let lock = 0;
     if (wheel) { const k = Math.min(1, wheel.age / 0.5, Math.max(0, wheel.ttl) / 0.5); lock = k * k * (3 - 2 * k); }
     rt.lock = lock;
+    // W12 Vesper Tide 'Swell and Draw': the ring radius breathes 14 px <-> tide x Orbit size at phase x Orbit speed rad/s (cosine,
+    // eases at both ends). Hits made while the ring pushes OUT (sin phi > 0) deal x crest. The guard contraction WINS: it takes the
+    // breathing radius as input and closes it to 14 px, and a closing/closed ring never gets the crest. Candle Wheel: no breathing, no crest.
+    rt.crest = 1; rt.tide = null;
+    let swelling = false;
+    if (tide && !wheel) {
+      rt.ph = (rt.ph || 0) + spin * tune(sim, w, 'phase', 1.5) * dt;
+      const k = 0.5 - 0.5 * Math.cos(rt.ph);
+      const rmin = Math.min(radius, tune(sim, w, 'rmin', 14));
+      radius = rmin + (radius * tune(sim, w, 'tide', 1.7) - rmin) * k;
+      swelling = Math.sin(rt.ph) > 0;
+    }
     radius = orbitRadius(sim, rt, dt, radius, !!wheel);
+    if (tide && !wheel) {
+      swelling = swelling && !(rt.gK > 0);
+      rt.crest = swelling ? tune(sim, w, 'crest', 2) : 1;
+      rt.tide = { r: radius, out: swelling };
+    }
     const gap = ORBIT_GAP / rateMult(sim.data.weapons.holy_orbit, 'speed', w.ranks.speed || 0);
     const burnOk = !wheel;
     units.forEach((u, i) => {
@@ -861,7 +879,7 @@ const holyOrbit = {
           break;
         }
         if (sim.canHit(e, `orb${i}`, gap)) {
-          const dealt = sim.hurt(e, dmg * contact * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
+          const dealt = sim.hurt(e, dmg * contact * rt.crest * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
           if (burnOk) sim.burn(e, dealt);
           if (rt.gK > 0) { u.guardCd = gap; break; } // contracted: one foe per light per gap (a guard, not a crowd grinder)
         }

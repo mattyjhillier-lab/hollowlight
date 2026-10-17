@@ -587,7 +587,7 @@ test('G1e: no non-gate node text names a locked weapon or evolution (data-driven
   const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate);
   const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
   const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
-  assert.ok(lockedW.length === 3 && lockedE.length === 12);
+  assert.ok(lockedW.length === 3 && lockedE.length === 13);
   for (const id of def.list) {
     const n = def.nodes[id];
     if (n.permanent || n.gateAnc.some((g) => def.nodes[g].effects.some((e) => e.unlock === 'weapon'))) continue; // gate nodes and locked-weapon nodes may name their weapon

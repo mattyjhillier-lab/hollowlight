@@ -42,7 +42,7 @@ for (let r = 0; r <= 5; r++) {
   const a = run(ranks, null, 'ring'), b = run(ranks, null, 'hug'), c = run(ranks, null, 'boss');
   console.log(`radius r${r}      ${f(a.dps)} ${f(b.dps)} ${f(c.dps)} |  ${(b.dps / a.dps).toFixed(2)}     ${(b.burn * 100).toFixed(0)}%      ${(c.burn * 100).toFixed(0)}%`);
 }
-for (const [evo, pair] of [['sanctum_halo', ['count', 'radius']], ['judgement_wheel', ['power', 'speed']]]) {
+for (const [evo, pair] of [['sanctum_halo', ['count', 'radius']], ['judgement_wheel', ['power', 'speed']], ['vesper_tide', ['radius', 'speed']]]) {
   const ranks = { count: OTHERS, power: OTHERS, radius: OTHERS, speed: OTHERS };
   for (const k of pair) ranks[k] = 5;
   const a = run(ranks, evo, 'ring'), b = run(ranks, evo, 'hug'), c = run(ranks, evo, 'boss');
