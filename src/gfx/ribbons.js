@@ -147,7 +147,7 @@ export class RibbonSet {
       const f = Math.max(0, Math.min(1, q.t / (q.l || 1)));
       const k = this.count++;
       this.sx[k] = 0.5 * (q.x + o.x); this.sy[k] = 0.5 * (q.y + o.y); this.sl[k] = len; this.sr[k] = Math.atan2(dy, dx);
-      this.sw[k] = q.hw * 2 * (0.45 + 0.55 * f); this.sa[k] = 0.3 * (0.2 + 0.8 * f); this.sc[k] = bodyCol;
+      this.sw[k] = q.hw * 2 * (0.45 + 0.55 * f); this.sa[k] = 0.42 * (0.25 + 0.75 * f); this.sc[k] = bodyCol;
       if (i >= n - coreN && this.count < this.cap) {
         const c = this.count++;
         this.sx[c] = this.sx[k]; this.sy[c] = this.sy[k]; this.sl[c] = len; this.sr[c] = this.sr[k];

@@ -47,12 +47,14 @@ async function load(w, h, mobile, query) {
   await send('Page.enable'); await send('Runtime.enable');
   await send('Page.navigate', { url: base + '/' + query });
   for (let i = 0; i < 80; i++) { await sleep(250); try { if (await ev('!!(window.__app && window.__app.sim && window.__app.ui && window.__app.ui.hudView)')) break; } catch { /* loading */ } }
+  if (process.env.QUALITY) await ev(`window.__app.save.data.settings.quality = '${process.env.QUALITY}'`); // headless auto-tier drops to Low: force the tier under test
   await sleep(600);
 }
 
 const EVO = 'trails';
 const GRANT = 'grant=' + encodeURIComponent('ghost_wolves:count=5,power=5,speed=5,duration=3:phantom_stampede');
-const VIEWS = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true]];
+const VIEWS0 = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true], ['phone-port-390x844', 390, 844, true]];
+const VIEWS = process.env.VIEW ? VIEWS0.filter((v) => v[0].startsWith(process.env.VIEW)) : VIEWS0;
 const zoom = async (name, w, h, mobile, z = 3) => {
   const c = await ev(`(() => { const a = window.__app; const s = a.sim; const cam = a.scene.cameras.main; const wv = cam.worldView; const cv = document.querySelector('canvas').getBoundingClientRect(); const u = s.units.filter((x) => x.kind === 'wolf' && !x.dead).sort((p, q) => Math.hypot(q.x - s.player.x, q.y - s.player.y) - Math.hypot(p.x - s.player.x, p.y - s.player.y))[0]; const t = s.weapons.find((x) => x.id === 'ghost_wolves').rt.trail; const m = u && t.length ? t[Math.max(0, t.length - 10)] : u; return u ? { x: cv.left + (m.x - wv.x) / wv.width * cv.width, y: cv.top + (m.y - wv.y) / wv.height * cv.height } : null; })()`);
   const cx = Math.max(160, Math.min(w - 160, c ? c.x : w / 2)); const cy = Math.max(90, Math.min(h - 90, c ? c.y : h / 2));
@@ -69,9 +71,10 @@ try {
     await load(w, h, mobile, `?auto=wren&seed=2&t=330&god=1&rr=2&ban=1${mobile ? '&touch=1' : ''}&${GRANT}`);
     let got = false, info = null;
     for (let i = 0; i < 1500 && !got; i++) {
+      if (i % 200 === 199) console.log('  waiting', i, JSON.stringify(info), await ev(STATE));
       if ((await ev(STATE)) === 'levelup') { await ev('window.__app.sim.offer && window.__app.sim.pick && window.__app.sim.pick(0)').catch(() => {}); continue; }
       info = await ev(MOMENT[EVO]);
-      if (info.ok) { got = true; await zoom(`${EVO}-${tag}-zoom`, w, h, mobile); await shot(`${EVO}-${tag}-full`); }
+      if (info.ok) { got = true; await zoom(`${EVO}-${tag}-${process.env.QUALITY || 'auto'}-zoom`, w, h, mobile); await shot(`${EVO}-${tag}-${process.env.QUALITY || 'auto'}-full`); }
       else await sleep(40);
     }
     check(`${tag}: ${EVO} moment captured`, got, JSON.stringify(info));

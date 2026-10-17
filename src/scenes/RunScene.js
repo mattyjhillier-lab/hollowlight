@@ -1220,7 +1220,7 @@ export class RunScene extends Phaser.Scene {
     const ww = sim.weapons.find((w) => w.evo === 'phantom_stampede');
     if (ww && ww.rt.trail && ww.rt.trail.length) {
       const tc = q.caps.trail || { body: 0, core: 0 };
-      const ph = this.swayPhone ? 0.6 : 1;
+      const ph = this.swayPhone ? 0.85 : 1; // the trail is the evolution's whole look: phones keep most of it
       n = this.ribSet.addTrail(ww.rt.trail, { body: Math.floor(tc.body * ph), core: Math.floor(tc.core * ph) }, ROLE.spiritA, 0xfff1c8);
     }
     this.ribLayer.render(this.ribSet, n);
