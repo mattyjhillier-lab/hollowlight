@@ -1,3 +1,4 @@
+- MASTER V1 LAUNCH CHECKLIST (what is done, awaiting review, required before launch, parked, Matt-only, known limits): docs/LAUNCH-CHECKLIST.md (compiled 2026-10-17).
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 - E9 DONE 2026-10-17 (awaiting Matt look; see LOCKED E9): evolution pick moment = ~0.55 s beat (role-colour pulse ring, gold rim on the weapon units, Calm = none) + kit name plate with codex line (recipe only on the first take) + codex/cue data for all 15 evolutions; no sim change (weapon timers already restart on evolve; verb acts 0-0.4 s, Talon Mark 0.75 s), sweeps byte-identical. Parked: sound for evo_<id> cues, codex screen, E10 status marks.
