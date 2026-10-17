@@ -80,6 +80,8 @@ export class CritterField {
     this.cand = { kind: 0, x: 0, y: 0, key: 0, h: 0 };
     this.live = 0;
     this.hush = false;
+    this.ext = false; // AL-6: the dawn hush moment forces hush; eager = the dawn flood lets critters return at once
+    this.eager = false;
     this.quiet = 0;
     this.scanT = 9;
     this.hushT = 9;
@@ -144,6 +146,7 @@ export class CritterField {
       this.hush = near || swarm >= HUSH_N;
       if (this.hush) this.quiet = 0; else this.quiet += step;
     }
+    if (this.ext) { this.hush = true; this.quiet = 0; } else if (this.eager && !this.hush && this.quiet < CALM_S) this.quiet = CALM_S;
     // ---- update live critters
     for (let si = 0; si < this.slots.length; si++) {
       const s = this.slots[si];

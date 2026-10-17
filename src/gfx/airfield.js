@@ -92,7 +92,7 @@ export class FogField {
   setBudget(n) { this.n = Math.max(0, Math.min(FOG_MAX, Math.floor(fin(n)))); }
 
   // view = { x0, y0, x1, y1 }; wnd = { x, y } cached shared wind (-1..1); life = LifeMap-like (sampleClean/sampleCorr)
-  update(dt, t, view, life, wx, wy, reduced, world = 4000) {
+  update(dt, t, view, life, wx, wy, reduced, world = 4000, thin = 0) {
     const n = this.n;
     if (n === 0) return;
     const d = dt > 0 ? (dt < 0.1 ? dt : 0.1) : 0;
@@ -122,7 +122,7 @@ export class FogField {
       this.dens[i] += (this.tgt[i] - this.dens[i]) * k;
       const u = (px - ox) / PX; const v = (py - oy) / PY; // fade at the wrap seam so a bank never pops
       const seam = sst(0, 0.16, u) * sst(0, 0.16, 1 - u) * sst(0, 0.16, v) * sst(0, 0.16, 1 - v);
-      this.a[i] = FOG_ALPHA * this.dens[i] * seam;
+      this.a[i] = FOG_ALPHA * this.dens[i] * seam * (1 - fin(thin)); // AL-6: first light / dawn thin the fog
     }
   }
 }
@@ -166,8 +166,9 @@ export class AirField {
   get count() { return this.nFly + this.nMote; }
   indexOf(j) { return j < this.nFly ? j : FLY_MAX + (j - this.nFly); } // j in 0..count-1 -> slot
 
-  update(dt, t, view, life, wx, wy, reduced) {
+  update(dt, t, view, life, wx, wy, reduced, dmod = null) {
     if (this.count === 0) return;
+    const rise = dmod ? fin(dmod.rise) : 0; const fade = dmod ? fin(dmod.fade) : 0; const slow = dmod ? 1 - fin(dmod.slow) : 1; // AL-6 dawn: fireflies rise + fade, motes slow
     const d = dt > 0 ? (dt < 0.1 ? dt : 0.1) : 0;
     t = fin(t);
     const PX = view.x1 - view.x0 + 2 * AIR_M;
@@ -194,16 +195,16 @@ export class AirField {
         al = MOTE_ALPHA * 0.6;
       } else if (fly) {
         this.ax[i] += (2.2 * this.sp[i] + 7 * wX) * d;
-        this.ay[i] += (-1.6 * this.sp[i] + 3 * wY) * d;
+        this.ay[i] += (-1.6 * this.sp[i] + 3 * wY - 16 * rise) * d;
         px = ox + mod(this.bx[i] + this.ax[i] - ox, PX) + Math.sin(t * 0.9 * this.sp[i] + this.ph[i]) * 6;
         py = oy + mod(this.by[i] + this.ay[i] - oy, PY) + Math.cos(t * 1.1 * this.sp[i] + this.ph[i]) * 5;
-        al = FLY_ALPHA * (0.35 + 0.65 * Math.max(0, Math.sin(t * 1.4 * this.sp[i] + this.ph[i]) * 0.5 + 0.5));
+        al = FLY_ALPHA * (0.35 + 0.65 * Math.max(0, Math.sin(t * 1.4 * this.sp[i] + this.ph[i]) * 0.5 + 0.5)) * (1 - fade);
       } else {
-        this.ax[i] += (6 + 14 * wX) * d * this.sp[i];
-        this.ay[i] += (-0.8 + 4 * wY) * d * this.sp[i];
+        this.ax[i] += (6 + 14 * wX) * d * this.sp[i] * slow;
+        this.ay[i] += (-0.8 + 4 * wY) * d * this.sp[i] * slow;
         px = ox + mod(this.bx[i] + this.ax[i] - ox, PX) + Math.sin(t * 0.5 + this.ph[i]) * 2;
         py = oy + mod(this.by[i] + this.ay[i] - oy, PY) + Math.cos(t * 0.6 + this.ph[i]) * 2;
-        al = MOTE_ALPHA * (0.5 + 0.5 * Math.sin(t * 0.7 + this.ph[i]) * 0.5 + 0.25);
+        al = MOTE_ALPHA * (0.5 + 0.5 * Math.sin(t * 0.7 + this.ph[i]) * 0.5 + 0.25) * (1 - 0.3 * fade);
       }
       const u = (px - ox) / PX; const v = (py - oy) / PY;
       const seam = sst(0, 0.1, u) * sst(0, 0.1, 1 - u) * sst(0, 0.1, v) * sst(0, 0.1, 1 - v);

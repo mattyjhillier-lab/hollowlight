@@ -95,7 +95,8 @@ export class AirLayer {
     // ---- fog
     const nf = st.fog ? airCount(caps.atmos.fog, { phone: st.phone, max: FOG_MAX }) : 0;
     this.fog.setBudget(nf);
-    this.fog.update(dt, t, view, life, this.wx, this.wy, reduced, this.world);
+    const mod = st.mod || null; // AL-6 dawn multipliers (rise / fade / slow / thin), optional
+    this.fog.update(dt, t, view, life, this.wx, this.wy, reduced, this.world, mod ? mod.thin : 0);
     for (let i = 0; i < nf; i++) {
       const im = this.fogIm[i] || this.makeFog();
       const a = this.fog.a[i];
@@ -109,7 +110,7 @@ export class AirLayer {
     let nMote = st.motes ? airCount(caps.ambient.motes, { phone: st.phone, max: MOTE_MAX }) : 0;
     if (reduced) { nFly = 0; nMote >>= 1; }
     this.air.setBudget(nFly, nMote);
-    this.air.update(dt, t, view, life, this.wx, this.wy, reduced);
+    this.air.update(dt, t, view, life, this.wx, this.wy, reduced, mod);
     const cnt = nFly + nMote;
     for (let j = 0; j < cnt; j++) {
       const i = this.air.indexOf(j);

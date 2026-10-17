@@ -34,6 +34,7 @@ function parseParams() {
     sway: q.get('sway') !== '0', // dev: ?sway=0 turns the AL-1 grass sway layer off (A/B perf)
     fog: q.get('fog') !== '0', // dev: ?fog=0 turns the W5 fog banks off (A/B perf)
     motes: q.get('motes') !== '0', // dev: ?motes=0 turns the W5 fireflies + motes off (A/B perf)
+    dawn: q.get('dawn') !== '0', // dev: ?dawn=0 turns the AL-6 dawn chorus off (A/B perf). Preview the moments with ?auto=wren&t=520 (first light), t=590 (hush), t=860 (flood), t=890 (14:50)
     critters: q.get('critters') !== '0', // dev: ?critters=0 turns the AL-5 critters off (A/B perf)
     edge: q.get('edge') !== '0', // dev: ?edge=0 turns the W5 edge-wall fade off (A/B perf)
     corr: q.get('corr') !== '0', // dev: ?corr=0 stops enemies staining the ground (A/B perf)

@@ -31,6 +31,8 @@ import { makePropAtlas, ATLAS_KEY as PROP_KEY } from '../gfx/propatlas.js';
 import { START_CLEAR } from '../gfx/propfield.js';
 import { RibbonSet, RibbonLayer, ribbonCaps } from '../gfx/ribbons.js';
 import { AirLayer, makeEdgeTextures } from '../gfx/airlayer.js'; // W5 fog, fireflies/motes, edge wall (visual only)
+import { DawnLayer } from '../gfx/dawnlayer.js'; // AL-6 dawn chorus (birds, petals, light shafts; visual only)
+import { airN, DAWN_CAPS, REF as DAWN_REF } from '../gfx/dawn.js';
 import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
@@ -162,6 +164,9 @@ export class RunScene extends Phaser.Scene {
     this.props = new PropLayer(this, { zone: (x, y) => zoneB(x, y, size), world: size }); // W4 props + AL-3 crown sway/petals (visual only)
     this.air = new AirLayer(this, { world: size, glowKey: 'glow', blendAdd: ADD }); // W5 fog + fireflies/motes + edge wall (visual only, own hash stream)
     this.critters = new CritterLayer(this, { world: size, glowKey: 'glow' }); // AL-5 critters (visual only, never touches the sim)
+    this.dawnFx = new DawnLayer(this, { glowKey: 'glow', blendAdd: ADD }); // AL-6 dawn chorus (visual only, own hash stream, never the sim RNG)
+    this.dawnSt = { calm: false, phone: false, victory: false, hx: 0, hy: 0, bright: 'normal' };
+    this.dawnBud = { birds: 0, petals: 0, shafts: 0 };
     this.ribSet = new RibbonSet(1000, 12, 64); // W2 trails (+ W7b Lightfoot trail segments) (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
@@ -323,12 +328,31 @@ export class RunScene extends Phaser.Scene {
     const P = app.params;
     this.airSt.caps = caps; this.airSt.phone = this.swayPhone; this.airSt.reduced = reduced;
     this.airSt.fog = P.fog && live; this.airSt.motes = P.motes && live; this.airSt.edge = P.edge;
+    // AL-6 dawn chorus: multipliers first (fireflies rise/fade, motes slow, fog thins, critters hush/return), then the pooled birds/petals/shafts
+    const dw = this.dawnFx;
+    const dm = app.params.dawn ? dw.field.mod : null;
+    this.airSt.mod = dm;
     this.air.update(dt, sim.time, view, this.life, this.airSt);
     const cs = this.critSt;
     cs.on = !!(P.critters && this.gbOn && live && caps.ambient.critters > 0); cs.cap = caps.ambient.critters; cs.phone = this.swayPhone; cs.reduced = reduced;
     this.critters.setTint(this.lmOn ? 0xffffff : this.gradeNow);
     this.tickVibrancy(dt, view);
+    this.critters.field.ext = !!(dm && dm.hush); this.critters.field.eager = !!(dm && dm.eager);
     this.critters.update(dt, sim.time, view, sim.player, this.life, sim.enemies, sim.enemies.length, cs);
+    this.tickDawn(sim, dt, view, caps, reduced);
+  }
+
+  // AL-6: run seconds on the 900 s reference clock; birds (CAPS ambient.birds 12/8/4), petals + shafts (DAWN_CAPS), Calm motion = nothing moves, ?dawn=0 off.
+  tickDawn(sim, dt, view, caps, reduced) {
+    const dw = this.dawnFx;
+    const on = app.params.dawn && sim.state !== 'dead';
+    const st = this.dawnSt; const bud = this.dawnBud; const ph = this.swayPhone;
+    const dc = DAWN_CAPS[this.quality.tier] || DAWN_CAPS.low;
+    bud.birds = on ? airN(caps.ambient.birds, ph, 12) : 0; bud.petals = on ? airN(dc.petals, ph, 10) : 0; bud.shafts = on ? airN(dc.shafts, ph, 3) : 0;
+    st.calm = reduced; st.phone = ph; st.victory = on && sim.state === 'victory'; st.hx = sim.player.x; st.hy = sim.player.y; st.bright = this.arc.mode || 'normal';
+    dw.setTint(this.lmOn ? 0xffffff : this.gradeNow);
+    if (!on) { dw.field.mod.flush = 0; dw.field.mod.rise = dw.field.mod.fade = dw.field.mod.slow = dw.field.mod.thin = 0; dw.field.mod.hush = dw.field.mod.eager = false; if (dw.count) dw.hideAll(); return; }
+    dw.update(dt, (sim.time / app.data.balance.runSeconds) * DAWN_REF, view, st, bud);
   }
 
   // WL6c: restored-world vibrancy (visual only). vib = arc saturation x (0.85 + 0.15 x restored share of the view); the ground shader gets it every frame
@@ -353,7 +377,7 @@ export class RunScene extends Phaser.Scene {
       v.rTarget = restoredShare(this.life, view.x0, view.y0, view.x1, view.y1);
     }
     v.R += ((v.rTarget || 0) - v.R) * k;
-    const target = vibTarget(this.arc.sat, v.R);
+    const target = vibTarget(this.arc.sat, v.R) + (app.params.dawn ? this.dawnFx.field.mod.flush : 0); // AL-6: soft colour flush on the restored layers
     v.s += (target - v.s) * k;
     if (this.gbOn) this.gb.setSat(v.s);
     const L = vibLevel(v.s);
@@ -366,6 +390,7 @@ export class RunScene extends Phaser.Scene {
   hideAmbient() {
     this.air.hideAll();
     this.critters.hideAll();
+    this.dawnFx.hideAll();
   }
 
   // AL-1b: a small seeded restored patch around the spawn so the run starts with some colour and sway (visual only: life map floor, never decays;
@@ -391,6 +416,7 @@ export class RunScene extends Phaser.Scene {
     this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
     this.air.reset(((sim.seed | 0) ^ 0xa1f10) | 0); // W5 fog / fireflies / motes (own hash stream)
     this.critters.reset(((sim.seed | 0) ^ 0xc41773) | 0); // AL-5 critters (own hash stream)
+    this.dawnFx.reset(((sim.seed | 0) ^ 0xda3c5) | 0); // AL-6 dawn chorus (own hash stream)
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
     const size = app.data.balance.worldSize;
