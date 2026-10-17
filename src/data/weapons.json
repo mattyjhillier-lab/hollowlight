@@ -49,9 +49,9 @@
     "desc": "Lightning strikes the nearest enemy and jumps between foes.",
     "stats": {
       "chains":   { "name": "Chains",   "base": 2,   "perRank": 1,     "fmt": "int", "hint": "Lightning jumps to one more foe" },
-      "power":    { "name": "Power",    "base": 12,  "perRank": 5,     "fmt": "int", "hint": "Each strike hits harder" },
+      "power":    { "name": "Power",    "base": 12,  "perRank": 6,     "fmt": "int", "hint": "Each strike hits harder (the first foe takes 1.5x)" },
       "cooldown": { "name": "Cooldown", "base": 1.6, "perRank": -0.15, "fmt": "sec", "hint": "Strikes more often (every {new})" },
-      "area":     { "name": "Jump range","base": 60, "perRank": 10,    "fmt": "int", "hint": "Jumps reach {old} → {new} away: little change in a crowd" }
+      "area":     { "name": "Arc",       "base": 60, "perRank": 10,    "fmt": "int", "first": 1.5, "decay0": 0.05, "decayPer": 0.01, "hint": "Each jump reaches {old} → {new} away and loses less power (5% → 0% per jump at full Arc)" }
     }
   },
   "holy_orbit": {

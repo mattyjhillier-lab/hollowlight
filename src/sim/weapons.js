@@ -484,15 +484,21 @@ const spiritBolts = {
 };
 
 // ---------------------------------------------------------------- Chain Lightning
+// W11a: the first foe takes 1.5x; every jump after it loses 5% less per Arc rank (5% at rank 0, 0% at rank 5), floor 0.5x.
+export function chainDecay(sim, w) {
+  const a = sim.data.weapons.chain_lightning.stats.area;
+  return Math.max(0, (a.decay0 ?? 0.05) - (a.decayPer ?? 0.01) * (w.ranks.area || 0));
+}
 function strikeChain(sim, w, first, chains, dmg, area) {
   const p = sim.player;
+  const decay = chainDecay(sim, w), firstMult = sim.data.weapons.chain_lightning.stats.area.first ?? 1.5;
   const hit = new Set();
   const pts = [{ x: p.x, y: p.y }];
   let cur = first;
   for (let i = 0; i < chains && cur; i++) {
     hit.add(cur.id);
     pts.push({ x: cur.x, y: cur.y });
-    sim.hurt(cur, dmg * Math.max(0.5, 1 - 0.05 * i));
+    sim.hurt(cur, dmg * (i === 0 ? firstMult : Math.max(0.5, 1 - decay * i)));
     cur = sim.nearestEnemy(cur.x, cur.y, area, (e) => !hit.has(e.id));
   }
   sim.addFx({ kind: 'bolt', pts, ttl: 0.16, color: '#b8f2ff' });
