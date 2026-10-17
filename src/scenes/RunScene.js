@@ -888,6 +888,7 @@ export class RunScene extends Phaser.Scene {
       }
       if (e.flash > 0) tq = 100;
       else if (e.bleedT > 0) tq = 101;
+      else if (e.markT > 0 && !e.boss) tq = 102; // W8b Mark: light violet body tint (all tiers, static; boss only gets the omen)
       else if (nlOn && !e.boss && ei < 512) tq = 200 + nl.lit[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
       else if (lit && !e.boss) {
         tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
@@ -897,6 +898,7 @@ export class RunScene extends Phaser.Scene {
         img.tv = nl.ver;
         if (tq >= 200) img.setTint(nl.tab[tq - 200]);
         else if (tq === 100) img.setTintFill(0xffffff);
+        else if (tq === 102) img.setTint(ROLE.markTint);
         else if (tq === 101) img.setTint(ROLE.bleedTint); // blood red (Matt 2026-10-16), shared with bleed numbers and drips
         else if (tq === 0) img.clearTint();
         else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
@@ -941,6 +943,16 @@ export class RunScene extends Phaser.Scene {
       } else if (img.uLast !== e.burnTot) {
         const d = e.burnTot - img.uLast; img.uLast = e.burnTot;
         if (d >= 1 && bleedNums < 6) { bleedNums++; this.nums.spawn(e.x, e.y - e.r - 6, d, e.id + 0.25, KIND.BURN, 0, false); }
+      }
+      // W8b Mark omen (reads markT only): a small violet chevron hovering over the head; blinks in its last 0.6 s. Shares the drip tier cap
+      // (none on Low, which keeps just the tint) and is not drawn under reduced motion (static tint stays).
+      if (e.markT > 0 && dripN < dripCap) {
+        dripN++;
+        const bob = Math.sin(sim.time * 6 + e.id) * 1.2;
+        const a = e.markT < 0.6 ? (Math.floor(sim.time * 12) % 2 ? 0.25 : 0.9) : 0.9;
+        const mx = Math.round(e.x), my = Math.round(e.y - e.r - (e.boss ? 14 : 9) + bob), k = e.boss ? 2 : 1;
+        fx.fillStyle(0x2a1d3a, a * 0.85).fillTriangle(mx - 5 * k, my - 4 * k, mx + 5 * k, my - 4 * k, mx, my + 3 * k); // dark outline so it reads on grass and on pale foes
+        fx.fillStyle(ROLE.mark, a).fillTriangle(mx - 4 * k, my - 3 * k, mx + 4 * k, my - 3 * k, mx, my + 1.5 * k);
       }
       if (e.tele) {
         if (e.boss) {

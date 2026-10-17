@@ -41,6 +41,7 @@ export const ROLE = {
   pickup: 0x7dffc4, heart: 0xff6f86, magnet: 0xa98aff,
   bleed: 0xe5484d, bleedTint: 0xff8a82, // blood red (Matt 2026-10-16): bleed numbers, drips and the enemy tint share it; distinct from heart rose and from the player-hit light red
   burn: 0xc79bff, burnHot: 0xefdcff, // Elias's Burn: lilac ember light (numbers + flame licks); not red, not gold
+  mark: 0x9b7dff, markTint: 0xc9b8ff, // W8b Mark: raven violet omen chevron + a light violet body tint (shape differs from Burn's rising licks)
   evo: 0xffd36b, evoHot: 0xfff3c4, danger: 0xff4a3a,
   uiA: 0x5ee6ff, uiB: 0x8b6cff, uiText: 0xe8e0ff, uiMuted: 0x9fb3c8,
 };

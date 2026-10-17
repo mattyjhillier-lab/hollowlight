@@ -19,6 +19,13 @@ import { WEAPON_BEHAVIOURS } from './weapons.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// MARK (W8b): +15% damage taken from ALL sources for 3 s, refresh only (re-marking resets the timer, never stacks), bosses included.
+// TOTAL DAMAGE-AMP CAP (Matt 2026-10-16): the product of every temporary damage amp (Mark, a source amp such as the future Rally +50%)
+// is capped at x1.75; applied in exactly one place (Sim.damageAmp, used by Sim.hurt).
+export const MARK_AMP = 0.15;
+export const MARK_TIME = 3;
+export const AMP_CAP = 1.75;
+
 export class Sim {
   constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false }) {
     this.data = data;
@@ -105,6 +112,9 @@ export class Sim {
     this.dmgBy = {};
     this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
     this.burnBy = {}; // the Burn part of dotBy (counter only)
+    this.srcAmps = {}; // temporary damage amps by SOURCE weapon id (a future Rally sets srcAmps.ghost_wolves = 1.5 while active); joins Mark in the capped product
+    this.ampBonus = 0; // extra damage dealt because of temporary amps (counter only)
+    this.markBy = {}; // the Mark part of ampBonus by the weapon that applied it (counter only)
     this.killsBy = {};
     this.boss = null;
     this.bossSpawned = false;
@@ -189,8 +199,31 @@ export class Sim {
     return false;
   }
 
+  // Product of the temporary damage amps on this hit (Mark on the target x the source's own amp), clamped to AMP_CAP.
+  damageAmp(e) {
+    let a = 1;
+    if (e.markT > 0) a *= 1 + MARK_AMP;
+    const sa = this._src ? this.srcAmps[this._src] : 0;
+    if (sa > 1) a *= sa;
+    return a > AMP_CAP ? AMP_CAP : a;
+  }
+
+  // Apply Mark to a foe (owner = the weapon currently acting). Refresh only: no stacking, no stronger version.
+  mark(e) {
+    if (e.dead) return;
+    e.markT = MARK_TIME;
+    e.markSrc = this._src;
+  }
+
   hurt(e, amount, opts = {}) {
     if (e.dead || amount <= 0) return 0;
+    const amp = this.damageAmp(e);
+    if (amp !== 1) {
+      const extra = amount * (amp - 1);
+      amount += extra;
+      this.ampBonus += extra;
+      if (e.markT > 0 && e.markSrc) this.markBy[e.markSrc] = (this.markBy[e.markSrc] || 0) + extra;
+    }
     e.hp -= amount;
     this.damageDealt += amount;
     if (this._src) this.dmgBy[this._src] = (this.dmgBy[this._src] || 0) + amount;
@@ -318,7 +351,7 @@ export class Sim {
       state: 'run', stT: 0, dx: 0, dy: 0, tele: false,
       chargeCd: this.rng.range(1, 3.5), slamCd: 5,
       phase: this.rng.range(0, 6.28), cd: {},
-      bleedT: 0, bleedDps: 0, bleedTot: 0, burnT: 0, burnDps: 0, burnTot: 0, burnSrc: null, fearT: 0, flash: 0, dead: false, faceX: 1,
+      markT: 0, markSrc: null, bleedT: 0, bleedDps: 0, bleedTot: 0, burnT: 0, burnDps: 0, burnTot: 0, burnSrc: null, fearT: 0, flash: 0, dead: false, faceX: 1,
     };
     this.enemies.push(e);
     return e;
@@ -372,6 +405,7 @@ export class Sim {
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.flash = Math.max(0, e.flash - dt);
+      if (e.markT > 0) e.markT = Math.max(0, e.markT - dt);
 
       if (e.bleedT > 0) {
         e.bleedT -= dt;
