@@ -4,6 +4,7 @@ import { SwayField, PHONE_DENSITY } from './swayfield.js';
 import { FRAME_NAMES, ATLAS_KEY, ORIGIN_Y } from './ambatlas.js';
 import { INV } from './style.js';
 import { hash, wind } from './wind.js';
+import { mulTint } from './vibrancy.js';
 
 export const SPARK_LIFE = 0.7; // AL-2 petal sparkle: seconds
 export const SPARK_PER_POP = 2;
@@ -21,6 +22,8 @@ export class SwayLayer {
     this.refreshT = 9;
     this.stepT = 9;
     this.tint = 0xffffff;
+    this.vibT = null; // WL6c: per-frame vibrancy tints (VibTints) or null = off
+    this.vibL = -1; // current vibrancy level (-1 = off)
     this.enabled = true;
     this.glow = opts.glow || null; // { key, inv, blend }: sparkle texture (AL-2); null = no sparkles
     this.sparkPool = []; // free sparkle images
@@ -34,7 +37,7 @@ export class SwayLayer {
       const p = s.prop;
       const sc = (INV[ATLAS_KEY] || 0.25) * p.size;
       s.base = sc;
-      im.setFrame(FRAME_NAMES[p.frame]).setPosition(p.x, p.y).setScale(sc * s.sc).setRotation(s.rot).setAlpha(0).setFlipX(p.phase > 3.14).setVisible(true).setTint(this.tint);
+      im.setFrame(FRAME_NAMES[p.frame]).setPosition(p.x, p.y).setScale(sc * s.sc).setRotation(s.rot).setAlpha(0).setFlipX(p.phase > 3.14).setVisible(true).setTint(this.tintOf(FRAME_NAMES[p.frame]));
       s.ref = im;
     };
     this.field.onRemove = (s) => {
@@ -94,11 +97,20 @@ export class SwayLayer {
   reset(seed) { this.field.reset(seed); this.clearSparks(); this.refreshT = 9; this.stepT = 9; }
   clear() { this.field.clear(); this.clearSparks(); }
 
+  // WL6c: grade tint x vibrancy tint for one frame (restored flowers/tufts only: this layer only ever draws restored-world plants)
+  tintOf(name) { return this.vibT && this.vibL >= 0 ? mulTint(this.tint, this.vibT.get(name, this.vibL)) : this.tint; }
+
+  setVib(level) {
+    if (level === this.vibL) return;
+    this.vibL = level;
+    for (const s of this.field.slots.values()) if (s.ref) s.ref.setTint(this.tintOf(FRAME_NAMES[s.prop.frame]));
+  }
+
   // Sets the ground-grade tint used when the lightmap is not doing the dusk grading (fallback look only).
   setTint(c) {
     if (c === this.tint) return;
     this.tint = c;
-    for (const im of this.all) im.setTint(c);
+    for (const im of this.all) im.setTint(this.tintOf(im.frame.name));
   }
 
   // on: sway wanted this frame (Med/High, ground shader showing the restored tile). cap from CAPS.<tier>.ambient.sway.

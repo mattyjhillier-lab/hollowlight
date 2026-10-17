@@ -39,6 +39,7 @@ function parseParams() {
     corr: q.get('corr') !== '0', // dev: ?corr=0 stops enemies staining the ground (A/B perf)
     bloom: q.get('bloom') !== '0', // dev: ?bloom=0 turns the High-tier bloom post effect off (A/B perf)
     arc: q.get('arc') !== '0', // dev: ?arc=0 restores the pre-WL6 lighting (A/B perf and screenshots)
+    vib: q.get('vib') !== '0', // dev: ?vib=0 turns the WL6c restored-world vibrancy off (same-spot A/B, perf)
     night: q.get('night') !== '0', // dev: ?night=0 turns the WL6b enemy night look off (A/B perf)
     bright: ['normal', 'brighter', 'clear'].includes(q.get('bright')) ? q.get('bright') : null, // dev: session-only brightness override (never saved)
     lm: q.get('lm') !== '0', // dev: ?lm=0 turns the lightmap (and with it the ground shader) off (A/B perf)

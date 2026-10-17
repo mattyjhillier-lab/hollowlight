@@ -5,6 +5,10 @@
 // Cadence: fields update every frame (cheap typed-array maths, zero allocation); images only get setters when something changed.
 import { FogField, AirField, EdgeField, TINTS, FLY_SIZE, MOTE_SIZE, airCount, FLY_MAX, MOTE_MAX, FOG_MAX, EDGE_A } from './airfield.js';
 import { wind, windScale } from './wind.js';
+import { buildGlowTable, VIB_LEVELS } from './vibrancy.js';
+
+const GLOW_N = TINTS.length;
+const GLOW_TAB = buildGlowTable(TINTS); // WL6c: [level][tint index] saturated firefly/mote colours
 
 export const FOG_DEPTH = 4990; // above props (depth = world y <= 4000), below the lightmap (5000)
 export const EDGE_DEPTH = 4995;
@@ -38,6 +42,7 @@ export class AirLayer {
     this.flyIm = [];
     this.edgeIm = [];
     this.tintOf = new Int16Array(FLY_MAX + MOTE_MAX).fill(-1);
+    this.vibL = -1; // WL6c vibrancy level (-1 = off)
     this.wx = 0; this.wy = 0; this.wT = 9;
     this.nFog = 0; this.nAir = 0; this.nEdge = 0;
   }
@@ -64,6 +69,8 @@ export class AirLayer {
     this.edgeIm[k] = im;
     return im;
   }
+
+  setVib(level) { this.vibL = level < 0 ? -1 : level >= VIB_LEVELS ? VIB_LEVELS - 1 : level; }
 
   reset(seed) { this.fog.reset(seed); this.air.reset(seed); this.tintOf.fill(-1); this.hideAll(); }
 
@@ -110,7 +117,8 @@ export class AirLayer {
       const a = this.air.a[i];
       if (a < 0.01) { im.setVisible(false); continue; }
       const ti = this.air.tint[i];
-      if (ti !== this.tintOf[i]) { this.tintOf[i] = ti; im.setTint(TINTS[ti]); }
+      const tk = ti + GLOW_N * (this.vibL + 1); // WL6c: the key includes the vibrancy level (vibL -1 = off)
+      if (tk !== this.tintOf[i]) { this.tintOf[i] = tk; im.setTint(this.vibL >= 0 ? GLOW_TAB[this.vibL * GLOW_N + ti] : TINTS[ti]); }
       im.setPosition(this.air.x[i], this.air.y[i]).setAlpha(a).setVisible(true);
     }
     for (let i = 0; i < this.flyIm.length; i++) {

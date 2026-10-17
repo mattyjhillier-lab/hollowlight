@@ -7,10 +7,7 @@ import { PUSH_BODY } from './pushfield.js';
 import { KINDS, ATLAS_KEY, TPU, frameName, frameOrigin, PETAL_FRAMES, kindGeo } from './propatlas.js';
 
 export const SHADE_DEPTH = -340; // pillar canopy shadow: a ground decal above the ground/sway layer, below everything standing
-const mulTint = (a, b) => {
-  const r = ((a >> 16 & 255) * (b >> 16 & 255) / 255) | 0; const g = ((a >> 8 & 255) * (b >> 8 & 255) / 255) | 0; const bl = ((a & 255) * (b & 255) / 255) | 0;
-  return (r << 16) | (g << 8) | bl;
-};
+import { mulTint } from './vibrancy.js';
 
 export class PropLayer {
   constructor(scene, opts = {}) {
@@ -23,6 +20,8 @@ export class PropLayer {
     this.petalAll = [];
     this.petalLive = []; // { q, im }
     this.tint = 0xffffff;
+    this.vibT = null; // WL6c: per-frame vibrancy tints (VibTints) or null = off; only RESTORED images ('r' layers) and petals use it, Hollow images never
+    this.vibL = -1;
     this.refreshT = 9;
     this.stepT = 9;
     this.field.onAdd = (s) => { s.refs = {}; this.sync(s); };
@@ -55,7 +54,7 @@ export class PropLayer {
       if (layer === 'crown') { [ox, oy] = frameOrigin(name, K.pivot[0], K.pivot[1]); x = p.x + geo.pivot[0] * p.size; y = p.y + geo.pivot[1] * p.size; depth = p.y + 0.01; } else [ox, oy] = frameOrigin(name);
     }
     im.setFrame(name).setOrigin(ox, oy).setPosition(x, y).setScale(sc).setRotation(0).setDepth(depth).setFlipX(st !== 'shade' && !!p.flip)
-      .setAlpha(st === 'shade' ? 0.9 : 1).setVisible(true).setTint(mulTint(this.tint, p.jit));
+      .setAlpha(st === 'shade' ? 0.9 : 1).setVisible(true).setTint(this.propTint(im, p.jit, st === 'r'));
     return im;
   }
 
@@ -75,10 +74,26 @@ export class PropLayer {
     }
   }
 
+  // WL6c: grade tint x jitter x (restored images only) the vibrancy tint of the image's frame
+  propTint(im, jit, restored) {
+    const t = mulTint(this.tint, jit);
+    return restored && this.vibT && this.vibL >= 0 ? mulTint(t, this.vibT.get(im.frame.name, this.vibL)) : t;
+  }
+
+  retint() {
+    for (const s of this.field.slots.values()) if (s.refs) for (const k of Object.keys(s.refs)) if (s.refs[k] && k !== 'shade') s.refs[k].setTint(this.propTint(s.refs[k], s.prop.jit, k.charCodeAt(k.length - 1) === 114));
+  }
+
+  setVib(level) {
+    if (level === this.vibL) return;
+    this.vibL = level;
+    this.retint();
+  }
+
   setTint(c) {
     if (c === this.tint) return;
     this.tint = c;
-    for (const s of this.field.slots.values()) if (s.refs) for (const k of Object.keys(s.refs)) if (s.refs[k] && k !== 'shade') s.refs[k].setTint(mulTint(c, s.prop.jit));
+    this.retint();
   }
 
   pose(s) {
@@ -126,7 +141,7 @@ export class PropLayer {
     }
     for (let i = 0; i < live.length; i++) {
       const q = live[i]; const im = this.petalLive[i].im;
-      im.setFrame(PETAL_FRAMES[q.kind]).setPosition(q.x, q.y).setRotation(q.rot).setScale(1 / TPU * 1.1).setAlpha(this.petals.alphaOf(q)).setVisible(true).setTint(this.tint);
+      im.setFrame(PETAL_FRAMES[q.kind]).setPosition(q.x, q.y).setRotation(q.rot).setScale(1 / TPU * 1.1).setAlpha(this.petals.alphaOf(q)).setVisible(true).setTint(this.vibT && this.vibL >= 0 ? mulTint(this.tint, this.vibT.get(PETAL_FRAMES[q.kind], this.vibL)) : this.tint);
     }
   }
 }

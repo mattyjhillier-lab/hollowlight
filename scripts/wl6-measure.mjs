@@ -3,6 +3,7 @@
 //   node scripts/wl6-measure.mjs shots   <outDir>            true-size + phone frames at the 5 moments (Wren/Elias, swarm), JPEG
 //   node scripts/wl6-measure.mjs contrast <outDir>           contrast gates G1/G2/G3: 5 moments x 3 enemy types x 3 distances x tier x size -> contrast.csv/json
 //   node scripts/wl6-measure.mjs strip    <outDir>           4-frame strip per moment (0:30, 4:00, 8:00) showing eye motion (WL6b2), zoomed crop around the hero
+//   node scripts/wl6-measure.mjs vib      <outDir>           WL6c vibrancy: restored meadow with vibrancy on vs the same spot with ?vib=0 at 4:00 / 8:00 / 11:30 / 14:30 (desk + phone), mean chroma of ground+props vs enemy interiors
 //   node scripts/wl6-measure.mjs settings <outDir>           Settings > Picture screenshots (desktop + phone)
 // env: DIST (default dist), TIERS (high,low), SIZES (desk,land,port), TS (30,240,480,690,870), BRIGHT (normal|brighter|clear|auto, default normal), PARAMS (extra url query), ONLY (name filter), HERO.
 import { spawn } from 'node:child_process';
@@ -207,6 +208,58 @@ async function strip(out) {
   } finally { c.close(); srv.close(); }
 }
 
+// ---- WL6c vibrancy: same spot on/off, chroma of the restored world vs enemy interiors (enemies must be unchanged) ----
+const CHROMA = `(async (b64, pts, box) => {
+  const im = await new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + b64; });
+  const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0);
+  const chroma = (d) => { let s = 0, n = 0, y = 0; for (let i = 0; i < d.length; i += 4) { const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]); s += mx - mn; y += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; n++; } return [s / n, y / n]; };
+  const gd = g.getImageData(box[0], box[1], box[2], box[3]).data; const [gc, gy] = chroma(gd);
+  let es = 0, en = 0;
+  for (const p of pts) { const r = Math.max(3, Math.round(p.r)); const d = g.getImageData(Math.round(p.x - r), Math.round(p.y - r), 2 * r, 2 * r).data; const [c] = chroma(d); es += c; en++; }
+  return JSON.stringify({ ground: +gc.toFixed(2), groundY: +gy.toFixed(1), enemy: en ? +(es / en).toFixed(2) : 0 });
+})`;
+
+async function vibrancy(out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
+  const rows = [];
+  try {
+    for (const [t, rr] of [[240, 330], [480, 330], [690, 460], [870, 620]]) for (const view of (process.env.SIZES || 'desk,port').split(',')) for (const mode of ['off', 'on']) {
+      const [w, h, dpr] = VIEWS[view];
+      await open(c, q('wren', t), w, h, dpr, process.env.TIER || 'high');
+      if (mode === 'off') { await c.send('Page.navigate', { url: `http://127.0.0.1:${HTTP}/?${q('wren', t)}&vib=0` }); for (let i = 0; i < 80; i++) { await sleep(250); try { if (await c.ev('!!(window.__app && window.__app.sim && window.__app.scene && window.__app.scene.pools)')) break; } catch { /* loading */ } } await c.ev(`window.__app.save.setSettings({quality:'${process.env.TIER || 'high'}',brightness:'${BRIGHT}'}); true`); }
+      await sleep(600); await setup(c, 2000, 2000, t, rr); await sleep(1500);
+      await autoPick(c); await settle(c, t);
+      await c.ev("(()=>{const s=window.__app.sim;s.enemies.length=0;return 1})()");
+      await holdTime(c, t); await sleep(500); await holdTime(c, t);
+      const ground = await shot(c, join(out, `meadow-${fmt(t)}-${view}-vib${mode}.jpg`));
+      const gpng = (await c.send('Page.captureScreenshot', { format: 'png' })).data;
+      // enemies: frozen ring of 12, then measure their interiors
+      await c.ev(`(()=>{const s=window.__app.sim,p=s.player;const T=['wolf','crow','root_crawler'];for(let k=0;k<12;k++){const a=k*0.5236,d=${h > w ? 70 : 80}+(k%3)*25;s.spawnEnemy(T[k%3],p.x+Math.cos(a)*d*(${h > w ? 0.6 : 1.4}),p.y+Math.sin(a)*d*(${h > w ? 1.4 : 0.8}));s.enemies[s.enemies.length-1]._va=k;}return s.enemies.length})()`);
+      const FREEZE = `(()=>{const s=window.__app.sim;for(const e of s.enemies){if(e._va==null)continue;if(e._x===undefined){e._x=e.x;e._y=e.y;}e.x=e._x;e.y=e._y;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;}s.time=${t};return 1})()`;
+      for (let i = 0; i < 6; i++) { await c.ev(FREEZE); await sleep(60); }
+      await c.ev(FREEZE);
+      const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();return JSON.stringify(s.enemies.filter(e=>e._va!=null).map(e=>({x:(R.left+(e.x-wv.x)/wv.width*R.width)*${dpr},y:(R.top+(e.y-wv.y)/wv.height*R.height)*${dpr},r:e.r*0.5*R.width/wv.width*${dpr}})))})()`));
+      const epng = (await c.send('Page.captureScreenshot', { format: 'png' })).data;
+      // ground box: central band away from the HUD, in image pixels
+      const box = [Math.round(w * dpr * 0.1), Math.round(h * dpr * 0.18), Math.round(w * dpr * 0.8), Math.round(h * dpr * 0.62)];
+      const gm = JSON.parse(await c.ev(`(${CHROMA})(${JSON.stringify(gpng)}, [], ${JSON.stringify(box)})`));
+      const em = JSON.parse(await c.ev(`(${CHROMA})(${JSON.stringify(epng)}, ${JSON.stringify(pts)}, [0,0,8,8])`));
+      rows.push({ t, view, mode, groundChroma: gm.ground, groundY: gm.groundY, enemyChroma: em.enemy });
+      void ground;
+      console.log('vib', fmt(t), view, mode, gm.ground, em.enemy);
+    }
+  } finally { c.close(); srv.close(); }
+  writeFileSync(join(out, 'vibrancy.json'), JSON.stringify(rows, null, 1));
+  const lines = ['t,view,groundChroma_off,groundChroma_on,ratio,enemyChroma_off,enemyChroma_on'];
+  for (const t of [240, 480, 690, 870]) for (const view of new Set(rows.map((r) => r.view))) {
+    const a = rows.find((r) => r.t === t && r.view === view && r.mode === 'off'); const b = rows.find((r) => r.t === t && r.view === view && r.mode === 'on');
+    if (a && b) lines.push([fmt(t), view, a.groundChroma, b.groundChroma, (b.groundChroma / a.groundChroma).toFixed(3), a.enemyChroma, b.enemyChroma].join(','));
+  }
+  writeFileSync(join(out, 'vibrancy.csv'), lines.join(String.fromCharCode(10)));
+  console.log(lines.join(String.fromCharCode(10)));
+}
+
 async function settingsShots(out) {
   mkdirSync(out, { recursive: true });
   const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
@@ -229,9 +282,10 @@ async function settingsShots(out) {
 }
 
 const [cmd, out] = process.argv.slice(2);
-if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|strip|settings <outDir>'); process.exit(1); }
+if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|strip|vib|settings <outDir>'); process.exit(1); }
 if (cmd === 'shots') await shots(out);
 else if (cmd === 'contrast') await contrast(out);
+else if (cmd === 'vib') await vibrancy(out);
 else if (cmd === 'strip') await strip(out);
 else if (cmd === 'settings') await settingsShots(out);
 process.exit(0);

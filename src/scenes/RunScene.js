@@ -12,6 +12,8 @@ import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
 import { NightLayer } from '../gfx/nightlayer.js';
+import { vibTarget, vibLevel, restoredShare, R_SMOOTH } from '../gfx/vibrancy.js';
+import { vibTintsFor } from '../gfx/vibatlas.js';
 import { arcSample, makeArcOut, resolveBrightness, lanternTarget, bossLightRadius } from '../gfx/arc.js';
 import { GroundBlend } from '../gfx/groundblend.js';
 import { LifeMap } from '../world/lifemap.js';
@@ -189,6 +191,7 @@ export class RunScene extends Phaser.Scene {
     this.dfl = Array.from({ length: 10 }, () => ({ x: 0, y: 0, t: 9 }));
     this.dflI = 0;
     this.lanR = 150;
+    this.vib = { R: 0, s: 1, level: -1, t: 9, built: false }; // WL6c: restored share of the view (smoothed), current saturation, quantised level, sampling timer
     this.arc = makeArcOut(); // WL6a: current arc sample (ambient, Low tint, lantern radius, enemy tint/eye/rim values, dawn wash)
     this.arcKey = -1;
     this.nl = new NightLayer(this, D_VIG + 1); // WL6b: eyes / rims / boss eyes, above the vignette
@@ -324,7 +327,40 @@ export class RunScene extends Phaser.Scene {
     const cs = this.critSt;
     cs.on = !!(P.critters && this.gbOn && live && caps.ambient.critters > 0); cs.cap = caps.ambient.critters; cs.phone = this.swayPhone; cs.reduced = reduced;
     this.critters.setTint(this.lmOn ? 0xffffff : this.gradeNow);
+    this.tickVibrancy(dt, view);
     this.critters.update(dt, sim.time, view, sim.player, this.life, sim.enemies, sim.enemies.length, cs);
+  }
+
+  // WL6c: restored-world vibrancy (visual only). vib = arc saturation x (0.85 + 0.15 x restored share of the view); the ground shader gets it every frame
+  // (smoothed), the restored sprites (tufts, flowers, props, petals, critters, fireflies) get a quantised level re-checked at 2 Hz, so no per-frame work or allocation.
+  // Never read by enemies, heroes, UI, pickups, numbers or telegraphs. Low: no ground shader, so tint-only on the (<= 40) props; sway/critters/fireflies are off there.
+  tickVibrancy(dt, view) {
+    const v = this.vib;
+    const on = !!(app.params.vib && app.params.arc);
+    if (!on) {
+      if (v.level !== -1 || v.s !== 1) { v.level = -1; v.s = 1; this.gb.setSat(1); this.sway.setVib(-1); this.props.setVib(-1); this.critters.setVib(-1); this.air.setVib(-1); }
+      return;
+    }
+    if (!v.built) { // one atlas readback each, the first time vibrancy is on
+      v.built = true;
+      this.sway.vibT = vibTintsFor(this, ATLAS_KEY); this.props.vibT = vibTintsFor(this, PROP_KEY); this.critters.vibT = vibTintsFor(this, CRIT_KEY);
+    }
+    v.t += dt;
+    let k = Math.min(1, dt / R_SMOOTH);
+    if (v.t >= 0.5 || v.rTarget === undefined) {
+      v.t = 0;
+      if (v.rTarget === undefined) { v.R = restoredShare(this.life, view.x0, view.y0, view.x1, view.y1); v.s = vibTarget(this.arc.sat, v.R); k = 0; } // first tick: snap (no fade-in at run start)
+      v.rTarget = restoredShare(this.life, view.x0, view.y0, view.x1, view.y1);
+    }
+    v.R += ((v.rTarget || 0) - v.R) * k;
+    const target = vibTarget(this.arc.sat, v.R);
+    v.s += (target - v.s) * k;
+    if (this.gbOn) this.gb.setSat(v.s);
+    const L = vibLevel(v.s);
+    if (L !== v.level) {
+      v.level = L;
+      this.sway.setVib(L); this.props.setVib(L); this.critters.setVib(L); this.air.setVib(L);
+    }
   }
 
   hideAmbient() {

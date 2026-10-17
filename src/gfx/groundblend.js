@@ -34,6 +34,7 @@ uniform sampler2D iChannel3; // set B Hollow tile (Deep Forest Floor)
 uniform sampler2D iChannel4; // set B restored tile
 uniform vec3 uTint;
 uniform float uTime;
+uniform float uSat; // WL6c: saturation of the RESTORED tile only (Hollow and corruption are untouched); 1.0 = the authored look
 uniform float uBReady; // 0 until the set B tiles are painted, then fades to 1 (no pop)
 uniform vec2 uHero; // hero world position (AL-1: baked ground flowers/tufts calm down near the hero)
 varying vec2 vTile;
@@ -70,6 +71,7 @@ void main () {
     }
     res = mix(res, mix(res, bl, 0.85), hc);
   }
+  if (uSat != 1.0) { float ly = dot(res, vec3(0.2126, 0.7152, 0.0722)); res = max(vec3(0.0), vec3(ly) + (res - ly) * uSat); }
   float n = vn(vTile * 14.0) * 0.6 + vn(vTile * 33.0) * 0.4 - 0.5;
   float m = smoothstep(0.14, 0.72, l + n * 0.3);
   float rim = smoothstep(0.0, 0.5, m) * (1.0 - smoothstep(0.5, 1.0, m));
@@ -117,6 +119,7 @@ export class GroundBlend {
       const base = new Phaser.Display.BaseShader('groundblend', FRAG, VERT, {
         uWorld: { type: '1f', value: size },
         uHero: { type: '2f', value: { x: -9999, y: -9999 } },
+        uSat: { type: '1f', value: 1 },
         uBReady: { type: '1f', value: (scene.bState && scene.bState.ready) || 0 },
         uTint: { type: '3f', value: { x: 1, y: 1, z: 1 } },
         iChannel4: { type: 'sampler2D', value: null, textureData: { repeat: true } },
@@ -182,6 +185,8 @@ export class GroundBlend {
   }
 
   setHero(x, y) { if (this.sh) { const u = this.sh.uniforms.uHero.value; u.x = x; u.y = y; } }
+
+  setSat(v) { if (this.sh) this.sh.uniforms.uSat.value = v; }
 
   setBReady(v) { if (this.sh) this.sh.uniforms.uBReady.value = v; }
 
