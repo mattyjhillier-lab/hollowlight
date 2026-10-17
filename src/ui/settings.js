@@ -104,6 +104,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     volume({ ...SET.sfxVol, value: st.sfxVol, onInput: (v) => set({ sfxVol: v }) }));
   const picture = group(SET.tabs[1].label,
     choice({ ...SET.quality, options: SET.quality.opts, value: st.quality, onChange: (v) => set({ quality: v }) }),
+    choice({ ...SET.brightness, options: SET.brightness.opts, value: api.resolvedBrightness ? api.resolvedBrightness(st.brightness) : (st.brightness === 'auto' ? 'normal' : st.brightness), onChange: (v) => set({ brightness: v }) }),
     wickToggle({ ...SET.screenShake, checked: st.screenShake, onChange: (v) => set({ screenShake: v }) }),
     wickToggle({ ...SET.reducedMotion, checked: st.reducedMotion, onChange: (v) => set({ reducedMotion: v }) }),
     wickToggle({ ...SET.damageNumbers, checked: st.damageNumbers, onChange: (v) => set({ damageNumbers: v }) }));

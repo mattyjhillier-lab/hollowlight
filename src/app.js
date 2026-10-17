@@ -5,6 +5,7 @@ import { SaveStore } from './save/store.js';
 import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
 import { newlyLines } from './meta/gatewords.js';
 import { abilityEmblem } from './ui/hudsvg.js';
+import { resolveBrightness } from './gfx/arc.js';
 import { parseTouchParam, touchEnabled } from './input/stick.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
@@ -37,6 +38,9 @@ function parseParams() {
     edge: q.get('edge') !== '0', // dev: ?edge=0 turns the W5 edge-wall fade off (A/B perf)
     corr: q.get('corr') !== '0', // dev: ?corr=0 stops enemies staining the ground (A/B perf)
     bloom: q.get('bloom') !== '0', // dev: ?bloom=0 turns the High-tier bloom post effect off (A/B perf)
+    arc: q.get('arc') !== '0', // dev: ?arc=0 restores the pre-WL6 lighting (A/B perf and screenshots)
+    night: q.get('night') !== '0', // dev: ?night=0 turns the WL6b enemy night look off (A/B perf)
+    bright: ['normal', 'brighter', 'clear'].includes(q.get('bright')) ? q.get('bright') : null, // dev: session-only brightness override (never saved)
     lm: q.get('lm') !== '0', // dev: ?lm=0 turns the lightmap (and with it the ground shader) off (A/B perf)
     nums: q.get('nums') !== '0', // dev: ?nums=0 turns damage numbers off (A/B perf)
     touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
@@ -234,6 +238,14 @@ export const app = {
     return b;
   },
 
+  // Phone-sized or touch-first device (drives the Brighter default of the Brightness setting).
+  isPhone() {
+    try {
+      const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+      return !!(coarse || Math.min(window.innerWidth, window.innerHeight) <= 600);
+    } catch (err) { return false; }
+  },
+
   applySettings() {
     const s = this.save.data.settings;
     document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
@@ -246,6 +258,7 @@ export const app = {
   settingsHandlers() {
     return {
       getSettings: () => ({ ...this.save.data.settings }),
+      resolvedBrightness: (stored) => resolveBrightness(stored, this.isPhone()),
       setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); },
       exportSave: () => this.save.exportText(),
       maxSaveBytes: MAX_SAVE_BYTES,

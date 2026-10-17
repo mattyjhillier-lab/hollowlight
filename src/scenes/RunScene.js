@@ -11,6 +11,7 @@ import { heroHaloAlpha } from '../gfx/rigmath.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
+import { arcSample, makeArcOut, resolveBrightness, lanternTarget, bossLightRadius } from '../gfx/arc.js';
 import { GroundBlend } from '../gfx/groundblend.js';
 import { LifeMap } from '../world/lifemap.js';
 import { zoneB } from '../world/zones.js';
@@ -186,7 +187,10 @@ export class RunScene extends Phaser.Scene {
     this.ambient = 0x33406c;
     this.dfl = Array.from({ length: 10 }, () => ({ x: 0, y: 0, t: 9 }));
     this.dflI = 0;
-    this.lanR = 130;
+    this.lanR = 150;
+    this.arc = makeArcOut(); // WL6a: current arc sample (ambient, Low tint, lantern radius, enemy tint/eye/rim values, dawn wash)
+    this.arcKey = -1;
+    this.phone = false;
     this.vig = this.add.image(0, 0, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
     this.vigLow = false;
     // warm pre-dawn glow: additive wash that grows over the last ~25% of the run (Med/High)
@@ -286,6 +290,7 @@ export class RunScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     this.baseZoom = zoomFor(W, H);
+    this.phone = app.isPhone();
     this.cameras.main.setZoom(this.baseZoom);
     const vw = (W / this.baseZoom) * 1.06;
     const vh = (H / this.baseZoom) * 1.06;
@@ -632,11 +637,25 @@ export class RunScene extends Phaser.Scene {
 
   // Colour-grade for the current point in the run. Quantised so we only touch objects when it changes.
   updateGrade(f) {
-    const q = Math.round(f * 150) / 150;
-    const col = gradeAt(q);
+    let col, dw;
+    if (app.params.arc) {
+      const q = Math.round(f * 900) / 900; // WL6a: 1 s steps so the sky never visibly steps
+      // WL6a arc: brightness setting (Normal / Brighter / Clear; 'auto' = Brighter on phones), quantised to 1 s steps, resampled only when something changed
+      const st = app.save.data.settings;
+      const mode = app.params.bright || resolveBrightness(st.brightness, this.phone);
+      const calm = !!st.reducedMotion;
+      const key = Math.round(q * 900) * 8 + (mode === 'brighter' ? 1 : mode === 'clear' ? 2 : 0) * 2 + (calm ? 1 : 0);
+      if (key !== this.arcKey) { this.arcKey = key; arcSample(q * 900, mode, calm, this.arc); this.arcVer = (this.arcVer | 0) + 1; }
+      col = this.arc.low;
+      this.ambient = this.arc.amb;
+      dw = this.arc.dawn;
+    } else {
+      const q = Math.round(f * 150) / 150;
+      col = gradeAt(q);
+      this.ambient = ambientAt(q);
+      dw = f > 0.7 ? Math.min(1, (f - 0.7) / 0.3) * 0.36 : 0;
+    }
     this.gradeNow = col;
-    this.ambient = ambientAt(q);
-    const dw = f > 0.7 ? Math.min(1, (f - 0.7) / 0.3) * 0.36 : 0;
     if (dw > 0 && this.lmOn) this.dawn.setVisible(true).setAlpha(dw);
     else if (this.dawn.visible) this.dawn.setVisible(false);
     if (!this.lmOn) this.setGround(col);
@@ -748,7 +767,7 @@ export class RunScene extends Phaser.Scene {
       this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : ROLE.lantern).setAlpha(0.45 + 0.2 * pulse);
     }
     if (lit) {
-      const target = lowHp ? 90 : 130;
+      const target = app.params.arc ? lanternTarget(this.arc.lan, lowHp, this.arc.y) : (lowHp ? 90 : 130);
       this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
       lm.add(lx, ly, this.lanR * fl, ROLE.lantern, 0.9);
@@ -797,6 +816,15 @@ export class RunScene extends Phaser.Scene {
       g.fillStyle(c, 0.14 * a).fillCircle(z.x, z.y, z.r);
       g.lineStyle(1, c, 0.6 * a).strokeCircle(z.x, z.y, z.r);
       if (lit) lm.add(z.x, z.y, z.r, c, 0.55 * a);
+    }
+    // W5 Sanctum Halo: faint ember glow on the burning ground inside the candle ring, thin gold rim on the ring only (never on enemies); still, no flicker
+    const hw = sim.weapons.find((w) => w.evo === 'sanctum_halo');
+    if (hw && hw.rt.ground) {
+      const hr = hw.rt.ground.r;
+      g.fillStyle(0xffb35c, 0.07).fillCircle(p.x, p.y, hr);
+      g.fillStyle(ROLE.burn, 0.05).fillCircle(p.x, p.y, hr * 0.62);
+      g.lineStyle(1, 0xffd27a, 0.32).strokeCircle(p.x, p.y, hr);
+      if (lit) lm.add(p.x, p.y, hr, 0xffb35c, 0.35);
     }
 
     // gems: culled to the view, gently pulsing with a soft halo (Med/High)
@@ -854,7 +882,7 @@ export class RunScene extends Phaser.Scene {
         else if (tq === 0) img.clearTint();
         else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
       }
-      if (lit && e.boss) lm.add(e.x, e.y - 10, 90, ROLE.bossEye, 0.8);
+      if (lit && e.boss) lm.add(e.x, e.y - 10, app.params.arc ? bossLightRadius(this.arc.y) : 90, ROLE.bossEye, 0.8);
       // bleed readout (visual only; reads the sim's running bleedTot): ~2 small pale-blue numbers a second per bleeding enemy
       // (batched, never per tick), plus drips of wolf light while it bleeds (not on Low, not with reduced motion)
       if (img.bid !== e.id) { img.bid = e.id; img.bLast = e.bleedTot; img.bNext = sim.time + 0.5; }
