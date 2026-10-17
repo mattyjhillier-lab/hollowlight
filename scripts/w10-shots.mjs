@@ -52,7 +52,7 @@ async function load(w, h, mobile, query) {
 
 const EVO = process.env.EVO || 'tempest';
 const ID = { tempest: 'spirit_tempest', lance: 'soul_lance', pages: 'returning_pages' }[EVO];
-const GRANT = 'grant=' + encodeURIComponent(`spirit_bolts:count=${EVO === 'lance' ? 3 : 4},power=4,speed=${EVO === 'lance' ? 3 : 5},pierce=${EVO === 'tempest' ? 3 : 5}:${ID};ghost_wolves:count=3,power=3,speed=3,duration=3`);
+const GRANT = 'grant=' + encodeURIComponent(`spirit_bolts:count=${EVO === 'lance' ? 5 : 4},power=4,speed=${EVO === 'lance' ? 3 : 5},pierce=${EVO === 'tempest' ? 3 : 5}:${ID};ghost_wolves:count=3,power=3,speed=3,duration=3`);
 const VIEWS = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true]];
 const zoom = async (name, w, h, mobile, z = 3) => {
   const r = await send('Page.captureScreenshot', { format: 'jpeg', quality: 82, clip: { x: w / 2 - 280, y: h / 2 - 158, width: 560, height: 316, scale: mobile ? 1.5 : 1.7 } });
@@ -61,7 +61,7 @@ const zoom = async (name, w, h, mobile, z = 3) => {
 // per-evolution "moment" predicates evaluated in the page
 const MOMENT = {
   tempest: `(() => { const s = window.__app.sim; const p = s.player; const g = s.projectiles.filter((b) => b.evo === 'spirit_tempest' && !(b.seek > 0) && b.target && !b.target.dead && Math.hypot(b.x - p.x, b.y - p.y) < 110); return { ok: g.length >= 5, n: g.length }; })()`,
-  lance: `(() => { const s = window.__app.sim; const w = s.weapons.find((x) => x.id === 'spirit_bolts'); const L = s.projectiles.filter((b) => b.lance); return { ok: L.length >= 2 && !!(w.rt.lines && w.rt.lines.length), lances: L.length, lines: w.rt.lines ? w.rt.lines.length : 0 }; })()`,
+  lance: `(() => { const s = window.__app.sim; const w = s.weapons.find((x) => x.id === 'spirit_bolts'); const p = s.player; const L = s.projectiles.filter((b) => b.lance && Math.hypot(b.x - p.x, b.y - p.y) > 110); return { ok: L.length >= 2 && !!(w.rt.lines && w.rt.lines.length), lances: L.length, lines: w.rt.lines ? w.rt.lines.length : 0 }; })()`,
   pages: `(() => { const s = window.__app.sim; const P = s.projectiles.filter((b) => b.pages); return { ok: P.some((b) => b.back) && P.some((b) => !b.back), n: P.length }; })()`,
 };
 const STATE = `(() => { const s = window.__app.sim; return s.state; })()`;

@@ -181,3 +181,108 @@ test('Tempest gates: stream40 <= 2.4x at max, single >= 1.5x at max, cap at pick
   for (const [sc, c] of Object.entries(res.pair)) assert.ok(c.ratio <= 3.0, `${sc} cap@pick ${c.ratio.toFixed(2)}x`);
   for (const mode of ['max', 'pair']) for (const [sc, c] of Object.entries(res[mode])) assert.ok(c.ratio >= 0.98, `${mode} ${sc} ${c.ratio.toFixed(2)}x`);
 });
+
+// ---------------------------------------------------------------- W10c Soul Lance (Lances of Light)
+const LNC = { count: 0, power: 5, speed: 0, pierce: 5 };
+const lanceSim = (ranks = LNC, seed = 3) => mk({ ...LNC, ...ranks }, 'soul_lance', seed);
+const lancesNow = (sim) => sim.projectiles.filter((b) => b.lance);
+const firstVolley = (sim, secs = 3) => { for (let i = 0; i < secs / DT; i++) { sim.step(DT, {}); const L = lancesNow(sim); if (L.length) return L; } return []; };
+
+test('Lance count: 1 + floor(Bolt count rank / 2), max 3 (1,1,2,2,3,3 at ranks 0..5), in a 12 degree fan', () => {
+  const want = [1, 1, 2, 2, 3, 3];
+  for (let rc = 0; rc <= 5; rc++) {
+    const sim = lanceSim({ count: rc }); place(sim, 1, 100, 100);
+    const L = firstVolley(sim);
+    assert.equal(L.length, want[rc], `count rank ${rc}`);
+    if (L.length > 1) {
+      const a = L.map((b) => b.ang).sort((x, y) => x - y);
+      assert.ok(Math.abs((a[a.length - 1] - a[0]) - (12 * Math.PI) / 180) < 1e-9, 'fan spans 12 degrees');
+    }
+  }
+});
+
+test('Lance damage = Bolt power x (2.0 + 0.07 per Bolt count rank); width = 1 + 2 px per Pierce rank; speed x1.3; range 300 px', () => {
+  for (const [rc, rp] of [[0, 5], [3, 5], [5, 2]]) {
+    const sim = lanceSim({ count: rc, pierce: rp }); place(sim, 1, 100, 100);
+    const [b] = firstVolley(sim);
+    const w = sim.weapons[0];
+    assert.ok(Math.abs(b.dmg - w.s.power * (2.0 + 0.07 * rc)) < 1e-6, `dmg ${b.dmg}`);
+    assert.equal(b.r, 1 + 2 * rp);
+    assert.ok(Math.abs(b.speed - w.s.speed * 1.3) < 1e-6);
+    assert.ok(Math.abs(b.life * b.speed - 300) < 10, 'range 300 px (one frame already flown)');
+    assert.equal(b.pierce, Infinity);
+  }
+});
+
+test('Lance aims through the DENSEST line among the nearest 5, not just at the nearest foe', () => {
+  const sim = lanceSim(); const p = sim.player;
+  const mkE = (x, y) => { const e = sim.spawnEnemy('dummy', p.x + x, p.y + y); e.hp = e.maxHp = 1e9; return e; };
+  mkE(50, 0); // nearest, alone to the east
+  for (let i = 0; i < 6; i++) mkE(0, 80 + i * 24); // a column to the south
+  const [b] = firstVolley(sim);
+  assert.ok(Math.abs(b.ang - Math.PI / 2) < 0.2, `aimed ${((b.ang * 180) / Math.PI).toFixed(0)} deg, wanted the column (90)`);
+});
+
+test('Lance script line: one per lance, grows with the lance, burns what stands on it 0.25x/s for 1.2 s, never stacks', () => {
+  const sim = lanceSim(); const p = sim.player;
+  const d = sim.spawnEnemy('dummy', p.x + 150, p.y); d.hp = d.maxHp = 1e9;
+  const [b] = firstVolley(sim);
+  const w = sim.weapons[0];
+  assert.equal(w.rt.lines.length, 1);
+  const ln = w.rt.lines[0];
+  assert.ok(Math.abs(ln.dps - b.dmg * 0.25) < 1e-6 && ln.ttl === 1.2);
+  // measure the burn on a foe placed on the line well after the lance passed (silent hits only)
+  let burn = 0, direct = 0; const o = sim.hurt.bind(sim);
+  sim.hurt = (e, a, x) => { if (e === d) { if (x && x.silent) burn += a; else direct += a; } return o(e, a, x); };
+  run(sim, 0.8);
+  burn = 0; direct = 0;
+  run(sim, 0.5); // inside the ttl window (line age < 1.2 s)
+  assert.ok(burn > 0, 'the line burns');
+  assert.ok(burn <= ln.dps * (0.5 + 0.25) + 1e-9 && burn >= ln.dps * 0.25 - 1e-9, `burn ${burn} over 0.5 s vs ${ln.dps}/s`); // 0.25x of the lance per second, one tick at a time
+  // never stack: two lines over one foe tick the strongest only
+  const sim2 = lanceSim({ count: 4 }); const p2 = sim2.player;
+  const f = sim2.spawnEnemy('dummy', p2.x + 120, p2.y); f.hp = f.maxHp = 1e9;
+  firstVolley(sim2); run(sim2, 0.6);
+  const lines = sim2.weapons[0].rt.lines;
+  assert.ok(lines.length >= 3);
+  const strongest = Math.max(...lines.map((l) => l.dps));
+  let one = 0; const o2 = sim2.hurt.bind(sim2); sim2.hurt = (e, a, x) => { if (e === f && x && x.silent) one = Math.max(one, a); return o2(e, a, x); };
+  run(sim2, 0.3);
+  assert.ok(one <= strongest * 0.25 + 1e-9, `one tick ${one} vs strongest line ${strongest * 0.25}`);
+});
+
+test('Lance: the line fades after 1.2 s once the lance has reached its full length', () => {
+  const sim = lanceSim(); const p = sim.player;
+  const d = sim.spawnEnemy('dummy', p.x + 150, p.y); d.hp = d.maxHp = 1e9;
+  firstVolley(sim);
+  const first = sim.weapons[0].rt.lines[0];
+  run(sim, 300 / (sim.weapons[0].s.speed * 1.3) + 1.3); // travel + ttl
+  assert.ok(!sim.weapons[0].rt.lines.includes(first), 'line gone');
+});
+
+test('Lance: no dead stat after evolving (Bolt count adds lances + damage, Swiftness speeds the volley); recipe stats are maxed', () => {
+  const dpsOf = (r) => { const sim = lanceSim(r); const d = place(sim, 1, 120, 120)[0]; void d; return dps(sim, 12); };
+  assert.ok(dpsOf({ count: 4 }) > dpsOf({ count: 2 }) * 1.1, 'count');
+  assert.ok(dpsOf({ speed: 5 }) > dpsOf({ speed: 0 }) * 1.05, 'Swiftness');
+});
+
+test('Lance gates: single 1.75-2.35x at max (band 1.8-2.3), cap at pick <= 3.0x (single, stream10, stream40), never below base incl. stream10 >= 1.0 (EXPECTED_FAIL removed)', () => {
+  const res = measureRatios({ secs: 10, seeds: [1], only: 'soul_lance' }).soul_lance;
+  assert.ok(res.max.single.ratio >= 1.75 && res.max.single.ratio <= 2.35, `single ${res.max.single.ratio.toFixed(2)}x`);
+  for (const [sc, c] of Object.entries(res.pair)) assert.ok(c.ratio <= 3.0, `${sc} cap@pick ${c.ratio.toFixed(2)}x`);
+  for (const mode of ['max', 'pair']) for (const [sc, c] of Object.entries(res[mode])) assert.ok(c.ratio >= 0.98, `${mode} ${sc} ${c.ratio.toFixed(2)}x`);
+});
+
+test('Lance hurts a boss (boss damage > 0) and never moves, frightens or pins it', () => {
+  const sim = lanceSim({ count: 5 }); const boss = sim.spawnEnemy('elder_treant', sim.player.x + 80, sim.player.y);
+  boss.hp = boss.maxHp = 1e12;
+  run(sim, 8, () => { assert.equal(boss.fearT, 0); assert.ok(!(boss.heldT > 0)); });
+  assert.ok(boss.maxHp - boss.hp > 0);
+});
+
+test('Soul Lance is deterministic', () => {
+  const a = lanceSim({ count: 4 }); place(a, 14, 50, 170, 'wolf', 400);
+  const b = lanceSim({ count: 4 }); place(b, 14, 50, 170, 'wolf', 400);
+  run(a, 8); run(b, 8);
+  assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+});

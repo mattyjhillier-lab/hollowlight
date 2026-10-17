@@ -480,12 +480,77 @@ export function boltRetarget(sim, b) {
   return sim.nearestEnemy(b.x, b.y, 180);
 }
 
+// W10c Soul Lance ('Lances of Light'): one pale lance (1 + floor(Bolt count / 2), max 3, in a 12 degree fan) is thrown through the DENSEST line of foes
+// among the nearest 5; Bolt count raises the lance damage (3.5x + 0.6x per count rank), Pierce widens the lance (+2 px per rank), Swiftness quickens
+// the volley (like the base) and the lance leaves a glowing script line that burns what stands on it (0.25x of the lance per second for 1.2 s).
+function lanceLines(sim, w, dt) {
+  const L = w.rt.lines;
+  if (!L || !L.length) return;
+  const T = 0.25;
+  let tick = false;
+  for (const ln of L) {
+    if (ln.len < ln.max) ln.len = Math.min(ln.max, ln.len + ln.v * dt); else ln.age += dt;
+    ln.tick -= dt;
+    if (ln.tick <= 0) tick = true;
+  }
+  if (tick) { // one burn per foe per tick, whatever number of lines it stands on (the strongest line counts: lines never stack)
+    const burn = new Map();
+    for (const ln of L) {
+      ln.tick = ln.tick <= 0 ? T : ln.tick;
+      const dx = Math.cos(ln.ang), dy = Math.sin(ln.ang);
+      for (const e of sim.enemies) {
+        if (e.dead) continue;
+        const rx = e.x - ln.x, ry = e.y - ln.y;
+        const along = rx * dx + ry * dy;
+        if (along < -e.r || along > ln.len + e.r || Math.abs(rx * dy - ry * dx) > ln.w + e.r) continue;
+        if (!(burn.get(e) >= ln.dps)) burn.set(e, ln.dps);
+      }
+    }
+    for (const [e, dps] of burn) sim.hurt(e, dps * T, { silent: true });
+  }
+  w.rt.lines = L.filter((ln) => ln.age < ln.ttl);
+}
+function lanceFire(sim, w, rs) {
+  const { s, rt } = w;
+  const p = sim.player;
+  const sdef = sim.data.weapons.spirit_bolts;
+  const range = tune(sim, w, 'range', 300);
+  const width = tune(sim, w, 'r', 1) + tune(sim, w, 'rPer', 2) * (w.ranks.pierce || 0);
+  const cand = sim.nearestEnemies(p.x, p.y, 210, tune(sim, w, 'cand', 5));
+  if (!cand.length) { rt.cd = 0.15; return; }
+  // densest line: for each candidate direction count the foes the lance would cross; ties go to the nearer candidate
+  let bestAng = 0, bestScore = -1;
+  for (const c of cand) {
+    const a = Math.atan2(c.y - p.y, c.x - p.x), dx = Math.cos(a), dy = Math.sin(a);
+    let score = 0;
+    for (const e of sim.enemies) {
+      if (e.dead) continue;
+      const rx = e.x - p.x, ry = e.y - p.y, along = rx * dx + ry * dy;
+      if (along > 0 && along < range && Math.abs(rx * dy - ry * dx) < width + e.r) score++;
+    }
+    if (score > bestScore) { bestScore = score; bestAng = a; }
+  }
+  const n = Math.min(tune(sim, w, 'max', 3), 1 + Math.floor((w.ranks.count || 0) / 2)); // lances = 1 + floor(Bolt count rank / 2): 1 at rank 0-1, 2 at 2-3, 3 at 4-5
+  const fan = (tune(sim, w, 'fan', 12) * Math.PI) / 180;
+  const dmg = s.power * sim.dmgMult(w) * (tune(sim, w, 'dmg', 2.0) + tune(sim, w, 'dmgPer', 0.07) * (w.ranks.count || 0));
+  const speed = s.speed * tune(sim, w, 'speedK', 1.3);
+  rt.lines = rt.lines || [];
+  for (let i = 0; i < n; i++) {
+    const ang = bestAng + (n > 1 ? (i - (n - 1) / 2) * (fan / (n - 1)) : 0);
+    sim.spawnBolt({ x: p.x, y: p.y, ang, speed, dmg, pierce: Infinity, r: width, homing: false, explode: false, life: range / speed, turn: 0, target: null, color: '#d6f7ff', evo: 'soul_lance', lance: true });
+    if (rt.lines.length < 12) rt.lines.push({ x: p.x, y: p.y, ang, len: 0, max: range, v: speed, age: 0, ttl: tune(sim, w, 'lineTime', 1.2), w: width, dps: dmg * tune(sim, w, 'line', 0.25), tick: 0.25 });
+  }
+  rt.cd = (tune(sim, w, 'cd', 0.8) / rateMult(sdef, 'speed', rs)) * sim.mods.cooldown;
+}
+
 const spiritBolts = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
     const p = sim.player;
+    if (evo === 'soul_lance') lanceLines(sim, w, dt);
     rt.cd = (rt.cd ?? 0.3) - dt;
     if (rt.cd > 0) return;
+    if (evo === 'soul_lance') return lanceFire(sim, w, w.ranks.speed || 0);
 
     // W10a: Swiftness = bolt speed + turn rate + a slightly shorter volley gap (1.1 s -> 1.0 s at rank 5)
     const sdef = sim.data.weapons.spirit_bolts;
@@ -505,7 +570,6 @@ const spiritBolts = {
       count = 8; cd = tune(sim, w, 'cd', 0.85) + tune(sim, w, 'cdPer', 0.02) * (sim.data.balance.maxRank - rs);
       speed *= tune(sim, w, 'speedK', 1.4); explode = true; dmg *= tune(sim, w, 'dmg', 1);
     }
-    if (evo === 'soul_lance') { count = 1; dmg *= tune(sim, w, 'dmg', 8); pierce = Infinity; speed *= 1.3; r = tune(sim, w, 'r', 12); homing = false; cd = tune(sim, w, 'cd', 1.1); life = 1.6; }
 
     const targets = sim.nearestEnemies(p.x, p.y, 210, Math.max(1, count));
     if (!targets.length) { rt.cd = 0.15; return; }
@@ -519,7 +583,7 @@ const spiritBolts = {
       else if (i >= targets.length) ang += (i - targets.length + 1) * 0.18 * (i % 2 ? 1 : -1);
       sim.spawnBolt({
         x: p.x, y: p.y, ang, speed, dmg, pierce, r, homing: vol ? false : homing, explode, life, turn, target: homing && !vol ? tgt : null,
-        color: evo === 'soul_lance' ? '#d6f7ff' : '#7ff0ff',
+        color: '#7ff0ff',
         ...(vol ? { vol, seek: tune(sim, w, 'burst', 0.22), evo, blast: tune(sim, w, 'blast', 0.12), blastR: tune(sim, w, 'blastR', 22), blastEach: tune(sim, w, 'each', 1) === 1 } : {}),
       });
       if (vol) vol.bolts.push(sim.projectiles[sim.projectiles.length - 1]);

@@ -1152,12 +1152,35 @@ export class RunScene extends Phaser.Scene {
     // Spirit Tempest draws a short thread from each seeking glyph to its own prey (cap halos/5, none under reduced motion).
     let rimN = 0, thrN = 0;
     const thrCap = Math.round(caps.halos / 5), still = this.reducedMotion();
+    // Soul Lance script lines: a thin glowing line along each lance's path that fades over 1.2 s (cores + faint ink ticks on Med/High; the core only on Low)
+    const lw = sim.weapons.find((w2) => w2.id === 'spirit_bolts');
+    if (lw && lw.evo === 'soul_lance' && lw.rt.lines) {
+      for (const ln of lw.rt.lines) {
+        const fade = ln.len < ln.max ? 1 : Math.max(0, 1 - ln.age / ln.ttl), cx = Math.cos(ln.ang), cy = Math.sin(ln.ang);
+        const ex = ln.x + cx * ln.len, ey = ln.y + cy * ln.len;
+        if (Math.max(ln.x, ex) < vx0 || Math.min(ln.x, ex) > vx1 || Math.max(ln.y, ey) < vy0 || Math.min(ln.y, ey) > vy1) continue;
+        fx.lineStyle(Math.max(4, ln.w * 1.4), ROLE.bolt, 0.1 * fade).lineBetween(ln.x, ln.y, ex, ey);
+        fx.lineStyle(1.5, 0xd6f7ff, 0.5 * fade).lineBetween(ln.x, ln.y, ex, ey);
+        if (caps.drips > 0) for (let d = 18, k = 0; d < ln.len && k < 16; d += 22, k++) { // script: short ink ticks across the line
+          const tl = k % 2 ? 3.5 : 2.2, tx = ln.x + cx * d, ty = ln.y + cy * d;
+          fx.lineStyle(1, 0xd6f7ff, 0.4 * fade).lineBetween(tx - cy * tl, ty + cx * tl, tx + cy * tl, ty - cx * tl);
+        }
+      }
+    }
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
-      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((b.r / 3) * pl.bolt.inv);
-      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale((b.r / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
+      const rv = b.lance ? 3.5 : b.r; // a lance is drawn as a long pale capsule below, its sprite stays small
+      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((rv / 3) * pl.bolt.inv);
+      if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale((rv / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
       trail(b.x, b.y, PAL.ice, 0.28);
       if (lit) lm.add(b.x, b.y, 24, ROLE.bolt, 0.8);
+      if (b.lance) { // pale lance: wide soft body, bright core, thin gold rim along both edges (evolved bolts only)
+        const lx = Math.cos(b.ang), ly = Math.sin(b.ang), ox = b.x - lx * 34, oy = b.y - ly * 34, hw = Math.max(1.5, b.r * 0.5);
+        fx.lineStyle(Math.max(3, b.r * 0.9), 0xd6f7ff, 0.2).lineBetween(ox, oy, b.x, b.y);
+        fx.lineStyle(2, 0xffffff, 0.85).lineBetween(ox, oy, b.x, b.y);
+        fx.fillStyle(0xffffff, 0.9).fillCircle(b.x, b.y, 2.5);
+        if (rimN++ < caps.halos) fx.lineStyle(1, 0xffd27a, 0.5).lineBetween(ox - ly * hw, oy + lx * hw, b.x - ly * hw, b.y + lx * hw).lineBetween(ox + ly * hw, oy - lx * hw, b.x + ly * hw, b.y - lx * hw);
+      }
       if (b.evo === 'spirit_tempest') {
         if (rimN++ < caps.halos) fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(b.x, b.y, 4.5);
         if (!(b.seek > 0) && b.target && !b.target.dead && !still && thrN++ < thrCap) { // short thread (<= 34 px) pointing at its prey
