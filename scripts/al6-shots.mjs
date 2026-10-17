@@ -51,7 +51,7 @@ async function load(w, h, mobile, query) {
   await sleep(600);
 }
 
-const VIEWS0 = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true]];
+const VIEWS0 = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true], ['phone-port-390x844', 390, 844, true]];
 const VIEWS = process.env.VIEW ? VIEWS0.filter((v) => v[0].startsWith(process.env.VIEW)) : VIEWS0;
 const Q = process.env.QUALITY || 'auto';
 const EXTRA = process.env.EXTRA || '';
