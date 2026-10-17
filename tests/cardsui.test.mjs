@@ -185,8 +185,9 @@ test('HUD-2 OfferView on a fake DOM: structure, order, quiet row, keys, banish m
   assert.equal(all(host, 'lu-btn').length, 2);
   assert.ok(textOf(all(host, 'lu-btn')[0]).includes('Reroll') && textOf(all(host, 'lu-btn')[0]).includes('×2'));
   // input lock: a pick right after opening is ignored; after the lock it goes through
+  v.openAt = performance.now() + 1e9; // deterministic: pretend it opened 'just now' (a wall-clock race made this flaky under load)
   assert.equal(v.activate(0), false);
-  v.openAt -= INPUT_LOCK_MS + 5;
+  v.openAt = performance.now() - INPUT_LOCK_MS - 5;
   assert.equal(v.activate(0), true);
   assert.deepEqual(log.pop(), ['pick', sim.offer.gold[0].key]);
   // keyboard: number picks display-order card; R rerolls
