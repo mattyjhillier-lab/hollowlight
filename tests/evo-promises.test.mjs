@@ -60,7 +60,7 @@ test('bosses are never frightened by any weapon or evolution', () => {
   }
 });
 
-test('Murder Storm still frightens ordinary enemies (the guard does not disable the wall)', () => {
+test('Wall of Wings (murder_storm) still frightens ordinary enemies (the guard does not disable the wall)', () => {
   const sim = mk('murder_storm', 'raven_flock');
   
   const crowd = ringAt(sim, 'crow', 8, 70, 140);
@@ -70,7 +70,7 @@ test('Murder Storm still frightens ordinary enemies (the guard does not disable 
   assert.ok(frightened > 0, 'no ordinary enemy was ever frightened');
 });
 
-test('Murder Storm fear cooldown: 1.5 s after an enemy recovers it cannot be re-frightened', () => {
+test('Wall of Wings fear cooldown: 1.5 s after an enemy recovers it cannot be re-frightened', () => {
   const sim = mk('murder_storm', 'raven_flock');
   const crowd = ringAt(sim, 'crow', 4, 70, 140);
   for (const c of crowd) { c.hp = c.maxHp = 1e12; c.speed = 0; c.dmg = 0; }
@@ -93,7 +93,7 @@ test('Murder Storm fear cooldown: 1.5 s after an enemy recovers it cannot be re-
   for (const s of state.values()) assert.ok(s.minGap >= 1.5 - 2 * DT, `re-frightened ${s.minGap.toFixed(2)}s after recovering`);
 });
 
-test('Dive Bombers: with enough enemies in range no two concurrent dives share a target', () => {
+test('Talon Mark (dive_bombers): with enough enemies in range no two concurrent dives share a target', () => {
   const sim = mk('dive_bombers', 'raven_flock');
   const crowd = ringAt(sim, 'crow', 12, 40, 120);
   for (const c of crowd) { c.hp = c.maxHp = 1e12; c.speed = 0; c.dmg = 0; }

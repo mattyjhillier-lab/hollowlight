@@ -205,6 +205,8 @@ const ghostWolves = {
 const RAVEN_REST = 1.6;
 const RAVEN_PECKS = 3;
 const RAVEN_PECK_GAP = 0.15;
+// Talon Mark (dive_bombers, W9): scouts pick the TOUGHEST unclaimed foe in Watch, climb above it for a 0.4 s shadow tell, drop once for
+// `dive` x a peck (~4x) and MARK it (Sim.mark: +15% damage taken from all sources for 3 s, refresh only, shared x1.75 amp cap). No splash.
 const raven = {
   claimed(units, self) {
     const c = new Set();
@@ -251,6 +253,7 @@ const ravenFlock = {
         if (!t) { u.rest = 0.25; return; }
         u.target = t;
         u.st = 'dive';
+        u.tell = 0;
         return;
       }
       if (u.st === 'return') {
@@ -266,9 +269,23 @@ const ravenFlock = {
         if (!t) { u.st = 'return'; return; }
       }
       if (u.st === 'dive') {
+        if (evo === 'dive_bombers') {
+          const tell = tune(sim, w, 'tell', 0.4);
+          u.tell = (u.tell || 0) + dt;
+          u.tellK = Math.min(1, u.tell / tell); // renderer: the growing violet shadow on the target
+          if (u.tell < tell) { moveToward(u, t.x, t.y - 22, flight, dt); return; } // climb above the foe
+          if (moveToward(u, t.x, t.y, flight * tune(sim, w, 'strike', 1.6), dt) < t.r + u.r + 1) {
+            sim.hurt(t, dmg * tune(sim, w, 'dive', 8));
+            sim.mark(t);
+            sim.addFx({ kind: 'ring', x: t.x, y: t.y, r: 16, ttl: 0.2, color: '#b79cff' });
+            u.tellK = 0;
+            u.st = 'return';
+          }
+          return;
+        }
         if (moveToward(u, t.x, t.y, flight, dt) < t.r + u.r + 1) {
           u.st = 'peck';
-          u.pecks = evo === 'dive_bombers' ? 1 : RAVEN_PECKS;
+          u.pecks = RAVEN_PECKS;
           u.pt = 0;
         }
         return;
@@ -279,16 +296,7 @@ const ravenFlock = {
       u.pt -= dt;
       if (u.pt > 0) return;
       u.pt = RAVEN_PECK_GAP;
-      if (evo === 'dive_bombers') {
-        sim.hurt(t, dmg * 6);
-        for (const e of sim.enemies) {
-          if (e.dead || e === t) continue;
-          if (Math.hypot(e.x - t.x, e.y - t.y) < e.r + 18) sim.hurt(e, dmg * 2);
-        }
-        sim.addFx({ kind: 'ring', x: t.x, y: t.y, r: 18, ttl: 0.2, color: '#b79cff' });
-      } else {
-        sim.hurt(t, dmg);
-      }
+      sim.hurt(t, dmg);
       u.pecks--;
       if (u.pecks <= 0) u.st = 'return';
     });
