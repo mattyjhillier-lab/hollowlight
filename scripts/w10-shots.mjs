@@ -47,10 +47,13 @@ async function load(w, h, mobile, query) {
   await send('Page.enable'); await send('Runtime.enable');
   await send('Page.navigate', { url: base + '/' + query });
   for (let i = 0; i < 80; i++) { await sleep(250); try { if (await ev('!!(window.__app && window.__app.sim && window.__app.ui && window.__app.ui.hudView)')) break; } catch { /* loading */ } }
+  if (process.env.QUALITY) await ev(`window.__app.save.data.settings.quality = '${process.env.QUALITY}'`); // forced tier (headless auto-tiers to Low)
+  if (process.env.RM) await ev('window.__app.save.data.settings.reducedMotion = true'); // reduced motion: threads/curls/ink lines off, rims stay
   await sleep(600);
 }
 
 const EVO = process.env.EVO || 'tempest';
+const TAG = (process.env.QUALITY ? '-' + process.env.QUALITY : '') + (process.env.RM ? '-rm' : '');
 const ID = { tempest: 'spirit_tempest', lance: 'soul_lance', pages: 'returning_pages' }[EVO];
 const GRANT = 'grant=' + encodeURIComponent(`spirit_bolts:count=${EVO === 'lance' ? 5 : 4},power=4,speed=${EVO === 'lance' ? 3 : 5},pierce=${EVO === 'tempest' ? 3 : 5}:${ID};ghost_wolves:count=3,power=3,speed=3,duration=3`);
 const VIEWS = [['desktop-1280x720', 1280, 720, false], ['phone-land-844x390', 844, 390, true]];
@@ -73,7 +76,7 @@ try {
     for (let i = 0; i < 1500 && !got; i++) {
       if ((await ev(STATE)) === 'levelup') { await ev('window.__app.sim.offer && window.__app.sim.pick && window.__app.sim.pick(0)').catch(() => {}); continue; }
       info = await ev(MOMENT[EVO]);
-      if (info.ok) { got = true; await ev('(() => { const s = window.__app.sim; s.step = () => {}; })()'); await sleep(250); await zoom(`${EVO}-${tag}-zoom`, w, h, mobile); await shot(`${EVO}-${tag}-full`); }
+      if (info.ok) { got = true; await ev('(() => { const s = window.__app.sim; s.step = () => {}; })()'); await sleep(250); await zoom(`${EVO}${TAG}-${tag}-zoom`, w, h, mobile); await shot(`${EVO}${TAG}-${tag}-full`); }
       else await sleep(40);
     }
     check(`${tag}: ${EVO} moment captured`, got, JSON.stringify(info));
