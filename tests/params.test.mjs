@@ -76,3 +76,11 @@ test('settings: every setting key survives hostile values (object, string, NaN, 
     }
   }
 });
+
+import { readFileSync } from 'node:fs';
+test('Space presses outside a running sim (pause, level-up cards, end screen) are drained so they never queue an ability', () => {
+  const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.ok(/else if \(\(this\.paused \|\| sim\.state !== 'running'\) && this\.scene\.drainAbilityKey\) this\.scene\.drainAbilityKey\(\)/.test(app));
+  const scene = readFileSync(new URL('../src/scenes/RunScene.js', import.meta.url), 'utf8');
+  assert.ok(/drainAbilityKey\(\) \{[^}]*JustDown\(k\.SPACE\)/.test(scene));
+});

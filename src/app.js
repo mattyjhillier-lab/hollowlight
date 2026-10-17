@@ -121,7 +121,7 @@ export const app = {
     if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
     if (!sim) return;
     if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
-    else if (this.paused && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button must not fire the ability on resume
+    else if ((this.paused || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
     if (sim.events.length) {
       for (const ev of sim.events) this.onEvent(ev);
