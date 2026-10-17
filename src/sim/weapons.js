@@ -667,16 +667,26 @@ const chainLightning = {
     const area = s.area * sim.mods.area;
 
     if (evo === 'static_storm') {
+      // W11c Living Field: a tick of 3 + floor(Chains / 2) strikes (max 5) at 0.42x on foes inside 110 + 0.8 x Arc, preferring foes
+      // not struck in the last 0.5 s (a repeat only when nothing fresh is left). Tick floor 0.1 s AFTER tree cooldown mods (B5).
+      const radius = 110 + area * 0.8;
+      rt.fieldR = radius;
       rt.cd = (rt.cd ?? 0.2) - dt;
       if (rt.cd > 0) return;
-      rt.cd = Math.max(0.1, 0.3 * (s.cooldown / 1.6) * sim.mods.cooldown); // floor after tree cooldown mods (B5)
-      const strikes = tune(sim, w, 'strikes', 4);
-      const radius = 110 + area * 0.8;
-      const pool = sim.enemies.filter((e) => !e.dead && Math.hypot(e.x - p.x, e.y - p.y) < radius);
-      for (let k = 0; k < strikes && pool.length; k++) {
-        const e = pool.splice(sim.rng.int(pool.length), 1)[0];
-        sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.5));
-        sim.addFx({ kind: 'bolt', pts: [{ x: e.x + sim.rng.range(-8, 8), y: e.y - 70 }, { x: e.x, y: e.y }], ttl: 0.12, color: '#b8f2ff' });
+      rt.cd = Math.max(0.1, 0.3 * (s.cooldown / 1.6) * sim.mods.cooldown);
+      const strikes = Math.min(tune(sim, w, 'cap', 5), tune(sim, w, 'strikes', 3) + Math.floor(s.chains / 2));
+      const gap = tune(sim, w, 'gap', 0.5);
+      const fresh = [], stale = [];
+      for (const e of sim.enemies) {
+        if (e.dead || Math.hypot(e.x - p.x, e.y - p.y) >= radius) continue;
+        (sim.time - (e.stormAt ?? -9) >= gap ? fresh : stale).push(e);
+      }
+      for (let k = 0; k < strikes && (fresh.length || stale.length); k++) {
+        const list = fresh.length ? fresh : stale;
+        const e = list.splice(sim.rng.int(list.length), 1)[0];
+        e.stormAt = sim.time;
+        sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.47));
+        sim.addFx({ kind: 'bolt', field: true, pts: [{ x: e.x + sim.rng.range(-8, 8), y: e.y - 70 }, { x: e.x, y: e.y }], ttl: 0.12, color: '#b8f2ff' });
       }
       return;
     }

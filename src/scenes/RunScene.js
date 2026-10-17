@@ -1199,7 +1199,13 @@ export class RunScene extends Phaser.Scene {
     }
 
     // transient effects (additive: glow comes for free)
-    let fi = 0, pil = 0, skyA = 0;
+    let fi = 0, pil = 0, skyA = 0, fld = 0;
+    const stW = sim.weapons.find((x) => x.id === 'chain_lightning' && x.evo === 'static_storm');
+    if (stW && stW.rt.fieldR) { // W11c Static Storm: a faint cyan field ring (gold hairline inside = evolved effect), static in reduced motion
+      const pr = sim.player, pulse = this.reducedMotion() ? 0 : 0.04 * Math.sin(sim.time * 2.2);
+      fx.lineStyle(1, PAL.ice, 0.13 + pulse).strokeCircle(pr.x, pr.y, stW.rt.fieldR);
+      fx.lineStyle(1, PAL.gold, 0.09 + pulse * 0.5).strokeCircle(pr.x, pr.y, stW.rt.fieldR - 3);
+    }
     const rmFx = this.reducedMotion(), tierFx = this.quality.tier;
     for (const f of sim.fx) {
       fi++;
@@ -1226,6 +1232,7 @@ export class RunScene extends Phaser.Scene {
         fx.lineStyle(3, hex(f.color), 0.7 * k).beginPath().arc(f.x, f.y, f.r * (1.05 - 0.1 * k), f.a - 1.0, f.a + 1.0).strokePath();
         fx.lineStyle(1, 0xffffff, 0.8 * k).beginPath().arc(f.x, f.y, f.r * (1.05 - 0.1 * k), f.a - 0.8, f.a + 0.8).strokePath();
       } else if (f.kind === 'bolt') {
+        if (f.field && fld++ >= (tierFx === 'low' ? 6 : tierFx === 'med' ? 12 : 20)) continue; // Static Storm strikes are tier-capped
         const a = Math.min(1, f.ttl / 0.1);
         if (lit && f.pts.length) lm.add(f.pts[f.pts.length - 1].x, f.pts[f.pts.length - 1].y, 60, ROLE.lightning, 0.9 * a);
         for (let pass = 0; pass < 2; pass++) {

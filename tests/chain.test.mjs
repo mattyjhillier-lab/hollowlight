@@ -127,3 +127,64 @@ test('W11b cap at pick: Thunder Judgment <= 3.0x its base (pair 5 + others rank 
   for (const [sc, c] of Object.entries(res.thunder_judgment.pair)) assert.ok(c.ratio <= 3.0, `${sc}: ${c.ratio.toFixed(2)}x at pick`);
   assert.ok(res.thunder_judgment.pair.single.ratio >= 1.2, `single ${res.thunder_judgment.pair.single.ratio}`);
 });
+
+// ---------------------------------------------------------------- W11c Static Storm
+const ticks = (sim, secs) => { // [{t, ids}] one entry per tick (field bolts in the same frame)
+  const out = []; const o = sim.addFx.bind(sim);
+  sim.addFx = (f) => { if (f.field) { const e = sim.enemies.find((q) => Math.abs(q.x - f.pts[1].x) < 1e-9 && Math.abs(q.y - f.pts[1].y) < 1e-9); const l = out[out.length - 1]; if (l && l.t === sim.time) l.ids.push(e.id); else out.push({ t: sim.time, ids: [e.id] }); } return o(f); };
+  run(sim, secs); return out;
+};
+
+test('W11c Static Storm data: 3 + floor(Chains/2) strikes (cap 5), recipe Cooldown + Arc, smite 0.42-0.5x, no-repeat gap 0.5 s', () => {
+  const e = data.evolutions.static_storm;
+  assert.equal(e.tune.strikes, 3); assert.equal(e.tune.cap, 5); assert.equal(e.tune.gap, 0.5);
+  assert.ok(e.tune.dmg >= 0.42 && e.tune.dmg <= 0.5, `dmg ${e.tune.dmg}`);
+  assert.deepEqual([...e.pair].sort(), ['area', 'cooldown']);
+});
+
+test('W11c Chains matter after evolving: strikes per tick = min(5, 3 + floor(Chains/2)) for Chains 0..5 (the card stat keeps working)', () => {
+  const want = (c) => Math.min(5, 3 + Math.floor(c / 2)); // chains stat = 2 + rank
+  for (let rk = 0; rk <= 5; rk++) {
+    const sim = mk({ chains: rk, cooldown: 5, area: 5 }, 'static_storm');
+    crowd(sim, 40);
+    for (const e of sim.enemies) { e.x = sim.player.x + (e.x - sim.player.x) * 0.3; e.y = sim.player.y + (e.y - sim.player.y) * 0.3; } // inside the field
+    const t = ticks(sim, 1);
+    assert.ok(t.length > 0);
+    for (const k of t) assert.equal(k.ids.length, want(2 + rk), `Chains rank ${rk}`);
+  }
+});
+
+test('W11c field radius = 110 + 0.8 x Arc: nothing struck outside it; a tick never strikes the same foe twice while fresh foes are in range', () => {
+  const sim = mk({ chains: 5, cooldown: 5, area: 5 }, 'static_storm');
+  const all = crowd(sim, 60);
+  const R2 = 110 + 0.8 * 110;
+  const tk = ticks(sim, 6);
+  const p = sim.player;
+  const seen = new Map();
+  for (const { t, ids } of tk) {
+    assert.equal(new Set(ids).size, ids.length, 'duplicate in one tick');
+    for (const id of ids) {
+      const e = all.find((q) => q.id === id);
+      assert.ok(Math.hypot(e.x - p.x, e.y - p.y) < R2 + 1e-9, 'outside the field');
+      if (seen.has(id)) { const inField = all.filter((q) => Math.hypot(q.x - p.x, q.y - p.y) < R2).length; assert.ok(inField < 8 || t - seen.get(id) >= 0.5 - 1e-9, `repeat after ${(t - seen.get(id)).toFixed(2)} s with ${inField} in range`); }
+      seen.set(id, t);
+    }
+  }
+});
+
+test('W11c a lone foe is still struck (stale fallback) and the tick never runs faster than 0.1 s even with extreme tree cooldown mods', () => {
+  const sim = mk({ chains: 5, cooldown: 5, area: 5 }, 'static_storm');
+  sim.mods.cooldown = 0.05; // far past the tree soft cap
+  put(sim, 60, 0);
+  const tk = ticks(sim, 3);
+  assert.ok(tk.length > 5, 'lone foe is struck');
+  for (let i = 1; i < tk.length; i++) assert.ok(tk[i].t - tk[i - 1].t >= 0.1 - 1e-9, `tick gap ${tk[i].t - tk[i - 1].t}`);
+});
+
+test('W11c cap at pick: Static Storm <= 3.0x its base (pair 5 + others rank 1) in single, stream10, stream40; deterministic', () => {
+  const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair'], only: 'static_storm' });
+  for (const [sc, c] of Object.entries(res.static_storm.pair)) assert.ok(c.ratio <= 3.0, `${sc}: ${c.ratio.toFixed(2)}x at pick`);
+  const mkc = () => { const s = mk({ chains: 3, cooldown: 4, area: 4 }, 'static_storm'); crowd(s, 50); return s; };
+  const a = mkc(), b = mkc(); run(a, 6); run(b, 6);
+  assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+});
