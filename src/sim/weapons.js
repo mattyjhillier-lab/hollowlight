@@ -504,6 +504,7 @@ function strikeChain(sim, w, first, chains, dmg, area) {
   sim.addFx({ kind: 'bolt', pts, ttl: 0.16, color: '#b8f2ff' });
 }
 
+export const JUDGE_R = 180; // Thunder Judgment smite radius (px); fits inside the 640x360 view (half-height 180)
 const chainLightning = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
@@ -528,24 +529,30 @@ const chainLightning = {
 
     if (evo === 'thunder_judgment') {
       rt.jCd = (rt.jCd ?? 1.5) - dt;
+      // W11b: 0.3 s sky-darkening tell (visual only; the render hook decides what to draw per tier / reduced motion)
+      if (rt.jCd <= 0.3 && rt.jCd > 0 && !rt.jTold) { rt.jTold = true; sim.addFx({ kind: 'judgetell', ttl: 0.3, life: 0.3, x: p.x, y: p.y, r: JUDGE_R }); }
       if (rt.jCd <= 0) {
         rt.jCd = tune(sim, w, 'cd', 3);
+        rt.jTold = false;
         let n = 0;
         const cap = tune(sim, w, 'cap', 30);
-        // Nearest first, on screen only (view half-height 180): never a far, off-screen enemy while a near one is skipped (B4).
+        // Nearest first, inside radius 180 (a circle that sits wholly inside the 640x360 view, so nothing is struck off screen).
         const near = [];
         for (const e of sim.enemies) {
           if (e.dead) continue;
           const dd = Math.hypot(e.x - p.x, e.y - p.y);
-          if (dd <= 180) near.push({ e, dd });
+          if (dd <= JUDGE_R) near.push({ e, dd });
         }
         near.sort((a, b) => a.dd - b.dd || a.e.id - b.e.id);
+        rt.jLast = [];
         for (const { e } of near) {
           if (n >= cap) break;
           n++;
-          sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.9));
-          sim.addFx({ kind: 'bolt', pts: [{ x: e.x, y: e.y - 80 }, { x: e.x, y: e.y }], ttl: 0.2, color: '#b8f2ff' });
+          rt.jLast.push(e.id);
+          sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.72));
+          sim.addFx({ kind: 'bolt', pillar: 'judgment', pts: [{ x: e.x, y: e.y - 260 }, { x: e.x, y: e.y }], ttl: 0.22, color: '#b8f2ff' });
         }
+        if (n) sim.addFx({ kind: 'judgeflash', ttl: 0.14, life: 0.14, x: p.x, y: p.y, r: JUDGE_R });
       }
     }
 

@@ -1,6 +1,7 @@
 # Hollowlight: to-do queue (kept up to date by Claude; Matt can add anything)
 
 - W10a DONE 2026-10-17 (awaiting Matt's look; see LOCKED W10a): Spirit Bolts base = Swiftness (speed + turn + volley gap), power +3.5/rank, honest hint. Next: W10b Spirit Tempest, W10c Soul Lance, W10d Returning Pages.
+- W11a/b DONE 2026-10-17 (awaiting Matt's look; see LOCKED W11a/b): Chain Lightning base (first strike 1.5x, Power +6, Arc) and Thunder Judgment (smite 0.72x, sky pillars). Next: W11c Static Storm, W11d Storm Tether.
 
 - AL-6 DAWN CHORUS DONE 2026-10-17 (awaiting Matt's look; see LOCKED AL-6): first light 8:30 (fireflies rise, fog thins, sparrows land), the hush at 10:00, the dawn flood from 14:00 (flock cap 12/8/4, petals, light shafts, critters out, colour flush), victory flush. Visual only, Calm = static, Low 4 birds. Preview `?auto=wren&t=520|590|860|889&god=1`, off with `?dawn=0`. Ambient-life lock is now COMPLETE (AL-0..AL-6). Next: sound sheet (cue names reserved: dawn_chorus_1..3).
 - W7c DONE 2026-10-17 (awaiting Matt's look; see LOCKED W7c): THE ALPHA built (id dire_alpha): one great wolf + two ghost shades, Pack size = bigger, wider, stronger. Sheet numbers could not meet the gates, tuned values + two alternatives are in the LOCKED row. evo-home 10 seeds home: swarm 2.21x, kite 1.41x, single 1.47x, boss 1.67x; cap@pick single 1.15x, stream40 1.40x, boss 1.62x. Starter sweeps byte-identical. Open for Matt: kite margin thin (1.41x vs gate 1.4x), keep tuned numbers or the literal sheet numbers.

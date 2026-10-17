@@ -242,6 +242,7 @@ export class RunScene extends Phaser.Scene {
     this.ring = this.add.image(0, 0, 'ring').setBlendMode(ADD).setDepth(D_HALO + 1).setScale(inv('ring')).setVisible(false);
     this.flashR = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
     this.flashT = 0; this.flashLife = 1; this.flashA = 0;
+    this.skyR = this.add.rectangle(0, 0, 760, 440, 0x070b1e).setScrollFactor(0).setDepth(D_VIG - 1).setVisible(false); // W11b Thunder Judgment sky-darkening tell (Med/High, not in reduced motion)
     this.rings = Array.from({ length: 10 }, () => ({ on: false, x: 0, y: 0, t: 0, life: 1, r0: 0, r1: 1, col: 0, w: 2 }));
     this.zoomT = 9; this.zoomAmp = 0; this.zoomDur = 1;
     this.hitStop = 0; this.hitCool = 0;
@@ -308,7 +309,7 @@ export class RunScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.baseZoom);
     const vw = (W / this.baseZoom) * 1.06;
     const vh = (H / this.baseZoom) * 1.06;
-    for (const o of [this.dawn, this.flashR]) o.setPosition(W / 2, H / 2).setSize(vw, vh);
+    for (const o of [this.dawn, this.flashR, this.skyR]) o.setPosition(W / 2, H / 2).setSize(vw, vh);
     this.vig.setPosition(W / 2, H / 2).setDisplaySize(vw, vh);
     this.lm.destroy(); // rebuilt at the new size by applyTier
     this.applyTier();
@@ -461,6 +462,7 @@ export class RunScene extends Phaser.Scene {
     this.heroBack.setVisible(false);
     this.ring.setVisible(false);
     this.flashR.setVisible(false);
+    this.skyR.setVisible(false);
     for (const r of this.rings) r.on = false;
     this.cameras.main.setZoom(this.baseZoom);
     app.freeze = false;
@@ -1156,10 +1158,25 @@ export class RunScene extends Phaser.Scene {
     }
 
     // transient effects (additive: glow comes for free)
-    let fi = 0;
+    let fi = 0, pil = 0, skyA = 0;
+    const rmFx = this.reducedMotion(), tierFx = this.quality.tier;
     for (const f of sim.fx) {
       fi++;
-      if (f.kind === 'ring') {
+      if (f.kind === 'judgetell' || f.kind === 'judgeflash') { // W11b Thunder Judgment: tell = a faint cyan radius ring (all tiers) + sky darkening (Med/High, not in reduced motion)
+        if (f.kind === 'judgetell') {
+          const k = 1 - f.ttl / f.life;
+          fx.lineStyle(1, PAL.ice, 0.18 + 0.3 * k).strokeCircle(f.x, f.y, f.r);
+          if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * k);
+        } else if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * (f.ttl / f.life));
+      } else if (f.kind === 'bolt' && f.pillar) { // a sky pillar on one struck foe: pale core, soft cyan column, gold rim (evolved effect only), tier-capped
+        if (pil++ >= (tierFx === 'low' ? 10 : tierFx === 'med' ? 20 : 30)) continue;
+        const a = Math.min(1, f.ttl / 0.14), x = Math.round(f.pts[1].x), y0 = f.pts[0].y, y1 = f.pts[1].y;
+        if (tierFx !== 'low') fx.fillStyle(PAL.ice, 0.2 * a).fillRect(x - 5, y0, 10, y1 - y0);
+        fx.fillStyle(0xffffff, 0.85 * a).fillRect(x - 1, y0, 2, y1 - y0);
+        fx.fillStyle(PAL.gold, 0.7 * a).fillRect(x - 6, y0, 1, y1 - y0).fillRect(x + 5, y0, 1, y1 - y0);
+        fx.lineStyle(1, PAL.ice, a).strokeCircle(x, y1, 9 - 3 * a);
+        if (lit) lm.add(x, y1, 50, ROLE.lightning, 0.9 * a);
+      } else if (f.kind === 'ring') {
         const c = hex(f.color);
         const k = Math.max(0, f.ttl / 0.3);
         fx.lineStyle(2, c, Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
@@ -1192,6 +1209,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
+    if (skyA > 0) this.skyR.setVisible(true).setAlpha(skyA); else if (this.skyR.visible) this.skyR.setVisible(false);
     // scene-local rings (level-up, evolution, boss)
     const dt = this.game.loop.delta / 1000;
     for (const r of this.rings) {
