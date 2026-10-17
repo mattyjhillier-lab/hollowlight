@@ -5,19 +5,20 @@ import { ambientAt as classicAmbient, gradeAt as classicGrade } from './palette.
 
 export const REF_SECONDS = 900;
 
-// [t, ambient (Med/High lightmap fill), Low multiply tint, lantern radius, far body V, eye alpha, rim alpha, restored saturation, dawn wash alpha]
+// [t, ambient (Med/High lightmap fill), Low multiply tint, lantern radius, far body V, eye alpha, rim alpha, restored saturation, dawn wash alpha,
+//  body K (WL6b: multiplies every enemy body tint; 1.0 until the boss, 0.72 from 11:30 so bodies read as darker silhouettes against the brighter ground (design gate G2), easing to 0.8 at the dawn flood)]
 export const ARC_A = [
-  [0, 0x222b54, 0x6c76aa, 150, 0.40, 1.0, 0.85, 0.80, 0],
-  [180, 0x242e5a, 0x707cb0, 150, 0.40, 1.0, 0.85, 0.82, 0],
-  [300, 0x2c3868, 0x7c8abc, 145, 0.45, 1.0, 0.75, 0.88, 0],
-  [480, 0x3c4a80, 0x8e9cc8, 140, 0.55, 0.9, 0.60, 0.95, 0],
-  [600, 0x56609a, 0xa4acd4, 135, 0.58, 0.75, 0.35, 1.00, 0],
-  [690, 0x7a74a8, 0xbeb4d6, 130, 0.48, 0.70, 0, 1.08, 0.04],
-  [780, 0xa8889c, 0xdcc0c4, 130, 0.55, 0.55, 0, 1.16, 0.10],
-  [870, 0xe0b8a8, 0xf2dccc, 130, 0.68, 0.40, 0, 1.26, 0.20],
-  [900, 0xffe2c4, 0xfff0dc, 130, 0.75, 0.30, 0, 1.30, 0.30],
+  [0, 0x222b54, 0x6c76aa, 150, 0.40, 1.0, 0.85, 0.80, 0, 1.0],
+  [180, 0x242e5a, 0x707cb0, 150, 0.40, 1.0, 0.85, 0.82, 0, 1.0],
+  [300, 0x2c3868, 0x7c8abc, 145, 0.45, 1.0, 0.75, 0.88, 0, 1.0],
+  [480, 0x3c4a80, 0x8e9cc8, 140, 0.55, 0.9, 0.60, 0.95, 0, 1.0],
+  [600, 0x56609a, 0xa4acd4, 135, 0.58, 0.75, 0.35, 1.00, 0, 1.0],
+  [690, 0x7a74a8, 0xbeb4d6, 130, 0.48, 0.70, 0, 1.08, 0.04, 0.72],
+  [780, 0xa8889c, 0xdcc0c4, 130, 0.55, 0.55, 0, 1.16, 0.10, 0.72],
+  [870, 0xe0b8a8, 0xf2dccc, 130, 0.68, 0.40, 0, 1.26, 0.20, 0.72],
+  [900, 0xffe2c4, 0xfff0dc, 130, 0.75, 0.30, 0, 1.30, 0.30, 0.8],
 ];
-export const COL = { amb: 1, low: 2, lan: 3, farV: 4, eyeA: 5, rimA: 6, sat: 7, dawn: 8 };
+export const COL = { amb: 1, low: 2, lan: 3, farV: 4, eyeA: 5, rimA: 6, sat: 7, dawn: 8, bodyK: 9 };
 
 // Brightness setting: the stored value may be 'auto' (first run: phones get Brighter, everything else Normal).
 export const BRIGHTNESS_STORED = ['auto', 'normal', 'brighter', 'clear'];
@@ -57,7 +58,7 @@ function maxCol(a, b) {
 }
 
 export function makeArcOut() {
-  return { t: 0, amb: 0, low: 0, lan: 150, farV: 0.4, eyeA: 1, rimA: 0, sat: 1, dawn: 0, y: 0, mode: 'normal' };
+  return { t: 0, amb: 0, low: 0, lan: 150, farV: 0.4, eyeA: 1, rimA: 0, sat: 1, dawn: 0, bodyK: 1, y: 0, mode: 'normal' };
 }
 
 // Fill `out` for run time t (seconds on the 900 s reference run; NaN/negative -> 0, past the end -> the dawn row).
@@ -96,6 +97,7 @@ export function arcSample(t, mode, calm, out) {
   out.rimA = a[6] + (b[6] - a[6]) * k;
   out.sat = a[7] + (b[7] - a[7]) * k;
   out.dawn = dawn;
+  out.bodyK = a[9] + (b[9] - a[9]) * k;
   out.y = lumY(amb);
   return out;
 }

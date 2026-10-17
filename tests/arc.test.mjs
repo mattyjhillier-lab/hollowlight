@@ -10,11 +10,11 @@ import { ambientAt } from '../src/gfx/palette.js';
 const o = makeArcOut();
 const at = (t, mode = 'normal', calm = false) => ({ ...arcSample(t, mode, calm, o) });
 
-test('table: ascending seconds from 0 to 900, 9 columns per row, design keyframes present', () => {
+test('table: ascending seconds from 0 to 900, 10 columns per row, design keyframes present', () => {
   assert.equal(ARC_A[0][0], 0);
   assert.equal(ARC_A.at(-1)[0], REF_SECONDS);
   for (let i = 1; i < ARC_A.length; i++) assert.ok(ARC_A[i][0] > ARC_A[i - 1][0]);
-  for (const r of ARC_A) assert.equal(r.length, 9);
+  for (const r of ARC_A) assert.equal(r.length, 10);
   assert.equal(at(0).amb, 0x222b54);
   assert.equal(at(600).amb, 0x56609a);
   assert.equal(at(900).amb, 0xffe2c4);
@@ -51,6 +51,7 @@ test('other columns are smooth and bounded: eye alpha >= 0.3, rim 0 after 11:30,
     assert.ok(a.sat >= 0.8 && a.sat <= 1.3 && a.dawn >= 0 && a.dawn <= 0.3);
     assert.ok(a.farV >= 0.4 && a.farV <= 0.75 && a.lan >= 130 && a.lan <= 150);
     if (t >= 690) assert.equal(a.rimA, 0);
+    assert.ok(a.bodyK >= 0.72 && a.bodyK <= 1 && (t > 600 || a.bodyK === 1));
   }
   assert.equal(at(900).sat, 1.3);
   assert.equal(at(0).sat, 0.8);

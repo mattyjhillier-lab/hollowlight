@@ -284,6 +284,24 @@ const SPRITES = {
       c.beginPath(); c.ellipse(14, 6, 12, 4.5, 0, 0, TAU); c.lineWidth = 1.2; c.strokeStyle = 'rgba(255,255,255,0.95)'; c.stroke();
     },
   },
+  // WL6b: the night eye core: a small disc that stays solid to half its radius, so the cream centre carries luminance (colour-blind safe), unlike the soft glow
+  eyedot: {
+    w: 16, h: 16, pad: 0, noPix: 1,
+    draw: (c) => {
+      c.fillStyle = rg(c, 8, 8, 0, 8, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,1)'], [0.8, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]);
+      c.fillRect(0, 0, 16, 16);
+    },
+  },
+  // WL6b: one-image night eye: ember halo under a solid cream core (core diameter = 0.47 of the image), additive, no tint needed
+  eyen: {
+    w: 32, h: 32, pad: 0, noPix: 1,
+    draw: (c) => {
+      c.fillStyle = rg(c, 16, 16, 0, 16, [[0, css(ROLE.eye, 0.95)], [0.45, css(ROLE.eye, 0.55)], [1, css(ROLE.eye, 0)]]);
+      c.fillRect(0, 0, 32, 32);
+      c.fillStyle = rg(c, 16, 16, 0, 7.5, [[0, css(ROLE.eyeCore, 1)], [0.72, css(ROLE.eyeCore, 1)], [1, css(ROLE.eyeCore, 0)]]);
+      c.fillRect(0, 0, 32, 32);
+    },
+  },
   glow: {
     w: 32, h: 32, pad: 0, noPix: 1,
     draw: (c) => {
@@ -509,6 +527,13 @@ export function makeStyleTextures(scene, style) {
     const t = scene.textures.addCanvas(key, cv);
     if (nearest && !def.noPix && key !== 'glow') t.setFilter(1); // Phaser.Textures.FilterMode.NEAREST
     INV[key] = (VIS[key] || 1) / S; // world units per texel, display size included
+    // WL6b: cool outline-only copy of each small enemy (the night rim, drawn behind far enemies on Med/High). Style A only; 1 world unit wide, tinted at draw time.
+    if (def.enemy && !def.big && !nearest) {
+      const rk = `${key}_r`;
+      if (scene.textures.exists(rk)) scene.textures.remove(rk);
+      scene.textures.addCanvas(rk, outlineOf(cv, '#ffffff', Math.max(1, Math.round(S * 1.0 / (VIS[key] || 1)))));
+      INV[rk] = INV[key];
+    }
     if (def.outline) {
       const ok = `${key}_o`;
       if (scene.textures.exists(ok)) scene.textures.remove(ok);

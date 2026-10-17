@@ -151,7 +151,7 @@ async function contrast(out) {
         ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}s.time=${t};return s.enemies.length})()`;
       for (let i = 0; i < 8; i++) { await c.ev(POS); await sleep(50); }
       await c.ev(POS); await sleep(60);
-      const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();const D=[70,140,220];return JSON.stringify(s.enemies.map(e=>({type:e.type,dist:D[e._va%3],x:R.left+(e.x-wv.x)/wv.width*R.width,y:R.top+(e.y-wv.y)/wv.height*R.height,r:e.r*R.width/wv.width*1.05})))})()`));
+      const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();const D=[70,140,220];return JSON.stringify(s.enemies.filter(e=>e._va!=null).map(e=>({type:e.type,dist:D[e._va%3],x:R.left+(e.x-wv.x)/wv.width*R.width,y:R.top+(e.y-wv.y)/wv.height*R.height,r:e.r*R.width/wv.width*1.05})))})()`));
       const b64 = await shot(c, process.env.KEEP ? join(out, `contrast-${view}-${fmt(t)}-${tier}.png`) : null, false);
       await c.ev('(()=>{window.__app.sim.enemies.length=0;return 1})()'); await sleep(150);
       const b64g = (await c.send('Page.captureScreenshot', { format: 'png' })).data;
@@ -169,6 +169,7 @@ async function contrast(out) {
   const lines = [`BRIGHT=${BRIGHT} PARAMS=${process.env.PARAMS || ''}`, `G1|G2 (eyes>=3:1 OR |dL*|>=6): all ${sum(ok)}, outside pool(220) ${sum(ok, (r) => r.dist === 220)}, inside(70) ${sum(ok, (r) => r.dist === 70)}`, `strict (>=11:30 needs silhouette): ${sum(strict)}`];
   for (const view of new Set(rows.map((r) => r.view))) for (const tier of new Set(rows.map((r) => r.tier))) lines.push(`${view} ${tier}: ${sum(ok, (r) => r.view === view && r.tier === tier)}`);
   lines.push(`G3 enemy pixels below RGB 12: ${rows.reduce((a, r) => a + (r.dark || 0), 0)}`);
+  lines.push('strict misses: ' + rows.filter((r) => !strict(r)).map((r) => `${r.view}/${r.tier}/${fmt(r.t)}/${r.type[0]}${r.dist}(eye ${r.eyeCR}, dL ${r.dL})`).join('; '));
   lines.push('misses: ' + rows.filter((r) => !ok(r)).map((r) => `${r.view}/${r.tier}/${fmt(r.t)}/${r.type[0]}${r.dist}(eye ${r.eyeCR}, dL ${r.dL}${r.mask ? '' : ', NO MASK'})`).join('; '));
   writeFileSync(join(out, 'summary.txt'), lines.join('\n'));
   console.log(lines.join('\n'));

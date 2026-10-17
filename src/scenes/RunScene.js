@@ -11,6 +11,7 @@ import { heroHaloAlpha } from '../gfx/rigmath.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
 import { Lightmap } from '../gfx/lightmap.js';
+import { NightLayer } from '../gfx/nightlayer.js';
 import { arcSample, makeArcOut, resolveBrightness, lanternTarget, bossLightRadius } from '../gfx/arc.js';
 import { GroundBlend } from '../gfx/groundblend.js';
 import { LifeMap } from '../world/lifemap.js';
@@ -190,6 +191,10 @@ export class RunScene extends Phaser.Scene {
     this.lanR = 150;
     this.arc = makeArcOut(); // WL6a: current arc sample (ambient, Low tint, lantern radius, enemy tint/eye/rim values, dawn wash)
     this.arcKey = -1;
+    this.nl = new NightLayer(this, D_VIG + 1); // WL6b: eyes / rims / boss eyes, above the vignette
+    this.nlc = { tier: 'med', calm: false, time: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT };
+    this.nlOn = false;
+    this.teleG = this.add.graphics().setDepth(D_VIG + 3); // telegraphs (charge line, boss ring) sit above the vignette so the screen edge never hides a threat
     this.phone = false;
     this.vig = this.add.image(0, 0, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
     this.vigLow = false;
@@ -766,10 +771,12 @@ export class RunScene extends Phaser.Scene {
       const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
       this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : ROLE.lantern).setAlpha(0.45 + 0.2 * pulse);
     }
-    if (lit) {
+    {
       const target = app.params.arc ? lanternTarget(this.arc.lan, lowHp, this.arc.y) : (lowHp ? 90 : 130);
       this.lanR += (target - this.lanR) * Math.min(1, this.game.loop.delta / 400);
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
+    }
+    if (lit) {
       lm.add(lx, ly, this.lanR * fl, ROLE.lantern, 0.9);
       if (rig && this.rig.hasPup) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
     }
@@ -779,6 +786,12 @@ export class RunScene extends Phaser.Scene {
     g.clear();
     fx.clear();
 
+    this.teleG.clear();
+    const nl = this.nl;
+    const nlOn = !!(app.params.arc && app.params.night);
+    if (nlOn) nl.prepare(sim, lx, ly, this.lanR, this.quality.tier, this.arc);
+    else if (this.nlOn) nl.hide();
+    this.nlOn = nlOn;
     // drain hit/kill records into numbers + puffs + hit-stop
     const nh = sim.hitN;
     sim.hitN = 0;
@@ -854,7 +867,9 @@ export class RunScene extends Phaser.Scene {
     const coldCap = this.gbOn ? (caps.halos >= 160 ? 80 : 40) : 0;
     const life = this.life;
     for (const e of sim.enemies) {
+    let ei = -1;
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
+      ei++;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
       if (cold < coldCap) { // W3 cold enemy glow: only on ink-dark ground, soft, steady (no flicker); helps dark enemies separate from the ink
@@ -873,11 +888,14 @@ export class RunScene extends Phaser.Scene {
       if (e.flash > 0) tq = 100;
       else if (e.bleedT > 0) tq = 101;
       else if (lit && !e.boss) {
+      else if (nlOn && !e.boss && ei < 512) tq = 200 + nl.lit[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
         tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
       } else tq = 0;
-      if (img.tq !== tq) {
+      if (img.tq !== tq || (tq >= 200 && img.tv !== nl.ver)) {
         img.tq = tq;
-        if (tq === 100) img.setTintFill(0xffffff);
+        img.tv = nl.ver;
+        if (tq >= 200) img.setTint(nl.tab[tq - 200]);
+        else if (tq === 100) img.setTintFill(0xffffff);
         else if (tq === 101) img.setTint(ROLE.bleedTint); // blood red (Matt 2026-10-16), shared with bleed numbers and drips
         else if (tq === 0) img.clearTint();
         else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
@@ -926,15 +944,22 @@ export class RunScene extends Phaser.Scene {
       if (e.tele) {
         if (e.boss) {
           g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
-          g.lineStyle(1, PAL.danger, 0.9).strokeCircle(e.x, e.y, 74);
+          this.teleG.lineStyle(1, PAL.danger, 0.9).strokeCircle(e.x, e.y, 74);
         } else {
-          fx.lineStyle(1, 0xff5a4a, 0.6).lineBetween(e.x, e.y, e.x + e.dx * 55, e.y + e.dy * 55);
-          fx.fillStyle(0xff3b2f, 1).fillTriangle(e.x, e.y - 18, e.x - 3, e.y - 11, e.x + 3, e.y - 11);
+          this.teleG.lineStyle(1, 0xff5a4a, 0.75).lineBetween(e.x, e.y, e.x + e.dx * 55, e.y + e.dy * 55);
+          this.teleG.fillStyle(0xff3b2f, 1).fillTriangle(e.x, e.y - 18, e.x - 3, e.y - 11, e.x + 3, e.y - 11);
         }
       }
     }
 
     // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
+    if (nlOn) {
+      const nc = this.nlc;
+      nc.tier = this.quality.tier; nc.calm = this.reducedMotion(); nc.time = sim.time;
+      nc.vx0 = vx0; nc.vy0 = vy0; nc.vx1 = vx1; nc.vy1 = vy1;
+      nl.draw(sim, nc);
+    }
+
     const oa = this.heroOutA + ((crowd >= 3 ? 0.7 : 0) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120);
     this.heroOutA = oa;
     this.heroOut.setVisible(oa > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(oa).setFlipX(p.faceX < 0);
