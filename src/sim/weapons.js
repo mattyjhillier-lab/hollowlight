@@ -388,7 +388,7 @@ const holyOrbit = {
       radius *= tune(sim, w, 'ring', 1.5);
       contact = tune(sim, w, 'contact', 0.6);
     }
-    if (evo === 'judgement_wheel') spin *= 1.8;
+    if (evo === 'judgement_wheel') spin *= tune(sim, w, 'spin', 1.8);
     const units = syncUnits(sim, w, 'orb', count, () => ({ r: 4, disabledT: 0, hidden: false }));
     rt.ang = (rt.ang || 0) + spin * dt;
 
@@ -425,13 +425,20 @@ const holyOrbit = {
         const rr = e.r + u.r + 1;
         if (dx * dx + dy * dy >= rr * rr) continue;
         if (evo === 'judgement_wheel') {
-          // Burn hook: Judgement Wheel blasts apply Burn in a later chunk (W4 blasts); not yet.
-          for (const o of sim.enemies) {
-            if (o.dead) continue;
-            if (Math.hypot(o.x - u.x, o.y - u.y) < o.r + 34 && sim.canHit(o, 'wheelblast', 0.1)) sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.8));
+          // W6 Bursting Lights: blast 34 px + 3 px per Orbit size rank, one blast per foe per 0.1 s, applies Burn (never from the Candle Wheel lock)
+          const br = tune(sim, w, 'blast', 34) + tune(sim, w, 'blastPer', 3) * (w.ranks.radius || 0);
+          // optional what-if knobs (off by default, see LOCKED W6 alternatives): 'maxHits' foes per blast (nearest first), 'boss' damage x on bosses
+          const maxHits = tune(sim, w, 'maxHits', 0), bossX = tune(sim, w, 'boss', 1);
+          let hit = sim.enemies.filter((o) => !o.dead && Math.hypot(o.x - u.x, o.y - u.y) < o.r + br);
+          if (maxHits > 0 && hit.length > maxHits) hit = hit.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y)).slice(0, maxHits);
+          for (const o of hit) {
+            if (!sim.canHit(o, 'wheelblast', 0.1)) continue;
+            const dealt = sim.hurt(o, dmg * tune(sim, w, 'dmg', 1.5) * (o.boss ? bossX : 1));
+            if (burnOk) sim.burn(o, dealt);
           }
-          sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: 34, ttl: 0.2, color: '#e8e0ff' });
-          u.disabledT = tune(sim, w, 'rest', 1.0);
+          sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: br, ttl: 0.2, color: '#c79bff' });
+          sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: br + 3, ttl: 0.14, color: '#ffd98a' }); // gold rim on the blast only
+          u.disabledT = tune(sim, w, 'rest', 1.2);
           break;
         }
         if (sim.canHit(e, `orb${i}`, gap)) {

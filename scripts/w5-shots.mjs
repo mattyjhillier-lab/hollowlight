@@ -68,8 +68,10 @@ try {
     for (let i = 0; i < 500; i++) {
       await sleep(120); await ev(KEEP); m = await ev(COUNT);
       if (m.state === 'levelup') { await ev("window.__app.sim.offer && window.__app.sim.pick && window.__app.sim.pick(0)").catch(() => {}); }
-      if (m.state === 'running' && (mode === 'halo' ? m.burning >= 3 && m.gK < 0.05 : m.blast >= 1 && m.near >= 6)) break;
+      if (m.state === 'running' && (mode === 'halo' ? m.burning >= 3 && m.gK < 0.05 : m.blast >= 3 && m.near >= 6)) break;
     }
+    if (mode === 'wheel') await ev('(() => { window.__app.sim.step = () => {}; })()'); // freeze the sim on the blast frame (fx stay drawn)
+    await sleep(150);
     check(`${tag}: ${mode === 'halo' ? 'foes burning' : 'blast on screen'}`, m && (mode === 'halo' ? m.burning >= 3 && m.gK < 0.05 : m.blast >= 1), JSON.stringify(m));
     await shot(`${tag}-${mode}`);
     const r = await send('Page.captureScreenshot', { format: 'jpeg', quality: 82, clip: { x: w / 2 - 160, y: h / 2 - 90, width: 320, height: 180, scale: mobile ? 2 : 3 } });

@@ -17,7 +17,7 @@ const mk = (ranks, evo = 'sanctum_halo', seed = 5, ch = 'elias') => {
 };
 const R = (o = {}) => ({ count: 1, power: 1, radius: 1, speed: 1, ...o });
 const dummy = (sim, dx, dy) => { const e = sim.spawnEnemy('dummy', sim.player.x + dx, sim.player.y + dy); e.hp = e.maxHp = 1e9; e.speed = 0; e.dmg = 0; return e; };
-const run = (sim, secs) => { for (let i = 0; i < secs / DT; i++) sim.step(DT, {}); };
+const run = (sim, secs) => { for (let i = 0; i < secs / DT; i++) { sim.step(DT, {}); if (sim.state === 'levelup') { sim.pending = 0; sim.offer = null; sim.state = 'running'; sim.xp = 0; } } };
 
 test('Halo: lights x2 capped at 12, ring = Orbit size x1.5, burning ground is not a zone and does not heal', () => {
   for (const [count, want] of [[1, 6], [3, 10], [4, 12], [5, 12]]) { // base Orb count = 2 + rank
