@@ -99,7 +99,7 @@ const ghostWolves = {
     let speed = s.speed * howl;
     let bleedDur = BLEED_TIME; // Rend (s.duration) is the potency; the time is fixed
     if (evo === 'phantom_stampede') { dmg *= tune(sim, w, 'dmg', 1.1); speed *= tune(sim, w, 'speed', 1.1); }
-    if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.2); } // W6 Echo Pack: no extra live wolves, the pack bites x1.2
+    if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.4); } // W6 Echo Pack: no extra live wolves, the pack bites x1.4 (Alt A)
     if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank
