@@ -231,7 +231,7 @@ Rule: each base weapon has its own light colour and trail shape. Evolutions keep
 ### Evolutions (all 11, names from evolutions.json)
 | Evolution (parent) | Visual signature | Light | Trail | Impact | Sound-feel |
 |---|---|---|---|---|---|
-| Pouncing Pack (Wolves) | Wolves become muscular and lower; leap in a clear arc with a shadow below, then pin | Moon blue + gold rim | Long leap-arc streak, then a ring stamped where they land | Pin: the enemy is pressed flat, pale claws cross over it | Leap, thud, maul |
+| Pouncing Pack (Wolves; REMOVED 2026-10-16, replaced by Light Trails, see LOCKED) | Wolves become muscular and lower; leap in a clear arc with a shadow below, then pin | Moon blue + gold rim | Long leap-arc streak, then a ring stamped where they land | Pin: the enemy is pressed flat, pale claws cross over it | Leap, thud, maul |
 | Howling Legion (Wolves) | A pack too big to count, lighter and more transparent; heads up when howling | Moon blue + gold rim | Wide band of overlapping paw prints like a river | Howl ripples: rings of sound visible on the ground | Chorus, rumble, rush |
 | Dire Alpha (Wolves) | One huge wolf, 3x size, mane of drifting light, amber eyes (a Wren touch) | Moon blue body, gold mane tips | Deep claw gouges that glow | Cleave = wide crescent slash across 3-4 enemies | Growl, crunch, quake |
 | Murder Storm (Ravens) | A tornado of ravens around the hero, wall-like | Violet + gold flecks | Spiral of feathers on the ground, slowly rotating | Enemies hit are flung outward, scattering paper | Roar, rustle, gale |
