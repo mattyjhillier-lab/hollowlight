@@ -30,6 +30,9 @@ const MAX = base.balance.maxRank;
 const SEEDS = Number(process.argv[2] || 3);
 const PICK = Number(process.argv[3] ?? 2);
 const FILTER = process.argv[4] || '';
+// TEAM=1 (+ MATE=rank, default 3 at pick, 5 at max): teammates Ghost Wolves, Holy Orbit, Spirit Bolts; the number is then TEAM damage (Talon Mark yardstick).
+const TEAM = process.env.TEAM === '1';
+const MATE = Number(process.env.MATE ?? 3);
 
 const ring = (sim, type, n, r0, r1) => {
   const p = sim.player;
@@ -63,10 +66,12 @@ function run(wid, ranks, evo, scen, seed) {
   sim.ability.cdLeft = 1e9;
   sim.rollDrops = () => {};
   sim.debugGrant(wid, ranks, evo);
+  if (TEAM) for (const m of ['ghost_wolves', 'holy_orbit', 'spirit_bolts']) sim.debugGrant(m, Object.fromEntries(Object.keys(data.weapons[m].stats).map((k) => [k, Object.values(ranks).every((v) => v === MAX) ? MAX : MATE])), null);
   sc.setup(sim);
   let eff = 0;
   const orig = sim.hurt.bind(sim);
-  sim.hurt = (e, a, o = {}) => { if (!e.dead && a > 0 && (!sc.bossOnly || e === sim.bossE)) eff += Math.min(a, Math.max(0, e.hp)); return orig(e, a, o); };
+  // counts the damage AFTER temporary amps (Mark, srcAmps), capped at the foe's remaining hp; TEAM=1 adds teammates (wolves, orbit, bolts) = team damage
+  sim.hurt = (e, a, o = {}) => { const hp0 = e.hp, was = e.dead; const r = orig(e, a, o); if (!was && r > 0 && (!sc.bossOnly || e === sim.bossE)) eff += Math.min(r, Math.max(0, hp0)); return r; };
   const n = Math.round(sc.secs / DT);
   let f = 0;
   for (; f < n; f++) {

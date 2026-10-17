@@ -297,40 +297,50 @@ const ravenFlock = {
   },
 };
 
-// Murder Storm (until its W9 rebuild): an orbiting wall of extra ravens that peck on contact and frighten (W1a rules),
-// on top of the scout flock. Wall ranks use the old flock-radius numbers (40 + 7 per Watch rank, spin 2.2 + 0.4 per Wingbeat rank).
+// Wall of Wings (murder_storm, W9): the scout flock is unchanged; on top of it min(count, 12 - count) ring ravens (flock x2, cap 12)
+// fly TWO counter-rotating rings around you: an inner ring at Watch x0.55 and an outer wall at Watch x0.7. Ring ravens peck what they
+// touch at 0.7x; a non-boss foe they touch is frightened for 0.6 s (+0.04 s per Wingbeat rank, 0.6-0.8 s) and then cannot be frightened
+// again for 1.5 s (W1a rules; never a boss). All tuning in evolutions.json; no RNG is drawn.
 function ravenWall(sim, w, dmg, dt) {
   const { s, rt } = w;
   const p = sim.player;
   const ranks = w.ranks || {};
-  const base = 40 + 7 * (ranks.range || 0);
-  const range = base * 1.8 * sim.mods.area;
-  const spin = (2.2 + 0.4 * (ranks.speed || 0)) * 1.1;
-  const count = Math.min(s.count, 12 - s.count); // flock doubles, cap 12
+  const watch = s.range * sim.mods.area;
+  const rIn = watch * tune(sim, w, 'inner', 0.55);
+  const rOut = watch * tune(sim, w, 'outer', 0.7);
+  const count = Math.max(0, Math.min(s.count, tune(sim, w, 'cap', 12) - s.count));
+  const nIn = Math.ceil(count / 2);
   const list = rt.wall || (rt.wall = []);
   while (list.length > count) list.pop().dead = true;
   while (list.length < count) {
-    const u = sim.makeUnit(w, 'raven', { r: 4, st: 'orbit', target: null, faceX: 1, wall: true });
+    const u = sim.makeUnit(w, 'raven', { r: 4, st: 'orbit', target: null, faceX: 1, wall: true, ring: 0 });
     list.push(u);
     sim.units.push(u);
   }
+  const spin = tune(sim, w, 'spin', 2.4) * Math.max(0.2, s.speed);
   rt.wang = (rt.wang || 0) + spin * dt;
+  rt.wallR = [rIn, rOut];
+  const hit = dmg * tune(sim, w, 'peck', 0.7);
+  const fdur = tune(sim, w, 'fear', 0.6) + tune(sim, w, 'fearPer', 0.04) * (ranks.speed || 0);
+  const immune = tune(sim, w, 'immune', 1.5);
+  const nOut = count - nIn;
   list.forEach((u, i) => {
-    const ring = i % 2 ? range * 0.55 : range;
-    const a = rt.wang * (i % 2 ? -1 : 1) + (i * TAU) / count;
+    const outer = i >= nIn;
+    const k = outer ? i - nIn : i;
+    const a = (outer ? -rt.wang : rt.wang) + (k * TAU) / Math.max(1, outer ? nOut : nIn);
+    const ring = outer ? rOut : rIn;
+    u.ring = outer ? 1 : 0;
     u.x = p.x + Math.cos(a) * ring;
     u.y = p.y + Math.sin(a) * ring;
+    u.faceX = Math.sin(a) * (outer ? -1 : 1) > 0 ? -1 : 1;
     for (const e of sim.enemies) {
       if (e.dead) continue;
       const dx = e.x - u.x;
       const dy = e.y - u.y;
       const rr = e.r + u.r + 1;
       if (dx * dx + dy * dy < rr * rr && sim.canHit(e, `wall${i}`, 0.55)) {
-        sim.hurt(e, dmg);
-        if (!e.boss) {
-          const fdur = tune(sim, w, 'fear', 0.3);
-          if (sim.canHit(e, 'stormFear', fdur + 1.5)) e.fearT = Math.max(e.fearT, fdur);
-        }
+        sim.hurt(e, hit);
+        if (!e.boss && !e.dead && sim.canHit(e, 'stormFear', fdur + immune)) e.fearT = Math.max(e.fearT, fdur);
       }
     }
   });

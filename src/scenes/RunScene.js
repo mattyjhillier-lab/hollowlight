@@ -990,6 +990,22 @@ export class RunScene extends Phaser.Scene {
         fx.fillStyle(0x2a1d3a, a * 0.85).fillTriangle(mx - 5 * k, my - 4 * k, mx + 5 * k, my - 4 * k, mx, my + 3 * k); // dark outline so it reads on grass and on pale foes
         fx.fillStyle(ROLE.mark, a).fillTriangle(mx - 4 * k, my - 3 * k, mx + 4 * k, my - 3 * k, mx, my + 1.5 * k);
       }
+      // W9 Wall of Wings fear tell (reads fearT; never on a boss): two pale feathers drifting off the foe (share the drip cap, none with
+      // reduced motion / Low) and wide pale eye-points that blink slowly (static under reduced motion)
+      if (e.fearT > 0 && !e.boss) {
+        if (dripN < dripCap) {
+          dripN++;
+          for (let fi2 = 0; fi2 < 2; fi2++) {
+            const ph = (sim.time * 1.8 + e.id * 0.29 + fi2 * 0.5) % 1;
+            const fx0 = Math.round(e.x + (fi2 ? 1 : -1) * (3 + ph * 6)), fy0 = Math.round(e.y - e.r - ph * 8);
+            fx.fillStyle(ROLE.spiritB2, 0.85 * (1 - ph)).fillTriangle(fx0, fy0 - 2, fx0 + 2, fy0, fx0, fy0 + 2);
+          }
+        }
+        if (this.reducedMotion() || Math.floor(sim.time * 5 + e.id) % 2 === 0) {
+          const ey = Math.round(e.y - e.r * 0.35);
+          fx.fillStyle(0xf2ecff, 0.9).fillRect(Math.round(e.x) - 3, ey, 1, 1).fillRect(Math.round(e.x) + 2, ey, 1, 1);
+        }
+      }
       if (e.tele) {
         if (e.boss) {
           g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
@@ -1029,6 +1045,21 @@ export class RunScene extends Phaser.Scene {
       this.parts.emit(x, y, 0, 0, 0.32, s, 0.05, col, 0.5);
     };
 
+    // W9 raven evolutions (visual only, reads the sim): thin gold rim on the EVOLVED flock only; Wall of Wings draws its two counter-rotating
+    // violet rings (dashed arcs on Med/High, still circles on Low and with reduced motion)
+    const rvw = sim.weapons.find((w2) => w2.id === 'raven_flock');
+    const rvEvo = rvw ? rvw.evo : null;
+    if (rvEvo === 'murder_storm' && rvw.rt.wallR) {
+      const spin = rvw.rt.wang || 0, still = this.reducedMotion() || caps.drips === 0;
+      for (let ri = 0; ri < 2; ri++) {
+        const rr = rvw.rt.wallR[ri];
+        if (still) { fx.lineStyle(1, ROLE.spiritB, 0.2).strokeCircle(p.x, p.y, rr); continue; }
+        fx.lineStyle(1, ROLE.spiritB, 0.32);
+        const a0 = (ri ? -spin : spin) * 0.5;
+        for (let k = 0; k < 8; k++) { const s0 = a0 + (k * Math.PI) / 4; fx.beginPath(); fx.arc(p.x, p.y, rr, s0, s0 + 0.42); fx.strokePath(); }
+      }
+    }
+
     // summons: bright (above the grade) + additive halo
     let echoN = 0;
     for (const u of sim.units) {
@@ -1052,6 +1083,7 @@ export class RunScene extends Phaser.Scene {
       } else if (u.kind === 'raven') {
         pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
         if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
+        if (rvEvo) fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved flock only: thin gold rim (never on enemies)
         if (ribOn) ribAdd(u, ROLE.spiritB, this.ribCaps.spirits.life); else trail(u.x, u.y, ROLE.spiritB, 0.3);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritB, 0.8);
       } else if (u.kind === 'orb') {
