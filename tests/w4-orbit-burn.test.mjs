@@ -179,3 +179,27 @@ test('burn: palette role is lilac (not red, not gold); own number kind, first to
 test('burn: honest card text (Orbit now burns for real)', () => {
   assert.ok(/burn/i.test(data.weapons.holy_orbit.desc) && !/scorch/i.test(data.weapons.holy_orbit.desc));
 });
+
+test('guard is a safety mechanic: hug is 40-70% of ring DPS per foe, boss in melee > 0, standing swarm <= 2x the open-ring swarm', () => {
+  const dpsOne = (type, edge, atRing) => {
+    const sim = fresh(); const e = put(sim, type, edge);
+    if (atRing) e.x = sim.player.x + orbW(sim).s.radius;
+    const h0 = e.hp; step(sim, 12); return (h0 - e.hp) / 12;
+  };
+  const ring = dpsOne('dummy', 0, true), hug = dpsOne('dummy', 2, false), boss = dpsOne('elder_treant', 4, false);
+  assert.ok(hug / ring >= 0.4 && hug / ring <= 0.7, `hug/ring ${hug / ring}`);
+  assert.ok(boss > 15, `boss ${boss}`);
+  // standing in a pile of 40 foes (immortal, so no kill saturation): contracted DPS vs the same pile with the guard off
+  const pile = (guardOff) => {
+    const sim = fresh();
+    const es = [];
+    for (let i = 0; i < 40; i++) { const e = sim.spawnEnemy('dummy', sim.player.x, sim.player.y); const a = i * 2.4, d = 14 + (i % 5) * 9 + (i >> 3) * 5; e.x = sim.player.x + Math.cos(a) * d; e.y = sim.player.y + Math.sin(a) * d; e.hp = e.maxHp = 1e9; e.speed = 0; es.push(e); }
+    if (guardOff) sim.chapter.guardOff = true;
+    const orig = GUARD.edge; if (guardOff) GUARD.edge = -1000;
+    step(sim, 10);
+    GUARD.edge = orig;
+    return es.reduce((a, e) => a + (e.maxHp - e.hp), 0) / 10;
+  };
+  const on = pile(false), off = pile(true);
+  assert.ok(on <= 2 * off, `contracted pile DPS ${on} vs open ${off}`);
+});

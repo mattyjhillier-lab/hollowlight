@@ -347,7 +347,7 @@ const chainLightning = {
 // W4 guard contraction: when a foe's EDGE distance to Elias stays < 8 px for 0.2 s the ring closes to 14 px (0.25 s), holds
 // >= 0.8 s once closed, then opens over 0.4 s. The Candle Wheel wins while it stands (no contraction). orbitRadius() is the
 // one place the ring radius is decided, so Sanctum Halo and Judgement Wheel inherit it.
-export const GUARD = { edge: 8, touch: 0.2, to: 14, close: 0.25, hold: 0.8, open: 0.4 };
+export const GUARD = { edge: 8, touch: 0.2, to: 14, close: 0.25, hold: 0.8, open: 0.4, dmg: 0.3 }; // dmg: contracted-ring hit damage x (scaled in by the closing), plus one foe per light per gap
 const smooth = (k) => k * k * (3 - 2 * k);
 export function orbitRadius(sim, rt, dt, radius, suppressed) {
   const p = sim.player;
@@ -411,6 +411,8 @@ const holyOrbit = {
         return;
       }
       u.hidden = false;
+      u.guardCd = Math.max(0, (u.guardCd || 0) - dt);
+      if (u.guardCd > 0 && rt.gK > 0) return;
       for (const e of sim.enemies) {
         if (e.dead) continue;
         const dx = e.x - u.x;
@@ -428,8 +430,9 @@ const holyOrbit = {
           break;
         }
         if (sim.canHit(e, `orb${i}`, gap)) {
-          const dealt = sim.hurt(e, dmg);
+          const dealt = sim.hurt(e, dmg * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
           if (burnOk) sim.burn(e, dealt);
+          if (rt.gK > 0) { u.guardCd = gap; break; } // contracted: one foe per light per gap (a guard, not a crowd grinder)
         }
       }
     });
