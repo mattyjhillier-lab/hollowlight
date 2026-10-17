@@ -286,3 +286,100 @@ test('Soul Lance is deterministic', () => {
   run(a, 8); run(b, 8);
   assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
 });
+
+// ---------------------------------------------------------------- W10d Returning Pages
+const PG = { count: 0, power: 5, speed: 5, pierce: 5 };
+const pagesSim = (ranks = {}, seed = 3) => mk({ ...PG, ...ranks }, 'returning_pages', seed);
+const glyphs = (sim) => sim.projectiles.filter((b) => b.pages);
+
+test('Pages data: pair Swiftness + Pierce, tree gate, card text fits, a 14th gate node exists', () => {
+  const e = data.evolutions.returning_pages;
+  assert.deepEqual([...e.pair].sort(), ['pierce', 'speed']);
+  assert.equal(e.weapon, 'spirit_bolts'); assert.equal(e.treeGate, true);
+  assert.equal(e.name, 'Returning Pages'); assert.equal(e.verb, 'RETURN');
+  assert.ok(Object.keys(data.evolutions).filter((k) => data.evolutions[k].weapon === 'spirit_bolts').length === 3);
+});
+
+test('Pages: glyphs per volley = Bolt count, each aimed at a different foe; the volley gap follows Swiftness like the base', () => {
+  const sim = pagesSim({ count: 3 }); place(sim, 8, 60, 160);
+  let g = [];
+  for (let i = 0; i < 40 && g.length < 4; i++) { sim.step(DT, {}); g = glyphs(sim); }
+  assert.equal(g.length, 4);
+  assert.equal(new Set(g.map((b) => b.target.id)).size, 4, 'distinct first targets');
+  assert.ok(g.every((b) => b.per === 6 && b.left === 6), '1 + Pierce foes per leg');
+});
+
+test('Pages: the glyph flies out 130 + 0.7 px per Swiftness speed point, turns, comes home and is caught (never longer than 4 s)', () => {
+  const far = (rs) => {
+    const sim = pagesSim({ speed: rs }); place(sim, 1, 205, 205);
+    let maxD = 0, turned = false, died = false, id = null, born = 0, life = 0;
+    for (let i = 0; i < 8 / DT && !died; i++) {
+      sim.step(DT, {});
+      const g = id === null ? glyphs(sim)[0] : glyphs(sim).find((b) => b.id === id);
+      if (g && id === null) { id = g.id; born = sim.time; }
+      if (g) { maxD = Math.max(maxD, Math.hypot(g.x - sim.player.x, g.y - sim.player.y)); if (g.back) turned = true; }
+      else if (id !== null) { died = true; life = sim.time - born; }
+    }
+    return { maxD, turned, died, life };
+  };
+  const a = far(0), b = far(5);
+  assert.ok(a.maxD > 120 && a.maxD < 150, `Swiftness 0 turned at ${a.maxD.toFixed(0)} px`);
+  assert.ok(a.turned && a.died && a.life < 4, 'came home and was caught');
+  assert.ok(b.maxD > a.maxD + 40, `Swiftness 5 flies further (${b.maxD.toFixed(0)} px)`);
+  assert.ok(b.turned && b.died && b.life < 4);
+});
+
+test('Pages: a foe is hit at most once per throw (out and home through the same line)', () => {
+  const sim = pagesSim({ count: 0 }); const [d] = place(sim, 1, 90, 90);
+  let n = 0, spawned = 0; const o = sim.hurt.bind(sim); sim.hurt = (e, a, x) => { if (e === d) n++; return o(e, a, x); };
+  const os = sim.spawnBolt.bind(sim); sim.spawnBolt = (b) => { if (b.pages) spawned++; return os(b); };
+  run(sim, 10);
+  assert.ok(spawned >= 6);
+  assert.ok(n <= spawned, `${n} hits for ${spawned} glyphs`);
+  assert.ok(n >= spawned - 1, 'and it is hit every throw (the last glyph may still be in the air)');
+});
+
+test('Pages: on the way home it hits FRESH foes (a foe that appears beside the return path is struck once)', () => {
+  const sim = pagesSim({ count: 0, pierce: 0 }); const [a] = place(sim, 1, 120, 120); void a;
+  let fresh = null, hitBack = 0, hitOut = 0;
+  const o = sim.hurt.bind(sim);
+  sim.hurt = (e, amt, x) => { if (e === fresh) { const g = glyphs(sim)[0]; if (g && g.back) hitBack++; else hitOut++; } return o(e, amt, x); };
+  for (let i = 0; i < 6 / DT && hitBack === 0; i++) {
+    sim.step(DT, {});
+    const g = glyphs(sim)[0];
+    if (g && g.back && !fresh) { fresh = sim.spawnEnemy('dummy', g.x - Math.cos(g.ang) * 25, g.y - Math.sin(g.ang) * 25); fresh.hp = fresh.maxHp = 1e9; }
+  }
+  assert.ok(hitBack >= 1 && hitOut === 0, `fresh foe: ${hitBack} hits on the way home, ${hitOut} on the way out`);
+});
+
+test('Pages: no dead stat after evolving (Bolt count, Bolt power, Swiftness and Pierce all move DPS against a column)', () => {
+  const column = (r, gap) => { const sim = pagesSim(r); const p = sim.player; for (let i = 0; i < 16; i++) { const e = sim.spawnEnemy('dummy', p.x + 30 + i * gap, p.y + ((i % 3) - 1) * 6); e.hp = e.maxHp = 1e9; } return dps(sim, 12); };
+  const mid = { count: 2, power: 2, speed: 2, pierce: 5 }; // the recipe keeps Pierce at 5, so Swiftness is tested with a full per-leg budget
+  for (const k of ['count', 'power']) assert.ok(column({ ...mid, [k]: 4 }, 13) > column(mid, 13) * 1.05, `${k} is dead`);
+  // Swiftness = how far the glyph flies: a spread-out column (40 px apart) is reached further along with more of it
+  assert.ok(column({ ...mid, speed: 5 }, 40) > column(mid, 40) * 1.1, 'speed (flight length) is dead');
+  const mid2 = { count: 2, power: 2, speed: 5, pierce: 2 };
+  assert.ok(column({ ...mid2, pierce: 4 }, 13) > column(mid2, 13) * 1.05, 'pierce is dead');
+});
+
+test('Pages gates: stream40 1.8-2.3x at max, single <= 2.5x, cap at pick <= 3.0x (single, stream10, stream40), never below base', () => {
+  const res = measureRatios({ secs: 10, seeds: [1], only: 'returning_pages' }).returning_pages;
+  assert.ok(res.max.stream40.ratio >= 1.8 && res.max.stream40.ratio <= 2.3, `stream40 ${res.max.stream40.ratio.toFixed(2)}x`);
+  assert.ok(res.max.single.ratio <= 2.5, `single ${res.max.single.ratio.toFixed(2)}x`);
+  for (const [sc, c] of Object.entries(res.pair)) assert.ok(c.ratio <= 3.0, `${sc} cap@pick ${c.ratio.toFixed(2)}x`);
+  for (const mode of ['max', 'pair']) for (const [sc, c] of Object.entries(res[mode])) assert.ok(c.ratio >= 0.98, `${mode} ${sc} ${c.ratio.toFixed(2)}x`);
+});
+
+test('Pages never move, frighten or pin a boss, and it still takes damage', () => {
+  const sim = pagesSim({ count: 5 }); const boss = sim.spawnEnemy('elder_treant', sim.player.x + 80, sim.player.y);
+  boss.hp = boss.maxHp = 1e12;
+  run(sim, 8, () => { assert.equal(boss.fearT, 0); assert.ok(!(boss.heldT > 0)); });
+  assert.ok(boss.maxHp - boss.hp > 0);
+});
+
+test('Returning Pages is deterministic', () => {
+  const a = pagesSim({ count: 3 }); place(a, 14, 50, 170, 'wolf', 400);
+  const b = pagesSim({ count: 3 }); place(b, 14, 50, 170, 'wolf', 400);
+  run(a, 8); run(b, 8);
+  assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+});

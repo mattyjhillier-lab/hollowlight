@@ -543,6 +543,39 @@ function lanceFire(sim, w, rs) {
   rt.cd = (tune(sim, w, 'cd', 0.8) / rateMult(sdef, 'speed', rs)) * sim.mods.cooldown;
 }
 
+// W10d Returning Pages: a glyph flies OUT through a line of foes (steering lightly until its first hit), turns at the end of its flight (130 px + 0.7 px per
+// Swiftness speed point, or when its pierce is spent), then flies HOME to the hero through FRESH foes (a foe is hit at most once per throw) and is caught.
+// Called by Sim.updateProjectiles for every glyph flagged `pages`.
+export function pagesStep(sim, b, dt) {
+  const p = sim.player;
+  b.life -= dt;
+  if (b.life <= 0) { b.dead = true; return; }
+  const v = b.speed;
+  if (b.back) {
+    const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy);
+    if (d < b.catchR) { b.dead = true; if (sim.fx.length < 48) sim.addFx({ kind: 'ring', x: p.x, y: p.y, r: 9, ttl: 0.15, color: '#e8f4ff' }); return; } // caught: a small page-flick sparkle
+    const st = Math.min(d, v * dt);
+    b.x += (dx / d) * st; b.y += (dy / d) * st; b.ang = Math.atan2(dy, dx);
+  } else {
+    if (b.target && !b.target.dead && b.hit.size === 0) {
+      let df = Math.atan2(b.target.y - b.y, b.target.x - b.x) - b.ang;
+      while (df > Math.PI) df -= TAU;
+      while (df < -Math.PI) df += TAU;
+      b.ang += Math.max(-b.steer * dt, Math.min(b.steer * dt, df));
+    }
+    b.x += Math.cos(b.ang) * v * dt; b.y += Math.sin(b.ang) * v * dt; b.go += v * dt;
+    if (b.go >= b.outLen || b.left <= 0) { b.back = true; b.left = b.per; }
+  }
+  if (b.left <= 0) return;
+  sim._src = b.src || null;
+  for (const e of sim.enemies) {
+    if (e.dead || b.hit.has(e.id)) continue;
+    const dx = e.x - b.x, dy = e.y - b.y, rr = e.r + b.r;
+    if (dx * dx + dy * dy < rr * rr) { sim.hurt(e, b.dmg); b.hit.add(e.id); if (--b.left <= 0) break; }
+  }
+  sim._src = null;
+}
+
 const spiritBolts = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
@@ -565,6 +598,10 @@ const spiritBolts = {
     let homing = true;
     let explode = false;
     let life = 2.4;
+    if (evo === 'returning_pages') {
+      // glyphs out and home again: 1 + Pierce foes per leg, 1.75x a bolt per hit, volley gap as the base (Swiftness shortens it)
+      dmg *= tune(sim, w, 'dmg', 1.75);
+    }
     if (evo === 'spirit_tempest') {
       // Burst and Seek: eight glyphs (ring), each re-homes to its own foe; blast only on a hit; Swiftness shortens the gap 0.02 s per rank
       count = 8; cd = tune(sim, w, 'cd', 0.85) + tune(sim, w, 'cdPer', 0.02) * (sim.data.balance.maxRank - rs);
@@ -581,6 +618,14 @@ const spiritBolts = {
       let ang = Math.atan2(tgt.y - p.y, tgt.x - p.x);
       if (evo === 'spirit_tempest') ang = rt.spin + (i * TAU) / 8;
       else if (i >= targets.length) ang += (i - targets.length + 1) * 0.18 * (i % 2 ? 1 : -1);
+      if (evo === 'returning_pages') {
+        sim.spawnBolt({
+          x: p.x, y: p.y, ang, speed: speed * tune(sim, w, 'speedK', 1.3), dmg, pierce: 0, r: tune(sim, w, 'hr', 9), homing: false, explode: false, life: tune(sim, w, 'life', 4), turn, target: tgt, color: '#7ff0ff',
+          evo, pages: true, back: false, go: 0, steer: tune(sim, w, 'steer', 3), per: 1 + s.pierce, left: 1 + s.pierce,
+          outLen: tune(sim, w, 'out0', 130) + tune(sim, w, 'outK', 0.7) * (s.speed - 150), catchR: tune(sim, w, 'catch', 8),
+        });
+        continue;
+      }
       sim.spawnBolt({
         x: p.x, y: p.y, ang, speed, dmg, pierce, r, homing: vol ? false : homing, explode, life, turn, target: homing && !vol ? tgt : null,
         color: '#7ff0ff',

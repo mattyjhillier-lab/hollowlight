@@ -15,7 +15,7 @@ import {
   BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
-import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget } from './weapons.js';
+import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -588,6 +588,7 @@ export class Sim {
     const size = this.balance.worldSize;
     for (const b of this.projectiles) {
       if (b.dead) continue;
+      if (b.pages) { pagesStep(this, b, dt); continue; } // W10d Returning Pages: out and home again, own movement and hit set
       if (b.seek > 0) { b.seek -= dt; if (b.seek <= 0) boltSeek(this, b); } // W10b: burst phase over, take your own prey
       if (b.homing) {
         if (!b.target || b.target.dead) b.target = b.vol ? boltRetarget(this, b) : this.nearestEnemy(b.x, b.y, 180);

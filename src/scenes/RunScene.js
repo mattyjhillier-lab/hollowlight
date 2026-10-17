@@ -1169,8 +1169,8 @@ export class RunScene extends Phaser.Scene {
     }
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
-      const rv = b.lance ? 3.5 : b.r; // a lance is drawn as a long pale capsule below, its sprite stays small
-      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((rv / 3) * pl.bolt.inv);
+      const rv = b.lance ? 3.5 : b.pages ? 3.2 : b.r; // a lance is drawn as a long pale capsule below, its sprite stays small
+      pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((rv / 3) * pl.bolt.inv).setTint(b.back ? 0xe2f1ff : 0xffffff); // Returning Pages: the way home is a paler glyph
       if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale((rv / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
       trail(b.x, b.y, PAL.ice, 0.28);
       if (lit) lm.add(b.x, b.y, 24, ROLE.bolt, 0.8);
@@ -1180,6 +1180,14 @@ export class RunScene extends Phaser.Scene {
         fx.lineStyle(2, 0xffffff, 0.85).lineBetween(ox, oy, b.x, b.y);
         fx.fillStyle(0xffffff, 0.9).fillCircle(b.x, b.y, 2.5);
         if (rimN++ < caps.halos) fx.lineStyle(1, 0xffd27a, 0.5).lineBetween(ox - ly * hw, oy + lx * hw, b.x - ly * hw, b.y + lx * hw).lineBetween(ox + ly * hw, oy - lx * hw, b.x + ly * hw, b.y - lx * hw);
+      }
+      if (b.pages) { // Returning Pages: gold rim; a short ink line trails the glyph out, a faint reversed curl points home on the way back (none under reduced motion)
+        if (rimN++ < caps.halos) fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(b.x, b.y, 4.5);
+        if (!still && thrN++ < thrCap) {
+          const ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+          if (!b.back) fx.lineStyle(1.5, ROLE.bolt, 0.45).lineBetween(b.x, b.y, b.x - ca * 12, b.y - sa * 12);
+          else fx.lineStyle(1, 0xe2f1ff, 0.3).lineBetween(b.x, b.y, b.x + ca * 14, b.y + sa * 14);
+        }
       }
       if (b.evo === 'spirit_tempest') {
         if (rimN++ < caps.halos) fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(b.x, b.y, 4.5);

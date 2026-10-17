@@ -105,8 +105,8 @@ test('Talon Mark (dive_bombers): with enough enemies in range no two concurrent 
   assert.ok(multi > 0, 'test never saw two concurrent dives (not sensitive)');
 });
 
-test('W9/W7b/W10 cap at pick: Lightfoot Pack, Wall of Wings, Spearhead, Spirit Tempest and Soul Lance stay <= 3.0x their base (pair 5 + others rank 1) in single, stream10 and stream40', () => {
-  for (const eid of ['phantom_stampede', 'murder_storm', 'spearhead', 'spirit_tempest', 'soul_lance']) {
+test('W9/W7b/W10 cap at pick: Lightfoot Pack, Wall of Wings, Spearhead, Spirit Tempest, Soul Lance and Returning Pages stay <= 3.0x their base (pair 5 + others rank 1) in single, stream10 and stream40', () => {
+  for (const eid of ['phantom_stampede', 'murder_storm', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages']) {
     const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair'], only: eid });
     for (const [sc, c] of Object.entries(res[eid].pair)) assert.ok(c.ratio <= 3.0, `${eid} ${sc}: ${c.ratio.toFixed(2)}x at pick`);
   }
