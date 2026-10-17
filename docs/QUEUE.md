@@ -197,3 +197,5 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - DONE on dev (2026-10-17): W7rem (Wolf speed +4% bite rate) and W4 Orbit guard + real Burn (see LOCKED rows). R1 inputs from W4: Elias 14% -> 64% (guard contraction makes a piled swarm a grinder: standing-swarm DPS 46 -> ~755); Judgement Wheel boss 0.53x vs base (below base, W6 must fix); Sanctum Halo swarm home 1.32x (below band; W5 retunes). Open for Matt: should the contracted ring hit softer (one constant) or stay? Hooks left for Halo ground / Wheel blasts Burn (W5/W6). Shots: docs/screenshots/w4/w4b-* (script scripts/w4b-shots.mjs; probe scripts/w4-hug.mjs).
 
 - RELEASE GATE 2026-10-17 (Matt): see docs/LOCKED.md 'RELEASE GATE'. NOW: R1 retune prep + enemies design sheet #4. NEXT: R1 build, enemies build, skill tree v2 (design -> build), boss sheet, front door + tutorial, audio sheet, final verification, private test, merge (Matt's explicit yes).
+
+- 2026-10-17 V1 SCOPE: 5 weapons / 15 evolutions only; weapon roster review + Matt's new weapon/summon ideas = AFTER v1. Launch checklist accepted. Finish what is in the game to its best before publishing.
