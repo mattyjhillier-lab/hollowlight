@@ -65,12 +65,12 @@ test('hidden reveal: evolution gates read ??? until progress starts, then show n
   const save = defaultSave();
   const dire = describeNode(def, save, 'gt_dire_alpha', data);
   assert.equal(dire.name, '???');
-  assert.ok(!dire.desc.includes('Dire Alpha'));
+  assert.ok(!dire.desc.includes('The Alpha'));
   save.stats.evolved = { howling_legion: 1 };
   const after = describeNode(def, save, 'gt_dire_alpha', data);
-  assert.equal(after.name, 'Dire Alpha (Ghost Wolves)');
+  assert.equal(after.name, 'The Alpha (Ghost Wolves)');
   assert.ok(after.desc.includes('Ghost Wolves'));
-  assert.ok(closestUnlocks(def, save, data, 99).some((r) => r.id === 'gt_dire_alpha' && r.name === 'Dire Alpha (Ghost Wolves)'));
+  assert.ok(closestUnlocks(def, save, data, 99).some((r) => r.id === 'gt_dire_alpha' && r.name === 'The Alpha (Ghost Wolves)'));
   assert.equal(describeNode(def, defaultSave(), 'gt_raven_flock', data).name, 'Raven Flock');
 });
 

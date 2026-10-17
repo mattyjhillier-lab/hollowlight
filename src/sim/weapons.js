@@ -134,7 +134,8 @@ const ghostWolves = {
     const { s, evo, rt } = w;
     const p = sim.player;
     let count = s.count;
-    if (evo === 'dire_alpha') count = 1;
+    if (evo === 'dire_alpha') count = 1 + Math.max(0, Math.round(tune(sim, w, 'shades', 2))); // Shades: unit 0 is the Alpha, the rest are small ghost shades // The Alpha: one great wolf; Pack size makes it BIGGER (size + sweep), not more bodies
+    const packRank = w.ranks.count || 0;
     const units = syncUnits(sim, w, 'wolf', count, (i) => ({
       r: 4, atkCd: 0, target: null, retarget: 0, slot: i, hit: null, faceX: 1,
     }));
@@ -145,7 +146,13 @@ const ghostWolves = {
     let bleedDur = BLEED_TIME; // Rend (s.duration) is the potency; the time is fixed
     if (evo === 'phantom_stampede') speed *= tune(sim, w, 'speed', 1.1); // Light Trails: fast wolves, bite code unchanged
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.4); } // W6 Echo Pack: no extra live wolves, the pack bites x1.4 (Alt A)
-    if (evo === 'dire_alpha') { dmg *= tune(sim, w, 'dmg', 3.2); bleedDur *= 1.5; }
+    if (evo === 'dire_alpha') bleedDur *= 1.5;
+    // The Alpha (W7c): primary bite on its prey 'dmg' x bite, lighter cleave 'side' x bite on everything else within reach; Rend bleeds each hit at that hit's own damage
+    // packPow: the alpha is the pack gathered into one: its bites grow with Pack size as (count / max count)^packPow (1.0 at max Pack size, weaker while the pack is small)
+    const cs = sim.data.weapons.ghost_wolves.stats.count;
+    const packF = evo === 'dire_alpha' ? (s.count / (cs.base + cs.perRank * sim.balance.maxRank)) ** tune(sim, w, 'packPow', 1.25) : 1;
+    const alphaHit = evo === 'dire_alpha' ? dmg * tune(sim, w, 'dmg', 3.4) * packF : 0;
+    const alphaSide = evo === 'dire_alpha' ? dmg * tune(sim, w, 'side', 0.6) * packF : 0;
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank
     const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl / rate;
@@ -154,7 +161,8 @@ const ghostWolves = {
     rt.ang = (rt.ang || 0) + 0.8 * dt;
 
     for (const u of units) {
-      u.r = evo === 'dire_alpha' ? 11 : 4;
+      u.shade = evo === 'dire_alpha' && u.slot > 0;
+      u.r = evo === 'dire_alpha' && !u.shade ? 11 + tune(sim, w, 'sizePer', 1) * packRank : 4;
       u.atkCd -= dt;
       u.retarget -= dt;
 
@@ -176,15 +184,22 @@ const ghostWolves = {
           moveToward(u, t.x, t.y, speed, dt);
         } else if (u.atkCd <= 0) {
           u.atkCd = biteGap;
-          if (evo === 'dire_alpha') {
+          if (u.shade) { // a shade: one lighter bite on the prey it keeps hunting
+            const sh = dmg * tune(sim, w, 'shade', 2.0) * packF;
+            sim.hurt(t, sh);
+            sim.bleed(t, sh * s.duration, bleedDur);
+          } else if (evo === 'dire_alpha') {
+            const reach = tune(sim, w, 'cleave', 22) + tune(sim, w, 'cleavePer', 2) * packRank;
+            sim.hurt(t, alphaHit);
+            sim.bleed(t, alphaHit * s.duration, bleedDur);
             for (const e of sim.enemies) {
-              if (e.dead) continue;
-              if (Math.hypot(e.x - u.x, e.y - u.y) < e.r + tune(sim, w, 'cleave', 24)) {
-                sim.hurt(e, dmg);
-                sim.bleed(e, bleedDps, bleedDur);
+              if (e.dead || e === t) continue;
+              if (Math.hypot(e.x - u.x, e.y - u.y) < e.r + reach) {
+                sim.hurt(e, alphaSide);
+                sim.bleed(e, alphaSide * s.duration, bleedDur);
               }
             }
-            sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: tune(sim, w, 'cleave', 24), ttl: 0.15, color: '#9fd8ff' });
+            sim.addFx({ kind: 'alphaarc', x: u.x, y: u.y, r: u.r + reach, a: Math.atan2(dy, dx), ttl: 0.18, color: '#9fd8ff' });
           } else {
             sim.hurt(t, dmg);
             sim.bleed(t, bleedDps, bleedDur);

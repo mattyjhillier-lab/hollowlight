@@ -86,12 +86,13 @@ test('every evolution runs cleanly against a horde and deals damage', () => {
   }
 });
 
-test('Dire Alpha is a single wolf; Howling Legion keeps the pack size (echoes, no extra live wolves)', () => {
+test('The Alpha is one great wolf plus two ghost shades; Howling Legion keeps the pack size (echoes, no extra live wolves)', () => {
   const sim = mk({ godMode: true });
   sim.weapons.length = 0;
   sim.debugGrant('ghost_wolves', { power: 5, duration: 5 }, 'dire_alpha');
   run(sim, 1);
-  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 1);
+  const wolves = sim.units.filter((u) => u.kind === 'wolf');
+  assert.equal(wolves.length, 3); assert.equal(wolves.filter((u) => u.r >= 11).length, 1); // alpha + 2 shades
   const sim2 = mk({ godMode: true });
   sim2.weapons.length = 0;
   sim2.debugGrant('ghost_wolves', { count: 5, duration: 5 }, 'howling_legion');

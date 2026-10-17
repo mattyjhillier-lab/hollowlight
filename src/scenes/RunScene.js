@@ -1098,9 +1098,14 @@ export class RunScene extends Phaser.Scene {
       if (u.hidden) { if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6); continue; } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
-        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 1.12 * pl.haloU.inv).setAlpha(0.62);
+        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(u.shade ? 0.5 : u.r > 6 ? 0.78 : 0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
+        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale((u.r > 6 ? 5 : u.r / 4 * 1.12) * pl.haloU.inv).setAlpha(u.r > 6 ? 0.45 : 0.62); // the great wolf keeps a modest halo so its body still reads
         if (wEvo === 'phantom_stampede') fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved wolves only: thin gold rim (never on enemies)
+        else if (wEvo === 'dire_alpha' && !u.shade) { // The Alpha: gold rim on the great wolf only (the ghost shades stay plain), pale-blue frost mane along its back
+          fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(u.x, u.y, u.r * 1.3);
+          const dir = u.faceX < 0 ? -1 : 1; // static strokes (no shimmer), so reduced motion is unchanged
+          for (let m = 0; m < 4; m++) { const sx = u.x - dir * u.r * (0.05 + 0.25 * m), sy = u.y - u.r * 0.72; fx.lineStyle(2, 0xcfeaff, 0.6).lineBetween(sx, sy, sx - dir * u.r * 0.3, sy - u.r * 0.42); }
+        }
         if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life * 1.15, true); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'echo') {
@@ -1158,6 +1163,10 @@ export class RunScene extends Phaser.Scene {
         const c = hex(f.color);
         const k = Math.max(0, f.ttl / 0.3);
         fx.lineStyle(2, c, Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
+      } else if (f.kind === 'alphaarc') { // The Alpha bite: a pale-blue sweep arc across the bite direction (not a ring), fades in ~0.18 s
+        const k = Math.max(0, f.ttl / 0.18);
+        fx.lineStyle(3, hex(f.color), 0.7 * k).beginPath().arc(f.x, f.y, f.r * (1.05 - 0.1 * k), f.a - 1.0, f.a + 1.0).strokePath();
+        fx.lineStyle(1, 0xffffff, 0.8 * k).beginPath().arc(f.x, f.y, f.r * (1.05 - 0.1 * k), f.a - 0.8, f.a + 0.8).strokePath();
       } else if (f.kind === 'bolt') {
         const a = Math.min(1, f.ttl / 0.1);
         if (lit && f.pts.length) lm.add(f.pts[f.pts.length - 1].x, f.pts[f.pts.length - 1].y, 60, ROLE.lightning, 0.9 * a);

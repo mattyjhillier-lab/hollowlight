@@ -25,7 +25,6 @@ const ringAt = (sim, type, n, d0, d1) => {
 // Known promise breakers, encoded so the guard still covers every other evolution and FLIPS TO FAILING if one of these changes by accident.
 // key = evolution|rank mode|scenario. Remove an entry when the later chunk fixes it.
 const EXPECTED_FAIL = new Set([
-  'dire_alpha|max|single', // 0.65x: fixed in the Dire Alpha chunk
   'soul_lance|max|stream10', // 0.88x: fixed in W10 (Spirit Bolts evolutions)
 ]);
 const FLOOR = 0.98; // noise allowance on a deterministic 1-seed run

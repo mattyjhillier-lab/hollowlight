@@ -41,6 +41,7 @@ const SCEN = {
   sparse: { secs: 20, setup: (s) => ring(s, 'dummy', 6, 95, 145), input: () => ({}) },
   swarm: { secs: 25, setup: (s) => { s.time = 480; refill(s, 60); }, tick: (s) => refill(s, 60), input: () => ({}) },
   kite: { secs: 25, setup: (s) => { s.time = 480; refill(s, 60); }, tick: (s) => refill(s, 60), input: (s) => kite(s) },
+  boss: { secs: 30, setup: (s) => { s.time = 600; s.spawnEnemy('elder_treant', s.player.x + 70, s.player.y); }, input: () => ({}) },
 };
 
 export function run(wid, ranks, evo, scen, seed) {
@@ -97,7 +98,7 @@ if (process.argv[1] && process.argv[1].endsWith('stat-ranks.mjs')) {
   if (!FILTER || FILTER.includes('wolves')) {
     console.log('\n== Wolves coverage (all stats max): distinct targets held by the pack, hits taken/s');
     const max = Object.fromEntries(Object.keys(data.weapons.ghost_wolves.stats).map((k) => [k, 5]));
-    for (const evo of [null, 'phantom_stampede', 'howling_legion', 'dire_alpha']) for (const scen of ['swarm', 'kite']) {
+    for (const evo of [null, 'phantom_stampede', 'howling_legion', 'dire_alpha']) for (const scen of ['swarm', 'kite', 'boss']) {
       const x = avg((sd) => run('ghost_wolves', max, evo, scen, sd));
       console.log(`  ${(evo || 'base').padEnd(17)} ${scen.padEnd(6)} dps ${Math.round(x.dps).toString().padStart(4)}  wolves ${x.units.toFixed(1)}  distinct targets ${x.distinct.toFixed(1)}  bleed ${Math.round(x.bleedShare * 100)}%  taken/s ${x.taken.toFixed(2)}`);
     }

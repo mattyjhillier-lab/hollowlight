@@ -97,7 +97,7 @@ for (const [eid, e] of Object.entries(data.evolutions)) {
   for (const sc of Object.keys(SCEN)) {
     const bp = baseDps(e.weapon, rp, sc), bm = baseDps(e.weapon, rm, sc);
     const ep = stats((sd) => run(e.weapon, rp, eid, sc, sd)), em = stats((sd) => run(e.weapon, rm, eid, sc, sd));
-    cells.push(`${sc} ${r2(ep, bp)} | ${r2(em, bm)} | ${r2(ep, bm)}  ${em.m.toFixed(0)} [${em.lo.toFixed(0)}-${em.hi.toFixed(0)}] base ${bm.m.toFixed(0)}`);
+    cells.push(`${sc} ${r2(ep, bp)} | ${r2(em, bm)} | ${r2(ep, bm)}  ${em.m.toFixed(0)} [${em.lo.toFixed(0)}-${em.hi.toFixed(0)}] base ${bm.m.toFixed(0)} (pick: evo ${ep.m.toFixed(0)} base ${bp.m.toFixed(0)})`);
   }
   console.log(`${eid}\n   ${cells.join('\n   ')}`);
 }

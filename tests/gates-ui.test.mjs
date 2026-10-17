@@ -18,7 +18,7 @@ test('G1c gateOf/gateTag: exactly the 13 permanent nodes are gates', () => {
 test('G1c newly lines: weapon gate says ready to unlock + cost; evolution shows Name (Weapon), never the stat pair', () => {
   assert.equal(newlyLine(def, 'gt_spirit_bolts', data), 'NEW: Spirit Bolts is ready to unlock in the Skill Tree (300 gold).');
   const l = newlyLine(def, 'gt_dire_alpha', data);
-  assert.ok(l.includes('Dire Alpha (Ghost Wolves)'));
+  assert.ok(l.includes('The Alpha (Ghost Wolves)'));
   const evo = data.evolutions.dire_alpha;
   for (const s of evo.stats || evo.pair || []) assert.ok(!l.toLowerCase().includes(String(data.weapons[evo.weapon].stats?.[s]?.name || s).toLowerCase()));
   // non-gate nodes keep their plain name
@@ -43,7 +43,7 @@ test('G1c hidden evolution gate: ??? until progress, then Name (Weapon); weapon 
   assert.ok(!closestUnlocks(def, s, data, 99).some((r) => r.id === 'gt_dire_alpha'));
   s.stats.killsByEnemy = { wolf: 500 };
   const d1 = describeNode(def, s, 'gt_dire_alpha', data);
-  assert.equal(d1.name, 'Dire Alpha (Ghost Wolves)');
+  assert.equal(d1.name, 'The Alpha (Ghost Wolves)');
   const row = closestUnlocks(def, s, data, 99).find((r) => r.id === 'gt_dire_alpha');
   assert.ok(row && row.gate && /500\/10000/.test(row.text));
 });
