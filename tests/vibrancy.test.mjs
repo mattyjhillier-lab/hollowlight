@@ -115,7 +115,7 @@ test('tickVibrancy: no per-frame allocation, Low = tint-only on props (no ground
   assert.ok(!/new (Array|Map|Set|Float32Array|Int32Array|Uint8Array)|\.map\(|\.filter\(|\.slice\(|=> /.test(fn));
   assert.ok(fn.includes('if (this.gbOn) this.gb.setSat'), 'ground uniform only when the shader runs');
   assert.ok(fn.includes('app.params.vib && app.params.arc'));
-  assert.ok(read('src/app.js').includes("vib: q.get('vib') !== '0'"));
+  assert.ok(/FLAGS_ON = \[[^\]]*'vib'/.test(read('src/params.js')));
 });
 
 test('mulTint is a plain multiply', () => {

@@ -6,49 +6,13 @@ import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
 import { newlyLines } from './meta/gatewords.js';
 import { abilityEmblem } from './ui/hudsvg.js';
 import { resolveBrightness } from './gfx/arc.js';
-import { parseTouchParam, touchEnabled } from './input/stick.js';
+import { touchEnabled } from './input/stick.js';
+import { parseParams } from './params.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);
-
-function parseParams() {
-  const q = new URLSearchParams(window.location.search);
-  const num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
-  return {
-    auto: q.get('auto'),
-    seed: q.has('seed') ? num('seed') : null,
-    startTime: num('t', 0),
-    god: q.get('god') === '1',
-    rerolls: num('rr', 0),
-    banishes: num('ban', 0),
-    grant: q.get('grant'), // dev: "spirit_bolts:power=5,pierce=5:soul_lance;raven_flock"
-    bless: q.get('bless'), // dev: "wider_glow:2;kind_fortune:3" (validated; disables banking)
-    debug: q.get('debug') === '1',
-    life: q.get('life') === '1', // dev: show the life map
-    flat: q.get('ground') === 'flat', // dev: force the Low ground fallback (no shader)
-    trails: q.get('trails') !== '0', // dev: ?trails=0 turns the W2 ribbon trails off (A/B perf)
-    props: q.get('props') !== '0', // dev: ?props=0 turns the W4 props layer off (A/B perf)
-    push: q.get('push') !== '0', // dev: ?push=0 turns the AL-4 creature-reactive foliage off (A/B perf)
-    sway: q.get('sway') !== '0', // dev: ?sway=0 turns the AL-1 grass sway layer off (A/B perf)
-    fog: q.get('fog') !== '0', // dev: ?fog=0 turns the W5 fog banks off (A/B perf)
-    motes: q.get('motes') !== '0', // dev: ?motes=0 turns the W5 fireflies + motes off (A/B perf)
-    dawn: q.get('dawn') !== '0', // dev: ?dawn=0 turns the AL-6 dawn chorus off (A/B perf). Preview the moments with ?auto=wren&t=520 (first light), t=590 (hush), t=860 (flood), t=890 (14:50)
-    critters: q.get('critters') !== '0', // dev: ?critters=0 turns the AL-5 critters off (A/B perf)
-    edge: q.get('edge') !== '0', // dev: ?edge=0 turns the W5 edge-wall fade off (A/B perf)
-    corr: q.get('corr') !== '0', // dev: ?corr=0 stops enemies staining the ground (A/B perf)
-    bloom: q.get('bloom') !== '0', // dev: ?bloom=0 turns the High-tier bloom post effect off (A/B perf)
-    arc: q.get('arc') !== '0', // dev: ?arc=0 restores the pre-WL6 lighting (A/B perf and screenshots)
-    vib: q.get('vib') !== '0', // dev: ?vib=0 turns the WL6c restored-world vibrancy off (same-spot A/B, perf)
-    night: q.get('night') !== '0', // dev: ?night=0 turns the WL6b enemy night look off (A/B perf)
-    bright: ['normal', 'brighter', 'clear'].includes(q.get('bright')) ? q.get('bright') : null, // dev: session-only brightness override (never saved)
-    lm: q.get('lm') !== '0', // dev: ?lm=0 turns the lightmap (and with it the ground shader) off (A/B perf)
-    nums: q.get('nums') !== '0', // dev: ?nums=0 turns damage numbers off (A/B perf)
-    touch: parseTouchParam(q.get('touch')), // '1' force touch controls on, '0' off (session only; never touches saves)
-    meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null, // dev: preview a preset skill tree
-  };
-}
 
 export const app = {
   data,
@@ -59,7 +23,7 @@ export const app = {
   freeze: false, // hit-stop
   lastState: null,
   hudAcc: 0,
-  params: parseParams(),
+  params: parseParams(window.location.search),
   characterId: null,
   save: new SaveStore(),
   banked: false,

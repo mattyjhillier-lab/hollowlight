@@ -278,7 +278,9 @@ test('critters never touch the sim: no sim import in any new module, no sim RNG,
   assert.ok(/this\.air\.update\(dt, sim\.time, view, this\.life, this\.airSt\)/.test(sc));
   assert.ok(/cs\.on = !!\(P\.critters && this\.gbOn/.test(sc), 'critters need the restored-ground look (Med/High)');
   const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
-  for (const k of ['fog', 'motes', 'critters', 'edge']) assert.ok(new RegExp(`${k}: q\\.get\\('${k}'\\) !== '0'`).test(app), 'flag ?' + k + '=0');
+  const pj = readFileSync(new URL('../src/params.js', import.meta.url), 'utf8');
+  assert.ok(app.includes('parseParams(window.location.search)'));
+  for (const k of ['fog', 'motes', 'critters', 'edge']) assert.ok(new RegExp(`FLAGS_ON = \\[[^\\]]*'${k}'`).test(pj), 'flag ?' + k + '=0');
 });
 
 test('critter atlas: 8 named frames, draws with a fake 2D context, colours are warm tan/cream (not pickup hues, no glow colours)', () => {

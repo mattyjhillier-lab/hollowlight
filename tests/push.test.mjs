@@ -166,5 +166,5 @@ test('visual only: no sim import, no Math.random, creatures only read; wired wit
   assert.ok(/pushBudget\(caps\.ambient\.push/.test(scene) && /push: pb > 0 \? this\.push : null/.test(scene) && /push: this\.push/.test(scene));
   assert.ok(/params\.push/.test(scene));
   const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
-  assert.ok(/push: q\.get\('push'\) !== '0'/.test(app));
+  assert.ok(/FLAGS_ON = \[[^\]]*'push'/.test(readFileSync(new URL('../src/params.js', import.meta.url), 'utf8')) && app.includes('parseParams('));
 });
