@@ -4,7 +4,7 @@
 // facing +x, y up negative, design units (du). Game changes vs the mock-ups: no telegraph decals (the scene draws the aim tick / fuse ring /
 // charge lane above the vignette), the mask is built in pre-rotated coordinates (so the knot-hole socket that the eye is baked into matches the
 // drawn socket on every frame), sockets are polygon blobs (paint.sockRec reads point pairs), freed face on the death body, mask-only frame.
-import { K, P, S, locks, sock, husk, knotSocket, strap, sprout, lichen, finish, furry, blob, ell, circ, limb, eye, shadow, glow, mix, f, TAU, VOID } from './kit.js';
+import { K, P, S, locks, sock, husk, knotSocket, strap, sprout, lichen, moss, thorn, finish, furry, blob, ell, circ, limb, eye, shadow, glow, mix, f, TAU, VOID } from './kit.js';
 
 const RO = '#ff5a3c';
 // polygon ellipse (sockRec needs point pairs; arcs would mis-read)
@@ -74,7 +74,7 @@ const crk = (x, y, r, tl) => {
 };
 export function toadA(st = {}) {
   const a = (st.ph || 0) * TAU, tl = st.tele || 0, hop = Math.max(0, Math.sin(a)) * 4 * (1 - tl), br = 1 + Math.sin(a * 2) * 0.03 + tl * 0.28;
-  const SK = '#64707f', SKD = mix(SK, '#120d22', 0.3), BEL = '#b4bcbd', SAC = '#aab5a5', SACD = '#64705f';
+  const SK = '#58627a', SKD = mix(SK, '#120d22', 0.3), BEL = '#b4bcbd', SAC = '#aab5a5', SACD = '#64705f';
   let b = shadow(32, 0) + `<ellipse cx="0" cy="0" rx="27" ry="5" fill="${K.ink}" opacity=".3"/>`;
   const y = -hop + tl * 2.5;
   // far hind leg, then the near bent frog leg (thigh + shin + ink sock)
@@ -110,3 +110,47 @@ export function toadA(st = {}) {
   return finish(st, b, e, { w: 50, h: 58, seed: 31 });
 }
 
+// =============================== 6. BRAMBLE HART (charger) ===============================
+// A BRAMBLE HART: a stag drained mid-leap; its antlers kept growing, into BRAMBLE: a lyre of thorny tines twice the size of its head (the hook),
+// a long deer-skull husk, a rag of moss on one tine. Proud and still, then explosive: on the tell it lowers the crown (eyes swing LOW), scrapes,
+// then charges in a straight line. Rig from the mock-up hoofRig: body bean on slim legs, neck to a big chibi head; the head + antlers rotate
+// as one group on the tell, the mask is drawn in pre-rotated coordinates (sockets match), between the far and near antler.
+export function hartA(st = {}) {
+  const FU = '#56607a', DK = '#3a4157', AN = '#7c7883', AND = '#5a5662', LH = 34;
+  const a = (st.ph || 0) * TAU, tl = st.tele || 0, s1 = Math.sin(a), bob = -Math.abs(s1) * 2;
+  let b = shadow(42, 0) + `<ellipse cx="0" cy="0" rx="32" ry="5" fill="${K.ink}" opacity=".3"/>`;
+  if (tl > 0) b += `<path d="M14 2 q4 -5 9 -2 M18 -1 q3 -4 7 -2" stroke="#8a8f99" stroke-width="2" fill="none" opacity="${f(tl)}"/>`; // hoof scrape dust
+  const by = -LH - 8 + bob + tl * 3;
+  const leg = (x, ph, far, back) => { const sw = Math.sin(ph) * 6 * (1 - tl), lift = Math.max(0, -Math.cos(ph)) * 5 * (1 - tl), px = x + sw + (back ? -tl * 3 : tl * 5), py = -lift;
+    const pts = back ? [[x, by + 4], [x - 4, by + LH * 0.45], [px + 1, -LH * 0.3 - lift], [px, py - 4]] : [[x, by + 4], [x + 1, by + LH * 0.5], [px, py - 4]];
+    return S(`M${pts.map(([q, r]) => `${f(q)} ${f(r)}`).join(' L')}`, far ? DK : FU, 6.4, { lw: 2.4 }) + sock(px, py, 3.8, 12); };
+  b += leg(16, a + Math.PI, true) + leg(-18, a, true, true) + leg(-22, a + Math.PI, false, true) + leg(12, a, false);
+  // body bean + pale rump patch
+  b += P(furry([[24, by + 6], [22, by - 8], [4, by - 12], [-16, by - 11], [-28, by - 4], [-26, by + 8], [0, by + 10]], 2.8, -1, 19, [0, 0, 0, 0, 0, 1, 1], 0.6), FU, { sh: 6, rim: 3, rimA: 1,
+    tex: locks([[-18, by - 4, 10, 2.9], [-6, by - 6, 10, 3.0], [6, by - 6, 9, 3.0]], mix(FU, '#0e0a1c', 0.5), 0.5) + locks([[-10, by - 10, 9, 3.0, 1.8], [4, by - 11, 8, 3.1, 1.8]], mix(FU, '#e6eef8', 0.4), 0.45) + `<ellipse cx="0" cy="${f(by + 9)}" rx="22" ry="4" fill="${K.ink}" opacity=".35" filter="url(#sb2)"/>` })
+    + P(blob([[-26, by - 6], [-34, by - 10], [-33, by - 2], [-27, by]]), '#d9dccf', { lw: 2, sh: 1 });
+  // neck + head (lowered and rotated on the tell)
+  const hx = 28 + tl * 12, hy = by - 20 + tl * 26, rot = tl * 48, rr = (rot * Math.PI) / 180;
+  b += P(limb(12, by - 2, hx - 4, hy + 6, 8, 7), FU, { sh: 3 });
+  const crown = (far) => { const c = far ? AND : AN, bx = hx - 3 + (far ? -5 : 0), by2 = hy - 8, dir = far ? -1 : 1;
+    const main = [[bx, by2], [bx + dir * 6, by2 - 12], [bx + dir * 16, by2 - 22], [bx + dir * 22, by2 - 36], [bx + dir * 20, by2 - 50]];
+    let s = S(`M${main.map(([q, r]) => `${f(q)} ${f(r)}`).join(' L')}`, c, 6.4, { lw: 2.4 });
+    for (const [i, len, ang] of [[1.3, 14, -1.9], [2.2, 17, -1.6], [3.1, 13, -1.35]]) { const p = main[Math.floor(i)], q = main[Math.ceil(i)], t = i % 1, x = p[0] + (q[0] - p[0]) * t, y = p[1] + (q[1] - p[1]) * t, an = dir > 0 ? ang : Math.PI - ang;
+      s += S(`M${f(x)} ${f(y)} q${f(Math.cos(an) * len * 0.3)} ${f(Math.sin(an) * len * 0.6)} ${f(Math.cos(an) * len)} ${f(Math.sin(an) * len)}`, c, 4, { lw: 2.1 }) + `<circle cx="${f(x + Math.cos(an) * len)}" cy="${f(y + Math.sin(an) * len)}" r="2.1" fill="#dcdccd"/>`; }
+    s += `<circle cx="${f(main[4][0])}" cy="${f(main[4][1])}" r="2.7" fill="#dcdccd"/>`;
+    for (let i = 0; i < 6; i++) { const p = main[1 + (i % 3)], sg = i % 2 ? 1 : -1; s += thorn(p[0], p[1] + 2 - i, sg > 0 ? -0.3 : 3.4, 6, 2, '#2f283a'); }
+    if (!far) s += moss(bx + 10, by2 - 32, 9, 13, 6);
+    return s; };
+  const head = P(blob([[hx - 8, hy - 4], [hx - 22, hy - 10], [hx - 12, hy + 0]]), DK, { lw: 2, sh: 1 }) + P(ell(hx - 4, hy - 1, 11, 10), FU, { sh: 4 });
+  const G = (svg) => `<g transform="rotate(${f(rot)} ${f(hx)} ${f(hy)})">${svg}</g>`;
+  // the long deer-skull husk, built in pre-rotated coordinates
+  const R = rotP(hx, hy, rr), M = (x, y) => R(hx + x, hy + y);
+  let ms = strap([M(-6, -7), M(-12, -2), M(-10, 6)], 2.6, { seed: 4 });
+  ms += husk(blob([M(-8, -9), M(4, -11), M(16, -6), M(26, 1), M(27, 5), M(20, 7), M(6, 8), M(-6, 5)]), M, { grain: [[[0, -6], [12, -3], [24, 2]], [[-2, 3], [10, 5], [22, 5]]], crack: [[2, -10], [4, -6], [3, -3]], lichen: [[12, -3, 2.6]], chip: [[-7, 2, 3, 3.2 + rr]], under: [[-6, 4], [10, 8], [25, 5]], hi: [[-4, -9], [8, -8], [20, -2]] })
+    + knotSocket(blob([M(-2.6, -5.6), M(4, -8.8), M(9.8, -5.4), M(6.6, -0.6), M(-0.4, -0.6)])) + knotSocket(rblob(...M(13.2, -3), 2.7, 2.3, 8, rr), 1.3); // sockets +15% after the WL6d run (far hart on the landscape phone)
+  if (st.maskOnly) return { b: `<g transform="translate(${f(-hx)},${f(-hy)})">${ms}</g>`, e: '' };
+  b += G(crown(true) + head) + (st.noMask ? G(freed(hx - 2, hy - 3, FU, 1)) : ms) + G(crown(false));
+  const E1 = M(3.5, -4.5), E2 = M(13, -3), sh = tl > 0.3 ? 'slit' : 'almond';
+  const e = st.hurt ? eye(...E1, 2.3, { shape: 'squint' }) + eye(...E2, 1.7, { shape: 'squint' }) : eye(...E1, 2.5 + tl * 0.8, { shape: sh, rot: -12 + rot }) + eye(...E2, 1.8 + tl * 0.5, { shape: sh, rot: -12 + rot });
+  return finish(st, b, e, { w: 70, h: 120, seed: 41 });
+}

@@ -206,3 +206,34 @@ test('Puffback Toad: killed during the fuse it FIZZLES (no burst, normal kill + 
   assert.equal(w.hp, whp);
 });
 
+test('Bramble Hart: 0.8 s head-down tell (direction locked), long STRAIGHT charge, immune to fear/pin during the charge, staggers vulnerable after', () => {
+  const A = data.enemies.bramble_hart.ai;
+  const s = arena(31), p = s.player;
+  const e = s.spawnEnemy('bramble_hart', p.x + 150, p.y + 20); e.grace = 0; e.aiCd = 0;
+  let teleAt = null, chargeAt = null, staggerAt = null, start = null, dir = null;
+  for (let i = 0; i < 60 * 5 && staggerAt === null; i++) {
+    s.step(1 / 60, {});
+    if (e.tele && teleAt === null) { teleAt = s.time; dir = [e.dx, e.dy]; }
+    if (e.state === 'charge' && chargeAt === null) { chargeAt = s.time; start = [e.x, e.y]; }
+    if (e.state === 'charge') { e.fearT = 1; e.heldT = 1; } // control every frame of the charge
+    if (e.state === 'stagger' && staggerAt === null) staggerAt = s.time;
+  }
+  assert.ok(Math.abs(chargeAt - teleAt - A.tell) < 0.05, 'tell ' + (chargeAt - teleAt));
+  assert.ok(Math.abs(staggerAt - chargeAt - A.charge) < 0.05, 'charge time');
+  const moved = [e.x - start[0], e.y - start[1]], L = Math.hypot(...moved);
+  assert.ok(L > A.charge * e.speed * A.chargeMul * 0.85, 'immune: kept charging through fear/pin, ' + L.toFixed(0));
+  assert.ok(Math.abs(moved[0] / L - dir[0]) < 0.05 && Math.abs(moved[1] / L - dir[1]) < 0.05, 'straight along the locked direction');
+  // stagger: vulnerable, fear applies again
+  e.fearT = 0.4; e.heldT = 0;
+  s.step(1 / 60, {});
+  assert.ok(e.fearT > 0, 'fear applies after the charge');
+  // fear during the TELL cancels it (non-boss)
+  const s2 = arena(32), p2 = s2.player;
+  const h = s2.spawnEnemy('bramble_hart', p2.x + 150, p2.y); h.grace = 0; h.aiCd = 0;
+  for (let i = 0; i < 60 && !h.tele; i++) s2.step(1 / 60, {});
+  h.heldT = 0.5;
+  run(s2, 1);
+  assert.notEqual(h.state, 'charge', 'pin cancels the tell');
+  // charge contact damage is the charge value
+  assert.ok(e.cdmg > e.dmg);
+});

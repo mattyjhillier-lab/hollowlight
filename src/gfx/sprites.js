@@ -182,6 +182,21 @@ const SPRITES = {
       emberEye(c, 12.2, 6.4, 0.5); emberEye(c, 13.8, 6.3, 0.45); emberEye(c, 13, 7.8, 0.42);
     },
   },
+  // EN5 flat fallback: tall stag on slim legs, dark briar antler lyre, pale skull husk, two high ember eyes
+  hart: {
+    w: 18, h: 22, shadow: [9, 21, 6.5, 1.5], enemy: 1,
+    draw: (c) => {
+      const F = 0x56607a, A2 = 0x6a6672, M = 0xc8c3ad;
+      for (const x of [5, 7, 11.5, 13.2]) { c.fillStyle = sh(F, x < 9 ? 0.75 : 0.9); c.beginPath(); c.roundRect(x, 14, 1.4, 6.6, 0.6); c.fill(); }
+      ell(c, 9, 13.4, 6, 3.4, lg(c, 9, 10, 9, 17, [[0, sh(F, 1.15)], [1, sh(F, 0.7)]])); // body
+      line(c, 13, 12, 14, 10, 14.4, 8.4, 2.6, sh(F, 0.95)); // neck
+      line(c, 13.4, 6.4, 10.6, 3, 11.8, 0.6, 1.3, sh(A2, 1)); line(c, 14.2, 6.2, 16.8, 3.4, 16, 0.6, 1.3, sh(A2, 0.85)); // antlers
+      line(c, 12.2, 3.6, 10.4, 2.6, 9.8, 1.6, 0.9, sh(A2, 1)); line(c, 15.8, 3.4, 17.6, 2.4, 17.8, 1.2, 0.9, sh(A2, 0.85));
+      ell(c, 14.4, 7.6, 2.6, 2.2, sh(F, 1.05)); // head
+      c.beginPath(); c.moveTo(13.4, 6.2); c.lineTo(18, 8); c.lineTo(17.6, 9.2); c.lineTo(13.6, 9.2); c.closePath(); c.fillStyle = sh(M, 1); c.fill(); // skull husk
+      emberEye(c, 14.6, 7.2, 0.6); emberEye(c, 16.4, 7.8, 0.45);
+    },
+  },
   treant: {
     w: 64, h: 72, shadow: [32, 66.5, 23, 5], enemy: 1, big: 1, rim: ROLE.barkRim,
     draw: (c) => {

@@ -20,6 +20,7 @@ export const EYE_DEFS = {
   root_crawler: { key: 'root', rim: 'root_r', pts: box('root', 20, 20, [[8, 9.2], [12.2, 9.2]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 },
   stoat_piper: { key: 'piper', rim: 'piper_r', pts: box('piper', 12, 16, [[6.2, 4.4]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 }, // EN3: one very high eye
   puffback_toad: { key: 'toad', rim: 'toad_r', pts: box('toad', 16, 12, [[12.2, 6.4], [13.8, 6.3], [13, 7.8]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 }, // EN4: three eyes (flat fallback keeps the WL6b minimum size)
+  bramble_hart: { key: 'hart', rim: 'hart_r', pts: box('hart', 18, 22, [[14.6, 7.2], [16.4, 7.8]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 }, // EN5: a high pair
 };
 // Boss eyes (treant box 64 x 72: bossEye ember at 27,40 and 37,40): always drawn, outside the caps.
 export const BOSS_EYES = box('treant', 64, 72, [[27, 40], [37, 40]]);

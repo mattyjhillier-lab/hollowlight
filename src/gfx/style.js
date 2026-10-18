@@ -29,7 +29,7 @@ export function zoomFor(W, H) {
 
 // Display scale vs the drawn box (hitboxes unchanged) and texel density per displayed world unit.
 export const VIS = {
-  hero_wren: 1.43, hero_elias: 1.43, wolf: 1.44, wolfU: 1.56, crow: 1.29, root: 1.4, treant: 1.875, piper: 1.4, toad: 1.4,
+  hero_wren: 1.43, hero_elias: 1.43, wolf: 1.44, wolfU: 1.56, crow: 1.29, root: 1.4, treant: 1.875, piper: 1.4, toad: 1.4, hart: 1.4,
   raven: 1.33, orb: 1.17, bolt: 1.2, gem: 0.875, heart: 1.1, magnet: 1.1, tree: 1.4,
 };
-export const DENS = { hero_wren: 5, hero_elias: 5, wolf: 4, wolfU: 4, crow: 4, root: 4, treant: 4, raven: 4, piper: 4, toad: 4 };
+export const DENS = { hero_wren: 5, hero_elias: 5, wolf: 4, wolfU: 4, crow: 4, root: 4, treant: 4, raven: 4, piper: 4, toad: 4, hart: 4 };

@@ -157,7 +157,7 @@ export function coreShape(sp, S, flare = 0, hot = true) {
     return { hw: r, hh: r, svg: `<circle r="${f(r)}" fill="${CORE}"/>` + (hot ? `<circle cx="${f(-r * 0.12)}" cy="${f(-r * 0.1)}" r="${f(r * 0.55)}" fill="#fffaf0"/><circle cx="${f(-r * 0.42)}" cy="${f(-r * 0.42)}" r="${f(Math.max(0.7, r * 0.3))}" fill="#ffffff"/>` : '') };
   }
   if (sp === 'puffback_toad') { // three tiny round pinprick cores (the triangle constellation)
-    const r = Math.min(S.w, S.h) * 0.34 * k;
+    const r = Math.min(S.w, S.h) * 0.4 * k;
     return { hw: r, hh: r, svg: `<circle r="${f(r)}" fill="${CORE}"/>` + (hot ? `<circle cx="${f(-r * 0.2)}" cy="${f(-r * 0.2)}" r="${f(r * 0.5)}" fill="#fffaf0"/>` : '') };
   }
   if (sp === 'root_crawler') {

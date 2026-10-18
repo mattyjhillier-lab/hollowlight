@@ -11,6 +11,7 @@ export function aiStep(sim, e, dt, nx, ny, dist, out) {
   if (e.grace > 0) e.grace -= dt;
   if (A.kind === 'ranged') ranged(sim, e, A, dt, nx, ny, dist, out);
   else if (A.kind === 'fuse') fuse(sim, e, A, dt, nx, ny, dist, out);
+  else if (A.kind === 'charger') charger(sim, e, A, dt, nx, ny, dist, out);
   else { out[0] = nx * e.speed; out[1] = ny * e.speed; }
 }
 
@@ -77,6 +78,29 @@ function fuse(sim, e, A, dt, nx, ny, dist, out) {
       if (sim.fx.length < 48) sim.addFx({ kind: 'burst', x: e.x, y: e.y, r: A.burstR, ttl: 0.45, color: '#c9d2c4' });
       sim.pushEvent('burst');
     }
+  }
+}
+
+// ---- Bramble Hart (charger): stalks you; inside `range` (and the view) it lowers its crown for `tell` s (direction locked), then charges in a
+// long STRAIGHT line (speed x chargeMul for `charge` s, contact damage chargeDmg) through the crowd; during the charge it is immune to fear/pin
+// (ai.immune = 'charge', handled in Sim.updateEnemies); afterwards it staggers (`stagger` s, still, vulnerable: fear/pin apply) and stalks again.
+function charger(sim, e, A, dt, nx, ny, dist, out) {
+  out[0] = 0; out[1] = 0;
+  if (e.state === 'run') {
+    out[0] = nx * e.speed; out[1] = ny * e.speed;
+    e.aiCd -= dt;
+    if (e.aiCd <= 0 && dist < A.range && canTell(sim, e, A)) { e.state = 'tele'; e.tele = true; e.stT = A.tell; e.dx = nx; e.dy = ny; e.faceX = nx >= 0 ? 1 : -1; sim.tells[e.type] = (sim.tells[e.type] || 0) + 1; }
+  } else if (e.state === 'tele') {
+    e.tele = true;
+    e.stT -= dt;
+    if (e.stT <= 0) { e.tele = false; e.state = 'charge'; e.stT = A.charge; sim.pushEvent('charge'); }
+  } else if (e.state === 'charge') {
+    out[0] = e.dx * e.speed * A.chargeMul; out[1] = e.dy * e.speed * A.chargeMul;
+    e.stT -= dt;
+    if (e.stT <= 0) { e.state = 'stagger'; e.stT = A.stagger; }
+  } else if (e.state === 'stagger') {
+    e.stT -= dt;
+    if (e.stT <= 0) { e.state = 'run'; e.aiCd = A.cd + sim.rng.range(0, A.cdRand); }
   }
 }
 

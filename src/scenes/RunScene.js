@@ -222,6 +222,7 @@ export class RunScene extends Phaser.Scene {
       root_crawler: new SpritePool(this, 'root'),
       stoat_piper: new SpritePool(this, 'piper'),
       puffback_toad: new SpritePool(this, 'toad'),
+      bramble_hart: new SpritePool(this, 'hart'),
       elder_treant: new SpritePool(this, 'treant'),
       uWolf: new SpritePool(this, 'wolfU'),
       uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves

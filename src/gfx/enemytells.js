@@ -33,6 +33,18 @@ export function drawEnemyTells(g, e, calm) {
     g.fillStyle(TELL_RO, 0.07 + 0.08 * k).fillCircle(e.x, e.y, R);
     g.fillStyle(TELL_RO, 0.2).fillCircle(e.x, e.y, Math.max(1, R * k));
     g.lineStyle(1.6, TELL_RO, 0.55 + 0.4 * k).strokeCircle(e.x, e.y, R);
+  } else if (A.kind === 'charger') {
+    // Bramble Hart charge lane: the WHOLE locked lane (exact charge length = speed x chargeMul x charge) as a soft band + a dashed centre line
+    // + an arrow head at the end; drawn at full length from the first frame of the tell (where it will go), brightening as the tell runs.
+    const len = e.speed * A.chargeMul * A.charge, w = e.r + 6, px = -e.dy, py = e.dx, x1 = e.x + e.dx * len, y1 = e.y + e.dy * len;
+    g.fillStyle(TELL_RO, 0.08 + 0.1 * k);
+    g.fillTriangle(e.x + px * w, e.y + py * w, x1 + px * w, y1 + py * w, x1 - px * w, y1 - py * w);
+    g.fillTriangle(e.x + px * w, e.y + py * w, x1 - px * w, y1 - py * w, e.x - px * w, e.y - py * w);
+    g.lineStyle(1.4, TELL_RO, 0.5 + 0.4 * k);
+    dashes(g, e.x, e.y, e.dx, e.dy, len, 9, 6);
+    g.lineStyle(2, TELL_RO, 0.55 + 0.4 * k);
+    g.lineBetween(x1, y1, x1 - e.dx * 10 + px * 7, y1 - e.dy * 10 + py * 7);
+    g.lineBetween(x1, y1, x1 - e.dx * 10 - px * 7, y1 - e.dy * 10 - py * 7);
   }
 }
 

@@ -81,7 +81,8 @@ export class EnemyArt {
     else {
       if (d < 20) img.ph += (d / STRIDE[e.type]) * img.jsp; // teleports (debug moves) never spin the legs
       f = walkFrame(e.type, img.ph, low);
-      if (e.state === 'charge') { f = FR.w1; sx = 1.1; sy = 0.93; } // the lunge: stretched, legs extended
+      if (e.state === 'charge') { if (T.tellT !== undefined && e.ai) { f = FR.t1; sx = 1.14; sy = 0.92; } else { f = FR.w1; sx = 1.1; sy = 0.93; } } // the lunge (wolf: stretched, legs out; Bramble Hart: crown down, stretched)
+      else if (e.state === 'stagger') f = FR.t0; // EN5 hart recovery: head half up, still (the punish window)
     }
     if (e.tele && e.ai && e.ai.kind === 'fuse' && !low) { const q = 1 + 0.045 * Math.sin(img.teleT * (12 + 26 * img.teleT)); sx = q; sy = 2 - q; } // EN4 toad fuse: the blister throbs faster and faster
     if (f !== img.frn) { img.frn = f; img.setFrame(nm[f]); }

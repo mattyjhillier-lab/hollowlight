@@ -48,6 +48,16 @@
         "rate1": 0.4,
         "maxAlive": 10,
         "bossMul": 0.5
+      },
+      {
+        "enemy": "bramble_hart",
+        "from": 380,
+        "to": 900,
+        "rate0": 0.025,
+        "rate1": 0.12,
+        "maxAlive": 3,
+        "maxAliveAfter": { "t": 600, "n": 5 },
+        "bossMul": 0.5
       }
     ],
     "events": [

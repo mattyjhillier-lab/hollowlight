@@ -4,7 +4,7 @@
 import { resetAll, defs, setGrainBox, EYES, SOCKS, clearEyes, setEyeSpecies, glowSvg, coreShape } from './paint.js';
 import { EXTRA_DEFS } from './kit.js';
 import { wolfA, crowA, crawlerA } from './husks.js';
-import { stoatA, toadA } from './husks2.js';
+import { stoatA, toadA, hartA } from './husks2.js';
 
 export const ATLAS_KEY = 'en_atlas';
 export const TPW = 5; // atlas texels per world unit (Wren ~5.9; 2.1x the 720p desktop zoom, 1.4x at 1080p)
@@ -37,12 +37,17 @@ export const HUSK_TYPES = {
   },
   // EN3 Stoat Piper (ranged; HUSKS BATCH 2 A): upright sentry, ONE very high socket; tell = rears + pipe drops onto you + ember in the tip
   stoat_piper: {
-    fn: stoatA, tellT: 0.3, stride: 9, maskAt: [16, -64], mdx: 6, g: 0.7, box: [-44, -96, 100, 104], foot: 5, dayK: 1, hurtW: 40, mask: MASK_BOX, dayRim: 0.55,
+    fn: stoatA, tellT: 0.3, stride: 9, maskAt: [16, -64], mdx: 6, g: 0.7, box: [-44, -96, 100, 104], foot: 5, dayK: 0.88, hurtW: 40, mask: MASK_BOX, dayRim: 0.55,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   // EN4 Puffback Toad (area denial; HUSKS BATCH 2 A): squat toad + spore blister, three tiny sockets in a triangle; tell = squats, blister swells, cracks glow
   puffback_toad: {
     fn: toadA, tellT: 0.5, stride: 10, maskAt: [26, -24], mdx: 8, g: 0.8, box: [-40, -64, 84, 72], foot: 6, dayK: 1, hurtW: 50, mask: MASK_BOX, dayRim: 0.4,
+    frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
+  },
+  // EN5 Bramble Hart (charger; HUSKS BATCH 2 A): thorn-antler lyre twice the head, long deer-skull husk, two HIGH sockets that swing LOW on the tell
+  bramble_hart: {
+    fn: hartA, tellT: 0.3, stride: 20, maskAt: [36, -66], mdx: 8, g: 0.62, box: [-48, -146, 152, 150], foot: 8, dayK: 1, hurtW: 70, mask: MASK_BOX, dayRim: 0.4,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };
