@@ -171,6 +171,17 @@ const SPRITES = {
       emberEye(c, 6.2, 4.4, 0.9);
     },
   },
+  // EN4 flat fallback: squat toad, pale spore blister on its back, three tiny ember eyes in a triangle
+  toad: {
+    w: 16, h: 12, shadow: [8, 11, 6, 1.4], enemy: 1,
+    draw: (c) => {
+      const F = 0x64707f, S2 = 0xaab5a5, M = 0xc8c3ad;
+      ell(c, 8, 8.4, 6.4, 3.2, lg(c, 8, 5, 8, 12, [[0, sh(F, 1.1)], [1, sh(F, 0.7)]])); // body
+      ell(c, 6, 4.4, 3.6, 3.2, rg(c, 5, 3.4, 0.3, 3.8, [[0, sh(S2, 1.2)], [1, sh(S2, 0.85)]])); // blister
+      ell(c, 12.8, 7, 2.6, 2.2, sh(M, 1)); // husk
+      emberEye(c, 12.2, 6.4, 0.5); emberEye(c, 13.8, 6.3, 0.45); emberEye(c, 13, 7.8, 0.42);
+    },
+  },
   treant: {
     w: 64, h: 72, shadow: [32, 66.5, 23, 5], enemy: 1, big: 1, rim: ROLE.barkRim,
     draw: (c) => {

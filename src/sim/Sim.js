@@ -857,6 +857,8 @@ export class Sim {
       if (!e.dead) continue;
       any = true;
       this.alive[e.type] -= 1;
+      if (e.burst) { this.addGem(e.x, e.y, e.xp); this.logHit(e, 0, true); continue; } // EN4 Puffback Toad burst: spent, XP only (no kill credit/gold/drops)
+      if (e.ai && e.ai.kind === 'fuse' && e.state === 'tele' && this.fx.length < 48) this.addFx({ kind: 'fizzle', x: e.x, y: e.y, r: 12, ttl: 0.35, color: '#9aa39a' }); // killed during the fuse: it only fizzles
       this.kills += 1;
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
       if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;

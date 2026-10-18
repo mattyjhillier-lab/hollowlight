@@ -153,3 +153,56 @@ test('bot dodge model: on by default, DODGE=0 documented; it side-steps out of a
   assert.equal(dodgeVec(s, v), 0);
 });
 
+test('Puffback Toad: plants within trigger, ring fills over the fuse, bursts (player inside = hit, outside = safe), spent with XP only', () => {
+  const A = data.enemies.puffback_toad.ai;
+  const s = arena(21), p = s.player;
+  const e = s.spawnEnemy('puffback_toad', p.x + 70, p.y); e.grace = 0;
+  let plantAt = null, burstAt = null, pos = null, k0 = 0, g0 = 0;
+  for (let i = 0; i < 60 * 6 && burstAt === null; i++) {
+    k0 = s.kills; g0 = s.gems.reduce((t, g) => t + g.v, 0) + s.xp;
+    s.step(1 / 60, {});
+    if (e.tele && plantAt === null) { plantAt = s.time; pos = [e.x, e.y]; assert.ok(Math.hypot(e.x - p.x, e.y - p.y) < A.trigger + 2); }
+    if (e.tele) assert.deepEqual([e.x, e.y], pos, 'planted: does not move during the fuse');
+    if (e.burst) burstAt = s.time;
+  }
+  assert.ok(Math.abs(burstAt - plantAt - A.fuse) < 0.05, 'fuse ' + (burstAt - plantAt));
+  assert.ok(s.hurtBy.puffback_toad > 0, 'inside the ring: hit');
+  assert.equal(s.enemies.includes(e), false, 'spent');
+  assert.equal(s.kills, k0, 'no kill credit for a burst');
+  assert.ok(s.gems.reduce((t, g) => t + g.v, 0) + s.xp > g0, 'still drops its XP');
+  // outside the ring: the hero steps away during the fuse and is safe
+  const s2 = arena(22), p2 = s2.player;
+  const t = s2.spawnEnemy('puffback_toad', p2.x + 45, p2.y); t.grace = 0;
+  for (let i = 0; i < 60 && !t.tele; i++) s2.step(1 / 60, {});
+  assert.ok(t.tele);
+  run(s2, 1.2, { x: -1 });
+  assert.equal(s2.hurtBy.puffback_toad || 0, 0, 'stepped out of the ring');
+  assert.ok(t.burst || !s2.enemies.includes(t));
+});
+
+test('Puffback Toad: killed during the fuse it FIZZLES (no burst, normal kill + XP); fear/pin cancel the fuse and it re-plants later; ring never hurts enemies', () => {
+  const s = arena(23), p = s.player;
+  const e = s.spawnEnemy('puffback_toad', p.x + 40, p.y); e.grace = 0;
+  const w = s.spawnEnemy('wolf', p.x + 40, p.y + 10); w.speed = 0; w.chargeCd = 1e9; const whp = w.hp;
+  for (let i = 0; i < 60 && !e.tele; i++) s.step(1 / 60, {});
+  assert.ok(e.tele);
+  s.hurt(e, 1e6);
+  s.step(1 / 60, {});
+  assert.equal(s.hurtBy.puffback_toad || 0, 0, 'no burst');
+  assert.equal(s.killsByEnemy.puffback_toad, 1);
+  assert.ok(s.fx.some((f) => f.kind === 'fizzle'));
+  run(s, 1.5);
+  const s2 = arena(24), p2 = s2.player;
+  const t = s2.spawnEnemy('puffback_toad', p2.x + 40, p2.y); t.grace = 0;
+  const w2 = s2.spawnEnemy('wolf', p2.x + 40, p2.y + 12); w2.speed = 0; w2.chargeCd = 1e9; const w2hp = w2.hp;
+  for (let i = 0; i < 60 && !t.tele; i++) s2.step(1 / 60, {});
+  t.fearT = 0.5;
+  run(s2, 0.5);
+  assert.equal(t.state, 'run', 'fear cancels the fuse');
+  assert.ok(!t.burst);
+  for (let i = 0; i < 60 * 4 && !t.burst; i++) s2.step(1 / 60, {});
+  assert.ok(t.burst, 're-plants and bursts later');
+  assert.equal(w2.hp, w2hp, 'the burst never hurts enemies');
+  assert.equal(w.hp, whp);
+});
+

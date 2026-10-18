@@ -10,6 +10,7 @@ export function aiStep(sim, e, dt, nx, ny, dist, out) {
   const A = e.ai;
   if (e.grace > 0) e.grace -= dt;
   if (A.kind === 'ranged') ranged(sim, e, A, dt, nx, ny, dist, out);
+  else if (A.kind === 'fuse') fuse(sim, e, A, dt, nx, ny, dist, out);
   else { out[0] = nx * e.speed; out[1] = ny * e.speed; }
 }
 
@@ -53,6 +54,28 @@ function ranged(sim, e, A, dt, nx, ny, dist, out) {
       const mx = e.x + e.dx * A.muzzle, my = e.y + e.dy * A.muzzle;
       sim.eshots.push({ id: sim.nextId++, src: e.type, x: mx, y: my, vx: e.dx * A.shotSpeed, vy: e.dy * A.shotSpeed, life: A.shotLife, age: 0, r: A.shotR, dmg: A.shotDmg * e.dmgMul, dead: false });
       sim.pushEvent('thorn');
+    }
+  }
+}
+
+// ---- Puffback Toad (area denial): waddles in; within `trigger` it PLANTS, a ground ring fills over `fuse` s, then the blister BURSTS: area
+// damage to the player only if inside burstR, and the toad is spent (dies; XP gem only, no kill credit/gold/drops). Killed during the fuse it
+// only FIZZLES (no burst; normal kill + XP). Fear/pin cancel the fuse (it re-plants later). The ring never hurts enemies or summons.
+function fuse(sim, e, A, dt, nx, ny, dist, out) {
+  out[0] = 0; out[1] = 0;
+  if (e.state === 'run') {
+    out[0] = nx * e.speed; out[1] = ny * e.speed;
+    if (dist < A.trigger && canTell(sim, e, A)) { e.state = 'tele'; e.tele = true; e.stT = A.fuse; sim.tells[e.type] = (sim.tells[e.type] || 0) + 1; }
+  } else if (e.state === 'tele') {
+    e.tele = true;
+    e.stT -= dt;
+    if (e.stT <= 0) {
+      e.tele = false;
+      const p = sim.player;
+      if (Math.hypot(p.x - e.x, p.y - e.y) < A.burstR + p.r) sim.damagePlayer(A.burstDmg * e.dmgMul, e.type);
+      e.burst = true; e.dead = true; e.hp = 0;
+      if (sim.fx.length < 48) sim.addFx({ kind: 'burst', x: e.x, y: e.y, r: A.burstR, ttl: 0.45, color: '#c9d2c4' });
+      sim.pushEvent('burst');
     }
   }
 }

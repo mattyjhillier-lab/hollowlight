@@ -40,7 +40,7 @@ import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
 import { EnemyArt } from '../gfx/enemyrig.js'; // EN0-EN2 Husk animator + death beat (visual only)
 import { HUSK_TYPES, HUSK_IDS } from '../gfx/husk/frames.js';
-import { drawEnemyTells, drawThorns } from '../gfx/enemytells.js'; // EN3-EN5 telegraph decals + thorns (above the vignette)
+import { drawEnemyTells, drawThorns, drawBurstFx } from '../gfx/enemytells.js'; // EN3-EN5 telegraph decals + thorns (above the vignette)
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -221,6 +221,7 @@ export class RunScene extends Phaser.Scene {
       crow: new SpritePool(this, 'crow'),
       root_crawler: new SpritePool(this, 'root'),
       stoat_piper: new SpritePool(this, 'piper'),
+      puffback_toad: new SpritePool(this, 'toad'),
       elder_treant: new SpritePool(this, 'treant'),
       uWolf: new SpritePool(this, 'wolfU'),
       uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves
@@ -1334,6 +1335,7 @@ export class RunScene extends Phaser.Scene {
         fx.fillStyle(PAL.gold, 0.7 * a).fillRect(x - 6, y0, 1, y1 - y0).fillRect(x + 5, y0, 1, y1 - y0);
         fx.lineStyle(1, PAL.ice, a).strokeCircle(x, y1, 9 - 3 * a);
         if (lit) lm.add(x, y1, 50, ROLE.lightning, 0.9 * a);
+      } else if (f.kind === 'burst' || f.kind === 'fizzle') { drawBurstFx(fx, f, this.reducedMotion());
       } else if (f.kind === 'ring') {
         const c = hex(f.color);
         const k = Math.max(0, f.ttl / 0.3);

@@ -156,6 +156,10 @@ export function coreShape(sp, S, flare = 0, hot = true) {
     const r = Math.min(S.w, S.h) * 0.34 * k;
     return { hw: r, hh: r, svg: `<circle r="${f(r)}" fill="${CORE}"/>` + (hot ? `<circle cx="${f(-r * 0.12)}" cy="${f(-r * 0.1)}" r="${f(r * 0.55)}" fill="#fffaf0"/><circle cx="${f(-r * 0.42)}" cy="${f(-r * 0.42)}" r="${f(Math.max(0.7, r * 0.3))}" fill="#ffffff"/>` : '') };
   }
+  if (sp === 'puffback_toad') { // three tiny round pinprick cores (the triangle constellation)
+    const r = Math.min(S.w, S.h) * 0.34 * k;
+    return { hw: r, hh: r, svg: `<circle r="${f(r)}" fill="${CORE}"/>` + (hot ? `<circle cx="${f(-r * 0.2)}" cy="${f(-r * 0.2)}" r="${f(r * 0.5)}" fill="#fffaf0"/>` : '') };
+  }
   if (sp === 'root_crawler') {
     const rx = S.w * 0.27 * k, ry = S.h * 0.19 * k;
     return { hw: rx, hh: ry, svg: `<ellipse rx="${f(rx)}" ry="${f(ry)}" fill="${CORE}"/>` + (hot ? `<ellipse cx="${f(-rx * 0.15)}" rx="${f(rx * 0.5)}" ry="${f(ry * 0.55)}" fill="#fffaf0"/>` : '') };

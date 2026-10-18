@@ -83,6 +83,7 @@ export class EnemyArt {
       f = walkFrame(e.type, img.ph, low);
       if (e.state === 'charge') { f = FR.w1; sx = 1.1; sy = 0.93; } // the lunge: stretched, legs extended
     }
+    if (e.tele && e.ai && e.ai.kind === 'fuse' && !low) { const q = 1 + 0.045 * Math.sin(img.teleT * (12 + 26 * img.teleT)); sx = q; sy = 2 - q; } // EN4 toad fuse: the blister throbs faster and faster
     if (f !== img.frn) { img.frn = f; img.setFrame(nm[f]); }
     const s = img.js * this.inv;
     if (img.sx0 !== sx * s) { img.sx0 = sx * s; img.setScale(sx * s, sy * s); }

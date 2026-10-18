@@ -39,6 +39,15 @@
         "curve": 0.8,
         "maxAlive": 8,
         "bossMul": 0.5
+      },
+      {
+        "enemy": "puffback_toad",
+        "from": 270,
+        "to": 900,
+        "rate0": 0.06,
+        "rate1": 0.4,
+        "maxAlive": 10,
+        "bossMul": 0.5
       }
     ],
     "events": [

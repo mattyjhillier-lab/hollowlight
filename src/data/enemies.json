@@ -5,5 +5,7 @@
   "stoat_piper":  { "name": "Stoat Piper",    "hp": 10,   "speed": 30,  "dmg": 3,  "r": 6,  "xp": 2, "gold": 1,   "color": "#525c78", "shape": "piper",  "mass": 1, "mustReact": true,
     "ai": { "kind": "ranged", "grace": 0.8, "maxTells": 3, "firstCd": [0.6, 1.6], "keep": 160, "keepMax": 170, "near": 80, "backSpeed": 30, "root": 0.3, "tell": 0.7, "recoil": 0.25, "cd": 2.8, "cdRand": 0.8,
             "shotSpeed": 110, "shotLife": 2.2, "shotDmg": 5, "shotR": 3, "muzzle": 8, "shotCap": 40 } },
+  "puffback_toad": { "name": "Puffback Toad", "hp": 9,    "speed": 38,  "dmg": 0,  "r": 7,  "xp": 2, "gold": 1,   "color": "#64707f", "shape": "toad",   "mass": 0.8, "mustReact": true,
+    "ai": { "kind": "fuse", "grace": 0.8, "maxTells": 6, "trigger": 30, "fuse": 1.0, "burstR": 36, "burstDmg": 12 } },
   "elder_treant": { "name": "Elder Treant",   "hp": 3600, "speed": 18,  "dmg": 13, "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true }
 }

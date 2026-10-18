@@ -9,8 +9,8 @@ import { parseParams } from '../src/params.js';
 import { data } from './helpers.mjs';
 
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
-const NEW_IDS = ['stoat_piper']; // EN3-EN5 telegraph types in the atlas (in build order)
-const WANT_EYES = { wolf: 2, crow: 1, root_crawler: 2, stoat_piper: 1 };
+const NEW_IDS = ['stoat_piper', 'puffback_toad']; // EN3-EN5 telegraph types in the atlas (in build order)
+const WANT_EYES = { wolf: 2, crow: 1, root_crawler: 2, stoat_piper: 1, puffback_toad: 3 };
 
 test('ids unchanged and every Husk type is a real enemy (saves, kill gates and tree conditions keep working)', () => {
   assert.deepEqual(HUSK_IDS.slice(0, 3), ['wolf', 'crow', 'root_crawler']); // batch 1 order kept (atlas layout); EN3-EN5 append the new types

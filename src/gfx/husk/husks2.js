@@ -55,3 +55,58 @@ export function stoatA(st = {}) {
   const E = M(3, -5.2), e = st.hurt ? eye(...E, 2.6, { shape: 'squint' }) : eye(...E, 2.9 + tl * 0.8, { shape: tl > 0.3 ? 'slit' : 'almond', rot: -8 });
   return finish(st, b, e, { w: 40, h: 76, seed: 51 });
 }
+
+// =============================== 5. PUFFBACK TOAD (area denial) ===============================
+// A PUFFBACK TOAD: a pond toad the Hollow filled with spores: a pale spore BLISTER rides its back (the silhouette hook), spore motes leak from it;
+// a wide flat husk with three small sockets in a triangle. Heavy hop-waddle, the blister breathes; on the tell it squats, the blister swells and
+// cracks glow red-orange while the ring fills. LOCK NOTE (Matt): the body must stay readable under the blister: vs the mock-up the blister is
+// smaller and sits further back, the toad body is wider with a bent frog hind leg, a pale throat/belly band and warts, so it reads 'toad + sac'.
+const crk = (x, y, r, tl) => {
+  if (tl <= 0) return '';
+  let s = '', q = 3;
+  const R = () => { q = (q * 1664525 + 1013904223) % 4294967296; return q / 4294967296; };
+  for (let i = 0; i < 4; i++) {
+    const a0 = R() * TAU, pts = [[x + Math.cos(a0) * r * 0.2, y + Math.sin(a0) * r * 0.2]];
+    for (let k = 1; k < 4; k++) { const a = a0 + (R() - 0.5) * 0.9; pts.push([x + Math.cos(a) * r * k * 0.28, y + Math.sin(a) * r * k * 0.25]); }
+    s += `<path d="M${pts.map(([px, py]) => `${f(px)} ${f(py)}`).join(' L')}" stroke="${RO}" stroke-width="${f(1.2 + tl * 1.2)}" fill="none" opacity="${f(0.5 + 0.5 * tl)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  return s + glow(x, y, r * 0.8, r * 0.7, RO, 0.35 * tl);
+};
+export function toadA(st = {}) {
+  const a = (st.ph || 0) * TAU, tl = st.tele || 0, hop = Math.max(0, Math.sin(a)) * 4 * (1 - tl), br = 1 + Math.sin(a * 2) * 0.03 + tl * 0.28;
+  const SK = '#64707f', SKD = mix(SK, '#120d22', 0.3), BEL = '#b4bcbd', SAC = '#aab5a5', SACD = '#64705f';
+  let b = shadow(32, 0) + `<ellipse cx="0" cy="0" rx="27" ry="5" fill="${K.ink}" opacity=".3"/>`;
+  const y = -hop + tl * 2.5;
+  // far hind leg, then the near bent frog leg (thigh + shin + ink sock)
+  const kick = Math.max(0, -Math.sin(a)) * 3 * (1 - tl);
+  b += P(ell(-14, -7 + y * 0.5, 9, 6), SKD, { sh: 2, rim: 0.8 });
+  b += P(blob([[-26, -10 + y], [-20, -20 + y], [-8, -18 + y], [-4, -10 + y], [-12, -4 + y * 0.4]]), mix(SK, '#e6eef8', 0.08), { sh: 3, rim: 1.6, tex: `<path d="M-22 ${f(-12 + y)} q6 -4 12 -2" stroke="${SKD}" stroke-width="1.6" fill="none" opacity=".7"/>` })
+    + P(limb(-14, -6 + y * 0.6, -22 - kick, -2, 3.6, 3), SKD, { lw: 2, sh: 1.5, rim: 0.8 }) + sock(-22 - kick, 0, 5.2, 4.5);
+  // body: a wide flat toad (head end low and forward), warts, pale belly band
+  const warts = [[-8, -22], [2, -25], [12, -21], [-16, -19], [18, -15], [6, -16]].map(([wx, wy], i) => `<circle cx="${wx}" cy="${f(wy + y)}" r="${1.4 + (i % 3) * 0.5}" fill="${SKD}" opacity=".7"/><circle cx="${wx - 0.5}" cy="${f(wy + y - 0.6)}" r="${0.6 + (i % 2) * 0.3}" fill="#9aa3b2" opacity=".6"/>`).join('');
+  b += P(blob([[26, -12 + y], [22, -24 + y], [6, -29 + y], [-14, -27 + y], [-26, -16 + y], [-22, -6 + y], [0, -4 + y], [20, -6 + y]]), SK, { sh: 5, rim: 3, rimA: 1,
+    tex: `<path d="M-20 ${f(-8 + y)} Q2 ${f(-1 + y)} 24 ${f(-9 + y)}" stroke="${BEL}" stroke-width="6" fill="none" opacity=".6" stroke-linecap="round"/>` + warts });
+  // the spore blister (smaller + further back than the mock-up so the toad reads), breathing; cracks glow on the fuse
+  const sx = -9, sy = -36 + y, sr = 14.5 * br;
+  b += P(blob([[sx - sr, sy + 8], [sx - sr * 0.95, sy - sr * 0.45], [sx - sr * 0.25, sy - sr * 1.05], [sx + sr * 0.6, sy - sr * 0.85], [sx + sr, sy - sr * 0.1], [sx + sr * 0.8, sy + 8]]), SAC, { sh: 4, gloss: 0.5, rimC: '#eef6f0', rimA: 1,
+    tex: `<circle cx="${f(sx - sr * 0.3)}" cy="${f(sy - 3)}" r="${f(sr * 0.22)}" fill="${SACD}" opacity=".55"/><circle cx="${f(sx + sr * 0.35)}" cy="${f(sy + 2)}" r="${f(sr * 0.16)}" fill="${SACD}" opacity=".55"/><circle cx="${f(sx + sr * 0.05)}" cy="${f(sy - sr * 0.55)}" r="${f(sr * 0.12)}" fill="${SACD}" opacity=".5"/>`
+      + lichen(sx + 7, sy - 8, 2.6) + crk(sx, sy - 2, sr, tl) });
+  for (let i = 0; i < 3; i++) b += `<circle cx="${f(sx - 4 + i * 5)}" cy="${f(sy - sr - 3 - i * 3 - Math.sin(a + i) * 2)}" r="${f(1.6 - i * 0.2)}" fill="${SAC}" opacity=".7"/>`;
+  // front leg
+  b += P(limb(16, -12 + y, 22, -2, 4.4, 3.8), SK, { lw: 2.3, sh: 2, rim: 1.2 }) + sock(23, 0, 5.4, 5);
+  // the wide flat husk with three sockets in a triangle
+  const hx = 24, hy = -21 + y, M = (x, y2) => [hx + x, hy + y2];
+  let ms = strap([M(-8, -4), M(-14, -8), M(-18, -4)], 2.4, { seed: 3 });
+  // wide FLAT bark plate (never a round shell), chipped front edge; three knot sockets in an UPWARD triangle (two low, one high between them:
+  // a constellation, never two-eyes-and-a-mouth: faceless rule F3)
+  ms += husk(blob([M(-12, -5), M(-8, -10), M(0, -9), M(7, -11), M(15, -8), M(21, -3), M(19, 3), M(9, 5), M(-3, 5), M(-11, 2)]), M, { grain: [[[-8, -6], [4, -7], [16, -4]], [[-8, 3], [6, 3], [16, 2]]], crack: [[13, -9], [14, -5], [12, -3]], lichen: [[-8, 1, 2.2], [17, -5, 1.8]], chip: [[20, 0, 3, 0.1], [-11, -2, 2.6, 3.3]], hi: [[-6, -8], [6, -9]] });
+  // sockets sized for the WL6d eye gate (the first, smaller set measured eye 2.2-2.9:1 near the lantern on High)
+  ms += knotSocket(rblob(...M(-3, -0.5), 3.2, 2.6, 8), 1.2) + knotSocket(rblob(...M(10.5, -1), 2.9, 2.4, 8, 0.3), 1.2) + knotSocket(rblob(...M(3.8, -6.2), 2.6, 2.2, 8, 0.6), 1.1);
+  ms += sprout(...M(-4, -9), -2.0, 0.6);
+  if (st.maskOnly) return { b: `<g transform="translate(${f(-hx)},${f(-hy)})">${ms}</g>`, e: '' };
+  if (!st.noMask) b += ms; else b += freed(hx - 2, hy - 2, SK, 0);
+  const E = [M(-3, -0.5), M(10.5, -1), M(3.8, -6.2)];
+  const e = E.map((p, i) => (st.hurt ? eye(...p, 1.5, { shape: 'squint' }) : eye(...p, (i ? 1.4 : 1.7) + tl * 0.5, { shape: tl > 0.3 ? 'slit' : 'round' }))).join('');
+  return finish(st, b, e, { w: 50, h: 58, seed: 31 });
+}
+
