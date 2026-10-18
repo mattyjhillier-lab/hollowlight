@@ -13,9 +13,10 @@ export const data = {
   enemies: load('enemies'),
   chapters: load('chapters'),
 };
-data.tree = load('tree');
+data.tree = loadTree(data).live; // fragments in src/data/tree/
 data.blessings = load('blessings');
 import { compileTree } from '../src/meta/tree.js';
+import { loadTree } from '../src/meta/treefs.mjs';
 import { setTreeDef } from '../src/save/schema.js';
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);

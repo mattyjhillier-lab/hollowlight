@@ -6,10 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Sim } from '../src/sim/Sim.js';
 import { compileTree, presetTree, aggregateMods, conditionProgress } from '../src/meta/tree.js';
+import { loadTree } from '../src/meta/treefs.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
-export const base = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
+export const base = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
+base.tree = loadTree(base).live; // fragments in src/data/tree/
 export const treeDef = compileTree(base.tree, base);
 
 // ---- proposed starter kits (pool at run 1). The signature weapon is always owned at start.

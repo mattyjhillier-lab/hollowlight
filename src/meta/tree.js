@@ -1,6 +1,6 @@
 import { nodeTitle } from './gatewords.js';
 // Skill tree (meta-progression). Pure JS, no DOM, no Phaser. All save input is untrusted.
-// Schema and rules: docs/design/skill-tree-v1.md. Data: src/data/tree.json.
+// Schema and rules: docs/design/skill-tree-v1.md and skill-tree-v2.md. Data: fragments in src/data/tree/ composed by src/meta/treedata.js.
 
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const ID_RE = /^[a-z0-9_]{1,40}$/;
@@ -116,6 +116,32 @@ export function conditionProgress(c, stats, def, data) {
 }
 
 // ---------------------------------------------------------------- compile + validate
+const KINDS = ['ring', 'key', 'teaser', 'knot', 'bead', 'mastery', 'heart', 'socket', 'hero', 'verb', 'kin', 'status', 'gate'];
+const FRAG_RE = /^[a-z][a-z0-9_]{0,39}$/;
+
+// Shared per-node checks (live nodes and inert/pending nodes).
+function readCommon(n, w) {
+  if (typeof n.name !== 'string' || !n.name || n.name.length > 40) fail(`${w}: bad name`);
+  if (typeof n.desc !== 'string' || n.desc.length > 220) fail(`${w}: bad desc`);
+  const maxRank = n.maxRank === undefined ? 1 : n.maxRank;
+  if (!Number.isInteger(maxRank) || maxRank < 1 || maxRank > 10) fail(`${w}: bad maxRank`);
+  const cost = isObj(n.cost) ? n.cost : {};
+  const gold = cost.gold === undefined ? 0 : cost.gold;
+  const shards = cost.shards === undefined ? 0 : cost.shards;
+  if (!Number.isInteger(gold) || gold < 0 || gold > 1e7 || !Number.isInteger(shards) || shards < 0 || shards > 1e5) fail(`${w}: bad cost`);
+  const rankCost = n.rankCost === undefined ? 1 : n.rankCost;
+  if (!fin(rankCost) || rankCost < 1 || rankCost > 5) fail(`${w}: bad rankCost`);
+  for (const [k, max] of [['requires', 8], ['excludes', 8], ['requiresAny', 4]]) {
+    if (n[k] !== undefined && (!Array.isArray(n[k]) || n[k].length > max || n[k].some((x) => typeof x !== 'string'))) fail(`${w}: bad ${k}`);
+  }
+  if (n.requiresAny !== undefined && n.requiresAny.length < 2) fail(`${w}: requiresAny needs at least 2 alternatives`);
+  if (n.kind !== undefined && !KINDS.includes(n.kind)) fail(`${w}: bad kind`);
+  if (n.idx !== undefined && (!Number.isInteger(n.idx) || n.idx < 0 || n.idx > 65535)) fail(`${w}: bad idx`);
+  if (n.frag !== undefined && (typeof n.frag !== 'string' || !FRAG_RE.test(n.frag) || BAD_KEYS.has(n.frag))) fail(`${w}: bad frag`);
+  if (n.scope !== undefined && !(isObj(n.scope) && Number.isInteger(n.scope.minChapter) && n.scope.minChapter >= 1 && n.scope.minChapter <= 99)) fail(`${w}: bad scope`);
+  return { maxRank, gold, shards, rankCost };
+}
+
 export function compileTree(raw, data) {
   if (!isObj(raw) || !Array.isArray(raw.nodes)) fail('missing nodes array');
   if (raw.nodes.length > MAX_NODES) fail('too many nodes');
@@ -130,34 +156,51 @@ export function compileTree(raw, data) {
   }
 
   const nodes = Object.create(null);
+  const pending = Object.create(null); // validated but inert: data for later chunks, never bought/aggregated/shown
   const list = [];
+  const pendingList = [];
+  const hasPos = new Set();
   for (const n of raw.nodes) {
     if (!isObj(n) || typeof n.id !== 'string' || !ID_RE.test(n.id) || BAD_KEYS.has(n.id) || n.id === 'hub') fail(`bad node id ${String(n && n.id)}`);
-    if (nodes[n.id]) fail(`duplicate id ${n.id}`);
+    if (nodes[n.id] || pending[n.id]) fail(`duplicate id ${n.id}`);
     const w = n.id;
-    if (typeof n.name !== 'string' || !n.name || n.name.length > 40) fail(`${w}: bad name`);
-    if (typeof n.desc !== 'string' || n.desc.length > 220) fail(`${w}: bad desc`);
+    const c = readCommon(n, w);
+    const extra = {};
+    if (n.kind !== undefined) extra.kind = n.kind;
+    if (n.idx !== undefined) extra.idx = n.idx;
+    if (n.frag !== undefined) extra.frag = n.frag;
+    if (n.cluster !== undefined) { if (typeof n.cluster !== 'string' || !ID_RE.test(n.cluster)) fail(`${w}: bad cluster`); extra.cluster = n.cluster; }
+    if (n.region !== undefined) { if (typeof n.region !== 'string' || !ID_RE.test(n.region)) fail(`${w}: bad region`); extra.region = n.region; }
+    if (n.scope !== undefined) extra.scope = { minChapter: n.scope.minChapter };
+    if (n.inert === true) {
+      if (n.requires !== undefined || n.requiresAny !== undefined) fail(`${w}: inert nodes carry no prerequisites`);
+      pending[w] = {
+        id: w, name: n.name, desc: n.desc, flavour: typeof n.flavour === 'string' ? n.flavour.slice(0, 120) : '', maxRank: c.maxRank, cost: { gold: c.gold, shards: c.shards }, rankCost: c.rankCost,
+        effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null, inert: true, ...extra,
+      };
+      pendingList.push(w);
+      continue;
+    }
     if (!own(branches, n.branch)) fail(`${w}: unknown branch`);
-    if (!Number.isInteger(n.ring) || n.ring < 1 || n.ring > 60) fail(`${w}: ring must be an integer 1-60`);
-    if (!fin(n.ang) || n.ang < -720 || n.ang > 720) fail(`${w}: bad angle`);
-    const maxRank = n.maxRank === undefined ? 1 : n.maxRank;
-    if (!Number.isInteger(maxRank) || maxRank < 1 || maxRank > 10) fail(`${w}: bad maxRank`);
-    const cost = isObj(n.cost) ? n.cost : {};
-    const gold = cost.gold === undefined ? 0 : cost.gold;
-    const shards = cost.shards === undefined ? 0 : cost.shards;
-    if (!Number.isInteger(gold) || gold < 0 || gold > 1e7 || !Number.isInteger(shards) || shards < 0 || shards > 1e5) fail(`${w}: bad cost`);
-    const rankCost = n.rankCost === undefined ? 1 : n.rankCost;
-    if (!fin(rankCost) || rankCost < 1 || rankCost > 5) fail(`${w}: bad rankCost`);
-    for (const k of ['requires', 'excludes']) if (n[k] !== undefined && (!Array.isArray(n[k]) || n[k].length > 8 || n[k].some((x) => typeof x !== 'string'))) fail(`${w}: bad ${k}`);
+    const posGiven = n.pos !== undefined;
+    if (posGiven) {
+      if (!Array.isArray(n.pos) || n.pos.length !== 2 || !n.pos.every((v) => fin(v) && Math.abs(v) <= 1e5)) fail(`${w}: bad pos`);
+      hasPos.add(w);
+    } else {
+      if (!Number.isInteger(n.ring) || n.ring < 1 || n.ring > 60) fail(`${w}: ring must be an integer 1-60`);
+      if (!fin(n.ang) || n.ang < -720 || n.ang > 720) fail(`${w}: bad angle`);
+    }
     nodes[w] = {
       id: w, name: n.name, desc: n.desc, flavour: typeof n.flavour === 'string' ? n.flavour.slice(0, 120) : '', branch: n.branch,
-      ring: n.ring, ang: n.ang, maxRank, cost: { gold, shards }, rankCost,
+      ring: posGiven ? 0 : n.ring, ang: posGiven ? 0 : n.ang, maxRank: c.maxRank, cost: { gold: c.gold, shards: c.shards }, rankCost: c.rankCost,
       requires: n.requires ? [...n.requires] : [], excludes: n.excludes ? [...n.excludes] : [],
       effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null,
       permanent: false, gateAnc: [],
       hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true,
-      x: 0, y: 0,
+      x: posGiven ? n.pos[0] : 0, y: posGiven ? n.pos[1] : 0,
+      ...extra,
     };
+    if (n.requiresAny) nodes[w].requiresAny = [...n.requiresAny];
     list.push(w);
   }
 
@@ -165,6 +208,7 @@ export function compileTree(raw, data) {
   for (const id of list) {
     const n = nodes[id];
     for (const r of n.requires) if (!nodes[r] || r === id) fail(`${id}: unknown prerequisite ${r}`);
+    for (const r of n.requiresAny || []) if (!nodes[r] || r === id || n.requires.includes(r)) fail(`${id}: unknown prerequisite ${r}`);
     for (const r of n.excludes) if (!nodes[r] || r === id) fail(`${id}: unknown excludes ${r}`);
     if (n.teaser && (n.effects.length || !n.unlock)) fail(`${id}: teaser nodes need a condition and no effects`);
     if (!n.teaser && !n.effects.length) fail(`${id}: no effects`);
@@ -172,21 +216,44 @@ export function compileTree(raw, data) {
     for (const e of n.effects) checkEffect(e, data, id);
     if (n.unlock) checkCond(n.unlock, data, n.teaser, 0, { n: 0 }, id);
   }
+  for (const id of pendingList) {
+    const n = pending[id];
+    if (!n.effects.length || n.effects.length > 6) fail(`${id}: needs 1-6 effects`);
+    for (const e of n.effects) checkEffect(e, data, id);
+    if (n.unlock) checkCond(n.unlock, data, false, 0, { n: 0 }, id);
+  }
   for (const id of list) for (const r of nodes[id].excludes) if (!nodes[r].excludes.includes(id)) nodes[r].excludes.push(id);
-  for (const id of list) for (const r of nodes[id].requires) if (nodes[id].excludes.includes(r)) fail(`${id}: requires a node it excludes`);
+  for (const id of list) {
+    for (const r of nodes[id].requires) if (nodes[id].excludes.includes(r)) fail(`${id}: requires a node it excludes`);
+    for (const r of nodes[id].requiresAny || []) if (nodes[id].excludes.includes(r)) fail(`${id}: requires a node it excludes`);
+  }
 
-  // cycle detection + topological order (parents first)
+  // cycle detection + topological order (parents first); iterative so a long chain cannot overflow the stack
   const order = [];
   const state = Object.create(null);
-  const visit = (id) => {
-    if (state[id] === 2) return;
-    if (state[id] === 1) fail(`cycle through ${id}`);
-    state[id] = 1;
-    for (const r of nodes[id].requires) visit(r);
-    state[id] = 2;
-    order.push(id);
-  };
-  for (const id of list) visit(id);
+  for (const root of list) {
+    if (state[root] === 2) continue;
+    const stack = [[root, 0]];
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      const id = top[0];
+      if (top[1] === 0) {
+        if (state[id] === 1) fail(`cycle through ${id}`);
+        state[id] = 1;
+      }
+      const nd = nodes[id];
+      const deps = nd.requiresAny ? nd.requires.concat(nd.requiresAny) : nd.requires;
+      if (top[1] < deps.length) {
+        const nx = deps[top[1]++];
+        if (state[nx] === 1) fail(`cycle through ${nx}`);
+        if (state[nx] !== 2) stack.push([nx, 0]);
+        continue;
+      }
+      state[id] = 2;
+      order.push(id);
+      stack.pop();
+    }
+  }
 
   // gate nodes: permanent, maxRank 1, hang off the hub (or other gate nodes only), 1:1 with gated content
   const gateIds = new Set();
@@ -207,7 +274,10 @@ export function compileTree(raw, data) {
       gateNodeIds[e.unlock].set(e.id, id);
     }
   }
-  for (const id of gateIds) for (const r of nodes[id].requires) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
+  for (const id of gateIds) {
+    for (const r of nodes[id].requires) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
+    for (const r of nodes[id].requiresAny || []) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
+  }
   if (data) {
     for (const [kind, pool] of [['weapon', data.weapons], ['evolution', data.evolutions]]) {
       for (const [gid, g] of Object.entries(pool || {})) {
@@ -217,11 +287,19 @@ export function compileTree(raw, data) {
   }
 
   // Gate-dependency rule: a node that targets a GATED weapon (or sits behind an evolution gate) must
-  // transitively require that item's gate node, so it cannot be bought before the item is unlocked.
+  // transitively require that item's gate node on EVERY route (requiresAny: the gate must be common to all alternatives).
   for (const id of order) {
     const n = nodes[id];
     const anc = new Set();
     for (const r of n.requires) { anc.add(r); for (const a of nodes[r].gateAnc) anc.add(a); }
+    if (n.requiresAny) {
+      let common = null;
+      for (const r of n.requiresAny) {
+        const s = new Set([r, ...nodes[r].gateAnc]);
+        common = common === null ? s : new Set([...common].filter((x) => s.has(x)));
+      }
+      for (const a of common || []) anc.add(a);
+    }
     n.gateAnc = [...anc].filter((a) => gateIds.has(a)); // gate nodes among all ancestors (transitive)
     if (n.permanent || !data) continue;
     for (const e of n.effects) {
@@ -231,29 +309,72 @@ export function compileTree(raw, data) {
     }
   }
 
-  // layout + overlap check + spatial index
+  // layout + overlap check (spatial grid, O(n)) + spatial index
   const cells = new Map();
-  const placed = [];
   const edges = [];
   const evoWeapon = Object.create(null);
   if (data && data.evolutions) for (const [eid, e] of Object.entries(data.evolutions)) evoWeapon[eid] = e.weapon;
+  const placedAt = new Map(); // minGap-sized grid cell -> node ids placed so far
+  const gcell = Math.max(1, minGap);
+  const seq = Object.create(null);
+  list.forEach((id, i) => { seq[id] = i; });
   for (const id of list) {
     const n = nodes[id];
-    const rad = (n.ang * Math.PI) / 180;
-    n.x = Math.round(Math.cos(rad) * n.ring * ringStep * 10) / 10;
-    n.y = Math.round(Math.sin(rad) * n.ring * ringStep * 10) / 10;
-    for (const p of placed) if (Math.hypot(p.x - n.x, p.y - n.y) < minGap) fail(`${id} overlaps ${p.id}`);
-    placed.push(n);
+    if (!hasPos.has(id)) {
+      const rad = (n.ang * Math.PI) / 180;
+      n.x = Math.round(Math.cos(rad) * n.ring * ringStep * 10) / 10;
+      n.y = Math.round(Math.sin(rad) * n.ring * ringStep * 10) / 10;
+    }
+    const gx = Math.floor(n.x / gcell), gy = Math.floor(n.y / gcell);
+    let clash = null;
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const bucket = placedAt.get((gx + dx + 65536) * 131072 + (gy + dy + 65536));
+        if (!bucket) continue;
+        for (const pid of bucket) {
+          const p = nodes[pid];
+          if (Math.hypot(p.x - n.x, p.y - n.y) < minGap && (clash === null || seq[pid] < seq[clash])) clash = pid;
+        }
+      }
+    }
+    if (clash) fail(`${id} overlaps ${clash}`);
+    const gk = (gx + 65536) * 131072 + (gy + 65536);
+    if (!placedAt.has(gk)) placedAt.set(gk, []);
+    placedAt.get(gk).push(id);
     const key = `${Math.floor(n.x / CELL)},${Math.floor(n.y / CELL)}`;
     if (!cells.has(key)) cells.set(key, []);
     cells.get(key).push(id);
-    if (n.requires.length) for (const r of n.requires) edges.push({ from: r, to: id });
-    else edges.push({ from: 'hub', to: id });
+    if (n.requires.length || n.requiresAny) {
+      for (const r of n.requires) edges.push({ from: r, to: id });
+      for (const r of n.requiresAny || []) edges.push({ from: r, to: id, any: true });
+    } else edges.push({ from: 'hub', to: id });
   }
   const children = Object.create(null);
   for (const id of list) children[id] = [];
-  for (const id of list) for (const r of nodes[id].requires) children[r].push(id);
-  return { version: 1, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL };
+  for (const id of list) {
+    for (const r of nodes[id].requires) children[r].push(id);
+    for (const r of nodes[id].requiresAny || []) children[r].push(id);
+  }
+
+  // fragments: stable per-fragment index numbers (the compact save key). Made-up test trees without idx get list order.
+  const frags = Object.create(null);
+  const everyId = list.concat(pendingList);
+  const anyIdx = everyId.some((id) => (nodes[id] || pending[id]).idx !== undefined);
+  if (anyIdx) {
+    for (const id of everyId) {
+      const n = nodes[id] || pending[id];
+      if (n.idx === undefined || n.frag === undefined) fail(`${id}: idx and frag go together on every node`);
+      const f = frags[n.frag] || (frags[n.frag] = { key: n.frag, max: -1, ids: [] });
+      if (f.ids[n.idx] !== undefined) fail(`${id}: idx ${n.idx} already used by ${f.ids[n.idx]} in ${n.frag}`);
+      f.ids[n.idx] = id;
+      if (n.idx > f.max) f.max = n.idx;
+    }
+  } else if (list.length) {
+    const f = (frags.legacy = { key: 'legacy', max: -1, ids: [] });
+    for (const id of list) { f.ids[++f.max] = id; }
+  }
+  const treeVersion = Number.isInteger(raw.treeVersion) && raw.treeVersion >= 3 && raw.treeVersion <= 99 ? raw.treeVersion : 3; // content version the compact save is written with (migrations/index.js)
+  return { version: 1, treeVersion, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags };
 }
 
 function checkEffect(e, data, where) {
@@ -274,8 +395,16 @@ function checkEffect(e, data, where) {
     if (!['heart', 'magnet', 'heartHeal'].includes(e.drop)) fail(`${where}: unknown drop effect`);
     num('pct', -90, 500);
   } else if (e.ability !== undefined) {
-    if (e.ability !== 'dur') fail(`${where}: unknown ability effect`);
-    num('pct', 0, 300);
+    if (e.ability === 'dur' || e.ability === 'wheelRadius') num('pct', 0, 300);
+    else if (e.ability === 'rallySecs') num('secs', 0.1, 5);
+    else fail(`${where}: unknown ability effect`);
+  } else if (e.status !== undefined) {
+    // status power: T3 wires these into the sim; until then only inert nodes carry them
+    if (e.status === 'bleed' || e.status === 'burn') num('pct', 0.1, 3);
+    else if (e.status === 'mark' || e.status === 'pin') num('secs', 0.1, 1);
+    else fail(`${where}: unknown status effect`);
+  } else if (e.visual !== undefined) {
+    if (!['kinSparks', 'graveLamp'].includes(e.visual)) fail(`${where}: unknown visual effect`);
   } else if (e.perk !== undefined) {
     if (e.perk === 'evoLuck') num('pct', 0, 300);
     else if (e.perk === 'rush') { num('pct', 0, 300); num('secs', 1, 30); } else fail(`${where}: unknown perk`);
@@ -356,10 +485,13 @@ export function nodeStatus(def, save, id, data) {
     const rival = n.excludes.find((x) => rankOf(tree, x) > 0);
     if (rival) { out.state = 'excluded'; out.reason = `Closed by ${def.nodes[rival].name}.`; return out; }
     const miss = n.requires.filter((r) => rankOf(tree, r) < 1);
-    if (miss.length) {
+    const anyMiss = n.requiresAny && !n.requiresAny.some((r) => rankOf(tree, r) >= 1);
+    if (miss.length || anyMiss) {
       out.state = 'locked';
       const gm = lockedGate(def, tree, id);
-      out.reason = gm ? gateLockText(def, gm, data) : `Requires ${stJoin(miss.map((m) => def.nodes[m].name))}.`;
+      const parts = miss.map((m) => def.nodes[m].name);
+      if (anyMiss) parts.push(`one of ${n.requiresAny.map((m) => def.nodes[m].name).join(' or ')}`);
+      out.reason = gm ? gateLockText(def, gm, data) : `Requires ${stJoin(parts)}.`;
       return out;
     }
     if (out.cond && !out.cond.done) { out.state = 'condition'; out.reason = 'Unlock condition not met.'; return out; }
@@ -425,6 +557,7 @@ export function sanitizeTree(rawTree, stats, def, data, refund = null) {
     if (n.excludes.some((r) => own(clean, r))) continue;
     if (n.unlock && !conditionProgress(n.unlock, stats, def, data).done) continue;
     const missing = n.requires.filter((r) => !own(clean, r));
+    if (n.requiresAny && !n.requiresAny.some((r) => own(clean, r))) missing.push(...n.requiresAny); // at least one alternative must be owned
     if (missing.length) {
       // gate-only breakage: every missing prerequisite is an unowned gate node or a node refunded for that reason
       if (refund && missing.every((r) => refunded.has(r) || def.nodes[r].permanent)) {
@@ -587,7 +720,7 @@ export function describeNode(def, save, id, data) {
 }
 
 // Ancestors of a node up to the hub (inclusive of the node): used for path highlighting.
-export function pathToHub(def, id) {
+export function pathToHub(def, id, tree = null) {
   const ids = new Set();
   const edges = new Set();
   const stack = [id];
@@ -595,7 +728,9 @@ export function pathToHub(def, id) {
     const cur = stack.pop();
     if (ids.has(cur)) continue;
     ids.add(cur);
-    const reqs = def.nodes[cur].requires;
+    const nd = def.nodes[cur];
+    let reqs = nd.requires;
+    if (nd.requiresAny) reqs = reqs.concat([nd.requiresAny.find((r) => tree && rankOf(tree, r) >= 1) || nd.requiresAny[0]]); // shortest owned route, else the first alternative
     if (!reqs.length) edges.add(`hub>${cur}`);
     for (const r of reqs) { edges.add(`${r}>${cur}`); stack.push(r); }
   }

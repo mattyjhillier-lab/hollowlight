@@ -1,0 +1,444 @@
+{
+ "kind": "cluster",
+ "weapon": "raven_flock",
+ "prefix": "rv",
+ "emblem": "raven",
+ "slot": "sky2",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "hero": null,
+ "heart": "gt_raven_flock",
+ "starterEvo": null,
+ "sockets": {
+  "a": {
+   "evo": "dive_bombers",
+   "gate": "gt_dive_bombers"
+  },
+  "b": {
+   "evo": "murder_storm",
+   "gate": "gt_murder_storm"
+  },
+  "c": {
+   "evo": "spearhead",
+   "gate": "gt_spearhead"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_raven_flock",
+   "idx": 0,
+   "kind": "heart",
+   "ord": 68,
+   "name": "Raven Flock",
+   "desc": "Unlocks Raven Flock: it can then appear in your level-up cards.",
+   "branch": "summoner",
+   "ring": 2,
+   "ang": 179,
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "raven_flock"
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "crow",
+    "n": 4500
+   }
+  },
+  {
+   "id": "gt_dive_bombers",
+   "idx": 1,
+   "kind": "socket",
+   "ord": 69,
+   "name": "Talon Mark",
+   "desc": "Unlocks the Talon Mark evolution for Raven Flock. Its recipe stays hidden.",
+   "branch": "summoner",
+   "ring": 2,
+   "ang": 149,
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "dive_bombers"
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "any",
+    "n": 4
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_murder_storm",
+   "idx": 2,
+   "kind": "socket",
+   "ord": 74,
+   "name": "Wall of Wings",
+   "desc": "Unlocks the Wall of Wings evolution for Raven Flock. Its recipe stays hidden.",
+   "branch": "summoner",
+   "ring": 1,
+   "ang": 92,
+   "cost": {
+    "gold": 400
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "murder_storm"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "raven_flock",
+      "n": 1
+     },
+     {
+      "t": "killEnemy",
+      "id": "crow",
+      "n": 12000
+     }
+    ]
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_spearhead",
+   "idx": 3,
+   "kind": "socket",
+   "ord": 70,
+   "name": "Spearhead",
+   "desc": "Unlocks the Spearhead evolution for Raven Flock. Its recipe stays hidden.",
+   "branch": "summoner",
+   "ring": 2,
+   "ang": 106,
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "spearhead"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "raven_flock",
+      "n": 3
+     },
+     {
+      "t": "killEnemy",
+      "id": "crow",
+      "n": 20000
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "outline": [
+  {
+   "id": "rv_talon",
+   "idx": 4,
+   "kind": "knot",
+   "ord": 23,
+   "name": "Keen Talons",
+   "desc": "Raven Flock pecks for +6% damage.",
+   "branch": "summoner",
+   "ring": 3,
+   "ang": 201.5,
+   "cost": {
+    "gold": 480
+   },
+   "requires": [
+    "su_pot",
+    "gt_raven_flock"
+   ],
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "power",
+     "pct": 6
+    }
+   ],
+   "v2": {
+    "effects": [
+     {
+      "weapon": "raven_flock",
+      "stat": "power",
+      "pct": 2
+     }
+    ],
+    "desc": "Peck power +2%",
+    "cost": {
+     "gold": 210
+    }
+   }
+  },
+  {
+   "id": "rv_quill",
+   "idx": 5,
+   "kind": "knot",
+   "inert": true,
+   "name": "Black Quill",
+   "desc": "Peck power +2%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "rv_wide",
+   "idx": 6,
+   "kind": "knot",
+   "ord": 24,
+   "name": "Wider Murder",
+   "desc": "Raven Flock watches +7 further per rank.",
+   "branch": "summoner",
+   "ring": 4,
+   "ang": 196.1,
+   "maxRank": 2,
+   "rankCost": 1.6,
+   "cost": {
+    "gold": 600
+   },
+   "requires": [
+    "rv_talon"
+   ],
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "range",
+     "add": 7
+    }
+   ],
+   "v2": {
+    "effects": [
+     {
+      "weapon": "raven_flock",
+      "stat": "range",
+      "pct": 2
+     }
+    ],
+    "desc": "Watch +2%",
+    "cost": {
+     "gold": 430
+    },
+    "maxRank": 1,
+    "rankCost": 1
+   }
+  },
+  {
+   "id": "rv_glide",
+   "idx": 7,
+   "kind": "knot",
+   "inert": true,
+   "name": "Long Glide",
+   "desc": "Wingbeat +2%",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "rv_eye",
+   "idx": 8,
+   "kind": "bead",
+   "inert": true,
+   "name": "Raven's Eye",
+   "desc": "Mark lasts +0.5 s (status: Mark; counted as +2% potency; the x1.75 amp cap still clamps)",
+   "cost": {
+    "gold": 630
+   },
+   "effects": [
+    {
+     "status": "mark",
+     "secs": 0.5
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "crow",
+    "n": 6000
+   }
+  },
+  {
+   "id": "rv_watch",
+   "idx": 9,
+   "kind": "knot",
+   "inert": true,
+   "name": "High Watch",
+   "desc": "Watch +2%",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "range",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "rv_oath",
+   "idx": 10,
+   "kind": "mastery",
+   "ord": 25,
+   "name": "Black Feather Oath",
+   "desc": "Raven Flock pecks for +6% damage and watches 7 further.",
+   "flavour": "The crows now count you as kin.",
+   "branch": "summoner",
+   "ring": 5,
+   "ang": 192.9,
+   "cost": {
+    "gold": 1500
+   },
+   "requires": [
+    "rv_wide"
+   ],
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "power",
+     "pct": 6
+    },
+    {
+     "weapon": "raven_flock",
+     "stat": "range",
+     "add": 7
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "crow",
+    "n": 1500
+   },
+   "v2": {
+    "effects": [
+     {
+      "weapon": "raven_flock",
+      "stat": "power",
+      "pct": 1
+     },
+     {
+      "weapon": "raven_flock",
+      "stat": "range",
+      "pct": 1
+     }
+    ],
+    "desc": "Peck power +1% and Watch +1%",
+    "cost": {
+     "gold": 910,
+     "shards": 1
+    },
+    "unlock": {
+     "t": "killEnemy",
+     "id": "crow",
+     "n": 8000
+    }
+   }
+  },
+  {
+   "id": "rv_wing",
+   "idx": 11,
+   "kind": "knot",
+   "inert": true,
+   "name": "Swift Wing",
+   "desc": "Wingbeat +2%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "rv_kin",
+   "idx": 12,
+   "kind": "bead",
+   "inert": true,
+   "name": "Crow-Kin",
+   "desc": "Peck power +2%",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "power",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "raven_flock",
+    "n": 2
+   }
+  },
+  {
+   "id": "rv_beat",
+   "idx": 13,
+   "kind": "knot",
+   "inert": true,
+   "name": "Wingbeat Drum",
+   "desc": "Wingbeat +2%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "rv_peck",
+   "idx": 14,
+   "kind": "knot",
+   "inert": true,
+   "name": "Hard Peck",
+   "desc": "Peck power +2%",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "raven_flock",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  }
+ ]
+}

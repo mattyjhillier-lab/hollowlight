@@ -2,8 +2,10 @@
 import { readFileSync } from 'node:fs';
 import { playRun } from './bot.mjs';
 import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
+import { loadTree } from '../src/meta/treefs.mjs';
 const L = (n) => JSON.parse(readFileSync(new URL(`../src/data/${n}.json`, import.meta.url), 'utf8'));
-const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, L(n)]));
+const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, L(n)]));
+data.tree = loadTree(data).live;
 const G = {
   counts: (e) => e.weapon && ['count', 'chains', 'pierce'].includes(e.stat),
   revive: (e) => e.player === 'revive',

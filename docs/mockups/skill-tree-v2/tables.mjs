@@ -2,7 +2,7 @@
 // node docs/mockups/skill-tree-v2/tables.mjs > out.md
 import { readFileSync } from 'node:fs';
 import { buildList, CAPS, softTotal, CLUSTERS, GATE_RUNS } from './inventory.mjs';
-const v1 = JSON.parse(readFileSync(new URL('../../../src/data/tree.json', import.meta.url), 'utf8')).nodes;
+const v1 = JSON.parse(readFileSync(new URL('../../../tests/fixtures/tree-v1.json', import.meta.url), 'utf8')).nodes;
 const L = buildList();
 const real = L.filter((n) => !n.display);
 const ids = new Set(real.map((n) => n.id));

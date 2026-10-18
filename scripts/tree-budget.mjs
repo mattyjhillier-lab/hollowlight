@@ -1,13 +1,15 @@
-// Power budget for src/data/tree.json: prints each node's power-equivalent (PE) and the totals.
+// Power budget for the skill tree fragments (src/data/tree/): prints each node's power-equivalent (PE) and the totals.
 // Usage: node scripts/tree-budget.mjs [--table]   (weights are documented in docs/design/skill-tree-v1.md)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { compileTree, totalCost, costFor, conditionProgress } from '../src/meta/tree.js';
+import { loadTree } from '../src/meta/treefs.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
-const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
+const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
+data.tree = loadTree(data).live;
 const def = compileTree(data.tree, data);
 
 // PE per unit: damage is worth its face value; everything else is diluted by how often a typical build uses it.

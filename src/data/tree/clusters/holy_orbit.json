@@ -1,0 +1,376 @@
+{
+ "kind": "cluster",
+ "weapon": "holy_orbit",
+ "prefix": "or",
+ "emblem": "orbit",
+ "slot": "sky5",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "hero": "elias",
+ "heart": null,
+ "starterEvo": "sanctum_halo",
+ "sockets": {
+  "a": {
+   "evo": "sanctum_halo",
+   "gate": null
+  },
+  "b": {
+   "evo": "judgement_wheel",
+   "gate": "gt_judgement_wheel"
+  },
+  "c": {
+   "evo": "vesper_tide",
+   "gate": "gt_vesper_tide"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_judgement_wheel",
+   "idx": 0,
+   "kind": "socket",
+   "ord": 67,
+   "name": "Judgement Wheel",
+   "desc": "Unlocks the Judgement Wheel evolution for Holy Orbit. Its recipe stays hidden.",
+   "branch": "magic",
+   "ring": 3,
+   "ang": 1,
+   "cost": {
+    "gold": 100
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "judgement_wheel"
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 1
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_vesper_tide",
+   "idx": 1,
+   "kind": "socket",
+   "ord": 79,
+   "name": "Vesper Tide",
+   "desc": "Unlocks the Vesper Tide evolution for Holy Orbit. Its recipe stays hidden.",
+   "branch": "magic",
+   "ring": 3,
+   "ang": 21,
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "vesper_tide"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "holy_orbit",
+      "n": 3
+     },
+     {
+      "t": "useCharacter",
+      "id": "elias",
+      "n": 8
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "outline": [
+  {
+   "id": "or_power",
+   "idx": 2,
+   "kind": "knot",
+   "ord": 38,
+   "name": "Burning Orbs",
+   "desc": "Holy Orbit burns for +6% damage.",
+   "branch": "magic",
+   "ring": 3,
+   "ang": 10.8,
+   "cost": {
+    "gold": 480
+   },
+   "requires": [
+    "ma_area"
+   ],
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 6
+    }
+   ],
+   "v2": {
+    "effects": [
+     {
+      "weapon": "holy_orbit",
+      "stat": "power",
+      "pct": 2
+     }
+    ],
+    "desc": "Orb power +2%",
+    "cost": {
+     "gold": 180
+    }
+   }
+  },
+  {
+   "id": "or_wick",
+   "idx": 3,
+   "kind": "knot",
+   "inert": true,
+   "name": "Long Wick",
+   "desc": "Orb power +2%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_kindle",
+   "idx": 4,
+   "kind": "bead",
+   "inert": true,
+   "name": "Kindling",
+   "desc": "Burn potency +2% (status, shared cap)",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_wide",
+   "idx": 5,
+   "kind": "knot",
+   "ord": 39,
+   "name": "Wider Halo",
+   "desc": "Holy Orbit circles +6 wider per rank.",
+   "branch": "magic",
+   "ring": 4,
+   "ang": 8.1,
+   "maxRank": 2,
+   "rankCost": 1.6,
+   "cost": {
+    "gold": 600
+   },
+   "requires": [
+    "or_power"
+   ],
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "add": 6
+    }
+   ],
+   "v2": {
+    "effects": [
+     {
+      "weapon": "holy_orbit",
+      "stat": "radius",
+      "pct": 2
+     }
+    ],
+    "desc": "Orbit size +2%",
+    "cost": {
+     "gold": 450
+    },
+    "maxRank": 1,
+    "rankCost": 1
+   }
+  },
+  {
+   "id": "or_seventh",
+   "idx": 6,
+   "kind": "mastery",
+   "ord": 40,
+   "name": "Seventh Light",
+   "desc": "Holy Orbit burns for +6% damage and circles 6 wider.",
+   "flavour": "Evolve the orbit and the circle widens.",
+   "branch": "magic",
+   "ring": 5,
+   "ang": 6.5,
+   "cost": {
+    "gold": 1500
+   },
+   "requires": [
+    "or_wide"
+   ],
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 6
+    },
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "add": 6
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 1
+   },
+   "v2": {
+    "effects": [
+     {
+      "weapon": "holy_orbit",
+      "stat": "power",
+      "pct": 1
+     },
+     {
+      "weapon": "holy_orbit",
+      "stat": "radius",
+      "pct": 1
+     }
+    ],
+    "desc": "Orb power +1% and Orbit size +1%",
+    "cost": {
+     "gold": 910,
+     "shards": 1
+    }
+   }
+  },
+  {
+   "id": "or_tide",
+   "idx": 7,
+   "kind": "knot",
+   "inert": true,
+   "name": "Turning Tide",
+   "desc": "Orbit speed +2%",
+   "cost": {
+    "gold": 450
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_ember",
+   "idx": 8,
+   "kind": "bead",
+   "inert": true,
+   "name": "Votive Embers",
+   "desc": "Burn potency +2% (status, shared cap)",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 3
+   }
+  },
+  {
+   "id": "or_swing",
+   "idx": 9,
+   "kind": "knot",
+   "inert": true,
+   "name": "Censer Swing",
+   "desc": "Orbit speed +2%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_spin",
+   "idx": 10,
+   "kind": "knot",
+   "inert": true,
+   "name": "Quick Circle",
+   "desc": "Orbit speed +2%",
+   "cost": {
+    "gold": 180
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_bright",
+   "idx": 11,
+   "kind": "knot",
+   "inert": true,
+   "name": "Bright Ring",
+   "desc": "Orbit size +2%",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_vigil",
+   "idx": 12,
+   "kind": "bead",
+   "inert": true,
+   "name": "Long Vigil",
+   "desc": "Orb power +2%",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "surviveTime",
+    "chapter": "cursed_forest",
+    "seconds": 600
+   }
+  }
+ ]
+}

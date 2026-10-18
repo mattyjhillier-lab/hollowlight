@@ -5,10 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Sim } from '../src/sim/Sim.js';
 import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
+import { loadTree } from '../src/meta/treefs.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
-const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
+const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
+data.tree = loadTree(data).live; // fragments in src/data/tree/ (src/meta/treedata.js)
 // BLESS=off drops the Blessing pool (identical to the pre-BLESS-1 game); BLESSPICK=random|defence|offence is the bot's Blessing taste.
 export const PREFER_W = /^[a-z_]{1,32}$/.test(process.env.PREFER_W || '') ? process.env.PREFER_W : null;
 export const BLESS = process.env.BLESS === 'off' ? 'off' : 'on';
