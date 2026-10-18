@@ -137,6 +137,23 @@ export function budgetOf(def, rule, W, opts = {}) {
   else best = (() => { const ev = evaluate(fixed.concat(groups.map((g) => g[0])), 1); return { score: ev.pe + ev.susPE, ev, chosen: fixed }; })();
   const ev = best.ev;
 
+  // WORST CASE over every side of every exclusive group (M3). Sustain, verb and utility quantities are linear, so each group adds
+  // the largest contribution among its members (or nothing), taken per quantity; the sustain score is the largest single side.
+  // Conservative for verb counts (two different sides may top two different quantities) and exact for the sustain score.
+  const worstAt = (chapter) => {
+    const base = evaluate(fixed, chapter);
+    const w = { sus: { ...base.sus }, susPE: base.susPE, util: { ...base.util }, reviveFracs: [...base.reviveFracs] };
+    for (const g of groups) {
+      const side = g.map((m) => evaluate([m], chapter));
+      for (const k of Object.keys(w.sus)) w.sus[k] += Math.max(0, ...side.map((e) => e.sus[k]));
+      w.susPE += Math.max(0, ...side.map((e) => e.susPE));
+      for (const k of new Set(side.flatMap((e) => Object.keys(e.util)))) w.util[k] = (w.util[k] || 0) + Math.max(0, ...side.map((e) => e.util[k] || 0));
+      for (const e of side) w.reviveFracs.push(...e.reviveFracs);
+    }
+    return w;
+  };
+  const worst = worstAt(1);
+
   // per-node and verb rules
   const knotMax = rule.knotMax;
   for (const id of ids) {
@@ -152,25 +169,28 @@ export function budgetOf(def, rule, W, opts = {}) {
       }
     }
   }
+  // saturation (L5): stuffing a combat category far past its soft cap buys nothing for the player, so it is reported as a design error
+  for (const [cat, row] of Object.entries(ev.rows)) if (!cat.startsWith('wpn:') && !row.unknown && row.C > 0 && row.S > 2 * row.C + EPS) violations.push(`category ${cat} is saturated: face sum ${row.S.toFixed(1)} is above 2 x its soft cap ${row.C}`);
   for (const [cat, row] of Object.entries(ev.rows)) if (row.unknown) violations.push(`category ${cat} is not in the budget rule`);
 
   // exact verb limits
-  if (ev.sus.reroll > rule.sustain.rerollMax + EPS) violations.push(`rerolls ${ev.sus.reroll} above ${rule.sustain.rerollMax}`);
-  if (ev.sus.banish > rule.sustain.banishMax + EPS) violations.push(`banishes ${ev.sus.banish} above ${rule.sustain.banishMax}`);
-  if (ev.sus.revive > rule.sustain.reviveMax) violations.push(`revive nodes ${ev.sus.revive} above ${rule.sustain.reviveMax}`);
-  if (ev.reviveFracs.some((f) => f > rule.sustain.reviveMaxFrac + EPS)) violations.push(`revive health above ${rule.sustain.reviveMaxFrac * 100}%`);
+  if (worst.sus.reroll > rule.sustain.rerollMax + EPS) violations.push(`rerolls ${worst.sus.reroll} above ${rule.sustain.rerollMax}`);
+  if (worst.sus.banish > rule.sustain.banishMax + EPS) violations.push(`banishes ${worst.sus.banish} above ${rule.sustain.banishMax}`);
+  if (worst.sus.revive > rule.sustain.reviveMax) violations.push(`revive nodes ${worst.sus.revive} above ${rule.sustain.reviveMax}`);
+  if (worst.reviveFracs.some((f) => f > rule.sustain.reviveMaxFrac + EPS)) violations.push(`revive health above ${rule.sustain.reviveMaxFrac * 100}%`);
   for (const [k, lim] of [['speed', rule.utility.speed], ['pickup', rule.utility.pickup], ['xp', rule.utility.xp], ['gold', rule.utility.gold], ['abilityCd', rule.utility.abilityCdMax]]) {
-    if ((ev.util[k] || 0) > lim + EPS) violations.push(`${k} total ${ev.util[k]} above ${lim}`);
+    if ((worst.util[k] || 0) > lim + EPS) violations.push(`${k} total ${worst.util[k]} above ${lim}`);
   }
 
   // ceilings (chapter 1) and chapter scopes
   const ceilCombat = rule.base.combat, ceilSustain = rule.base.sustain;
   if (atCap > ceilCombat + EPS) violations.push(`combat PE-at-cap ${atCap.toFixed(2)} is above the ceiling ${ceilCombat}`);
-  if (ev.susPE > ceilSustain + EPS) violations.push(`sustain ${ev.susPE.toFixed(2)} is above the ceiling ${ceilSustain}`);
+  if (worst.susPE > ceilSustain + EPS) violations.push(`sustain ${worst.susPE.toFixed(2)} is above the ceiling ${ceilSustain}`);
   const chapters = {};
   const maxK = Math.max(1, ...ids.map((i) => (def.nodes[i].scope ? def.nodes[i].scope.minChapter : 1)));
   for (let k = 2; k <= maxK; k++) {
     const e2 = evaluate(best.chosen, k);
+    const w2 = worstAt(k);
     let faceCombat = 0;
     for (const [cat, row] of Object.entries(e2.rows)) {
       const wp = cat.startsWith('wpn:');
@@ -179,7 +199,7 @@ export function budgetOf(def, rule, W, opts = {}) {
     }
     chapters[k] = { combat: faceCombat, sustain: e2.susPE };
     if (faceCombat > rule.perChapter.combat + EPS) violations.push(`chapter ${k} combat ${faceCombat.toFixed(2)} is above the per-chapter allowance ${rule.perChapter.combat}`);
-    if (e2.susPE > rule.perChapter.sustain + EPS) violations.push(`chapter ${k} sustain ${e2.susPE.toFixed(2)} is above the per-chapter allowance ${rule.perChapter.sustain}`);
+    if (w2.susPE > rule.perChapter.sustain + EPS) violations.push(`chapter ${k} sustain ${w2.susPE.toFixed(2)} is above the per-chapter allowance ${rule.perChapter.sustain}`);
   }
 
   // option share per non-launch constellation (60% of its nodes are not plain knots)
@@ -193,7 +213,7 @@ export function budgetOf(def, rule, W, opts = {}) {
   }
   for (const [cl, c] of byCluster) if ((c.total - c.knots) / c.total < rule.optionShareMin - EPS) violations.push(`cluster ${cl}: only ${(((c.total - c.knots) / c.total) * 100).toFixed(0)}% options/verbs (needs ${rule.optionShareMin * 100}%)`);
 
-  return { rows: ev.rows, combatPE: ev.pe, combatAtCap: atCap, sustainPE: ev.susPE, util: ev.util, chapters, violations, groups, W };
+  return { rows: ev.rows, combatPE: ev.pe, combatAtCap: atCap, sustainPE: ev.susPE, worstSustainPE: worst.susPE, util: ev.util, chapters, violations, groups, W };
 }
 
 function statusOwnedBy(n, cluster) {

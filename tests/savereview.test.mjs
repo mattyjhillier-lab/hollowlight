@@ -17,12 +17,7 @@ import { budgetOf } from '../src/meta/treebudget.js';
 import { rng, v1RandomBuys, BIG_STATS, isGateV1, memStorage, ROOT } from '../scripts/review/lib.mjs';
 
 // ---- open findings (see docs/design/save-v3-review.md); remove a name here when its fix lands
-export const KNOWN_FAILING = [
-  'R10 a retired id\'s (fragment, idx) can never be given to a new node',
-  'R11 a migration step can see a node that was retired (so it can refund it)',
-  'R12 a migration step can see the full owned rank of a node whose maxRank was cut',
-  'R15 tree budget checks the sustain ceiling on EVERY side of an exclusive pair',
-];
+export const KNOWN_FAILING = [];
 const T = (name, fn) => test(name, KNOWN_FAILING.includes(name) ? { todo: 'open review finding (KNOWN_FAILING)' } : {}, fn);
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -349,4 +344,28 @@ test('L8 two tabs: the second tab refuses to overwrite a newer write and adopts 
   assert.match(b.loadNote, /Another tab/);
   b.data.gold = 600; assert.equal(b.saveNow(), true, 'after adopting it can save again');
   const c = new SaveStore(mem); c.load(); assert.equal(c.data.gold, 600);
+});
+
+test('L5 the combat budget can fail: five health nodes stuffed into +3% damage report a saturated category; baseline is clean', () => {
+  const run = (mut) => {
+    const fs = files(); mut(fs);
+    const c = composeTree(fs, data);
+    return budgetOf(compileTree(c.v2, data), c.info.core.budget, Object.keys(c.info.clusters).length);
+  };
+  assert.deepEqual(run(() => {}).violations, []);
+  const b = run((fs) => {
+    const hp = core(fs).nodes.filter((n) => !n.keystone && (n.effects || []).some((e) => e.player === 'maxHp')).slice(0, 5);
+    assert.ok(hp.length >= 3);
+    for (const n of hp) n.v2 = { ...(n.v2 || {}), effects: [{ mod: 'damage', pct: 3 }, { mod: 'damage', pct: 3 }] };
+  });
+  assert.match(b.violations.join('|'), /saturated/);
+});
+
+test('M3 a revive / reroll hidden behind an exclusive pair is caught on the side that has it', () => {
+  const fs = files();
+  const l = core(fs).nodes.find((n) => n.id === 'li_lantern');
+  l.v2 = { ...(l.v2 || {}), effects: [...((l.v2 && l.v2.effects) || l.effects), { unlock: 'rerolls', n: 9 }] };
+  const c = composeTree(fs, data);
+  const b = budgetOf(compileTree(c.v2, data), c.info.core.budget, Object.keys(c.info.clusters).length);
+  assert.match(b.violations.join('|'), /rerolls/);
 });
