@@ -68,13 +68,13 @@ export class Sim {
       autoHp: T.ability?.autoHp || 0,
       evoLuck: T.evoLuck ?? 1,
       rush: T.rush || null, // { pct, secs }: summons surge on level-up
-    };
       // Status power nodes (T3): potency multipliers on the existing Rend / Burn paths, extra Mark seconds, Rally and Candle Wheel tuning. 1 / 0 when absent.
       bleedMul: 1 + (T.status?.bleed || 0) / 100,
       burnMul: 1 + (T.status?.burn || 0) / 100,
       markAdd: T.status?.mark || 0,
       rallyAdd: T.ability?.rallySecs || 0,
       wheelMul: 1 + (T.ability?.wheel || 0) / 100,
+    };
     this.reviveLeft = this.tfx.revive > 0 ? 1 : 0;
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
@@ -85,9 +85,9 @@ export class Sim {
       this.player.hp = this.player.maxHp;
     }
     this.baseMaxHp = this.player.maxHp;
-    // Blessings (run-only). Validated here so absent/tampered data fails closed to "none".
     // The tree's own multiplier for each Blessing effect: Blessings are clamped so tree x Blessing stays under the combined cap (blessings.js).
     this.treeMul = { damage: this.mods.damage, maxHp: T.player?.maxHp ?? 1, speed: this.mods.speed, pickup: this.mods.pickup, gold: this.mods.gold };
+    // Blessings (run-only). Validated here so absent/tampered data fails closed to "none".
     const bdef = validateBlessings(data.blessings);
     this.blessDef = blessingCount(bdef) ? bdef : null;
     this.blessRanks = Object.create(null);
@@ -756,6 +756,7 @@ export class Sim {
     a.cdLeft = this.abilityCooldown;
     const dur = 6 * this.tfx.abilityDur;
     if (a.id === 'rally_pack') {
+      const dur = 6 * this.tfx.abilityDur + this.tfx.rallyAdd; // Firm Grip: a longer window, never a stronger one (pins still never hold bosses)
       // Rally the Pack: the wolves converge on (and pin) the toughest non-boss enemy; wolf damage +bonus while it lasts.
       // The window is its own state (this.rally), never a speed boost. Ravens stay independent.
       this.buffs.rally = dur;
@@ -788,7 +789,6 @@ export class Sim {
     return best || boss;
   }
 
-      const dur = 6 * this.tfx.abilityDur + this.tfx.rallyAdd; // Firm Grip: a longer window, never a stronger one (pins still never hold bosses)
   updateRally(dt) {
     const r = this.rally;
     if (!r) return;
