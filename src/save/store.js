@@ -156,7 +156,7 @@ export class SaveStore {
   exportText() { if (this.keptRaw !== null) return this.keptRaw; return JSON.stringify(serializeSave(this.data), null, 2); }
 
   // Validate imported text without applying it.
-  checkImport(text) { return parseSave(text); }
+  checkImport(text) { return this.readOnly ? { ok: false, code: 'locked', error: 'Saving is switched off because your save is from a newer version. Update the game first.' } : parseSave(text); }
 
   applyImport(save) {
     if (this.readOnly) return false;

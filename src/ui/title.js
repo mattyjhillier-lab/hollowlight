@@ -10,7 +10,7 @@ let sid = 0;
 const nid = (p) => `u3-${p}-${++sid}`;
 
 /** Title: wordmark, then Begin / Continue as the big primary, Skill Tree and Settings as secondary, version footer. */
-export function buildTitle({ hasProgress = false, firstRun = false, bank = null, version = '', onBegin, onTree, onSettings } = {}) {
+export function buildTitle({ hasProgress = false, firstRun = false, bank = null, version = '', note = '', onBegin, onTree, onSettings } = {}) {
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-title');
   const col = el('main', 'u3-col');
@@ -26,6 +26,7 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
   const settings = button({ label: TITLE.settings.label, whisper: TITLE.settings.whisper, hint: 'S', onClick: () => { if (onSettings) onSettings(); } });
   add(menu, begin, tree, settings);
   add(side, menu);
+  if (typeof note === 'string' && note) add(side, el('p', 'u3-note ty-small', note.slice(0, 400), { role: 'status' })); // textContent only (el)
   if (firstRun) add(side, el('p', 'u3-hint ty-small', TITLE.hint));
   add(side, el('p', 'u3-orient ty-small', TITLE.orient));
   add(col, brand, side);

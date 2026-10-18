@@ -23,6 +23,7 @@ html.touch .overlay.u3, .overlay.u3 {
 .overlay.u3 .u3-side { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
 .overlay.u3 .u3-menu { display: flex; flex-direction: column; gap: 12px; width: min(100%, 400px); }
 .overlay.u3 .u3-hint { margin: 0; max-width: 32em; text-align: center; color: var(--lg-dim); }
+.overlay.u3 .u3-note { margin: 0; max-width: 32em; text-align: center; color: var(--lg-warn, #ffb86b); border: 1px solid currentColor; border-radius: 8px; padding: .5em .8em; }
 .overlay.u3 .u3-orient { display: none; margin: 0; color: var(--thread); }
 @media (orientation: portrait) { html.touch .overlay.u3 .u3-orient { display: block; } }
 .overlay.u3 .u3-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px clamp(10px, 2vw, 20px) 6px; pointer-events: none; }

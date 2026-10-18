@@ -235,7 +235,8 @@ export const app = {
       checkImport: (t) => this.save.checkImport(t),
       applyImport: (s) => { this.save.applyImport(s); this.applySettings(); },
       resetSave: () => { this.save.reset(); this.applySettings(); },
-      storageNote: () => (this.save.persistent ? null : 'Browser storage is blocked or full: progress will not persist.'),
+      loadNote: () => { const n = this.save.loadNote; if (n && !this.save.readOnly) this.save.loadNote = null; return n; }, // recovery message: once on the title screen (the newer-version lock stays)
+      storageNote: () => (this.save.readOnly ? this.save.loadNote : this.save.persistent ? null : 'Browser storage is blocked or full: progress will not persist.'),
       isFirstRun: () => (this.save.data.stats.runs || 0) === 0 && Object.keys(this.save.data.tree).length === 0,
       hasProgress: () => (this.save.data.stats.runs || 0) > 0 || Object.keys(this.save.data.tree).length > 0 || this.save.data.gold > 0 || this.save.data.shards > 0,
       getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),

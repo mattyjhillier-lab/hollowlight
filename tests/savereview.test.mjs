@@ -149,7 +149,7 @@ T('R07 compact codec round-trips every single-node rank state and 300 random mix
   }
 });
 
-T('R16 no DOM sink takes save/import data: the only innerHTML is ui.show(name, html) and no caller passes html', () => {
+T('R16 no DOM sink exists anywhere in src (no innerHTML/outerHTML/insertAdjacentHTML/eval/ui.show with html)', () => {
   const hits = [];
   const walk = (d) => {
     for (const f of readdirSync(d, { withFileTypes: true })) {
@@ -157,13 +157,13 @@ T('R16 no DOM sink takes save/import data: the only innerHTML is ui.show(name, h
       if (f.isDirectory()) walk(p);
       else if (/\.(js|mjs)$/.test(f.name)) {
         const src = readFileSync(p, 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n'); // code only, not comments
-        for (const re of [/\.innerHTML\s*=/g, /insertAdjacentHTML/g, /\.outerHTML\s*=/g, /document\.write/g, /\beval\s*\(/g, /new Function\s*\(/g]) for (const m of src.matchAll(re)) hits.push(`${p.slice(ROOT.length + 1)}:${m[0]}`);
+        for (const re of [/\.innerHTML\s*\+?=/g, /insertAdjacentHTML/g, /\.outerHTML\s*=/g, /document\.write/g, /\beval\s*\(/g, /new Function\s*\(/g]) for (const m of src.matchAll(re)) hits.push(`${p.slice(ROOT.length + 1)}:${m[0]}`);
         for (const m of src.matchAll(/\b(?:this|ui|host|app\.ui)\.show\(\s*'[a-z]+'\s*,/g)) hits.push(`${p.slice(ROOT.length + 1)}:show-with-html ${m[0]}`);
       }
     }
   };
   walk(join(ROOT, 'src'));
-  assert.deepEqual(hits.map((h) => h.replace(/\\/g, '/')), ['src/ui/ui.js:.innerHTML ='], 'a new HTML sink appeared: it must never receive save/import data');
+  assert.deepEqual(hits.map((h) => h.replace(/\\/g, '/')), [], 'an HTML sink appeared: it must never receive save/import data');
 });
 
 T('R17 an import cannot bypass the graph: inert nodes, missing requires/requiresAny, rivals and teasers are dropped (same rules as v1)', () => {

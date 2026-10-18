@@ -135,3 +135,11 @@ test('title veil keeps text >= 4.5:1 over the lightest Hollow ground', () => {
   assert.ok(ratio([255, 224, 160]) >= 4.5, 'tagline');
   assert.ok(ratio([255, 243, 220].map((v, i) => v * 0.88 + bg[i] * 0.12)) >= 4.5, 'dim text');
 });
+
+test('title load note: shown as plain text in a status paragraph, hostile text is inert, absent when empty', () => {
+  const t = buildTitle({ note: '<img src=x onerror=alert(1)> Save was damaged' });
+  const n = find(t.root, (x) => x._cls.has('u3-note'));
+  assert.equal(n.length, 1); assert.equal(n[0].attrs.role, 'status');
+  assert.ok(n[0].textContent.startsWith('<img'), 'kept as text');
+  assert.equal(find(buildTitle({}).root, (x) => x._cls.has('u3-note')).length, 0);
+});

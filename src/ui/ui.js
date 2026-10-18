@@ -58,9 +58,8 @@ export class UI {
     return this.layers[name];
   }
 
-  show(name, html) {
+  show(name) {
     const el = this.layer(name);
-    if (html !== undefined) el.innerHTML = html;
     el.style.display = name === 'hud' ? 'block' : 'flex';
     el.style.pointerEvents = name === 'hud' ? 'none' : 'auto';
     return el;
@@ -128,6 +127,7 @@ export class UI {
       hasProgress: !!(h.hasProgress && h.hasProgress()),
       firstRun: !!(h.isFirstRun && h.isFirstRun()),
       bank: h.getBank ? h.getBank() : null,
+      note: h.loadNote ? h.loadNote() : '',
       version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
       onBegin: () => this.showHeroSelect(),
       onTree: () => h.openTree(),
