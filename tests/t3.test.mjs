@@ -18,11 +18,11 @@ const own = (ids) => Object.fromEntries(ids.map((i) => [i, 1]));
 const full = () => presetTree(def, 'full', true);
 
 test('T3a the budget rule reaches the compiled tree and aggregateMods applies it', () => {
-  assert.ok(RULE && RULE.categories.dmg.cap === 2.5 && RULE.perWeapon.cap === 7);
+  assert.ok(RULE && RULE.categories.dmg.cap === 2.7 && RULE.perWeapon.cap === 8.6);
   assert.deepEqual(aggregateMods({}, def, data).softcap, {});
   const a = aggregateMods(own(['sp_edge', 'sp_mastery', 'li_dawn']), def, data);
-  assert.ok(Math.abs(a.mods.damage - (1 + soft(3, 2.5) / 100)) < 1e-9, 'three +1% damage nodes pass through C(1 - e^(-S/C)), C = 2.5');
-  assert.ok(Math.abs(a.softcap.dmg.total - soft(3, 2.5)) < 1e-9 && a.softcap.dmg.S === 3);
+  assert.ok(Math.abs(a.mods.damage - (1 + soft(3, 2.7) / 100)) < 1e-9, 'three +1% damage nodes pass through C(1 - e^(-S/C)), C = 2.5');
+  assert.ok(Math.abs(a.softcap.dmg.total - soft(3, 2.7)) < 1e-9 && a.softcap.dmg.S === 3);
 });
 
 test('T3a one cap per category: the whole tree can never pass a category cap, however many nodes are added', () => {
@@ -62,7 +62,7 @@ test('T3a the soft cap is the budget: every capped category of the full tree equ
 test('T3a negatives pass through the cap unscaled; flat adds are never scaled; the keystone trade stays a real trade', () => {
   const k = aggregateMods(own(['su_key']), def, data);
   assert.equal(k.weaponBonus.spirit_bolts.power.pct, -3);
-  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(3, 5)) < 1e-9);
+  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(3, 6.4)) < 1e-9);
   const p = aggregateMods(own(['gt_spirit_bolts', 'bo_pierce']), def, data);
   assert.equal(p.weaponBonus.spirit_bolts.pierce.add, 1, 'Pierce +1 is a whole foe, not a percentage');
   const g = aggregateMods(own(['li_glass']), def, data);
@@ -162,5 +162,5 @@ test('T3a the live tree compiles from the SAME composed data as the budget view 
   const c = composeTree(readTreeFiles(), data);
   assert.deepEqual(c.live.nodes.filter((n) => !n.inert).map((n) => n.id), c.v2.nodes.filter((n) => !c.live.nodes.find((x) => x.id === n.id && x.inert)).map((n) => n.id));
   const d1 = compileTree(c.live, data);
-  assert.equal(d1.rule && d1.rule.categories.choice.cap, 1);
+  assert.equal(d1.rule && d1.rule.categories.choice.cap, 0, "choice cap is loaned to live categories until the Card Fan perks go live (docs/design/tree-impact.md)");
 });

@@ -329,13 +329,13 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   assert.deepEqual(none, emptyEffects());
   const a = aggregateMods({ sp_edge: 1, sp_cd1: 1, sp_cd2: 1, sp_cd3: 1, sp_cd4: 1, ma_cast: 1, ma_area: 1, su_bond: 1, ma_focus: 1, li_vigor: 1, li_regen: 1 }, def, data);
   // every capped effect passes through the soft cap total = C(1 - e^(-S/C)) (docs/design/skill-tree-v2.md section 8)
-  assert.ok(Math.abs(a.mods.damage - (1 + soft(E('sp_edge').pct, 2.5) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.mods.damage - (1 + soft(E('sp_edge').pct, def.rule.categories.dmg.cap) / 100)) < 1e-9);
   assert.ok(Math.abs(a.mods.abilityCd - 0.55) < 1e-9, `abilityCd ${a.mods.abilityCd}`);
-  assert.ok(Math.abs(a.mods.cooldown - (1 + soft(-E('ma_cast').pct, 3) / -100)) < 1e-9);
+  assert.ok(Math.abs(a.mods.cooldown - (1 + soft(-E('ma_cast').pct, def.rule.categories.cast.cap) / -100)) < 1e-9);
   assert.ok(Math.abs(a.mods.area - (1 + soft(E('ma_area').pct, 4) / 100)) < 1e-9);
   assert.ok(Math.abs(a.player.maxHp - (1 + soft(E('li_vigor').pct, 6) / 100)) < 1e-9);
   assert.ok(Math.abs(a.player.levelHeal - soft(E('li_regen').pct, 1.5)) < 1e-9);
-  const tagS = soft(E('su_bond').pct, 5), tagM = soft(E('ma_focus').pct, 5);
+  const tagS = soft(E('su_bond').pct, def.rule.categories.tagS.cap), tagM = soft(E('ma_focus').pct, def.rule.categories.tagM.cap);
   assert.ok(Math.abs(a.weaponBonus.ghost_wolves.power.pct - tagS) < 1e-9, 'summon tag expands to wolves');
   assert.ok(Math.abs(a.weaponBonus.raven_flock.power.pct - tagS) < 1e-9);
   assert.ok(Math.abs(a.weaponBonus.spirit_bolts.power.pct - tagM) < 1e-9, 'magic tag expands to bolts');
@@ -352,7 +352,7 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   assert.equal(v.evoLuck, 1.5);
   // keystone trade-off
   const k = aggregateMods({ su_key: 1 }, def, data);
-  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(E('su_key', 0).pct, 5)) < 1e-9);
+  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(E('su_key', 0).pct, def.rule.categories.tagS.cap)) < 1e-9);
   assert.equal(k.weaponBonus.spirit_bolts.power.pct, E('su_key', 1).pct, 'penalties pass through the cap unscaled');
   assert.ok(E('su_key', 0).pct > 0 && E('su_key', 1).pct < 0, 'keystone trades one side for the other');
   // hostile ranks cannot push values out of bounds
@@ -429,7 +429,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   assert.equal(w.s.count, 3);
   assert.ok(Math.abs(w.s.power - 7 * 1.1) < 1e-9, `power ${w.s.power}`);
   const real = new Sim({ data, seed: 1, tree: fx({ su_bond: 1, wf_fang: 1 }) });
-  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (soft(E('su_bond').pct, 5) + soft(E('wf_fang').pct, 7)) / 100)) < 1e-9);
+  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (soft(E('su_bond').pct, def.rule.categories.tagS.cap) + soft(E('wf_fang').pct, def.rule.perWeapon.cap)) / 100)) < 1e-9);
   sim.debugGrant('ghost_wolves', { count: 2, power: 1 });
   assert.equal(sim.weapons[0].s.count, 5, 'bonus persists through rank-ups and debug grants');
   run(sim, 5);
@@ -437,7 +437,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   const s2 = new Sim({ data, seed: 1, characterId: 'elias', tree: fx({ ma_cast: 1, bo_pierce: 1 }) });
   s2.addWeapon('spirit_bolts');
   assert.equal(s2.weapons[1].s.pierce, 1);
-  assert.ok(Math.abs(s2.mods.cooldown - (1 - soft(-E('ma_cast').pct, 3) / 100)) < 1e-9);
+  assert.ok(Math.abs(s2.mods.cooldown - (1 - soft(-E('ma_cast').pct, def.rule.categories.cast.cap) / 100)) < 1e-9);
 });
 
 test('effects: reroll and banish are unavailable at the start and unlocked by the tree', () => {

@@ -223,25 +223,25 @@
   "markFace": 4,
   "rushFace": 0.0375,
   "perWeapon": {
-   "cap": 7,
+   "cap": 8.6,
    "weight": 0.08,
    "refWeapons": 5
   },
   "categories": {
    "dmg": {
-    "cap": 2.5,
+    "cap": 2.7,
     "weight": 1
    },
    "tagS": {
-    "cap": 5,
+    "cap": 6.4,
     "weight": 0.35
    },
    "tagM": {
-    "cap": 5,
+    "cap": 6.4,
     "weight": 0.35
    },
    "cast": {
-    "cap": 3,
+    "cap": 3.6,
     "weight": 0.3
    },
    "area": {
@@ -261,11 +261,11 @@
     "weight": 0.15
    },
    "lore": {
-    "cap": 2,
+    "cap": 0,
     "weight": 0.6
    },
    "choice": {
-    "cap": 1,
+    "cap": 0,
     "weight": 0.8
    }
   },
@@ -395,7 +395,7 @@
    "idx": 4,
    "kind": "ring",
    "name": "Moon-Touched",
-   "desc": "Magic +2% damage",
+   "desc": "Magic +3% damage",
    "flavour": "Moonlight settles in your palms.",
    "branch": "magic",
    "cost": {
@@ -405,7 +405,7 @@
     {
      "weapon": "@magic",
      "stat": "power",
-     "pct": 2
+     "pct": 3
     }
    ],
    "place": {
@@ -1127,7 +1127,7 @@
    "idx": 31,
    "kind": "ring",
    "name": "Quickened Casting",
-   "desc": "Spells cast 2% faster",
+   "desc": "Spells cast 3% faster",
    "branch": "magic",
    "cost": {
     "gold": 670
@@ -1138,7 +1138,7 @@
    "effects": [
     {
      "mod": "cooldown",
-     "pct": -2
+     "pct": -3
     }
    ],
    "place": {
@@ -1200,7 +1200,7 @@
    "idx": 34,
    "kind": "ring",
    "name": "Dusk Radiance",
-   "desc": "Magic +2% damage",
+   "desc": "Magic +3% damage",
    "branch": "magic",
    "cost": {
     "gold": 1500,
@@ -1213,7 +1213,7 @@
     {
      "weapon": "@magic",
      "stat": "power",
-     "pct": 2
+     "pct": 3
     }
    ],
    "place": {
