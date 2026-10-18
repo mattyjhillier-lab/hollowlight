@@ -882,7 +882,7 @@ export class RunScene extends Phaser.Scene {
     this.teleG.clear();
     const nl = this.nl;
     const nlOn = !!(app.params.arc && app.params.night);
-    if (nlOn) nl.prepare(sim, lx, ly, this.lanR, this.quality.tier, this.arc);
+    if (nlOn) nl.prepare(sim, lx, ly, this.lanR, this.quality.tier, this.arc, this.enArt.on);
     else if (this.nlOn) nl.hide();
     this.nlOn = nlOn;
 
@@ -1022,7 +1022,7 @@ export class RunScene extends Phaser.Scene {
       if (img.tq !== tq || (tq >= 200 && img.tv !== nl.ver)) {
         img.tq = tq;
         img.tv = nl.ver;
-        const jv = husk ? img.jv : 1; // EN1/EN2: per-instance body value jitter so a pack is not clones (visual only, from the id)
+        const jv = husk ? img.jv * (this.arc.bodyK < 1 ? HUSK_TYPES[e.type].dayK : 1) : 1; // EN1/EN2: per-instance body value jitter so a pack is not clones (visual only, from the id); dayK = daylight body darkening per type (WL6d G2)
         if (tq >= 200) img.setTint(img.lastTint = mulTint(nl.tab[tq - 200], jv));
         else if (tq === 100) img.setTintFill(0xffffff);
         else if (tq === 102) img.setTint(ROLE.markTint);

@@ -8,6 +8,7 @@ import {
   eyeAnim, makeEyeOut, streakCap,
 } from './nightlook.js';
 import { ROLE } from './palette.js';
+import { HUSK_TYPES } from './husk/frames.js';
 
 const ADD = Phaser.BlendModes.ADD;
 const MAXE = 512;
@@ -70,7 +71,9 @@ export class NightLayer {
   }
 
   // Before the enemy loop: tint table, nearby spirit lights, lit level per enemy (index = position in sim.enemies).
-  prepare(sim, lx, ly, R, tier, arc) {
+  // husks = the Husk atlas is on: Husk types use the normal tint table (the dark-type floor was for the old near-black crawler sprite;
+  // the Husk bake lifts its own blacks for G3, and the floor made the pale-masked Rootback match bright daylight ground, |dL*| < 1)
+  prepare(sim, lx, ly, R, tier, arc, husks) {
     const key = Math.round(arc.farV * 1000) * 1000 + Math.round(arc.bodyK * 1000);
     if (key !== this.tabKey) { this.tabKey = key; fillTintTable(arc.farV, arc.bodyK, this.tab); fillTintTable(Math.max(arc.farV * DARK_DAY_K, DARK_FLOOR.root_crawler, DARK_FLOOR_DAY / arc.bodyK), arc.bodyK, this.tab, DARK_OFF); this.ver++; }
     // spirit lights (wolves, ravens, orbs): the first few visible ones also light the enemies beside them
@@ -103,7 +106,7 @@ export class NightLayer {
         if (sx * sx + sy * sy < SPIRIT_R2) { ns = true; break; }
       }
       this.lit[i] = e.boss ? LIT_STEPS : litLevel(Math.sqrt(d2), R, ns);
-      this.tq[i] = this.lit[i] + (DARK_FLOOR[e.type] ? DARK_OFF : 0);
+      this.tq[i] = this.lit[i] + (DARK_FLOOR[e.type] && !(husks && HUSK_TYPES[e.type]) ? DARK_OFF : 0);
     }
   }
 

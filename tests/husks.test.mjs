@@ -11,9 +11,11 @@ import { data } from './helpers.mjs';
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 test('ids unchanged and every Husk type is a real enemy (saves, kill gates and tree conditions keep working)', () => {
-  assert.deepEqual(HUSK_IDS, ['wolf']); // EN1: Fell Wolf; crow + crawler in EN2
-  assert.equal(data.enemies.wolf.name, 'Fell Wolf');
+  assert.deepEqual(HUSK_IDS, ['wolf', 'crow', 'root_crawler']);
   for (const id of HUSK_IDS) assert.ok(data.enemies[id], id);
+  assert.equal(data.enemies.wolf.name, 'Fell Wolf');
+  assert.equal(data.enemies.crow.name, 'Grave Crow');
+  assert.equal(data.enemies.root_crawler.name, 'Root Crawler');
 });
 
 test('atlas layout: every frame of every type is present, inside the atlas, no overlaps, within the size budget', () => {
@@ -41,6 +43,8 @@ test('atlas layout: every frame of every type is present, inside the atlas, no o
 test('true size: wolf ~hero-sized (~50 px long on a 720p desktop), crow smaller, crawler wolf-sized', () => {
   const px = (id) => HUSK_TYPES[id].box[2] * HUSK_TYPES[id].g / 4 * 2.4; // frame width incl. margins at 2.4 px per world unit
   assert.ok(px('wolf') > 50 && px('wolf') < 62, 'wolf ' + px('wolf'));
+  assert.ok(px('crow') < px('wolf'));
+  assert.ok(px('root_crawler') > 48);
   assert.equal(TPW, 5);
 });
 
@@ -57,7 +61,7 @@ test('SVG sheets are self-contained (no external refs/scripts), deterministic, o
 
 test('eye anchors: per type count (wolf pair, crow one high, crawler wide pair), present for every frame, inside the frame box, sized down to the socket', () => {
   const E = eyeAnchors();
-  const want = { wolf: 2 };
+  const want = { wolf: 2, crow: 1, root_crawler: 2 };
   for (const id of HUSK_IDS) {
     const T = HUSK_TYPES[id], u = T.g / 4;
     assert.equal(E[id].length, Object.keys(FR).length);
@@ -69,6 +73,8 @@ test('eye anchors: per type count (wolf pair, crow one high, crawler wide pair),
       }
     }
   }
+  assert.ok(E.crow[FR.w0][0][1] < E.wolf[FR.w0][0][1], 'crow eye held higher than the wolf eye');
+  assert.ok(Math.abs(E.root_crawler[FR.w0][0][0] - E.root_crawler[FR.w0][1][0]) > Math.abs(E.wolf[FR.w0][0][0] - E.wolf[FR.w0][1][0]), 'crawler eyes wider apart');
   assert.ok(E.wolf[FR.t1][0][1] > E.wolf[FR.w0][0][1], 'wolf head drops on the tell');
   const [hx, hy] = hurtPoint(80, 0, 0); assert.ok(Number.isFinite(hx) && Number.isFinite(hy));
 });

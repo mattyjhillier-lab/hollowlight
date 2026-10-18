@@ -3,7 +3,7 @@
 // Units: du (design units of the locked mock-ups); world units per du = g / 4 (docs/mockups/enemies-husks/roster.mjs, true px = du * g * 2.34 / 4).
 import { resetAll, defs, setGrainBox, EYES, clearEyes } from './paint.js';
 import { EXTRA_DEFS } from './kit.js';
-import { wolfA } from './husks.js';
+import { wolfA, crowA, crawlerA } from './husks.js';
 
 export const ATLAS_KEY = 'en_atlas';
 export const TPW = 5; // atlas texels per world unit (Wren ~5.9; 2.1x the 720p desktop zoom, 1.4x at 1080p)
@@ -12,17 +12,26 @@ export const RIM_K = 0.5; // rim outline frames are baked at half density (a sof
 // Night-eye image size on Husks vs the WL6b size (the locked WL6b eye was sized for the old 18-unit sprites; at full size the ember halo
 // covers the whole mask and the Husk reads as 'orb head'). 0.6 puts the cream core inside the knot-hole socket like the locked mock-up
 // sheets; contrast re-measured with the WL6d harness (scripts/wl6-measure.mjs contrast). Needs Matt's OK as a WL6b size change.
-export const HUSK_EYE_K = { wolf: 0.6 };
+export const HUSK_EYE_K = { wolf: 0.6, crow: 0.9, root_crawler: 0.85 }; // crow keeps the locked crow boost; crawler eyes sit wide in a dark cleft
 
 // box = [x0, y0, w, h] in du (frame bounds incl. outline, blur and shadow); foot = world units from the sim position down to the feet;
 // maskAt = mask centre on the walk pose (du; the death mask-pop starts there), mdx = how far it is thrown forward (du);
+// dayK = body value multiplier once the arc darkens bodies for daylight (bodyK < 1; WL6d G2: the mid-grey crow needs |dL*| >= 6 on bright ground);
 // hurtW = the mock-up finish() width used by the hurt squash transform (eye anchors follow it).
 // frames: [name, state]. Order matters: index = frame id used at runtime (FR below).
 const MASK_BOX = [-58, -46, 116, 88];
 export const HUSK_TYPES = {
   wolf: {
-    fn: wolfA, maskAt: [44, -48], mdx: 10, g: 0.62, box: [-80, -96, 162, 108], foot: 5, hurtW: 80, mask: MASK_BOX,
+    fn: wolfA, maskAt: [44, -48], mdx: 10, g: 0.62, box: [-80, -96, 162, 108], foot: 5, dayK: 1, hurtW: 80, mask: MASK_BOX,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
+  },
+  crow: {
+    fn: crowA, maskAt: [14, -56], mdx: 6, g: 0.66, box: [-60, -94, 118, 104], foot: 6, dayK: 0.85, hurtW: 40, mask: MASK_BOX,
+    frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0.25, noMask: 1 }], ['m', { maskOnly: 1 }]],
+  },
+  root_crawler: {
+    fn: crawlerA, maskAt: [34, -22], mdx: 10, g: 0.74, box: [-62, -94, 132, 104], foot: 7, dayK: 1, hurtW: 84, mask: MASK_BOX,
+    frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };
 export const HUSK_IDS = Object.keys(HUSK_TYPES);
