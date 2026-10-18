@@ -14,10 +14,10 @@
     "name": "Elias, the Priest",
     "blurb": "Sturdy and steady. Holy light keeps him alive.",
     "color": "#f2f2f2",
-    "hp": 130,
+    "hp": 150,
     "speed": 76,
-    "traits": { "holyDamage": 1.15 },
-    "traitText": "+15% holy damage",
+    "traits": { "holyDamage": 1.30 },
+    "traitText": "+30% holy damage",
     "weapon": "holy_orbit",
     "ability": { "id": "candle_wheel", "name": "Candle Wheel", "cooldown": 60, "radius": 80, "heal": 1.5, "dps": 0, "desc": "6s: plant a ring of light. You heal while you stand inside, and your Holy Orbit lights lock into the ring and burn what crosses it." }
   }

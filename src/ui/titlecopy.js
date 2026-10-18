@@ -53,7 +53,7 @@ export function splitName(full) {
 }
 
 const clampPips = (v) => Math.max(1, Math.min(5, Math.round(v)));
-/** Health 60..130 -> 2..5 pips; speed 76..96 -> 2..5 pips (fixed scales so a future hero lands on the same ruler). */
+/** Health 60..130+ -> 2..5 pips (150 clamps to 5); speed 76..96 -> 2..5 pips (fixed scales so a future hero lands on the same ruler). */
 export function heroPips(c) {
   return { health: clampPips((Number(c && c.hp) || 0) / 26), speed: clampPips(((Number(c && c.speed) || 0) - 60) / 7.5) };
 }
