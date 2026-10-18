@@ -77,14 +77,19 @@ export const MIGRATIONS = {
 
 const ID_KEY = /^[a-z0-9_]{1,40}$/;
 // id -> bounded count (stat maps keyed by enemy / chapter / weapon / character ids).
+// Bounds (documented): killsByEnemy 128 keys (8 chapters x ~12 enemy types + margin), bossKills/weaponsUsed/charsUsed 32, chapters 32,
+// recentRuns.k 12. A VALID key that does not fit is dropped and counted in SANITIZE_WARNINGS.capped (visible to tests/diagnostics) so the
+// cap is never hit silently: raise the cap when the roster grows (tests/savev3.test.mjs checks the roster fits).
+export const SANITIZE_WARNINGS = { capped: 0 };
+export const STAT_KEY_CAPS = { killsByEnemy: 128, bossKills: 32, weaponsUsed: 32, charsUsed: 32, chapters: 32 };
 function countMap(o, maxKeys = 64, max = 1e9) {
   const out = {};
   if (!isObj(o)) return out;
   let n = 0;
   for (const k of Object.keys(o)) {
-    if (n >= maxKeys) break;
     if (BAD_KEYS.has(k) || !ID_KEY.test(k)) continue;
     if (typeof o[k] !== 'number' || !Number.isFinite(o[k])) continue;
+    if (n >= maxKeys) { SANITIZE_WARNINGS.capped++; continue; }
     out[k] = Math.floor(Math.min(max, Math.max(0, o[k])));
     n++;
   }
@@ -95,8 +100,8 @@ function chapterMap(o) {
   if (!isObj(o)) return out;
   let n = 0;
   for (const k of Object.keys(o)) {
-    if (n >= 32) break;
     if (BAD_KEYS.has(k) || !ID_KEY.test(k) || !isObj(o[k])) continue;
+    if (n >= STAT_KEY_CAPS.chapters) { SANITIZE_WARNINGS.capped++; continue; }
     out[k] = { runs: int(o[k].runs, 0, 0, 1e9), clears: int(o[k].clears, 0, 0, 1e9), bestTime: num(o[k].bestTime, 0, 0, 1e7) };
     n++;
   }
@@ -166,7 +171,7 @@ export function sanitize(raw, now = Date.now()) {
     totalPlayTime: num(s.totalPlayTime, 0, 0, 1e9),
     bestLevel: int(s.bestLevel, 0, 0, 1e6),
     totalGold: int(s.totalGold, 0),
-    killsByEnemy: countMap(s.killsByEnemy),
+    killsByEnemy: countMap(s.killsByEnemy, STAT_KEY_CAPS.killsByEnemy),
     bossKills: countMap(s.bossKills, 32),
     chapters: chapterMap(s.chapters),
     evolved: countMap(s.evolved),

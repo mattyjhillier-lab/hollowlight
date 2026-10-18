@@ -12,7 +12,7 @@ export const OLD_TREE_VERSION = 2; // object-form trees written before the compa
 export const TREE_STEPS = {
   3: (tree) => {
     const r = regrow(tree);
-    return { tree: r.tree, gold: r.refund.gold, shards: r.refund.shards, note: { regrowth: { gold: r.refund.gold, shards: r.refund.shards, nodes: r.refunded } } };
+    return { tree: r.tree, gold: r.refund.gold, shards: r.refund.shards, note: r.refunded > 0 ? { regrowth: { gold: r.refund.gold, shards: r.refund.shards, nodes: r.refunded } } : undefined }; // the 'web has regrown' notice only when something was refunded
   },
 };
 

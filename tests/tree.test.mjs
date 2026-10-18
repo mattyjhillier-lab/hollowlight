@@ -180,7 +180,7 @@ test('edited stats cannot be abused beyond clamps; stored totals are not trusted
   assert.equal(st.killsByEnemy.crow, 0);
   assert.equal(st.killsByEnemy.root_crawler, undefined);
   assert.equal(Object.hasOwn(st.killsByEnemy, '__proto__'), false);
-  assert.ok(Object.keys(st.killsByEnemy).length <= 64);
+  assert.ok(Object.keys(st.killsByEnemy).length <= 128);
   assert.equal(st.chapters.cursed_forest.clears, 1e9);
   assert.equal(st.chapters.cursed_forest.bestTime, 0);
   assert.equal(st.chapters.cursed_forest.runs, 0);

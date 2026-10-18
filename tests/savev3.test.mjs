@@ -113,7 +113,7 @@ test('T2 v1 saves migrate through v2 and v3 (placeholder tree reset, nothing to 
   assert.equal(r.save.version, 3);
   assert.equal(r.save.gold, 321);
   assert.deepEqual(r.save.tree, {});
-  assert.deepEqual(r.save.notes, { regrowth: { gold: 0, shards: 0, nodes: 0 } });
+  assert.deepEqual(r.save.notes, {}, 'nothing refunded: no regrowth notice');
   assert.equal(SAVE_VERSION, 3);
   assert.equal(defaultSave().version, 3);
   assert.equal(typeof MIGRATIONS[1], 'function'); assert.equal(typeof MIGRATIONS[2], 'function');
@@ -304,7 +304,7 @@ test('T2 at 2000 owned nodes the tree part of the save is <= 2 KB and load (pars
     console.log(`  2000 owned: parseSave median ${times[3].toFixed(1)} ms (target 20 ms)`);
     assert.ok(out.ok);
     assert.equal(Object.keys(out.save.tree).length, Object.keys(tree).length, 'everything owned loads back');
-    assert.ok(times[3] <= 200, `load ${times[3]} ms`);
+    assert.ok(times[0] <= 40, `load best-of-7 ${times[0]} ms, median ${times[3]} ms (locked budget 20 ms at 2000 nodes; best-of-7 with 2x margin ignores scheduler noise)`);
     // and it round-trips through the compact writer
     assert.deepEqual(serializeSave(out.save).tree.o, disk.tree.o);
   });

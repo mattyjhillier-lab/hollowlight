@@ -428,3 +428,13 @@ test('T1 scripts/tree-validate.mjs passes on the shipped tree (exit 0) and print
   assert.match(r.stdout, /budget: combat PE at cap 15\.32/);
   assert.match(r.stdout, /ids and idx match the append-only snapshot/);
 });
+
+test('L6 legacyIds are exactly the frozen v1 ids that skip prefix ownership: a subset of PRICES_V3, snapshot-pinned', async () => {
+  const { PRICES_V3 } = await import('../src/meta/migrations/tree-v3.prices.js');
+  const legacy = real.info.core.legacyIds;
+  assert.deepEqual(legacy, ['su_call'], 'adding a legacy id skips the namespace rule: a deliberate, reviewed edit of this snapshot');
+  for (const id of legacy) assert.ok(Object.hasOwn(PRICES_V3, id), `${id} must be a shipped v1 id`);
+  const v1 = fx('tree-v1.json');
+  const v1ids = new Set((v1.nodes || v1).map((n) => n.id));
+  for (const id of legacy) assert.ok(v1ids.has(id), `${id} must exist in the v1 fixture`);
+});

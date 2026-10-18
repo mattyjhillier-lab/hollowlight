@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { data, treeDef } from './helpers.mjs';
-import { setTreeDef, parseSave, sanitize, serializeSave, defaultSave, MAX_SAVE_BYTES } from '../src/save/schema.js';
+import { setTreeDef, parseSave, sanitize, serializeSave, defaultSave, MAX_SAVE_BYTES, SANITIZE_WARNINGS, STAT_KEY_CAPS } from '../src/save/schema.js';
 import { SaveStore, SAVE_KEY, BACKUP_KEY, DAMAGED_KEY } from '../src/save/store.js';
 import { compileTree, presetTree, sanitizeTree, costFor } from '../src/meta/tree.js';
 import { composeTree } from '../src/meta/treedata.js';
@@ -368,4 +368,20 @@ test('M3 a revive / reroll hidden behind an exclusive pair is caught on the side
   const c = composeTree(fs, data);
   const b = budgetOf(compileTree(c.v2, data), c.info.core.budget, Object.keys(c.info.clusters).length);
   assert.match(b.violations.join('|'), /rerolls/);
+});
+
+test('L3 stat-map caps: a valid key beyond the cap is counted (never silent); the shipped roster fits with room to spare', () => {
+  assert.ok(Object.keys(data.enemies).length * 2 <= STAT_KEY_CAPS.killsByEnemy, 'enemy roster x2 must fit killsByEnemy');
+  assert.ok(Object.keys(data.weapons).length + 8 <= STAT_KEY_CAPS.weaponsUsed && Object.keys(data.characters).length + 8 <= STAT_KEY_CAPS.charsUsed);
+  const before = SANITIZE_WARNINGS.capped;
+  const many = Object.fromEntries(Array.from({ length: STAT_KEY_CAPS.killsByEnemy + 5 }, (_, i) => [`e${i}`, 1]));
+  const out = sanitize({ ...defaultSave(), stats: { ...defaultSave().stats, killsByEnemy: many } });
+  assert.equal(Object.keys(out.stats.killsByEnemy).length, STAT_KEY_CAPS.killsByEnemy);
+  assert.equal(SANITIZE_WARNINGS.capped - before, 5);
+});
+
+test('L9 the regrowth notice exists only when something was refunded', () => {
+  assert.deepEqual(parseSave(JSON.stringify({ version: 2, gold: 5, tree: {} })).save.notes, {});
+  assert.deepEqual(parseSave(JSON.stringify({ version: 2, gold: 5, tree: { gt_raven_flock: 1 } })).save.notes, {}, 'only permanent gates: nothing refunded');
+  assert.equal(parseSave(JSON.stringify({ version: 2, gold: 5, tree: { sp_reroll1: 1 } })).save.notes.regrowth.nodes, 1);
 });
