@@ -224,3 +224,5 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - FEEDBACK 2026-10-18 (Matt, dev + built game on PC): still somewhat laggy (built game only slightly better than dev); WALK ANIMATION not smooth: the head bounce does not look like someone actually walking; wants it MUCH smoother. -> lag + walk-cycle redesign (Wren, Elias, followers) running (opus). Release-gate quality item.
 
 - IDEA 2026-10-18 (Matt) DIFFICULTY TIERS: Normal/Hard/Expert per map, unlocked in the skill tree, harder = more resources (maybe a new resource), some upgrades locked behind tier clears; careful balance with tree economy; research first. = release-gate item 12 (replay loop). Design BEFORE tree T3.
+
+- QUEUED 2026-10-18: design pass (three options per piece) for the 4 extra v1 ideas: cosmetics, Twilight assist, daily seed + endless dusk, risk toggles/curses; economy re-model for curse income. Starts when an agent slot frees (after T3 / EN3-5).
