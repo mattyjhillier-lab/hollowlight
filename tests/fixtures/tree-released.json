@@ -1,0 +1,4 @@
+{
+ "_comment": "Tree content versions that have been RELEASED to players (main). Empty until the v1 launch merge: nothing is released on save v3 yet, so T3 may still change prices before then. At the launch merge run `node scripts/tree-release.mjs --snapshot` and commit the result; from then on any change to a released id needs a core.version bump + migration step (tests/treerelease.test.mjs).",
+ "released": {}
+}
