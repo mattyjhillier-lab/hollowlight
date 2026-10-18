@@ -15,6 +15,7 @@ import {
   BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
+import { resolveTier } from './tiers.js';
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -27,11 +28,13 @@ export const MARK_TIME = 3;
 export const AMP_CAP = 1.75;
 
 export class Sim {
-  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false }) {
+  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal' }) {
     this.data = data;
     this.balance = data.balance;
     this.chapterId = chapterId;
     this.chapter = data.chapters[chapterId];
+    // Difficulty tier (src/sim/tiers.js): an unknown or forged id resolves to Twilight (every multiplier 1), so the param can never reach another path.
+    this.tier = resolveTier(data.tiers, chapterId, tier);
     this.character = data.characters[characterId];
     this.characterId = characterId;
     this.seed = seed;
@@ -74,6 +77,11 @@ export class Sim {
       markAdd: T.status?.mark || 0,
       rallyAdd: T.ability?.rallySecs || 0,
       wheelMul: 1 + (T.ability?.wheel || 0) / 100,
+      // Satchel (DT5a): gems fly to you faster / on level-up; seconds taken off the heart and magnet pity timers
+      gemPull: 1 + (T.perks?.gemPull || 0) / 100,
+      gemCall: !!T.perks?.gemCall,
+      heartPity: T.drops?.heartPity || 0,
+      magnetPity: T.drops?.magnetPity || 0,
     };
     this.reviveLeft = this.tfx.revive > 0 ? 1 : 0;
     this.weaponBonus = T.weaponBonus || {};
@@ -94,6 +102,7 @@ export class Sim {
     this._bless = {};
     this.healSwapReady = 0;
     this.killsByEnemy = {};
+    this.gemsTaken = 0; this.abilityUses = 0; this.blessingsTaken = 0; // counters for the tool-cluster unlock conditions (never read by the sim)
 
     this.enemies = [];
     this.gems = [];
@@ -349,8 +358,8 @@ export class Sim {
     const d = this.data.enemies[typeId];
     const hs = this.balance.hpScale;
     const m = this.minutes;
-    const hpMul = d.boss ? 1 : 1 + hs.linear * m + hs.quad * m * m;
-    const dmgMul = 1 + this.balance.dmgScale.linear * m;
+    const hpMul = (d.boss ? 1 : 1 + hs.linear * m + hs.quad * m * m) * (d.boss ? this.tier.bossHp : this.tier.enemyHp); // tier multipliers are exactly 1 on Twilight
+    const dmgMul = (1 + this.balance.dmgScale.linear * m) * this.tier.enemyDmg;
     const size = this.balance.worldSize;
     const e = {
       id: this.nextId++, type: typeId,
@@ -685,11 +694,12 @@ export class Sim {
       const d = Math.hypot(dx, dy) || 0.001;
       if (d < pick) g.mag = true;
       if (g.mag) {
-        const step = Math.min(d, this.balance.magnetSpeed * dt);
+        const step = Math.min(d, this.balance.magnetSpeed * this.tfx.gemPull * dt);
         g.x += (dx / d) * step;
         g.y += (dy / d) * step;
       }
       if (d < 5) {
+        this.gemsTaken += 1;
         this.xp += g.v * this.mods.xp;
       } else {
         keep.push(g);
@@ -707,8 +717,9 @@ export class Sim {
       this.addPickup('magnet', e.x + 12, e.y);
       return;
     }
-    const heartP = b.heart * this.tfx.heart * low * (1 + this.sinceHeart / b.pityHeart);
-    const magnetP = b.magnet * this.tfx.magnet * (1 + this.sinceMagnet / b.pityMagnet);
+    const pityH = Math.max(10, b.pityHeart + this.tfx.heartPity) * this.tier.heartPity, pityM = Math.max(10, b.pityMagnet + this.tfx.magnetPity); // Kinder Hearts / Lodestar shorten the timers; Long Night stretches the heart timer
+    const heartP = b.heart * this.tfx.heart * low * (1 + this.sinceHeart / pityH);
+    const magnetP = b.magnet * this.tfx.magnet * (1 + this.sinceMagnet / pityM);
     const forced = this.sinceHeart >= (b.pityHeartForce || Infinity) && p.hp < p.maxHp * 0.8; // guaranteed heart after a long dry spell
     if (p.hp < p.maxHp && (forced || this.rng.chance(heartP))) { this.addPickup('heart', e.x, e.y); this.sinceHeart = 0; }
     else if (this.gems.length > (b.magnetGems ?? 12) && this.rng.chance(magnetP)) { this.addPickup('magnet', e.x, e.y); this.sinceMagnet = 0; }
@@ -754,6 +765,7 @@ export class Sim {
     if (a.cdLeft > 0 || this.state !== 'running') return false;
     const p = this.player;
     a.cdLeft = this.abilityCooldown;
+    this.abilityUses += 1;
     const dur = 6 * this.tfx.abilityDur;
     if (a.id === 'rally_pack') {
       const dur = 6 * this.tfx.abilityDur + this.tfx.rallyAdd; // Firm Grip: a longer window, never a stronger one (pins still never hold bosses)
@@ -857,6 +869,10 @@ export class Sim {
       this.level += 1;
       this.pending += 1;
       if (this.tfx.rush) this.buffs.rush = this.tfx.rush.secs;
+      if (this.tfx.gemCall) { // Lantern Call: gems within twice your pickup range fly to you
+        const reach = this.balance.pickupRadius * this.mods.pickup * this.bless.pickup * 2;
+        for (const g of this.gems) if (!g.mag && Math.hypot(this.player.x - g.x, this.player.y - g.y) < reach) g.mag = true;
+      }
       if (this.tfx.levelHeal > 0) this.healPlayer((this.player.maxHp * this.tfx.levelHeal) / 100);
       this.pushEvent('levelup');
     }
@@ -916,6 +932,7 @@ export class Sim {
       else if (card.fallback === 'xp') this.xp += Math.ceil(this.xpNeeded * 0.5);
     } else if (card.kind === 'blessing') {
       this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1);
+      this.blessingsTaken += 1;
     } else {
       if (card.kind === 'evolution') {
         for (const u of this.units) if (u.owner === card.weaponId) u.dead = true;
@@ -973,6 +990,10 @@ export class Sim {
       bossId: this.bossKilled ? this.chapter.bossId : null,
       weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks }, damage: this.dmgBy[w.id] || 0, kills: this.killsBy[w.id] || 0 })),
       damageDealt: this.damageDealt,
+      tier: this.tier.id,
+      gems: this.gemsTaken,
+      abilityUses: this.abilityUses,
+      blessings: this.blessingsTaken,
     };
   }
 

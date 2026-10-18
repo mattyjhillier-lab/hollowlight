@@ -1,0 +1,442 @@
+{
+ "kind": "tool",
+ "tool": "almanac",
+ "prefix": "bs",
+ "slot": "far6",
+ "name": "The Almanac",
+ "blurb": "What you have learned of the Hollow: Habits, Weakness and Tells for every foe you have faced.",
+ "nodes": [
+  {
+   "id": "bs_wolf1",
+   "idx": 0,
+   "kind": "ring",
+   "name": "Fell Wolf: Habits",
+   "desc": "+1% damage against Fell Wolf.",
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "lore": "wolf",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "killEnemy",
+    "id": "wolf",
+    "n": 1000
+   },
+   "place": {
+    "at": [
+     0,
+     -130
+    ]
+   }
+  },
+  {
+   "id": "bs_wolf2",
+   "idx": 1,
+   "kind": "ring",
+   "name": "Fell Wolf: Weakness",
+   "desc": "+1% more damage against Fell Wolf (2% per type at most).",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "lore": "wolf",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_wolf1"
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "wolf",
+    "n": 4000
+   },
+   "place": {
+    "at": [
+     65,
+     -112.6
+    ]
+   }
+  },
+  {
+   "id": "bs_wolf3",
+   "idx": 2,
+   "kind": "ring",
+   "name": "Fell Wolf: Tells",
+   "desc": "Its attack tell shows 0.1 s earlier.",
+   "cost": {
+    "gold": 400
+   },
+   "effects": [
+    {
+     "info": "tells",
+     "enemy": "wolf"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_wolf2"
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "wolf",
+    "n": 12000
+   },
+   "place": {
+    "at": [
+     112.6,
+     -65
+    ]
+   }
+  },
+  {
+   "id": "bs_crow1",
+   "idx": 3,
+   "kind": "ring",
+   "name": "Grave Crow: Habits",
+   "desc": "+1% damage against Grave Crow.",
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "lore": "crow",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "killEnemy",
+    "id": "crow",
+    "n": 1000
+   },
+   "place": {
+    "at": [
+     130,
+     0
+    ]
+   }
+  },
+  {
+   "id": "bs_crow2",
+   "idx": 4,
+   "kind": "ring",
+   "name": "Grave Crow: Weakness",
+   "desc": "+1% more damage against Grave Crow (2% per type at most).",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "lore": "crow",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_crow1"
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "crow",
+    "n": 4000
+   },
+   "place": {
+    "at": [
+     112.6,
+     65
+    ]
+   }
+  },
+  {
+   "id": "bs_crow3",
+   "idx": 5,
+   "kind": "ring",
+   "name": "Grave Crow: Tells",
+   "desc": "Its attack tell shows 0.1 s earlier.",
+   "cost": {
+    "gold": 400
+   },
+   "effects": [
+    {
+     "info": "tells",
+     "enemy": "crow"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_crow2"
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "crow",
+    "n": 12000
+   },
+   "place": {
+    "at": [
+     65,
+     112.6
+    ]
+   }
+  },
+  {
+   "id": "bs_crawl1",
+   "idx": 6,
+   "kind": "ring",
+   "name": "Root Crawler: Habits",
+   "desc": "+1% damage against Root Crawler.",
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "lore": "root_crawler",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 250
+   },
+   "place": {
+    "at": [
+     0,
+     130
+    ]
+   }
+  },
+  {
+   "id": "bs_crawl2",
+   "idx": 7,
+   "kind": "ring",
+   "name": "Root Crawler: Weakness",
+   "desc": "+1% more damage against Root Crawler (2% per type at most).",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "lore": "root_crawler",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_crawl1"
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 1000
+   },
+   "place": {
+    "at": [
+     -65,
+     112.6
+    ]
+   }
+  },
+  {
+   "id": "bs_crawl3",
+   "idx": 8,
+   "kind": "ring",
+   "name": "Root Crawler: Tells",
+   "desc": "Its attack tell shows 0.1 s earlier.",
+   "cost": {
+    "gold": 400
+   },
+   "effects": [
+    {
+     "info": "tells",
+     "enemy": "root_crawler"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_crawl2"
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 3000
+   },
+   "place": {
+    "at": [
+     -112.6,
+     65
+    ]
+   }
+  },
+  {
+   "id": "bs_treant1",
+   "idx": 9,
+   "kind": "ring",
+   "name": "Elder Treant: Habits",
+   "desc": "+1% damage against Elder Treant.",
+   "cost": {
+    "gold": 300
+   },
+   "effects": [
+    {
+     "lore": "elder_treant",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "bossKill",
+    "id": "elder_treant",
+    "n": 1
+   },
+   "place": {
+    "at": [
+     -130,
+     0
+    ]
+   }
+  },
+  {
+   "id": "bs_treant2",
+   "idx": 10,
+   "kind": "ring",
+   "name": "Elder Treant: Weakness",
+   "desc": "+1% more damage against Elder Treant (2% per type at most).",
+   "cost": {
+    "gold": 700
+   },
+   "effects": [
+    {
+     "lore": "elder_treant",
+     "pct": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_treant1"
+   ],
+   "unlock": {
+    "t": "bossKill",
+    "id": "elder_treant",
+    "n": 5
+   },
+   "place": {
+    "at": [
+     -112.6,
+     -65
+    ]
+   }
+  },
+  {
+   "id": "bs_treant3",
+   "idx": 11,
+   "kind": "ring",
+   "name": "Elder Treant: Tells",
+   "desc": "Its attack tell shows 0.1 s earlier.",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "info": "tells",
+     "enemy": "elder_treant"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_treant2"
+   ],
+   "unlock": {
+    "t": "bossKill",
+    "id": "elder_treant",
+    "n": 15
+   },
+   "place": {
+    "at": [
+     -65,
+     -112.6
+    ]
+   }
+  },
+  {
+   "id": "bs_page",
+   "idx": 12,
+   "kind": "ring",
+   "name": "Full Almanac",
+   "desc": "The codex pages light up and chests show one more Blessing to choose from. No power beyond the Blessing caps.",
+   "cost": {
+    "gold": 2000,
+    "shards": 2
+   },
+   "effects": [
+    {
+     "info": "codex",
+     "pe": 0.05
+    },
+    {
+     "perk": "blessChoice",
+     "pe": 0
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "bs_wolf1",
+    "bs_crow1",
+    "bs_crawl1",
+    "bs_treant1"
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "killEnemy",
+      "id": "wolf",
+      "n": 1000
+     },
+     {
+      "t": "killEnemy",
+      "id": "crow",
+      "n": 1000
+     },
+     {
+      "t": "killEnemy",
+      "id": "root_crawler",
+      "n": 250
+     },
+     {
+      "t": "bossKill",
+      "id": "elder_treant",
+      "n": 1
+     }
+    ]
+   },
+   "place": {
+    "at": [
+     0,
+     0
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,167 @@
+{
+ "kind": "tool",
+ "tool": "hearthkey",
+ "prefix": "rs",
+ "slot": "far2",
+ "name": "The Hearth-key",
+ "blurb": "How a run begins and how it is kept safe.",
+ "nodes": [
+  {
+   "id": "rs_autoset",
+   "idx": 0,
+   "kind": "ring",
+   "name": "Chosen Moment",
+   "desc": "Pick the auto-fire rule in Settings: below 30% health, below 50%, when 25+ foes are near, or off.",
+   "cost": {
+    "gold": 900
+   },
+   "effects": [
+    {
+     "perk": "autoRule"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "sp_auto"
+   ],
+   "unlock": {
+    "t": "abilityUses",
+    "n": 100
+   },
+   "place": {
+    "at": [
+     69.3,
+     -40
+    ]
+   }
+  },
+  {
+   "id": "rs_start",
+   "idx": 1,
+   "kind": "ring",
+   "name": "Kindred Start",
+   "desc": "At 0:00 choose your second spirit from three of your unlocked weapons (a free weapon card).",
+   "cost": {
+    "gold": 1500
+   },
+   "effects": [
+    {
+     "perk": "startWeapon",
+     "pe": 0.2
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "any",
+    "of": [
+     {
+      "t": "killEnemy",
+      "id": "crow",
+      "n": 4500
+     },
+     {
+      "t": "killEnemy",
+      "id": "root_crawler",
+      "n": 1500
+     },
+     {
+      "t": "bossKill",
+      "id": "elder_treant",
+      "n": 2
+     }
+    ]
+   },
+   "place": {
+    "at": [
+     69.3,
+     40
+    ]
+   }
+  },
+  {
+   "id": "rs_bless",
+   "idx": 2,
+   "kind": "ring",
+   "name": "Lantern Blessing",
+   "desc": "Start with one Blessing rank (choose one of three). It counts toward the Blessing caps.",
+   "cost": {
+    "gold": 1800,
+    "shards": 2
+   },
+   "effects": [
+    {
+     "perk": "startBlessing",
+     "pe": 0.3
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "rs_start"
+   ],
+   "unlock": {
+    "t": "blessings",
+    "n": 15
+   },
+   "place": {
+    "at": [
+     0,
+     80
+    ]
+   }
+  },
+  {
+   "id": "rs_slot5",
+   "idx": 3,
+   "kind": "ring",
+   "name": "Fifth Hook",
+   "desc": "A fifth weapon slot. Works on Deep Dusk and Long Night only.",
+   "cost": {
+    "gold": 3000,
+    "shards": 3,
+    "glass": 12
+   },
+   "effects": [
+    {
+     "perk": "weaponSlot",
+     "n": 1,
+     "pe": 1.5
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "rs_bless"
+   ],
+   "scope": {
+    "minChapter": 1,
+    "minTier": 1
+   },
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "clearTier",
+      "chapter": "cursed_forest",
+      "tier": "hard",
+      "hero": "wren"
+     },
+     {
+      "t": "clearTier",
+      "chapter": "cursed_forest",
+      "tier": "hard",
+      "hero": "elias"
+     }
+    ]
+   },
+   "place": {
+    "at": [
+     -69.3,
+     -40
+    ]
+   }
+  }
+ ]
+}

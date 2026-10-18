@@ -1,0 +1,199 @@
+{
+ "kind": "tool",
+ "tool": "nightgate",
+ "prefix": "df",
+ "slot": "far8",
+ "name": "The Night Gate",
+ "blurb": "Deeper nights and the lanterns only they can light.",
+ "nodes": [
+  {
+   "id": "gt_cursed_forest_hard",
+   "idx": 0,
+   "kind": "gate",
+   "name": "Deep Dusk: Cursed Forest",
+   "desc": "Opens the Deep Dusk night of the Cursed Forest. Kept when you reset the web.",
+   "cost": {
+    "gold": 1200,
+    "shards": 2
+   },
+   "effects": [
+    {
+     "unlock": "tier",
+     "chapter": "cursed_forest",
+     "tier": "hard"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "clearChapter",
+    "id": "cursed_forest"
+   },
+   "place": {
+    "at": [
+     0,
+     -85
+    ]
+   }
+  },
+  {
+   "id": "gt_cursed_forest_expert",
+   "idx": 1,
+   "kind": "gate",
+   "name": "Long Night: Cursed Forest",
+   "desc": "Opens the Long Night of the Cursed Forest. Kept when you reset the web.",
+   "cost": {
+    "gold": 2500,
+    "shards": 4,
+    "glass": 10
+   },
+   "effects": [
+    {
+     "unlock": "tier",
+     "chapter": "cursed_forest",
+     "tier": "expert"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "gt_cursed_forest_hard"
+   ],
+   "unlock": {
+    "t": "clearTier",
+    "chapter": "cursed_forest",
+    "tier": "hard"
+   },
+   "place": {
+    "at": [
+     80.8,
+     -26.3
+    ]
+   }
+  },
+  {
+   "id": "df_ward",
+   "idx": 2,
+   "kind": "key",
+   "name": "Dawnward",
+   "desc": "Long Night only: hearts heal +10%, all damage -1%. The other side of this pair is closed.",
+   "cost": {
+    "gold": 1800,
+    "glass": 10
+   },
+   "effects": [
+    {
+     "drop": "heartHeal",
+     "pct": 10,
+     "pe": 0.4
+    },
+    {
+     "mod": "damage",
+     "pct": -1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "keystone": true,
+   "requires": [
+    "gt_cursed_forest_expert"
+   ],
+   "excludes": [
+    "df_vigil"
+   ],
+   "scope": {
+    "minChapter": 1,
+    "minTier": 2
+   },
+   "unlock": {
+    "t": "clearTier",
+    "chapter": "cursed_forest",
+    "tier": "expert"
+   },
+   "place": {
+    "at": [
+     50,
+     68.8
+    ]
+   }
+  },
+  {
+   "id": "df_vigil",
+   "idx": 3,
+   "kind": "key",
+   "name": "Night Vigil",
+   "desc": "Long Night only: all damage +2%, max health -3%. The other side of this pair is closed.",
+   "cost": {
+    "gold": 1800,
+    "glass": 10
+   },
+   "effects": [
+    {
+     "mod": "damage",
+     "pct": 2,
+     "pe": 0.6
+    },
+    {
+     "player": "maxHp",
+     "pct": -3
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "keystone": true,
+   "requires": [
+    "gt_cursed_forest_expert"
+   ],
+   "excludes": [
+    "df_ward"
+   ],
+   "scope": {
+    "minChapter": 1,
+    "minTier": 2
+   },
+   "unlock": {
+    "t": "clearTier",
+    "chapter": "cursed_forest",
+    "tier": "expert"
+   },
+   "place": {
+    "at": [
+     -50,
+     68.8
+    ]
+   }
+  },
+  {
+   "id": "df_star",
+   "idx": 4,
+   "kind": "ring",
+   "name": "Three Dawns",
+   "desc": "Your lantern burns with a dawn rim on the map and the results screen. No power.",
+   "cost": {
+    "gold": 1000,
+    "glass": 6
+   },
+   "effects": [
+    {
+     "visual": "threeDawns"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "gt_cursed_forest_hard"
+   ],
+   "unlock": {
+    "t": "stars",
+    "chapter": "cursed_forest",
+    "n": 9
+   },
+   "place": {
+    "at": [
+     -80.8,
+     -26.3
+    ]
+   }
+  }
+ ]
+}

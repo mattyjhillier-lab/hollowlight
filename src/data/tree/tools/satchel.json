@@ -1,0 +1,96 @@
+{
+ "kind": "tool",
+ "tool": "satchel",
+ "prefix": "co",
+ "slot": "far4",
+ "name": "The Satchel",
+ "blurb": "Gems, pickups and fortune: small, cheap steps that make every run feel kinder.",
+ "nodes": [
+  {
+   "id": "co_pull",
+   "idx": 0,
+   "kind": "ring",
+   "name": "Eager Gems",
+   "desc": "Gems fly to you 15% faster per rank.",
+   "cost": {
+    "gold": 260
+   },
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 15
+    }
+   ],
+   "branch": "light",
+   "maxRank": 3,
+   "rankCost": 1.6,
+   "requires": [],
+   "place": {
+    "at": [
+     63.6,
+     -63.6
+    ]
+   }
+  },
+  {
+   "id": "co_call",
+   "idx": 1,
+   "kind": "ring",
+   "name": "Lantern Call",
+   "desc": "On level-up, gems within twice your pickup range fly to you.",
+   "cost": {
+    "gold": 1100
+   },
+   "effects": [
+    {
+     "perk": "gemCall"
+    }
+   ],
+   "branch": "light",
+   "requires": [
+    "co_pull"
+   ],
+   "unlock": {
+    "t": "bestLevel",
+    "n": 35
+   },
+   "place": {
+    "at": [
+     63.6,
+     63.6
+    ]
+   }
+  },
+  {
+   "id": "co_glean",
+   "idx": 2,
+   "kind": "ring",
+   "name": "Gleaner",
+   "desc": "Experience +2%.",
+   "cost": {
+    "gold": 1400,
+    "shards": 1
+   },
+   "effects": [
+    {
+     "mod": "xp",
+     "pct": 2
+    }
+   ],
+   "branch": "light",
+   "requires": [
+    "li_scav"
+   ],
+   "unlock": {
+    "t": "gems",
+    "n": 60000
+   },
+   "place": {
+    "at": [
+     -63.6,
+     -63.6
+    ]
+   }
+  }
+ ]
+}

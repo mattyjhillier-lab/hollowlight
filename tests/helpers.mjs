@@ -15,6 +15,7 @@ export const data = {
 };
 data.tree = loadTree(data).live; // fragments in src/data/tree/
 data.blessings = load('blessings');
+data.tiers = load('tiers');
 import { compileTree } from '../src/meta/tree.js';
 import { loadTree } from '../src/meta/treefs.mjs';
 import { setTreeDef } from '../src/save/schema.js';

@@ -1,6 +1,7 @@
 // Save manager: localStorage with in-memory fallback, rolling backup, debounced writes.
 import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS } from './schema.js';
 import { metConditions } from '../meta/tree.js';
+import { recordTierRun } from './tiers.js';
 
 export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
@@ -135,6 +136,10 @@ export class SaveStore {
         if (w.evo) bump(s.evolved, w.evo);
       }
     }
+    // tool-cluster unlock counters (the sim counts them per run; sanitize() clamps)
+    s.gems += pos(r.gems); s.abilityUses += pos(r.abilityUses); s.blessingsTaken += pos(r.blessings); s.markedKills += pos(r.marked); s.chests += pos(r.chests);
+    // difficulty tier records + the one-time first-dawn bounty (a tier whose gate the save does not own is recorded as Twilight)
+    const tier = ctx && ctx.data ? recordTierRun(this.data, r, { data: ctx.data, unlockedTiers: ctx.unlockedTiers }) : null;
     if (typeof r.chapter === 'string') {
       const c = Object.hasOwn(s.chapters, r.chapter) ? s.chapters[r.chapter] : (s.chapters[r.chapter] = { runs: 0, clears: 0, bestTime: 0 });
       c.runs += 1;
@@ -150,7 +155,7 @@ export class SaveStore {
     const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);
     this.keptRaw = this.readOnly ? this.keptRaw : null;
     this.saveNow();
-    return { gold: this.data.gold, shards: this.data.shards, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet };
+    return { gold: this.data.gold, shards: this.data.shards, dawnglass: this.data.dawnglass, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet, tier };
   }
 
   exportText() { if (this.keptRaw !== null) return this.keptRaw; return JSON.stringify(serializeSave(this.data), null, 2); }

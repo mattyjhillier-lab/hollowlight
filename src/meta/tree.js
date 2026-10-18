@@ -1,5 +1,6 @@
 import { nodeTitle } from './gatewords.js';
 import { effectTerms } from './treebudget.js';
+import { TIER_IDS } from '../sim/tiers.js';
 // Skill tree (meta-progression). Pure JS, no DOM, no Phaser. All save input is untrusted.
 // Schema and rules: docs/design/skill-tree-v1.md and skill-tree-v2.md. Data: fragments in src/data/tree/ composed by src/meta/treedata.js.
 
@@ -7,7 +8,7 @@ const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const ID_RE = /^[a-z0-9_]{1,40}$/;
 const MOD_KEYS = ['damage', 'area', 'cooldown', 'speed', 'pickup', 'xp', 'gold', 'abilityCd'];
 const UNLOCK_IDS = ['weapon', 'evolution', 'hero', 'abilityUpgrade', 'modifier']; // id-style unlocks
-const GATE_KINDS = ['weapon', 'evolution', 'hero']; // permanent unlock kinds (never refunded by respec)
+const GATE_KINDS = ['weapon', 'evolution', 'hero', 'tier']; // permanent unlock kinds (never refunded by respec)
 const MAX_NODES = 5000;
 const CELL = 240;
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -29,6 +30,14 @@ const LEAF = {
   totalGold: { need: ['n'] },
   bestLevel: { need: ['n'] },
   runs: { need: ['n'] },
+  // difficulty tiers + tool-cluster counters (docs/design/difficulty-tiers-economy-v1.md 5.2)
+  clearTier: { need: ['chapter', 'tier'], ref: 'chapters', refKey: 'chapter', tier: true },
+  stars: { need: ['chapter', 'n'], ref: 'chapters', refKey: 'chapter' },
+  killMarked: { need: ['n'] },
+  openChest: { need: ['n'] },
+  gems: { need: ['n'] },
+  abilityUses: { need: ['n'] },
+  blessings: { need: ['n'] },
 };
 
 function checkCond(c, data, teaser, depth, budget, where) {
@@ -42,10 +51,12 @@ function checkCond(c, data, teaser, depth, budget, where) {
   if (!spec) fail(`${where}: unknown condition type`);
   if (++budget.n > 10) fail(`${where}: too many conditions`);
   for (const k of spec.need) {
-    if (k === 'id' || k === 'chapter') { if (typeof c[k] !== 'string' || !ID_RE.test(c[k])) fail(`${where}: ${c.t}.${k} must be an id`); }
+    if (k === 'id' || k === 'chapter' || k === 'tier') { if (typeof c[k] !== 'string' || !ID_RE.test(c[k])) fail(`${where}: ${c.t}.${k} must be an id`); }
     else if (!fin(c[k]) || c[k] <= 0 || c[k] > 1e9) fail(`${where}: ${c.t}.${k} must be a positive number`);
   }
   if (c.n !== undefined && (!fin(c.n) || c.n <= 0 || c.n > 1e9)) fail(`${where}: bad n`);
+  if (spec.tier && !TIER_IDS.includes(c.tier)) fail(`${where}: unknown tier "${c.tier}"`);
+  if (c.hero !== undefined) { if (c.t !== 'clearTier' || typeof c.hero !== 'string' || !ID_RE.test(c.hero) || (!teaser && !own(data.characters, c.hero))) fail(`${where}: bad hero`); }
   if (spec.ref && !teaser) {
     const id = c[spec.refKey || 'id'];
     if (!(spec.anyOk && id === 'any') && !own(data[spec.ref], id)) fail(`${where}: unknown ${spec.ref} "${id}"`);
@@ -74,11 +85,29 @@ function leafValue(c, stats, def) {
     case 'totalGold': return stats.totalGold || 0;
     case 'bestLevel': return stats.bestLevel || 0;
     case 'runs': return stats.runs || 0;
+    case 'clearTier': {
+      const t = m(m(stats.tiers, c.chapter), c.tier);
+      if (!isObj(t)) return 0;
+      return c.hero ? (m(t.heroes, c.hero)?.clears || 0) : t.clears || 0;
+    }
+    case 'stars': {
+      const ch = m(stats.tiers, c.chapter);
+      let n = 0;
+      if (isObj(ch)) for (const t of Object.values(ch)) if (isObj(t)) for (let b = 0; b < 3; b++) if ((t.stars | 0) & (1 << b)) n++;
+      return n;
+    }
+    case 'killMarked': return stats.markedKills || 0;
+    case 'openChest': return stats.chests || 0;
+    case 'gems': return stats.gems || 0;
+    case 'abilityUses': return stats.abilityUses || 0;
+    case 'blessings': return stats.blessingsTaken || 0;
     default: return 0;
   }
 }
 
 const pretty = (id) => String(id).replace(/_/g, ' ');
+const TIER_NAMES = { normal: 'Twilight', hard: 'Deep Dusk', expert: 'Long Night' }; // provisional display names (data lives in tiers.json)
+const tierName = (id) => (own(TIER_NAMES, id) ? TIER_NAMES[id] : pretty(id));
 function leafText(c, data) {
   const nm = (k, id) => (data && data[k] && own(data[k], id) ? data[k][id].name : pretty(id));
   const n = c.n ?? 1;
@@ -93,6 +122,13 @@ function leafText(c, data) {
     case 'totalGold': return `Earn ${n} gold in total`;
     case 'bestLevel': return `Reach level ${n} in one run`;
     case 'runs': return `Complete ${n} runs`;
+    case 'clearTier': return `Clear ${nm('chapters', c.chapter)} on ${tierName(c.tier)}${c.hero ? ` as ${nm('characters', c.hero).split(',')[0]}` : ''}${n > 1 ? ` ${n} times` : ''}`;
+    case 'stars': return `Earn ${n} star${n > 1 ? 's' : ''} in ${nm('chapters', c.chapter)}`;
+    case 'killMarked': return `Slay ${n} Hollow-marked foes`;
+    case 'openChest': return `Open ${n} chest${n > 1 ? 's' : ''}`;
+    case 'gems': return `Gather ${n} gems`;
+    case 'abilityUses': return `Use your ability ${n} times`;
+    case 'blessings': return `Take ${n} Blessings`;
     default: return '?';
   }
 }
@@ -129,7 +165,8 @@ function readCommon(n, w) {
   const cost = isObj(n.cost) ? n.cost : {};
   const gold = cost.gold === undefined ? 0 : cost.gold;
   const shards = cost.shards === undefined ? 0 : cost.shards;
-  if (!Number.isInteger(gold) || gold < 0 || gold > 1e7 || !Number.isInteger(shards) || shards < 0 || shards > 1e5) fail(`${w}: bad cost`);
+  const glass = cost.glass === undefined ? 0 : cost.glass; // Dawnglass (harder tiers only)
+  if (!Number.isInteger(gold) || gold < 0 || gold > 1e7 || !Number.isInteger(shards) || shards < 0 || shards > 1e5 || !Number.isInteger(glass) || glass < 0 || glass > 1e5) fail(`${w}: bad cost`);
   const rankCost = n.rankCost === undefined ? 1 : n.rankCost;
   if (!fin(rankCost) || rankCost < 1 || rankCost > 5) fail(`${w}: bad rankCost`);
   for (const [k, max] of [['requires', 8], ['excludes', 8], ['requiresAny', 4]]) {
@@ -140,8 +177,11 @@ function readCommon(n, w) {
   if (n.idx !== undefined && (!Number.isInteger(n.idx) || n.idx < 0 || n.idx > 65535)) fail(`${w}: bad idx`);
   if (n.frag !== undefined && (typeof n.frag !== 'string' || !FRAG_RE.test(n.frag) || BAD_KEYS.has(n.frag))) fail(`${w}: bad frag`);
   if (n.scope !== undefined && !(isObj(n.scope) && Number.isInteger(n.scope.minChapter) && n.scope.minChapter >= 1 && n.scope.minChapter <= 99 && (n.scope.minTier === undefined || (Number.isInteger(n.scope.minTier) && n.scope.minTier >= 0 && n.scope.minTier <= 9)))) fail(`${w}: bad scope`);
-  return { maxRank, gold, shards, rankCost };
+  return { maxRank, gold, shards, glass, rankCost };
 }
+
+// cost objects carry `glass` only when a node actually costs Dawnglass (keeps every older node's data identical)
+const costObj = (c) => (c.glass ? { gold: c.gold, shards: c.shards, glass: c.glass } : { gold: c.gold, shards: c.shards });
 
 export function compileTree(raw, data) {
   if (!isObj(raw) || !Array.isArray(raw.nodes)) fail('missing nodes array');
@@ -176,7 +216,7 @@ export function compileTree(raw, data) {
     if (n.inert === true) {
       if (n.requires !== undefined || n.requiresAny !== undefined) fail(`${w}: inert nodes carry no prerequisites`);
       pending[w] = {
-        id: w, name: n.name, desc: n.desc, flavour: typeof n.flavour === 'string' ? n.flavour.slice(0, 120) : '', maxRank: c.maxRank, cost: { gold: c.gold, shards: c.shards }, rankCost: c.rankCost,
+        id: w, name: n.name, desc: n.desc, flavour: typeof n.flavour === 'string' ? n.flavour.slice(0, 120) : '', maxRank: c.maxRank, cost: costObj(c), rankCost: c.rankCost,
         effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null, inert: true, ...extra,
       };
       pendingList.push(w);
@@ -193,7 +233,7 @@ export function compileTree(raw, data) {
     }
     nodes[w] = {
       id: w, name: n.name, desc: n.desc, flavour: typeof n.flavour === 'string' ? n.flavour.slice(0, 120) : '', branch: n.branch,
-      ring: posGiven ? 0 : n.ring, ang: posGiven ? 0 : n.ang, maxRank: c.maxRank, cost: { gold: c.gold, shards: c.shards }, rankCost: c.rankCost,
+      ring: posGiven ? 0 : n.ring, ang: posGiven ? 0 : n.ang, maxRank: c.maxRank, cost: costObj(c), rankCost: c.rankCost,
       requires: n.requires ? [...n.requires] : [], excludes: n.excludes ? [...n.excludes] : [],
       effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null,
       permanent: false, gateAnc: [],
@@ -268,7 +308,7 @@ export function compileTree(raw, data) {
     gateIds.add(id);
     if (n.maxRank !== 1) fail(`${id}: unlock nodes must have maxRank 1`);
     for (const e of gates) {
-      if (e.unlock === 'hero') continue;
+      if (e.unlock === 'hero' || e.unlock === 'tier') continue;
       const pool = e.unlock === 'weapon' ? data.weapons : data.evolutions;
       if (!pool[e.id].treeGate) fail(`${id}: unlocks ${e.unlock} "${e.id}" which is not gated`);
       gateNodeFor[e.unlock].set(e.id, (gateNodeFor[e.unlock].get(e.id) || 0) + 1);
@@ -397,6 +437,7 @@ function checkEffect(e, data, where) {
   const keys = Object.keys(e);
   const num = (k, lo, hi) => { if (!fin(e[k]) || e[k] < lo || e[k] > hi) fail(`${where}: effect ${k} out of range`); };
   if (keys.length > 6) fail(`${where}: effect too large`);
+  if (e.pe !== undefined) num('pe', 0, 5); // budget annotation: the estimated power-equivalents of a choice / tier effect
   if (e.mod !== undefined) {
     if (!MOD_KEYS.includes(e.mod)) fail(`${where}: unknown mod`);
     num('pct', -90, 200);
@@ -407,8 +448,9 @@ function checkEffect(e, data, where) {
     else if (e.player === 'levelHeal') num('pct', 0, 50);
     else fail(`${where}: unknown player effect`);
   } else if (e.drop !== undefined) {
-    if (!['heart', 'magnet', 'heartHeal'].includes(e.drop)) fail(`${where}: unknown drop effect`);
-    num('pct', -90, 500);
+    if (e.drop === 'heartPity' || e.drop === 'magnetPity') num('secs', -20, 0); // seconds taken off the pity timer (balance.drops.pityHeart / pityMagnet)
+    else if (['heart', 'magnet', 'heartHeal'].includes(e.drop)) num('pct', -90, 500);
+    else fail(`${where}: unknown drop effect`);
   } else if (e.ability !== undefined) {
     if (e.ability === 'dur' || e.ability === 'wheelRadius') num('pct', 0, 300);
     else if (e.ability === 'rallySecs') num('secs', 0.1, 5);
@@ -419,10 +461,20 @@ function checkEffect(e, data, where) {
     else if (e.status === 'mark' || e.status === 'pin') num('secs', 0.1, 1);
     else fail(`${where}: unknown status effect`);
   } else if (e.visual !== undefined) {
-    if (!['kinSparks', 'graveLamp'].includes(e.visual)) fail(`${where}: unknown visual effect`);
+    if (!['kinSparks', 'graveLamp', 'threeDawns'].includes(e.visual)) fail(`${where}: unknown visual effect`);
   } else if (e.perk !== undefined) {
     if (e.perk === 'evoLuck') num('pct', 0, 300);
-    else if (e.perk === 'rush') { num('pct', 0, 300); num('secs', 1, 30); } else fail(`${where}: unknown perk`);
+    else if (e.perk === 'rush') { num('pct', 0, 300); num('secs', 1, 30); }
+    else if (e.perk === 'gemPull') num('pct', 0, 100); // gems fly to you faster (balance.magnetSpeed x (1 + pct))
+    else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') num('n', 1, 2);
+    else if (['gemCall', 'favour', 'startWeapon', 'startBlessing', 'autoRule', 'blessChoice'].includes(e.perk)) { /* flag perks */ } else fail(`${where}: unknown perk`);
+  } else if (e.lore !== undefined) {
+    // Almanac: +pct damage against ONE enemy type (id must exist)
+    if (typeof e.lore !== 'string' || !ID_RE.test(e.lore) || !(data && data.enemies && own(data.enemies, e.lore))) fail(`${where}: lore needs a known enemy id`);
+    num('pct', 0.1, 3);
+  } else if (e.info !== undefined) {
+    if (!['tells', 'bars', 'compass', 'peek', 'stir', 'codex'].includes(e.info)) fail(`${where}: unknown info effect`);
+    if (e.enemy !== undefined && !(typeof e.enemy === 'string' && ID_RE.test(e.enemy) && data && data.enemies && own(data.enemies, e.enemy))) fail(`${where}: info enemy must be a known enemy`);
   } else if (e.weapon !== undefined) {
     const w = e.weapon;
     const tagOk = ['@summon', '@magic', '@all'].includes(w);
@@ -437,7 +489,11 @@ function checkEffect(e, data, where) {
   } else if (e.unlock !== undefined) {
     if (e.unlock === 'rerolls' || e.unlock === 'banishes') num('n', 1, 9);
     else if (e.unlock === 'autoAbility') num('hp', 0.05, 0.9);
-    else if (UNLOCK_IDS.includes(e.unlock)) {
+    else if (e.unlock === 'tier') {
+      // permanent Night Gate lantern: opens one tier of one chapter ('normal' is always open)
+      if (typeof e.chapter !== 'string' || !ID_RE.test(e.chapter) || !(data && data.chapters && own(data.chapters, e.chapter))) fail(`${where}: unlock tier needs a known chapter`);
+      if (!TIER_IDS.includes(e.tier) || e.tier === 'normal') fail(`${where}: unlock tier needs hard or expert`);
+    } else if (UNLOCK_IDS.includes(e.unlock)) {
       if (typeof e.id !== 'string' || !ID_RE.test(e.id)) fail(`${where}: unlock needs an id`);
       if (e.unlock === 'weapon' && !(data && own(data.weapons, e.id))) fail(`${where}: unknown weapon`);
       if (e.unlock === 'evolution' && !(data && own(data.evolutions, e.id))) fail(`${where}: unknown evolution`);
@@ -450,17 +506,18 @@ function checkEffect(e, data, where) {
 export function costFor(node, rank) {
   const g = node.cost.gold;
   const gold = g === 0 ? 0 : Math.max(10, Math.round((g * Math.pow(node.rankCost, rank - 1)) / 10) * 10);
-  return { gold, shards: node.cost.shards };
+  return { gold, shards: node.cost.shards, glass: node.cost.glass || 0 };
 }
 
 export function spentOf(tree, def) {
   let gold = 0;
   let shards = 0;
+  let glass = 0;
   for (const id of def.list) {
     const r = Math.min(def.nodes[id].maxRank, Math.max(0, Math.floor(rankOf(tree, id))));
-    for (let k = 1; k <= r; k++) { const c = costFor(def.nodes[id], k); gold += c.gold; shards += c.shards; }
+    for (let k = 1; k <= r; k++) { const c = costFor(def.nodes[id], k); gold += c.gold; shards += c.shards; glass += c.glass; }
   }
-  return { gold, shards };
+  return { gold, shards, glass };
 }
 
 export function totalCost(def) {
@@ -494,7 +551,7 @@ export function nodeStatus(def, save, id, data) {
   if (n.unlock) out.cond = conditionProgress(n.unlock, save.stats, def, data);
   if (rank >= n.maxRank) { out.state = 'owned'; return out; }
   out.next = costFor(n, rank + 1);
-  out.affordable = (save.gold || 0) >= out.next.gold && (save.shards || 0) >= out.next.shards;
+  out.affordable = (save.gold || 0) >= out.next.gold && (save.shards || 0) >= out.next.shards && (save.dawnglass || 0) >= out.next.glass;
   if (n.teaser) { out.state = 'teaser'; out.reason = 'Not yet discoverable.'; return out; }
   if (rank === 0) {
     const rival = n.excludes.find((x) => rankOf(tree, x) > 0);
@@ -521,7 +578,7 @@ export function canBuy(save, id, def, data) {
   const s = nodeStatus(def, save, id, data);
   if (s.state === 'owned') return { ok: false, reason: 'Already fully owned.' };
   if (!s.buyable) return { ok: false, reason: s.reason || 'Not available.' };
-  if (!s.affordable) return { ok: false, reason: 'Not enough gold or soul shards.' };
+  if (!s.affordable) return { ok: false, reason: s.next.glass ? 'Not enough gold, soul shards or Dawnglass.' : 'Not enough gold or soul shards.' };
   return { ok: true, cost: s.next };
 }
 
@@ -533,6 +590,7 @@ export function buy(save, id, def, data) {
   const rank = rankOf(save.tree, id) + 1;
   save.gold -= c.cost.gold;
   save.shards -= c.cost.shards;
+  if (c.cost.glass) save.dawnglass = (save.dawnglass || 0) - c.cost.glass;
   save.tree[id] = rank;
   return { ok: true, cost: c.cost, rank };
 }
@@ -552,6 +610,7 @@ export function respec(save, def) {
   const spent = spentOf(refundable, def);
   save.gold = Math.min(1e12, (save.gold || 0) + spent.gold);
   save.shards = Math.min(1e12, (save.shards || 0) + spent.shards);
+  if (spent.glass) save.dawnglass = Math.min(1e9, (save.dawnglass || 0) + spent.glass);
   save.tree = kept;
   return spent;
 }
@@ -581,6 +640,7 @@ export function sanitizeTree(rawTree, stats, def, data, refund = null) {
         const c = spentOf({ [id]: rank }, def);
         refund.gold = (refund.gold || 0) + c.gold;
         refund.shards = (refund.shards || 0) + c.shards;
+        refund.glass = (refund.glass || 0) + c.glass;
       }
       continue;
     }
@@ -595,15 +655,18 @@ export function emptyEffects() {
     mods: Object.fromEntries(MOD_KEYS.map((k) => [k, 1])),
     meta: { rerolls: 0, banishes: 0 },
     player: { maxHp: 1, regen: 0, revive: 0, levelHeal: 0 },
-    drops: { heart: 1, magnet: 1, heartHeal: 1 },
+    drops: { heart: 1, magnet: 1, heartHeal: 1, heartPity: 0, magnetPity: 0 },
     ability: { dur: 1, autoHp: 0, rallySecs: 0, wheel: 0 },
+    perks: { gemPull: 0, gemCall: false, offerSize: 0, weaponSlot: 0, favour: false, startWeapon: false, startBlessing: false, autoRule: false, blessChoice: false }, // tool-cluster perks (hooks for the simple ones; the rest is read by later chunks)
+    lore: {}, // Almanac: enemy id -> damage % (cap 2 per type)
+    info: [], // Almanac / Card Fan information perks (read by the UI chunks)
     status: { bleed: 0, burn: 0, mark: 0, pin: 0 }, // bleed/burn: potency % ; mark/pin: extra seconds (all inside the shared Status cap)
     visuals: [],
     softcap: {},
     evoLuck: 1,
     rush: null,
     weaponBonus: {},
-    unlocks: { weapons: [], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [] },
+    unlocks: { weapons: [], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [], tiers: [] },
   };
 }
 
@@ -617,7 +680,7 @@ export function softFactors(tree, def, ctx = null) {
   const S = Object.create(null);
   for (const id of def.order) {
     const r = rankOf(tree, id);
-    if (r < 1 || (ctx && !inScope(def.nodes[id], ctx))) continue;
+    if (r < 1 || (ctx && !inScope(def.nodes[id], ctx)) || tierScoped(def.nodes[id])) continue; // tier-bought power sits on top of the Twilight caps
     for (const e of def.nodes[id].effects) for (const t of effectTerms(e, rule)) if (t.pool === 'combat' && t.face > 0) S[t.cat] = (S[t.cat] || 0) + t.face * r;
   }
   const f = Object.create(null);
@@ -633,6 +696,7 @@ export function softFactors(tree, def, ctx = null) {
   return f;
 }
 
+const tierScoped = (n) => !!(n.scope && n.scope.minTier > 0);
 const inScope = (n, ctx) => !n.scope || ((n.scope.minChapter || 1) <= ctx.chapter && (n.scope.minTier || 0) <= ctx.tier);
 
 // Sum a tree map's effects. Sim consumes this at run start. opts = { tier: 0.., chapter: 1.. }: nodes whose scope is above the run's
@@ -657,7 +721,7 @@ export function aggregateMods(tree, def, data, opts = null) {
     for (const e of n.effects) {
       // soft-cap scale for this effect (1 = uncapped, unscaled penalties and flat adds)
       let m = 1;
-      if (fac) {
+      if (fac && !tierScoped(n)) {
         const t = effectTerms(e, def.rule)[0];
         if (t && t.pool === 'combat' && t.face > 0 && own(fac, t.cat) && !(e.weapon !== undefined && e.add !== undefined)) m = fac[t.cat];
       }
@@ -666,6 +730,7 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.player === 'regen') out.player.regen += e.add * r;
       else if (e.player === 'levelHeal') out.player.levelHeal += e.pct * r * m;
       else if (e.player === 'revive') out.player.revive = Math.max(out.player.revive, e.frac);
+      else if (e.drop === 'heartPity' || e.drop === 'magnetPity') out.drops[e.drop] += e.secs * r;
       else if (e.drop) add(`drop:${e.drop}`, e.pct * r);
       else if (e.ability === 'dur') add('abilityDur', e.pct * r);
       else if (e.ability === 'rallySecs') out.ability.rallySecs += e.secs * r;
@@ -673,6 +738,11 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.status) out.status[e.status] += (e.status === 'bleed' || e.status === 'burn' ? e.pct : e.secs) * r * m;
       else if (e.visual) { if (!out.visuals.includes(e.visual)) out.visuals.push(e.visual); }
       else if (e.perk === 'evoLuck') add('evoLuck', e.pct * r);
+      else if (e.perk === 'gemPull') out.perks.gemPull += e.pct * r;
+      else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') out.perks[e.perk] += e.n * r;
+      else if (e.perk && own(out.perks, e.perk)) out.perks[e.perk] = true;
+      else if (e.lore) out.lore[e.lore] = Math.min(2, (out.lore[e.lore] || 0) + e.pct * r);
+      else if (e.info) { if (!out.info.includes(e.info)) out.info.push(e.info); }
       else if (e.perk === 'rush') out.rush = { pct: Math.max(out.rush ? out.rush.pct : 0, e.pct * r * m), secs: Math.max(out.rush ? out.rush.secs : 0, e.secs) };
       else if (e.weapon) {
         const ids = ['@summon', '@magic', '@all'].includes(e.weapon)
@@ -685,6 +755,7 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.unlock === 'weapon') out.unlocks.weapons.push(e.id);
       else if (e.unlock === 'evolution') out.unlocks.evolutions.push(e.id);
       else if (e.unlock === 'hero') out.unlocks.heroes.push(e.id);
+      else if (e.unlock === 'tier') out.unlocks.tiers.push(`${e.chapter}:${e.tier}`);
       else if (e.unlock === 'abilityUpgrade') out.unlocks.abilityUpgrades.push(e.id);
       else if (e.unlock === 'modifier') out.unlocks.modifiers.push(e.id);
     }
@@ -696,6 +767,8 @@ export function aggregateMods(tree, def, data, opts = null) {
   out.player.levelHeal = Math.min(50, out.player.levelHeal);
   out.player.maxHp = Math.min(5, Math.max(0.2, 1 + (pct.maxHp || 0) / 100));
   for (const k of ['heart', 'magnet', 'heartHeal']) out.drops[k] = Math.min(6, Math.max(0, 1 + (pct[`drop:${k}`] || 0) / 100));
+  out.drops.heartPity = Math.max(-15, out.drops.heartPity); out.drops.magnetPity = Math.max(-15, out.drops.magnetPity); // seconds off the pity timers (never below 15 s of the 30)
+  out.perks.gemPull = Math.min(100, out.perks.gemPull); out.perks.offerSize = Math.min(2, out.perks.offerSize); out.perks.weaponSlot = Math.min(2, out.perks.weaponSlot);
   out.ability.dur = Math.min(4, 1 + (pct.abilityDur || 0) / 100);
   out.ability.rallySecs = Math.min(5, out.ability.rallySecs);
   out.ability.wheel = Math.min(100, out.ability.wheel);

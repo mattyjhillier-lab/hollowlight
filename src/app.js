@@ -8,6 +8,7 @@ import { abilityEmblem } from './ui/hudsvg.js';
 import { resolveBrightness } from './gfx/arc.js';
 import { touchEnabled } from './input/stick.js';
 import { parseParams } from './params.js';
+import { tierIndex } from './sim/tiers.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
@@ -40,6 +41,7 @@ export const app = {
       tree: this.treeEffects(),
       startTime: p.startTime,
       godMode: p.god,
+      tier: p.tier || 'normal', // dev ?tier= (whitelisted in params.js); the map-select UI arrives with DT7
     });
     if (p.grant) this.applyGrants(sim, p.grant);
     if (p.bless) this.applyBless(sim, p.bless);
@@ -56,7 +58,7 @@ export const app = {
   // Effects of the player's owned nodes (or a dev preset). Rebuilt from the sanitised save each run.
   treeEffects() {
     const owned = this.params.meta ? presetTree(treeDef, this.params.meta, true) /* previews include gate nodes */ : this.save.data.tree;
-    return aggregateMods(owned, treeDef, data);
+    return aggregateMods(owned, treeDef, data, { tier: tierIndex(this.params.tier) }); // tier-bought power applies only on the tiers that pay it
   },
 
   heroUnlocked(id) {
@@ -195,13 +197,13 @@ export const app = {
   // Debug URL params never touch the real save.
   isDebugRun() {
     const p = this.params;
-    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.seed !== null);
+    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.tier !== null || p.seed !== null);
   },
 
   bankRun(sim) {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
-    const b = this.save.bankRun(sim.result(), { def: treeDef, data });
+    const b = this.save.bankRun(sim.result(), { def: treeDef, data, unlockedTiers: aggregateMods(this.save.data.tree, treeDef, data).unlocks.tiers });
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
     if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';

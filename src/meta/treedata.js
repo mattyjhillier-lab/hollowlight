@@ -5,6 +5,7 @@
 //   emblems/<id>.json          silhouette, 11 outline slots, heart, 3 sockets
 //   clusters/<weaponId>.json   one constellation per weapon (template instance)
 //   heroes/<heroId>.json       one hero lantern triple
+//   tools/<toolId>.json        one tool cluster on a far slot (Satchel, Card Fan, Almanac, Hearth-key, Night Gate): free-form lanterns at local offsets
 //   chapters/<chapterId>.json  one fogged chapter band
 //
 // composeTree(files, data) returns { live, v2, info }:
@@ -21,12 +22,13 @@ const SLOT_RE = /^[a-zA-Z][a-zA-Z0-9]{0,11}$/;
 const PREFIX_RE = /^[a-z][a-z0-9]{1,3}$/;
 const TOKEN_RE = /^(role\.[a-zA-Z0-9]{1,24}|brass|ink|glass)$/;
 const PATH_RE = /^[MLCQAZ0-9 .,-]*$/;
-const NS_KINDS = ['ring', 'teaser', 'gate', 'cluster', 'hero', 'chapter'];
+const NS_KINDS = ['ring', 'teaser', 'gate', 'cluster', 'hero', 'chapter', 'tool'];
 const MAX_FILES = 600;
 const MAX_FILE_NODES = 600;
 const CLUSTER_OUTLINE = 11;
 const TEMPLATE_KINDS = ['knot', 'knot', ['status', 'verb', 'bead'], 'knot', ['kin', 'bead'], 'mastery', 'knot', ['verb', 'bead'], 'knot', ['status', 'verb', 'kin', 'bead'], 'knot'];
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const checkAt = (at, id) => { if (!(Array.isArray(at) && at.length === 2 && at.every((v) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 400))) throw new Error(`tree data: ${id}: place.at must be [dx, dy] within 400 of the tool centre`); };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => Object.hasOwn(o, k);
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -122,6 +124,11 @@ function checkCore(c) {
   const b = c.budget;
   ensure(isObj(b) && isObj(b.base) && isObj(b.perChapter) && isObj(b.categories) && isObj(b.sustain) && isObj(b.utility) && isObj(b.perWeapon), 'core.json: budget');
   for (const [k, v] of Object.entries({ ...b.base, ...b.perChapter, ...b.sustain, ...b.utility })) num(v, 0, 1e4, `budget.${k}`);
+  if (b.loreShare !== undefined) num(b.loreShare, 0, 10, 'budget.loreShare');
+  if (b.perTier !== undefined) {
+    ensure(isObj(b.perTier), 'budget.perTier');
+    for (const [k, v] of Object.entries(b.perTier)) { ensure(/^[1-9]$/.test(k) && isObj(v), `budget.perTier.${k}`); num(v.combat, 0, 100, `budget.perTier.${k}.combat`); num(v.sustain, 0, 100, `budget.perTier.${k}.sustain`); }
+  }
   num(b.knotMax, 0, 100, 'budget.knotMax'); num(b.optionShareMin, 0, 1, 'budget.optionShareMin'); num(b.flatFace, 0, 10, 'budget.flatFace'); num(b.markFace, 0, 20, 'budget.markFace'); num(b.rushFace, 0, 1, 'budget.rushFace');
   num(b.perWeapon.cap, 0, 100, 'budget.perWeapon.cap'); num(b.perWeapon.weight, 0, 10, 'budget.perWeapon.weight'); num(b.perWeapon.refWeapons, 1, 100, 'budget.perWeapon.refWeapons');
   for (const [k, v] of Object.entries(b.categories)) { ensure(/^[a-zA-Z][a-zA-Z0-9_]{0,23}$/.test(k) && isObj(v), `budget category ${k}`); num(v.cap, 0, 1000, `budget.${k}.cap`); num(v.weight, 0, 10, `budget.${k}.weight`); }
@@ -139,7 +146,7 @@ export function composeTree(files, data = null) {
   }).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   const seenPath = new Set();
   let core = null;
-  const emblems = Object.create(null), clusters = Object.create(null), heroes = Object.create(null), chapters = Object.create(null);
+  const emblems = Object.create(null), clusters = Object.create(null), heroes = Object.create(null), chapters = Object.create(null), tools = Object.create(null);
   for (const f of sorted) {
     ensure(!seenPath.has(f.path), `duplicate fragment ${f.path}`);
     seenPath.add(f.path);
@@ -149,7 +156,7 @@ export function composeTree(files, data = null) {
     if (f.path === 'core.json') { ensure(j.kind === 'core', 'core.json kind'); checkCore(j); core = j; continue; }
     const dir = f.path.split('/')[0];
     ensure(f.path.split('/').length === 2 && ID_RE.test(stem), `${f.path}: unexpected location`);
-    const table = { emblems: [emblems, 'emblem', 'id'], clusters: [clusters, 'cluster', 'weapon'], heroes: [heroes, 'hero', 'hero'], chapters: [chapters, 'chapter', 'chapter'] }[dir];
+    const table = { emblems: [emblems, 'emblem', 'id'], clusters: [clusters, 'cluster', 'weapon'], heroes: [heroes, 'hero', 'hero'], chapters: [chapters, 'chapter', 'chapter'], tools: [tools, 'tool', 'tool'] }[dir];
     ensure(table, `${f.path}: unknown fragment directory`);
     const [map, kind, idKey] = table;
     ensure(j.kind === kind, `${f.path}: kind must be ${kind}`);
@@ -196,7 +203,7 @@ export function composeTree(files, data = null) {
       ensure(own(ns, p), `${w}: prefix "${p}" is not registered in core.namespaces`);
       const n = ns[p];
       ensure(n.owners.includes('*') || n.owners.includes(ctx.owner), `${w}: prefix "${p}" is not owned by ${ctx.owner}`);
-      const okKind = n.kind === 'gate' ? ['cluster', 'hero'].includes(ctx.ownerKind) : n.kind === ctx.ownerKind || (n.kind === 'ring' && ctx.ownerKind === 'core') || (n.kind === 'teaser' && ctx.ownerKind === 'core');
+      const okKind = n.kind === 'gate' ? ['cluster', 'hero', 'tool'].includes(ctx.ownerKind) : n.kind === ctx.ownerKind || (n.kind === 'ring' && ctx.ownerKind === 'core') || (n.kind === 'teaser' && ctx.ownerKind === 'core');
       ensure(okKind, `${w}: prefix "${p}" (${n.kind}) cannot be used inside a ${ctx.ownerKind} fragment`);
     }
     ensure(Number.isInteger(spec.idx) && spec.idx >= 0 && spec.idx <= 65535, `${w}: idx must be an integer 0..65535`);
@@ -218,6 +225,13 @@ export function composeTree(files, data = null) {
   ensure(core.nodes.length <= MAX_FILE_NODES, 'core.json: too many nodes');
   const ringSlotUse = new Set();
   for (const s of core.nodes) {
+    if (isObj(s.place) && s.place.tool !== undefined) {
+      // a global lantern that lives in a tool cluster (the id and idx stay in the core fragment: ids are permanent)
+      ensure(typeof s.place.tool === 'string' && own(tools, s.place.tool), `${s.id}: place.tool must name a tool cluster`);
+      checkAt(s.place.at, s.id);
+      addSpec(s, { frag: 'core', owner: 'core', ownerKind: 'core', region: 'rings', tool: s.place.tool });
+      continue;
+    }
     ensure(isObj(s.place) && typeof s.place.ring === 'string' && own(core.rings, s.place.ring) && !['heroes', 'sky', 'far', 'bands'].includes(s.place.ring), `${s.id}: ring node needs place {ring, i}`);
     const k = `${s.place.ring}:${s.place.i}`;
     ensure(!ringSlotUse.has(k), `${s.id}: ring slot ${k} already used`);
@@ -286,6 +300,27 @@ export function composeTree(files, data = null) {
     clusterInfo[wid] = { ...c, fragKey: frag };
   }
 
+  // ---- tool clusters (far slots, free-form lanterns at local offsets)
+  const toolInfo = Object.create(null);
+  for (const [tid, t] of Object.entries(tools)) {
+    const frag = claimKey(tid, t.prefix, 'tool');
+    ensure(own(ns, t.prefix) && ns[t.prefix].kind === 'tool' && ns[t.prefix].owners.includes(tid), `tool ${tid}: prefix "${t.prefix}" must be a registered tool namespace owned by ${tid}`);
+    ensure(typeof t.slot === 'string' && /^far\d+$/.test(t.slot), `tool ${tid}: slot must be a far slot`);
+    clusterCentre(core, t.slot);
+    ensure(!slotUse.has(t.slot), `tool ${tid}: slot ${t.slot} already used by ${slotUse.get(t.slot)}`);
+    slotUse.set(t.slot, tid);
+    ensure(typeof t.name === 'string' && t.name.length >= 1 && t.name.length <= 30 && typeof t.blurb === 'string' && t.blurb.length <= 160, `tool ${tid}: name / blurb`);
+    ensure(Array.isArray(t.nodes) && t.nodes.length >= 1 && t.nodes.length <= MAX_FILE_NODES, `tool ${tid}: nodes`);
+    t.nodes.forEach((s, i) => {
+      ensure(isObj(s.place) && Object.keys(s.place).length === 1, `${s && s.id}: tool nodes use place {at: [dx, dy]}`);
+      checkAt(s.place.at, s.id);
+      const eff = Array.isArray(s.effects) ? s.effects.find((e) => isObj(e) && e.unlock === 'tier') : null;
+      if (eff) ensure(s.id === `gt_${eff.chapter}_${eff.tier}` && s.kind === 'gate', `${s.id}: a tier gate is a gate node named gt_<chapter>_<tier>`);
+      addSpec(s, { frag, owner: tid, ownerKind: 'tool', region: 'tools', role: 'tool', tool: tid, slotIndex: i });
+    });
+    toolInfo[tid] = { ...t, fragKey: frag };
+  }
+
   // ---- heroes
   const heroInfo = Object.create(null);
   for (const [hid, h] of Object.entries(heroes)) {
@@ -332,6 +367,8 @@ export function composeTree(files, data = null) {
   const positions = Object.create(null); // id -> [x, y] (v2 view)
   const centreOf = Object.create(null);
   for (const [wid, c] of Object.entries(clusterInfo)) centreOf[wid] = clusterCentre(core, c.slot);
+  const toolCentres = Object.create(null);
+  for (const [tid, t] of Object.entries(toolInfo)) toolCentres[tid] = clusterCentre(core, t.slot);
   const slotAngle = (wid) => {
     const m = /^sky\d+$/.test(clusterInfo[wid].slot) ? core.skySlots[clusterInfo[wid].slot] : null;
     if (m !== null) return m;
@@ -341,7 +378,9 @@ export function composeTree(files, data = null) {
   for (const a of allNodes) {
     const s = a.spec;
     let p;
-    if (a.ownerKind === 'core') p = ringPos(core, s.place);
+    if (a.ownerKind === 'core' && s.place.tool) { const [cx, cy] = clusterCentre(core, tools[s.place.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
+    else if (a.ownerKind === 'core') p = ringPos(core, s.place);
+    else if (a.ownerKind === 'tool') { const [cx, cy] = clusterCentre(core, tools[a.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
     else if (a.ownerKind === 'cluster') {
       const c = clusterInfo[a.cluster];
       const em = emblems[c.emblem];
@@ -402,7 +441,7 @@ export function composeTree(files, data = null) {
     } else if (a.ownerKind === 'hero') {
       o.branch = tagBranch(a.cluster);
       o.requires = m.requires || (clusterInfo[a.cluster].heart ? [clusterInfo[a.cluster].heart] : []); // dormant until the signature weapon is unlocked
-    } else if (a.ownerKind === 'chapter') {
+    } else if (a.ownerKind === 'chapter' || a.ownerKind === 'tool') {
       o.branch = s.branch || 'spirit';
       o.requires = m.requires || [];
     } else {
@@ -431,7 +470,7 @@ export function composeTree(files, data = null) {
 
   return {
     live, v2,
-    info: { core, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, positions, centres: centreOf, nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, region: a.region, inert: !!a.spec.inert })) },
+    info: { core, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres, nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, tool: a.tool, region: a.region, inert: !!a.spec.inert })) },
   };
 }
 

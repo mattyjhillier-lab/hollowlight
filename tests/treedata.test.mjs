@@ -25,23 +25,26 @@ const RULE = real.info.core.budget;
 const W = Object.keys(real.info.clusters).length;
 
 // ---------------------------------------------------------------- live tree == the v2 rescale (T3a)
-const GOLD = fx('tree-v2-rescale.json');
+const GOLD = fx('tree-v2-rescale.json'); // Appendix A of skill-tree-v2.md (T3a)
+const MOVED = fx('tree-t3b-moved.json'); // the four existing ids the tool-cluster build changed afterwards (Satchel steps, Kinder Hearts, Lodestar)
+const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df'];
 const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
 
 test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ranks / requires / condition skill-tree-v2 Appendix A specifies', () => {
-  for (const id of Object.keys(GOLD)) assert.deepEqual(snap(liveDef.nodes[id]), GOLD[id], id);
-  const ids = real.info.nodes.map((n) => n.id).filter((id) => !real.info.nodes.find((n) => n.id === id).inert);
-  for (const id of ids) assert.ok(Object.hasOwn(GOLD, id), `${id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
+  for (const id of Object.keys(GOLD)) assert.deepEqual(snap(liveDef.nodes[id]), MOVED[id] || GOLD[id], id);
+  for (const id of Object.keys(MOVED)) assert.ok(Object.hasOwn(GOLD, id), `${id} is a pre-existing id`);
+  // every other live node is a tool-cluster lantern (its own fragment): covered by tests/t3b.test.mjs
+  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
 });
 
-test('T3a the rescale changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids (live == v2 view)', () => {
+test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids; the live tree IS the v2 view', () => {
   const g = compileTree(V1, data);
   assert.equal(g.list.length, 82);
   const J = JSON.stringify;
   const n = { effects: 0, cost: 0, requires: 0, maxRank: 0 };
   for (const id of g.list) {
-    const a = g.nodes[id], b = liveDef.nodes[id];
-    assert.ok(b, `v1 id ${id} must stay live (ids are permanent; a removal needs a tombstone)`);
+    const a = g.nodes[id], b = { ...liveDef.nodes[id], ...GOLD[id] };
+    assert.ok(liveDef.nodes[id], `v1 id ${id} must stay live (ids are permanent; a removal needs a tombstone)`);
     if (J(a.effects) !== J(b.effects)) n.effects++;
     if (J(a.cost) !== J(b.cost) || a.rankCost !== b.rankCost) n.cost++;
     if (J([...a.requires].sort()) !== J([...b.requires].sort()) || J(a.requiresAny || null) !== J(b.requiresAny || null)) n.requires++;
@@ -50,8 +53,8 @@ test('T3a the rescale changed exactly 47 effects, 26 prices, 14 requires and 2 m
   assert.deepEqual(n, { effects: 47, cost: 26, requires: 14, maxRank: 2 });
   assert.deepEqual(['rv_wide', 'or_wide'].map((i) => liveDef.nodes[i].maxRank), [1, 1]);
   // the live tree IS the v2 view: same nodes, same graph, same positions
-  assert.deepEqual(liveDef.list, v2Def.list);
-  for (const id of v2Def.list) { assert.deepEqual(snap(liveDef.nodes[id]), snap(v2Def.nodes[id]), id); assert.deepEqual([liveDef.nodes[id].x, liveDef.nodes[id].y], [v2Def.nodes[id].x, v2Def.nodes[id].y], id); }
+  assert.deepEqual(liveDef.list, v2Def.list.filter((id) => liveDef.nodes[id]), 'live = v2 minus the inert (pending) tool nodes, same order');
+  for (const id of liveDef.list) { assert.deepEqual(snap(liveDef.nodes[id]), snap(v2Def.nodes[id]), id); assert.deepEqual([liveDef.nodes[id].x, liveDef.nodes[id].y], [v2Def.nodes[id].x, v2Def.nodes[id].y], id); }
   assert.equal(liveDef.retiredIds && Object.keys(liveDef.retiredIds).length, 0, 'no v1 id is retired by the rescale');
 });
 
@@ -66,7 +69,7 @@ test('T3a a tree-less run is untouched: no nodes owned = the same effects as the
 
 test('T3a the 43 new v2 nodes are LIVE: listed, costed, buyable behind their thread; every v1 id is live', () => {
   const v1ids = new Set(V1.nodes.map((n) => n.id));
-  const newIds = real.info.nodes.filter((n) => !v1ids.has(n.id) && !n.inert).map((n) => n.id);
+  const newIds = Object.keys(GOLD).filter((id) => !v1ids.has(id));
   assert.equal(newIds.length, 43);
   for (const id of newIds) { assert.ok(liveDef.nodes[id], id); assert.ok(liveDef.list.includes(id) && liveDef.order.includes(id)); assert.equal(liveDef.pending[id], undefined); }
   assert.ok([...v1ids].every((id) => liveDef.nodes[id]));
@@ -99,7 +102,7 @@ test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbe
 
 test('T1 fragment save keys are short, unique and idx are stable small integers', () => {
   const keys = new Set(real.info.nodes.map((n) => n.frag));
-  assert.deepEqual([...keys].sort(), ['bo', 'cl', 'core', 'el', 'or', 'rv', 'wf', 'wr']);
+  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'el', 'or', 'rs', 'rv', 'wf', 'wr']);
   for (const k of Object.keys(liveDef.frags)) {
     const f = liveDef.frags[k];
     assert.ok(f.max < 64, k);
@@ -108,8 +111,9 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 });
 
 // ---------------------------------------------------------------- v2 view
-test('T1 v2 view compiles: 125 nodes, template requires, apex uses requiresAny, gates stay root nodes', () => {
-  assert.equal(v2Def.list.length, 125);
+test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
+  assert.equal(v2Def.list.length, real.info.nodes.length);
+  assert.equal(real.info.nodes.length, 156);
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);
@@ -118,7 +122,8 @@ test('T1 v2 view compiles: 125 nodes, template requires, apex uses requiresAny, 
   assert.ok(v2Def.nodes[apex].gateAnc.includes('gt_raven_flock'), 'the apex still sits behind the Raven gate on every route');
   const wf = real.info.clusters.ghost_wolves;
   assert.deepEqual(v2Def.nodes[wf.outline[0].id].requires, [], 'a starter weapon hangs off the hub');
-  for (const id of v2Def.list) if (v2Def.nodes[id].permanent) assert.deepEqual(v2Def.nodes[id].requires, [], `${id}: gates keep requires []`);
+  for (const id of v2Def.list) if (v2Def.nodes[id].permanent) assert.ok(v2Def.nodes[id].requires.every((r) => v2Def.nodes[r].permanent), `${id}: a gate requires only other gates (the Night Gate chain: Long Night after Deep Dusk)`);
+  for (const id of v2Def.list) if (v2Def.nodes[id].permanent && !id.startsWith('gt_cursed_forest')) assert.deepEqual(v2Def.nodes[id].requires, [], `${id}: weapon / evolution gates keep requires []`);
   assert.deepEqual(layoutIssues(real.info, v2Def), []);
 });
 
@@ -185,12 +190,12 @@ test('T1 budget FAILS: extra sustain, second revive, knot over 3%, cluster node 
 
 test('T1 budget rule is snapshot-tested: changing a cap, weight or limit is a visible deliberate edit', () => {
   assert.deepEqual(RULE, {
-    base: { combat: 15.5, sustain: 5 }, perChapter: { combat: 1.5, sustain: 0.5 }, knotMax: 3, optionShareMin: 0.6, flatFace: 2, markFace: 4, rushFace: 0.0375,
-    loreShare: 0.1667,
+    base: { combat: 15.5, sustain: 5 }, perChapter: { combat: 1.5, sustain: 0.5 }, perTier: { 1: { combat: 2.5, sustain: 0 }, 2: { combat: 0.6, sustain: 0 } }, knotMax: 3, optionShareMin: 0.6, flatFace: 2, markFace: 4, rushFace: 0.0375,
+    loreShare: 0.2,
     perWeapon: { cap: 7, weight: 0.08, refWeapons: 5 },
     categories: { dmg: { cap: 2.5, weight: 1 }, tagS: { cap: 5, weight: 0.35 }, tagM: { cap: 5, weight: 0.35 }, cast: { cap: 3, weight: 0.3 }, area: { cap: 4, weight: 0.12 }, hp: { cap: 6, weight: 0.2 }, heal: { cap: 1.5, weight: 0.4 }, status: { cap: 8, weight: 0.15 }, lore: { cap: 2, weight: 0.6 }, choice: { cap: 1, weight: 0.8 } },
-    sustain: { revive: 4, perReroll: 0.1, perBanish: 0.1, heartDrop: 0.04, heartHeal: 0.04, reviveMaxFrac: 0.2, rerollMax: 3, banishMax: 3, reviveMax: 1 },
-    utility: { speed: 5, pickup: 12, xp: 7.5, gold: 12, abilityCdMax: 50 },
+    sustain: { revive: 4, perReroll: 0.1, perBanish: 0.1, heartDrop: 0.04, heartHeal: 0.04, heartPity: 0.016, reviveMaxFrac: 0.2, rerollMax: 3, banishMax: 3, reviveMax: 1 },
+    utility: { speed: 5, pickup: 20, xp: 7.5, gold: 12, abilityCdMax: 50 },
   });
 });
 
@@ -310,7 +315,7 @@ function wispsFiles() {
     silhouette: 'M0 -150 C30 -110 120 -70 116 6 C112 70 60 108 0 108 C-60 108 -112 70 -116 6 C-120 -50 -70 -80 -40 -120 C-30 -90 -14 -80 0 -70 C8 -100 4 -130 0 -150Z',
     medallion: [{ d: 'M0 -20 C14 -6 16 8 0 18 C-16 8 -14 -6 0 -20Z', fill: 'role.lantern', stroke: 'ink', w: 2.4 }, { d: 'M0 -4 C5 2 5 8 0 12 C-5 8 -5 2 0 -4Z', fill: 'role.lanternCore' }] } });
   fs.push({ path: 'clusters/lantern_wisps.json', json: {
-    kind: 'cluster', weapon: W, prefix: 'lw', emblem: 'flame', slot: 'far2', chapter: 'drowned_marsh', region: 'drowned_marsh', hero: 'thomas', heart: 'gt_lantern_wisps', starterEvo: null,
+    kind: 'cluster', weapon: W, prefix: 'lw', emblem: 'flame', slot: 'far1', chapter: 'drowned_marsh', region: 'drowned_marsh', hero: 'thomas', heart: 'gt_lantern_wisps', starterEvo: null,
     sockets: { a: { evo: 'wisp_choir', gate: 'gt_wisp_choir' }, b: { evo: 'beacon_line', gate: 'gt_beacon_line' }, c: { evo: 'ember_veil', gate: 'gt_ember_veil' } },
     gates: [
       gate('gt_lantern_wisps', { unlock: 'weapon', id: W }, 0, 400, { t: 'clearChapter', id: 'drowned_marsh' }, 'heart'),
@@ -343,13 +348,13 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   const { fs, d } = wispsFiles();
   const c = compose(fs, d);
   const def = compileTree(c.v2, d);
-  assert.equal(def.list.length, 125 + 15 + 3);
-  assert.deepEqual(c.info.centres.lantern_wisps, [752.4, 1035.5]);
-  assert.deepEqual(c.info.positions.gt_lantern_wisps, [752.4, 1099.5]);
-  assert.deepEqual(c.info.positions.lw_beacon, [752.4, 895.5]);
-  assert.deepEqual(c.info.positions.gt_wisp_choir, [752.4, 843.5]);
-  assert.deepEqual(c.info.positions.gt_beacon_line, [602.4, 939.5]);
-  assert.deepEqual(c.info.positions.th_b, [264.5, 364]);
+  assert.equal(def.list.length, real.info.nodes.length + 15 + 3);
+  assert.deepEqual(c.info.centres.lantern_wisps, [1217.4, 395.5]); // far1 (the tool clusters hold far2/4/6/8/10)
+  assert.deepEqual(c.info.positions.gt_lantern_wisps, [1217.4, 459.5]);
+  assert.deepEqual(c.info.positions.lw_beacon, [1217.4, 255.5]);
+  assert.deepEqual(c.info.positions.gt_wisp_choir, [1217.4, 203.5]);
+  assert.deepEqual(c.info.positions.gt_beacon_line, [1067.4, 299.5]);
+  assert.deepEqual(c.info.positions.th_b, [428, 139]);
   assert.deepEqual(layoutIssues(c.info, def), []);
   assert.deepEqual(def.nodes.lw_beacon.requiresAny, ['lw_halo', 'lw_hood'].length ? def.nodes.lw_beacon.requiresAny : []);
   assert.deepEqual(def.nodes.lw_wick.requires, ['gt_lantern_wisps']);

@@ -15,13 +15,20 @@ export function layoutIssues(info, def) {
   const issues = [];
   const core = info.core;
   const R = core.rings;
-  const cl = Object.entries(info.clusters).map(([id, c]) => ({ id, c: info.centres[id], r: clusterRadius(info.emblems[c.emblem]) }));
+  const cl = Object.entries(info.clusters).map(([id, c]) => ({ id, c: info.centres[id], r: clusterRadius(info.emblems[c.emblem]), slot: c.slot }));
+  // tool clusters (Satchel, Card Fan, Almanac, Hearth-key, Night Gate): footprint = farthest lantern placed in them (own nodes AND moved global lanterns)
+  for (const [id, t] of Object.entries(info.tools || {})) {
+    const c = info.toolCentres[id];
+    let m = 0;
+    for (const n of info.nodes) if (n.tool === id) m = Math.max(m, Math.hypot(info.positions[n.id][0] - c[0], info.positions[n.id][1] - c[1]));
+    cl.push({ id, c, r: m + EXTRA, slot: t.slot });
+  }
   for (let i = 0; i < cl.length; i++) {
     const a = cl[i];
     const d0 = Math.hypot(a.c[0], a.c[1]);
     if (d0 < a.r + 90) issues.push(`cluster ${a.id} overlaps the hub pool`);
     for (const k of ['hearth', 'wick', 'dusk']) if (Math.abs(d0 - R[k].r) < a.r + 30) issues.push(`cluster ${a.id} overlaps the ${k} ring`);
-    if (info.clusters[a.id].slot.startsWith('far') || info.clusters[a.id].slot.startsWith('band')) {
+    if (a.slot.startsWith('far') || a.slot.startsWith('band')) {
       if (d0 - a.r < R.dusk.r + 30) issues.push(`cluster ${a.id} sits inside the Dusk ring`);
     }
     for (let j = i + 1; j < cl.length; j++) {

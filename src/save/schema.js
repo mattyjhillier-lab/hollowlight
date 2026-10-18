@@ -3,6 +3,7 @@ import { sanitizeTree, sanitizeSeen } from '../meta/tree.js';
 import { encodeTree, decodeTree, decodeTreeRaw, encodeSeen, decodeSeen, isCompact } from '../meta/treecodec.js';
 import { OLD_TREE_VERSION, runTreeSteps } from '../meta/migrations/index.js';
 import { BRIGHTNESS_STORED } from '../gfx/arc.js';
+import { tierRecords, MAX_GLASS } from './tiers.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -32,6 +33,7 @@ export function defaultSave(now = Date.now()) {
     updatedAt: now,
     gold: 0,
     shards: 0,
+    dawnglass: 0, // the night currency (harder tiers only); bounded 0..1e9, never negative
     stats: defaultStats(),
     unlocks: {},
     tree: {},
@@ -47,6 +49,9 @@ export function defaultStats() {
     bestLevel: 0, totalGold: 0,
     killsByEnemy: {}, bossKills: {}, chapters: {}, evolved: {}, weaponsUsed: {}, charsUsed: {},
     recentRuns: [],
+    // tool-cluster counters + difficulty-tier records (DT0; docs/design/difficulty-tiers-economy-v1.md section 10)
+    markedKills: 0, chests: 0, gems: 0, abilityUses: 0, blessingsTaken: 0,
+    tiers: {},
   };
 }
 
@@ -80,7 +85,7 @@ const ID_KEY = /^[a-z0-9_]{1,40}$/;
 // Bounds (documented): killsByEnemy 128 keys (8 chapters x ~12 enemy types + margin), bossKills/weaponsUsed/charsUsed 32, chapters 32,
 // recentRuns.k 12. A VALID key that does not fit is dropped and counted in SANITIZE_WARNINGS.capped (visible to tests/diagnostics) so the
 // cap is never hit silently: raise the cap when the roster grows (tests/savev3.test.mjs checks the roster fits).
-export const SANITIZE_WARNINGS = { capped: 0 };
+export const SANITIZE_WARNINGS = { capped: 0, unknown: 0 };
 export const STAT_KEY_CAPS = { killsByEnemy: 128, bossKills: 32, weaponsUsed: 32, charsUsed: 32, chapters: 32 };
 function countMap(o, maxKeys = 64, max = 1e9) {
   const out = {};
@@ -178,6 +183,8 @@ export function sanitize(raw, now = Date.now()) {
     weaponsUsed: countMap(s.weaponsUsed, 32),
     charsUsed: countMap(s.charsUsed, 32),
     recentRuns: recentRuns(s.recentRuns),
+    markedKills: int(s.markedKills, 0, 0, 1e9), chests: int(s.chests, 0, 0, 1e9), gems: int(s.gems, 0, 0, 1e9), abilityUses: int(s.abilityUses, 0, 0, 1e9), blessingsTaken: int(s.blessingsTaken, 0, 0, 1e9),
+    tiers: TREE_DATA ? tierRecords(s.tiers, TREE_DATA, SANITIZE_WARNINGS) : {}, // unknown chapter / tier / hero ids are dropped (and counted)
   };
   // Owned stat nodes whose weapon gate is not owned (pre-G1e saves) are dropped WITH a full refund.
   const refund = { gold: 0, shards: 0 };
@@ -190,6 +197,7 @@ export function sanitize(raw, now = Date.now()) {
     updatedAt: int(raw.updatedAt, created, 0, 1e14),
     gold: Math.min(MAX_NUM, int(raw.gold, 0) + refund.gold),
     shards: Math.min(MAX_NUM, int(raw.shards, 0) + refund.shards),
+    dawnglass: Math.min(MAX_GLASS, int(raw.dawnglass, 0, 0, MAX_GLASS) + int(refund.glass, 0, 0, MAX_GLASS)),
     stats,
     unlocks: cleanMap(raw.unlocks),
     tree,

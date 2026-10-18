@@ -1,0 +1,193 @@
+{
+ "kind": "tool",
+ "tool": "cardfan",
+ "prefix": "cd",
+ "slot": "far10",
+ "name": "The Card Fan",
+ "blurb": "Cards and information: see more, choose better, never learn a recipe early.",
+ "nodes": [
+  {
+   "id": "cd_stir",
+   "idx": 0,
+   "kind": "ring",
+   "name": "Louder Stirring",
+   "desc": "\"Something stirs\" also lights when the partner stat is at rank 2. It never names an evolution.",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "info": "stir"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "any",
+    "n": 3
+   },
+   "place": {
+    "at": [
+     64.7,
+     89
+    ]
+   }
+  },
+  {
+   "id": "cd_peek",
+   "idx": 1,
+   "kind": "ring",
+   "name": "Second Sight",
+   "desc": "See the next level-up offer, dimmed, under the current one. It can still change if a pick removes a card.",
+   "cost": {
+    "gold": 900
+   },
+   "effects": [
+    {
+     "info": "peek",
+     "pe": 0.05
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "sp_reroll2"
+   ],
+   "unlock": {
+    "t": "bestLevel",
+    "n": 30
+   },
+   "place": {
+    "at": [
+     0,
+     110
+    ]
+   }
+  },
+  {
+   "id": "cd_bars",
+   "idx": 2,
+   "kind": "ring",
+   "name": "Hunter's Eye",
+   "desc": "Thin health bars and the mark name on Hollow-marked foes. Boss and miniboss bars stay free.",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "info": "bars"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "killMarked",
+    "n": 20
+   },
+   "place": {
+    "at": [
+     -64.7,
+     89
+    ]
+   }
+  },
+  {
+   "id": "cd_radar",
+   "idx": 3,
+   "kind": "ring",
+   "name": "Lantern Compass",
+   "desc": "Edge arrows also point to chests and to the next miniboss 20 s before it arrives.",
+   "cost": {
+    "gold": 700
+   },
+   "effects": [
+    {
+     "info": "compass"
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "unlock": {
+    "t": "openChest",
+    "n": 5
+   },
+   "place": {
+    "at": [
+     -104.6,
+     34
+    ]
+   }
+  },
+  {
+   "id": "cd_favour",
+   "idx": 4,
+   "kind": "ring",
+   "name": "Favoured Spirit",
+   "desc": "At run start mark one weapon: its stat cards weigh x1.5. Recipes stay hidden.",
+   "cost": {
+    "gold": 1200
+   },
+   "effects": [
+    {
+     "perk": "favour",
+     "pe": 0.2
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "cd_stir"
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "any",
+    "n": 8
+   },
+   "place": {
+    "at": [
+     -104.6,
+     -34
+    ]
+   }
+  },
+  {
+   "id": "cd_fourth",
+   "idx": 5,
+   "kind": "ring",
+   "name": "Fourth Card",
+   "desc": "Level-ups offer four cards. Works on Deep Dusk and Long Night only.",
+   "cost": {
+    "gold": 2000,
+    "glass": 8
+   },
+   "effects": [
+    {
+     "perk": "offerSize",
+     "n": 1,
+     "pe": 1
+    }
+   ],
+   "branch": "spirit",
+   "inert": true,
+   "requires": [
+    "cd_peek"
+   ],
+   "scope": {
+    "minChapter": 1,
+    "minTier": 1
+   },
+   "unlock": {
+    "t": "clearTier",
+    "chapter": "cursed_forest",
+    "tier": "hard"
+   },
+   "place": {
+    "at": [
+     -64.7,
+     -89
+    ]
+   }
+  }
+ ]
+}

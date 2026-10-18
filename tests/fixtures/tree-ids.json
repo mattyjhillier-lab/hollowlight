@@ -498,5 +498,129 @@
  "wr_spark": [
   "wr",
   2
+ ],
+ "bs_wolf1": [
+  "bs",
+  0
+ ],
+ "bs_wolf2": [
+  "bs",
+  1
+ ],
+ "bs_wolf3": [
+  "bs",
+  2
+ ],
+ "bs_crow1": [
+  "bs",
+  3
+ ],
+ "bs_crow2": [
+  "bs",
+  4
+ ],
+ "bs_crow3": [
+  "bs",
+  5
+ ],
+ "bs_crawl1": [
+  "bs",
+  6
+ ],
+ "bs_crawl2": [
+  "bs",
+  7
+ ],
+ "bs_crawl3": [
+  "bs",
+  8
+ ],
+ "bs_treant1": [
+  "bs",
+  9
+ ],
+ "bs_treant2": [
+  "bs",
+  10
+ ],
+ "bs_treant3": [
+  "bs",
+  11
+ ],
+ "bs_page": [
+  "bs",
+  12
+ ],
+ "cd_stir": [
+  "cd",
+  0
+ ],
+ "cd_peek": [
+  "cd",
+  1
+ ],
+ "cd_bars": [
+  "cd",
+  2
+ ],
+ "cd_radar": [
+  "cd",
+  3
+ ],
+ "cd_favour": [
+  "cd",
+  4
+ ],
+ "cd_fourth": [
+  "cd",
+  5
+ ],
+ "rs_autoset": [
+  "rs",
+  0
+ ],
+ "rs_start": [
+  "rs",
+  1
+ ],
+ "rs_bless": [
+  "rs",
+  2
+ ],
+ "rs_slot5": [
+  "rs",
+  3
+ ],
+ "gt_cursed_forest_hard": [
+  "df",
+  0
+ ],
+ "gt_cursed_forest_expert": [
+  "df",
+  1
+ ],
+ "df_ward": [
+  "df",
+  2
+ ],
+ "df_vigil": [
+  "df",
+  3
+ ],
+ "df_star": [
+  "df",
+  4
+ ],
+ "co_pull": [
+  "co",
+  0
+ ],
+ "co_call": [
+  "co",
+  1
+ ],
+ "co_glean": [
+  "co",
+  2
  ]
 }

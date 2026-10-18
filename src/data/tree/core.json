@@ -172,6 +172,36 @@
    "owners": [
     "cursed_forest"
    ]
+  },
+  "co": {
+   "kind": "tool",
+   "owners": [
+    "satchel"
+   ]
+  },
+  "cd": {
+   "kind": "tool",
+   "owners": [
+    "cardfan"
+   ]
+  },
+  "bs": {
+   "kind": "tool",
+   "owners": [
+    "almanac"
+   ]
+  },
+  "rs": {
+   "kind": "tool",
+   "owners": [
+    "hearthkey"
+   ]
+  },
+  "df": {
+   "kind": "tool",
+   "owners": [
+    "nightgate"
+   ]
   }
  },
  "legacyIds": [
@@ -248,16 +278,27 @@
    "reviveMaxFrac": 0.2,
    "rerollMax": 3,
    "banishMax": 3,
-   "reviveMax": 1
+   "reviveMax": 1,
+   "heartPity": 0.016
   },
   "utility": {
    "speed": 5,
-   "pickup": 12,
+   "pickup": 20,
    "xp": 7.5,
    "gold": 12,
    "abilityCdMax": 50
   },
-  "loreShare": 0.1667
+  "loreShare": 0.2,
+  "perTier": {
+   "1": {
+    "combat": 2.5,
+    "sustain": 0
+   },
+   "2": {
+    "combat": 0.6,
+    "sustain": 0
+   }
+  }
  },
  "nodes": [
   {
@@ -376,25 +417,28 @@
    "id": "li_reach",
    "idx": 5,
    "kind": "ring",
-   "name": "Reaching Light",
-   "desc": "Pickup radius +6%",
+   "name": "Wider Lantern",
+   "desc": "Gem pickup range +4% per rank.",
    "branch": "light",
    "cost": {
-    "gold": 260
+    "gold": 200
    },
-   "requires": [
-    "li_vigor"
-   ],
+   "requires": [],
    "effects": [
     {
      "mod": "pickup",
-     "pct": 6
+     "pct": 4
     }
    ],
    "place": {
-    "ring": "hearth",
-    "i": 5
-   }
+    "tool": "satchel",
+    "at": [
+     0,
+     -90
+    ]
+   },
+   "maxRank": 4,
+   "rankCost": 1.5
   },
   {
    "id": "li_step",
@@ -513,8 +557,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 0
+    "tool": "cardfan",
+    "at": [
+     0,
+     -110
+    ]
    }
   },
   {
@@ -537,8 +584,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 1
+    "tool": "cardfan",
+    "at": [
+     64.7,
+     -89
+    ]
    }
   },
   {
@@ -561,8 +611,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 2
+    "tool": "cardfan",
+    "at": [
+     104.6,
+     -34
+    ]
    }
   },
   {
@@ -585,8 +638,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 3
+    "tool": "cardfan",
+    "at": [
+     104.6,
+     34
+    ]
    }
   },
   {
@@ -707,8 +763,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 8
+    "tool": "hearthkey",
+    "at": [
+     0,
+     -80
+    ]
    },
    "unlock": {
     "t": "surviveTime",
@@ -745,8 +804,8 @@
    "id": "li_hearts",
    "idx": 20,
    "kind": "ring",
-   "name": "Bright Hearts",
-   "desc": "Hearts drop +5%",
+   "name": "Kinder Hearts",
+   "desc": "Hearts drop +3% and come 5 s sooner when you have not seen one.",
    "branch": "light",
    "cost": {
     "gold": 840
@@ -757,12 +816,19 @@
    "effects": [
     {
      "drop": "heart",
-     "pct": 5
+     "pct": 3
+    },
+    {
+     "drop": "heartPity",
+     "secs": -5
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 10
+    "tool": "satchel",
+    "at": [
+     0,
+     90
+    ]
    }
   },
   {
@@ -785,16 +851,19 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 11
+    "tool": "satchel",
+    "at": [
+     -63.6,
+     63.6
+    ]
    }
   },
   {
    "id": "li_magnet",
    "idx": 22,
    "kind": "ring",
-   "name": "Pull of the Moon",
-   "desc": "Soul Magnets +25%",
+   "name": "Lodestar",
+   "desc": "Per rank: Soul Magnets +12.5% and 3 s sooner when you have not seen one.",
    "branch": "light",
    "cost": {
     "gold": 750
@@ -805,13 +874,22 @@
    "effects": [
     {
      "drop": "magnet",
-     "pct": 25
+     "pct": 12.5
+    },
+    {
+     "drop": "magnetPity",
+     "secs": -3
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 12
-   }
+    "tool": "satchel",
+    "at": [
+     -90,
+     0
+    ]
+   },
+   "maxRank": 2,
+   "rankCost": 1.4
   },
   {
    "id": "li_coin",
@@ -841,8 +919,8 @@
    "id": "li_scav",
    "idx": 24,
    "kind": "ring",
-   "name": "Scavenger's Eye",
-   "desc": "Pickup radius +6%",
+   "name": "Scavenger",
+   "desc": "Gem pickup range +4%.",
    "flavour": "Wolves and crows leave much behind.",
    "branch": "light",
    "cost": {
@@ -854,7 +932,7 @@
    "effects": [
     {
      "mod": "pickup",
-     "pct": 6
+     "pct": 4
     }
    ],
    "unlock": {
@@ -873,8 +951,11 @@
     ]
    },
    "place": {
-    "ring": "wick",
-    "i": 14
+    "tool": "satchel",
+    "at": [
+     90,
+     0
+    ]
    }
   },
   {
@@ -1334,8 +1415,11 @@
     "id": "cursed_forest"
    },
    "place": {
-    "ring": "dusk",
-    "i": 4
+    "tool": "hearthkey",
+    "at": [
+     -69.3,
+     40
+    ]
    }
   },
   {

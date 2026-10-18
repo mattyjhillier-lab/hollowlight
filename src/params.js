@@ -1,6 +1,7 @@
 // URL debug params: pure parser (no DOM). Every key accepts ONLY known values; anything else falls back to the default.
 // URL input is untrusted: nothing here is ever saved, and all numbers are clamped integers.
 import { parseTouchParam } from './input/stick.js';
+import { TIER_IDS } from './sim/tiers.js';
 
 const clampInt = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.floor(n))) : null; };
 const SPEC_MAX = 300; // grant/bless spec length cap
@@ -10,7 +11,7 @@ const ID_RE = /^[a-z0-9_]{1,32}$/;
 export const FLAGS_ON = ['trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums', 'husks'];
 // Flags that default OFF and are turned on with =1.
 export const FLAGS_OFF = ['god', 'debug', 'life'];
-export const KNOWN_KEYS = ['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'ground', 'bright', 'touch', 'meta', 'mem', 'style', 'specimen', 'kit', ...FLAGS_ON, ...FLAGS_OFF];
+export const KNOWN_KEYS = ['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'ground', 'bright', 'touch', 'meta', 'mem', 'style', 'specimen', 'kit', 'tier', ...FLAGS_ON, ...FLAGS_OFF];
 
 export function parseParams(search) {
   const q = new URLSearchParams(search || '');
@@ -30,6 +31,7 @@ export function parseParams(search) {
     bright: ['normal', 'brighter', 'clear'].includes(q.get('bright')) ? q.get('bright') : null, // session-only brightness override (never saved)
     touch: parseTouchParam(q.get('touch')),
     meta: ['full', 'half'].includes(q.get('meta')) ? q.get('meta') : null,
+    tier: TIER_IDS.includes(q.get('tier')) ? q.get('tier') : null, // dev: ?tier=hard|expert plays Deep Dusk / Long Night (strict whitelist; never saved, never banks tier rewards unless the tier gate is owned)
   };
   if (q.get('seed') === null || q.get('seed') === '') p.seed = null;
   if (q.get('t') === '') p.startTime = 0;

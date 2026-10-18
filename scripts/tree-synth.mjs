@@ -18,10 +18,11 @@ export function loadRealData() {
   return Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, L(n)]));
 }
 
-// Slot for the k-th synthetic constellation: far1..far10, then two per chapter band starting at band 2.
+// Slot for the k-th synthetic constellation: the far slots the five tool clusters leave free (far1, far3, far5, far7, far9), then two per chapter band starting at band 2.
+const FREE_FAR = ['far1', 'far3', 'far5', 'far7', 'far9'];
 export function synthSlot(k) {
-  if (k < 10) return `far${k + 1}`;
-  const j = k - 10;
+  if (k < FREE_FAR.length) return FREE_FAR[k];
+  const j = k - FREE_FAR.length;
   return `band${2 + Math.floor(j / 2)}.${1 + (j % 2)}`;
 }
 
@@ -30,8 +31,10 @@ export function synthTree(realData, n, baseFiles = readTreeFiles()) {
   const files = JSON.parse(JSON.stringify(baseFiles));
   const core = files.find((f) => f.path === 'core.json').json;
   const data = JSON.parse(JSON.stringify(realData));
-  const K = Math.max(0, Math.ceil((n - 125) / 15));
-  let count = 125;
+  // launch size = every node of the real fragments (core ring nodes + clusters + heroes + tool clusters)
+  let count = 0;
+  for (const f of baseFiles) { if (f.path.startsWith('emblems/')) continue; const j = f.json; for (const l of [j.nodes, j.gates, j.outline, j.lanterns]) if (Array.isArray(l)) count += l.length; }
+  const K = Math.max(0, Math.ceil((n - count) / 15));
   const bands = new Set();
   files.find((f) => f.path === 'clusters/ghost_wolves.json');
   for (let i = 0; i < K; i++) {

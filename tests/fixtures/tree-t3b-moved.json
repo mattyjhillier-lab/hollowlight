@@ -1,0 +1,102 @@
+{
+ "li_reach": {
+  "effects": [
+   {
+    "mod": "pickup",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 200,
+   "shards": 0
+  },
+  "rankCost": 1.5,
+  "maxRank": 4,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_scav": {
+  "effects": [
+   {
+    "mod": "pickup",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_reach"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "any",
+   "of": [
+    {
+     "t": "killEnemy",
+     "id": "wolf",
+     "n": 500
+    },
+    {
+     "t": "killEnemy",
+     "id": "crow",
+     "n": 800
+    }
+   ]
+  }
+ },
+ "li_hearts": {
+  "effects": [
+   {
+    "drop": "heart",
+    "pct": 3
+   },
+   {
+    "drop": "heartPity",
+    "secs": -5
+   }
+  ],
+  "cost": {
+   "gold": 840,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_regen"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_magnet": {
+  "effects": [
+   {
+    "drop": "magnet",
+    "pct": 12.5
+   },
+   {
+    "drop": "magnetPity",
+    "secs": -3
+   }
+  ],
+  "cost": {
+   "gold": 750,
+   "shards": 0
+  },
+  "rankCost": 1.4,
+  "maxRank": 2,
+  "requires": [
+   "li_study"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ }
+}

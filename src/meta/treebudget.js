@@ -8,11 +8,18 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const soft = (S, C) => (S <= 0 ? 0 : C * (1 - Math.exp(-S / C)));
 const EPS = 1e-9;
 
-// One effect -> [{ cat, face, pool }]. pool: 'combat' | 'sustain' | 'util' | 'none'.
+// One effect -> [{ cat, face, pool }]. pool: 'combat' | 'sustain' | 'util' | 'none' | 'tier'.
 // Negative faces are not credited (conservative: the budget counts only what a node gives).
+// ctx.tier > 0 = the effect belongs to a tier-scoped node: it is paid from that tier's own allowance (rule.perTier), never from the
+// Twilight caps, so every positive effect of such a node must carry a `pe` estimate (otherwise it reports 'tierunest', a budget violation).
 export function effectTerms(e, rule, ctx = {}) {
   const T = (cat, face, pool = 'combat') => ({ cat, face, pool });
   if (!isObj(e)) return [];
+  if (ctx.tier > 0) {
+    if (e.pe !== undefined) return [T('tierpe', e.pe, 'tier')];
+    const base = effectTerms(e, rule, {});
+    return base.some((t) => (t.pool === 'combat' || t.pool === 'sustain') && t.face > 0) ? [T('tierunest', 0, 'tier')] : base.map((t) => ({ ...t, pool: 'none' }));
+  }
   if (e.weapon !== undefined) {
     if (e.weapon === '@summon') return [e.stat === 'power' ? T('tagS', e.pct ?? 0) : T('summonSpeed', e.pct ?? 0, 'util')];
     if (e.weapon === '@magic') return [e.stat === 'power' ? T('tagM', e.pct ?? 0) : T('magicSpeed', e.pct ?? 0, 'util')];
@@ -35,13 +42,18 @@ export function effectTerms(e, rule, ctx = {}) {
   if (e.drop !== undefined) {
     if (e.drop === 'heart') return [T('heartDrop', e.pct, 'sustain')];
     if (e.drop === 'heartHeal') return [T('heartHeal', e.pct, 'sustain')];
+    if (e.drop === 'heartPity') return [T('heartPity', Math.abs(e.secs), 'sustain')];
+    if (e.drop === 'magnetPity') return [T('magnetPity', Math.abs(e.secs), 'util')];
     return [T('magnet', e.pct, 'util')];
   }
   if (e.ability !== undefined) return [T(`ability.${e.ability}`, e.pct ?? e.secs ?? 0, 'util')];
   if (e.perk !== undefined) {
     if (e.perk === 'rush') return [T('tagS', e.pct * e.secs * rule.rushFace)];
+    if (e.pe > 0) return [T('choice', e.pe)]; // a discrete choice perk (Favoured Spirit, Kindred Start, Lantern Blessing): estimated PE, replaced by ablation
     return [T(`perk.${e.perk}`, e.pct ?? 0, 'util')];
   }
+  if (e.lore !== undefined) return [T('lore', e.pct * rule.loreShare)];
+  if (e.info !== undefined) return e.pe > 0 ? [T('choice', e.pe)] : [T('info', 0, 'none')];
   if (e.status !== undefined) return [T('status', e.pct !== undefined ? e.pct : e.secs * rule.markFace)];
   if (e.unlock !== undefined) {
     if (e.unlock === 'rerolls') return [T('reroll', e.n, 'sustain')];
@@ -84,20 +96,22 @@ export function budgetOf(def, rule, W, opts = {}) {
   const termsOf = (id) => {
     const n = def.nodes[id];
     const ts = [];
-    for (const e of n.effects) for (const t of effectTerms(e, rule)) ts.push({ ...t, face: t.face * n.maxRank });
+    const tier = n.scope && n.scope.minTier ? n.scope.minTier : 0;
+    for (const e of n.effects) for (const t of effectTerms(e, rule, { tier })) ts.push({ ...t, face: t.face * n.maxRank });
     return ts;
   };
   const termCache = new Map(ids.map((id) => [id, termsOf(id)]));
 
+  const tierOf = (id) => (def.nodes[id].scope && def.nodes[id].scope.minTier) || 0;
   const evaluate = (chosen, chapter) => {
     const S = Object.create(null);
-    const sus = { reroll: 0, banish: 0, revive: 0, heartDrop: 0, heartHeal: 0 };
+    const sus = { reroll: 0, banish: 0, revive: 0, heartDrop: 0, heartHeal: 0, heartPity: 0 };
     const util = Object.create(null);
     const reviveFracs = [];
     for (const id of chosen) {
       const n = def.nodes[id];
       const k = n.scope ? n.scope.minChapter : 1;
-      if (k !== chapter) continue;
+      if (k !== chapter || tierOf(id) > 0) continue;
       for (const t of termCache.get(id)) {
         if (t.pool === 'combat') S[t.cat] = (S[t.cat] || 0) + Math.max(0, t.face);
         else if (t.pool === 'sustain') {
@@ -116,7 +130,7 @@ export function budgetOf(def, rule, W, opts = {}) {
       rows[cat] = { S: s, C: c.C, w: c.w, soft: sf, pe: sf * c.w, peCap: c.C * c.w };
       pe += sf * c.w;
     }
-    const susPE = (sus.revive ? rule.sustain.revive : 0) + sus.reroll * rule.sustain.perReroll + sus.banish * rule.sustain.perBanish + sus.heartDrop * rule.sustain.heartDrop + sus.heartHeal * rule.sustain.heartHeal;
+    const susPE = (sus.revive ? rule.sustain.revive : 0) + sus.reroll * rule.sustain.perReroll + sus.banish * rule.sustain.perBanish + sus.heartDrop * rule.sustain.heartDrop + sus.heartHeal * rule.sustain.heartHeal + sus.heartPity * (rule.sustain.heartPity || 0);
     return { rows, pe, sus, susPE, util, reviveFracs };
   };
 
@@ -202,6 +216,19 @@ export function budgetOf(def, rule, W, opts = {}) {
     if (w2.susPE > rule.perChapter.sustain + EPS) violations.push(`chapter ${k} sustain ${w2.susPE.toFixed(2)} is above the per-chapter allowance ${rule.perChapter.sustain}`);
   }
 
+  // tier-scoped nodes: each tier has its own allowance (rule.perTier), paid only on that tier or harder. The larger side of every exclusive pair counts.
+  const tierIds = [...new Set(ids.map(tierOf).filter((t) => t > 0))].sort((a, b) => a - b);
+  const tiers = {};
+  for (const id of ids) if (tierOf(id) > 0 && termCache.get(id).some((x) => x.cat === 'tierunest')) violations.push(`${id}: a tier-scoped effect needs a pe estimate`);
+  for (const t of tierIds) {
+    const peOf = (members) => { let pe = 0; for (const id of members) if (tierOf(id) === t) for (const x of termCache.get(id)) if (x.pool === 'tier' && x.cat === 'tierpe') pe += x.face; return pe; };
+    let pe = peOf(fixed);
+    for (const g of groups) pe += Math.max(0, ...g.map((m) => peOf([m])));
+    const allow = rule.perTier && rule.perTier[t] ? rule.perTier[t].combat : 0;
+    tiers[t] = { combat: pe, allowance: allow };
+    if (pe > allow + EPS) violations.push(`tier ${t} combat ${pe.toFixed(2)} is above the per-tier allowance ${allow}`);
+  }
+
   // option share per non-launch constellation (60% of its nodes are not plain knots)
   const byCluster = new Map();
   for (const id of ids) {
@@ -213,7 +240,7 @@ export function budgetOf(def, rule, W, opts = {}) {
   }
   for (const [cl, c] of byCluster) if ((c.total - c.knots) / c.total < rule.optionShareMin - EPS) violations.push(`cluster ${cl}: only ${(((c.total - c.knots) / c.total) * 100).toFixed(0)}% options/verbs (needs ${rule.optionShareMin * 100}%)`);
 
-  return { rows: ev.rows, pool: capCats.wpn, combatPE: ev.pe, combatAtCap: atCap, sustainPE: ev.susPE, worstSustainPE: worst.susPE, util: ev.util, chapters, violations, groups, W };
+  return { rows: ev.rows, pool: capCats.wpn, combatPE: ev.pe, combatAtCap: atCap, sustainPE: ev.susPE, worstSustainPE: worst.susPE, util: ev.util, chapters, tiers, violations, groups, W };
 }
 
 function statusOwnedBy(n, cluster) {

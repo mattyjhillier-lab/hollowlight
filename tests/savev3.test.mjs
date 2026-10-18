@@ -290,7 +290,7 @@ test('T2 at 2000 owned nodes the tree part of the save is <= 2 KB and load (pars
   const r = buildSynthetic(real0, 2000);
   const def = r.def;
   const tree = Object.fromEntries(def.list.filter((id) => !def.nodes[id].teaser).map((id) => [id, 1]));
-  delete tree.ma_key; delete tree.li_glass; // rival keystones cannot both be owned
+  delete tree.ma_key; delete tree.li_glass; delete tree.df_vigil; // rival keystones cannot both be owned
   assert.ok(Object.keys(tree).length >= 1990);
   const disk = { tree: encodeTree(tree, def, 3), seen: encodeSeen(Object.fromEntries(Object.keys(tree).map((k) => [k, true])), def) };
   const treeBytes = JSON.stringify(disk.tree).length;

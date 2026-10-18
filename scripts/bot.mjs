@@ -5,12 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Sim } from '../src/sim/Sim.js';
 import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
+import { TIER_IDS, tierIndex } from '../src/sim/tiers.js';
 import { loadTree } from '../src/meta/treefs.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
 const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
 data.tree = loadTree(data).live; // fragments in src/data/tree/ (src/meta/treedata.js)
+data.tiers = load('tiers'); // difficulty tiers (src/data/tiers.json)
+// TIER=normal|hard|expert (Twilight / Deep Dusk / Long Night; default normal = byte-identical to before tiers existed)
+export const TIER = TIER_IDS.includes(process.env.TIER) ? process.env.TIER : 'normal';
 // BLESS=off drops the Blessing pool (identical to the pre-BLESS-1 game); BLESSPICK=random|defence|offence is the bot's Blessing taste.
 export const PREFER_W = /^[a-z_]{1,32}$/.test(process.env.PREFER_W || '') ? process.env.PREFER_W : null;
 export const BLESS = process.env.BLESS === 'off' ? 'off' : 'on';
@@ -26,7 +30,7 @@ const BPREF = { defence: { maxHp: 1.2, pickup: 0.6, gold: 0.3, damage: 0.3, spee
 export const GATES = process.env.GATES === 'all' ? 'all' : process.env.GATES === 'preset' ? 'preset' : 'starter';
 const treeDef = compileTree(data.tree, data);
 export function metaTree(name = process.env.META || 'none') {
-  return name === 'none' ? null : aggregateMods(presetTree(treeDef, name, GATES === 'preset'), treeDef, data);
+  return name === 'none' ? null : aggregateMods(presetTree(treeDef, name, GATES === 'preset'), treeDef, data, { tier: tierIndex(TIER) });
 }
 
 export function withGates(t) {
@@ -82,7 +86,7 @@ function pick(sim, rng) {
 }
 
 export function playRun(charId, seed, opts = {}) {
-  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree()) });
+  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree()), tier: TIER });
   let s = seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;

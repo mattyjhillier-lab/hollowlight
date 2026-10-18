@@ -75,10 +75,10 @@ test('validation rejects duplicate ids, unknown/self prerequisites, cycles, bad 
 test('costs: rank scaling, totals recomputed from nodes', () => {
   const n = node('a', { maxRank: 3, cost: { gold: 100, shards: 1 }, rankCost: 2 });
   const d = compileTree(raw([n]), udata);
-  assert.deepEqual(costFor(d.nodes.a, 1), { gold: 100, shards: 1 });
-  assert.deepEqual(costFor(d.nodes.a, 3), { gold: 400, shards: 1 });
-  assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2 });
-  assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3 }); // junk ids ignored, rank clamped to the node max
+  assert.deepEqual(costFor(d.nodes.a, 1), { gold: 100, shards: 1, glass: 0 });
+  assert.deepEqual(costFor(d.nodes.a, 3), { gold: 400, shards: 1, glass: 0 });
+  assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2, glass: 0 });
+  assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3, glass: 0 }); // junk ids ignored, rank clamped to the node max
   const t = totalCost(def);
   assert.ok(t.gold > 40000 && t.gold < 120000, `total gold ${t.gold}`);
   assert.ok(t.shards >= 20 && t.shards <= 60, `total shards ${t.shards}`);

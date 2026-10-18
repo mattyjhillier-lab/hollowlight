@@ -90,7 +90,7 @@ test('T9 respec keeps unlock nodes and refunds the rest', () => {
   assert.deepEqual(save.tree, { g_ps: 1 });
   assert.equal(refund.gold, 10);
   assert.equal(save.gold, 700);
-  assert.deepEqual(respec(save, d), { gold: 0, shards: 0 });
+  assert.deepEqual(respec(save, d), { gold: 0, shards: 0, glass: 0 });
   assert.deepEqual(aggregateMods(save.tree, d, gd).unlocks.evolutions, ['phantom_stampede']);
 });
 
