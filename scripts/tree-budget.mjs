@@ -1,3 +1,5 @@
+// SUPERSEDED (T3, 2026-10-18): this is the v1 per-node PE printout and does not know the v2 effect kinds (its combat total reads NaN).
+// The authoritative budget is the soft-cap table: `node scripts/tree-validate.mjs --table` (and tests/treedata.test.mjs, tests/t3b.test.mjs).
 // Power budget for the skill tree fragments (src/data/tree/): prints each node's power-equivalent (PE) and the totals.
 // Usage: node scripts/tree-budget.mjs [--table]   (weights are documented in docs/design/skill-tree-v1.md)
 import { readFileSync } from 'node:fs';

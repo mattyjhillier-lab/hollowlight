@@ -54,9 +54,9 @@ test('T3a the soft cap is the budget: every capped category of the full tree equ
     assert.ok(Math.abs(row.total - soft(row.S, row.C)) < 1e-9, cat);
     assert.ok(row.total <= row.C + 1e-9 && row.factor <= 1);
   }
-  // the budget counts the better side of each keystone pair; the preset takes the first side, so per category the aggregate is never above the worse-case sum of both
+  // the face sums the game caps equal the ones the budget counts, for every category no keystone pair touches (the budget scores the better side of a pair, the preset takes the first)
   const b = budgetOf(def, RULE, 5);
-  for (const cat of ['dmg', 'cast', 'area', 'hp', 'heal', 'status']) assert.ok(Math.abs((f.info[cat] ? f.info[cat].S : 0) - (b.rows[cat] ? b.rows[cat].S : 0)) < 1e-9 || cat === 'dmg' || cat === 'hp' || cat === 'heal', `${cat}: aggregate ${f.info[cat] && f.info[cat].S} vs budget ${b.rows[cat] && b.rows[cat].S}`);
+  for (const cat of ['cast', 'area', 'status']) assert.ok(Math.abs(f.info[cat].S - b.rows[cat].S) < 1e-9, `${cat}: aggregate ${f.info[cat].S} vs budget ${b.rows[cat].S}`);
 });
 
 test('T3a negatives pass through the cap unscaled; flat adds are never scaled; the keystone trade stays a real trade', () => {
