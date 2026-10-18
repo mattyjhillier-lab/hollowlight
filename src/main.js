@@ -46,6 +46,9 @@ const game = new Phaser.Game({
   backgroundColor: '#07070d',
   pixelArt: false,
   render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
+  // Raw vsync-aligned rAF deltas: Phaser's 10-frame delta smoothing made a dropped frame play as a slow-motion hiccup
+  // followed by a catch-up (world speed wobble); raw deltas keep on-screen speed true to the clock (RunScene still clamps 100 ms).
+  fps: { smoothStep: false },
   scale: { mode: Phaser.Scale.NONE, zoom: 1 },
   scene: [RunScene],
 });

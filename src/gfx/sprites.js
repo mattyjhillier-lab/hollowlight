@@ -560,7 +560,9 @@ export function makeStyleTextures(scene, style) {
     // later in small slices by makeGroundLazy() (W1b), so the boot has no long stall.
     for (const [key, name] of [['ground', 'hollowA'], ['groundR', 'restoredA']]) setTex(key, TILE_DRAW[name](mkCanvas(TILE_PX, TILE_PX)));
     for (const [key, col] of [['groundBH', '#627082'], ['groundBR', '#507c48']]) {
-      const cv = mkCanvas(TILE_PX, TILE_PX); const g = cv.getContext('2d'); g.fillStyle = col; g.fillRect(0, 0, TILE_PX, TILE_PX);
+      // CPU-backed canvas: the lazy painter reads pixels back (grain strips + a flush per slice); on a GPU canvas every read stalled
+      // the GPU and dropped frames for ~2.5 s at the start of a run. Software canvas = cheap reads and a plain memcpy upload.
+      const cv = mkCanvas(TILE_PX, TILE_PX); const g = cv.getContext('2d', { willReadFrequently: true }); g.fillStyle = col; g.fillRect(0, 0, TILE_PX, TILE_PX);
       setTex(key, cv);
     }
   }
@@ -592,12 +594,13 @@ export function makeGroundLazy(scene) {
   return {
     done: false,
     step(ms) {
+      for (const j of jobs) if (j.up) { j.up = false; j.tex.source[0].update(); return false; } // each 4 MB GPU upload gets a frame of its own
       const t0 = performance.now();
       for (const j of jobs) {
         while (!j.done && performance.now() - t0 < ms) {
           const fin = j.it.next().done;
-          j.cx.getImageData(0, 0, 1, 1); // forces the canvas to flush this slice now (GPU canvases defer work), keeps the cost inside the budget
-          if (fin) { j.done = true; j.tex.source[0].update(); }
+          j.cx.getImageData(0, 0, 1, 1); // forces the canvas to flush this slice now, keeps the cost inside the budget (cheap: CPU canvas)
+          if (fin) { j.done = true; j.up = true; return false; }
         }
         if (performance.now() - t0 >= ms) break;
       }

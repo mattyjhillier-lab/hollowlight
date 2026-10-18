@@ -32,6 +32,8 @@
 
 .h-strip { position: absolute; left: var(--ml); bottom: var(--mb); display: flex; gap: calc(8 * var(--hu)); pointer-events: auto; transition: opacity .8s ease-out; padding: calc(6 * var(--hu)); margin: calc(-6 * var(--hu)); }
 .h-strip.low { opacity: .4; }
+/* own compositor layer from the start: the first fade used to rasterize the whole strip (SVG frames) mid-play, a ~100 ms GPU hitch */
+.h-strip { will-change: opacity; }
 .h-tile { position: relative; width: calc(56 * var(--hu)); height: calc(56 * var(--hu)); border-radius: calc(14.5 * var(--hu)); background: linear-gradient(rgba(45, 37, 32, .86), rgba(23, 18, 15, .86)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(5 * var(--hu)) rgba(0, 0, 0, .4); }
 .h-tile svg { position: absolute; left: calc(-2 * var(--hu)); top: calc(-2 * var(--hu)); width: calc(56 * var(--hu)); height: calc(56 * var(--hu)); overflow: visible; }
 .h-tile.evo { border-color: var(--gold); border-width: calc(3 * var(--hu)); box-shadow: 0 0 calc(8 * var(--hu)) rgba(255, 211, 107, .35), 0 calc(2 * var(--hu)) calc(5 * var(--hu)) rgba(0, 0, 0, .4); }

@@ -22,6 +22,7 @@ import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
 import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
+import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
@@ -257,7 +258,7 @@ export class RunScene extends Phaser.Scene {
     const rigOpts = { depth: D_LIT, glowKey: 'glow', glowInv: inv('glow'), blendAdd: ADD, flat: this.playerImg };
     this.rigs = [new HeroRig(this, rigOpts), new EliasRig(this, rigOpts)]; // Wren v2 + pup (A1), Elias v2 (A2); both share the flat sprite
     this.rig = this.rigs[0];
-    this.followTarget = this.add.zone(0, 0, 1, 1);
+    this.camF = { cx: 0, cy: 0, sx: 0, sy: 0, ok: false };
     this.gradeNow = gradeAt(0);
 
     this.keys = this.input.keyboard.addKeys({
@@ -437,8 +438,7 @@ export class RunScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, size, size);
     cam.stopFollow();
-    this.followTarget.setPosition(sim.player.x, sim.player.y);
-    cam.startFollow(this.followTarget, true, 0.18, 0.18);
+    this.camF.ok = false; // own follow (camfollow.js): float, frame-rate independent, device-pixel snapped; no Phaser roundPixels
     cam.centerOn(sim.player.x, sim.player.y);
 
     this.clearDecor();
@@ -809,6 +809,8 @@ export class RunScene extends Phaser.Scene {
     this.sec0(0);
     app.frame(dt);
     this.sec1(0);
+    // W1b: paint the Deep Forest Floor tiles on the title / menus (idle frames), so a run normally starts with them done
+    if (!this.sim) { const b = this.bState; if (b && b.ready < 1 && STYLE === 'a') { if (!b.lazy) b.lazy = makeGroundLazy(this); if (!b.lazy.done && b.lazy.step(4)) b.fade = 0; } }
     if (this.sim) {
       this.sec0(1);
       this.draw();
@@ -842,7 +844,7 @@ export class RunScene extends Phaser.Scene {
     if (lit) lm.begin(wv.centerX, wv.centerY, this.cameras.main.zoom, caps.lights);
 
     // player: lantern pool + ground ring (readability) + lantern light
-    this.followTarget.setPosition(p.x, p.y);
+    { const cam = this.cameras.main; followStep(this.camF, p.x, p.y, Math.min(this.game.loop.delta, 100) / 1000, cam.zoom, cam.width, cam.height); cam.setScroll(this.camF.sx, this.camF.sy); }
     this.sec0(2); this.tickLife(sim, p); this.sec1(2);
     this.sec0(3); this.tickSway(sim, p, caps); this.sec1(3);
     this.sec0(4); this.tickProps(sim, p, caps); this.sec1(4);

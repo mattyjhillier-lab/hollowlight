@@ -66,6 +66,8 @@ export default defineConfig({
   plugins: [inlineSingleFile(), stampServiceWorker()],
   // Dev server: only watch what the game loads. docs/ holds ~150 mockup .html files and screenshots that agents write while Matt
   // plays; any change there made the dev server full-reload his open game page.
-  server: { watch: { ignored: ['**/docs/**', '**/scripts/**', '**/tests/**', '**/dist/**', '**/.claude/**', '**/*.log'] } },
+  // HMR off by default (HMR=1 turns it on): agents edit src/ while Matt plays the dev server, and every edit to a non-HMR module
+  // full-reloaded his running game mid-run ("struggling to load things in"). With it off the page only changes when he refreshes.
+  server: { hmr: process.env.HMR === '1', watch: { ignored: ['**/docs/**', '**/scripts/**', '**/tests/**', '**/dist/**', '**/.claude/**', '**/*.log'] } },
   build: { chunkSizeWarningLimit: 4000, assetsInlineLimit: 100000000 },
 });

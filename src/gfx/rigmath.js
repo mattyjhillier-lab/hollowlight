@@ -13,23 +13,60 @@ export function advancePhase(phase, dist, stride = STRIDE) {
   return p - Math.floor(p);
 }
 
-// Pose for a walk phase: leg = +-1 foot swing, pass = 0 at full stride .. 1 at the passing pose (body highest/narrowest).
-// Writes into `o` (preallocated). sp = speed 0..1 (0 = standing still).
+// Pose for a walk phase (WALK v2, 2026-10-18). One leg cycle = two steps. Contacts at phase 0 and 0.5 (feet furthest apart),
+// passing poses at 0.25 / 0.75. Everything is a smooth sine of the STEP angle (no |cos| cusps), so the body makes ONE soft bump
+// per step: lowest just after contact (weight lands), highest just after passing. The head rides the neck with a small lag
+// (follow-through) and never squashes; feet lift on their FORWARD swing (sin^2: zero slope at lift-off and plant).
+// Writes into `o` (preallocated). sp = walk amount 0..1 (0 = standing: the rest pose exactly).
+export const WALK = { bob: 2.2, headLag: 0.55, land: 0.35, squash: 0.014, lean: 5, nod: 1.6, rock: 1.1 };
 export function walkPose(o, phase, sp) {
-  const s = clamp(sp, 0, 1);
+  const s = clamp(fin(sp), 0, 1);
   const a = fin(phase) * TAU;
-  const leg = Math.cos(a);
-  const pass = 1 - Math.abs(leg);
+  const b = 2 * a; // step angle
+  const leg = Math.cos(a); // +1: near foot forward
+  const sn = Math.sin(a);
+  const h = 0.5 - 0.5 * Math.cos(b - WALK.land); // body height 0 (just after contact) .. 1 (just after passing)
+  const hh = 0.5 - 0.5 * Math.cos(b - WALK.land - WALK.headLag); // the head, a beat later
   o.leg = leg * s + 0;
-  o.lift = Math.max(0, Math.sin(a)) * s; // far foot lift 0..1 (near foot = the other half)
-  o.lift2 = Math.max(0, -Math.sin(a)) * s;
-  o.bob = -pass * 3.5 * s + 0; // du, up is negative
-  o.sy = 1 - 0.05 * s + 0.09 * pass * s;
-  o.sx = 1 + 0.04 * s - 0.07 * pass * s;
-  o.lean = 6 * s; // degrees, forward
-  o.tailSway = Math.sin(a) * 0.16 * s; // rad
+  o.lift = sn < 0 ? sn * sn * s : 0; // near foot swings forward while leg rises (sin < 0)
+  o.lift2 = sn > 0 ? sn * sn * s : 0;
+  o.h = h * s;
+  o.bob = -h * WALK.bob * s + 0; // du, up is negative
+  o.headBob = -hh * WALK.bob * s + 0; // head anchor uses this instead of bob (lags the body a little)
+  o.sy = 1 + WALK.squash * s * (2 * h - 1); // a touch shorter on landing, a touch taller at the top
+  o.sx = 1 - 0.6 * WALK.squash * s * (2 * h - 1);
+  o.lean = WALK.lean * s; // degrees, forward
+  o.nod = (WALK.nod * Math.sin(b - WALK.land - WALK.headLag - 1.2) - WALK.rock * leg) * s; // degrees: small nod per step + side rock per cycle
+  o.tailSway = (0.13 * Math.sin(a - 0.9) + 0.05 * Math.sin(b - 1.6)) * s; // rad, trails the hips
   return o;
 }
+
+// Walk driver (WALK v2): smooth speed, walk amount and phase from the raw per-frame distance, frame-rate independent.
+// st = {v, amp, phase, acc}; dist = world units moved this frame; dt seconds; top = full walk speed (u/s); stride = u per leg cycle.
+// Phase advances by the SMOOTHED speed (a frame hitch can never kick the legs); stride shortens at low speed (slow = small steps).
+export function walkDrive(st, dist, dt, top, stride = STRIDE) {
+  if (!(dt > 0)) return st;
+  const h = Math.min(dt, 0.1);
+  const T = top > 1 ? top : 100;
+  const vRaw = clamp(fin(dist) / h, 0, T * 1.6);
+  const v0 = fin(st.v);
+  st.v = v0 + (vRaw - v0) * (1 - Math.exp(-h / 0.06));
+  const acc = (st.v - v0) / h;
+  st.acc = fin(st.acc) + (acc - fin(st.acc)) * (1 - Math.exp(-h / 0.08));
+  const tgt = clamp(st.v / T, 0, 1);
+  const amp = fin(st.amp);
+  st.amp = amp + (tgt - amp) * (1 - Math.exp(-h * (tgt > amp ? 12 : 8))); // eases in a little faster than out
+  const len = (stride > 0 ? stride : STRIDE) * (0.7 + 0.3 * tgt);
+  st.phase = advancePhase(st.phase, st.v * h, len);
+  return st;
+}
+
+// Turn: a quick soft squeeze of the width when the facing flips (t = seconds since the flip). 1 = none.
+export const TURN_T = 0.14;
+export const turnSquash = (t) => { const k = fin(t, 9) / TURN_T; return k >= 0 && k < 1 ? 1 - 0.28 * Math.sin(k * Math.PI) : 1; };
+
+// Signed lean that eases through zero on a turn instead of snapping (deg); st = {v}. Returns the new value.
+export function easeTo(cur, target, dt, tau) { const c = fin(cur, target); return c + (fin(target) - c) * (1 - Math.exp(-clamp(dt, 0, 0.1) / (tau > 0 ? tau : 0.05))); }
 
 // Squash and stretch are always clamped so a bad input can never break the silhouette.
 export const SQ_MIN = 0.82;

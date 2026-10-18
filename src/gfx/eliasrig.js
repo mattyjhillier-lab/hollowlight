@@ -9,6 +9,7 @@ export const ELIAS_ATLAS = 'elias_rig';
 const K = DU / TEX; // world units per atlas texel
 const FS = DU / E_FLAT_TEXEL; // world units per texel of the flat sprite
 const RAD = Math.PI / 180;
+const E_STRIDE = 40; // world units per leg cycle: he is slower (76 u/s), so a slightly shorter stride keeps a calm ~1.9 cycles/s
 const WARM = 0xffc96b;
 
 export class EliasRig {
@@ -24,7 +25,8 @@ export class EliasRig {
     this.parts = [this.staffB, this.bootF, this.bootN, this.body, this.head, this.staffF];
     this.flatBox = E_FLAT; this.hasPup = false; this.backScale = [1.35, 1.95]; this.backY = -9; // focal-point backing (A1b-style), sized for his taller shape
     this.active = false; this.mode = '';
-    this.wp = { leg: 0, lift: 0, lift2: 0, bob: 0, sy: 1, sx: 1, lean: 0, tailSway: 0 };
+    this.wp = { leg: 0, lift: 0, lift2: 0, h: 0, bob: 0, headBob: 0, sy: 1, sx: 1, lean: 0, nod: 0, tailSway: 0 };
+    this.wd = { v: 0, amp: 0, phase: 0, acc: 0 }; // WALK v2 driver state
     this.hf = { tint: 0, sx: 1, sy: 1, lean: 0, active: false };
     this.df = { k: 0, alpha: 1, rise: 0, sy: 1, sx: 1, light: 0, emberY: -80 };
     this._x = 0; this._y = 0; this.emberX = 0; this.emberY = 0; this.scarfX = 0; this.scarfY = 0;
@@ -33,7 +35,7 @@ export class EliasRig {
 
   reset() {
     this.t = 0; this.lastT = -1; this.px = 0; this.py = 0; this.phase = 0; this.sps = 0; this.dir = 1; this.hp = -1;
-    this.hurtT = 9; this.deadT = -1; this.lastIf = 0; this.tint = -1; this.ready = false; this.deadSet = false; this.deadX = 0; this.deadY = 0;
+    this.hurtT = 9; this.deadT = -1; this.lastIf = 0; this.tint = -1; this.ready = false; this.deadSet = false; this.turnT = 9; this.leanS = 0; this.wd.v = 0; this.wd.amp = 0; this.wd.phase = 0; this.wd.acc = 0; this.deadX = 0; this.deadY = 0;
   }
 
   bind(sim) {
@@ -86,14 +88,15 @@ export class EliasRig {
     if (!this.ready) { this.px = p.x; this.py = p.y; } else dist = Math.hypot(p.x - this.px, p.y - this.py);
     if (dist >= 40) dist = 0; // teleport: no stride
     this.px = p.x; this.py = p.y;
-    const spd = dt > 0 ? dist / dt : 0;
     const top = p.speed > 1 ? p.speed : 76;
-    const spN = M.clamp(spd / top, 0, 1.2);
-    this.sps += (Math.min(1, spN) - this.sps) * Math.min(1, dt * 16);
+    if (dt > 0) M.walkDrive(this.wd, dist, dt, top, E_STRIDE); // WALK v2: smoothed speed -> amount + phase
+    this.sps = this.wd.amp;
+    if (!reduced) this.phase = this.wd.phase;
+    const pdir = this.dir;
     this.dir = M.faceDir(this.dir, p.faceX);
     const dir = this.dir;
-    const moving = this.sps > 0.08;
-    if (!reduced && dt > 0) this.phase = M.advancePhase(this.phase, dist, M.STRIDE);
+    if (dir !== pdir) this.turnT = 0; else this.turnT += dt;
+    const amp = this.sps;
 
     if (this.ready && ((this.hp > 0 && p.hp < this.hp - 0.01) || (this.lastIf <= 0 && p.iframes > 0.3 && p.iframes <= 0.45))) this.hurtT = 0;
     this.hp = p.hp; this.lastIf = p.iframes;
@@ -109,16 +112,19 @@ export class EliasRig {
     const cast = M.wheelCasting(wheel);
 
     // ----- root transform (Elias is heavy: smaller lean and bob than Wren) -----
-    let sx = gentle ? 1 : M.clampSq(wp.sx * hf.sx);
-    let sy = gentle ? 1 : M.clampSq(wp.sy * hf.sy * (moving ? 1 : M.breathe(this.t * 0.85)));
-    let leanDeg = gentle ? 0 : wp.lean * 0.7 + hf.lean;
+    const turn = gentle ? 1 : M.turnSquash(this.turnT);
+    let sx = gentle ? 1 : M.clampSq(wp.sx * hf.sx * turn);
+    let sy = gentle ? 1 : M.clampSq(wp.sy * hf.sy * (1 + (M.breathe(this.t * 0.85) - 1) * (1 - amp)));
+    let leanDeg = gentle ? 0 : wp.lean * 0.7 + M.clamp(this.wd.acc / top * 0.6, -2, 2) + hf.lean;
     let bob = gentle ? 0 : wp.bob * 0.8;
+    let headBob = gentle ? 0 : wp.headBob * 0.8;
     let alpha = 1; let rise = 0; let deadK = 0;
     if (dead) {
       const df = M.deathFx(this.df, this.deadT);
-      sx = M.clampSq(df.sx); sy = M.clampSq(df.sy); leanDeg = 0; bob = 0; alpha = df.alpha; rise = df.rise; deadK = df.k;
+      sx = M.clampSq(df.sx); sy = M.clampSq(df.sy); leanDeg = 0; bob = 0; headBob = 0; alpha = df.alpha; rise = df.rise; deadK = df.k;
     }
-    const lean = leanDeg * RAD * dir;
+    this.leanS = gentle || dead ? leanDeg * dir : M.easeTo(this.leanS, leanDeg * dir, dt, 0.09); // heavier: eases through upright a touch slower
+    const lean = this.leanS * RAD;
     const ca = Math.cos(lean); const sa = Math.sin(lean);
 
     const flick = p.iframes > 0 && !dead && Math.floor(sim.time * 24) % 2 === 1;
@@ -166,9 +172,9 @@ export class EliasRig {
       this.body.setPosition(this._x, this._y).setRotation(lean).setScale(K * sx, K * sy).setFlipX(fl).setDepth(dBase + 0.003);
       const ex = M.pickEliasExpr(false, hf.active, cast, lowHp, M.isBlink(this.t));
       const X = E_EXPR[ex];
-      const idleTilt = gentle ? 0 : (moving ? -1.5 * wp.leg : Math.sin(this.t * 1.1) * 1.8);
-      this.at(fx, fy, E_ANCHOR.neck[0], E_ANCHOR.neck[1] + X.hy, ca, sa, sx, sy, bob);
-      this.head.setFrame(`e_head_${ex}`).setPosition(this._x, this._y).setRotation(lean + (X.tilt + idleTilt) * RAD * dir).setScale(K * sx, K * sy).setFlipX(fl).setDepth(dBase + 0.004);
+      const idleTilt = gentle ? 0 : wp.nod * 0.75 + (1 - amp) * Math.sin(this.t * 1.1) * 1.8;
+      this.at(fx, fy, E_ANCHOR.neck[0], E_ANCHOR.neck[1] + X.hy, ca, sa, sx, sy, headBob);
+      this.head.setFrame(`e_head_${ex}`).setPosition(this._x, this._y).setRotation(lean + (X.tilt + idleTilt) * RAD * dir).setScale(K * hf.sx * turn, K * hf.sy).setFlipX(fl).setDepth(dBase + 0.004);
       this.atStaff(fx, fy, E_ANCHOR.staffFront[0], E_ANCHOR.staffFront[1], th, ca, sa, sx, sy, bob);
       this.staffF.setPosition(this._x, this._y).setRotation(sRot).setScale(K * sx, K * sy).setFlipX(fl).setDepth(dBase + 0.005);
       // candle crown glow: a soft gold halo around the six candles; flares when the Candle Wheel is planted

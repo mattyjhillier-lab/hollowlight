@@ -30,7 +30,8 @@ export class HeroRig {
     this.active = false; this.flatBox = FLAT; this.hasPup = true; this.id = 'wren';
     this.mode = ''; this.pupMode = ''; this._x = 0; this._y = 0; // '' | 'rig' | 'flat'
     // reusable scratch (no allocation in update)
-    this.wp = { leg: 0, lift: 0, lift2: 0, bob: 0, sy: 1, sx: 1, lean: 0, tailSway: 0 };
+    this.wp = { leg: 0, lift: 0, lift2: 0, h: 0, bob: 0, headBob: 0, sy: 1, sx: 1, lean: 0, nod: 0, tailSway: 0 };
+    this.wd = { v: 0, amp: 0, phase: 0, acc: 0 }; // WALK v2 driver state
     this.hf = { tint: 0, sx: 1, sy: 1, lean: 0, active: false };
     this.df = { k: 0, alpha: 1, rise: 0, sy: 1, sx: 1, light: 0, emberY: -80 };
     this.es = { x: 0, y: 0, vx: 0, vy: 0 }; // ember spring (world)
@@ -44,7 +45,7 @@ export class HeroRig {
   reset() {
     this.t = 0; this.lastT = -1; this.px = 0; this.py = 0; this.phase = 0; this.sps = 0; this.dir = 1; this.hp = -1;
     this.hurtT = 9; this.deadT = -1; this.lastIf = 0; this.pdir = 1; this.pPhase = 0; this.pup = 'sit'; this.tint = -1; this.alphaSet = -1;
-    this.trailT = 0; this.ready = false; this.pst.run = false; this.pst.still = 0;
+    this.trailT = 0; this.ready = false; this.turnT = 9; this.leanS = 0; this.wd.v = 0; this.wd.amp = 0; this.wd.phase = 0; this.wd.acc = 0; this.pst.run = false; this.pst.still = 0;
   }
 
   bind(sim) {
@@ -100,14 +101,15 @@ export class HeroRig {
     let ux = 0; let uy = 0;
     if (dist > 0.0001 && dist < 40) { ux = (p.x - this.px) / dist; uy = (p.y - this.py) / dist; } else if (dist >= 40) dist = 0; // teleport: no stride
     this.px = p.x; this.py = p.y;
-    const spd = dt > 0 ? dist / dt : 0;
-    const top = p.speed > 1 ? p.speed : 105;
-    const spN = M.clamp(spd / top, 0, 1.2);
-    this.sps += (Math.min(1, spN) - this.sps) * Math.min(1, dt * 16);
+    const top = p.speed > 1 ? p.speed * 1.1 : 105; // her trait speed (+10%)
+    if (dt > 0) M.walkDrive(this.wd, dist, dt, top, M.STRIDE); // WALK v2: smoothed speed -> amount + phase
+    this.sps = this.wd.amp;
+    if (!reduced) this.phase = this.wd.phase;
+    const pdir = this.dir;
     this.dir = M.faceDir(this.dir, p.faceX);
     const dir = this.dir;
-    const moving = this.sps > 0.08;
-    if (!reduced && dt > 0) this.phase = M.advancePhase(this.phase, dist, M.STRIDE);
+    if (dir !== pdir) this.turnT = 0; else this.turnT += dt;
+    const amp = this.sps;
 
     // hurt detection (hp drop or a fresh iframe window of the normal 0.4 s kind; also under god mode)
     if (this.ready && ((this.hp > 0 && p.hp < this.hp - 0.01) || (this.lastIf <= 0 && p.iframes > 0.3 && p.iframes <= 0.45))) this.hurtT = 0;
@@ -121,17 +123,20 @@ export class HeroRig {
     const wp = M.walkPose(this.wp, gentle ? 0 : this.phase, gentle ? 0 : this.sps);
 
     // ----- root transform -----
-    let sx = gentle ? 1 : M.clampSq(wp.sx * hf.sx);
-    let sy = gentle ? 1 : M.clampSq(wp.sy * hf.sy * (moving ? 1 : M.breathe(this.t)));
-    let leanDeg = gentle ? 0 : wp.lean + hf.lean;
+    const turn = gentle ? 1 : M.turnSquash(this.turnT);
+    let sx = gentle ? 1 : M.clampSq(wp.sx * hf.sx * turn);
+    let sy = gentle ? 1 : M.clampSq(wp.sy * hf.sy * (1 + (M.breathe(this.t) - 1) * (1 - amp))); // breathing fades out as she walks (no snap)
+    let leanDeg = gentle ? 0 : wp.lean + M.clamp(this.wd.acc / top * 0.9, -3, 3) + hf.lean; // leans into a start, rocks back on a stop
     let bob = gentle ? 0 : wp.bob;
+    let headBob = gentle ? 0 : wp.headBob;
     let alpha = 1; let rise = 0;
     let deadK = 0;
     if (dead) {
       const df = M.deathFx(this.df, this.deadT);
-      sx = M.clampSq(df.sx); sy = M.clampSq(df.sy); leanDeg = 0; bob = 0; alpha = df.alpha; rise = df.rise; deadK = df.k;
+      sx = M.clampSq(df.sx); sy = M.clampSq(df.sy); leanDeg = 0; bob = 0; headBob = 0; alpha = df.alpha; rise = df.rise; deadK = df.k;
     }
-    const lean = leanDeg * RAD * dir;
+    this.leanS = gentle || dead ? leanDeg * dir : M.easeTo(this.leanS, leanDeg * dir, dt, 0.07); // eases through upright on a turn
+    const lean = this.leanS * RAD;
     const ca = Math.cos(lean); const sa = Math.sin(lean);
 
     // ----- mode: rig (med/high), flat (low, death, iframe flicker frames) -----
@@ -146,9 +151,9 @@ export class HeroRig {
 
     // ----- ember: spring-follows its anchor (swings when she turns/stops), gentle bob; reduced motion = bob only -----
     const eAnchorY = dead ? this.df.emberY : ANCHOR.ember[1] + (lowHp ? 14 : 0) + (hf.active && !dead ? 10 : 0);
-    const eBob = Math.sin(this.t * 2.6) * 2.2 + Math.sin(this.t * 4.1 + 1) * 0.8;
+    const eBob = (Math.sin(this.t * 2.6) * 2.2 + Math.sin(this.t * 4.1 + 1) * 0.8) * (1 - 0.6 * amp); // floats when still, steadier when walking
     this.at(fx, fy, ANCHOR.ember[0] * (lowHp ? 0.8 : 1), eAnchorY + eBob, ca, sa, sx, sy, bob);
-    if (gentle) { this.es.x = this._x; this.es.y = this._y; this.es.vx = this.es.vy = 0; } else M.springStep(this.es, this._x, this._y, dt, 900, 0.5, 60);
+    if (gentle) { this.es.x = this._x; this.es.y = this._y; this.es.vx = this.es.vy = 0; } else { const lead = 0.064 * this.wd.v; M.springStep(this.es, this._x + ux * lead, this._y + uy * lead, dt, 220, 0.72, 60); } // soft, well damped, far below the step rate (never bounces with the steps); a velocity lead keeps the old steady walking offset (c/k lag 0.097 s minus 0.033 s), so the softer spring only adds swing on starts, stops and turns
     this.emberX = this.es.x; this.emberY = this.es.y;
     this.at(fx, fy, ANCHOR.scarf[0], ANCHOR.scarf[1], ca, sa, sx, sy, bob); this.scarfX = this._x; this.scarfY = this._y; // W2b trail anchor
     const flicker = gentle ? 1 : 1 + 0.045 * Math.sin(this.t * 17) + 0.03 * Math.sin(this.t * 29);
@@ -182,9 +187,9 @@ export class HeroRig {
       // head: neck pivot, expression texture, tilt (breathing sway when idle)
       const ex = M.pickExpr(false, hf.active, lowHp, M.isBlink(this.t));
       const X = HEAD_EXPR[ex];
-      const idleTilt = gentle ? 0 : (moving ? -2 * wp.leg : Math.sin(this.t * 1.3) * 2.5);
-      this.at(fx, fy, ANCHOR.neck[0], ANCHOR.neck[1], ca, sa, sx, sy, bob);
-      this.head.setFrame(`w_head_${ex}`).setPosition(this._x, this._y).setRotation(lean + (X.tilt + idleTilt) * RAD * dir).setScale(K * sx, K * sy).setFlipX(fl).setDepth(dBase + 0.004);
+      const idleTilt = gentle ? 0 : wp.nod + (1 - amp) * Math.sin(this.t * 1.3) * 2.5;
+      this.at(fx, fy, ANCHOR.neck[0], ANCHOR.neck[1], ca, sa, sx, sy, headBob);
+      this.head.setFrame(`w_head_${ex}`).setPosition(this._x, this._y).setRotation(lean + (X.tilt + idleTilt) * RAD * dir).setScale(K * hf.sx * turn, K * hf.sy) // the head never squashes with the steps.setFlipX(fl).setDepth(dBase + 0.004);
       // ember cage rides the spring
       this.ember.setPosition(this.es.x, this.es.y).setScale(K * 0.95 * flicker).setDepth(dBase + 0.005).setVisible(true);
     }
