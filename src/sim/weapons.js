@@ -140,9 +140,9 @@ const ghostWolves = {
       r: 4, atkCd: 0, target: null, retarget: 0, slot: i, hit: null, faceX: 1,
     }));
 
-    const howl = sim.buffs.packHowl > 0 ? 2 : 1;
-    let dmg = s.power * sim.dmgMult(w) * howl;
-    let speed = s.speed * howl;
+    const rallying = sim.rally && sim.buffs.rally > 0; // Rally the Pack: wolves only; its +50% rides sim.srcAmps (shared x1.75 cap with Mark)
+    let dmg = s.power * sim.dmgMult(w);
+    let speed = s.speed;
     let bleedDur = BLEED_TIME; // Rend (s.duration) is the potency; the time is fixed
     if (evo === 'phantom_stampede') speed *= tune(sim, w, 'speed', 1.1); // Light Trails: fast wolves, bite code unchanged
     if (evo === 'howling_legion') { bleedDur *= 1.3; dmg *= tune(sim, w, 'dmg', 1.4); } // W6 Echo Pack: no extra live wolves, the pack bites x1.4 (Alt A)
@@ -155,7 +155,7 @@ const ghostWolves = {
     const alphaSide = evo === 'dire_alpha' ? dmg * tune(sim, w, 'side', 0.6) * packF : 0;
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank
-    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / howl / rate;
+    const biteGap = (evo === 'dire_alpha' ? tune(sim, w, 'biteGap', 0.45) : 0.6) / rate;
 
     const echoes = evo === 'howling_legion' ? echoUpdate(sim, w, units, dmg, speed, biteGap, dt) : null;
     rt.ang = (rt.ang || 0) + 0.8 * dt;
@@ -166,7 +166,11 @@ const ghostWolves = {
       u.atkCd -= dt;
       u.retarget -= dt;
 
-      if (!u.target || u.target.dead || u.retarget <= 0) {
+      const rallyT = rallying && sim.rally.target && !sim.rally.target.dead ? sim.rally.target : null;
+      if (rallyT) {
+        u.target = rallyT; // the whole pack converges on the rallied enemy
+        u.retarget = 0.4;
+      } else if (!u.target || u.target.dead || u.retarget <= 0) {
         // Hunt close to the player so loot and gems stay within reach.
         const taken = new Set();
         for (const o of units) if (o !== u && o.target && !o.target.dead) taken.add(o.target.id);

@@ -20,7 +20,7 @@ import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // MARK (W8b): +15% damage taken from ALL sources for 3 s, refresh only (re-marking resets the timer, never stacks), bosses included.
-// TOTAL DAMAGE-AMP CAP (Matt 2026-10-16): the product of every temporary damage amp (Mark, a source amp such as the future Rally +50%)
+// TOTAL DAMAGE-AMP CAP (Matt 2026-10-16): the product of every temporary damage amp (Mark, a source amp such as Rally the Pack +50%)
 // is capped at x1.75; applied in exactly one place (Sim.damageAmp, used by Sim.hurt).
 export const MARK_AMP = 0.15;
 export const MARK_TIME = 3;
@@ -73,7 +73,7 @@ export class Sim {
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
     this.unlockedEvolutions = new Set(T.unlocks?.evolutions || []); // tree-derived only, never from save.unlocks
-    this.buffs = { packHowl: 0, speedBoost: 0, speedMult: 1, rush: 0 };
+    this.buffs = { rally: 0, speedBoost: 0, speedMult: 1, rush: 0 };
     if (T.player?.maxHp && T.player.maxHp !== 1) {
       this.player.maxHp = Math.round(this.player.maxHp * T.player.maxHp);
       this.player.hp = this.player.maxHp;
@@ -112,7 +112,7 @@ export class Sim {
     this.dmgBy = {};
     this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
     this.burnBy = {}; // the Burn part of dotBy (counter only)
-    this.srcAmps = {}; // temporary damage amps by SOURCE weapon id (a future Rally sets srcAmps.ghost_wolves = 1.5 while active); joins Mark in the capped product
+    this.srcAmps = {}; // temporary damage amps by SOURCE weapon id (Rally the Pack sets srcAmps.ghost_wolves = 1.5 while active); joins Mark in the capped product
     this.ampBonus = 0; // extra damage dealt because of temporary amps (counter only)
     this.markBy = {}; // the Mark part of ampBonus by the weapon that applied it (counter only)
     this.killsBy = {};
@@ -130,7 +130,8 @@ export class Sim {
     this.chapter.events.forEach((ev, i) => { if (ev.t < startTime) this.eventsDone.add(i); });
 
     const ab = this.character.ability;
-    this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10 };
+    this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10, bonus: ab.bonus ?? 0 };
+    this.rally = null; // Rally the Pack window: { target, t, dur } (target may be null until an enemy is in reach)
     this.ability.cdLeft = Math.min(this.ability.cdLeft, this.abilityCooldown);
 
     this.patches = [];
@@ -572,7 +573,6 @@ export class Sim {
     p.iframes = Math.max(0, p.iframes - dt);
     if (this.tfx.regen > 0) this.healPlayer(this.tfx.regen * dt);
     this.buffs.rush = Math.max(0, this.buffs.rush - dt);
-    this.buffs.packHowl = Math.max(0, this.buffs.packHowl - dt);
     this.buffs.speedBoost = Math.max(0, this.buffs.speedBoost - dt);
   }
 
@@ -747,14 +747,14 @@ export class Sim {
     const p = this.player;
     a.cdLeft = this.abilityCooldown;
     const dur = 6 * this.tfx.abilityDur;
-    if (a.id === 'pack_howl') {
-      this.buffs.packHowl = dur;
-      this.addSpeedBoost(1.25, dur);
-      for (const e of this.enemies) {
-        if (!e.dead && !e.boss && Math.hypot(e.x - p.x, e.y - p.y) < 130) e.fearT = Math.max(e.fearT, 2);
-      }
-      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 130, ttl: 0.35, color: '#9fd8ff' });
-      this.pushEvent('howl');
+    if (a.id === 'rally_pack') {
+      // Rally the Pack: the wolves converge on (and pin) the toughest non-boss enemy; wolf damage +bonus while it lasts.
+      // The window is its own state (this.rally), never a speed boost. Ravens stay independent.
+      this.buffs.rally = dur;
+      this.rally = { target: this.pickRallyTarget(), t: dur, dur };
+      this.srcAmps.ghost_wolves = 1 + (a.bonus ?? 0.5); // +50% bite via the shared amp product (Rally x Mark = 1.725, under the x1.75 cap)
+      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 90, ttl: 0.35, color: '#ffcf7a' });
+      this.pushEvent('rally');
     } else if (a.id === 'candle_wheel') {
       // Candle Wheel: a planted ring of light. Heals Elias only while he stands inside; his Holy Orbit lights lock
       // into the ring (weapons.js) and burn what crosses it. The zone itself deals no damage.
@@ -764,6 +764,38 @@ export class Sim {
       this.pushEvent('wheel');
     }
     return true;
+  }
+
+  // Toughest (highest current HP) non-boss enemy near the hero; a boss only if nothing else is in reach (wolves bite it, never pin it).
+  pickRallyTarget() {
+    const p = this.player;
+    let best = null;
+    let boss = null;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (e.boss) { if (d < 300 && !boss) boss = e; continue; }
+      if (d < 240 && (!best || e.hp > best.hp || (e.hp === best.hp && e.id < best.id))) best = e;
+    }
+    return best || boss;
+  }
+
+  updateRally(dt) {
+    const r = this.rally;
+    if (!r) return;
+    r.t -= dt;
+    this.buffs.rally = Math.max(0, r.t);
+    if (r.t <= 0) {
+      const t = r.target;
+      if (t && !t.dead) this.addFx({ kind: 'ring', x: t.x, y: t.y, r: 26, ttl: 0.3, color: '#ffcf7a' });
+      this.pushEvent('rallyEnd');
+      this.rally = null;
+      delete this.srcAmps.ghost_wolves;
+      return;
+    }
+    if (!r.target || r.target.dead) r.target = this.pickRallyTarget();
+    const t = r.target;
+    if (t && !t.boss) t.heldT = Math.max(t.heldT || 0, 0.25); // pin; a boss is never pinned
   }
 
   cleanupDead() {
@@ -899,6 +931,7 @@ export class Sim {
     this.time += dt;
     this.updatePlayer(dt, input);
     this.updateSpawns(dt);
+    this.updateRally(dt);
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
     this.updateWeapons(dt);

@@ -70,7 +70,7 @@ test('hostile hero names, lines, version and bank are inert text (no innerHTML a
 test('hero select: Wren and Elias cards, stats as pips with names, ability line, radio semantics', () => {
   const hs = buildHeroSelect({ heroes: heroes(), selected: 'wren' });
   const s = texts(hs.root);
-  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Ghost Wolves', 'Holy Orbit', 'Pack Howl', 'Candle Wheel', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Light-footed']) assert.ok(s.includes(w), w);
+  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Ghost Wolves', 'Holy Orbit', 'Rally the Pack', 'Candle Wheel', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Light-footed']) assert.ok(s.includes(w), w);
   assert.equal(hs.group.attrs.role, 'radiogroup');
   assert.deepEqual(hs.cards.map((c) => c.el.attrs['aria-checked']), ['true', 'false']);
   assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['0', '-1']);

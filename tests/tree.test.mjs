@@ -467,7 +467,7 @@ test('effects: ability duration, auto-activate at low health', () => {
   sim.player.hp = sim.player.maxHp * 0.2;
   sim.step(DT, {});
   assert.ok(sim.ability.cdLeft > 0, 'auto-activated');
-  assert.ok(Math.abs(sim.buffs.packHowl - 7.5) < 0.1, `howl ${sim.buffs.packHowl}`);
+  assert.ok(Math.abs(sim.buffs.rally - 7.5) < 0.1, `rally ${sim.buffs.rally}`);
 });
 
 test('effects: max health, regeneration, hearts', () => {

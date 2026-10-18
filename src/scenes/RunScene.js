@@ -674,6 +674,14 @@ export class RunScene extends Phaser.Scene {
     if (f.gold && hud) hud.tickCoin();
   }
 
+  // Rally the Pack: warm amber ring from the lantern, a small flare where the pup sits, an ember puff (no gold: gold is for evolutions).
+  rallyMoment() {
+    const p = this.sim.player;
+    this.addRing(p.x, p.y, 8, 100, 0.5, ROLE.lantern, 2);
+    this.addRing(p.x - 8 * p.faceX, p.y + 4, 3, 22, 0.4, ROLE.lanternCore, 2, 0.1); // pup howl
+    if (!this.reducedMotion()) this.burst(p.x, p.y - 4, 10, ROLE.lantern, 80, 0.6, 0.45);
+  }
+
   // E9 evolution pick beat (render-only, ~0.55 s): a soft pulse ring from the hero in the weapon's role colour, a faint gold flash, and a thin gold
   // rim on the evolved weapon's units (drawn in draw(), never on enemies). Calm motion: no ring, flash, particles or rim (the HUD plate carries it).
   evolveMoment(evoId) {
@@ -1228,6 +1236,21 @@ export class RunScene extends Phaser.Scene {
           fx.lineStyle(1, ROLE.bolt, 0.4).lineBetween(b.x, b.y, b.x + tx * tk, b.y + ty * tk);
         }
       }
+    }
+
+    // Rally the Pack: thin amber thread from each rallying wolf to the rallied enemy
+    const ry = sim.rally;
+    if (ry && ry.target && !ry.target.dead && sim.buffs.rally > 0) {
+      const rt = ry.target;
+      const calm = this.reducedMotion();
+      const pulse = calm ? 0.7 : 0.55 + 0.25 * Math.sin(sim.time * 9);
+      let nl = 0;
+      for (const u of sim.units) {
+        if (u.kind !== 'wolf' || u.hidden) continue;
+        if (this.quality.tier === 'low' && nl++ >= 6) break;
+        fx.lineStyle(1, ROLE.lantern, pulse).lineBetween(u.x, u.y, rt.x, rt.y);
+      }
+      fx.lineStyle(1, ROLE.lantern, pulse).strokeCircle(rt.x, rt.y, rt.r + 5);
     }
 
     // transient effects (additive: glow comes for free)

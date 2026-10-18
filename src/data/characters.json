@@ -8,7 +8,7 @@
     "traits": { "moveSpeed": 1.1 },
     "traitText": "+10% move speed",
     "weapon": "ghost_wolves",
-    "ability": { "id": "pack_howl", "name": "Pack Howl", "cooldown": 60, "desc": "6s: wolves move and bite twice as fast, you run faster, nearby enemies flee." }
+    "ability": { "id": "rally_pack", "name": "Rally the Pack", "cooldown": 60, "bonus": 0.5, "desc": "6s: the wolves rush the toughest enemy near you and pin it, biting 50% harder." }
   },
   "elias": {
     "name": "Elias, the Priest",

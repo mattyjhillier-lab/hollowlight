@@ -27,7 +27,7 @@ N('sp_cd1', 'Steady Breath', 'spirit', 2, 0, { desc: 'Ability cooldown -10% (60s
 N('sp_cd2', 'Quickening Spirit', 'spirit', 3, 0, { desc: 'Ability cooldown -10% more.', gold: 2200, req: ['sp_cd1'], eff: [mod('abilityCd', -10)] });
 N('sp_cd3', 'Hollow Rhythm', 'spirit', 4, 0, { desc: 'Ability cooldown -10% more.', gold: 4500, req: ['sp_cd2'], eff: [mod('abilityCd', -10)] });
 N('sp_cd4', 'Unbroken Rhythm', 'spirit', 5, 0, { desc: 'Ability cooldown -15% more. With every cooldown node the ability returns in 33s; it can never be faster than 30s.', gold: 7000, shards: 2, req: ['sp_cd3'], eff: [mod('abilityCd', -15)] });
-N('sp_dur', 'Long Howl', 'spirit', 4, -2, { desc: 'Pack Howl and Candle Wheel last 25% longer.', gold: 3000, req: ['sp_cd2'], eff: [{ ability: 'dur', pct: 25 }] });
+N('sp_dur', 'Long Howl', 'spirit', 4, -2, { desc: 'Rally the Pack and Candle Wheel last 25% longer.', gold: 3000, req: ['sp_cd2'], eff: [{ ability: 'dur', pct: 25 }] });
 N('sp_auto', 'Last Whistle', 'spirit', 4, 2, { desc: 'Unlocks auto-activate: your ability fires by itself when health falls below 30%.', flavour: 'The spirits answer before you call.', gold: 3500, req: ['sp_cd2'], eff: [un('autoAbility', { hp: 0.3 })] });
 N('sp_edge', 'Edge of Dusk', 'spirit', 5, -2, { desc: 'All your spirits and spells deal +3% damage.', gold: 5000, req: ['sp_dur'], eff: [mod('damage', 3)] });
 N('sp_mastery', 'Dusk Mastery', 'spirit', 6, -2, { desc: 'All damage +3%.', flavour: 'You have walked the whole night.', gold: 9000, shards: 2, req: ['sp_edge'], eff: [mod('damage', 3)], unlock: { t: 'all', of: [{ t: 'clearChapter', id: CF }, evo('any', 5)] } });

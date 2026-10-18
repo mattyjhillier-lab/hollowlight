@@ -124,7 +124,7 @@ const mkSim = (o = {}) => ({
   player: { hp: 60, maxHp: 120 },
   balance: { runSeconds: 900, weaponSlots: 4, maxRank: 5 },
   weapons: [{ id: 'ghost_wolves', evo: null, ranks: { count: 2, power: 1 }, rt: {} }, { id: 'spirit_bolts', evo: null, ranks: { count: 1 }, rt: { cd: 0.5 } }],
-  ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 30 }, abilityCooldown: 60,
+  ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 30 }, abilityCooldown: 60,
   ...o,
 });
 
@@ -178,15 +178,15 @@ test('HUD-1 Hud fade: fades after 8s idle game time; level-up, weapon gain, abil
   const W3 = mkSim().weapons.concat([{ id: 'spirit_bolts', evo: null, ranks: { a: 1 }, rt: {} }]);
   hud.update(mkSim({ time: 119, level: 4, weapons: W3 }), DATA); // weapon gain
   assert.ok(!strip._cls.has('low'));
-  hud.update(mkSim({ time: 130, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 5 } }), DATA);
+  hud.update(mkSim({ time: 130, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 5 } }), DATA);
   assert.ok(strip._cls.has('low'));
-  hud.update(mkSim({ time: 131, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 60 } }), DATA); // ability used
+  hud.update(mkSim({ time: 131, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 60 } }), DATA); // ability used
   assert.ok(!strip._cls.has('low'));
-  hud.update(mkSim({ time: 145, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 40 } }), DATA);
+  hud.update(mkSim({ time: 145, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 40 } }), DATA);
   assert.ok(strip._cls.has('low'));
   hud.tapAt(50, 20); // inside the (fake) strip box
   assert.ok(!strip._cls.has('low'));
-  hud.update(mkSim({ time: 160, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 30 } }), DATA);
+  hud.update(mkSim({ time: 160, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 30 } }), DATA);
   assert.ok(strip._cls.has('low'));
   hud.strip.listeners.pointerenter[0](); // hover
   assert.ok(!strip._cls.has('low'));
