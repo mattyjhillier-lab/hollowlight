@@ -5,7 +5,7 @@
 //    the head, knot-hole sockets with a raised lip, lichen cups, one tiny dead-twig sprout. Asymmetric, per-species shape (anti Hollow Knight).
 //  - bodies cold (slate-indigo / grey-blue / lichen grey), ink socks; red-orange ONLY eyes + tells; amber eyes only miniboss/boss.
 // Units: du. Origin = ground under the feet, facing +x, y up negative.
-import { part, rod, furry, tuft, blob, line, poly, ell, circ, limb, eye, shadow, glow, mix, rng, specks, ticks, tick, strands, f, TAU, VOID, BOSS_EYE, EYE } from './paint.js';
+import { part, rod, furry, tuft, blob, line, poly, ell, circ, limb, eye, shadow, glow, mix, rng, specks, ticks, tick, strands, f, TAU, VOID, BOSS_EYE, EYE, sockRec } from './paint.js';
 export { part, rod, furry, tuft, blob, line, poly, ell, circ, limb, eye, shadow, glow, mix, rng, specks, ticks, tick, strands, f, TAU, VOID, BOSS_EYE, EYE };
 
 export const K = {
@@ -41,8 +41,8 @@ export function husk(d, M, o = {}) {
 }
 // lichen cup cluster (pale sage rosette)
 export const lichen = (x, y, r, seed = 3) => { const q = rng(seed + Math.round(x * 7 + y * 13)); let s = ''; for (let i = 0; i < 4; i++) { const a = q() * TAU, d = r * 0.7 * q(), rr = r * (0.35 + 0.35 * q()); s += `<circle cx="${f(x + Math.cos(a) * d)}" cy="${f(y + Math.sin(a) * d)}" r="${f(rr)}" fill="${K.lichen}" stroke="${K.lichenDk}" stroke-width=".8"/><circle cx="${f(x + Math.cos(a) * d - rr * 0.2)}" cy="${f(y + Math.sin(a) * d - rr * 0.25)}" r="${f(rr * 0.45)}" fill="#d6e3d2" opacity=".75"/>`; } return s; };
-// knot-hole SOCKET with a raised bark lip (the empty face). d = socket outline. Draw in the body layer, eyes go in the eye layer.
-export const knotSocket = (d, lip = 2.2) => `<path d="${d}" fill="none" stroke="${K.barkDk}" stroke-width="${f(lip * 2.4)}" stroke-linejoin="round" opacity=".75"/><path d="${d}" fill="none" stroke="${K.barkLt}" stroke-width="${f(lip * 0.9)}" stroke-linejoin="round" opacity=".55" transform="translate(-.7,-.9)"/><path d="${d}" fill="${VOID}"/><path d="${d}" fill="url(#hkVoid)"/>`;
+// knot-hole SOCKET with a raised bark lip. d = socket outline. Recorded (sockRec) so eye() bakes the eye INTO it and the night glow matches its contour.
+export const knotSocket = (d, lip = 2.2) => { sockRec(d); return `<path d="${d}" fill="none" stroke="${K.barkDk}" stroke-width="${f(lip * 2.4)}" stroke-linejoin="round" opacity=".75"/><path d="${d}" fill="none" stroke="${K.barkLt}" stroke-width="${f(lip * 0.9)}" stroke-linejoin="round" opacity=".55" transform="translate(-.7,-.9)"/><path d="${d}" fill="${VOID}"/><path d="${d}" fill="url(#hkVoid)"/>` };
 // root strap that grips the head: a gnarled TAPERED root (filled, knobby, grain line, 1-2 hair rootlets), never a chain
 export const strap = (pts, w = 3.2, o = {}) => { const q = rng(o.seed || 9), L = [], R = [], n = pts.length;
   for (let i = 0; i < n; i++) { const p = pts[i], a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;

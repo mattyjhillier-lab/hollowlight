@@ -95,6 +95,9 @@ export const CLOSE_ALPHA = 0.18;
 export const STREAK_MIN_SPEED = 35;
 export const STREAK_MAX_LEN = 16;
 export const STREAK_CAPS = { high: 60, med: 30, low: 0 };
+// Husk socket eyes: the nearest N enemies (plan order) get a separate drifting core image (look-at-hero inside the socket); the rest and all
+// of Low draw ONE glow+core image per eye (static core), so the image count stays the same as the old one-image eyes (perf budget).
+export const CORE_CAPS = { high: 40, med: 20, low: 0 };
 export const streakCap = (tier) => STREAK_CAPS[tier] ?? 0;
 export function makeEyeOut() { return { ox: 0, oy: 0, sc: 1, am: 1, ab: 0, sl: 0, sa: 0, sx: 0, sy: 0 }; }
 export function eyeAnim(time, id, hdx, hdy, speed, vx, vy, calm, out) {

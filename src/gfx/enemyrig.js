@@ -1,7 +1,7 @@
 // EN0-EN2: Husk enemy animator + death beat (Phaser side, visual only). Reads sim enemies (position, faceX, tele/state, flash) and never writes
 // to the sim. One pooled image per enemy from the chapter atlas (frame swap only), plus pooled death props (mask-pop, sinking body, warm mote).
 // Per-enemy animation memory lives on the pooled image (reset when the image is reused for another id); no per-frame allocation.
-import { HUSK_TYPES, FR, ATLAS_KEY, TPW, RIM_K, eyeAnchors, jitter, wpd } from './husk/frames.js';
+import { HUSK_TYPES, FR, ATLAS_KEY, TPW, RIM_K, EYE_TEX, EYE_KINDS, eyeAnchors, eyeMeta, jitter, wpd } from './husk/frames.js';
 
 const NAMES = Object.keys(FR);
 const STRIDE = { wolf: 15, crow: 1, root_crawler: 13 }; // world units moved per walk cycle (crow flaps on time instead)
@@ -34,6 +34,10 @@ export class EnemyArt {
     this.sc = new Float32Array(512).fill(1);
     this.dy = new Float32Array(512); // extra vertical offset (crow bob) per enemy index
     this.eyes = eyeAnchors();
+    this.eyeMeta = eyeMeta(); // per socket: look clamp, core size (world units)
+    this.eyeNames = {}; // [type][socket] = [glow, core, glow+core] atlas frame names (night layer)
+    for (const id in HUSK_TYPES) this.eyeNames[id] = this.eyeMeta[id].map((m, j) => EYE_KINDS.map((k) => `${id}:e${k}${j}`));
+    this.eyeInv = 1 / (TPW * EYE_TEX);
     this.foot = {}; for (const id in HUSK_TYPES) this.foot[id] = HUSK_TYPES[id].foot;
     this.names = {}; for (const id in HUSK_TYPES) { this.names[id] = NAMES.map((n) => `${id}:${n}`); this.names[id].rim = NAMES.map((n) => `${id}:r${n}`); }
     this.j = { s: 1, v: 1, ph: 0, sp: 1 };

@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HUSK_TYPES, HUSK_IDS, FR, layoutAtlas, typeSheet, eyeAnchors, jitter, ATLAS_W, TPW, HUSK_EYE_K, hurtPoint } from '../src/gfx/husk/frames.js';
+import { HUSK_TYPES, HUSK_IDS, FR, layoutAtlas, typeSheet, eyeAnchors, eyeMeta, socketInfo, jitter, ATLAS_W, TPW, EYE_TEX, hurtPoint } from '../src/gfx/husk/frames.js';
 import { walkFrame, crowFrame, CORPSE_CAPS } from '../src/gfx/enemyrig.js';
 import { parseParams } from '../src/params.js';
 import { data } from './helpers.mjs';
@@ -36,7 +36,7 @@ test('atlas layout: every frame of every type is present, inside the atlas, no o
     const a = rects[i], b = rects[j];
     assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, 'overlap');
   }
-  assert.ok(bytes <= 1.15e6, 'frame bytes ' + bytes); // budget ~1 MB (measured 1.10 MB incl. half-density rims)
+  assert.ok(bytes <= 1.25e6, 'frame bytes ' + bytes); // budget ~1 MB (1.10 MB incl. half-density rims + 0.12 MB socket-eye glow/core frames)
   assert.ok(L.w * L.h * 4 <= 2.1e6, 'GPU bytes');
 });
 
@@ -54,29 +54,62 @@ test('SVG sheets are self-contained (no external refs/scripts), deterministic, o
     const a = typeSheet(id, L), b = typeSheet(id, L);
     assert.equal(a.svg, b.svg, id + ' deterministic');
     assert.ok(!/<script|javascript:|href=|https?:|<image|<foreignObject|@import/i.test(a.svg.replace('xmlns="http://www.w3.org/2000/svg"', '')), id + ' no external content');
-    assert.equal((a.svg.match(/overflow="hidden"/g) || []).length, HUSK_TYPES[id].frames.length);
+    assert.equal((a.svg.match(/overflow="hidden"/g) || []).length, HUSK_TYPES[id].frames.length + 5 * socketInfo(id).socks.length, 'one cell per frame + glow/core/glow+core/hot glow/hot glow+core per socket');
     assert.ok(!a.svg.includes('stroke-dasharray="7 5"') && !a.svg.includes('ff5a3c" opacity="'), id + ' no telegraph decals in the frames');
   }
 });
 
-test('eye anchors: per type count (wolf pair, crow one high, crawler wide pair), present for every frame, inside the frame box, sized down to the socket', () => {
-  const E = eyeAnchors();
+test('eye anchors: per type count (wolf pair, crow one high, crawler wide pair), present for every frame, socket + iris INSIDE the socket bounds on every frame', () => {
+  const E = eyeAnchors(), M = eyeMeta();
   const want = { wolf: 2, crow: 1, root_crawler: 2 };
   for (const id of HUSK_IDS) {
     const T = HUSK_TYPES[id], u = T.g / 4;
     assert.equal(E[id].length, Object.keys(FR).length);
-    for (const pts of E[id]) {
+    assert.equal(M[id].length, want[id], id + ' sockets');
+    for (let f = 0; f < E[id].length; f++) {
+      const pts = E[id][f];
       assert.equal(pts.length, want[id], id);
-      for (const [x, y, k] of pts) {
+      for (const [x, y, ex, ey, open, flare, j] of pts) {
         assert.ok(x / u > T.box[0] && x / u < T.box[0] + T.box[2] && y / u > T.box[1] && y / u < 0, `${id} anchor in box`);
-        assert.ok(k > 0 && k <= HUSK_EYE_K[id] * 1.15 + 1e-9);
+        const m = M[id][j];
+        // the iris (and the core's whole drift range) stays inside the socket opening, on every frame (hurt squash included)
+        assert.ok(Math.abs(ex - x) + m.hw + m.lx <= m.w / 2 + 1e-6, `${id} f${f} core x inside socket`);
+        assert.ok(Math.abs(ey - y) + m.hh + m.ly <= m.h / 2 + 1e-6, `${id} f${f} core y inside socket`);
+        assert.ok(open > 0 && open <= 1 && (flare === 0 || flare === 1));
       }
     }
+    // eyes move rigidly with the head: socket-to-socket offset is the same on every walk frame
+    if (want[id] === 2) for (const f of [FR.w1, FR.w2, FR.w3]) {
+      const a0 = E[id][FR.w0], a1 = E[id][f];
+      assert.ok(Math.abs((a0[1][0] - a0[0][0]) - (a1[1][0] - a1[0][0])) < 1e-6 && Math.abs((a0[1][1] - a0[0][1]) - (a1[1][1] - a1[0][1])) < 1e-6, id + ' rigid');
+    }
+    // sockets are small: the glow sprite never exceeds the socket + a thin spill (the old floating ball was 2.7x the socket)
+    for (const m of M[id]) assert.ok(m.w < 2.5 && m.h < 2.0, `${id} socket ${m.w.toFixed(2)} x ${m.h.toFixed(2)} wu`);
   }
+  assert.ok(E.wolf[FR.h][0][4] < 1, 'hurt squints');
+  assert.equal(E.wolf[FR.t1][0][5], 1, 'wolf tell flares');
   assert.ok(E.crow[FR.w0][0][1] < E.wolf[FR.w0][0][1], 'crow eye held higher than the wolf eye');
   assert.ok(Math.abs(E.root_crawler[FR.w0][0][0] - E.root_crawler[FR.w0][1][0]) > Math.abs(E.wolf[FR.w0][0][0] - E.wolf[FR.w0][1][0]), 'crawler eyes wider apart');
   assert.ok(E.wolf[FR.t1][0][1] > E.wolf[FR.w0][0][1], 'wolf head drops on the tell');
   const [hx, hy] = hurtPoint(80, 0, 0); assert.ok(Number.isFinite(hx) && Number.isFinite(hy));
+});
+
+test('eyes are baked INTO the sockets (walk/tell/hurt frames), none on the freed body or the fallen mask; night glow frames are clipped to the socket outline', () => {
+  const L = layoutAtlas();
+  for (const id of HUSK_IDS) {
+    const { svg } = typeSheet(id, L);
+    const cells = svg.split('<svg x=').slice(1);
+    const names = HUSK_TYPES[id].frames.map(([n]) => n);
+    names.forEach((n, i) => { const has = cells[i].includes('#ff9a66'); assert.equal(has, n !== 'b' && n !== 'm', `${id}:${n} baked eye`); });
+    const SI = socketInfo(id);
+    for (let j = 0; j < SI.socks.length; j++) {
+      for (const k of ['g', 'c', 'G', 'h', 'H']) assert.ok(L.types[id].frames['e' + k + j], `${id}:e${k}${j}`);
+      const gf = L.types[id].frames['eg' + j];
+      assert.ok(gf.w <= Math.ceil((SI.socks[j].w + 6) * TPW * EYE_TEX * HUSK_TYPES[id].g / 4) + 2, 'glow frame = socket + thin spill');
+    }
+    const glowCells = cells.slice(names.length).filter((c) => !c.includes('<circle') || c.includes('clip-path'));
+    assert.ok(glowCells.some((c) => /clip-path="url\(#gk/.test(c)), id + ' glow clipped to the socket');
+  }
 });
 
 test('per-instance jitter is deterministic from the id, bounded, and never brightens past the tint', () => {
@@ -123,7 +156,7 @@ test('wiring: RunScene bakes at boot, falls back to flat sprites, feeds the nigh
   const sc = src('../src/scenes/RunScene.js');
   assert.ok(sc.includes('bakeHuskAtlas(this)') && sc.includes('art.apply(img, e, ei') && sc.includes('nc.art = art.on ? art : null') && sc.includes('art.kill('));
   const nl = src('../src/gfx/nightlayer.js');
-  assert.ok(nl.includes('art.eyes[e.type][af]') && nl.includes('art.rimName(e.type, af)'));
+  assert.ok(nl.includes('art.eyes[e.type][af]') && nl.includes('art.rimName(e.type, af)') && nl.includes('art.eyeMeta[e.type]'));
   const tex = src('../src/gfx/enemytex.js');
   assert.ok(tex.includes("type: 'image/svg+xml'") && tex.includes('revokeObjectURL') && !tex.includes('innerHTML'));
   assert.equal(parseParams('?husks=0').husks, false);
@@ -133,4 +166,19 @@ test('wiring: RunScene bakes at boot, falls back to flat sprites, feeds the nigh
 
 test('sim untouched: no sim file imports the art', () => {
   for (const f of ['Sim.js', 'weapons.js', 'cards.js']) assert.ok(!/gfx|husk|enemyrig/.test(src('../src/sim/' + f)), f);
+});
+
+test('night socket eyes: Calm = no drift/pulse/blink, look clamp scales the core inside the socket, drifting core only for the nearest CORE_CAPS (Low none), no allocation in draw()', async () => {
+  const { eyeAnim, makeEyeOut, blinkMul, LOOK_MAX } = await import('../src/gfx/nightlook.js');
+  const o = makeEyeOut();
+  for (let t = 0; t < 20; t += 0.37) { eyeAnim(t, 5, 100, -30, 80, 60, 0, true, o); assert.equal(o.ox, 0); assert.equal(o.oy, 0); assert.equal(o.sl, 0); assert.equal(blinkMul(t, 5, true), 1); }
+  for (let t = 0; t < 20; t += 0.37) { eyeAnim(t, 5, 100, -30, 0, 0, 0, false, o); assert.ok(Math.hypot(o.ox, o.oy) <= LOOK_MAX + 1e-9); }
+  const nl = src('../src/gfx/nightlayer.js');
+  assert.ok(nl.includes('lx * mj.lx * ks') && nl.includes('ly * mj.ly * ks'), 'drift = look direction x the per-socket clamp');
+  assert.ok(nl.includes('nm[split ? (c.bloom ? 3 : 0) : (c.bloom ? 4 : 2)]') && /if \(split\)/.test(nl) && nl.includes('const split = k < coreCap'), 'nearest CORE_CAPS get a drifting core, the rest (and Low) one glow+core image per eye');
+  const { CORE_CAPS } = await import('../src/gfx/nightlook.js');
+  assert.deepEqual(CORE_CAPS, { high: 40, med: 20, low: 0 });
+  assert.ok(nl.includes('blink ? 0.15 : 1'), 'blink closes the lid inside the socket');
+  const draw = nl.slice(nl.indexOf('  draw('), nl.indexOf('  // Night look off'));
+  assert.ok(!/new (Array|Map|Set|Float32Array|Uint8Array)|\.map\(|\.filter\(|\.slice\(|=> /.test(draw), 'allocation in draw()');
 });

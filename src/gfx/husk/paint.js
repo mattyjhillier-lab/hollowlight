@@ -12,9 +12,20 @@ export const addDef = (s) => { D.push(s); };
 export const TAU = Math.PI * 2;
 const GB = [-100, -120, 200, 140];
 export const setGrainBox = (x, y, w, h) => { GB[0] = Math.floor(x); GB[1] = Math.floor(y); GB[2] = Math.ceil(w); GB[3] = Math.ceil(h); };
-// eye anchors recorded by eye() since the last clearEyes(): [x, y, r] in du
+// EYES-IN-SOCKETS (2026-10-18, Matt: 'the eyes look like a random red glowing ball in the face'): knotSocket() records every socket it draws
+// (SOCKS: outline + box, du), eye() bakes the eye INTO the nearest socket (recessed void, inner shadow, brow lid, ember iris, species core,
+// warm catch on the lower lip) and records its anchor in EYES: [socket cx, socket cy, r, socket index, iris x, iris y, open 0..1, flare 0|1] (du).
 export const EYES = [];
-export const clearEyes = () => { EYES.length = 0; };
+export const SOCKS = [];
+export const clearEyes = () => { EYES.length = 0; SOCKS.length = 0; };
+let SPECIES = 'wolf';
+export const setEyeSpecies = (id) => { SPECIES = id; };
+export function sockRec(d) {
+  const n = String(d).match(/-?\d+(?:\.\d+)?/g).map(Number);
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i + 1 < n.length; i += 2) { x0 = Math.min(x0, n[i]); x1 = Math.max(x1, n[i]); y0 = Math.min(y0, n[i + 1]); y1 = Math.max(y1, n[i + 1]); }
+  SOCKS.push({ d, x0, y0, w: x1 - x0, h: y1 - y0, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 });
+}
 export { f };
 
 // ---------- colour ----------
@@ -137,8 +148,63 @@ export function specks(cx, cy, rx, ry, n, col, o = {}) {
 
 // ---------- eyes (WL6b: ember halo under a SOLID cream core, white hot centre). shape: round | almond | slit | squint | wide | x ----------
 export const EYE = '#ff5a3c', BOSS_EYE = '#ffb84a', CORE = '#ffe9c4';
+// species core (pupil) shape, centred on 0,0, sized to its socket S: wolf = narrow slanted slit, crow = one big round core with a highlight,
+// root crawler = a wide low oval. flare (tell) = longer/brighter; returns { svg, hw, hh } (half extents for the look clamp, du).
+export function coreShape(sp, S, flare = 0, hot = true) {
+  const k = 1 + 0.18 * flare;
+  if (sp === 'crow') {
+    const r = Math.min(S.w, S.h) * 0.34 * k;
+    return { hw: r, hh: r, svg: `<circle r="${f(r)}" fill="${CORE}"/>` + (hot ? `<circle cx="${f(-r * 0.12)}" cy="${f(-r * 0.1)}" r="${f(r * 0.55)}" fill="#fffaf0"/><circle cx="${f(-r * 0.42)}" cy="${f(-r * 0.42)}" r="${f(Math.max(0.7, r * 0.3))}" fill="#ffffff"/>` : '') };
+  }
+  if (sp === 'root_crawler') {
+    const rx = S.w * 0.27 * k, ry = S.h * 0.19 * k;
+    return { hw: rx, hh: ry, svg: `<ellipse rx="${f(rx)}" ry="${f(ry)}" fill="${CORE}"/>` + (hot ? `<ellipse cx="${f(-rx * 0.15)}" rx="${f(rx * 0.5)}" ry="${f(ry * 0.55)}" fill="#fffaf0"/>` : '') };
+  }
+  const L = S.w * 0.34 * k, t = Math.max(1.2, S.h * 0.16) * (1 + 0.3 * flare), rot = -14; // wolf slit, slanted down toward the snout
+  const ca = Math.cos(rot * Math.PI / 180), sa = Math.abs(Math.sin(rot * Math.PI / 180));
+  return { hw: L * ca + t * sa, hh: L * sa + t * ca, svg: `<g transform="rotate(${rot})"><path d="M${f(-L)} 0 Q0 ${f(-t * 2)} ${f(L)} 0 Q0 ${f(t * 2)} ${f(-L)} 0Z" fill="${CORE}"/>` + (hot ? `<ellipse rx="${f(L * 0.45)}" ry="${f(t * 0.5)}" fill="#fffaf0"/>` : '') + '</g>' };
+}
+// iris centre inside socket S for an eye drawn at x,y (pulled half way to the socket centre, slightly low under the brow)
+const irisAt = (S, x, y) => [S.cx + (x - S.cx) * 0.4, S.cy + (y - S.cy) * 0.4 + S.h * 0.08];
+// the eye baked INTO the socket (frames): recessed void (already drawn by knotSocket) + ember iris + species core + inner shadow + brow lid
+// (squint = both lids nearly closed) + a warm catch of light on the lower bark lip. Everything is clipped to the socket outline.
+function bakedEye(S, ex, ey, squint, flare) {
+  const id = nid('sk'), lid = nid('sl');
+  D.push(`<clipPath id="${id}"><path d="${S.d}"/></clipPath><clipPath id="${lid}"><rect x="${f(S.x0 - 4)}" y="${f(S.cy + S.h * 0.08)}" width="${f(S.w + 8)}" height="${f(S.h)}"/></clipPath>`);
+  const irx = S.w * 0.42 * (1 + 0.1 * flare), iry = S.h * 0.42 * (1 + 0.1 * flare);
+  const iris = rad([[0, '#ffc48a', 1], [0.3, '#ff7a45', 1], [0.72, '#e0402e', 1], [1, '#5a1626', 0.9]]);
+  const c = coreShape(SPECIES, S, flare);
+  const top = squint ? 0.62 : 0.24, bot = squint ? 0.3 : 0;
+  let s = `<g clip-path="url(#${id})"><ellipse cx="${f(ex)}" cy="${f(ey)}" rx="${f(irx)}" ry="${f(iry)}" fill="url(#${iris})"/>`;
+  s += squint ? `<path d="M${f(ex - S.w * 0.38)} ${f(ey)} L${f(ex + S.w * 0.38)} ${f(ey - S.h * 0.04)}" stroke="${CORE}" stroke-width="${f(Math.max(0.9, S.h * 0.12))}" stroke-linecap="round"/>`
+    : `<g transform="translate(${f(ex)},${f(ey)})">${c.svg}</g>`;
+  s += `<path d="${S.d}" transform="translate(0,${f(-(S.h * (1 - top)))})" fill="${VOID}" opacity=".93" filter="url(#sb1)"/>`; // brow / upper lid
+  if (bot) s += `<path d="${S.d}" transform="translate(0,${f(S.h * (1 - bot))})" fill="${VOID}" opacity=".9" filter="url(#sb1)"/>`; // lower lid (squint)
+  s += `<path d="${S.d}" fill="none" stroke="${VOID}" stroke-width="2.2" opacity=".7" filter="url(#sb1)"/></g>`; // inner shadow: the hole has depth
+  s += `<g clip-path="url(#${lid})"><path d="${S.d}" fill="none" stroke="#ff9a66" stroke-width="1.1" opacity=".55"/></g>`; // the ember lights the lower lip
+  return s;
+}
+// NIGHT glow sprite for socket S (additive, in its own atlas frame): ember light FILLING the socket outline (brightest at the iris, under the
+// brow), plus a very faint spill on the bark lip. withCore adds the cream core (Low tier: one image per eye, no drift). No floating disc.
+// hot = the High-tier variant used while the camera bloom is on: the bloom mixes 55% of a blurred frame into the picture, which halves a
+// 3-5 px eye; the hot frame has a cream-white heart (still clipped to the socket) so the eye keeps its >= 3:1 read through the bloom.
+export function glowSvg(S, ex, ey, withCore, hot) {
+  const id = nid('gk'), g = nid('gg'), R = Math.max(S.w, S.h) * 0.62;
+  D.push(`<clipPath id="${id}"><path d="${S.d}"/></clipPath><radialGradient id="${g}" gradientUnits="userSpaceOnUse" cx="${f(ex)}" cy="${f(ey)}" r="${f(R)}">${hot ? '<stop offset="0" stop-color="#fff4e0" stop-opacity="1"/><stop offset=".4" stop-color="#ffc890" stop-opacity="1"/><stop offset=".7" stop-color="#ff6a40" stop-opacity=".95"/>' : '<stop offset="0" stop-color="#ffd2a0" stop-opacity="1"/><stop offset=".3" stop-color="#ffa064" stop-opacity="1"/><stop offset=".6" stop-color="#ff5a3c" stop-opacity=".9"/>'}<stop offset="1" stop-color="#d0302a" stop-opacity=".5"/></radialGradient>`);
+  let s = hot ? `<path d="${S.d}" fill="none" stroke="#ff8a50" stroke-width="6" opacity=".5" filter="url(#sb2)"/>` : ''; // hot: soft lip glow that survives the bloom's blur-mix
+  s += `<path d="${S.d}" fill="none" stroke="${EYE}" stroke-width="2.6" opacity="${hot ? '.4' : '.22'}" filter="url(#sb1)"/>`;
+  s += `<g clip-path="url(#${id})"><path d="${S.d}" fill="url(#${g})"/>` + (withCore ? `<g transform="translate(${f(ex)},${f(ey)})">${coreShape(SPECIES, S).svg}</g>` : '') + '</g>';
+  return s;
+}
 export function eye(x, y, r = 3, o = {}) {
-  EYES.push([x, y, r]);
+  if (SOCKS.length) { // game path: bake into the nearest socket
+    let j = 0, best = Infinity;
+    for (let i = 0; i < SOCKS.length; i++) { const q = SOCKS[i], dd = (q.cx - x) ** 2 + (q.cy - y) ** 2; if (dd < best) { best = dd; j = i; } }
+    const S = SOCKS[j], sh = o.shape || 'round', squint = sh === 'squint', flare = sh === 'slit' ? 1 : 0, [ex, ey] = irisAt(S, x, y);
+    EYES.push([S.cx, S.cy, r, j, ex, ey, squint ? 0.55 : 1, flare]);
+    return bakedEye(S, ex, ey, squint, flare);
+  }
+  EYES.push([x, y, r, -1, x, y, 1, 0]);
   const col = o.col || EYE, a = o.a ?? 1, sh = o.shape || 'round', rot = o.rot || 0, halo = o.halo ?? 3.4;
   let core;
   if (sh === 'almond') core = `<path d="M${f(-r * 1.35)} 0 Q0 ${f(-r * 1.15)} ${f(r * 1.35)} 0 Q0 ${f(r * 0.85)} ${f(-r * 1.35)} 0Z" fill="${CORE}"/>`;

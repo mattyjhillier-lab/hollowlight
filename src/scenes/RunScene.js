@@ -205,7 +205,7 @@ export class RunScene extends Phaser.Scene {
     this.arc = makeArcOut(); // WL6a: current arc sample (ambient, Low tint, lantern radius, enemy tint/eye/rim values, dawn wash)
     this.arcKey = -1;
     this.nl = new NightLayer(this, D_VIG + 1); // WL6b: eyes / rims / boss eyes, above the vignette
-    this.nlc = { tier: 'med', calm: false, time: 0, hx: 0, hy: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT, art: null };
+    this.nlc = { tier: 'med', calm: false, time: 0, hx: 0, hy: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT, art: null, bloom: false };
     this.nlOn = false;
     this.teleG = this.add.graphics().setDepth(D_VIG + 3); // telegraphs (charge line, boss ring) sit above the vignette so the screen edge never hides a threat
     this.phone = false;
@@ -1113,7 +1113,7 @@ export class RunScene extends Phaser.Scene {
     if (nlOn) {
       const nc = this.nlc;
       nc.tier = this.quality.tier; nc.calm = this.reducedMotion(); nc.time = sim.time; nc.hx = p.x; nc.hy = p.y;
-      nc.vx0 = vx0; nc.vy0 = vy0; nc.vx1 = vx1; nc.vy1 = vy1; nc.art = art.on ? art : null;
+      nc.vx0 = vx0; nc.vy0 = vy0; nc.vx1 = vx1; nc.vy1 = vy1; nc.art = art.on ? art : null; nc.bloom = !!this.bloom; // socket eyes: hot glow frame under the High bloom
       nl.draw(sim, nc);
     }
 

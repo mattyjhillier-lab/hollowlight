@@ -178,7 +178,8 @@ async function contrast(out) {
           await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=['wolf','crow','root_crawler'];
             for(let i=0;i<3;i++)for(let j=0;j<3;j++){s.spawnEnemy(T[i],p.x+100,p.y);s.enemies[s.enemies.length-1]._va=i*3+j;}return s.enemies.length})()`);
           const POS = `(()=>{const s=window.__app.sim,p=s.player;const D=[70,140,220];s.enemies=s.enemies.filter(e=>e._va!=null);for(const e of s.enemies){const i=(e._va/3)|0,j=e._va%3;
-            ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}s.time=${t + 0.37 * attempt};return s.enemies.length})()`;
+            ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}for(const o of window.__app.scene.children.list)if(o.aid!==undefined)o.hurtT=-9;s.time=${t + 0.37 * attempt};return s.enemies.length})()`;
+          // POS also ends the Husk hurt frame: the harness holds the sim clock, so a hit taken while staging kept the 0.14 s hurt squint on forever
           for (let i = 0; i < 8; i++) { await c.ev(POS); await sleep(50); }
           await c.ev(POS); await sleep(60);
           const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();const D=[70,140,220];return JSON.stringify(s.enemies.filter(e=>e._va!=null).map(e=>({type:e.type,dist:D[e._va%3],x:R.left+(e.x-wv.x)/wv.width*R.width,y:R.top+(e.y-wv.y)/wv.height*R.height,r:e.r*R.width/wv.width*1.05})))})()`));

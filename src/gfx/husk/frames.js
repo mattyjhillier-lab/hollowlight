@@ -1,7 +1,7 @@
 // EN0 enemy rig definitions + frame sheets (pure JS, no DOM): which frames each Husk type bakes, its frame box, world scale, foot offset and
 // the eye anchors per frame (read by the WL6b night layer so the eye images sit in the knot-hole sockets). enemytex.js rasterises the sheets.
 // Units: du (design units of the locked mock-ups); world units per du = g / 4 (docs/mockups/enemies-husks/roster.mjs, true px = du * g * 2.34 / 4).
-import { resetAll, defs, setGrainBox, EYES, clearEyes } from './paint.js';
+import { resetAll, defs, setGrainBox, EYES, SOCKS, clearEyes, setEyeSpecies, glowSvg, coreShape } from './paint.js';
 import { EXTRA_DEFS } from './kit.js';
 import { wolfA, crowA, crawlerA } from './husks.js';
 
@@ -9,28 +9,28 @@ export const ATLAS_KEY = 'en_atlas';
 export const TPW = 5; // atlas texels per world unit (Wren ~5.9; 2.1x the 720p desktop zoom, 1.4x at 1080p)
 export const ATLAS_W = 1024;
 export const RIM_K = 0.5; // rim outline frames are baked at half density (a soft additive glow)
-// Night-eye image size on Husks vs the WL6b size (the locked WL6b eye was sized for the old 18-unit sprites; at full size the ember halo
-// covers the whole mask and the Husk reads as 'orb head'). 0.6 puts the cream core inside the knot-hole socket like the locked mock-up
-// sheets; contrast re-measured with the WL6d harness (scripts/wl6-measure.mjs contrast). Needs Matt's OK as a WL6b size change.
-export const HUSK_EYE_K = { wolf: 0.6, crow: 0.9, root_crawler: 0.85 }; // crow keeps the locked crow boost; crawler eyes sit wide in a dark cleft
-
+// EYES IN SOCKETS (2026-10-18; supersedes the EN0 0.6-0.9x night-eye size): the eyes are baked INTO each frame's knot-hole sockets, and the
+// night glow is a socket-shaped additive sprite per socket ('eg' glow, 'ec' core, 'eG' glow+core in one image, 'eh'/'eH' the same under the High bloom), baked at EYE_TEX x the frame density.
+export const EYE_TEX = 2;
+const EYE_PAD = 3; // du of faint spill around the socket in the glow frames
 // box = [x0, y0, w, h] in du (frame bounds incl. outline, blur and shadow); foot = world units from the sim position down to the feet;
 // maskAt = mask centre on the walk pose (du; the death mask-pop starts there), mdx = how far it is thrown forward (du);
 // dayK = body value multiplier once the arc darkens bodies for daylight (bodyK < 1; WL6d G2: the mid-grey crow needs |dL*| >= 6 on bright ground);
 // hurtW = the mock-up finish() width used by the hurt squash transform (eye anchors follow it).
 // frames: [name, state]. Order matters: index = frame id used at runtime (FR below).
 const MASK_BOX = [-58, -46, 116, 88];
+// dayRim = alpha of the dark daylight outline (bodyK < 1) for the dawn |dL*| >= 6 gate (EN2 misses: crow 70/140 desk, crawler 220 landscape; wolf 140 corrupt landscape after the socket eyes)
 export const HUSK_TYPES = {
   wolf: {
-    fn: wolfA, maskAt: [44, -48], mdx: 10, g: 0.62, box: [-80, -96, 162, 108], foot: 5, dayK: 1, hurtW: 80, mask: MASK_BOX,
+    fn: wolfA, maskAt: [44, -48], mdx: 10, g: 0.62, box: [-80, -96, 162, 108], foot: 5, dayK: 1, hurtW: 80, mask: MASK_BOX, dayRim: 0.35,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   crow: {
-    fn: crowA, maskAt: [14, -56], mdx: 6, g: 0.66, box: [-60, -94, 118, 104], foot: 6, dayK: 0.85, hurtW: 40, mask: MASK_BOX,
+    fn: crowA, maskAt: [14, -56], mdx: 6, g: 0.66, box: [-60, -94, 118, 104], foot: 6, dayK: 0.85, hurtW: 40, mask: MASK_BOX, dayRim: 0.6, poolRim: 0.5,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0.25, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   root_crawler: {
-    fn: crawlerA, maskAt: [34, -22], mdx: 10, g: 0.74, box: [-62, -94, 132, 104], foot: 7, dayK: 1, hurtW: 84, mask: MASK_BOX,
+    fn: crawlerA, maskAt: [34, -22], mdx: 10, g: 0.74, box: [-62, -94, 132, 104], foot: 7, dayK: 1, hurtW: 84, mask: MASK_BOX, dayRim: 0.5,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };
@@ -49,6 +49,22 @@ export function hurtPoint(W, x, y) {
   const dx = x - cx, rx = cx + dx * Math.cos(a) - y * Math.sin(a), ry = dx * Math.sin(a) + y * Math.cos(a);
   return [rx * 1.06 - W * 0.06, ry * 0.92];
 }
+
+// Sockets of a type on its rest pose (w0): outline, box, iris centre (du) + the species core half-extents. Pure, cached.
+const SOCK_CACHE = {};
+export function socketInfo(id) {
+  if (SOCK_CACHE[id]) return SOCK_CACHE[id];
+  resetAll(); setEyeSpecies(id); clearEyes();
+  HUSK_TYPES[id].fn({ ph: 0 });
+  const socks = SOCKS.map((S) => ({ ...S }));
+  const irises = socks.map((S, j) => { const e = EYES.find((q) => q[3] === j); return e ? [e[4], e[5]] : [S.cx, S.cy + S.h * 0.08]; });
+  const cores = socks.map((S) => { const c = coreShape(id, S); return [c.hw, c.hh]; });
+  clearEyes();
+  return (SOCK_CACHE[id] = { socks, irises, cores });
+}
+const HOT_PAD = 7; // the hot (bloom) frame carries a soft lip glow a little wider than the socket
+const eyeBox = (S, kind, core) => { if (kind === 'c') return [-core[0] - 1.5, -core[1] - 1.5, 2 * core[0] + 3, 2 * core[1] + 3]; const p = kind === 'h' || kind === 'H' ? HOT_PAD : EYE_PAD; return [S.x0 - p, S.y0 - p, S.w + 2 * p, S.h + 2 * p]; };
+export const EYE_KINDS = ['g', 'c', 'G', 'h', 'H']; // glow, core, glow+core (one image), hot glow, hot glow+core (High with bloom)
 
 // Pure layout of every type's block in the atlas: grid of frames (cols fit ATLAS_W), rim block (half density) after the frames.
 // Returns { w, h, types: { [type]: { x, y, cols, fw, fh, mw, mh, rw, rh, rimY, frames: { name: { x, y, w, h, ox, oy } } } } } (pixels, origin = feet).
@@ -76,6 +92,17 @@ export function layoutAtlas() {
       frames['r' + name] = { x, y: row, w: rw, h: rh, ox: frames[name].ox * RIM_K, oy: frames[name].oy * RIM_K, rim: name };
       x += rw; rowH = Math.max(rowH, rh);
     }
+    // eye frames: per socket a glow, a core and a glow+core sprite at EYE_TEX x density; pivot = socket centre (glow) / core centre
+    const SI = socketInfo(id), k2 = k * EYE_TEX;
+    SI.socks.forEach((S, j) => {
+      for (const kind of EYE_KINDS) {
+        const bx = eyeBox(S, kind, SI.cores[j]), w = Math.ceil(bx[2] * k2) + 2, h = Math.ceil(bx[3] * k2) + 2;
+        if (x + w > ATLAS_W) { x = 0; row += rowH; rowH = 0; }
+        const px = kind === 'c' ? 0 : S.cx, py = kind === 'c' ? 0 : S.cy;
+        frames['e' + kind + j] = { x, y: row, w, h, ox: 1 + (px - bx[0]) * k2, oy: 1 + (py - bx[1]) * k2, eye: { j, kind, bx } };
+        x += w; rowH = Math.max(rowH, h);
+      }
+    });
     out.types[id] = { y, fw, fh, mw, mh, rw, rh, frames };
     y = row + rowH;
   }
@@ -87,7 +114,9 @@ export function layoutAtlas() {
 // Eye anchors are returned in du; the runtime converts with wpd(type).
 export function typeSheet(id, lay) {
   const T = HUSK_TYPES[id], L = lay.types[id], k = texPerDu(id);
+  const SI = socketInfo(id);
   resetAll();
+  setEyeSpecies(id);
   setGrainBox(T.box[0], T.box[1], T.box[2], T.box[3]);
   let body = '';
   let bottom = 0;
@@ -96,10 +125,22 @@ export function typeSheet(id, lay) {
     const fr = L.frames[name];
     clearEyes();
     const r = T.fn(st);
-    eyes[name] = EYES.map(([x, y, rr]) => (st.hurt ? [...hurtPoint(T.hurtW, x, y), rr] : [x, y, rr]));
+    // [socket x, y, iris x, y, open, flare, socket index] (du); the hurt squash moves both points with the frame
+    eyes[name] = EYES.map(([x, y, , j, ex, ey, open, flare]) => (st.hurt ? [...hurtPoint(T.hurtW, x, y), ...hurtPoint(T.hurtW, ex, ey), open, flare, j] : [x, y, ex, ey, open, flare, j]));
     const bx = name === 'm' ? T.mask : T.box;
     const yy = fr.y - L.y;
-    body += `<svg x="${fr.x}" y="${yy}" width="${fr.w}" height="${fr.h}" viewBox="${(bx[0] - 1 / k).toFixed(2)} ${(bx[1] - 1 / k).toFixed(2)} ${(fr.w / k).toFixed(2)} ${(fr.h / k).toFixed(2)}" overflow="hidden">${r.b}</svg>`;
+    const baked = name === 'b' || name === 'm' ? r.b : r.b + r.e; // eyes are baked INTO the sockets (the freed body and the fallen mask have none)
+    body += `<svg x="${fr.x}" y="${yy}" width="${fr.w}" height="${fr.h}" viewBox="${(bx[0] - 1 / k).toFixed(2)} ${(bx[1] - 1 / k).toFixed(2)} ${(fr.w / k).toFixed(2)} ${(fr.h / k).toFixed(2)}" overflow="hidden">${baked}</svg>`;
+    bottom = Math.max(bottom, yy + fr.h);
+  }
+  const k2 = k * EYE_TEX;
+  for (const name in L.frames) {
+    const fr = L.frames[name];
+    if (!fr.eye) continue;
+    const { j, kind, bx } = fr.eye, S = SI.socks[j], [ex, ey] = SI.irises[j];
+    const inner = kind === 'c' ? coreShape(id, S).svg : glowSvg(S, ex, ey, kind === 'G' || kind === 'H', kind === 'h' || kind === 'H');
+    const yy = fr.y - L.y;
+    body += `<svg x="${fr.x}" y="${yy}" width="${fr.w}" height="${fr.h}" viewBox="${(bx[0] - 1 / k2).toFixed(2)} ${(bx[1] - 1 / k2).toFixed(2)} ${(fr.w / k2).toFixed(2)} ${(fr.h / k2).toFixed(2)}" overflow="hidden">${inner}</svg>`;
     bottom = Math.max(bottom, yy + fr.h);
   }
   const w = ATLAS_W, h = bottom;
@@ -108,25 +149,39 @@ export function typeSheet(id, lay) {
 }
 
 // Eye anchors for every type/frame in WORLD units relative to the FEET (the sprite origin; feet sit at sim y + foot), facing +x, unscaled. Pure (no DOM).
-// Frames without eyes (b, m) fall back to w0. Cached.
+// Per frame, per eye: [socket x, socket y, iris x, iris y, open (1 | 0.55 hurt squint), flare (1 on the tell), socket index]. Frames without eyes
+// (b, m) fall back to w0. Cached.
 let EYE_CACHE = null;
 export function eyeAnchors() {
   if (EYE_CACHE) return EYE_CACHE;
   const lay = layoutAtlas();
   const out = {};
   for (const id of HUSK_IDS) {
-    const T = HUSK_TYPES[id], u = wpd(id);
+    const u = wpd(id);
     const { eyes } = typeSheet(id, lay);
     const per = [];
     for (let f = 0; f < FR_N; f++) {
       const name = Object.keys(FR).find((n) => FR[n] === f);
-      const src = eyes[name] && eyes[name].length ? eyes[name] : eyes.w0;
-      const rmax = Math.max(...eyes.w0.map((e) => e[2]));
-      per.push(src.map(([x, y, r]) => [x * u, y * u, HUSK_EYE_K[id] * Math.max(0.75, Math.min(1.15, r / rmax))]));
+      const src = name !== 'b' && name !== 'm' && eyes[name] && eyes[name].length ? eyes[name] : eyes.w0;
+      per.push(src.map(([x, y, ex, ey, open, flare, j]) => [x * u, y * u, ex * u, ey * u, open, flare, j]));
     }
     out[id] = per;
   }
   EYE_CACHE = out;
+  return out;
+}
+// Per type, per socket (world units, relative to the socket centre): socket box, iris offset, core half extents and the look clamp
+// (how far the core may drift from the iris centre and stay inside the socket opening: 80% of the free room), so the WL6b2 look drift never leaves it.
+export function eyeMeta() {
+  const out = {};
+  for (const id of HUSK_IDS) {
+    const u = wpd(id), SI = socketInfo(id);
+    out[id] = SI.socks.map((S, j) => {
+      const [ex, ey] = SI.irises[j], [hw, hh] = SI.cores[j];
+      const lx = Math.max(0, S.w / 2 * 0.85 - Math.abs(ex - S.cx) - hw) * 0.8, ly = Math.max(0, S.h / 2 * 0.85 - Math.abs(ey - S.cy) - hh) * 0.8;
+      return { w: S.w * u, h: S.h * u, lx: lx * u, ly: ly * u, x0: (S.x0 - S.cx) * u, y0: (S.y0 - S.cy) * u, ex: (ex - S.cx) * u, ey: (ey - S.cy) * u, hw: hw * u, hh: hh * u };
+    });
+  }
   return out;
 }
 

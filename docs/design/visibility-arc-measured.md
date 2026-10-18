@@ -45,6 +45,9 @@ Clear (720 cells): gate **718/720**, strict 683/720, G1 alone (<= 8:00) 423/432,
 ## Before the WL6d fixes (first full run, same matrix, 4860 cells)
 Gate 4860/4860, strict 4540/4860, G1 alone 2898/2916, **G3 5344 px**. (Files: docs/screenshots/wl6d-before/.) The gate count after the fixes is 10 lower, all of it in the protan/tritan daylight cells above: the root crawler is darker in daylight now (DARK_DAY_K) and the capture rule also became stricter (blink-dim frames are no longer hidden by luck), so the two runs are not a like-for-like comparison; the honest reading is "normal vision 100% both times, G3 fixed".
 
+## Eyes in sockets re-measure (2026-10-18)
+Husk eyes are now baked into the bark sockets and the night glow is socket-shaped (LOCKED 'EYES IN SOCKETS'). Same full matrix, 4860 cells: G1|G2 4857/4860 (normal vision 1215/1215), G1 eyes alone up to 8:00 2862/2916, G3 0 px; misses = the known root crawler 220 portrait protan/tritan daylight cells. Two findings on the way: the High camera bloom (blur mixed 55% into the frame) halves a 3-5 px eye, so High uses hotter socket frames and a dark pool outline on the crow; and the harness held the sim clock so a hit while staging froze the Husk hurt squint (fixed in POS). Data: docs/screenshots/eyes/contrast/.
+
 ## Noise and limits
 One frame per cell (plus up to two retries), on one seed, headless software GL; contrast noise about +-0.3, delta L* about +-1.5. The CVD pass is a matrix simulation, not a person. No real phone or sunlight test (Matt's checklist in visibility-arc-v1.md 4.1 still stands). The eye ceiling on bright ground is a property of an additive eye.
 

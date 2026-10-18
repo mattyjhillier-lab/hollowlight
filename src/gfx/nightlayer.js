@@ -5,20 +5,27 @@ import Phaser from 'phaser';
 import {
   EYE_DEFS, DARK_FLOOR, DARK_FLOOR_DAY, DARK_OFF, DARK_DAY_K, BOSS_EYES, BOSS_CORE, BOSS_HALO, EYE_CORE_TINT, EYE_HALO_TINT, RIM_TINT, LIT_STEPS,
   eyeCap, rimCap, spiritCap, litLevel, bandOf, fillTintTable, blinkMul, eyeAlpha, rimAlpha, planEyes, slotsOf,
-  eyeAnim, makeEyeOut, streakCap,
+  eyeAnim, makeEyeOut, streakCap, LOOK_MAX, CORE_CAPS,
 } from './nightlook.js';
 import { ROLE } from './palette.js';
-import { HUSK_TYPES } from './husk/frames.js';
+import { HUSK_TYPES, ATLAS_KEY as HUSK_ATLAS } from './husk/frames.js';
 
 const ADD = Phaser.BlendModes.ADD;
 const MAXE = 512;
 const SPIRIT_R2 = 40 * 40;
+const DAY_RIM_TINT = 0x1c2034; // cold ink outline (never under RGB 12: G3)
+const POOL_LIT = 12; // lit level (of 16) from which a night pool outline is drawn
 
 export class NightLayer {
   constructor(scene, depth) {
     this.scene = scene;
+    this.atlasKey = HUSK_ATLAS;
     this.depth = depth;
     this.core = [];
+    this.coreN = 0;
+    this.prevCore = 0;
+    this.hp = {}; // Husk socket-eye pools: atlas frame name -> { arr, n } (one pool per frame: no setFrame churn)
+    this.day = { arr: [], n: 0 }; // daylight dark outline (crow / crawler, dawn |dL*| gate)
     this.bHalo = [];
     this.bCore = [];
     this.rims = {}; // texture key -> { arr, n }
@@ -62,6 +69,34 @@ export class NightLayer {
       arr[i] = im;
     }
     return im;
+  }
+
+  // Husk socket eye: pooled atlas image per frame name; sx/sy = scale (sy squashes for lids), flip = facing left
+  put(name, x, y, sx, sy, flip, a) {
+    let p = this.hp[name];
+    if (!p) p = this.hp[name] = { arr: [], n: 0 };
+    let im = p.arr[p.n];
+    if (!im) { im = this.scene.add.image(0, 0, this.atlasKey, name).setBlendMode(ADD).setDepth(this.depth); p.arr[p.n] = im; }
+    p.n++;
+    im.x = x; im.y = y; im.alpha = a;
+    if (im.scaleX !== sx) im.scaleX = sx;
+    if (im.scaleY !== sy) im.scaleY = sy;
+    if (im.flipX !== flip) im.flipX = flip;
+    if (!im.visible) im.visible = true;
+  }
+
+  dayImg(atlas, rn, depthBase) { const im = this.scene.add.image(0, 0, atlas, rn).setTint(DAY_RIM_TINT).setDepth(depthBase - 1); im.rn = rn; return im; }
+
+  endPools(pools) { for (const key in pools) { const p = pools[key]; for (let i = p.n; i < p.arr.length; i++) if (p.arr[i].visible) p.arr[i].setVisible(false); } }
+
+  // trailing ember streak behind a fast mover (WL6b2): h = thickness (Husks: thinner than the socket), k = length factor
+  streakAt(ns, x, y, ea, a, h, k) {
+    let st = this.streak[ns];
+    if (!st) { st = this.scene.add.image(0, 0, 'glow').setBlendMode(ADD).setTint(EYE_HALO_TINT).setDepth(this.depth - 0.5); st.dw = 0; this.streak[ns] = st; }
+    const len = ea.sl * k;
+    st.setDisplaySize(len + 3 * k, h);
+    st.x = x - ea.sx * len * 0.5; st.y = y - ea.sy * len * 0.5; st.rotation = Math.atan2(ea.sy, ea.sx); st.alpha = ea.sa * a;
+    if (!st.visible) st.visible = true;
   }
 
   place(im, x, y, size, a) {
@@ -124,6 +159,9 @@ export class NightLayer {
     const cnt = planEyes(n, this.near, this.kinds, eyeCap(tier), this.plan);
     let slot = 0;
     let ns = 0;
+    const coreCap = CORE_CAPS[tier] ?? 0;
+    this.coreN = 0;
+    for (const key in this.hp) this.hp[key].n = 0;
     const sc = streakCap(tier);
     const ea = this.ea;
     const calm = c.calm;
@@ -151,34 +189,63 @@ export class NightLayer {
       const mvy = this.mVy[m];
       spd = Math.sqrt(mvx * mvx + mvy * mvy);
       eyeAnim(c.time, e.id, c.hx - e.x, c.hy - e.y, spd, mvx, mvy, calm, ea);
-      const a = Math.min(1, eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * ea.am * blinkMul(c.time, e.id, calm) + ea.ab);
-      const size = d.halo * ea.sc;
-      // EN0: Husk frames carry per-frame socket anchors (relative to the feet, scaled with the instance jitter) so the eyes sit in the sockets
       const art = c.art;
       const af = art && i < 512 ? art.fi[i] : 255;
-      const pts = af !== 255 ? art.eyes[e.type][af] : d.pts;
-      const ks = af !== 255 ? art.sc[i] : 1;
-      const oy = af !== 255 ? art.foot[e.type] + art.dy[i] : 0;
+      const bm = blinkMul(c.time, e.id, calm);
+      if (af !== 255) {
+        // EYES IN SOCKETS (Husks): a socket-shaped ember glow that fills the knot-hole (+ a faint spill on the lip) and a small species core that
+        // drifts toward the hero inside the socket's free room; blink = the lid closes (the sprites squash shut, never leave the socket);
+        // hurt squints (open 0.55, hotter); the tell flares (brighter, core +25%). Beyond the nearest CORE_CAPS (and on Low): one glow+core image per
+        // eye, no drift. All on the frame's anchors.
+        const E = art.eyes[e.type][af];
+        const ME = art.eyeMeta[e.type];
+        const NM = art.eyeNames[e.type];
+        const ks = art.sc[i];
+        const oy = e.y + art.foot[e.type] + art.dy[i];
+        const blink = bm < 1;
+        const a0 = Math.min(1, eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * ea.am * (blink ? 0.7 : 1) + ea.ab);
+        const gS = ks * art.eyeInv * (1 + (ea.sc - 1) * 0.3); // the glow grows a little (<= ~+9%) as the enemy closes in: it stays on the lip
+        const split = k < coreCap;
+        const lx = ea.ox / LOOK_MAX;
+        const ly = ea.oy / LOOK_MAX;
+        for (let j = 0; j < E.length; j++) {
+          const A = E[j];
+          const mj = ME[A[6]];
+          const nm = NM[A[6]];
+          const open = A[4] * (blink ? 0.15 : 1); // core: lid closes on a blink, squints on a hit
+          const gOpen = blink ? 0.15 : A[4] < 1 ? 0.85 : 1; // glow: a hit only narrows it a little (an enemy under fire stays readable)
+          const a = Math.min(1, a0 * (A[4] < 1 ? 1.35 : 1 + 0.3 * A[5])); // tell flares; the hurt squint flinches hot (narrower, brighter)
+          const gx = e.x + A[0] * ks * fl;
+          const gy = oy + A[1] * ks;
+          this.put(nm[split ? (c.bloom ? 3 : 0) : (c.bloom ? 4 : 2)], gx, gy, gS, gS * gOpen, fl < 0, a);
+          slot++;
+          if (split) {
+            const cS = ks * art.eyeInv * ea.sc * (1 + 0.25 * A[5]);
+            this.put(nm[1], e.x + A[2] * ks * fl + lx * mj.lx * ks, oy + A[3] * ks + ly * mj.ly * ks, cS, cS * open, fl < 0, a);
+            slot++;
+          }
+          if (ea.sl > 0 && ns < sc && j === 0) this.streakAt(ns++, gx, gy, ea, a, mj.h * ks * 0.7, 0.6);
+        }
+        continue;
+      }
+      const a = Math.min(1, eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * ea.am * bm + ea.ab);
+      const size = d.halo * ea.sc;
+      const pts = d.pts;
       for (let j = 0; j < pts.length; j++) {
         const pj = pts[j];
-        const x = e.x + pj[0] * ks * fl + ea.ox;
-        const y = e.y + oy + pj[1] * ks + ea.oy;
-        this.place(this.eyeImg(this.core, slot, 0xffffff, this.depth, 'eyen'), x, y, pj.length > 2 ? size * pj[2] : size, a);
+        const x = e.x + pj[0] * fl + ea.ox;
+        const y = e.y + pj[1] + ea.oy;
+        this.place(this.eyeImg(this.core, this.coreN++, 0xffffff, this.depth, 'eyen'), x, y, size, a);
         slot++;
-        if (ea.sl > 0 && ns < sc && j === 0) {
-          let st = this.streak[ns];
-          if (!st) { st = this.scene.add.image(0, 0, 'glow').setBlendMode(ADD).setTint(EYE_HALO_TINT).setDepth(this.depth - 0.5); st.dw = 0; this.streak[ns] = st; }
-          st.setDisplaySize(ea.sl + 3, 3.2);
-          st.x = x - ea.sx * ea.sl * 0.5; st.y = y - ea.sy * ea.sl * 0.5; st.rotation = Math.atan2(ea.sy, ea.sx); st.alpha = ea.sa * a;
-          if (!st.visible) st.visible = true;
-          ns++;
-        }
+        if (ea.sl > 0 && ns < sc && j === 0) this.streakAt(ns++, x, y, ea, a, 3.2, 1);
       }
     }
     for (let i = ns; i < this.prevStreak; i++) if (this.streak[i]) this.streak[i].setVisible(false);
     this.prevStreak = ns;
     this.streaks = ns;
-    for (let i = slot; i < this.prevEyes; i++) if (this.core[i]) this.core[i].setVisible(false);
+    for (let i = this.coreN; i < this.prevCore; i++) if (this.core[i]) this.core[i].setVisible(false);
+    this.prevCore = this.coreN;
+    this.endPools(this.hp);
     this.prevEyes = slot;
     this.eyeSlots = slot;
     this.eyeEnemies = cnt;
@@ -227,6 +294,39 @@ export class NightLayer {
     for (const key in this.rims) { const p = this.rims[key]; for (let i = p.n; i < p.arr.length; i++) if (p.arr[i].visible) p.arr[i].setVisible(false); }
     this.rimCount = nr;
 
+    // 2b) daylight (bodyK < 1): a soft DARK outline on the Husk types whose bodies sit close to bright dawn ground (crow, crawler: the dawn
+    // |dL*| >= 6 gate), from the same atlas outline frames, normal blend, under the sprites; Med/High only (rim caps), in view, not the boss
+    // and at night under the High bloom: the crow (darkest type) standing in the lit lantern pool (its small socket eye is softened by the
+    // bloom's blur-mix there, so its silhouette carries the read: G2)
+    const dayOn = c.art && rc > 0 && (arc.bodyK < 0.999 || c.bloom);
+    const dp = this.day;
+    dp.n = 0;
+    if (dayOn) {
+      const art = c.art;
+      const dk = Math.min(1, (1 - arc.bodyK) / 0.28);
+      const night = arc.bodyK >= 0.999;
+      for (let i = 0; i < n && dp.n < rc; i++) {
+        const e = es[i];
+        const af = i < 512 ? art.fi[i] : 255;
+        if (af === 255 || e.boss) continue;
+        const T = HUSK_TYPES[e.type];
+        if (!T || !T.dayRim || (night && (!T.poolRim || this.lit[i] < POOL_LIT))) continue;
+        if (e.x < c.vx0 || e.x > c.vx1 || e.y < c.vy0 || e.y > c.vy1) continue;
+        let im = dp.arr[dp.n];
+        const rn = art.rimName(e.type, af);
+        if (!im) { im = this.dayImg(art.atlas, rn, c.depthBase); dp.arr[dp.n] = im; }
+        dp.n++;
+        if (im.rn !== rn) { im.rn = rn; im.setFrame(rn); }
+        const k = art.sc[i] * art.rimInv;
+        if (im.scaleX !== k) im.setScale(k);
+        im.x = e.x; im.y = e.y + art.foot[e.type] + art.dy[i];
+        im.flipX = e.faceX < 0; im.alpha = night ? T.poolRim : T.dayRim * dk;
+        if (!im.visible) im.visible = true;
+      }
+    }
+    for (let i = dp.n; i < dp.arr.length; i++) if (dp.arr[i].visible) dp.arr[i].setVisible(false);
+    this.dayRims = dp.n;
+
     // 3) boss: always fully lit (see the tint path), larger ember eyes drawn above the vignette, outside the caps
     let nb = 0;
     for (let i = 0; i < n; i++) {
@@ -246,7 +346,12 @@ export class NightLayer {
 
   // Night look off (Settings/dev param) or run over: hide everything that was shown.
   hide() {
-    for (let i = 0; i < this.prevEyes; i++) if (this.core[i]) this.core[i].setVisible(false);
+    for (let i = 0; i < this.prevCore; i++) if (this.core[i]) this.core[i].setVisible(false);
+    for (const key in this.hp) this.hp[key].n = 0;
+    this.endPools(this.hp);
+    this.day.n = 0;
+    for (const im of this.day.arr) im.setVisible(false);
+    this.prevCore = 0;
     for (let i = 0; i < this.prevBoss; i++) { this.bHalo[i].setVisible(false); this.bCore[i].setVisible(false); }
     for (const key in this.rims) for (const im of this.rims[key].arr) im.setVisible(false);
     for (let i = 0; i < this.prevStreak; i++) this.streak[i].setVisible(false);
