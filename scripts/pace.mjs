@@ -60,6 +60,8 @@ try {
   if (process.env.HIDE) await c.ev(`(()=>{const st=document.createElement('style');st.textContent='${process.env.HIDE}{display:none!important}';document.head.appendChild(st);return 1})()`);
   const ginfo = await c.ev(`(()=>{const gl=document.createElement('canvas').getContext('webgl');const e=gl.getExtension('WEBGL_debug_renderer_info');return gl.getParameter(e.UNMASKED_RENDERER_WEBGL)})()`);
   if (!process.env.EARLY) await c.ev(`(()=>{const a=window.__app,s=a.sim;s.xpNeeded=1e9;s.player.x=2000;s.player.y=1000;a.scene.cameras.main.centerOn(2000,1000);return 1})()`);
+  // TYPES=a,b,... = the injected mix (EN3-EN5 'mixed': all six; default the batch 1 trio)
+  const PTYPES = (process.env.TYPES || 'wolf,crow,root_crawler').split(',').filter((x) => /^[a-z_]{1,32}$/.test(x));
   const key = (type, k, code, vk) => c.send('Input.dispatchKeyEvent', { type, key: k, code, windowsVirtualKeyCode: vk });
   const dirs = [['d', 'KeyD', 68], ['s', 'KeyS', 83], ['a', 'KeyA', 65], ['w', 'KeyW', 87]];
   if (!process.env.EARLY) await sleep(3000);
@@ -73,7 +75,7 @@ try {
     await key('keyDown', d[0], d[1], d[2]);
     for (let k = 0; k < 6; k++) {
       await sleep(500);
-      if (inj) await c.ev(`(()=>{const a=window.__app,s=a.sim;if(s.state==='levelup'&&s.offer&&s.offer.cards[0])a.pick(s.offer.cards[0].key);const T=['wolf','crow','root_crawler'];let k=0;while(s.enemies.length<${inj}){const an=(k*2.399)%6.2832,dd=50+((k*37)%260);s.spawnEnemy(T[k%3],s.player.x+Math.cos(an)*dd,s.player.y+Math.sin(an)*dd);k++}return 1})()`);
+      if (inj) await c.ev(`(()=>{const a=window.__app,s=a.sim;if(s.state==='levelup'&&s.offer&&s.offer.cards[0])a.pick(s.offer.cards[0].key);const T=${JSON.stringify(PTYPES)};let k=0;while(s.enemies.length<${inj}){const an=(k*2.399)%6.2832,dd=50+((k*37)%260);s.spawnEnemy(T[k%T.length],s.player.x+Math.cos(an)*dd,s.player.y+Math.sin(an)*dd);k++}return 1})()`);
     }
     await key('keyUp', d[0], d[1], d[2]);
   }

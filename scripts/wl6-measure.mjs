@@ -155,6 +155,8 @@ const MEASURE = `(async (b64, b64g, pts, dpr, cbm) => {
 // Full matrix: view x moment x tier x ground (hollow | restored | corrupt) x colour-blind simulation, 3 enemy types x 3 distances per capture.
 // Resumable: every finished capture is appended to <out>/cells.jsonl and skipped on the next run (RESUME=0 to redo); each capture retries up to 3 times with a fresh Chrome.
 // env: SIZES, TS, TIERS (high,med,low), GROUNDS (hollow,restored,corrupt), CBS (none,protan,deutan,tritan), BRIGHT, DIST
+// TYPES=a,b,c measures other enemy ids (exactly 3; EN3-EN5: TYPES=stoat_piper,puffback_toad,bramble_hart); default the batch 1 trio
+const MTYPES = (() => { const t = (process.env.TYPES || 'wolf,crow,root_crawler').split(',').filter((x) => /^[a-z_]{1,32}$/.test(x)); return t.length === 3 ? t : ['wolf', 'crow', 'root_crawler']; })();
 async function contrast(out) {
   mkdirSync(out, { recursive: true });
   const file = join(out, 'cells.jsonl');
@@ -175,10 +177,10 @@ async function contrast(out) {
           const cx = 2600, cy = 2600;
           await sleep(600); await setup(c, cx, cy, t, ground === 'restored' ? 420 : 0); await sleep(1200);
           if (ground === 'corrupt') await c.ev(`(()=>{const l=window.__app.scene.life;for(let k=0;k<4;k++)l.stampCorr(${cx},${cy},460,1);return 1})()`);
-          await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=['wolf','crow','root_crawler'];
+          await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=${JSON.stringify(MTYPES)};
             for(let i=0;i<3;i++)for(let j=0;j<3;j++){s.spawnEnemy(T[i],p.x+100,p.y);s.enemies[s.enemies.length-1]._va=i*3+j;}return s.enemies.length})()`);
           const POS = `(()=>{const s=window.__app.sim,p=s.player;const D=[70,140,220];s.enemies=s.enemies.filter(e=>e._va!=null);for(const e of s.enemies){const i=(e._va/3)|0,j=e._va%3;
-            ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}for(const o of window.__app.scene.children.list)if(o.aid!==undefined)o.hurtT=-9;s.time=${t + 0.37 * attempt};return s.enemies.length})()`;
+            ${portrait ? 'e.x=p.x-80+i*80;e.y=p.y+D[j];' : 'e.x=p.x+D[j];e.y=p.y-70+i*70;'}e.faceX=-1;e.speed=0;e.tele=0;e.grace=99;e.state='run';e.hp=1e9;e.maxHp=1e9;e.flash=0;e.bleedT=0;e.burnT=0;}for(const o of window.__app.scene.children.list)if(o.aid!==undefined)o.hurtT=-9;s.time=${t + 0.37 * attempt};return s.enemies.length})()`;
           // POS also ends the Husk hurt frame: the harness holds the sim clock, so a hit taken while staging kept the 0.14 s hurt squint on forever
           for (let i = 0; i < 8; i++) { await c.ev(POS); await sleep(50); }
           await c.ev(POS); await sleep(60);

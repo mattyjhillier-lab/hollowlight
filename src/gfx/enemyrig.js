@@ -4,7 +4,8 @@
 import { HUSK_TYPES, FR, ATLAS_KEY, TPW, RIM_K, EYE_TEX, EYE_KINDS, eyeAnchors, eyeMeta, jitter, wpd } from './husk/frames.js';
 
 const NAMES = Object.keys(FR);
-const STRIDE = { wolf: 15, crow: 1, root_crawler: 13 }; // world units moved per walk cycle (crow flaps on time instead)
+const STRIDE = { wolf: 15, crow: 1, root_crawler: 13 }; // world units moved per walk cycle (crow flaps on time instead); new types carry `stride` in HUSK_TYPES
+for (const id in HUSK_TYPES) if (HUSK_TYPES[id].stride) STRIDE[id] = HUSK_TYPES[id].stride;
 const CROW_SEQ = [0, 2, 0, 2, 1]; // jerky two-beat flap then a short stall glide (frames w0 up, w2 down, w1 glide)
 const CROW_DUR = [0.09, 0.09, 0.09, 0.09, 0.2];
 const CROW_T = CROW_DUR.reduce((a, b) => a + b, 0);
@@ -53,7 +54,7 @@ export class EnemyArt {
     this.maskPops = 0;
   }
 
-  rimName(type, f) { const r = this.rimOf[f]; return this.names[type].rim[type === 'wolf' || r < FR.t0 ? r : FR.w0]; }
+  rimName(type, f) { const r = this.rimOf[f]; return this.names[type].rim[HUSK_TYPES[type].tellT !== undefined || r < FR.t0 ? r : FR.w0]; }
 
   enable(on) { this.on = on && this.scene.textures.exists(ATLAS_KEY); }
   isHusk(type) { return this.on && !!HUSK_TYPES[type]; }
@@ -75,7 +76,7 @@ export class EnemyArt {
     if (e.flash > 0) img.hurtT = time;
     if (e.tele) img.teleT += Math.min(0.1, this.scene.game.loop.delta / 1000); else img.teleT = 0;
     if (time - img.hurtT < 0.14 && img.hurtT <= time) f = FR.h;
-    else if (e.type === 'wolf' && e.tele) f = low || img.teleT > 0.16 ? FR.t1 : FR.t0; // crouch, then the hackles fan up
+    else if (e.tele && T.tellT !== undefined) f = low || img.teleT > T.tellT ? FR.t1 : FR.t0; // two-step tell (wolf: crouch, then the hackles fan up; piper: rears, then the pipe drops + ember)
     else if (e.type === 'crow') { f = crowFrame(time * img.jsp + img.ph * CROW_T); if (low && f === 1) f = 0; bob = Math.sin(time * 5 + img.ph * 6.28) * 0.9; }
     else {
       if (d < 20) img.ph += (d / STRIDE[e.type]) * img.jsp; // teleports (debug moves) never spin the legs

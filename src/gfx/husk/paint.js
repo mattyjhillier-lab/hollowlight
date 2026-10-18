@@ -152,7 +152,7 @@ export const EYE = '#ff5a3c', BOSS_EYE = '#ffb84a', CORE = '#ffe9c4';
 // root crawler = a wide low oval. flare (tell) = longer/brighter; returns { svg, hw, hh } (half extents for the look clamp, du).
 export function coreShape(sp, S, flare = 0, hot = true) {
   const k = 1 + 0.18 * flare;
-  if (sp === 'crow') {
+  if (sp === 'crow' || sp === 'stoat_piper') { // one round core with a highlight (crow: big, the Stoat Piper: its one very high sentry eye)
     const r = Math.min(S.w, S.h) * 0.34 * k;
     return { hw: r, hh: r, svg: `<circle r="${f(r)}" fill="${CORE}"/>` + (hot ? `<circle cx="${f(-r * 0.12)}" cy="${f(-r * 0.1)}" r="${f(r * 0.55)}" fill="#fffaf0"/><circle cx="${f(-r * 0.42)}" cy="${f(-r * 0.42)}" r="${f(Math.max(0.7, r * 0.3))}" fill="#ffffff"/>` : '') };
   }

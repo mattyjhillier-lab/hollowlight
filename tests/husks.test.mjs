@@ -9,9 +9,12 @@ import { parseParams } from '../src/params.js';
 import { data } from './helpers.mjs';
 
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+const NEW_IDS = ['stoat_piper']; // EN3-EN5 telegraph types in the atlas (in build order)
+const WANT_EYES = { wolf: 2, crow: 1, root_crawler: 2, stoat_piper: 1 };
 
 test('ids unchanged and every Husk type is a real enemy (saves, kill gates and tree conditions keep working)', () => {
-  assert.deepEqual(HUSK_IDS, ['wolf', 'crow', 'root_crawler']);
+  assert.deepEqual(HUSK_IDS.slice(0, 3), ['wolf', 'crow', 'root_crawler']); // batch 1 order kept (atlas layout); EN3-EN5 append the new types
+  assert.deepEqual(HUSK_IDS.slice(3), NEW_IDS);
   for (const id of HUSK_IDS) assert.ok(data.enemies[id], id);
   assert.equal(data.enemies.wolf.name, 'Fell Wolf');
   assert.equal(data.enemies.crow.name, 'Grave Crow');
@@ -21,7 +24,7 @@ test('ids unchanged and every Husk type is a real enemy (saves, kill gates and t
 test('atlas layout: every frame of every type is present, inside the atlas, no overlaps, within the size budget', () => {
   const L = layoutAtlas();
   assert.equal(L.w, ATLAS_W);
-  assert.ok(L.h <= 512, 'atlas height ' + L.h);
+  assert.ok(L.h <= 1024 + 256, 'atlas height ' + L.h);
   const rects = [];
   let bytes = 0;
   for (const id of HUSK_IDS) {
@@ -36,8 +39,10 @@ test('atlas layout: every frame of every type is present, inside the atlas, no o
     const a = rects[i], b = rects[j];
     assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, 'overlap');
   }
-  assert.ok(bytes <= 1.25e6, 'frame bytes ' + bytes); // budget ~1 MB (1.10 MB incl. half-density rims + 0.12 MB socket-eye glow/core frames)
-  assert.ok(L.w * L.h * 4 <= 2.1e6, 'GPU bytes');
+  // budget: batch 1 = 1.22 MB (incl. half-density rims + socket-eye frames); each EN3-EN5 type adds ~0.3-0.45 MB at the same texel density
+  // (the ~1 MB/chapter target from the design sheet is exceeded: reported, see docs/LOCKED.md EN3-EN5 rows)
+  assert.ok(bytes <= 1.25e6 + 0.45e6 * NEW_IDS.length, 'frame bytes ' + bytes);
+  assert.ok(L.w * L.h * 4 <= 2.1e6 + 0.9e6 * NEW_IDS.length, 'GPU bytes');
 });
 
 test('true size: wolf ~hero-sized (~50 px long on a 720p desktop), crow smaller, crawler wolf-sized', () => {
@@ -61,7 +66,7 @@ test('SVG sheets are self-contained (no external refs/scripts), deterministic, o
 
 test('eye anchors: per type count (wolf pair, crow one high, crawler wide pair), present for every frame, socket + iris INSIDE the socket bounds on every frame', () => {
   const E = eyeAnchors(), M = eyeMeta();
-  const want = { wolf: 2, crow: 1, root_crawler: 2 };
+  const want = WANT_EYES;
   for (const id of HUSK_IDS) {
     const T = HUSK_TYPES[id], u = T.g / 4;
     assert.equal(E[id].length, Object.keys(FR).length);

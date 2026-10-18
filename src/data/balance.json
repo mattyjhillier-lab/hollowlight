@@ -5,6 +5,10 @@
     "w": 640,
     "h": 360
   },
+  "tellView": {
+    "hw": 266,
+    "hh": 150
+  },
   "maxRank": 5,
   "abilityCdFloor": 30,
   "weaponSlots": 4,

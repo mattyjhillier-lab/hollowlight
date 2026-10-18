@@ -11,6 +11,14 @@ import { loadTree } from '../src/meta/treefs.mjs';
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
 const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
+// Probe knobs (balance experiments only; default off): ENEMY_PATCH='{"stoat_piper":{"ai":{"shotDmg":0}}}' merges into enemy data (ai merged one
+// level deep); NO_ENEMY=a,b drops those waves. Ids/keys are checked against the shipped data (unknown keys ignored).
+if (process.env.ENEMY_PATCH) {
+  const P = JSON.parse(process.env.ENEMY_PATCH);
+  for (const id of Object.keys(P)) if (Object.hasOwn(data.enemies, id)) { const { ai, ...rest } = P[id]; data.enemies[id] = { ...data.enemies[id], ...rest, ...(ai ? { ai: { ...data.enemies[id].ai, ...ai } } : {}) }; }
+}
+if (process.env.WAVE_PATCH) { const P = JSON.parse(process.env.WAVE_PATCH); for (const ch of Object.values(data.chapters)) for (const w of ch.waves) if (Object.hasOwn(P, w.enemy)) Object.assign(w, P[w.enemy]); } // WAVE_PATCH='{"stoat_piper":{"maxAlive":4}}'
+if (process.env.NO_ENEMY) { const drop = process.env.NO_ENEMY.split(','); for (const ch of Object.values(data.chapters)) ch.waves = ch.waves.filter((w) => !drop.includes(w.enemy)); }
 data.tree = loadTree(data).live; // fragments in src/data/tree/ (src/meta/treedata.js)
 data.tiers = load('tiers'); // difficulty tiers (src/data/tiers.json)
 // TIER=normal|hard|expert (Twilight / Deep Dusk / Long Night; default normal = byte-identical to before tiers existed)
@@ -42,6 +50,52 @@ export function withGates(t) {
   return { ...base, unlocks: { ...base.unlocks, weapons: [...(base.unlocks?.weapons || []), ...weapons], evolutions: [...(base.unlocks?.evolutions || []), ...evolutions] } };
 }
 
+// DODGE MODEL (EN3-EN5; docs/design/enemies-v1.md section 7): the bot cannot "see" telegraphs, so without this every thorn, burst ring and
+// charge lane would hit it. A simple human-like heuristic, applied only when a threat is IMMINENT (a first version that steered away from every
+// lane all the time cost the bot more than the thorns did: measured, see docs/LOCKED.md EN3):
+//  - thorns in flight (visible, slow): if one will pass within reach in the next 0.9 s, side-step perpendicular to its path;
+//  - toad fuse ring / hart charge lane: noticed after a 0.35 s reaction delay from the tell start, then step out of the ring / out of the lane.
+// While a dodge is active it takes over the steering (a short side-step); the normal flee/gem steering keeps 80% weight (DODGE_KEEP). DODGE=0 turns it
+// off (results are reported ON and OFF).
+export const DODGE = process.env.DODGE !== '0';
+const REACT = 0.35;
+const DODGE_KEEP = Number(process.env.DODGE_KEEP || 0.8); // weight the normal steering keeps while a dodge is active (0.35 measured worse: the bot ran into crowds)
+const _d = [0, 0];
+// adds a perpendicular push if the hero is inside the lane (origin o, unit dir d, half width, length); returns 1 if it did
+function laneAway(p, ox, oy, dx, dy, half, len, out) {
+  const rx = p.x - ox, ry = p.y - oy, along = rx * dx + ry * dy;
+  if (along < -half || along > len) return 0;
+  const px = rx - dx * along, py = ry - dy * along, pd = Math.hypot(px, py);
+  if (pd >= half) return 0;
+  if (pd < 0.5) { out[0] += -dy; out[1] += dx; } else { out[0] += px / pd; out[1] += py / pd; }
+  return 1;
+}
+// returns the dodge direction in out (unit length) and 1 if a threat is imminent, else 0
+export function dodgeVec(sim, out = _d) {
+  out[0] = 0; out[1] = 0;
+  const p = sim.player;
+  let n = 0;
+  for (const s of sim.eshots || []) {
+    const sp = Math.hypot(s.vx, s.vy) || 1, dx = s.vx / sp, dy = s.vy / sp;
+    n += laneAway(p, s.x, s.y, dx, dy, p.r + s.r + 4, sp * 0.9, out);
+  }
+  for (const e of sim.enemies) {
+    if (!e.ai || e.dead) continue;
+    const A = e.ai;
+    if (A.kind === 'charger' && e.state === 'charge') { n += laneAway(p, e.x, e.y, e.dx, e.dy, p.r + e.r + 8, e.speed * A.chargeMul * e.stT + 10, out); continue; }
+    if (!e.tele) continue;
+    const age = (A.tell ?? A.fuse ?? 0) - e.stT;
+    if (age < REACT) continue;
+    const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
+    if (A.kind === 'fuse') { if (d < A.burstR + p.r + 4) { out[0] += dx / d; out[1] += dy / d; n++; } }
+    else if (A.kind === 'charger') n += laneAway(p, e.x, e.y, e.dx, e.dy, p.r + e.r + 8, e.speed * A.chargeMul * A.charge + 10, out);
+  }
+  const m = Math.hypot(out[0], out[1]);
+  if (!n || m < 1e-6) { out[0] = 0; out[1] = 0; return 0; }
+  out[0] /= m; out[1] /= m;
+  return 1;
+}
+
 function botInput(sim) {
   const p = sim.player;
   let ax = 0, ay = 0;
@@ -63,6 +117,7 @@ function botInput(sim) {
     const d = Math.sqrt(bd) || 1;
     ax += ((best.x - p.x) / d) * 0.6; ay += ((best.y - p.y) / d) * 0.6;
   }
+  if (DODGE && dodgeVec(sim)) { const m = Math.hypot(ax, ay) || 1; ax = (ax / m) * DODGE_KEEP + _d[0]; ay = (ay / m) * DODGE_KEEP + _d[1]; }
   // drift back toward world centre when near the edge
   const c = sim.balance.worldSize / 2;
   ax += (c - p.x) * 0.0004; ay += (c - p.y) * 0.0004;
@@ -118,7 +173,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {

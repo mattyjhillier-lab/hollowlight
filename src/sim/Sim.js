@@ -17,6 +17,7 @@ import {
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
 import { resolveTier } from './tiers.js';
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
+import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -105,6 +106,15 @@ export class Sim {
     this.gemsTaken = 0; this.abilityUses = 0; this.blessingsTaken = 0; // counters for the tool-cluster unlock conditions (never read by the sim)
 
     this.enemies = [];
+    // EN3-EN5 telegraph enemies: enemy projectiles (hit the player only), live tells per type (recounted every frame), live count per type
+    // (spawn caps), the view the tells must sit inside (half extents in world units; the scene feeds the real camera view each frame).
+    this.eshots = [];
+    this.tells = {};
+    this.alive = {};
+    const tv = this.balance.tellView || { hw: 266, hh: 150 };
+    this.view = { hw: tv.hw, hh: tv.hh };
+    this.hurtBy = {}; // damage taken by source (counter only)
+    this._v = [0, 0];
     this.gems = [];
     this.pickups = [];
     this.sinceHeart = 0;
@@ -322,9 +332,11 @@ export class Sim {
     p.hp = Math.min(p.maxHp, p.hp + amount);
   }
 
-  damagePlayer(amount) {
+  // src = what hurt the hero (enemy type id; counter only, never read by the sim: bot/sweep damage-by-source readout)
+  damagePlayer(amount, src = 'contact') {
     const p = this.player;
     if (p.iframes > 0 || this.state !== 'running') return;
+    this.hurtBy[src] = (this.hurtBy[src] || 0) + amount;
     if (!this.godMode) p.hp -= amount;
     p.iframes = this.balance.playerIframes;
     if (!this.godMode) this.pushEvent('hurt');
@@ -371,6 +383,11 @@ export class Sim {
       phase: this.rng.range(0, 6.28), cd: {},
       markT: 0, markSrc: null, bleedT: 0, bleedDps: 0, bleedTot: 0, burnT: 0, burnDps: 0, burnTot: 0, burnSrc: null, fearT: 0, flash: 0, dead: false, faceX: 1,
     };
+    if (d.ai) { // EN3-EN5: data-driven telegraph behaviour (src/sim/enemyai.js); the ai block is shared read-only data
+      e.ai = d.ai; e.grace = d.ai.grace ?? 0.8; e.dmgMul = dmgMul; e.aiCd = this.rng.range(d.ai.firstCd?.[0] ?? 1, d.ai.firstCd?.[1] ?? 2);
+      if (d.ai.chargeDmg) e.cdmg = d.ai.chargeDmg * dmgMul;
+    }
+    this.alive[typeId] = (this.alive[typeId] || 0) + 1;
     this.enemies.push(e);
     return e;
   }
@@ -384,14 +401,17 @@ export class Sim {
   updateSpawns(dt) {
     const t = this.time;
     const cap = this.balance.maxEnemies;
+    const bossLive = this.boss && !this.boss.dead;
     this.chapter.waves.forEach((wave, i) => {
       if (t < wave.from || t > wave.to) return;
       const k = (t - wave.from) / (wave.to - wave.from);
-      const rate = wave.rate0 + (wave.rate1 - wave.rate0) * Math.pow(k, wave.curve || 1);
+      const rate = (wave.rate0 + (wave.rate1 - wave.rate0) * Math.pow(k, wave.curve || 1)) * (bossLive && wave.bossMul !== undefined ? wave.bossMul : 1);
       this.spawnAcc[i] = Math.min(4, this.spawnAcc[i] + rate * dt);
+      // per-type live cap (EN3-EN5 must-react types), optionally raised after a time (maxAliveAfter: { t, n })
+      const maxA = wave.maxAlive === undefined ? Infinity : (wave.maxAliveAfter && t >= wave.maxAliveAfter.t ? wave.maxAliveAfter.n : wave.maxAlive);
       while (this.spawnAcc[i] >= 1) {
         this.spawnAcc[i] -= 1;
-        if (this.enemies.length >= cap) continue;
+        if (this.enemies.length >= cap || (this.alive[wave.enemy] || 0) >= maxA) continue;
         const pt = this.ringPoint(this.rng.range(0, 6.2832), this.rng.range(0, 40));
         this.spawnEnemy(wave.enemy, pt.x, pt.y);
       }
@@ -420,6 +440,9 @@ export class Sim {
   updateEnemies(dt) {
     const p = this.player;
     const size = this.balance.worldSize;
+    // live tells per telegraph type (the token cap in enemyai.canTell); recounted so a dead/interrupted teller always frees its token
+    for (const k in this.tells) this.tells[k] = 0;
+    for (const e of this.enemies) if (e.ai && e.state === 'tele' && !e.dead) this.tells[e.type] = (this.tells[e.type] || 0) + 1;
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.flash = Math.max(0, e.flash - dt);
@@ -455,14 +478,22 @@ export class Sim {
       let vx = 0;
       let vy = 0;
 
+      if (e.ai && e.ai.immune === e.state) { e.heldT = 0; e.fearT = 0; } // control-immune state (Bramble Hart charge): fear/pin do nothing
       if (e.heldT > 0) {
         e.heldT -= dt;
         e.tele = false;
+        if (e.ai) aiInterrupt(e);
       } else if (e.fearT > 0) {
         e.fearT -= dt;
         vx = -nx * e.speed * 1.3;
         vy = -ny * e.speed * 1.3;
         e.tele = false;
+        if (e.ai) aiInterrupt(e);
+      } else if (e.ai) {
+        aiStep(this, e, dt, nx, ny, dist, this._v);
+        vx = this._v[0];
+        vy = this._v[1];
+        if (e.dead) continue;
       } else if (e.type === 'wolf') {
         if (e.state === 'run') {
           vx = nx * e.speed;
@@ -513,7 +544,7 @@ export class Sim {
             e.slamCd = 6.5;
             this.addFx({ kind: 'ring', x: e.x, y: e.y, r: 74, ttl: 0.3, color: '#7a4a1b' });
             this.pushEvent('slam');
-            if (dist < 74 + p.r) this.damagePlayer(e.dmg * 1.4);
+            if (dist < 74 + p.r) this.damagePlayer(e.dmg * 1.4, e.type);
             for (let k = 0; k < 3; k++) {
               const a = this.rng.range(0, 6.2832);
               this.spawnEnemy('root_crawler', e.x + Math.cos(a) * 40, e.y + Math.sin(a) * 40);
@@ -558,15 +589,16 @@ export class Sim {
     }
 
     // Contact damage: the strongest overlapping enemy lands one hit per i-frame window.
-    let worst = 0;
+    let worst = 0, wsrc = 'contact';
     for (const e of this.enemies) {
       if (e.dead) continue;
       const dx = p.x - e.x;
       const dy = p.y - e.y;
       const rr = p.r + e.r * 0.85;
-      if (dx * dx + dy * dy < rr * rr && e.dmg > worst) worst = e.dmg;
+      const dm = e.cdmg && e.state === 'charge' ? e.cdmg : e.dmg; // a charging Bramble Hart hits harder
+      if (dx * dx + dy * dy < rr * rr && dm > worst) { worst = dm; wsrc = e.type; }
     }
-    if (worst > 0) this.damagePlayer(worst);
+    if (worst > 0) this.damagePlayer(worst, wsrc);
   }
 
   // ------------------------------------------------------------------ the rest of the frame
@@ -824,6 +856,7 @@ export class Sim {
     for (const e of this.enemies) {
       if (!e.dead) continue;
       any = true;
+      this.alive[e.type] -= 1;
       this.kills += 1;
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
       if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
@@ -960,6 +993,7 @@ export class Sim {
     this.updateRally(dt);
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
+    if (this.eshots.length) { updateEnemyShots(this, dt); if (this.state !== 'running') return; }
     this.updateWeapons(dt);
     this.updateProjectiles(dt);
     this.updateZones(dt);

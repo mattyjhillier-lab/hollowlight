@@ -2,5 +2,8 @@
   "wolf":         { "name": "Fell Wolf",      "hp": 12,   "speed": 46,  "dmg": 5,  "r": 6,  "xp": 1, "gold": 1,   "color": "#8a7f78", "shape": "wolf",   "mass": 1 },
   "crow":         { "name": "Grave Crow",     "hp": 5,    "speed": 62,  "dmg": 3,  "r": 4,  "xp": 1, "gold": 0.5, "color": "#2b2b3a", "shape": "crow",   "mass": 0.6 },
   "root_crawler": { "name": "Root Crawler",   "hp": 38,   "speed": 26,  "dmg": 8,  "r": 8,  "xp": 3, "gold": 2,   "color": "#6b4a2b", "shape": "root",   "mass": 2 },
+  "stoat_piper":  { "name": "Stoat Piper",    "hp": 10,   "speed": 30,  "dmg": 3,  "r": 6,  "xp": 2, "gold": 1,   "color": "#525c78", "shape": "piper",  "mass": 1, "mustReact": true,
+    "ai": { "kind": "ranged", "grace": 0.8, "maxTells": 3, "firstCd": [0.6, 1.6], "keep": 160, "keepMax": 170, "near": 80, "backSpeed": 30, "root": 0.3, "tell": 0.7, "recoil": 0.25, "cd": 2.8, "cdRand": 0.8,
+            "shotSpeed": 110, "shotLife": 2.2, "shotDmg": 5, "shotR": 3, "muzzle": 8, "shotCap": 40 } },
   "elder_treant": { "name": "Elder Treant",   "hp": 3600, "speed": 18,  "dmg": 13, "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true }
 }

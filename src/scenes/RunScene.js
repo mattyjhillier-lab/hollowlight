@@ -39,7 +39,8 @@ import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js'
 import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
 import { EnemyArt } from '../gfx/enemyrig.js'; // EN0-EN2 Husk animator + death beat (visual only)
-import { HUSK_TYPES } from '../gfx/husk/frames.js';
+import { HUSK_TYPES, HUSK_IDS } from '../gfx/husk/frames.js';
+import { drawEnemyTells, drawThorns } from '../gfx/enemytells.js'; // EN3-EN5 telegraph decals + thorns (above the vignette)
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -219,6 +220,7 @@ export class RunScene extends Phaser.Scene {
       wolf: new SpritePool(this, 'wolf'),
       crow: new SpritePool(this, 'crow'),
       root_crawler: new SpritePool(this, 'root'),
+      stoat_piper: new SpritePool(this, 'piper'),
       elder_treant: new SpritePool(this, 'treant'),
       uWolf: new SpritePool(this, 'wolfU'),
       uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves
@@ -835,6 +837,7 @@ export class RunScene extends Phaser.Scene {
     const vy0 = wv.y - 40;
     const vx1 = wv.right + 40;
     const vy1 = wv.bottom + 40;
+    sim.view.hw = wv.width / 2; sim.view.hh = wv.height / 2; // EN3-EN5: telegraph enemies only start a tell inside the real camera view
     let halos = 0;
 
     this.updateGrade(sim.time / app.data.balance.runSeconds);
@@ -907,9 +910,8 @@ export class RunScene extends Phaser.Scene {
         } else if (h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) {
           this.deathPuff(h.x, h.y);
           if (art.on) { // EN1/EN2 death beat: mask pops off, the freed body sinks, a warm mote rises (the enemy's image is still in its pool this frame)
-            let ty = 'wolf', ent = pl.wolf.map.get(h.id);
-            if (!ent) { ty = 'crow'; ent = pl.crow.map.get(h.id); }
-            if (!ent) { ty = 'root_crawler'; ent = pl.root_crawler.map.get(h.id); }
+            let ty = null, ent = null;
+            for (let hi = 0; hi < HUSK_IDS.length && !ent; hi++) { ty = HUSK_IDS[hi]; ent = pl[ty].map.get(h.id); }
             if (ent && ent.img.aid === h.id) art.kill(ent.img, ty, this.quality.tier, this.swayPhone, this.reducedMotion(), D_LIT, 'glow', inv('glow'), ADD);
           }
         }
@@ -1103,12 +1105,15 @@ export class RunScene extends Phaser.Scene {
         if (e.boss) {
           g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
           this.teleG.lineStyle(1, PAL.danger, 0.9).strokeCircle(e.x, e.y, 74);
-        } else {
+        } else if (e.ai) drawEnemyTells(this.teleG, e, this.reducedMotion());
+        else {
           this.teleG.lineStyle(1, 0xff5a4a, 0.75).lineBetween(e.x, e.y, e.x + e.dx * 55, e.y + e.dy * 55);
           this.teleG.fillStyle(0xff3b2f, 1).fillTriangle(e.x, e.y - 18, e.x - 3, e.y - 11, e.x + 3, e.y - 11);
         }
       }
     }
+
+    if (sim.eshots.length) drawThorns(this.teleG, sim.eshots, vx0, vy0, vx1, vy1, this.quality.tier === 'low');
 
     if (nlOn) {
       const nc = this.nlc;

@@ -156,6 +156,21 @@ const SPRITES = {
       emberEye(c, 8, 9.2, 1.2); emberEye(c, 12.2, 9.2, 1.2);
     },
   },
+  // EN3 flat fallback (atlas not baked yet / ?husks=0): upright stoat, pale bark blowpipe, ONE high ember eye
+  piper: {
+    w: 12, h: 16, shadow: [6, 15, 4.4, 1.3], enemy: 1,
+    draw: (c) => {
+      const F = 0x525c78, B = 0x9aa6bd, M = 0xc8c3ad;
+      line(c, 4, 13, 0.2, 13, 1, 9.6, 1.6, sh(F, 0.8)); // tail
+      ell(c, 6, 10.4, 2.8, 4.4, lg(c, 6, 6, 6, 15, [[0, sh(F, 1.15)], [1, sh(F, 0.7)]])); // body
+      ell(c, 7, 11, 1.2, 3, sh(B, 1)); // pale belly
+      ell(c, 5.6, 5, 2.6, 2.4, sh(F, 1.05)); // head
+      poly(c, [4, 3.4, 4.6, 1.2, 5.6, 3], sh(F, 0.8)); // ear
+      c.beginPath(); c.moveTo(5, 3.6); c.lineTo(11.6, 4.6); c.lineTo(11.6, 5.8); c.lineTo(5.4, 6.6); c.closePath(); c.fillStyle = sh(M, 1); c.fill(); // pipe husk
+      circ(c, 11.4, 5.2, 0.45, '#15121a');
+      emberEye(c, 6.2, 4.4, 0.9);
+    },
+  },
   treant: {
     w: 64, h: 72, shadow: [32, 66.5, 23, 5], enemy: 1, big: 1, rim: ROLE.barkRim,
     draw: (c) => {

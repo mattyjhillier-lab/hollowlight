@@ -4,6 +4,7 @@
 import { resetAll, defs, setGrainBox, EYES, SOCKS, clearEyes, setEyeSpecies, glowSvg, coreShape } from './paint.js';
 import { EXTRA_DEFS } from './kit.js';
 import { wolfA, crowA, crawlerA } from './husks.js';
+import { stoatA } from './husks2.js';
 
 export const ATLAS_KEY = 'en_atlas';
 export const TPW = 5; // atlas texels per world unit (Wren ~5.9; 2.1x the 720p desktop zoom, 1.4x at 1080p)
@@ -17,12 +18,13 @@ const EYE_PAD = 3; // du of faint spill around the socket in the glow frames
 // maskAt = mask centre on the walk pose (du; the death mask-pop starts there), mdx = how far it is thrown forward (du);
 // dayK = body value multiplier once the arc darkens bodies for daylight (bodyK < 1; WL6d G2: the mid-grey crow needs |dL*| >= 6 on bright ground);
 // hurtW = the mock-up finish() width used by the hurt squash transform (eye anchors follow it).
+// tellT = seconds into the tell when the frame switches t0 -> t1 (types with tell frames only); stride = world units moved per walk cycle.
 // frames: [name, state]. Order matters: index = frame id used at runtime (FR below).
 const MASK_BOX = [-58, -46, 116, 88];
 // dayRim = alpha of the dark daylight outline (bodyK < 1) for the dawn |dL*| >= 6 gate (EN2 misses: crow 70/140 desk, crawler 220 landscape; wolf 140 corrupt landscape after the socket eyes)
 export const HUSK_TYPES = {
   wolf: {
-    fn: wolfA, maskAt: [44, -48], mdx: 10, g: 0.62, box: [-80, -96, 162, 108], foot: 5, dayK: 1, hurtW: 80, mask: MASK_BOX, dayRim: 0.35,
+    fn: wolfA, tellT: 0.16, maskAt: [44, -48], mdx: 10, g: 0.62, box: [-80, -96, 162, 108], foot: 5, dayK: 1, hurtW: 80, mask: MASK_BOX, dayRim: 0.35,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   crow: {
@@ -32,6 +34,11 @@ export const HUSK_TYPES = {
   root_crawler: {
     fn: crawlerA, maskAt: [34, -22], mdx: 10, g: 0.74, box: [-62, -94, 132, 104], foot: 7, dayK: 1, hurtW: 84, mask: MASK_BOX, dayRim: 0.5,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
+  },
+  // EN3 Stoat Piper (ranged; HUSKS BATCH 2 A): upright sentry, ONE very high socket; tell = rears + pipe drops onto you + ember in the tip
+  stoat_piper: {
+    fn: stoatA, tellT: 0.3, stride: 9, maskAt: [16, -64], mdx: 6, g: 0.7, box: [-44, -96, 100, 104], foot: 5, dayK: 1, hurtW: 40, mask: MASK_BOX, dayRim: 0.55,
+    frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };
 export const HUSK_IDS = Object.keys(HUSK_TYPES);

@@ -29,6 +29,16 @@
         "rate0": 0.12,
         "rate1": 0.6,
         "curve": 0.7
+      },
+      {
+        "enemy": "stoat_piper",
+        "from": 120,
+        "to": 900,
+        "rate0": 0.05,
+        "rate1": 0.35,
+        "curve": 0.8,
+        "maxAlive": 8,
+        "bossMul": 0.5
       }
     ],
     "events": [

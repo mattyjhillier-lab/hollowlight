@@ -18,6 +18,8 @@ const PORT = 9493 + SLOT, HTTP = 4211 + SLOT;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
 const VIEWS = { desk: [1280, 720, 1], land: [844, 390, 2], port: [390, 844, 2] };
+const ids = (v, d) => (v || d).split(',').filter((t) => /^[a-z_]{1,32}$/.test(t));
+const MIX = ids(process.env.MIX, 'wolf,wolf,crow,root_crawler,wolf,crow'); // the staged crowd (EN3-EN5: add stoat_piper,puffback_toad,bramble_hart)
 const fmt = (t) => `${Math.floor(t / 60)}m${String(t % 60).padStart(2, '0')}`;
 
 function serve(dir) {
@@ -78,7 +80,7 @@ async function stage(c, t, n, restored) {
   for (let i = 0; i < 12; i++) { if (await c.ev("window.__app.sim.state==='running'")) break; await autoPick(c); await sleep(80); }
   await c.ev(`(()=>{const a=window.__app,s=a.sim,p=s.player,l=a.scene.life;s.enemies.length=0;s.xpNeeded=1e9;s.time=${t};p.x=2000;p.y=2000;a.scene.cameras.main.centerOn(2000,2000);l.decay=1e9;
     if(${restored}>0){l.stamp(2000,2000,${restored},1);}
-    const T=['wolf','wolf','crow','root_crawler','wolf','crow'];for(let k=0;k<${n};k++){const an=(k*2.399)%6.2832,d=55+((k*37)%200);s.spawnEnemy(T[k%T.length],p.x+Math.cos(an)*d*1.5,p.y+Math.sin(an)*d*0.9);}return s.enemies.length})()`);
+    const T=${JSON.stringify(MIX)};for(let k=0;k<${n};k++){const an=(k*2.399)%6.2832,d=55+((k*37)%200);s.spawnEnemy(T[k%T.length],p.x+Math.cos(an)*d*1.5,p.y+Math.sin(an)*d*0.9);}return s.enemies.length})()`);
   await sleep(900);
   await c.ev(`(()=>{window.__app.sim.time=${t};return 1})()`);
   await sleep(250);
@@ -88,7 +90,7 @@ async function world(out, extra = '', tag = '') {
   mkdirSync(out, { recursive: true });
   const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
   try {
-    const moments = [[30, 26, 0], [240, 40, 160], [480, 50, 260], [690, 50, 330]];
+    const moments = process.env.MOMENTS ? JSON.parse(process.env.MOMENTS) : [[30, 26, 0], [240, 40, 160], [480, 50, 260], [690, 50, 330]];
     for (const [t, n, rr] of moments) {
       const views = tag ? [['wren', 'desk']] : [['wren', 'desk'], ['wren', 'land'], ['elias', 'port']].concat(t === 690 ? [['elias', 'desk']] : []);
       for (const [hero, view] of views) {
@@ -111,7 +113,7 @@ async function strips(out) {
   try {
     await open(c, q('wren', 30), 1600, 900, 1);
     await sleep(500);
-    for (const type of ['wolf', 'crow', 'root_crawler']) {
+    for (const type of (process.env.TYPES || 'wolf,crow,root_crawler').split(',').filter((t) => /^[a-z_]{1,32}$/.test(t))) {
       const b64 = await c.ev(`(()=>{const tx=window.__app.scene.textures.get('en_atlas');const src=tx.getSourceImage();
         const names=['w0','w1','w2','w3','t0','t1','h','b','m'].filter(n=>tx.has('${type}:'+n));
         const fr=names.map(n=>tx.get('${type}:'+n));const K=3;const W=fr.reduce((a,f)=>a+f.width*K+16,16),H=Math.max(...fr.map(f=>f.height))*K*2+90;
@@ -139,7 +141,7 @@ async function death(out) {
     for (const tier of ['high', 'low']) {
       await c.ev(`window.__app.save.setSettings({quality:'${tier}'}); true`); await sleep(300);
       for (let k = 0; k < ts.length; k++) {
-        await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=['wolf','crow','root_crawler'];T.forEach((ty,i)=>{s.spawnEnemy(ty,p.x+125+i*34,p.y-6);const e=s.enemies[s.enemies.length-1];e.speed=0;e.faceX=-1;});return 1})()`);
+        await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=${JSON.stringify(ids(process.env.TYPES, 'wolf,crow,root_crawler'))};T.forEach((ty,i)=>{s.spawnEnemy(ty,p.x+125+i*34,p.y-6);const e=s.enemies[s.enemies.length-1];e.speed=0;e.faceX=-1;});return 1})()`);
         await sleep(250);
         await c.ev(`(()=>{const s=window.__app.sim;for(const e of s.enemies.slice()){s.hurt(e,1e6);}return s.enemies.length})()`);
         await sleep(ts[k] * 1000);
@@ -168,7 +170,8 @@ async function compare(out) {
   const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
   try {
     await open(c, q('wren', 30), 1600, 900, 1);
-    const sheets = { wolf: '01-fell-wolf', crow: '02-grave-crow', root_crawler: '03-root-crawler' };
+    const all = { wolf: '01-fell-wolf', crow: '02-grave-crow', root_crawler: '03-root-crawler', stoat_piper: '04-ranged', puffback_toad: '05-area-denial', bramble_hart: '06-charger' };
+    const sheets = Object.fromEntries(ids(process.env.TYPES, 'wolf,crow,root_crawler').map((k) => [k, all[k]]).filter(([, v]) => v));
     const crop = readFileSync(join(out, 'en-0m30-wren-desk-crop2x.png')).toString('base64');
     for (const [type, sheet] of Object.entries(sheets)) {
       const a = readFileSync(`docs/mockups/enemies-husks/${sheet}.png`).toString('base64');
@@ -179,6 +182,34 @@ async function compare(out) {
         g.fillStyle='#000';g.fillRect(0,H-34,W,34);g.fillStyle='#fff';g.font='bold 20px sans-serif';g.fillText('LEFT: locked mock-up sheet   RIGHT: in-game atlas frames (3x / 1x, day + far-night tint) and a 2x crop of the real build at 0:30',10,H-8);
         return cv.toDataURL('image/jpeg',0.88).slice(23);})()`);
       writeFileSync(join(out, `compare-${type}.jpg`), Buffer.from(png, 'base64')); console.log('compare', type);
+    }
+  } finally { c.close(); srv.close(); }
+}
+
+// EN3-EN5 tells in game: one telegraph enemy at a time next to the hero, captured mid-tell (aim tick / fuse ring / charge lane) and a thorn in
+// flight, desktop 1280x720 + phone 844x390@2, at the dark start (0:30) and in daylight (11:30). Crops at 2x.
+async function tells(out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
+  const cases = [['stoat_piper', 150, 0.55, 'aim'], ['stoat_piper', 150, 1.1, 'thorn'], ['puffback_toad', 26, 0.6, 'fuse'], ['bramble_hart', 150, 0.6, 'lane'], ['bramble_hart', 150, 1.15, 'charge']];
+  try {
+    for (const [view, t] of [['desk', 30], ['desk', 690], ['land', 240]]) {
+      const [w, h, dpr] = VIEWS[view];
+      await open(c, q('wren', t, '&nums=0'), w, h, dpr);
+      await sleep(400); await stage(c, t, 0, t > 600 ? 330 : 0);
+      for (const [type, d, wait, tag] of cases) {
+        await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;s.eshots.length=0;s.weapons.length=0;s.units.length=0;
+          const e=s.spawnEnemy('${type}',p.x+${d},p.y-10);e.grace=0;e.aiCd=0;s.time=${t};return 1})()`);
+        // wait for the tell to start, then the case delay
+        for (let i = 0; i < 60; i++) { if (await c.ev("window.__app.sim.enemies.some(e=>e.tele)")) break; await sleep(50); }
+        await sleep(wait * 1000);
+        await c.ev('(()=>{window.__app.paused=true;return 1})()'); await sleep(60);
+        const name = `tell-${type}-${tag}-${view}-${fmt(t)}.png`;
+        const cw = view === 'desk' ? 700 : 520, ch = view === 'desk' ? 330 : 260;
+        await shot(c, join(out, name), { x: (w - cw) / 2 + (view === 'desk' ? 150 : 90), y: (h - ch) / 2, width: cw, height: ch, scale: 2 / dpr });
+        console.log('shot', name);
+        await c.ev('(()=>{window.__app.paused=false;return 1})()'); await sleep(200);
+      }
     }
   } finally { c.close(); srv.close(); }
 }
@@ -197,5 +228,6 @@ else if (cmd === 'death') await death(out);
 else if (cmd === 'bake') await bake();
 else if (cmd === 'probe') await probe();
 else if (cmd === 'compare') await compare(out);
+else if (cmd === 'tells') await tells(out);
 else console.log('usage: node scripts/en-shots.mjs world|before|strips|death|bake <outDir>');
 process.exit(0);

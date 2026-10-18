@@ -8,7 +8,7 @@ if (!isMainThread) {
   const out = [];
   for (const sd of workerData.seeds) {
     const r = playRun(workerData.char, sd);
-    out.push({ outcome: r.outcome, time: r.time, level: r.level, evo: r.marks.evo ?? null, bossKill: r.marks.bossKill ?? null, evos: r.evolved.length, levelups: r.levelups, filler: r.filler, fillerFirst: r.marks.filler ?? null, hearts: r.hearts, magnets: r.magnets, hurts: r.hurts, lvl: Object.fromEntries([1, 3, 5, 10].map((k) => [k, r.marks[k]?.lvl ?? null])) });
+    out.push({ outcome: r.outcome, time: r.time, level: r.level, evo: r.marks.evo ?? null, bossKill: r.marks.bossKill ?? null, evos: r.evolved.length, levelups: r.levelups, filler: r.filler, fillerFirst: r.marks.filler ?? null, hearts: r.hearts, magnets: r.magnets, hurts: r.hurts, hurtBy: r.hurtBy || {}, lvl: Object.fromEntries([1, 3, 5, 10].map((k) => [k, r.marks[k]?.lvl ?? null])) });
   }
   parentPort.postMessage(out);
 } else {
@@ -41,5 +41,10 @@ if (!isMainThread) {
     const d = runs.filter((r) => r.outcome !== 'victory').map((r) => r.time).sort((a, b) => a - b);
     const evo = runs.map((r) => r.evo).filter((v) => v != null);
     console.log(`${k.padEnd(15)} ${String(Math.round((runs.length - d.length) / n * 100)).padStart(3)}%  ${String(med(runs.map((r) => r.level))).padStart(3)}  ${String(med(runs.map((r) => r.lvl[5]).filter((v) => v != null))).padStart(3)}   ${fmt(med(evo))} (${fmt(pc(evo, 0.1))}/${fmt(pc(evo, 0.9))})   ${evo.length}/${n}     ${med(runs.map((r) => r.evos))}   ${mean(runs.map((r) => r.hearts)).toFixed(1).padStart(5)} ${mean(runs.map((r) => r.magnets)).toFixed(1).padStart(4)}  ${fshare(runs)}  [${d.filter((t) => t < 300).length} | ${d.filter((t) => t >= 600 && t < 660).length} | ${d.filter((t) => t >= 660).length}]  ${fmt(med(runs.map((r) => r.bossKill).filter((v) => v != null).map((v) => v - 600)))}  ${d.map(fmt).join(' ')}`);
+    // damage taken by source (EN3-EN5 readout): share of all damage the hero took, telegraph types listed when present
+    const tot = {}; let all = 0;
+    for (const r of runs) for (const [src, v] of Object.entries(r.hurtBy)) { tot[src] = (tot[src] || 0) + v; all += v; }
+    const share = Object.entries(tot).sort((a, b) => b[1] - a[1]).map(([src, v]) => `${src} ${(100 * v / (all || 1)).toFixed(1)}%`).join(', ');
+    console.log(`${''.padEnd(15)} dmg taken by source: ${share}`);
   }
 }

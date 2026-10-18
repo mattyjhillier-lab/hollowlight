@@ -18,6 +18,7 @@ export const EYE_DEFS = {
   wolf: { key: 'wolf', rim: 'wolf_r', pts: box('wolf', 18, 12, [[15.2, 4.4]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 },
   crow: { key: 'crow', rim: 'crow_r', pts: box('crow', 14, 10, [[10.9, 3.8]]), core: 5.0, halo: 10.7, rimK: 1.2, floorK: 1.6 }, // crows: darkest, fastest, erratic -> core +20%, rim x1.2
   root_crawler: { key: 'root', rim: 'root_r', pts: box('root', 20, 20, [[8, 9.2], [12.2, 9.2]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 },
+  stoat_piper: { key: 'piper', rim: 'piper_r', pts: box('piper', 12, 16, [[6.2, 4.4]]), core: 4.2, halo: 9, rimK: 1, floorK: 1 }, // EN3: one very high eye
 };
 // Boss eyes (treant box 64 x 72: bossEye ember at 27,40 and 37,40): always drawn, outside the caps.
 export const BOSS_EYES = box('treant', 64, 72, [[27, 40], [37, 40]]);
