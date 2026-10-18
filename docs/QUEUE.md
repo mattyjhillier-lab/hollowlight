@@ -219,3 +219,5 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - FIX-EVERYTHING-FLAGGED TRIAGE DONE 2026-10-17: docs/design/flagged-triage.md (every section-F item bucketed; 15 fixed, 12 NEEDS MATT with options, 4 NEEDS PHONE, 9 AFTER-R1, 17 ACCEPTED, 7 QUEUED CHUNK); first fixes: flaky test, src/params.js URL param validation, Space drain, doc/CLAUDE.md consistency, AL-6 shots. Remaining FIX NOW: W12 Calm/Low + WL6 phone Med/Low shots (machine too loaded). LAUNCH-CHECKLIST section F carries the buckets.
 
 - FEEDBACK 2026-10-18 (Matt, dev + built game on PC): still somewhat laggy (built game only slightly better than dev); WALK ANIMATION not smooth: the head bounce does not look like someone actually walking; wants it MUCH smoother. -> lag + walk-cycle redesign (Wren, Elias, followers) running (opus). Release-gate quality item.
+
+- IDEA 2026-10-18 (Matt) DIFFICULTY TIERS: Normal/Hard/Expert per map, unlocked in the skill tree, harder = more resources (maybe a new resource), some upgrades locked behind tier clears; careful balance with tree economy; research first. = release-gate item 12 (replay loop). Design BEFORE tree T3.
