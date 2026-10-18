@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tier results</title><style>
+@font-face{font-family:HLC;src:url(../../../src/assets/fonts/hollowlight-chancery.woff2) format('woff2')}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-700.woff2) format('woff2');font-weight:700}
+:root{--ink:#140f0c;--brass:#d8b26a;--brassD:#8d6c34;--cream:#fff3dc;--dim:rgba(255,243,220,.82);--mute:#a8b0c4;--teal:#6fd3c5;--gold:#ffd36b;--lock:#6b7490;
+ --glassA:#303c56;--glassB:#161c2a;--night:#0c1220;--dusk:#ffb867;--deep:#9aa8ff;--long:#c9c2ff;--dawn1:#ffd0b0;--dawn2:#bfeaf0;--danger:#ff5a3c;
+ --u:min(1vw,1.78vh)}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--night);color:var(--cream);font-family:AS,"Segoe UI",sans-serif}
+h1,h2,.title{font-family:HLC,Georgia,serif;font-weight:400}
+.coin,.shard,.glass{display:inline-block;vertical-align:-.12em;margin-right:.22em}
+.coin{width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b0,#d8b26a 60%,#8d6c34);box-shadow:0 0 0 1.5px var(--ink)}
+.shard{width:.72em;height:.9em;background:linear-gradient(135deg,#e9ddff,#9d86ff);clip-path:polygon(50% 0,100% 40%,70% 100%,30% 100%,0 40%)}
+.glass{width:.72em;height:.95em;background:linear-gradient(160deg,#fff7ee 0%,var(--dawn1) 45%,var(--dawn2) 100%);clip-path:polygon(50% 0,92% 34%,74% 100%,26% 100%,8% 34%);filter:drop-shadow(0 0 3px rgba(255,208,176,.7))}
+.pill{display:inline-flex;align-items:center;gap:.3em;padding:.18em .7em;border-radius:99px;border:1.5px solid var(--brassD);background:rgba(12,9,8,.6);font-weight:700;font-variant-numeric:tabular-nums}
+.k{font-size:max(12px,calc(var(--u)*1.25));letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.new{color:var(--teal);font-weight:700;letter-spacing:.08em}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 calc(var(--u)*3);border-radius:calc(var(--u)*1.4);font-weight:700;font-size:max(15px,calc(var(--u)*2));color:#2a1a08;background:linear-gradient(#ffe7b0,#e6b862);border:2px solid #6b4a1c;box-shadow:0 3px 0 #4a3210,0 0 18px rgba(255,190,100,.35)}
+.btn.ghost{color:var(--cream);background:rgba(20,26,40,.8);border-color:var(--brassD);box-shadow:none}
+.bar{position:relative;height:max(8px,calc(var(--u)*.9));border-radius:99px;background:#0b0f18;border:1.5px solid rgba(111,211,197,.45);overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2f8f86,var(--teal))}
+.star{display:inline-block;width:1em;height:1em;vertical-align:-.15em;background:var(--brass);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.star.off{background:#3a4258}
+.star.dawn{background:linear-gradient(160deg,#fff7ee,var(--dawn1) 55%,var(--dawn2))}
+
+.rs{position:fixed;inset:0;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr);gap:calc(var(--u)*2.4);align-items:center;padding:2.4vh 3vw;
+ background:radial-gradient(ellipse 80% 60% at 28% 8%,rgba(255,208,176,.38),transparent 65%),radial-gradient(ellipse 100% 70% at 50% 100%,rgba(154,168,255,.18),transparent 70%),linear-gradient(#2a2440,#121426 75%)}
+.hero{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*1);text-align:center}
+.hero h1{font-size:max(28px,calc(var(--u)*5.2));color:var(--gold);text-shadow:0 2px 0 #4a2f08,0 0 30px rgba(255,211,107,.55)}
+.badge{display:inline-flex;gap:.5em;align-items:center;padding:.25em .9em;border-radius:99px;border:2px solid var(--deep);color:var(--deep);font-weight:700;background:rgba(20,24,48,.8);font-size:max(13px,calc(var(--u)*1.6))}
+.line{font-family:HLC,Georgia,serif;font-size:max(14px,calc(var(--u)*2));color:#efe2c6}
+.lamp{width:calc(var(--u)*12);height:calc(var(--u)*16);min-width:70px;min-height:94px}
+.card{border-radius:calc(var(--u)*1.6);border:2px solid rgba(216,178,106,.85);background:linear-gradient(rgba(48,60,86,.9),rgba(22,28,42,.94));padding:calc(var(--u)*1.6) calc(var(--u)*2);display:flex;flex-direction:column;gap:calc(var(--u)*1.1)}
+.bank{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*1)}
+.ch{background:rgba(12,9,8,.5);border:1.5px solid rgba(141,108,52,.55);border-radius:calc(var(--u)*1.1);padding:calc(var(--u)*.8) calc(var(--u)*1);display:flex;flex-direction:column;gap:calc(var(--u)*.3)}
+.ch .n{font-weight:700;font-size:max(20px,calc(var(--u)*3.2));font-variant-numeric:tabular-nums}
+.ch .s{font-size:max(12px,calc(var(--u)*1.25));color:var(--dim)}
+.ch.dawn{border-color:rgba(255,208,176,.8);box-shadow:0 0 16px rgba(255,208,176,.25)}
+.first{display:flex;align-items:center;gap:calc(var(--u)*1);font-size:max(13px,calc(var(--u)*1.6));padding:calc(var(--u)*.8) calc(var(--u)*1.2);border-radius:calc(var(--u)*1.1);background:rgba(255,208,176,.12);border:1.5px solid rgba(255,208,176,.6)}
+.stars{display:flex;gap:calc(var(--u)*1.2);font-size:max(13px,calc(var(--u)*1.5));color:var(--dim);flex-wrap:wrap}
+.nx{display:flex;flex-direction:column;gap:calc(var(--u)*.5);font-size:max(13px,calc(var(--u)*1.5))}
+.acts{display:flex;gap:calc(var(--u)*1.2)}
+@media (max-aspect-ratio:1/1){.rs{grid-template-columns:1fr;align-content:start;gap:14px;padding:18px 16px;overflow:hidden}.lamp{display:none}.card{padding:14px 16px;gap:10px}.acts .btn{flex:1}}
+@media (max-height:420px) and (min-aspect-ratio:1/1){.rs{padding:10px 16px;gap:16px}.card{padding:10px 14px;gap:7px}.line,.stars{display:none}.lamp{min-height:70px;min-width:52px}}</style></head><body><div class="rs">
+  <div class="hero"><svg class="lamp" viewBox="0 0 60 80"><defs><radialGradient id="lg"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffd0b0" stop-opacity=".8"/><stop offset="1" stop-color="#ffd0b0" stop-opacity="0"/></radialGradient></defs><circle cx="30" cy="44" r="30" fill="url(#lg)"/><rect x="18" y="26" width="24" height="34" rx="6" fill="rgba(255,240,210,.25)" stroke="#d8b26a" stroke-width="3"/><path d="M30 32 C36 40 36 48 30 54 C24 48 24 40 30 32Z" fill="#ffe7b0"/><path d="M22 26 Q30 14 38 26" fill="none" stroke="#d8b26a" stroke-width="3"/></svg><span class="badge"><i class="star dawn"></i>Deep Dusk - first dawn</span><h1>Dawn breaks</h1><div class="line">"Even here, the light holds." - Wren</div></div>
+  <div class="card">
+    <div class="k">Brought home</div>
+    <div class="bank">
+      <div class="ch"><div class="n"><i class="coin"></i>4,290</div><div class="s">gold (x1.5 Deep Dusk)</div></div>
+      <div class="ch"><div class="n"><i class="shard"></i>7</div><div class="s">soul shards</div></div>
+      <div class="ch dawn"><div class="n"><i class="glass"></i>12</div><div class="s">dawnglass: 6 + 6 first dawn</div></div>
+    </div>
+    <div class="first"><i class="star dawn"></i><span><b>First dawn with Wren on Deep Dusk.</b> Elias has not seen it yet (+6 waiting).</span></div>
+    <div class="stars"><span><i class="star"></i> Cleared</span><span><i class="star off"></i> Clear with both heroes</span><span><i class="star off"></i> All three Alphas + no revive</span></div>
+    <div class="nx"><div class="k">Next lights</div><div>Long Night: ready to wake <span class="new">READY</span> (2,500 gold, 4 shards, 10 dawnglass)</div><div>Fifth Hook: clear Deep Dusk with Elias</div><div class="bar"><i style="width:50%"></i></div></div>
+    <div class="acts"><span class="btn ghost">Skill tree</span><span class="btn">Again</span></div>
+  </div></div></body></html>

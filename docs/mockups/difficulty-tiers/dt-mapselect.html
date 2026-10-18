@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Map select tiers</title><style>
+@font-face{font-family:HLC;src:url(../../../src/assets/fonts/hollowlight-chancery.woff2) format('woff2')}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-700.woff2) format('woff2');font-weight:700}
+:root{--ink:#140f0c;--brass:#d8b26a;--brassD:#8d6c34;--cream:#fff3dc;--dim:rgba(255,243,220,.82);--mute:#a8b0c4;--teal:#6fd3c5;--gold:#ffd36b;--lock:#6b7490;
+ --glassA:#303c56;--glassB:#161c2a;--night:#0c1220;--dusk:#ffb867;--deep:#9aa8ff;--long:#c9c2ff;--dawn1:#ffd0b0;--dawn2:#bfeaf0;--danger:#ff5a3c;
+ --u:min(1vw,1.78vh)}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--night);color:var(--cream);font-family:AS,"Segoe UI",sans-serif}
+h1,h2,.title{font-family:HLC,Georgia,serif;font-weight:400}
+.coin,.shard,.glass{display:inline-block;vertical-align:-.12em;margin-right:.22em}
+.coin{width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b0,#d8b26a 60%,#8d6c34);box-shadow:0 0 0 1.5px var(--ink)}
+.shard{width:.72em;height:.9em;background:linear-gradient(135deg,#e9ddff,#9d86ff);clip-path:polygon(50% 0,100% 40%,70% 100%,30% 100%,0 40%)}
+.glass{width:.72em;height:.95em;background:linear-gradient(160deg,#fff7ee 0%,var(--dawn1) 45%,var(--dawn2) 100%);clip-path:polygon(50% 0,92% 34%,74% 100%,26% 100%,8% 34%);filter:drop-shadow(0 0 3px rgba(255,208,176,.7))}
+.pill{display:inline-flex;align-items:center;gap:.3em;padding:.18em .7em;border-radius:99px;border:1.5px solid var(--brassD);background:rgba(12,9,8,.6);font-weight:700;font-variant-numeric:tabular-nums}
+.k{font-size:max(12px,calc(var(--u)*1.25));letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.new{color:var(--teal);font-weight:700;letter-spacing:.08em}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 calc(var(--u)*3);border-radius:calc(var(--u)*1.4);font-weight:700;font-size:max(15px,calc(var(--u)*2));color:#2a1a08;background:linear-gradient(#ffe7b0,#e6b862);border:2px solid #6b4a1c;box-shadow:0 3px 0 #4a3210,0 0 18px rgba(255,190,100,.35)}
+.btn.ghost{color:var(--cream);background:rgba(20,26,40,.8);border-color:var(--brassD);box-shadow:none}
+.bar{position:relative;height:max(8px,calc(var(--u)*.9));border-radius:99px;background:#0b0f18;border:1.5px solid rgba(111,211,197,.45);overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2f8f86,var(--teal))}
+.star{display:inline-block;width:1em;height:1em;vertical-align:-.15em;background:var(--brass);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.star.off{background:#3a4258}
+.star.dawn{background:linear-gradient(160deg,#fff7ee,var(--dawn1) 55%,var(--dawn2))}
+
+.ms{position:fixed;inset:0;display:flex;flex-direction:column;gap:calc(var(--u)*1.6);padding:max(2.2vh,env(safe-area-inset-top)) 3vw 2.2vh;
+ background:radial-gradient(ellipse 60% 50% at 20% 0%,rgba(255,184,103,.14),transparent 70%),radial-gradient(ellipse 100% 90% at 50% 100%,#1a2238,#0c1220 75%)}
+.top{display:flex;align-items:center;gap:calc(var(--u)*1.6)}
+.top h1{font-size:max(22px,calc(var(--u)*3.6));flex:1;text-shadow:0 2px 0 var(--ink)}
+.purse{display:flex;gap:calc(var(--u)*.8);font-size:max(13px,calc(var(--u)*1.6))}
+.main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:calc(var(--u)*2)}
+.mapc{position:relative;border-radius:calc(var(--u)*1.8);overflow:hidden;border:2px solid var(--brass);box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;min-height:0}
+.art{position:relative;flex:1;min-height:calc(var(--u)*10)}
+.art .nm{position:absolute;left:calc(var(--u)*2);bottom:calc(var(--u)*1.4);font-family:HLC,Georgia,serif;font-size:max(22px,calc(var(--u)*4));text-shadow:0 2px 0 var(--ink),0 0 18px rgba(0,0,0,.8)}
+.art .ch{position:absolute;left:calc(var(--u)*2);top:calc(var(--u)*1.4)}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*1);padding:calc(var(--u)*1.2);background:linear-gradient(rgba(48,60,86,.95),rgba(22,28,42,.98))}
+.tc{position:relative;min-height:max(52px,calc(var(--u)*7.2));border-radius:calc(var(--u)*1.2);border:1.5px solid rgba(141,108,52,.7);background:rgba(12,18,32,.75);padding:calc(var(--u)*.8) calc(var(--u)*1);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*.3)}
+.tc .tn{font-family:HLC,Georgia,serif;font-size:max(15px,calc(var(--u)*2.1))}
+.tc .ts{font-size:max(12px,calc(var(--u)*1.3));color:var(--dim)}
+.tc.dusk .tn{color:var(--dusk)} .tc.deep .tn{color:var(--deep)} .tc.long .tn{color:var(--long)}
+.tc.sel{border:2.5px solid var(--brass);background:linear-gradient(rgba(70,80,130,.55),rgba(18,22,40,.9));box-shadow:0 0 0 3px rgba(216,178,106,.25),0 0 22px rgba(154,168,255,.25)}
+.tc.locked{border-style:dashed;border-color:var(--lock);background:rgba(10,12,20,.8)}
+.tc.locked .tn{color:#8b93ad}
+.tag{position:absolute;top:calc(var(--u)*-1.1);right:calc(var(--u)*.8);font-size:max(11px,calc(var(--u)*1.15));font-weight:700;letter-spacing:.06em;padding:.1em .6em;border-radius:99px;background:#16352f;color:var(--teal);border:1.5px solid var(--teal)}
+.lockg{display:inline-block;width:.75em;height:.85em;margin-right:.3em;vertical-align:-.1em;background:#8b93ad;clip-path:polygon(15% 45%,15% 100%,85% 100%,85% 45%,75% 45%,75% 25%,62% 8%,38% 8%,25% 25%,25% 45%,35% 45%,35% 28%,42% 20%,58% 20%,65% 28%,65% 45%)}
+.side{display:flex;flex-direction:column;gap:calc(var(--u)*1.2);min-height:0}
+.card{border-radius:calc(var(--u)*1.6);border:2px solid rgba(216,178,106,.85);background:linear-gradient(rgba(48,60,86,.9),rgba(22,28,42,.94));padding:calc(var(--u)*1.4) calc(var(--u)*1.8);display:flex;flex-direction:column;gap:calc(var(--u)*.9)}
+.card h2{font-size:max(18px,calc(var(--u)*2.8));color:var(--deep)}
+.chg{display:flex;flex-direction:column;gap:calc(var(--u)*.45);font-size:max(13px,calc(var(--u)*1.55))}
+.chg div::before{content:"";display:inline-block;width:.45em;height:.45em;border-radius:50%;background:var(--deep);margin-right:.5em;vertical-align:.12em}
+.rw{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.7);font-size:max(13px,calc(var(--u)*1.55))}
+.rec{display:flex;gap:calc(var(--u)*2);font-size:max(13px,calc(var(--u)*1.5));color:var(--dim);flex-wrap:wrap}
+.rec b{color:var(--cream);font-variant-numeric:tabular-nums}
+.nudge{font-size:max(13px,calc(var(--u)*1.5));color:var(--dim);display:flex;flex-direction:column;gap:calc(var(--u)*.4)}
+.nudge b{color:var(--teal)}
+.acts{display:flex;gap:calc(var(--u)*1.2);justify-content:flex-end;margin-top:auto}
+.fog{display:flex;align-items:center;gap:calc(var(--u)*1);font-size:max(12px,calc(var(--u)*1.4));color:#8b93ad;border:1.5px dashed var(--lock);border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*.7) calc(var(--u)*1.2)}
+@media (max-aspect-ratio:1/1){
+ .ms{gap:10px;padding:max(14px,env(safe-area-inset-top)) 16px 14px}
+ .main{grid-template-columns:1fr;grid-template-rows:auto 1fr;gap:12px}
+ .art{min-height:150px;flex:none;height:150px}
+ .tiers{gap:8px;padding:10px}
+ .tc{padding:8px}
+ .card{padding:14px 16px;gap:10px}
+ .acts .btn{flex:1}
+ .purse{font-size:13px}
+}
+@media (max-height:420px) and (min-aspect-ratio:1/1){
+ .ms{padding:10px 16px;gap:8px}.top h1{font-size:20px}.main{gap:12px}.card{padding:10px 14px;gap:6px}.chg{gap:2px}.fog{display:none}.side{gap:8px}
+ .chg div:nth-child(n+3){display:none}.nudge span{display:none}
+}</style></head><body><div class="ms">
+  <div class="top"><h1>Choose your road</h1><div class="purse"><span class="pill"><i class="coin"></i>2,410</span><span class="pill"><i class="shard"></i>6</span><span class="pill"><i class="glass"></i>0</span></div></div>
+  <div class="main">
+    <div class="mapc">
+      <div class="art"><svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%"><defs><linearGradient id="sdeep" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141a34"/><stop offset=".6" stop-color="#3a3f6e"/><stop offset="1" stop-color="#7c6f9e"/></linearGradient><radialGradient id="ldeep"><stop offset="0" stop-color="#ffcf80" stop-opacity=".75"/><stop offset="1" stop-color="#ffcf80" stop-opacity="0"/></radialGradient></defs>
+  <rect width="400" height="150" fill="url(#sdeep)"/><circle cx="0" cy="6" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="71" cy="35" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="142" cy="64" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="213" cy="23" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="284" cy="52" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="355" cy="11" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="26" cy="40" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="97" cy="69" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="168" cy="28" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="239" cy="57" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="310" cy="16" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="381" cy="45" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="52" cy="74" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="123" cy="33" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="194" cy="62" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="265" cy="21" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="336" cy="50" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="7" cy="9" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="78" cy="38" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="149" cy="67" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="220" cy="26" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="291" cy="55" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="362" cy="14" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="33" cy="43" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="104" cy="72" r="1.5" fill="#dfe6ff" opacity="0.5"/><circle cx="175" cy="31" r="0.9" fill="#dfe6ff" opacity="0.5"/><circle cx="320" cy="34" r="12" fill="#e8ecff" opacity="0.8"/><path d="M-10 150 L4 90 L18 150Z" fill="#0d1020" opacity=".95"/><path d="M31 150 L45 77 L59 150Z" fill="#0d1020" opacity=".95"/><path d="M59 150 L73 64 L87 150Z" fill="#0d1020" opacity=".95"/><path d="M87 150 L101 51 L115 150Z" fill="#0d1020" opacity=".95"/><path d="M115 150 L129 78 L143 150Z" fill="#0d1020" opacity=".95"/><path d="M143 150 L157 65 L171 150Z" fill="#0d1020" opacity=".95"/><path d="M171 150 L185 52 L199 150Z" fill="#0d1020" opacity=".95"/><path d="M212 150 L226 79 L240 150Z" fill="#0d1020" opacity=".95"/><path d="M240 150 L254 66 L268 150Z" fill="#0d1020" opacity=".95"/><path d="M268 150 L282 53 L296 150Z" fill="#0d1020" opacity=".95"/><path d="M296 150 L310 80 L324 150Z" fill="#0d1020" opacity=".95"/><path d="M324 150 L338 67 L352 150Z" fill="#0d1020" opacity=".95"/><path d="M352 150 L366 54 L380 150Z" fill="#0d1020" opacity=".95"/><path d="M380 150 L394 81 L408 150Z" fill="#0d1020" opacity=".95"/>
+  <ellipse cx="250" cy="142" rx="60" ry="20" fill="url(#ldeep)"/><circle cx="250" cy="132" r="4" fill="#ffe7b0"/></svg><div class="ch k">Chapter 1</div><div class="nm">Cursed Forest</div></div>
+      <div class="tiers" role="radiogroup" aria-label="Difficulty">
+        <div class="tc dusk" role="radio" aria-checked="false"><div class="tn">Twilight</div><div class="ts"><i class="star"></i><i class="star"></i><i class="star off"></i> cleared 2x</div></div>
+        <div class="tc deep sel" role="radio" aria-checked="true"><span class="tag">NEW</span><div class="tn">Deep Dusk</div><div class="ts">Recommended next</div></div>
+        <div class="tc long locked" role="radio" aria-disabled="true"><div class="tn"><i class="lockg"></i>Long Night</div><div class="ts">Clear Deep Dusk once</div><div class="bar" aria-label="0 of 1"><i style="width:0%"></i></div></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <div class="k">Deep Dusk - harder night</div>
+        <h2>The Hollow presses closer</h2>
+        <div class="chg"><div>Foes are tougher (+45% health) and hit a little harder</div><div>From 4:00 some foes bear a Hollow mark (you can read each one)</div><div>The Elder Treant is stronger</div><div>Blessings, hearts and your tree are unchanged</div></div>
+        <div class="k">You earn</div>
+        <div class="rw"><span class="pill"><i class="coin"></i>gold x1.5</span><span class="pill"><i class="shard"></i>7 from the boss</span><span class="pill"><i class="glass"></i>dawnglass up to 6</span><span class="pill new">first dawn +6</span></div>
+        <div class="rec"><span>Best <b>-</b></span><span>Clears <b>0</b></span><span>Stars <i class="star off"></i><i class="star off"></i><i class="star off"></i></span></div>
+      </div>
+      <div class="nudge"><b>Next light: first dawn on Deep Dusk</b><span>Clear it with Wren and with Elias to light the Fifth Hook.</span></div>
+      <div class="fog">Chapter 2 sleeps in the fog. Clear Cursed Forest on Long Night to see it.</div>
+      <div class="acts"><span class="btn ghost">Back</span><span class="btn">Begin with Wren</span></div>
+    </div>
+  </div></div></body></html>

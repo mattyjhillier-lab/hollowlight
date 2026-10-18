@@ -1,0 +1,98 @@
+## Budget v2 rule (skill-tree-v2 s8)
+dmg | 3 | 1 | 3 | 1.9 | 1.9 | 3
+tagS | 6 | 0.35 | 8.5 | 4.54 | 1.59 | 2.1
+tagM | 6 | 0.35 | 4 | 2.92 | 1.02 | 2.1
+cast | 4 | 0.3 | 2 | 1.57 | 0.47 | 1.2
+area | 6 | 0.12 | 5 | 3.39 | 0.41 | 0.72
+hp | 6 | 0.2 | 9 | 4.66 | 0.93 | 1.2
+heal | 1.5 | 0.4 | 1.3 | 0.87 | 0.35 | 0.6
+status | 8 | 0.15 | 10 | 5.71 | 0.86 | 1.2
+wpn (5 weapons) | 8 | 0.08 | 104 | null | 2.96 | 3.2
+combat PE at total 10.48 at cap 15.32
+
+## Budget PROPOSED rule (Twilight scope), choice nodes (scope all) PE 0.8
+dmg | 2.5 | 1 | 3 | 1.75 | 1.75 | 2.5
+tagS | 5 | 0.35 | 8.5 | 4.09 | 1.43 | 1.75
+tagM | 5 | 0.35 | 4 | 2.75 | 0.96 | 1.75
+cast | 3 | 0.3 | 2 | 1.46 | 0.44 | 0.9
+area | 4 | 0.12 | 5 | 2.85 | 0.34 | 0.48
+hp | 6 | 0.2 | 9 | 4.66 | 0.93 | 1.2
+heal | 1.5 | 0.4 | 1.3 | 0.87 | 0.35 | 0.6
+status | 8 | 0.15 | 10 | 5.71 | 0.86 | 1.2
+lore | 2 | 0.6 | 2 | 1.26 | 0.76 | 1.2
+wpn (5 weapons) | 7 | 0.08 | 104 | null | 2.66 | 2.8
+choice (discrete, est) | - | - | - | null | 0.8 | 0.8
+combat PE at total 11.27 at cap 15.18
+tier-scoped (hard+) choice PE 2.5 expert-scoped PE (larger side of pair) 0.6
+
+## Group costs
+satchel {"n":8,"nNew":3,"g":9470,"gNew":3850,"s":1,"d":0}
+cards {"n":10,"nNew":6,"g":7820,"gNew":5900,"s":0,"d":8}
+almanac {"n":25,"nNew":25,"g":11600,"gNew":11600,"s":2,"d":0}
+hearthkey {"n":6,"nNew":4,"g":9150,"gNew":7200,"s":10,"d":12}
+nightgate {"n":5,"nNew":5,"g":8300,"gNew":8300,"s":6,"d":36}
+ALL {"n":54,"nNew":43,"g":46340,"gNew":36850,"s":19,"d":56}
+
+## Nodes
+| li_reach | satchel | moved | Wider Lantern | Gem pickup range +4% per rank (was +6% x1) | 4 | 1630 | 0 | 0 | - | util | all |
+| li_scav | satchel | moved | Scavenger | Gem pickup range +4% (was +6%) | 1 | 450 | 0 | 0 | slay 500 wolves OR 800 crows (as v2) | util | all |
+| co_pull | satchel | NEW | Eager Gems | Gems fly to you 15% faster per rank (magnetSpeed 260 -> 377 at r3) | 3 | 1350 | 0 | 0 | - | util | all |
+| co_call | satchel | NEW | Lantern Call | On level-up, gems within 2x your pickup range fly to you | 1 | 1100 | 0 | 0 | reach level 35 in a run | util 0.05 | all |
+| li_hearts | satchel | moved | Kinder Hearts | Hearts +5% AND heart pity 30 s -> 25 s (re-weighted, same 0.2 sustain) | 1 | 840 | 0 | 0 | - | sustain 0.2 | all |
+| li_heal | satchel | moved | Mending Light | Hearts heal +5% (as v2) | 1 | 900 | 0 | 0 | - | sustain 0.2 | all |
+| li_magnet | satchel | moved | Lodestar | r1 Soul Magnets +25% (as v2); r2 magnet pity 30 s -> 24 s | 2 | 1800 | 0 | 0 | - | util | all |
+| co_glean | satchel | NEW | Gleaner | Experience +2% (XP utility cap 7.5% holds: li_study 3% + 2%) | 1 | 1400 | 1 | 0 | collect 60000 gems (lifetime) | util | all |
+| sp_reroll2 | cards | moved | Third Glance | +1 reroll (as v2) | 1 | 270 | 0 | 0 | - | sustain 0.1 | all |
+| sp_reroll3 | cards | moved | Fourth Glance | +1 reroll (as v2) | 1 | 600 | 0 | 0 | - | sustain 0.1 | all |
+| sp_ban2 | cards | moved | Second Snuff | +1 banish (as v2) | 1 | 330 | 0 | 0 | - | sustain 0.1 | all |
+| sp_ban3 | cards | moved | Third Snuff | +1 banish (as v2) | 1 | 720 | 0 | 0 | - | sustain 0.1 | all |
+| cd_stir | cards | NEW | Louder Stirring | "Something stirs" also lights when the PARTNER stat is rank 2+ (earlier hint); still never names an evolution | 1 | 600 | 0 | 0 | evolve weapons 3 times | info | all |
+| cd_peek | cards | NEW | Second Sight | See the next level-up offer, dimmed, under the current one (it can still change if a pick removes a card) | 1 | 900 | 0 | 0 | reach level 30 in a run | choice 0.05 | all |
+| cd_bars | cards | NEW | Hunter's Eye | Thin health bars + affix name on affixed enemies and minibosses (boss bar stays free) | 1 | 500 | 0 | 0 | slay 20 affixed enemies OR 3 Grey Alphas | info | all |
+| cd_radar | cards | NEW | Lantern Compass | Edge arrows also point to chests and to the next miniboss 20 s before it arrives | 1 | 700 | 0 | 0 | open 5 chests | info | all |
+| cd_favour | cards | NEW | Favoured Spirit | At run start mark one weapon: its stat cards weigh x1.5 (inside the evoNudge cap; recipes stay hidden) | 1 | 1200 | 0 | 0 | evolve weapons 8 times | choice 0.2 | all |
+| cd_fourth | cards | NEW | Fourth Card | Level-ups offer 4 cards (offerSize 3 -> 4); gold cards stay max 3 | 1 | 2000 | 0 | 8 | clear Cursed Forest on Deep Dusk | tier 1 | hard+ |
+| bs_wolf1 | almanac | NEW | Fell Wolf: Habits | +1% damage vs Fell Wolf | 1 | 200 | 0 | 0 | slay 1000 Fell Wolf | combat | all |
+| bs_wolf2 | almanac | NEW | Fell Wolf: Weakness | +1% damage vs Fell Wolf (lore cap 2% per type) | 1 | 500 | 0 | 0 | slay 4000 Fell Wolf | combat | all |
+| bs_wolf3 | almanac | NEW | Fell Wolf: Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 400 | 0 | 0 | slay 12000 Fell Wolf | info | all |
+| bs_crow1 | almanac | NEW | Grave Crow: Habits | +1% damage vs Grave Crow | 1 | 200 | 0 | 0 | slay 1000 Grave Crow | combat | all |
+| bs_crow2 | almanac | NEW | Grave Crow: Weakness | +1% damage vs Grave Crow (lore cap 2% per type) | 1 | 500 | 0 | 0 | slay 4000 Grave Crow | combat | all |
+| bs_crow3 | almanac | NEW | Grave Crow: Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 400 | 0 | 0 | slay 12000 Grave Crow | info | all |
+| bs_crawl1 | almanac | NEW | Root Crawler: Habits | +1% damage vs Root Crawler | 1 | 200 | 0 | 0 | slay 250 Root Crawler | combat | all |
+| bs_crawl2 | almanac | NEW | Root Crawler: Weakness | +1% damage vs Root Crawler (lore cap 2% per type) | 1 | 500 | 0 | 0 | slay 1000 Root Crawler | combat | all |
+| bs_crawl3 | almanac | NEW | Root Crawler: Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 400 | 0 | 0 | slay 3000 Root Crawler | info | all |
+| bs_stoat1 | almanac | NEW | Stoat Piper (EN3): Habits | +1% damage vs Stoat Piper (EN3) | 1 | 200 | 0 | 0 | slay 200 Stoat Piper (EN3) | combat | all |
+| bs_stoat2 | almanac | NEW | Stoat Piper (EN3): Weakness | +1% damage vs Stoat Piper (EN3) (lore cap 2% per type) | 1 | 500 | 0 | 0 | slay 800 Stoat Piper (EN3) | combat | all |
+| bs_stoat3 | almanac | NEW | Stoat Piper (EN3): Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 400 | 0 | 0 | slay 2500 Stoat Piper (EN3) | info | all |
+| bs_hb1 | almanac | NEW | Husk type 5 (EN4/EN5, area denial): Habits | +1% damage vs Husk type 5 (EN4/EN5, area denial) | 1 | 200 | 0 | 0 | slay 200 Husk type 5 (EN4/EN5, area denial) | combat | all |
+| bs_hb2 | almanac | NEW | Husk type 5 (EN4/EN5, area denial): Weakness | +1% damage vs Husk type 5 (EN4/EN5, area denial) (lore cap 2% per type) | 1 | 500 | 0 | 0 | slay 800 Husk type 5 (EN4/EN5, area denial) | combat | all |
+| bs_hb3 | almanac | NEW | Husk type 5 (EN4/EN5, area denial): Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 400 | 0 | 0 | slay 2500 Husk type 5 (EN4/EN5, area denial) | info | all |
+| bs_hc1 | almanac | NEW | Husk type 6 (EN6, heavy charge): Habits | +1% damage vs Husk type 6 (EN6, heavy charge) | 1 | 200 | 0 | 0 | slay 150 Husk type 6 (EN6, heavy charge) | combat | all |
+| bs_hc2 | almanac | NEW | Husk type 6 (EN6, heavy charge): Weakness | +1% damage vs Husk type 6 (EN6, heavy charge) (lore cap 2% per type) | 1 | 500 | 0 | 0 | slay 600 Husk type 6 (EN6, heavy charge) | combat | all |
+| bs_hc3 | almanac | NEW | Husk type 6 (EN6, heavy charge): Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 400 | 0 | 0 | slay 1800 Husk type 6 (EN6, heavy charge) | info | all |
+| bs_alpha1 | almanac | NEW | Branch-Mane / Grey Alpha (miniboss): Habits | +1% damage vs Branch-Mane / Grey Alpha (miniboss) | 1 | 300 | 0 | 0 | slay 5 Branch-Mane / Grey Alpha (miniboss) | combat | all |
+| bs_alpha2 | almanac | NEW | Branch-Mane / Grey Alpha (miniboss): Weakness | +1% damage vs Branch-Mane / Grey Alpha (miniboss) (lore cap 2% per type) | 1 | 700 | 0 | 0 | slay 20 Branch-Mane / Grey Alpha (miniboss) | combat | all |
+| bs_alpha3 | almanac | NEW | Branch-Mane / Grey Alpha (miniboss): Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 500 | 0 | 0 | slay 60 Branch-Mane / Grey Alpha (miniboss) | info | all |
+| bs_treant1 | almanac | NEW | Elder Treant (boss): Habits | +1% damage vs Elder Treant (boss) | 1 | 300 | 0 | 0 | slay 1 Elder Treant (boss) | combat | all |
+| bs_treant2 | almanac | NEW | Elder Treant (boss): Weakness | +1% damage vs Elder Treant (boss) (lore cap 2% per type) | 1 | 700 | 0 | 0 | slay 5 Elder Treant (boss) | combat | all |
+| bs_treant3 | almanac | NEW | Elder Treant (boss): Tells | its attack tell shows 0.1 s earlier (readability; boss/miniboss: the tell ring is brighter) | 1 | 500 | 0 | 0 | slay 15 Elder Treant (boss) | info | all |
+| bs_page | almanac | NEW | Full Almanac | Codex page art + all Almanac lanterns glow; +1 Blessing choice in chests (3 -> 4 shown; no power beyond the Blessing caps) | 1 | 2000 | 2 | 0 | every Habits lantern lit | choice 0.05 | all |
+| sp_auto | hearthkey | moved | Steady Hand | Ability fires itself below 30% health (as v2) | 1 | 1050 | 0 | 0 | survive 5:00 in Cursed Forest | util | all |
+| rs_autoset | hearthkey | NEW | Chosen Moment | Pick the auto-fire rule in Settings: below 30% / below 50% / when 25+ foes are near / off | 1 | 900 | 0 | 0 | use your ability 100 times | util | all |
+| rs_start | hearthkey | NEW | Kindred Start | At 0:00 choose your second spirit from 3 of your unlocked weapons (a free weapon card) | 1 | 1500 | 0 | 0 | wake 1 sleeping spirit (any weapon gate) | choice 0.2 | all |
+| rs_bless | hearthkey | NEW | Lantern Blessing | Start with one Blessing rank (choose 1 of 3); counts toward the Blessing caps | 1 | 1800 | 2 | 0 | take 15 Blessings | choice 0.3 | all |
+| li_last | hearthkey | moved | Last Light | Once per run a killing blow returns you at 20% health (as v2; the one revive) | 1 | 900 | 5 | 0 | clear Cursed Forest | sustain 4 | all |
+| rs_slot5 | hearthkey | NEW | Fifth Hook | A 5th weapon slot (balance.weaponSlots 4 -> 5) | 1 | 3000 | 3 | 12 | clear Deep Dusk with Wren AND with Elias | tier 1.5 | hard+ |
+| gt_cursed_forest_hard | nightgate | NEW | Deep Dusk: Cursed Forest | Unlocks the Deep Dusk tier (permanent, kept on respec) | 1 | 1200 | 2 | 0 | clear Cursed Forest (Twilight) | none | all |
+| gt_cursed_forest_expert | nightgate | NEW | Long Night: Cursed Forest | Unlocks the Long Night tier (permanent) | 1 | 2500 | 4 | 10 | clear Cursed Forest on Deep Dusk | none | all |
+| df_ward | nightgate | NEW | Dawnward (pair A) | Long Night only: hearts heal +10%, all damage -1% (excludes df_vigil) | 1 | 1800 | 0 | 10 | clear Long Night once | tier 0.4 | expert |
+| df_vigil | nightgate | NEW | Night Vigil (pair B) | Long Night only: all damage +2%, max health -3% (excludes df_ward) | 1 | 1800 | 0 | 10 | clear Long Night once | tier 0.6 | expert |
+| df_star | nightgate | NEW | Three Dawns | Cosmetic: your lantern burns with a dawn rim on the map + results (no power) | 1 | 1000 | 0 | 6 | earn all 9 stars in Cursed Forest | none | all |
+
+## Dawnglass per run
+hard win 6 loss 3.2 first-clear win 12
+expert win 9 loss 3.8 first-clear win 19
+
+## Economy model: total gold 110850 shards 43 dawnglass (one side of the pair) 46
+human factor 1: firstClear 3 (p90 7, 40/40); hardUnlocked 3 (p90 7, 40/40); firstHard 27 (p90 38, 40/40); expertUnlocked 27 (p90 38, 40/40); firstExpert 40 (p90 47, 40/40); goldDone 48 (p90 54, 40/40); shardsDone 21 (p90 34, 40/40); glassDone 32 (p90 39, 40/40)
+human factor 0.75: firstClear 3 (p90 7, 40/40); hardUnlocked 3 (p90 7, 40/40); firstHard 35 (p90 44, 40/40); expertUnlocked 35 (p90 44, 40/40); firstExpert 51 (p90 62, 40/40); goldDone 64 (p90 69, 40/40); shardsDone 21 (p90 33, 40/40); glassDone 39 (p90 47, 40/40)
