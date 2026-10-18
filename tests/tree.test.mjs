@@ -205,9 +205,11 @@ test('migration v1 -> v2: carries gold/stats/settings, resets placeholder tree, 
   assert.deepEqual(r.save.seen, {});
   // an older save that never had these fields at all
   assert.ok(parseSave('{"version":1}').ok);
-  // a v2 save keeps a valid tree
+  // a v2 save goes through the v3 Regrowth: non-permanent nodes are refunded at their old price (150 + 150), unknown ids vanish
   const v2 = parseSave(JSON.stringify({ ...v1, version: 2, tree: { sp_reroll1: 1, sp_ban1: 1, junk: 7 } }));
-  assert.deepEqual(v2.save.tree, { sp_reroll1: 1, sp_ban1: 1 });
+  assert.deepEqual(v2.save.tree, {});
+  assert.equal(v2.save.gold, 321 + 300);
+  assert.deepEqual(v2.save.notes, { regrowth: { gold: 300, shards: 0, nodes: 2 } });
 });
 
 test('seen flags are sanitised', () => {

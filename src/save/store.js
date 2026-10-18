@@ -1,5 +1,5 @@
 // Save manager: localStorage with in-memory fallback, rolling backup, debounced writes.
-import { defaultSave, parseSave, sanitize } from './schema.js';
+import { defaultSave, parseSave, sanitize, serializeSave, RECENT_RUNS } from './schema.js';
 import { metConditions } from '../meta/tree.js';
 
 export const SAVE_KEY = 'hollowlight:save';
@@ -46,7 +46,7 @@ export class SaveStore {
   saveNow() {
     if (this.timer) { clearTimeout(this.timer); this.timer = null; }
     this.data.updatedAt = Date.now();
-    const text = JSON.stringify(this.data);
+    const text = JSON.stringify(serializeSave(this.data));
     const prev = this._get(SAVE_KEY);
     if (prev !== null && parseSave(prev).ok) this._set(BACKUP_KEY, prev);
     const ok = this._set(SAVE_KEY, text);
@@ -115,6 +115,10 @@ export class SaveStore {
       if (won) c.clears += 1;
       c.bestTime = Math.max(c.bestTime, time);
     }
+    // Last RECENT_RUNS runs (per-run pace for the tree's "about N more runs" hint); sanitize() re-clamps every field.
+    const kills = r.killsByEnemy && typeof r.killsByEnemy === 'object' ? Object.entries(r.killsByEnemy).sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0)).slice(0, 12) : [];
+    const evos = Array.isArray(r.weapons) ? r.weapons.filter((w) => w && typeof w.evo === 'string').map((w) => w.evo) : [];
+    s.recentRuns = [...(Array.isArray(s.recentRuns) ? s.recentRuns : []), { t: time, k: Object.fromEntries(kills.map(([id, n]) => [id, pos(n)])), e: evos, b: !!(r.bossKilled && r.bossId), c: won }].slice(-RECENT_RUNS);
     this.data = sanitize(this.data);
     const after = ctx && ctx.def ? metConditions(ctx.def, this.data.stats, ctx.data) : new Set();
     const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);
@@ -122,7 +126,7 @@ export class SaveStore {
     return { gold: this.data.gold, shards: this.data.shards, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet };
   }
 
-  exportText() { return JSON.stringify(this.data, null, 2); }
+  exportText() { return JSON.stringify(serializeSave(this.data), null, 2); }
 
   // Validate imported text without applying it.
   checkImport(text) { return parseSave(text); }

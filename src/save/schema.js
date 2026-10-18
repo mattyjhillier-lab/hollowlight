@@ -1,13 +1,16 @@
 // Save schema, migrations and strict validation. Pure JS, no DOM. All input is untrusted.
 import { sanitizeTree, sanitizeSeen } from '../meta/tree.js';
+import { encodeTree, decodeTree, encodeSeen, decodeSeen, isCompact } from '../meta/treecodec.js';
+import { OLD_TREE_VERSION, runTreeSteps } from '../meta/migrations/index.js';
 import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
 export const QUALITIES = ['auto', 'low', 'med', 'high'];
 export const BRIGHTNESS = BRIGHTNESS_STORED; // 'auto' = Brighter on phone-sized/touch devices, Normal elsewhere (resolved at draw time)
 export const TOUCH_MODES = ['auto', 'on', 'off'];
 export const STICK_NAMES = ['small', 'medium', 'large'];
+export const RECENT_RUNS = 10;
 
 const MAX_NUM = 1e12;
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -32,6 +35,7 @@ export function defaultSave(now = Date.now()) {
     unlocks: {},
     tree: {},
     seen: {},
+    notes: {},
     settings: defaultSettings(),
   };
 }
@@ -41,19 +45,35 @@ export function defaultStats() {
     runs: 0, wins: 0, kills: 0, bestTime: 0, totalPlayTime: 0,
     bestLevel: 0, totalGold: 0,
     killsByEnemy: {}, bossKills: {}, chapters: {}, evolved: {}, weaponsUsed: {}, charsUsed: {},
+    recentRuns: [],
   };
 }
-
-// Migration table: MIGRATIONS[n] upgrades a version-n object to n+1. Append later.
-// v1 -> v2: skill tree arrives. The v1 tree was an empty placeholder, so it is reset; new stat maps start empty
-// (sanitize fills them). Gold, shards, stats totals and settings carry over.
-export const MIGRATIONS = {
-  1: (o) => ({ ...o, version: 2, tree: {}, seen: {} }),
-};
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const num = (v, def, min = 0, max = MAX_NUM) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def);
 const int = (v, def, min = 0, max = MAX_NUM) => Math.floor(num(v, def, min, max));
+
+// Migration table: MIGRATIONS[n] upgrades a version-n object to n+1. Append later.
+// v1 -> v2: skill tree arrives. The v1 tree was an empty placeholder, so it is reset; new stat maps start empty
+// (sanitize fills them). Gold, shards, stats totals and settings carry over.
+// v2 -> v3: the Lantern Web. "Regrowth": every non-permanent owned node is refunded at its old price from a FROZEN table
+// (src/meta/migrations/tree-v3.js), permanent gate nodes stay owned. Runs once (version >= 3 never re-enters), before sanitising.
+export const MIGRATIONS = {
+  1: (o) => ({ ...o, version: 2, tree: {}, seen: {} }),
+  2: (o) => {
+    const to = TREE ? TREE.treeVersion : 3;
+    const r = runTreeSteps(isObj(o.tree) && !isCompact(o.tree) ? o.tree : {}, OLD_TREE_VERSION, to);
+    return {
+      ...o,
+      version: 3,
+      tree: r.tree,
+      gold: Math.min(MAX_NUM, int(o.gold, 0) + r.gold),
+      shards: Math.min(MAX_NUM, int(o.shards, 0) + r.shards),
+      notes: { ...(isObj(o.notes) ? o.notes : {}), ...r.notes },
+    };
+  },
+};
+
 const ID_KEY = /^[a-z0-9_]{1,40}$/;
 // id -> bounded count (stat maps keyed by enemy / chapter / weapon / character ids).
 function countMap(o, maxKeys = 64, max = 1e9) {
@@ -84,7 +104,34 @@ function chapterMap(o) {
 
 const bool = (v, def) => (typeof v === 'boolean' ? v : def);
 
-// Free-form id->value map (unlocks/tree): short safe ids, bounded numbers/bools only.
+// Last RECENT_RUNS runs, for the "about N more runs at your pace" hint: { t time, k kills by enemy, e evolutions, b boss, c clear }.
+function idList(a, max) {
+  const out = [];
+  if (!Array.isArray(a)) return out;
+  for (const v of a.slice(0, 64)) {
+    if (out.length >= max) break;
+    if (typeof v === 'string' && ID_KEY.test(v) && !BAD_KEYS.has(v) && !out.includes(v)) out.push(v);
+  }
+  return out;
+}
+function recentRuns(a) {
+  const out = [];
+  if (!Array.isArray(a)) return out;
+  for (const r of a.slice(-RECENT_RUNS)) {
+    if (!isObj(r)) continue;
+    out.push({ t: num(r.t, 0, 0, 1e7), k: countMap(r.k, 12, 1e6), e: idList(r.e, 8), b: r.b === true, c: r.c === true });
+  }
+  return out;
+}
+
+// One-time migration notices (the tree screen shows "The web has regrown" once): known keys only, clamped.
+function notesOf(o) {
+  const out = {};
+  if (isObj(o) && isObj(o.regrowth)) out.regrowth = { gold: int(o.regrowth.gold, 0), shards: int(o.regrowth.shards, 0), nodes: int(o.regrowth.nodes, 0, 0, 1e4) };
+  return out;
+}
+
+// Free-form id->value map (unlocks): short safe ids, bounded numbers/bools only.
 function cleanMap(o) {
   const out = {};
   if (!isObj(o)) return out;
@@ -102,6 +149,7 @@ function cleanMap(o) {
 }
 
 // Build a fresh clean object from whitelisted keys only. Never copies unknown keys.
+// Accepts the tree/seen maps in either form: object form (in memory) or compact form (on disk, decoded here).
 export function sanitize(raw, now = Date.now()) {
   const d = defaultSave(now);
   if (!isObj(raw)) return d;
@@ -123,10 +171,13 @@ export function sanitize(raw, now = Date.now()) {
     evolved: countMap(s.evolved),
     weaponsUsed: countMap(s.weaponsUsed, 32),
     charsUsed: countMap(s.charsUsed, 32),
+    recentRuns: recentRuns(s.recentRuns),
   };
   // Owned stat nodes whose weapon gate is not owned (pre-G1e saves) are dropped WITH a full refund.
   const refund = { gold: 0, shards: 0 };
-  const tree = TREE ? sanitizeTree(raw.tree, stats, TREE, TREE_DATA, refund) : {};
+  const treeIn = isCompact(raw.tree) ? decodeTree(raw.tree, TREE).tree : raw.tree;
+  const seenIn = isCompact(raw.seen) ? decodeSeen(raw.seen, TREE) : raw.seen;
+  const tree = TREE ? sanitizeTree(treeIn, stats, TREE, TREE_DATA, refund) : {};
   return {
     version: SAVE_VERSION,
     createdAt: created,
@@ -136,7 +187,8 @@ export function sanitize(raw, now = Date.now()) {
     stats,
     unlocks: cleanMap(raw.unlocks),
     tree,
-    seen: TREE ? sanitizeSeen(raw.seen, TREE) : {},
+    seen: TREE ? sanitizeSeen(seenIn, TREE) : {},
+    notes: notesOf(raw.notes),
     settings: {
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),
       sfxVol: num(st.sfxVol, ds.sfxVol, 0, 1),
@@ -149,6 +201,16 @@ export function sanitize(raw, now = Date.now()) {
       stickSize: STICK_NAMES.includes(st.stickSize) ? st.stickSize : ds.stickSize,
     },
   };
+}
+
+// The on-disk / export form: identical to the in-memory save except tree and seen are written compact.
+export function serializeSave(save) {
+  const out = { ...save };
+  if (TREE) {
+    out.tree = encodeTree(save.tree, TREE, TREE.treeVersion);
+    out.seen = encodeSeen(save.seen, TREE);
+  } else { out.tree = {}; out.seen = {}; }
+  return out;
 }
 
 // Parse + migrate + sanitise untrusted text. Returns {ok, save} or {ok:false, error, code}.
@@ -167,6 +229,16 @@ export function parseSave(text) {
       const fn = MIGRATIONS[n];
       if (typeof fn !== 'function') return { ok: false, code: 'migrate', error: 'Save is too old to upgrade.' };
       cur = fn(cur);
+    }
+    // v3+ saves carry the tree version they were written with; older content versions run their steps now (before sanitising).
+    if (v >= 3 && TREE && isCompact(cur.tree)) {
+      const dec = decodeTree(cur.tree, TREE);
+      if (dec.v !== null && dec.v > TREE.treeVersion) return { ok: false, code: 'future', error: 'This save is from a newer version of the game. Update the game to use it.' };
+      const from = dec.v === null ? TREE.treeVersion : Math.max(3, dec.v); // a forged low version can never replay the Regrowth refund
+      if (from < TREE.treeVersion) {
+        const r = runTreeSteps(dec.tree, from, TREE.treeVersion);
+        cur = { ...cur, tree: r.tree, gold: Math.min(MAX_NUM, int(cur.gold, 0) + r.gold), shards: Math.min(MAX_NUM, int(cur.shards, 0) + r.shards), notes: { ...(isObj(cur.notes) ? cur.notes : {}), ...r.notes } };
+      }
     }
   } catch { return { ok: false, code: 'migrate', error: 'Save could not be upgraded.' }; }
   return { ok: true, save: sanitize(cur) };

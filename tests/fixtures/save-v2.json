@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "createdAt": 1760000000000,
+  "updatedAt": 1760100000000,
+  "gold": 4210,
+  "shards": 3,
+  "stats": {
+    "runs": 61,
+    "wins": 22,
+    "kills": 90210,
+    "bestTime": 900,
+    "totalPlayTime": 52000,
+    "bestLevel": 50,
+    "totalGold": 61000,
+    "killsByEnemy": { "wolf": 21000, "crow": 9000, "root_crawler": 3100 },
+    "bossKills": { "elder_treant": 5 },
+    "chapters": { "cursed_forest": { "runs": 61, "clears": 22, "bestTime": 900 } },
+    "evolved": { "phantom_stampede": 5, "howling_legion": 6, "sanctum_halo": 4, "dive_bombers": 2 },
+    "weaponsUsed": { "ghost_wolves": 61, "holy_orbit": 50 },
+    "charsUsed": { "wren": 40, "elias": 21 }
+  },
+  "unlocks": {},
+  "tree": {
+    "sp_reroll1": 1, "sp_ban1": 1, "sp_reroll2": 1, "sp_cd1": 1, "sp_cd2": 1, "sp_cd3": 1, "sp_cd4": 1,
+    "su_bond": 2, "su_call": 1, "su_pot": 1, "su_key": 1, "wf_fang": 1,
+    "ma_focus": 2, "rv_talon": 1, "rv_wide": 2, "or_power": 1, "or_wide": 2, "li_vigor": 2, "li_last": 1,
+    "gt_phantom_stampede": 1, "gt_raven_flock": 1, "gt_spirit_bolts": 1, "gt_judgement_wheel": 1, "gt_dive_bombers": 1,
+    "tz_marsh": 1, "not_a_node": 4
+  },
+  "seen": { "sp_reroll1": true, "gt_raven_flock": true, "removed_node": true },
+  "settings": { "musicVol": 0.4, "sfxVol": 0.8, "screenShake": true, "reducedMotion": false, "damageNumbers": true, "quality": "high", "brightness": "auto", "touchMode": "auto", "stickSize": "medium" }
+}

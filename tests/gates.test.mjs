@@ -117,11 +117,11 @@ test('T15 forged gate node is dropped; save.unlocks and prototype keys never unl
   assert.equal(sim.unlockedEvolutions.size, 0);
 });
 
-test('T16 v2 save with owned nodes loads unchanged after G1a', () => {
+test('T16 owned nodes in the in-memory save survive sanitize unchanged (save v3)', () => {
   const owned = { su_key: 1, sp_reroll1: 1 };
   const clean = sanitizeTree(owned, defaultSave().stats, realDef, base);
   const out = sanitize(JSON.parse(JSON.stringify({ ...defaultSave(), gold: 5, tree: owned })));
-  assert.equal(out.version, 2);
+  assert.equal(out.version, 3);
   assert.deepEqual(out.tree, clean);
   assert.ok(Object.keys(clean).length >= 1);
 });

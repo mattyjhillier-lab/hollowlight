@@ -131,6 +131,30 @@ The full id-by-id table (every v1 id and every new id, its v2 place, effect, cos
 - New bounded save field `stats.recentRuns` (last 10 runs: kills by enemy, evolutions, boss kill, clear; numbers clamped, keys whitelisted) feeds the "about N more runs at your pace" hint (review finding 9); empty for old saves (hint hidden until 3 runs exist).
 - Tests (T1/T2): migration from a real v2 fixture (owned nodes + gates + seen), refund equals the frozen v1 prices incl. ranks and shards, gates kept, hostile values clamped, idempotency, import of a v2 save into v3 code, round trip export/import, `sanitizeTree` with `requiresAny`, `recentRuns` sanitising.
 
+### 7b. How saves migrate (BUILT in T2, 2026-10-18; code: src/save/schema.js, src/meta/migrations/, src/meta/treecodec.js)
+
+**Two version numbers.** `save.version` is the envelope (now 3). The skill tree has its own content version (`core.json` `version`, now 3; compact saves store it as `tree.v`). A step exists only when an EXISTING id changes effect, price, ranks or is retired. New clusters, heroes, chapters and ring nodes are additive: nobody owns the new ids, so they need no step (tested by adding a whole fixture cluster to a v3 save with no loss).
+
+**What a save looks like on disk (v3).** In memory the game still holds `tree = { id: rank }` and `seen = { id: true }` (the UI and sim read those). On disk (`serializeSave`, used by the autosave, the backup and Export) they are compact:
+
+```
+tree: { v: 3, o: { <fragment key>: "<base64url bitset by idx>" }, r: { <id>: rank } }   // r only for ranks above 1
+seen: { o: { <fragment key>: "<base64url bitset>" } }
+notes: { regrowth: { gold, shards, nodes } }      // one-time notice for the tree screen (T4 shows then clears it)
+stats.recentRuns: last 10 runs { t, k, e, b, c }  // feeds "about N more runs at your pace"
+```
+A fragment key is the fragment's short prefix (`core`, `wf`, `rv`, `bo`, `cl`, `or`, `wr`, `el`); bit `idx` of its bitset is the node with that permanent `idx`. 2000 nodes all owned = about 1.6 KB (tree) + 1.6 KB (seen).
+
+**Load order (parseSave).** size cap (200 KB) -> JSON.parse -> envelope version check (newer than the game = refuse, code `future`) -> envelope migrations in order (1 -> 2 resets the placeholder tree; 2 -> 3 is the Regrowth) -> if the save is v3 and its `tree.v` is below the data's `core.version`, run the registered tree steps above it (`TREE_STEPS`, one frozen price table per step) -> `sanitize` (decode compact maps, then `sanitizeTree` as before: unknown ids, bad ranks, broken prerequisites, rivals and unmet unlock conditions are dropped).
+
+**The Regrowth (envelope 2 -> 3, tree step 3).** Runs once, before sanitising, only for saves with `version < 3`. For each id in the FROZEN v1 table (`src/meta/migrations/tree-v3.prices.js`, a deep-frozen copy of the 82 shipped prices with `maxRank`, `rankCost`, shards, a `p` flag for the 16 permanent gate nodes and a `t` flag for the 3 teasers): a permanent gate node stays owned at rank 1 and refunds nothing; every other owned node is cleared and refunded `sum over ranks 1..rank of max(10, round(gold x rankCost^(k-1) / 10) x 10)` gold and `shards x rank` shards, ranks clamped to the old `maxRank`; teasers and unknown ids are dropped. Gold and shards are clamped at 1e12. The table is never read from live data or from the save, so rescaling the live tree later can never change what was refunded. Idempotent: a second pass over its own output refunds nothing, and a version-3 save never enters it. A forged low `tree.v` in a v3 save is clamped up to 3, so it can never replay the refund. Importing an old v2 export into the new game refunds it again (harmless: it replaces the tree, and gold can never exceed what those nodes cost).
+
+**Gates are never dropped by the migration.** Gate nodes keep `requires: []`, so no new prerequisite can orphan them; a save that owns Talon Mark without the Raven heart keeps it (the sanitiser's existing unlock-condition recheck still applies to a gate whose condition the save's own stats no longer meet, as before).
+
+**Hostile input.** Compact maps never contribute ids: the decoder maps bit positions to ids from the compiled tree, ignores unknown fragment keys, bits above a fragment's last `idx`, non-string / non-base64url / over-long bitsets and ranks without a set bit, clamps ranks to `maxRank`, and caps the number of keys it looks at (4096). Every other new field is whitelisted and clamped (`notes`, `stats.recentRuns`).
+
+**Adding content later.** Add a fragment file (see Appendix C); if you change the effect, price or rank count of an owned id or retire one, bump `core.version`, add `src/meta/migrations/tree-vN.js` with its own frozen price table, register it in `TREE_STEPS`, add a fixture and the tests listed in C.8.
+
 ## 8. Power budget (soft cap, must stay inside the ceiling)
 
 Weights and caps from progression-gates-v1 3.1 plus the Status category from evolutions-second-review 5.1. Exclusive pairs counted once (the larger side). Generated by tables.mjs:
