@@ -102,6 +102,36 @@ export function decodeTree(c, def) {
   return { tree, v };
 }
 
+// RAW decode for migration steps: maps bits through the fragment table INCLUDING retired (tombstoned) and not-yet-live ids, and
+// bounds ranks only by the schema maximum, so a step can refund a node the current data no longer has or whose maxRank was cut.
+// The result is handed to a step and then to sanitize(), which drops everything the current tree does not own. Ids still come
+// only from the compiled fragment table, never from the input.
+export const RAW_MAX_RANK = 10;
+export function decodeTreeRaw(c, def) {
+  const tree = {};
+  if (!isObj(c) || !def || !def.frags) return { tree, v: null };
+  const v = Number.isInteger(c.v) ? c.v : null;
+  const known = new Set();
+  if (isObj(c.o)) {
+    let n = 0;
+    for (const key of Object.keys(c.o)) {
+      if (++n > MAX_KEYS) break;
+      if (!own(def.frags, key)) continue;
+      unpackFrag(def.frags[key], c.o[key], (id) => { tree[id] = 1; known.add(id); });
+    }
+  }
+  if (isObj(c.r)) {
+    let n = 0;
+    for (const id of Object.keys(c.r)) {
+      if (++n > MAX_KEYS) break;
+      if (!known.has(id)) continue;
+      const x = c.r[id];
+      if (fin(x)) tree[id] = Math.min(RAW_MAX_RANK, Math.max(1, Math.floor(x)));
+    }
+  }
+  return { tree, v };
+}
+
 export function encodeSeen(seen, def) {
   const o = {};
   if (isObj(seen) && def && def.frags) {

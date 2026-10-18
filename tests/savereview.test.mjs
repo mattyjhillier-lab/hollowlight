@@ -223,7 +223,7 @@ T('R10 a retired id\'s (fragment, idx) can never be given to a new node', () => 
   const c = core(fs);
   const i = c.nodes.findIndex((n) => n.id === 'sp_cd4');
   c.nodes.splice(i, 1, { ...clone(c.nodes[i]), id: 'sp_echo', name: 'Echo', desc: 'reuses a retired slot', effects: [{ mod: 'abilityCd', pct: -3 }] });
-  c.retired.push('sp_cd4');
+  c.retired.push({ id: 'sp_cd4', frag: 'core', idx: c.nodes[i].idx });
   assert.throws(() => liveOf(fs), /idx|retired/, 'compose must reject reuse of a retired (frag, idx), else old saves own the new node for free');
 });
 
@@ -231,8 +231,9 @@ T('R11 a migration step can see a node that was retired (so it can refund it)', 
   const disk = serializeSave(fullSave());
   const fs = files();
   const c = core(fs);
+  const gone = c.nodes.find((n) => n.id === 'sp_cd4');
   c.nodes = c.nodes.filter((n) => n.id !== 'sp_cd4');
-  c.retired.push('sp_cd4');
+  c.retired.push({ id: 'sp_cd4', frag: 'core', idx: gone.idx });
   c.version = 4;
   const def = liveOf(fs);
   let seenByStep = null;

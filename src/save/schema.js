@@ -1,6 +1,6 @@
 // Save schema, migrations and strict validation. Pure JS, no DOM. All input is untrusted.
 import { sanitizeTree, sanitizeSeen } from '../meta/tree.js';
-import { encodeTree, decodeTree, encodeSeen, decodeSeen, isCompact } from '../meta/treecodec.js';
+import { encodeTree, decodeTree, decodeTreeRaw, encodeSeen, decodeSeen, isCompact } from '../meta/treecodec.js';
 import { OLD_TREE_VERSION, runTreeSteps } from '../meta/migrations/index.js';
 import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 
@@ -233,7 +233,7 @@ export function parseSave(text) {
     }
     // v3+ saves carry the tree version they were written with; older content versions run their steps now (before sanitising).
     if (v >= 3 && TREE && isCompact(cur.tree)) {
-      const dec = decodeTree(cur.tree, TREE);
+      const dec = decodeTreeRaw(cur.tree, TREE); // raw: retired ids and full ranks reach the steps so refunds are exact
       if (dec.v !== null && dec.v > TREE.treeVersion) return { ok: false, code: 'future', error: 'This save is from a newer version of the game. Update the game to use it.' };
       const from = dec.v === null ? TREE.treeVersion : Math.max(3, dec.v); // a forged low version can never replay the Regrowth refund
       if (from < TREE.treeVersion) {

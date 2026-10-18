@@ -373,8 +373,21 @@ export function compileTree(raw, data) {
     const f = (frags.legacy = { key: 'legacy', max: -1, ids: [] });
     for (const id of list) { f.ids[++f.max] = id; }
   }
+  // Tombstones (retired nodes) keep their (fragment, idx) slot and their id in frags so a migration step can still see them (never in nodes/list).
+  const retiredIds = Object.create(null);
+  if (Array.isArray(raw.retired)) {
+    for (const t of raw.retired) {
+      if (!isObj(t) || typeof t.id !== 'string' || typeof t.frag !== 'string' || !Number.isInteger(t.idx) || t.idx < 0) fail('bad retired tombstone');
+      const f = frags[t.frag] || (frags[t.frag] = { key: t.frag, max: -1, ids: [] });
+      if (f.ids[t.idx] !== undefined) fail(`${t.id}: tombstone idx ${t.idx} already used by ${f.ids[t.idx]} in ${t.frag}`);
+      if (own(nodes, t.id) || own(pending, t.id)) fail(`${t.id}: a retired id is also a live node`);
+      f.ids[t.idx] = t.id;
+      retiredIds[t.id] = true;
+      if (t.idx > f.max) f.max = t.idx;
+    }
+  }
   const treeVersion = Number.isInteger(raw.treeVersion) && raw.treeVersion >= 3 && raw.treeVersion <= 99 ? raw.treeVersion : 3; // content version the compact save is written with (migrations/index.js)
-  return { version: 1, treeVersion, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags };
+  return { version: 1, treeVersion, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags, retiredIds };
 }
 
 function checkEffect(e, data, where) {

@@ -75,12 +75,22 @@ test('T1 no live node uses a v2-only effect kind (they stay inert until T3)', ()
 test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbered', () => {
   const snap = fx('tree-ids.json');
   const now = Object.fromEntries(real.info.nodes.map((n) => [n.id, [n.frag, n.idx]]));
-  const retired = new Set(real.info.core.retired);
+  const retired = new Set(real.info.core.retired.map((t) => t.id));
+  const tomb = Object.fromEntries(real.info.core.retired.map((t) => [t.id, [t.frag, t.idx]]));
+  // every [frag, idx] slot ever shipped (live or retired) is unique and permanent: a retired id keeps its slot as a tombstone
+  const slots = new Map();
   for (const [id, v] of Object.entries(snap)) {
-    if (retired.has(id)) { assert.equal(now[id], undefined, `${id} is retired and must not return`); continue; }
+    const k = v.join(':');
+    assert.ok(!slots.has(k), `snapshot slot ${k} is used by both ${slots.get(k)} and ${id}`);
+    slots.set(k, id);
+  }
+  for (const [id, v] of Object.entries(snap)) {
+    if (retired.has(id)) { assert.equal(now[id], undefined, `${id} is retired and must not return`); assert.deepEqual(tomb[id], v, `${id} is retired: its tombstone must keep [fragment, idx] ${v}`); continue; }
     assert.deepEqual(now[id], v, `${id} must keep its fragment and idx (a node was renamed, moved or removed: retire it in core.retired and add a migration step)`);
   }
   for (const id of Object.keys(now)) assert.ok(snap[id], `${id} is new: add it to tests/fixtures/tree-ids.json deliberately`);
+  for (const [id, v] of Object.entries(now)) assert.equal(slots.get(v.join(':')) ?? id, id, `${id} sits on the (frag, idx) slot of ${slots.get(v.join(':'))}: a retired or shipped idx is never reassigned`);
+  for (const [id, v] of Object.entries(tomb)) assert.equal(slots.get(v.join(':')), id, `tombstone ${id} must match its snapshot slot`);
 });
 
 test('T1 fragment save keys are short, unique and idx are stable small integers', () => {
@@ -206,7 +216,7 @@ test('T1 validator: ids, namespaces, retired, idx, fields', () => {
   bad((fs) => { get(fs, 'core.json').nodes[0].id = 'Bad-Id'; }, /bad node id/);
   bad((fs) => { get(fs, 'core.json').nodes[0].id = '__proto__'; }, /bad node id/);
   bad((fs) => { get(fs, 'core.json').nodes[0].id = 'hub'; }, /bad node id/);
-  bad((fs) => { get(fs, 'core.json').retired.push('sp_reroll1'); }, /retired list and can never be reused/);
+  bad((fs) => { get(fs, 'core.json').retired.push({ id: 'sp_reroll1', frag: 'core', idx: 900 }); }, /retired list and can never be reused/);
   bad((fs) => { get(fs, 'core.json').nodes[1].id = get(fs, 'core.json').nodes[0].id; }, /duplicate id/);
   bad((fs) => { get(fs, 'core.json').nodes[1].idx = get(fs, 'core.json').nodes[0].idx; }, /idx \d+ already used inside core/);
   bad((fs) => { get(fs, 'core.json').nodes[0].idx = -1; }, /idx must be an integer/);
@@ -352,7 +362,7 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   assert.throws(() => compose(bad1.fs, bad1.d), /outline 2 .* must be kind/);
   const bad2 = wispsFiles(); get(bad2.fs, 'clusters/lantern_wisps.json').slot = 'sky1';
   assert.throws(() => compose(bad2.fs, bad2.d), /already used by/);
-  const bad3 = wispsFiles(); get(bad3.fs, 'core.json').retired.push('lw_wick');
+  const bad3 = wispsFiles(); get(bad3.fs, 'core.json').retired.push({ id: 'lw_wick', frag: 'core', idx: 901 });
   assert.throws(() => compose(bad3.fs, bad3.d), /retired/);
 });
 

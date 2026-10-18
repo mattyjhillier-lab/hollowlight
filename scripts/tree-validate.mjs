@@ -38,7 +38,7 @@ if (v2) {
 try {
   const snap = JSON.parse(readFileSync(join(root, 'tests', 'fixtures', 'tree-ids.json'), 'utf8'));
   const now = Object.fromEntries(composed.info.nodes.map((n) => [n.id, [n.frag, n.idx]]));
-  const retired = new Set(composed.info.core.retired);
+  const retired = new Set(composed.info.core.retired.map((t) => t.id));
   let n = 0;
   for (const [id, v] of Object.entries(snap)) if (!retired.has(id) && JSON.stringify(now[id]) !== JSON.stringify(v)) { bad(`id ${id} moved or vanished`); n++; }
   for (const id of Object.keys(now)) if (!snap[id]) { bad(`id ${id} is not in tests/fixtures/tree-ids.json (add it deliberately)`); n++; }

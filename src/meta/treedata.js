@@ -115,7 +115,10 @@ function checkCore(c) {
     ensure(PREFIX_RE.test(p) && !BAD_KEYS.has(p) && p !== 'core', `namespace prefix "${p}"`);
     ensure(isObj(ns) && NS_KINDS.includes(ns.kind) && Array.isArray(ns.owners) && ns.owners.length >= 1 && ns.owners.length <= 16 && ns.owners.every((o) => o === '*' || o === 'core' || ID_RE.test(o)), `namespace ${p}`);
   }
-  for (const k of ['legacyIds', 'retired']) ensure(Array.isArray(c[k]) && c[k].length <= 5000 && c[k].every((i) => typeof i === 'string' && ID_RE.test(i)), `core.json: ${k}`);
+  ensure(Array.isArray(c.legacyIds) && c.legacyIds.length <= 5000 && c.legacyIds.every((i) => typeof i === 'string' && ID_RE.test(i)), 'core.json: legacyIds');
+  // TOMBSTONES: a removed node keeps its id AND its (fragment, idx) forever. Neither can ever be reused, and migration steps still see the id.
+  ensure(Array.isArray(c.retired) && c.retired.length <= 5000, 'core.json: retired');
+  for (const t of c.retired) ensure(isObj(t) && Object.keys(t).length === 3 && typeof t.id === 'string' && ID_RE.test(t.id) && !BAD_KEYS.has(t.id) && typeof t.frag === 'string' && PREFIX_RE.test(t.frag) && !BAD_KEYS.has(t.frag) && Number.isInteger(t.idx) && t.idx >= 0 && t.idx <= 65535, 'core.json: retired entries are tombstones {id, frag, idx}');
   const b = c.budget;
   ensure(isObj(b) && isObj(b.base) && isObj(b.perChapter) && isObj(b.categories) && isObj(b.sustain) && isObj(b.utility) && isObj(b.perWeapon), 'core.json: budget');
   for (const [k, v] of Object.entries({ ...b.base, ...b.perChapter, ...b.sustain, ...b.utility })) num(v, 0, 1e4, `budget.${k}`);
@@ -158,7 +161,9 @@ export function composeTree(files, data = null) {
   for (const [id, e] of Object.entries(emblems)) checkEmblem(e, `emblems/${id}`);
   const ns = core.namespaces;
   const legacy = new Set(core.legacyIds);
-  const retired = new Set(core.retired);
+  const retired = new Set(core.retired.map((t) => t.id));
+  const tombIdx = new Set(core.retired.map((t) => `${t.frag}:${t.idx}`));
+  ensure(tombIdx.size === core.retired.length && retired.size === core.retired.length, 'core.json: duplicate tombstone');
 
   // fragment save keys = prefixes (short keys keep a 2000-node save small); unique across fragments
   const fragKeys = new Map([['core', 'core']]);
@@ -195,6 +200,7 @@ export function composeTree(files, data = null) {
       ensure(okKind, `${w}: prefix "${p}" (${n.kind}) cannot be used inside a ${ctx.ownerKind} fragment`);
     }
     ensure(Number.isInteger(spec.idx) && spec.idx >= 0 && spec.idx <= 65535, `${w}: idx must be an integer 0..65535`);
+    ensure(!tombIdx.has(`${ctx.frag}:${spec.idx}`), `${w}: idx ${spec.idx} of ${ctx.frag} belongs to a retired node and can never be reused`);
     const used = idxUsed.get(ctx.frag) || new Set();
     ensure(!used.has(spec.idx), `${w}: idx ${spec.idx} already used inside ${ctx.frag}`);
     used.add(spec.idx);
@@ -371,6 +377,7 @@ export function composeTree(files, data = null) {
   const live = {
     version: 1,
     treeVersion: core.version,
+    retired: core.retired,
     layout: core.layout,
     branches: core.branches,
     nodes: [
@@ -430,7 +437,7 @@ export function composeTree(files, data = null) {
     if (m.requiresAny && !o.requiresAny) o.requiresAny = m.requiresAny;
     return o;
   });
-  const v2 = { version: 2, treeVersion: core.version, layout: { ...core.layout, minGap: core.layout.v2MinGap ?? core.layout.minGap }, branches: core.branches, nodes: v2Nodes };
+  const v2 = { version: 2, treeVersion: core.version, retired: core.retired, layout: { ...core.layout, minGap: core.layout.v2MinGap ?? core.layout.minGap }, branches: core.branches, nodes: v2Nodes };
 
   return {
     live, v2,
