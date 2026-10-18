@@ -568,7 +568,8 @@ export function sanitizeTree(rawTree, stats, def, data, refund = null) {
     const rank = clampInt(rawTree[id], 0, n.maxRank);
     if (rank < 1 || n.teaser) continue;
     if (n.excludes.some((r) => own(clean, r))) continue;
-    if (n.unlock && !conditionProgress(n.unlock, stats, def, data).done) continue;
+    // Unlock conditions gate BUYING (canBuy / nodeStatus), not owning: a node already paid for is never dropped here when its condition
+    // later gets stricter or a stat regresses (gates stay permanent; the cost was paid). Graph rules below still apply.
     const missing = n.requires.filter((r) => !own(clean, r));
     if (n.requiresAny && !n.requiresAny.some((r) => own(clean, r))) missing.push(...n.requiresAny); // at least one alternative must be owned
     if (missing.length) {

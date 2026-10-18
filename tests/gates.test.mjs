@@ -106,15 +106,17 @@ test('T10 bad grant evo / weapon / ranks are ignored (no crash)', () => {
   assert.doesNotThrow(() => s.result());
 });
 
-test('T15 forged gate node is dropped; save.unlocks and prototype keys never unlock anything', () => {
+test('T15 an owned gate is kept even if its condition is unmet (M1); save.unlocks and prototype keys never unlock anything', () => {
   const d = comp([gate('g_ps', { unlock: { t: 'evolveWeapon', id: 'ghost_wolves', n: 1 } })]);
-  assert.deepEqual(sanitizeTree({ g_ps: 1 }, {}, d, gd), {}, 'unmet condition');
+  assert.deepEqual(sanitizeTree({ g_ps: 1 }, {}, d, gd), { g_ps: 1 }, 'unmet condition: kept (conditions gate buying only)');
   assert.deepEqual(sanitizeTree({ g_ps: 1 }, { evolved: { phantom_stampede: 1 } }, d, gd), { g_ps: 1 }, 'met condition');
   assert.deepEqual(sanitizeTree(JSON.parse('{"__proto__":{"g_ps":1},"constructor":1}'), {}, d, gd), {});
   const forged = sanitize({ ...defaultSave(), unlocks: { phantom_stampede: true, raven_flock: true }, tree: { g_ps: 1 } });
-  assert.deepEqual(aggregateMods(sanitizeTree(forged.tree, forged.stats, d, gd), d, gd).unlocks.evolutions, [], 'save.unlocks is not a gate source');
-  const sim = new Sim({ data: gd, seed: 1, tree: aggregateMods(sanitizeTree(forged.tree, forged.stats, d, gd), d, gd) });
+  const noGate = sanitize({ ...defaultSave(), unlocks: { phantom_stampede: true, raven_flock: true } });
+  assert.deepEqual(aggregateMods(sanitizeTree(noGate.tree, noGate.stats, d, gd), d, gd).unlocks.evolutions, [], 'save.unlocks is not a gate source');
+  const sim = new Sim({ data: gd, seed: 1, tree: aggregateMods(sanitizeTree(noGate.tree, noGate.stats, d, gd), d, gd) });
   assert.equal(sim.unlockedEvolutions.size, 0);
+  void forged;
 });
 
 test('T16 owned nodes in the in-memory save survive sanitize unchanged (save v3)', () => {

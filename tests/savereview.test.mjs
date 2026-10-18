@@ -21,8 +21,6 @@ export const KNOWN_FAILING = [
   'R10 a retired id\'s (fragment, idx) can never be given to a new node',
   'R11 a migration step can see a node that was retired (so it can refund it)',
   'R12 a migration step can see the full owned rank of a node whose maxRank was cut',
-  'R13 a bought node whose unlock condition later gets stricter is kept or refunded, never silently lost',
-  'R14 a permanent gate is never dropped because its unlock condition changed',
   'R15 tree budget checks the sustain ceiling on EVERY side of an exclusive pair',
 ];
 const T = (name, fn) => test(name, KNOWN_FAILING.includes(name) ? { todo: 'open review finding (KNOWN_FAILING)' } : {}, fn);

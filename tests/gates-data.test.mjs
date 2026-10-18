@@ -104,11 +104,10 @@ test('owning a weapon gate node adds that weapon card to the pool; its evolution
   assert.deepEqual(goldCards(sim.cardCtx), [], 'murder_storm still needs its own gate node');
 });
 
-test('T15 forged save: gate nodes whose condition is unmet are dropped; met ones kept; junk keys ignored', () => {
+test('T15 owned gate nodes are kept whatever the stats say (M1: conditions gate BUYING, never owning); junk keys ignored', () => {
   const forged = Object.fromEntries(gateNodes.map((i) => [i, 1]));
-  assert.deepEqual(sanitizeTree(forged, defaultSave().stats, def, data), {});
   const stats = { ...defaultSave().stats, evolved: { howling_legion: 1, sanctum_halo: 1 } };
-  assert.deepEqual(Object.keys(sanitizeTree(forged, stats, def, data)).sort(), ['gt_judgement_wheel', 'gt_phantom_stampede']);
+  assert.deepEqual(Object.keys(sanitizeTree(forged, defaultSave().stats, def, data)).sort(), Object.keys(sanitizeTree(forged, stats, def, data)).sort());
   assert.deepEqual(sanitizeTree(JSON.parse('{"__proto__":{"gt_raven_flock":1},"gt_nope":1}'), stats, def, data), {});
 });
 
