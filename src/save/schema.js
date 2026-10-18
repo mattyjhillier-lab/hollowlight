@@ -19,6 +19,7 @@ const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 let TREE = null;
 let TREE_DATA = null;
 export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
+export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
   return { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium' };

@@ -1,9 +1,11 @@
 // Save manager: localStorage with in-memory fallback, rolling backup, debounced writes.
-import { defaultSave, parseSave, sanitize, serializeSave, RECENT_RUNS } from './schema.js';
+import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS } from './schema.js';
 import { metConditions } from '../meta/tree.js';
 
 export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
+export const DAMAGED_KEY = 'hollowlight:save:damaged'; // one slot: the last damaged main save, never written by saveNow
+export const NEWER_NOTE = 'This save is from a newer version of Hollowlight: it is kept safe and untouched. Update the game to continue. Nothing is saved in this session; Settings > Export save still gives you the file.';
 const DEBOUNCE_MS = 400;
 
 function defaultStorage() {
@@ -17,7 +19,10 @@ export class SaveStore {
     this.timer = null;
     this.persistAsked = false;
     this.data = defaultSave();
-    this.loadNote = null; // friendly message if recovery happened
+    this.loadNote = null; // friendly message if recovery happened (shown once on the title screen)
+    this.readOnly = false; // true when the stored save is from a NEWER version: it is never written over
+    this.keptRaw = null; // raw text export returns instead of the in-memory save (newer-version save, or a quarantined damaged one)
+    this.stamp = 0; // updatedAt of the last copy this tab read or wrote: a newer stored copy means another tab saved
   }
 
   _get(key) { try { return this.storage ? this.storage.getItem(key) : null; } catch { this.persistent = false; return null; } }
@@ -27,29 +32,50 @@ export class SaveStore {
     let res = null;
     const main = this._get(SAVE_KEY);
     const bak = this._get(BACKUP_KEY);
-    if (main !== null) {
-      res = parseSave(main);
-      if (!res.ok) {
-        const r2 = bak !== null ? parseSave(bak) : null;
-        if (r2 && r2.ok) { res = r2; this.loadNote = 'Save was damaged; restored from backup.'; }
-        else { res = null; this.loadNote = 'Save was damaged; started fresh.'; }
-      }
-    } else if (bak !== null) {
-      const r2 = parseSave(bak);
-      if (r2.ok) res = r2;
-    }
+    const rm = main !== null ? parseSave(main) : null;
+    const rb = bak !== null ? parseSave(bak) : null;
+    if (rm && rm.code === 'future') this._lock(main);
+    else if (rm && !rm.ok) {
+      this._quarantine(main);
+      if (rb && rb.code === 'future') this._lock(bak);
+      else if (rb && rb.ok) { res = rb; this.loadNote = 'Save was damaged; restored from backup. A copy of the damaged file was kept in this browser.'; }
+      else { this.loadNote = 'Save was damaged; started fresh. A copy of the damaged file was kept in this browser: Settings > Export save gives it to you.'; this.keptRaw = main; }
+    } else if (rm) res = rm;
+    else if (rb && rb.code === 'future') this._lock(bak);
+    else if (rb && rb.ok) res = rb;
     this.data = res ? res.save : defaultSave();
+    this.stamp = this.data.updatedAt;
     return this.data;
   }
 
+  // A save from a newer build is read-only for the whole session: kept byte for byte, never overwritten.
+  _lock(raw) {
+    this.readOnly = true;
+    this.keptRaw = raw;
+    this.loadNote = NEWER_NOTE;
+  }
+
+  _quarantine(text) { if (text !== this._get(DAMAGED_KEY)) this._set(DAMAGED_KEY, text); }
+
   // Immediate write; keeps the previous good copy as the backup.
-  saveNow() {
+  // Refuses (returns false, writes nothing) when the stored save is from a newer version, when another tab saved newer
+  // progress meanwhile (this tab adopts it instead of overwriting), or when the tree data is not registered yet.
+  saveNow(force = false) {
     if (this.timer) { clearTimeout(this.timer); this.timer = null; }
-    this.data.updatedAt = Date.now();
-    const text = JSON.stringify(serializeSave(this.data));
+    if (this.readOnly || !treeReady()) return false;
     const prev = this._get(SAVE_KEY);
-    if (prev !== null && parseSave(prev).ok) this._set(BACKUP_KEY, prev);
+    const pr = prev !== null ? parseSave(prev) : null;
+    if (pr && pr.code === 'future') { this._lock(prev); return false; }
+    if (!force && pr && pr.ok && pr.save.updatedAt > this.stamp) {
+      this.data = pr.save; this.stamp = pr.save.updatedAt;
+      this.loadNote = 'Another tab saved newer progress; this tab loaded it instead of overwriting it.';
+      return false;
+    }
+    this.data.updatedAt = Math.max(Date.now(), this.stamp + 1);
+    const text = JSON.stringify(serializeSave(this.data));
+    if (pr && pr.ok) this._set(BACKUP_KEY, prev);
     const ok = this._set(SAVE_KEY, text);
+    if (ok) this.stamp = this.data.updatedAt;
     if (ok && !this.persistAsked) {
       this.persistAsked = true;
       try {
@@ -122,22 +148,27 @@ export class SaveStore {
     this.data = sanitize(this.data);
     const after = ctx && ctx.def ? metConditions(ctx.def, this.data.stats, ctx.data) : new Set();
     const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);
+    this.keptRaw = this.readOnly ? this.keptRaw : null;
     this.saveNow();
     return { gold: this.data.gold, shards: this.data.shards, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet };
   }
 
-  exportText() { return JSON.stringify(serializeSave(this.data), null, 2); }
+  exportText() { if (this.keptRaw !== null) return this.keptRaw; return JSON.stringify(serializeSave(this.data), null, 2); }
 
   // Validate imported text without applying it.
   checkImport(text) { return parseSave(text); }
 
   applyImport(save) {
+    if (this.readOnly) return false;
     this.data = sanitize(save);
-    this.saveNow();
+    this.keptRaw = null;
+    return this.saveNow(true);
   }
 
   reset() {
+    if (this.readOnly) return false;
     this.data = defaultSave();
-    this.saveNow();
+    this.keptRaw = null;
+    return this.saveNow(true);
   }
 }

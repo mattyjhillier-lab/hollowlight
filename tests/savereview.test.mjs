@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { data, treeDef } from './helpers.mjs';
 import { setTreeDef, parseSave, sanitize, serializeSave, defaultSave, MAX_SAVE_BYTES } from '../src/save/schema.js';
-import { SaveStore, SAVE_KEY, BACKUP_KEY } from '../src/save/store.js';
+import { SaveStore, SAVE_KEY, BACKUP_KEY, DAMAGED_KEY } from '../src/save/store.js';
 import { compileTree, presetTree, sanitizeTree, costFor } from '../src/meta/tree.js';
 import { composeTree } from '../src/meta/treedata.js';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
@@ -18,8 +18,6 @@ import { rng, v1RandomBuys, BIG_STATS, isGateV1, memStorage, ROOT } from '../scr
 
 // ---- open findings (see docs/design/save-v3-review.md); remove a name here when its fix lands
 export const KNOWN_FAILING = [
-  'R08 a save from a NEWER version is never overwritten (no silent wipe on downgrade / rollback)',
-  'R09 a damaged save with no usable backup is quarantined, not overwritten',
   'R10 a retired id\'s (fragment, idx) can never be given to a new node',
   'R11 a migration step can see a node that was retired (so it can refund it)',
   'R12 a migration step can see the full owned rank of a node whose maxRank was cut',
@@ -288,4 +286,68 @@ T('R15 tree budget checks the sustain ceiling on EVERY side of an exclusive pair
   const c = composeTree(fs, data);
   const b = budgetOf(compileTree(c.v2, data), c.info.core.budget, Object.keys(c.info.clusters).length);
   assert.match(b.violations.join('|'), /sustain/, 'a player who picks the Lantern side is over the sustain ceiling');
+});
+
+// ================================================================ FIXES: H1 / M2 / L7 / L8 extra coverage
+test('H1 newer-version save: read-only session, message, export gives the kept file, import/reset/settings never write', () => {
+  const mem = memStorage();
+  const v4 = JSON.stringify({ ...serializeSave(fullSave()), version: 4 });
+  mem.setItem(SAVE_KEY, v4); mem.setItem(BACKUP_KEY, v4);
+  const s = new SaveStore(mem); s.load();
+  assert.equal(s.readOnly, true);
+  assert.match(s.loadNote, /newer version of Hollowlight/);
+  assert.equal(s.saveNow(), false);
+  s.setSettings({ musicVol: 0.1 }); s.flush();
+  assert.equal(s.reset(), false);
+  assert.equal(s.applyImport(defaultSave()), false);
+  assert.equal(s.exportText(), v4, 'export still hands over the newer file');
+  assert.equal(mem.getItem(SAVE_KEY), v4); assert.equal(mem.getItem(BACKUP_KEY), v4);
+  // main damaged but backup newer: also locked, backup kept
+  const m2 = memStorage(); m2.setItem(SAVE_KEY, '{oops'); m2.setItem(BACKUP_KEY, v4);
+  const s2 = new SaveStore(m2); s2.load(); s2.saveNow();
+  assert.equal(s2.readOnly, true); assert.equal(m2.getItem(BACKUP_KEY), v4);
+  // forged newer tree version inside a v3 envelope is also locked
+  const disk = serializeSave(fullSave());
+  const tv = JSON.stringify({ ...disk, tree: { ...disk.tree, v: 99 } });
+  const m3 = memStorage(); m3.setItem(SAVE_KEY, tv);
+  const s3 = new SaveStore(m3); s3.load(); s3.saveNow();
+  assert.equal(s3.readOnly, true); assert.equal(m3.getItem(SAVE_KEY), tv);
+  // a newer-version write by another tab/build that lands mid-session is never overwritten either
+  const m4 = memStorage(); const s4 = new SaveStore(m4); s4.load(); s4.saveNow();
+  m4.setItem(SAVE_KEY, v4);
+  assert.equal(s4.saveNow(), false); assert.equal(m4.getItem(SAVE_KEY), v4); assert.equal(s4.readOnly, true);
+});
+
+test('M2 damaged save: copy kept under its own key (never overwritten by saves), note set, export returns it until real progress', () => {
+  const mem = memStorage();
+  const broken = JSON.stringify(serializeSave(fullSave())).slice(0, -7);
+  mem.setItem(SAVE_KEY, broken);
+  const s = new SaveStore(mem); s.load();
+  assert.equal(mem.getItem(DAMAGED_KEY), broken);
+  s.saveNow(); s.saveNow(); s.setSettings({ musicVol: 0.2 }); s.flush();
+  assert.equal(mem.getItem(DAMAGED_KEY), broken);
+  assert.equal(s.exportText(), broken);
+  assert.match(s.loadNote, /copy of the damaged file was kept/);
+});
+
+test('L7 never writes an empty tree when the tree data is not registered', () => {
+  const mem = memStorage();
+  const a = new SaveStore(mem); a.data = fullSave(); a.saveNow();
+  const good = mem.getItem(SAVE_KEY);
+  setTreeDef(null, null);
+  try { const b = new SaveStore(mem); b.data = defaultSave(); assert.equal(b.saveNow(), false); } finally { setTreeDef(treeDef, data); }
+  assert.equal(mem.getItem(SAVE_KEY), good);
+});
+
+test('L8 two tabs: the second tab refuses to overwrite a newer write and adopts it', () => {
+  const mem = memStorage();
+  const a = new SaveStore(mem); a.load();
+  const b = new SaveStore(mem); b.load();
+  a.data.gold = 500; assert.equal(a.saveNow(), true);
+  b.data.gold = 7;
+  assert.equal(b.saveNow(), false);
+  assert.equal(b.data.gold, 500, 'adopted the newer copy');
+  assert.match(b.loadNote, /Another tab/);
+  b.data.gold = 600; assert.equal(b.saveNow(), true, 'after adopting it can save again');
+  const c = new SaveStore(mem); c.load(); assert.equal(c.data.gold, 600);
 });
