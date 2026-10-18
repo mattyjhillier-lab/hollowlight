@@ -7,7 +7,7 @@ const SPEC_MAX = 300; // grant/bless spec length cap
 const ID_RE = /^[a-z0-9_]{1,32}$/;
 
 // Flags that default ON and are turned off with =0 (A/B perf switches). Only '0' and '1' are meaningful; other values keep the default.
-export const FLAGS_ON = ['trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums'];
+export const FLAGS_ON = ['trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums', 'husks'];
 // Flags that default OFF and are turned on with =1.
 export const FLAGS_OFF = ['god', 'debug', 'life'];
 export const KNOWN_KEYS = ['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'ground', 'bright', 'touch', 'meta', 'mem', 'style', 'specimen', 'kit', ...FLAGS_ON, ...FLAGS_OFF];

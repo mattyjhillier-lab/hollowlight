@@ -150,10 +150,17 @@ export class NightLayer {
       eyeAnim(c.time, e.id, c.hx - e.x, c.hy - e.y, spd, mvx, mvy, calm, ea);
       const a = Math.min(1, eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * ea.am * blinkMul(c.time, e.id, calm) + ea.ab);
       const size = d.halo * ea.sc;
-      for (let j = 0; j < d.pts.length; j++) {
-        const x = e.x + d.pts[j][0] * fl + ea.ox;
-        const y = e.y + d.pts[j][1] + ea.oy;
-        this.place(this.eyeImg(this.core, slot, 0xffffff, this.depth, 'eyen'), x, y, size, a);
+      // EN0: Husk frames carry per-frame socket anchors (relative to the feet, scaled with the instance jitter) so the eyes sit in the sockets
+      const art = c.art;
+      const af = art && i < 512 ? art.fi[i] : 255;
+      const pts = af !== 255 ? art.eyes[e.type][af] : d.pts;
+      const ks = af !== 255 ? art.sc[i] : 1;
+      const oy = af !== 255 ? art.foot[e.type] + art.dy[i] : 0;
+      for (let j = 0; j < pts.length; j++) {
+        const pj = pts[j];
+        const x = e.x + pj[0] * ks * fl + ea.ox;
+        const y = e.y + oy + pj[1] * ks + ea.oy;
+        this.place(this.eyeImg(this.core, slot, 0xffffff, this.depth, 'eyen'), x, y, pj.length > 2 ? size * pj[2] : size, a);
         slot++;
         if (ea.sl > 0 && ns < sc && j === 0) {
           let st = this.streak[ns];
@@ -187,16 +194,28 @@ export class NightLayer {
           if (e.x < c.vx0 || e.x > c.vx1 || e.y < c.vy0 || e.y > c.vy1) continue;
           const a = rimAlpha(arc.rimA, this.lit[i], d.rimK);
           if (a < 0.02) continue;
-          let pool = this.rims[d.rim];
-          if (!pool) pool = this.rims[d.rim] = { arr: [], n: 0 };
+          const art = c.art;
+          const af = art && i < 512 ? art.fi[i] : 255;
+          const rk = af !== 255 ? 'husk' : d.rim; // EN0: Husk rims are half-density outline frames in the chapter atlas (one per walk/tell frame)
+          let pool = this.rims[rk];
+          if (!pool) pool = this.rims[rk] = { arr: [], n: 0 };
           let im = pool.arr[pool.n];
           if (!im) {
-            im = this.scene.add.image(0, 0, d.rim).setBlendMode(ADD).setTint(RIM_TINT).setDepth(c.depthBase - 1);
-            im.setScale(this.scene.pools[e.type].inv);
+            im = af !== 255 ? this.scene.add.image(0, 0, art.atlas, art.rimName(e.type, af)) : this.scene.add.image(0, 0, d.rim);
+            im.setBlendMode(ADD).setTint(RIM_TINT).setDepth(c.depthBase - 1);
+            if (af === 255) im.setScale(this.scene.pools[e.type].inv);
+            im.rn = '';
             pool.arr[pool.n] = im;
           }
           pool.n++;
-          im.x = e.x; im.y = e.y; im.flipX = e.faceX < 0; im.alpha = a;
+          if (af !== 255) {
+            const rn = art.rimName(e.type, af);
+            if (im.rn !== rn) { im.rn = rn; im.setFrame(rn); }
+            const k = art.sc[i] * art.rimInv;
+            if (im.scaleX !== k) im.setScale(k);
+            im.x = e.x; im.y = e.y + art.foot[e.type] + art.dy[i];
+          } else { im.x = e.x; im.y = e.y; }
+          im.flipX = e.faceX < 0; im.alpha = a;
           if (!im.visible) im.visible = true;
           nr++;
         }

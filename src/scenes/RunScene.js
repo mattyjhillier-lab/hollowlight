@@ -36,6 +36,9 @@ import { airN, DAWN_CAPS, REF as DAWN_REF } from '../gfx/dawn.js';
 import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
+import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
+import { EnemyArt } from '../gfx/enemyrig.js'; // EN0-EN2 Husk animator + death beat (visual only)
+import { HUSK_TYPES } from '../gfx/husk/frames.js';
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -122,6 +125,7 @@ class SpritePool {
 
 const PROPS_OFF = { props: { live: 0, density: 1, sway: false }, ambient: { petals: 0 } };
 const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
+const mulTint = (c, k) => (k === 1 ? c : (Math.min(255, (c >> 16 & 255) * k) << 16) | (Math.min(255, (c >> 8 & 255) * k) << 8) | Math.min(255, (c & 255) * k)); // clamped per channel
 const dimTint = (c, k) => (((c >> 16 & 255) * k | 0) << 16) | (((c >> 8 & 255) * k | 0) << 8) | ((c & 255) * k | 0);
 
 export class RunScene extends Phaser.Scene {
@@ -200,7 +204,7 @@ export class RunScene extends Phaser.Scene {
     this.arc = makeArcOut(); // WL6a: current arc sample (ambient, Low tint, lantern radius, enemy tint/eye/rim values, dawn wash)
     this.arcKey = -1;
     this.nl = new NightLayer(this, D_VIG + 1); // WL6b: eyes / rims / boss eyes, above the vignette
-    this.nlc = { tier: 'med', calm: false, time: 0, hx: 0, hy: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT };
+    this.nlc = { tier: 'med', calm: false, time: 0, hx: 0, hy: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT, art: null };
     this.nlOn = false;
     this.teleG = this.add.graphics().setDepth(D_VIG + 3); // telegraphs (charge line, boss ring) sit above the vignette so the screen edge never hides a threat
     this.phone = false;
@@ -297,7 +301,15 @@ export class RunScene extends Phaser.Scene {
     this.scale.on('resize', () => this.fit());
 
     app.scene = this;
-    window.dispatchEvent(new Event('scene-ready'));
+    // EN0: the Husk atlas bakes in a few async slices; the title/auto-run waits for it (max 4 s, then the flat sprites are used until it lands)
+    this.enArt = new EnemyArt(this);
+    this.enArt.bake = HUSK_BAKE; // readout (tests / harness)
+    const ready = () => window.dispatchEvent(new Event('scene-ready'));
+    if (STYLE === 'a' && app.params.husks) {
+      const bake = bakeHuskAtlas(this).then((ok) => { this.enArt.enable(ok); });
+      if (app.params.auto) Promise.race([bake, new Promise((r) => setTimeout(r, 4000))]).then(ready); // dev/harness auto-runs start on the Husks
+      else ready(); // the title shows at once; the bake (~0.3-1 s) finishes long before anyone starts a run (flat sprites until then)
+    } else ready();
   }
 
   // Native-resolution rendering: the canvas is window size x DPR; zoom comes from the short side (zoomFor).
@@ -473,6 +485,7 @@ export class RunScene extends Phaser.Scene {
     this.playerImg.setVisible(false);
     this.heroOut.setVisible(false);
     for (const r of this.rigs) r.hide();
+    if (this.enArt) this.enArt.clear();
     this.hideAmbient();
     this.sway.clear();
     this.ribSet.reset(); this.ribLayer.clear();
@@ -874,6 +887,8 @@ export class RunScene extends Phaser.Scene {
     this.nlOn = nlOn;
 
     // drain hit/kill records into numbers + puffs + hit-stop
+    const art = this.enArt;
+    if (!art.on && HUSK_BAKE.ready) art.enable(true);
     const nh = sim.hitN;
     sim.hitN = 0;
     let nd = 0, top1 = 0, top2 = 0;
@@ -889,6 +904,12 @@ export class RunScene extends Phaser.Scene {
           this.stop(0.06);
         } else if (h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) {
           this.deathPuff(h.x, h.y);
+          if (art.on) { // EN1/EN2 death beat: mask pops off, the freed body sinks, a warm mote rises (the enemy's image is still in its pool this frame)
+            let ty = 'wolf', ent = pl.wolf.map.get(h.id);
+            if (!ent) { ty = 'crow'; ent = pl.crow.map.get(h.id); }
+            if (!ent) { ty = 'root_crawler'; ent = pl.root_crawler.map.get(h.id); }
+            if (ent && ent.img.aid === h.id) art.kill(ent.img, ty, this.quality.tier, this.swayPhone, this.reducedMotion(), D_LIT, 'glow', inv('glow'), ADD);
+          }
         }
         continue;
       }
@@ -968,11 +989,16 @@ export class RunScene extends Phaser.Scene {
     const coldCap = this.gbOn ? (caps.halos >= 160 ? 80 : 40) : 0;
     const life = this.life;
     let ei = -1;
+    const lowT = this.quality.tier === 'low';
+    art.update(Math.min(0.1, this.game.loop.delta / 1000));
     for (const e of sim.enemies) {
       ei++;
+      if (ei < 512) art.fi[ei] = 255;
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
+      const husk = art.on && HUSK_TYPES[e.type] !== undefined;
+      if (husk) art.apply(img, e, ei, sim.time, lowT);
       if (cold < coldCap) { // W3 cold enemy glow: only on ink-dark ground, soft, steady (no flicker); helps dark enemies separate from the ink
         const cc = life.sampleCorr(e.x, e.y) * (1 - Math.min(1, life.sample(e.x, e.y) * 1.5));
         if (cc > 0.25) { cold++; pl.haloC.get(e.id).setPosition(e.x, e.y + 2).setScale((e.boss ? 3 : 1.1) * pl.haloC.inv).setAlpha(Math.min(0.3, (cc - 0.2) * 0.45)); }
@@ -996,12 +1022,13 @@ export class RunScene extends Phaser.Scene {
       if (img.tq !== tq || (tq >= 200 && img.tv !== nl.ver)) {
         img.tq = tq;
         img.tv = nl.ver;
-        if (tq >= 200) img.setTint(nl.tab[tq - 200]);
+        const jv = husk ? img.jv : 1; // EN1/EN2: per-instance body value jitter so a pack is not clones (visual only, from the id)
+        if (tq >= 200) img.setTint(img.lastTint = mulTint(nl.tab[tq - 200], jv));
         else if (tq === 100) img.setTintFill(0xffffff);
         else if (tq === 102) img.setTint(ROLE.markTint);
         else if (tq === 101) img.setTint(ROLE.bleedTint); // blood red (Matt 2026-10-16), shared with bleed numbers and drips
-        else if (tq === 0) img.clearTint();
-        else { const v = Math.min(255, tq * 16 - 1); img.setTint((v << 16) | (v << 8) | v); }
+        else if (tq === 0) { if (jv === 1) img.clearTint(); else img.setTint(img.lastTint = mulTint(0xffffff, jv)); }
+        else { const v = Math.min(255, tq * 16 - 1); img.setTint(img.lastTint = mulTint((v << 16) | (v << 8) | v, jv)); }
       }
       if (lit && e.boss) lm.add(e.x, e.y - 10, app.params.arc ? bossLightRadius(this.arc.y) : 90, ROLE.bossEye, 0.8);
       // bleed readout (visual only; reads the sim's running bleedTot): ~2 small pale-blue numbers a second per bleeding enemy
@@ -1084,7 +1111,7 @@ export class RunScene extends Phaser.Scene {
     if (nlOn) {
       const nc = this.nlc;
       nc.tier = this.quality.tier; nc.calm = this.reducedMotion(); nc.time = sim.time; nc.hx = p.x; nc.hy = p.y;
-      nc.vx0 = vx0; nc.vy0 = vy0; nc.vx1 = vx1; nc.vy1 = vy1;
+      nc.vx0 = vx0; nc.vy0 = vy0; nc.vx1 = vx1; nc.vy1 = vy1; nc.art = art.on ? art : null;
       nl.draw(sim, nc);
     }
 
