@@ -69,6 +69,12 @@ export class Sim {
       evoLuck: T.evoLuck ?? 1,
       rush: T.rush || null, // { pct, secs }: summons surge on level-up
     };
+      // Status power nodes (T3): potency multipliers on the existing Rend / Burn paths, extra Mark seconds, Rally and Candle Wheel tuning. 1 / 0 when absent.
+      bleedMul: 1 + (T.status?.bleed || 0) / 100,
+      burnMul: 1 + (T.status?.burn || 0) / 100,
+      markAdd: T.status?.mark || 0,
+      rallyAdd: T.ability?.rallySecs || 0,
+      wheelMul: 1 + (T.ability?.wheel || 0) / 100,
     this.reviveLeft = this.tfx.revive > 0 ? 1 : 0;
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
@@ -80,6 +86,8 @@ export class Sim {
     }
     this.baseMaxHp = this.player.maxHp;
     // Blessings (run-only). Validated here so absent/tampered data fails closed to "none".
+    // The tree's own multiplier for each Blessing effect: Blessings are clamped so tree x Blessing stays under the combined cap (blessings.js).
+    this.treeMul = { damage: this.mods.damage, maxHp: T.player?.maxHp ?? 1, speed: this.mods.speed, pickup: this.mods.pickup, gold: this.mods.gold };
     const bdef = validateBlessings(data.blessings);
     this.blessDef = blessingCount(bdef) ? bdef : null;
     this.blessRanks = Object.create(null);
@@ -151,7 +159,7 @@ export class Sim {
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).
@@ -162,7 +170,7 @@ export class Sim {
   }
 
   // Read-time clamped Blessing multipliers (separate from this.mods, which stay untouched).
-  get bless() { return blessTotals(this.blessDef, this.blessRanks, this._bless); }
+  get bless() { return blessTotals(this.blessDef, this.blessRanks, this._bless, this.treeMul); }
 
   dmgMult(w) {
     let m = this.mods.damage;
@@ -212,7 +220,7 @@ export class Sim {
   // Apply Mark to a foe (owner = the weapon currently acting). Refresh only: no stacking, no stronger version.
   mark(e) {
     if (e.dead) return;
-    e.markT = MARK_TIME;
+    e.markT = MARK_TIME + this.tfx.markAdd; // Raven's Eye adds uptime only; the amp stays 15% and inside the x1.75 cap
     e.markSrc = this._src;
   }
 
@@ -241,7 +249,7 @@ export class Sim {
   bleed(e, dps, dur) {
     if (e.dead) return;
     e.bleedSrc = this._src;
-    e.bleedDps = Math.max(e.bleedDps, dps);
+    e.bleedDps = Math.max(e.bleedDps, dps * this.tfx.bleedMul);
     e.bleedT = Math.max(e.bleedT, dur);
   }
 
@@ -250,7 +258,7 @@ export class Sim {
   burn(e, hit) {
     if (e.dead || !(hit > 0)) return;
     e.burnSrc = this._src;
-    e.burnDps = Math.max(e.burnDps, hit * BURN_RATE);
+    e.burnDps = Math.max(e.burnDps, hit * BURN_RATE * this.tfx.burnMul);
     e.burnT = Math.max(e.burnT, BURN_TIME);
   }
 
@@ -760,7 +768,7 @@ export class Sim {
       // into the ring (weapons.js) and burn what crosses it. The zone itself deals no damage.
       const d = this.character.ability;
       this.zones = this.zones.filter((z) => !z.wheel);
-      this.spawnZone({ wheel: true, x: p.x, y: p.y, r: d.radius ?? 80, ttl: dur, dur, age: 0, dps: d.dps ?? 0, heal: d.heal ?? 1.5, color: '#fff3b0' });
+      this.spawnZone({ wheel: true, x: p.x, y: p.y, r: (d.radius ?? 80) * this.tfx.wheelMul, ttl: dur, dur, age: 0, dps: d.dps ?? 0, heal: d.heal ?? 1.5, color: '#fff3b0' });
       this.pushEvent('wheel');
     }
     return true;
@@ -780,6 +788,7 @@ export class Sim {
     return best || boss;
   }
 
+      const dur = 6 * this.tfx.abilityDur + this.tfx.rallyAdd; // Firm Grip: a longer window, never a stronger one (pins still never hold bosses)
   updateRally(dt) {
     const r = this.rally;
     if (!r) return;

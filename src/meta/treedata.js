@@ -8,10 +8,10 @@
 //   chapters/<chapterId>.json  one fogged chapter band
 //
 // composeTree(files, data) returns { live, v2, info }:
-//   live = what the game runs today: the 82 shipped v1 nodes exactly as they were (same order, effects, prices, graph), plus the
-//          new v2 nodes as INERT specs (validated, never buyable) so balance is unchanged until their chunk (T3+).
-//   v2   = the target tree (every node, v2 effects/prices, template-derived requires, computed positions) used by the budget,
-//          layout and reachability checks and, from T3/T4, by the game.
+//   live = what the game runs (T3a, 2026-10-18: the v2 "Lantern Web" tree): every node not marked `inert`, with template-derived
+//          requires and computed positions. A node marked `inert: true` is a validated PENDING spec (never buyable, aggregated or
+//          shown) for a chunk whose sim hook is not built yet.
+//   v2   = the FULL tree (live + inert nodes) used by the budget, layout and reachability checks.
 //   info = validated structures for tools (cores, clusters, emblems, heroes, chapters, positions).
 import { STATUSES } from './status.js';
 
@@ -127,7 +127,7 @@ function checkCore(c) {
   for (const [k, v] of Object.entries(b.categories)) { ensure(/^[a-zA-Z][a-zA-Z0-9_]{0,23}$/.test(k) && isObj(v), `budget category ${k}`); num(v.cap, 0, 1000, `budget.${k}.cap`); num(v.weight, 0, 10, `budget.${k}.weight`); }
 }
 
-const NODE_KEYS = new Set(['id', 'idx', 'ord', 'kind', 'name', 'desc', 'flavour', 'branch', 'ring', 'ang', 'maxRank', 'rankCost', 'cost', 'requires', 'requiresAny', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone', 'inert', 'place', 'v2', 'scope']);
+const NODE_KEYS = new Set(['id', 'idx', 'kind', 'name', 'desc', 'flavour', 'branch', 'maxRank', 'rankCost', 'cost', 'requires', 'requiresAny', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone', 'inert', 'place', 'v2', 'scope']);
 const V2_KEYS = new Set(['name', 'desc', 'effects', 'cost', 'maxRank', 'rankCost', 'unlock', 'requires', 'requiresAny', 'excludes', 'hidden']);
 
 // ---------------------------------------------------------------- compose
@@ -205,9 +205,7 @@ export function composeTree(files, data = null) {
     ensure(!used.has(spec.idx), `${w}: idx ${spec.idx} already used inside ${ctx.frag}`);
     used.add(spec.idx);
     idxUsed.set(ctx.frag, used);
-    if (spec.ord !== undefined) ensure(Number.isInteger(spec.ord) && spec.ord >= 0 && spec.ord < 100000, `${w}: ord`);
-    ensure(spec.inert === true || spec.ord !== undefined, `${w}: a live node needs a legacy order (ord); new nodes are inert until their chunk`);
-    ensure(!(spec.inert === true && spec.ord !== undefined), `${w}: inert nodes have no legacy order`);
+    ensure(spec.inert === undefined || typeof spec.inert === 'boolean', `${w}: inert must be a boolean`);
     if (spec.v2 !== undefined) {
       ensure(isObj(spec.v2), `${w}: v2 block`);
       for (const k of Object.keys(spec.v2)) ensure(V2_KEYS.has(k), `${w}: unknown v2 field ${k}`);
@@ -361,8 +359,6 @@ export function composeTree(files, data = null) {
     positions[s.id] = p;
   }
 
-  // ---- LIVE raw: the v1 nodes exactly as shipped (by legacy order) + inert specs
-  const liveFields = ['id', 'name', 'desc', 'flavour', 'branch', 'ring', 'ang', 'maxRank', 'rankCost', 'cost', 'requires', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone'];
   const common = (a) => {
     const o = {};
     if (a.spec.kind !== undefined) o.kind = a.spec.kind;
@@ -371,26 +367,6 @@ export function composeTree(files, data = null) {
     o.region = a.region;
     if (a.spec.scope) o.scope = a.spec.scope;
     return o;
-  };
-  const liveNodes = allNodes.filter((a) => !a.spec.inert).sort((x, y) => x.spec.ord - y.spec.ord);
-  for (let i = 1; i < liveNodes.length; i++) ensure(liveNodes[i].spec.ord !== liveNodes[i - 1].spec.ord, `duplicate legacy order ${liveNodes[i].spec.ord}`);
-  const live = {
-    version: 1,
-    treeVersion: core.version,
-    retired: core.retired,
-    layout: core.layout,
-    branches: core.branches,
-    nodes: [
-      ...liveNodes.map((a) => { const o = {}; for (const k of liveFields) if (a.spec[k] !== undefined) o[k] = a.spec[k]; return { ...o, ...common(a) }; }),
-      ...allNodes.filter((a) => a.spec.inert).map((a) => {
-        const s = a.spec;
-        const o = { id: s.id, name: s.name, desc: s.desc, cost: s.cost, effects: s.effects, inert: true, ...common(a) };
-        if (s.flavour) o.flavour = s.flavour;
-        if (s.maxRank) o.maxRank = s.maxRank;
-        if (s.unlock) o.unlock = s.unlock;
-        return o;
-      }),
-    ],
   };
 
   // ---- V2 raw: every node, v2 values, template requires, computed positions
@@ -437,7 +413,21 @@ export function composeTree(files, data = null) {
     if (m.requiresAny && !o.requiresAny) o.requiresAny = m.requiresAny;
     return o;
   });
-  const v2 = { version: 2, treeVersion: core.version, retired: core.retired, layout: { ...core.layout, minGap: core.layout.v2MinGap ?? core.layout.minGap }, branches: core.branches, nodes: v2Nodes };
+  const layout = { ...core.layout, minGap: core.layout.v2MinGap ?? core.layout.minGap };
+  const v2 = { version: 2, treeVersion: core.version, retired: core.retired, layout, branches: core.branches, budget: core.budget, nodes: v2Nodes };
+  // LIVE = every non-inert node (v2 values) + the inert specs as pending data. Same compile rules as v2; inert nodes carry no prerequisites.
+  const inertIds = new Set(allNodes.filter((a) => a.spec.inert === true).map((a) => a.spec.id));
+  const live = {
+    version: 1, treeVersion: core.version, retired: core.retired, layout, branches: core.branches, budget: core.budget,
+    nodes: [
+      ...v2Nodes.filter((n) => !inertIds.has(n.id)),
+      ...v2Nodes.filter((n) => inertIds.has(n.id)).map((n) => {
+        const o = { id: n.id, name: n.name, desc: n.desc, cost: n.cost, effects: n.effects, inert: true, kind: n.kind, idx: n.idx, frag: n.frag, region: n.region };
+        for (const k of ['cluster', 'scope', 'flavour', 'maxRank', 'rankCost', 'unlock']) if (n[k] !== undefined) o[k] = n[k];
+        return o;
+      }),
+    ],
+  };
 
   return {
     live, v2,

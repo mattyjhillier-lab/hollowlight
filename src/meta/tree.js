@@ -1,4 +1,5 @@
 import { nodeTitle } from './gatewords.js';
+import { effectTerms } from './treebudget.js';
 // Skill tree (meta-progression). Pure JS, no DOM, no Phaser. All save input is untrusted.
 // Schema and rules: docs/design/skill-tree-v1.md and skill-tree-v2.md. Data: fragments in src/data/tree/ composed by src/meta/treedata.js.
 
@@ -138,7 +139,7 @@ function readCommon(n, w) {
   if (n.kind !== undefined && !KINDS.includes(n.kind)) fail(`${w}: bad kind`);
   if (n.idx !== undefined && (!Number.isInteger(n.idx) || n.idx < 0 || n.idx > 65535)) fail(`${w}: bad idx`);
   if (n.frag !== undefined && (typeof n.frag !== 'string' || !FRAG_RE.test(n.frag) || BAD_KEYS.has(n.frag))) fail(`${w}: bad frag`);
-  if (n.scope !== undefined && !(isObj(n.scope) && Number.isInteger(n.scope.minChapter) && n.scope.minChapter >= 1 && n.scope.minChapter <= 99)) fail(`${w}: bad scope`);
+  if (n.scope !== undefined && !(isObj(n.scope) && Number.isInteger(n.scope.minChapter) && n.scope.minChapter >= 1 && n.scope.minChapter <= 99 && (n.scope.minTier === undefined || (Number.isInteger(n.scope.minTier) && n.scope.minTier >= 0 && n.scope.minTier <= 9)))) fail(`${w}: bad scope`);
   return { maxRank, gold, shards, rankCost };
 }
 
@@ -171,7 +172,7 @@ export function compileTree(raw, data) {
     if (n.frag !== undefined) extra.frag = n.frag;
     if (n.cluster !== undefined) { if (typeof n.cluster !== 'string' || !ID_RE.test(n.cluster)) fail(`${w}: bad cluster`); extra.cluster = n.cluster; }
     if (n.region !== undefined) { if (typeof n.region !== 'string' || !ID_RE.test(n.region)) fail(`${w}: bad region`); extra.region = n.region; }
-    if (n.scope !== undefined) extra.scope = { minChapter: n.scope.minChapter };
+    if (n.scope !== undefined) extra.scope = n.scope.minTier ? { minChapter: n.scope.minChapter, minTier: n.scope.minTier } : { minChapter: n.scope.minChapter };
     if (n.inert === true) {
       if (n.requires !== undefined || n.requiresAny !== undefined) fail(`${w}: inert nodes carry no prerequisites`);
       pending[w] = {
@@ -386,8 +387,9 @@ export function compileTree(raw, data) {
       if (t.idx > f.max) f.max = t.idx;
     }
   }
+  const rule = isObj(raw.budget) ? raw.budget : null; // the budget RULE (core.budget): aggregateMods applies its soft caps
   const treeVersion = Number.isInteger(raw.treeVersion) && raw.treeVersion >= 3 && raw.treeVersion <= 99 ? raw.treeVersion : 3; // content version the compact save is written with (migrations/index.js)
-  return { version: 1, treeVersion, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags, retiredIds };
+  return { version: 1, treeVersion, rule, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags, retiredIds };
 }
 
 function checkEffect(e, data, where) {
@@ -594,7 +596,10 @@ export function emptyEffects() {
     meta: { rerolls: 0, banishes: 0 },
     player: { maxHp: 1, regen: 0, revive: 0, levelHeal: 0 },
     drops: { heart: 1, magnet: 1, heartHeal: 1 },
-    ability: { dur: 1, autoHp: 0 },
+    ability: { dur: 1, autoHp: 0, rallySecs: 0, wheel: 0 },
+    status: { bleed: 0, burn: 0, mark: 0, pin: 0 }, // bleed/burn: potency % ; mark/pin: extra seconds (all inside the shared Status cap)
+    visuals: [],
+    softcap: {},
     evoLuck: 1,
     rush: null,
     weaponBonus: {},
@@ -602,9 +607,41 @@ export function emptyEffects() {
   };
 }
 
-// Sum a tree map's effects. Sim consumes this at run start.
-export function aggregateMods(tree, def, data) {
+// SOFT CAP (docs/design/skill-tree-v2.md section 8, Appendix C.9): every effect belongs to ONE budget category (treebudget.effectTerms);
+// the positive face sum S of a category passes through total = C(1 - e^(-S/C)); negatives (keystone costs) pass through unscaled.
+// One cap per category, one per weapon (all of that weapon's own stat nodes summed), one shared Status cap. Returns the per-category
+// scale factor total/S, or null when the tree carries no budget rule (made-up test trees).
+export function softFactors(tree, def, ctx = null) {
+  const rule = def.rule;
+  if (!rule || !isObj(rule.categories) || !isObj(rule.perWeapon)) return null;
+  const S = Object.create(null);
+  for (const id of def.order) {
+    const r = rankOf(tree, id);
+    if (r < 1 || (ctx && !inScope(def.nodes[id], ctx))) continue;
+    for (const e of def.nodes[id].effects) for (const t of effectTerms(e, rule)) if (t.pool === 'combat' && t.face > 0) S[t.cat] = (S[t.cat] || 0) + t.face * r;
+  }
+  const f = Object.create(null);
+  const info = {};
+  for (const [cat, sum] of Object.entries(S)) {
+    const C = cat.startsWith('wpn:') ? rule.perWeapon.cap : (own(rule.categories, cat) ? rule.categories[cat].cap : 0);
+    if (!fin(C) || C <= 0) continue;
+    const total = C * (1 - Math.exp(-sum / C));
+    f[cat] = total / sum;
+    info[cat] = { S: sum, C, total, factor: total / sum };
+  }
+  f.info = info;
+  return f;
+}
+
+const inScope = (n, ctx) => !n.scope || ((n.scope.minChapter || 1) <= ctx.chapter && (n.scope.minTier || 0) <= ctx.tier);
+
+// Sum a tree map's effects. Sim consumes this at run start. opts = { tier: 0.., chapter: 1.. }: nodes whose scope is above the run's
+// tier / chapter are ignored (tier-bought power works only on the tiers that pay it; docs/design/difficulty-tiers-economy-v1.md 8.2).
+export function aggregateMods(tree, def, data, opts = null) {
   const out = emptyEffects();
+  const ctx = { tier: clampInt(opts && opts.tier, 0, 9), chapter: Math.max(1, clampInt(opts && opts.chapter !== undefined ? opts.chapter : 1, 1, 99)) };
+  const fac = softFactors(tree, def, ctx);
+  if (fac) out.softcap = fac.info;
   const pct = { };
   const add = (k, v) => { pct[k] = (pct[k] || 0) + v; };
   const bonus = (wid, stat, kind, v) => {
@@ -616,21 +653,32 @@ export function aggregateMods(tree, def, data) {
     const r = rankOf(tree, id);
     if (r < 1) continue;
     const n = def.nodes[id];
+    if (!inScope(n, ctx)) continue;
     for (const e of n.effects) {
-      if (e.mod) add(`mod:${e.mod}`, e.pct * r);
-      else if (e.player === 'maxHp') add('maxHp', e.pct * r);
+      // soft-cap scale for this effect (1 = uncapped, unscaled penalties and flat adds)
+      let m = 1;
+      if (fac) {
+        const t = effectTerms(e, def.rule)[0];
+        if (t && t.pool === 'combat' && t.face > 0 && own(fac, t.cat) && !(e.weapon !== undefined && e.add !== undefined)) m = fac[t.cat];
+      }
+      if (e.mod) add(`mod:${e.mod}`, e.pct * r * (e.pct > 0 || e.mod === 'cooldown' ? m : 1));
+      else if (e.player === 'maxHp') add('maxHp', e.pct * r * m);
       else if (e.player === 'regen') out.player.regen += e.add * r;
-      else if (e.player === 'levelHeal') out.player.levelHeal += e.pct * r;
+      else if (e.player === 'levelHeal') out.player.levelHeal += e.pct * r * m;
       else if (e.player === 'revive') out.player.revive = Math.max(out.player.revive, e.frac);
       else if (e.drop) add(`drop:${e.drop}`, e.pct * r);
       else if (e.ability === 'dur') add('abilityDur', e.pct * r);
+      else if (e.ability === 'rallySecs') out.ability.rallySecs += e.secs * r;
+      else if (e.ability === 'wheelRadius') out.ability.wheel += e.pct * r;
+      else if (e.status) out.status[e.status] += (e.status === 'bleed' || e.status === 'burn' ? e.pct : e.secs) * r * m;
+      else if (e.visual) { if (!out.visuals.includes(e.visual)) out.visuals.push(e.visual); }
       else if (e.perk === 'evoLuck') add('evoLuck', e.pct * r);
-      else if (e.perk === 'rush') out.rush = { pct: Math.max(out.rush ? out.rush.pct : 0, e.pct * r), secs: Math.max(out.rush ? out.rush.secs : 0, e.secs) };
+      else if (e.perk === 'rush') out.rush = { pct: Math.max(out.rush ? out.rush.pct : 0, e.pct * r * m), secs: Math.max(out.rush ? out.rush.secs : 0, e.secs) };
       else if (e.weapon) {
         const ids = ['@summon', '@magic', '@all'].includes(e.weapon)
           ? Object.keys(data.weapons).filter((i) => e.weapon === '@all' || data.weapons[i].type === e.weapon.slice(1))
           : [e.weapon];
-        for (const wid of ids) if (own(data.weapons[wid].stats, e.stat)) bonus(wid, e.stat, e.pct !== undefined ? 'pct' : 'add', (e.pct !== undefined ? e.pct : e.add) * r);
+        for (const wid of ids) if (own(data.weapons[wid].stats, e.stat)) bonus(wid, e.stat, e.pct !== undefined ? 'pct' : 'add', (e.pct !== undefined ? e.pct * (e.pct > 0 || e.stat === 'cooldown' ? m : 1) : e.add) * r);
       } else if (e.unlock === 'rerolls') out.meta.rerolls += e.n * r;
       else if (e.unlock === 'banishes') out.meta.banishes += e.n * r;
       else if (e.unlock === 'autoAbility') out.ability.autoHp = Math.max(out.ability.autoHp, e.hp);
@@ -649,6 +697,10 @@ export function aggregateMods(tree, def, data) {
   out.player.maxHp = Math.min(5, Math.max(0.2, 1 + (pct.maxHp || 0) / 100));
   for (const k of ['heart', 'magnet', 'heartHeal']) out.drops[k] = Math.min(6, Math.max(0, 1 + (pct[`drop:${k}`] || 0) / 100));
   out.ability.dur = Math.min(4, 1 + (pct.abilityDur || 0) / 100);
+  out.ability.rallySecs = Math.min(5, out.ability.rallySecs);
+  out.ability.wheel = Math.min(100, out.ability.wheel);
+  out.status.bleed = Math.min(100, out.status.bleed); out.status.burn = Math.min(100, out.status.burn);
+  out.status.mark = Math.min(5, out.status.mark); out.status.pin = Math.min(5, out.status.pin);
   out.evoLuck = Math.min(4, 1 + (pct.evoLuck || 0) / 100);
   out.meta.rerolls = Math.min(9, out.meta.rerolls);
   out.meta.banishes = Math.min(9, out.meta.banishes);

@@ -18,7 +18,7 @@ test('H3 guard logic: changing a released price / rank / requires fails; a bump 
   const v = treeDef.treeVersion;
   const fx = { released: { [v]: clone(now) } };
   assert.deepEqual(releaseProblems(fx, now, v, TREE_STEPS), []);
-  for (const mutate of [(d) => { d.nodes.sp_reroll1.cost = { gold: 1 }; }, (d) => { d.nodes.rv_wide.maxRank = 1; }, (d) => { d.nodes.wf_third.requires = []; }, (d) => { d.nodes.sp_cd1.effects = [{ mod: 'abilityCd', pct: -9 }]; }]) {
+  for (const mutate of [(d) => { d.nodes.sp_reroll1.cost = { gold: 1 }; }, (d) => { d.nodes.sp_cd4.maxRank = 2; }, (d) => { d.nodes.wf_scent.requires = []; }, (d) => { d.nodes.sp_cd1.effects = [{ mod: 'abilityCd', pct: -9 }]; }]) {
     const d = { list: treeDef.list, nodes: clone(treeDef.nodes) };
     mutate(d);
     const p = releaseProblems(fx, fingerprints(d), v, TREE_STEPS);

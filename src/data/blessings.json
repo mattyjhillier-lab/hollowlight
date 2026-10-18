@@ -1,6 +1,7 @@
 {
   "heal": { "hpBelow": 0.4, "cooldown": 45 },
   "caps": { "damage": 1.06, "maxHp": 1.12, "speed": 1.04, "pickup": 1.24, "gold": 1.24 },
+  "combined": { "damage": 1.09, "maxHp": 1.18, "speed": 1.08, "pickup": 1.45, "gold": 1.40 },
   "items": {
     "wider_glow": { "name": "Wider Glow", "desc": "Pick up gems from further away, +8%.", "whisper": "Your light reaches further than you knew.", "effect": "pickup", "perRank": 0.08, "ranks": 3, "weight": 1 },
     "wrapped_warmth": { "name": "Wrapped Warmth", "desc": "Max health +4%, and you heal that much.", "whisper": "Somebody left a coat on the hook.", "effect": "maxHp", "perRank": 0.04, "ranks": 3, "weight": 1 },

@@ -208,8 +208,12 @@ test('T2 bitset codec: round trips, strict base64url, length caps', () => {
 test('T2 hostile compact trees: prototype keys, wrong types, bad charset, oversize, stray bits, forged ranks, unknown fragments', () => {
   const ids = (s) => Object.keys(s).sort();
   const dec = (c) => decodeTree(c, treeDef).tree;
-  const good = encodeTree({ sp_reroll1: 1, rv_wide: 2 }, treeDef, 3);
-  assert.deepEqual(dec(good), { sp_reroll1: 1, rv_wide: 2 });
+  // no shipped node has more than one rank since the v2 rescale: rank handling is proven on a copy of the def where Watch has two ranks
+  const def2 = { ...treeDef, nodes: { ...treeDef.nodes, rv_wide: { ...treeDef.nodes.rv_wide, maxRank: 2 } } };
+  const dec2 = (c) => decodeTree(c, def2).tree;
+  const good = encodeTree({ sp_reroll1: 1, rv_wide: 2 }, def2, 3);
+  assert.deepEqual(dec2(good), { sp_reroll1: 1, rv_wide: 2 });
+  assert.deepEqual(dec(good), { sp_reroll1: 1, rv_wide: 1 }, 'the live tree clamps a forged second rank to its maxRank 1');
   const evil = JSON.parse('{"v":3,"o":{"__proto__":"AAAA","constructor":"/////w","prototype":"AAAA","nope":"AAAA","core":["A"],"wf":7,"rv":{"a":1},"bo":"!!!!","cl":"AA==","or":"' + 'A'.repeat(6000) + '"},"r":{"__proto__":5,"constructor":3,"rv_wide":99,"sp_reroll1":-4,"zz_none":9}}');
   assert.deepEqual(dec(evil), {}, 'nothing valid in there');
   assert.equal(({}).polluted, undefined);
@@ -221,12 +225,12 @@ test('T2 hostile compact trees: prototype keys, wrong types, bad charset, oversi
   assert.ok(Object.keys(all).every((id) => treeDef.nodes[id]));
   assert.ok(Object.keys(all).length <= core.ids.filter(Boolean).length);
   // a rank without its bit is ignored; a rank above max is clamped; rank 0/negative/NaN keep the node at rank 1
-  const t = dec({ v: 3, o: { core: b64urlEncode(Uint8Array.of(0b1)) }, r: { sp_reroll1: 7, rv_wide: 2, li_vigor: 2 } });
+  const t = dec2({ v: 3, o: { core: b64urlEncode(Uint8Array.of(0b1)) }, r: { sp_reroll1: 7, rv_wide: 2, li_vigor: 2 } });
   assert.deepEqual(t, { sp_reroll1: 1 }, 'sp_reroll1 maxRank is 1; others have no bit');
-  const t2 = dec(encodeTree({ rv_wide: 2 }, treeDef, 3)); assert.deepEqual(t2, { rv_wide: 2 });
-  const forged = encodeTree({ rv_wide: 2 }, treeDef, 3); forged.r.rv_wide = 99; assert.deepEqual(dec(forged), { rv_wide: 2 });
-  forged.r.rv_wide = Number.NaN; assert.deepEqual(dec(forged), { rv_wide: 1 });
-  forged.r.rv_wide = '2'; assert.deepEqual(dec(forged), { rv_wide: 1 });
+  const t2 = dec2(encodeTree({ rv_wide: 2 }, def2, 3)); assert.deepEqual(t2, { rv_wide: 2 });
+  const forged = encodeTree({ rv_wide: 2 }, def2, 3); forged.r.rv_wide = 99; assert.deepEqual(dec2(forged), { rv_wide: 2 });
+  forged.r.rv_wide = Number.NaN; assert.deepEqual(dec2(forged), { rv_wide: 1 });
+  forged.r.rv_wide = '2'; assert.deepEqual(dec2(forged), { rv_wide: 1 });
   // shapes
   for (const junk of [null, 7, 'x', [], [1], true, { o: null }, { o: [] }, { o: 'x' }, { o: { core: null } }]) assert.deepEqual(dec(junk), {}, JSON.stringify(junk));
   // thousands of keys are capped, not iterated forever

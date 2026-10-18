@@ -1,0 +1,2851 @@
+{
+ "sp_reroll1": {
+  "effects": [
+   {
+    "unlock": "rerolls",
+    "n": 1
+   }
+  ],
+  "cost": {
+   "gold": 150,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_ban1": {
+  "effects": [
+   {
+    "unlock": "banishes",
+    "n": 1
+   }
+  ],
+  "cost": {
+   "gold": 150,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_vigor": {
+  "effects": [
+   {
+    "player": "maxHp",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "su_bond": {
+  "effects": [
+   {
+    "weapon": "@summon",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "ma_focus": {
+  "effects": [
+   {
+    "weapon": "@magic",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_reach": {
+  "effects": [
+   {
+    "mod": "pickup",
+    "pct": 6
+   }
+  ],
+  "cost": {
+   "gold": 260,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_vigor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_step": {
+  "effects": [
+   {
+    "mod": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 260,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_vigor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_study": {
+  "effects": [
+   {
+    "mod": "xp",
+    "pct": 3
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_vigor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_oak": {
+  "effects": [
+   {
+    "player": "maxHp",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_vigor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_cd1": {
+  "effects": [
+   {
+    "mod": "abilityCd",
+    "pct": -10
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_ban1",
+   "sp_reroll1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_reroll2": {
+  "effects": [
+   {
+    "unlock": "rerolls",
+    "n": 1
+   }
+  ],
+  "cost": {
+   "gold": 270,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_reroll1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_reroll3": {
+  "effects": [
+   {
+    "unlock": "rerolls",
+    "n": 1
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_reroll2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_ban2": {
+  "effects": [
+   {
+    "unlock": "banishes",
+    "n": 1
+   }
+  ],
+  "cost": {
+   "gold": 330,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_ban1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_ban3": {
+  "effects": [
+   {
+    "unlock": "banishes",
+    "n": 1
+   }
+  ],
+  "cost": {
+   "gold": 720,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_ban2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_cd2": {
+  "effects": [
+   {
+    "mod": "abilityCd",
+    "pct": -10
+   }
+  ],
+  "cost": {
+   "gold": 660,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_cd1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_cd3": {
+  "effects": [
+   {
+    "mod": "abilityCd",
+    "pct": -10
+   }
+  ],
+  "cost": {
+   "gold": 1350,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_cd2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_cd4": {
+  "effects": [
+   {
+    "mod": "abilityCd",
+    "pct": -15
+   }
+  ],
+  "cost": {
+   "gold": 2100,
+   "shards": 2
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_cd3"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_dur": {
+  "effects": [
+   {
+    "ability": "dur",
+    "pct": 15
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_cd2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_auto": {
+  "effects": [
+   {
+    "unlock": "autoAbility",
+    "hp": 0.3
+   }
+  ],
+  "cost": {
+   "gold": 1050,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_cd2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "surviveTime",
+   "chapter": "cursed_forest",
+   "seconds": 300
+  }
+ },
+ "li_regen": {
+  "effects": [
+   {
+    "player": "levelHeal",
+    "pct": 0.75
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_step"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_hearts": {
+  "effects": [
+   {
+    "drop": "heart",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 840,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_regen"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_heal": {
+  "effects": [
+   {
+    "drop": "heartHeal",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_oak"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_magnet": {
+  "effects": [
+   {
+    "drop": "magnet",
+    "pct": 25
+   }
+  ],
+  "cost": {
+   "gold": 750,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_study"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_coin": {
+  "effects": [
+   {
+    "mod": "gold",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 720,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_study"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "li_scav": {
+  "effects": [
+   {
+    "mod": "pickup",
+    "pct": 6
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_reach"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "any",
+   "of": [
+    {
+     "t": "killEnemy",
+     "id": "wolf",
+     "n": 500
+    },
+    {
+     "t": "killEnemy",
+     "id": "crow",
+     "n": 800
+    }
+   ]
+  }
+ },
+ "li_root": {
+  "effects": [
+   {
+    "player": "maxHp",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 750,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_oak"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "root_crawler",
+   "n": 400
+  }
+ },
+ "li_vow": {
+  "effects": [
+   {
+    "mod": "gold",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_coin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "surviveTime",
+   "chapter": "cursed_forest",
+   "seconds": 600
+  }
+ },
+ "li_hoard": {
+  "effects": [
+   {
+    "mod": "gold",
+    "pct": 3
+   }
+  ],
+  "cost": {
+   "gold": 1050,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_coin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "totalGold",
+   "n": 20000
+  }
+ },
+ "su_pot": {
+  "effects": [
+   {
+    "weapon": "@summon",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "su_bond"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "su_swift": {
+  "effects": [
+   {
+    "weapon": "@summon",
+    "stat": "speed",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 540,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "su_rush": {
+  "effects": [
+   {
+    "perk": "rush",
+    "pct": 10,
+    "secs": 4
+   }
+  ],
+  "cost": {
+   "gold": 750,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "su_bond"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "ma_cast": {
+  "effects": [
+   {
+    "mod": "cooldown",
+    "pct": -2
+   }
+  ],
+  "cost": {
+   "gold": 670,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_focus"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "ma_area": {
+  "effects": [
+   {
+    "mod": "area",
+    "pct": 3
+   }
+  ],
+  "cost": {
+   "gold": 580,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_focus"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "ma_attune": {
+  "effects": [
+   {
+    "perk": "evoLuck",
+    "pct": 50
+   }
+  ],
+  "cost": {
+   "gold": 1050,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_focus"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "ma_pow3": {
+  "effects": [
+   {
+    "weapon": "@magic",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 1500,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_attune"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_edge": {
+  "effects": [
+   {
+    "mod": "damage",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 1500,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_dur"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "su_key": {
+  "effects": [
+   {
+    "weapon": "@summon",
+    "stat": "power",
+    "pct": 3
+   },
+   {
+    "weapon": "@magic",
+    "stat": "power",
+    "pct": -3
+   }
+  ],
+  "cost": {
+   "gold": 1800,
+   "shards": 3
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "su_rush"
+  ],
+  "requiresAny": null,
+  "excludes": [
+   "ma_key"
+  ],
+  "unlock": null
+ },
+ "ma_key": {
+  "effects": [
+   {
+    "weapon": "@magic",
+    "stat": "power",
+    "pct": 3
+   },
+   {
+    "weapon": "@summon",
+    "stat": "power",
+    "pct": -3
+   }
+  ],
+  "cost": {
+   "gold": 1800,
+   "shards": 3
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_attune"
+  ],
+  "requiresAny": null,
+  "excludes": [
+   "su_key"
+  ],
+  "unlock": null
+ },
+ "li_lantern": {
+  "effects": [
+   {
+    "player": "maxHp",
+    "pct": 3
+   },
+   {
+    "player": "levelHeal",
+    "pct": 0.5
+   },
+   {
+    "mod": "damage",
+    "pct": -1
+   }
+  ],
+  "cost": {
+   "gold": 1800,
+   "shards": 3
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_hearts"
+  ],
+  "requiresAny": null,
+  "excludes": [
+   "li_glass"
+  ],
+  "unlock": null
+ },
+ "li_glass": {
+  "effects": [
+   {
+    "mod": "damage",
+    "pct": 1.5
+   },
+   {
+    "player": "maxHp",
+    "pct": -4
+   }
+  ],
+  "cost": {
+   "gold": 1800,
+   "shards": 3
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_magnet"
+  ],
+  "requiresAny": null,
+  "excludes": [
+   "li_lantern"
+  ],
+  "unlock": null
+ },
+ "li_last": {
+  "effects": [
+   {
+    "player": "revive",
+    "frac": 0.2
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 5
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_regen"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest"
+  }
+ },
+ "li_elder": {
+  "effects": [
+   {
+    "player": "levelHeal",
+    "pct": 0.5
+   }
+  ],
+  "cost": {
+   "gold": 1200,
+   "shards": 2
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_last"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "bossKill",
+   "id": "elder_treant"
+  }
+ },
+ "sp_mastery": {
+  "effects": [
+   {
+    "mod": "damage",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 2700,
+   "shards": 2
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "sp_edge"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "clearChapter",
+     "id": "cursed_forest"
+    },
+    {
+     "t": "evolveWeapon",
+     "id": "any",
+     "n": 5
+    }
+   ]
+  }
+ },
+ "ma_ascend": {
+  "effects": [
+   {
+    "mod": "area",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 1800,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_pow3"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "any",
+   "n": 3
+  }
+ },
+ "li_dawn": {
+  "effects": [
+   {
+    "mod": "damage",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 1500,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_vow"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "bestLevel",
+   "n": 50
+  }
+ },
+ "tz_marsh": {
+  "effects": [],
+  "cost": {
+   "gold": 0,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "su_key"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "drowned_marsh"
+  }
+ },
+ "tz_witch": {
+  "effects": [],
+  "cost": {
+   "gold": 0,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_key"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "bog_witch",
+   "n": 200
+  }
+ },
+ "tz_crown": {
+  "effects": [],
+  "cost": {
+   "gold": 0,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_elder"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "bossKill",
+   "id": "drowned_king"
+  }
+ },
+ "gt_chain_lightning": {
+  "effects": [
+   {
+    "unlock": "weapon",
+    "id": "chain_lightning"
+   }
+  ],
+  "cost": {
+   "gold": 500,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "bossKill",
+     "id": "elder_treant",
+     "n": 2
+    },
+    {
+     "t": "killEnemy",
+     "id": "root_crawler",
+     "n": 2500
+    }
+   ]
+  }
+ },
+ "gt_thunder_judgment": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "thunder_judgment"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "clearChapter",
+     "id": "cursed_forest",
+     "n": 3
+    },
+    {
+     "t": "evolveWeapon",
+     "id": "chain_lightning",
+     "n": 1
+    }
+   ]
+  }
+ },
+ "gt_static_storm": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "static_storm"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "any",
+   "n": 12
+  }
+ },
+ "gt_storm_tether": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "storm_tether"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "chain_lightning",
+     "n": 2
+    },
+    {
+     "t": "bossKill",
+     "id": "elder_treant",
+     "n": 5
+    }
+   ]
+  }
+ },
+ "cl_arc": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "chains",
+    "add": 1
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_chain_lightning"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_power": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_arc"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_spark": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_power"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_reach": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "area",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_spark"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_storm": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "area",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_reach"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_quick": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "cooldown",
+    "pct": -2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "cl_storm",
+   "cl_crack"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_crack": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_hum"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_hum": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "cooldown",
+    "pct": -2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_ground"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_ground": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "area",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_kin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "cl_kin": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 630,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "cl_crown"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "bossKill",
+   "id": "elder_treant",
+   "n": 3
+  }
+ },
+ "cl_crown": {
+  "effects": [
+   {
+    "weapon": "chain_lightning",
+    "stat": "power",
+    "pct": 1
+   },
+   {
+    "weapon": "chain_lightning",
+    "stat": "area",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 910,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_chain_lightning"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "chain_lightning",
+   "n": 2
+  }
+ },
+ "gt_phantom_stampede": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "phantom_stampede"
+   }
+  ],
+  "cost": {
+   "gold": 100,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "ghost_wolves",
+   "n": 1
+  }
+ },
+ "gt_dire_alpha": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "dire_alpha"
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "ghost_wolves",
+     "n": 3
+    },
+    {
+     "t": "killEnemy",
+     "id": "wolf",
+     "n": 10000
+    }
+   ]
+  }
+ },
+ "su_call": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_lope": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "su_call"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_bleed": {
+  "effects": [
+   {
+    "status": "bleed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_lope"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_scent": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_bleed"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_rend": {
+  "effects": [
+   {
+    "status": "bleed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_scent"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "wolf",
+   "n": 2500
+  }
+ },
+ "wf_third": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 1
+   },
+   {
+    "weapon": "ghost_wolves",
+    "stat": "speed",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 910,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "wf_rend",
+   "wf_hunt"
+  ],
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "wolf",
+   "n": 4000
+  }
+ },
+ "wf_hunt": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_maul"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_maul": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_coat"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_coat": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_bite"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "wren",
+   "n": 5
+  }
+ },
+ "wf_bite": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_fang"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_fang": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "gt_judgement_wheel": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "judgement_wheel"
+   }
+  ],
+  "cost": {
+   "gold": 100,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "holy_orbit",
+   "n": 1
+  }
+ },
+ "gt_vesper_tide": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "vesper_tide"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "holy_orbit",
+     "n": 3
+    },
+    {
+     "t": "useCharacter",
+     "id": "elias",
+     "n": 8
+    }
+   ]
+  }
+ },
+ "or_power": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_wick": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_power"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_kindle": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_wick"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_wide": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "radius",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_kindle"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_seventh": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 1
+   },
+   {
+    "weapon": "holy_orbit",
+    "stat": "radius",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 910,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_wide"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "holy_orbit",
+   "n": 1
+  }
+ },
+ "or_tide": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "or_seventh",
+   "or_ember"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "or_ember": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_swing"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "holy_orbit",
+   "n": 3
+  }
+ },
+ "or_swing": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_spin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_spin": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_bright"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_bright": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "radius",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_vigil"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_vigil": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "surviveTime",
+   "chapter": "cursed_forest",
+   "seconds": 600
+  }
+ },
+ "gt_raven_flock": {
+  "effects": [
+   {
+    "unlock": "weapon",
+    "id": "raven_flock"
+   }
+  ],
+  "cost": {
+   "gold": 200,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "crow",
+   "n": 4500
+  }
+ },
+ "gt_dive_bombers": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "dive_bombers"
+   }
+  ],
+  "cost": {
+   "gold": 200,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "any",
+   "n": 4
+  }
+ },
+ "gt_murder_storm": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "murder_storm"
+   }
+  ],
+  "cost": {
+   "gold": 400,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "raven_flock",
+     "n": 1
+    },
+    {
+     "t": "killEnemy",
+     "id": "crow",
+     "n": 12000
+    }
+   ]
+  }
+ },
+ "gt_spearhead": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "spearhead"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "raven_flock",
+     "n": 3
+    },
+    {
+     "t": "killEnemy",
+     "id": "crow",
+     "n": 20000
+    }
+   ]
+  }
+ },
+ "rv_talon": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_raven_flock"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_quill": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_talon"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_wide": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "range",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_quill"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_glide": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_wide"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_eye": {
+  "effects": [
+   {
+    "status": "mark",
+    "secs": 0.5
+   }
+  ],
+  "cost": {
+   "gold": 630,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_glide"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "crow",
+   "n": 6000
+  }
+ },
+ "rv_watch": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "range",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "rv_eye",
+   "rv_oath"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_oath": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "power",
+    "pct": 1
+   },
+   {
+    "weapon": "raven_flock",
+    "stat": "range",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 910,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_wing"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "crow",
+   "n": 8000
+  }
+ },
+ "rv_wing": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_kin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_kin": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_beat"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "raven_flock",
+   "n": 2
+  }
+ },
+ "rv_beat": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "rv_peck"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "rv_peck": {
+  "effects": [
+   {
+    "weapon": "raven_flock",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_raven_flock"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "gt_spirit_bolts": {
+  "effects": [
+   {
+    "unlock": "weapon",
+    "id": "spirit_bolts"
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "root_crawler",
+   "n": 1500
+  }
+ },
+ "gt_spirit_tempest": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "spirit_tempest"
+   }
+  ],
+  "cost": {
+   "gold": 400,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "bossKill",
+     "id": "elder_treant",
+     "n": 1
+    },
+    {
+     "t": "evolveWeapon",
+     "id": "any",
+     "n": 6
+    }
+   ]
+  }
+ },
+ "gt_soul_lance": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "soul_lance"
+   }
+  ],
+  "cost": {
+   "gold": 500,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "bossKill",
+     "id": "elder_treant",
+     "n": 2
+    },
+    {
+     "t": "evolveWeapon",
+     "id": "spirit_bolts",
+     "n": 1
+    }
+   ]
+  }
+ },
+ "gt_returning_pages": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "returning_pages"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "spirit_bolts",
+     "n": 2
+    },
+    {
+     "t": "clearChapter",
+     "id": "cursed_forest",
+     "n": 2
+    }
+   ]
+  }
+ },
+ "bo_twin": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "power",
+    "pct": 1
+   },
+   {
+    "weapon": "spirit_bolts",
+    "stat": "speed",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 910,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_spirit_bolts"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "spirit_bolts",
+   "n": 1
+  }
+ },
+ "bo_glyph": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_twin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_pierce": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "pierce",
+    "add": 1
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_glyph"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_swift": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_pierce"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_ink": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_swift"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_quick": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "bo_ink",
+   "bo_line"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_line": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_page"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_page": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_hand"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_hand": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_kin"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "bo_kin": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "bo_seal"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "root_crawler",
+   "n": 3000
+  }
+ },
+ "bo_seal": {
+  "effects": [
+   {
+    "weapon": "spirit_bolts",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_spirit_bolts"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "ch_elias": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "ma_focus"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "elias",
+   "n": 3
+  }
+ },
+ "el_wheel": {
+  "effects": [
+   {
+    "ability": "wheelRadius",
+    "pct": 8
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "elias",
+   "n": 6
+  }
+ },
+ "el_lamp": {
+  "effects": [
+   {
+    "visual": "graveLamp"
+   }
+  ],
+  "cost": {
+   "gold": 400,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "elias",
+   "n": 10
+  }
+ },
+ "ch_wren": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "su_swift"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "wren",
+   "n": 3
+  }
+ },
+ "wr_grip": {
+  "effects": [
+   {
+    "ability": "rallySecs",
+    "secs": 0.5
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "wren",
+   "n": 6
+  }
+ },
+ "wr_spark": {
+  "effects": [
+   {
+    "visual": "kinSparks"
+   }
+  ],
+  "cost": {
+   "gold": 400,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "useCharacter",
+   "id": "wren",
+   "n": 10
+  }
+ }
+}

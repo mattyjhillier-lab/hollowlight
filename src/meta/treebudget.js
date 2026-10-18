@@ -213,7 +213,7 @@ export function budgetOf(def, rule, W, opts = {}) {
   }
   for (const [cl, c] of byCluster) if ((c.total - c.knots) / c.total < rule.optionShareMin - EPS) violations.push(`cluster ${cl}: only ${(((c.total - c.knots) / c.total) * 100).toFixed(0)}% options/verbs (needs ${rule.optionShareMin * 100}%)`);
 
-  return { rows: ev.rows, combatPE: ev.pe, combatAtCap: atCap, sustainPE: ev.susPE, worstSustainPE: worst.susPE, util: ev.util, chapters, violations, groups, W };
+  return { rows: ev.rows, pool: capCats.wpn, combatPE: ev.pe, combatAtCap: atCap, sustainPE: ev.susPE, worstSustainPE: worst.susPE, util: ev.util, chapters, violations, groups, W };
 }
 
 function statusOwnedBy(n, cluster) {
@@ -230,7 +230,7 @@ export function formatBudget(b) {
     if (cat.startsWith('wpn:')) { wp.S += r.S; wp.soft += r.soft; wp.pe += r.pe; continue; }
     rows.push(`| ${cat} | ${r.C} | ${r.w} | ${r.S.toFixed(1)} | ${r.soft.toFixed(2)} | ${r.pe.toFixed(2)} | ${r.peCap.toFixed(2)} |`);
   }
-  rows.push(`| per-weapon pool (${b.W} weapons) | 8 each | ${(0.4 / b.W).toFixed(3)} | ${wp.S.toFixed(1)} | ${wp.soft.toFixed(1)} | ${wp.pe.toFixed(2)} | ${(8 * 0.4).toFixed(2)} |`);
+  rows.push(`| per-weapon pool (${b.W} weapons) | ${b.pool.C} each | ${b.pool.w.toFixed(3)} | ${wp.S.toFixed(1)} | ${wp.soft.toFixed(1)} | ${wp.pe.toFixed(2)} | ${(b.pool.C * b.pool.w * b.pool.count).toFixed(2)} |`);
   out.push(...rows);
   out.push(`| **Combat total** | | | | | **${b.combatPE.toFixed(2)}** | **${b.combatAtCap.toFixed(2)}** |`);
   out.push(`| Sustain/verb | | | | | **${b.sustainPE.toFixed(2)}** | ceiling 5 |`);

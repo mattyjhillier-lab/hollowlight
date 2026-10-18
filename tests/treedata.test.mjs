@@ -1,5 +1,5 @@
 // T1: skill tree data schema v2 (fragments, validator, loader, budget, layout, synthetic 1000/2000-node trees).
-// Design: docs/design/skill-tree-v2.md Appendix C. The shipped LIVE tree must stay exactly the v1 tree (balance unchanged until T3).
+// Design: docs/design/skill-tree-v2.md Appendix C. Since T3a (2026-10-18) the LIVE tree is the v2 'Lantern Web' tree (golden fixture tests/fixtures/tree-v2-rescale.json).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -24,52 +24,56 @@ const v2Def = compileTree(real.v2, data);
 const RULE = real.info.core.budget;
 const W = Object.keys(real.info.clusters).length;
 
-// ---------------------------------------------------------------- live tree == v1 tree
-test('T1 live tree is exactly the shipped v1 tree (same nodes, order, effects, prices, graph)', () => {
+// ---------------------------------------------------------------- live tree == the v2 rescale (T3a)
+const GOLD = fx('tree-v2-rescale.json');
+const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
+
+test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ranks / requires / condition skill-tree-v2 Appendix A specifies', () => {
+  for (const id of Object.keys(GOLD)) assert.deepEqual(snap(liveDef.nodes[id]), GOLD[id], id);
+  const ids = real.info.nodes.map((n) => n.id).filter((id) => !real.info.nodes.find((n) => n.id === id).inert);
+  for (const id of ids) assert.ok(Object.hasOwn(GOLD, id), `${id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
+});
+
+test('T3a the rescale changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids (live == v2 view)', () => {
   const g = compileTree(V1, data);
-  assert.equal(liveDef.list.length, 82);
-  assert.deepEqual(liveDef.list, g.list, 'same node order');
-  assert.deepEqual(liveDef.order, g.order, 'same topological order');
-  assert.deepEqual(liveDef.edges, g.edges);
+  assert.equal(g.list.length, 82);
+  const J = JSON.stringify;
+  const n = { effects: 0, cost: 0, requires: 0, maxRank: 0 };
   for (const id of g.list) {
-    const a = liveDef.nodes[id], b = g.nodes[id];
-    for (const k of ['name', 'desc', 'flavour', 'branch', 'ring', 'ang', 'maxRank', 'cost', 'rankCost', 'requires', 'excludes', 'effects', 'unlock', 'permanent', 'gateAnc', 'hidden', 'teaser', 'keystone', 'x', 'y']) assert.deepEqual(a[k], b[k], `${id}.${k}`);
+    const a = g.nodes[id], b = liveDef.nodes[id];
+    assert.ok(b, `v1 id ${id} must stay live (ids are permanent; a removal needs a tombstone)`);
+    if (J(a.effects) !== J(b.effects)) n.effects++;
+    if (J(a.cost) !== J(b.cost) || a.rankCost !== b.rankCost) n.cost++;
+    if (J([...a.requires].sort()) !== J([...b.requires].sort()) || J(a.requiresAny || null) !== J(b.requiresAny || null)) n.requires++;
+    if (a.maxRank !== b.maxRank) { n.maxRank++; assert.ok(b.maxRank < a.maxRank, 'a cut'); }
   }
-  assert.deepEqual(liveDef.branches, g.branches);
+  assert.deepEqual(n, { effects: 47, cost: 26, requires: 14, maxRank: 2 });
+  assert.deepEqual(['rv_wide', 'or_wide'].map((i) => liveDef.nodes[i].maxRank), [1, 1]);
+  // the live tree IS the v2 view: same nodes, same graph, same positions
+  assert.deepEqual(liveDef.list, v2Def.list);
+  for (const id of v2Def.list) { assert.deepEqual(snap(liveDef.nodes[id]), snap(v2Def.nodes[id]), id); assert.deepEqual([liveDef.nodes[id].x, liveDef.nodes[id].y], [v2Def.nodes[id].x, v2Def.nodes[id].y], id); }
+  assert.equal(liveDef.retiredIds && Object.keys(liveDef.retiredIds).length, 0, 'no v1 id is retired by the rescale');
 });
 
-test('T1 balance inputs are byte-identical: presets, totals and aggregated mods match the v1 tree', () => {
+test('T3a a tree-less run is untouched: no nodes owned = the same effects as the v1 tree gave', () => {
   const g = compileTree(V1, data);
-  for (const name of ['none', 'half', 'full', '0.3']) {
-    for (const gates of [false, true]) {
-      assert.deepEqual(presetTree(liveDef, name, gates), presetTree(g, name, gates), `${name}/${gates}`);
-      assert.deepEqual(aggregateMods(presetTree(liveDef, name, gates), liveDef, data), aggregateMods(presetTree(g, name, gates), g, data));
-    }
-  }
-  assert.deepEqual(totalCost(liveDef), totalCost(g));
+  const none = aggregateMods({}, liveDef, data);
+  const old = aggregateMods({}, g, data);
+  for (const k of ['mods', 'meta', 'player', 'drops', 'evoLuck', 'rush', 'weaponBonus', 'unlocks']) assert.deepEqual(none[k], old[k], k);
+  assert.deepEqual(none.ability, { ...old.ability, rallySecs: 0, wheel: 0 });
+  assert.deepEqual(totalCost(liveDef).shards > 0, true);
 });
 
-test('T1 the 43 new v2 nodes are validated but inert: never buyable, aggregated, listed or costed', () => {
+test('T3a the 43 new v2 nodes are LIVE: listed, costed, buyable behind their thread; every v1 id is live', () => {
   const v1ids = new Set(V1.nodes.map((n) => n.id));
-  const newIds = real.info.nodes.filter((n) => !v1ids.has(n.id)).map((n) => n.id);
+  const newIds = real.info.nodes.filter((n) => !v1ids.has(n.id) && !n.inert).map((n) => n.id);
   assert.equal(newIds.length, 43);
-  assert.deepEqual(liveDef.pendingList.slice().sort(), newIds.slice().sort());
-  for (const id of newIds) {
-    assert.ok(liveDef.pending[id].inert);
-    assert.equal(liveDef.nodes[id], undefined);
-    assert.ok(!liveDef.list.includes(id) && !liveDef.order.includes(id));
-  }
-  // a hostile save that owns every new id gets none of them
-  const forged = Object.fromEntries(newIds.map((id) => [id, 1]));
-  assert.deepEqual(sanitizeTree(forged, { killsByEnemy: { wolf: 1e9, crow: 1e9 } }, liveDef, data), {});
-  assert.deepEqual(aggregateMods(forged, liveDef, data), aggregateMods({}, liveDef, data));
-  // all 82 v1 ids are live, all 125 ids exist exactly once
+  for (const id of newIds) { assert.ok(liveDef.nodes[id], id); assert.ok(liveDef.list.includes(id) && liveDef.order.includes(id)); assert.equal(liveDef.pending[id], undefined); }
   assert.ok([...v1ids].every((id) => liveDef.nodes[id]));
-  assert.equal(new Set(real.info.nodes.map((n) => n.id)).size, 125);
-});
-
-test('T1 no live node uses a v2-only effect kind (they stay inert until T3)', () => {
-  for (const id of liveDef.list) for (const e of liveDef.nodes[id].effects) assert.ok(!('status' in e) && !('visual' in e) && !(e.ability && e.ability !== 'dur'), id);
+  assert.equal(new Set(real.info.nodes.map((n) => n.id)).size, real.info.nodes.length);
+  // the status, ability and visual effect kinds are now live in the game tree
+  const kinds = new Set(liveDef.list.flatMap((id) => liveDef.nodes[id].effects.map((e) => Object.keys(e)[0])));
+  for (const k of ['status', 'visual', 'ability']) assert.ok(kinds.has(k), k);
 });
 
 test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbered', () => {
@@ -145,11 +149,11 @@ test('T1 the v2 view puts every node at a computed position with no overlap, and
   const b = budgetOf(v2Def, RULE, W);
   assert.deepEqual(b.violations, []);
   console.log(formatBudget(b));
-  assert.ok(b.combatAtCap <= 15.5 && b.combatAtCap > 15.3, `combat PE at cap ${b.combatAtCap}`);
+  assert.ok(b.combatAtCap <= 15.5 && Math.abs(b.combatAtCap - 15.18) < 1e-9, `combat PE at cap ${b.combatAtCap} (DT0 trims: 15.18)`);
   assert.ok(Math.abs(b.sustainPE - 5) < 1e-9, `sustain ${b.sustainPE}`);
   assert.ok(b.combatPE < b.combatAtCap);
   const pool = ruleCaps(RULE, W).cats.wpn;
-  assert.ok(Math.abs(pool.C * pool.w * pool.count - 3.2) < 1e-9, 'per-weapon pool is 3.2 PE at cap');
+  assert.ok(Math.abs(pool.C * pool.w * pool.count - 2.8) < 1e-9, 'per-weapon pool is 2.8 PE at cap (cap 7, DT0 trim)');
 });
 
 // ---------------------------------------------------------------- budget failure cases
@@ -182,8 +186,9 @@ test('T1 budget FAILS: extra sustain, second revive, knot over 3%, cluster node 
 test('T1 budget rule is snapshot-tested: changing a cap, weight or limit is a visible deliberate edit', () => {
   assert.deepEqual(RULE, {
     base: { combat: 15.5, sustain: 5 }, perChapter: { combat: 1.5, sustain: 0.5 }, knotMax: 3, optionShareMin: 0.6, flatFace: 2, markFace: 4, rushFace: 0.0375,
-    perWeapon: { cap: 8, weight: 0.08, refWeapons: 5 },
-    categories: { dmg: { cap: 3, weight: 1 }, tagS: { cap: 6, weight: 0.35 }, tagM: { cap: 6, weight: 0.35 }, cast: { cap: 4, weight: 0.3 }, area: { cap: 6, weight: 0.12 }, hp: { cap: 6, weight: 0.2 }, heal: { cap: 1.5, weight: 0.4 }, status: { cap: 8, weight: 0.15 } },
+    loreShare: 0.1667,
+    perWeapon: { cap: 7, weight: 0.08, refWeapons: 5 },
+    categories: { dmg: { cap: 2.5, weight: 1 }, tagS: { cap: 5, weight: 0.35 }, tagM: { cap: 5, weight: 0.35 }, cast: { cap: 3, weight: 0.3 }, area: { cap: 4, weight: 0.12 }, hp: { cap: 6, weight: 0.2 }, heal: { cap: 1.5, weight: 0.4 }, status: { cap: 8, weight: 0.15 }, lore: { cap: 2, weight: 0.6 }, choice: { cap: 1, weight: 0.8 } },
     sustain: { revive: 4, perReroll: 0.1, perBanish: 0.1, heartDrop: 0.04, heartHeal: 0.04, reviveMaxFrac: 0.2, rerollMax: 3, banishMax: 3, reviveMax: 1 },
     utility: { speed: 5, pickup: 12, xp: 7.5, gold: 12, abilityCdMax: 50 },
   });
@@ -224,8 +229,6 @@ test('T1 validator: ids, namespaces, retired, idx, fields', () => {
   bad((fs) => { get(fs, 'core.json').nodes[0].idx = 1.5; }, /idx must be an integer/);
   bad((fs) => { get(fs, 'core.json').nodes[0].surprise = 1; }, /unknown field surprise/);
   bad((fs) => { get(fs, 'core.json').nodes[0].v2 = { ring: 3 }; }, /unknown v2 field ring/);
-  bad((fs) => { delete get(fs, 'core.json').nodes[0].ord; }, /needs a legacy order/);
-  bad((fs) => { get(fs, 'core.json').nodes[1].ord = get(fs, 'core.json').nodes[0].ord; }, /duplicate legacy order/);
   bad((fs) => { get(fs, 'core.json').nodes[0].place = { ring: 'hearth', i: 99 }; }, /slot out of range/);
   bad((fs) => { get(fs, 'core.json').nodes[1].place = get(fs, 'core.json').nodes[0].place; }, /ring slot hearth:0 already used/);
   bad((fs) => { get(fs, 'core.json').nodes[0].place = { ring: 'sky', i: 0 }; }, /needs place/);
@@ -354,7 +357,7 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   assert.deepEqual(b.violations, []);
   assert.equal(b.W, 6);
   const base = budgetOf(v2Def, RULE, W);
-  assert.ok(Math.abs(b.combatAtCap - base.combatAtCap) < 1e-9, 'a new weapon adds choices, not power: the pool stays 3.2 PE');
+  assert.ok(Math.abs(b.combatAtCap - base.combatAtCap) < 1e-9, 'a new weapon adds choices, not power: the pool stays 2.8 PE');
   // the live (game) tree is untouched by it: all new nodes are inert and the gates of a missing live weapon are not required
   assert.equal(c.live.nodes.filter((n) => n.id.startsWith('lw_')).every((n) => n.inert), true);
   // and a broken copy of the fixture fails loudly
@@ -387,7 +390,7 @@ for (const n of [1000, 2000]) {
     assert.deepEqual(layoutIssues(r.composed.info, r.def), []);
     const b = budgetOf(r.def, r.composed.info.core.budget, Object.keys(r.composed.info.clusters).length);
     assert.deepEqual(b.violations, []);
-    assert.ok(Math.abs(b.combatAtCap - 15.32) < 0.01, `pool stays fixed as weapons grow: ${b.combatAtCap}`);
+    assert.ok(Math.abs(b.combatAtCap - 15.18) < 0.01, `pool stays fixed as weapons grow: ${b.combatAtCap}`);
     // C.12 targets: compile + validate <= 40 ms (1000) / 80 ms (2000) on an idle machine, and the same for composing the fragments.
     // The test allows 8x (the full suite runs every test file at once on one machine; scripts/tree-validate.mjs --synthetic N checks the real targets on an idle one) and prints the real numbers.
     const target = n === 1000 ? 40 : 80;
@@ -425,7 +428,7 @@ test('T1 scripts/tree-validate.mjs passes on the shipped tree (exit 0) and print
   const { spawnSync } = await import('node:child_process');
   const r = spawnSync(process.execPath, ['scripts/tree-validate.mjs', '--table'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' });
   assert.equal(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /budget: combat PE at cap 15\.32/);
+  assert.match(r.stdout, /budget: combat PE at cap 15.18/);
   assert.match(r.stdout, /ids and idx match the append-only snapshot/);
 });
 

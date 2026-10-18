@@ -9,13 +9,10 @@
    "id": "ch_wren",
    "idx": 0,
    "kind": "hero",
-   "ord": 26,
    "name": "Orphan's Instinct",
-   "desc": "Ghost Wolves bite for +5% damage.",
+   "desc": "Ghost Wolves bite +2%",
    "flavour": "Wren taught the pack to hunt.",
    "branch": "summoner",
-   "ring": 4,
-   "ang": 171.9,
    "cost": {
     "gold": 600
    },
@@ -26,30 +23,19 @@
     {
      "weapon": "ghost_wolves",
      "stat": "power",
-     "pct": 5
+     "pct": 2
     }
    ],
    "unlock": {
     "t": "useCharacter",
     "id": "wren",
     "n": 3
-   },
-   "v2": {
-    "effects": [
-     {
-      "weapon": "ghost_wolves",
-      "stat": "power",
-      "pct": 2
-     }
-    ],
-    "desc": "Ghost Wolves bite +2%"
    }
   },
   {
    "id": "wr_grip",
    "idx": 1,
    "kind": "hero",
-   "inert": true,
    "name": "Firm Grip",
    "desc": "Rally the Pack lasts +0.5 s (ability duration; pins still never hold bosses)",
    "cost": {
@@ -71,7 +57,6 @@
    "id": "wr_spark",
    "idx": 2,
    "kind": "hero",
-   "inert": true,
    "name": "Kindred Sparks",
    "desc": "Visual only: kill sparks join your pack (BIBLE lock)",
    "cost": {

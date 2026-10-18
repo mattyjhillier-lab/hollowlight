@@ -28,12 +28,9 @@
    "id": "gt_judgement_wheel",
    "idx": 0,
    "kind": "socket",
-   "ord": 67,
    "name": "Judgement Wheel",
    "desc": "Unlocks the Judgement Wheel evolution for Holy Orbit. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 3,
-   "ang": 1,
    "cost": {
     "gold": 100
    },
@@ -54,12 +51,9 @@
    "id": "gt_vesper_tide",
    "idx": 1,
    "kind": "socket",
-   "ord": 79,
    "name": "Vesper Tide",
    "desc": "Unlocks the Vesper Tide evolution for Holy Orbit. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 3,
-   "ang": 21,
    "cost": {
     "gold": 600
    },
@@ -92,14 +86,11 @@
    "id": "or_power",
    "idx": 2,
    "kind": "knot",
-   "ord": 38,
    "name": "Burning Orbs",
-   "desc": "Holy Orbit burns for +6% damage.",
+   "desc": "Orb power +2%",
    "branch": "magic",
-   "ring": 3,
-   "ang": 10.8,
    "cost": {
-    "gold": 480
+    "gold": 180
    },
    "requires": [
     "ma_area"
@@ -108,28 +99,14 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 6
+     "pct": 2
     }
-   ],
-   "v2": {
-    "effects": [
-     {
-      "weapon": "holy_orbit",
-      "stat": "power",
-      "pct": 2
-     }
-    ],
-    "desc": "Orb power +2%",
-    "cost": {
-     "gold": 180
-    }
-   }
+   ]
   },
   {
    "id": "or_wick",
    "idx": 3,
    "kind": "knot",
-   "inert": true,
    "name": "Long Wick",
    "desc": "Orb power +2%",
    "cost": {
@@ -147,7 +124,6 @@
    "id": "or_kindle",
    "idx": 4,
    "kind": "bead",
-   "inert": true,
    "name": "Kindling",
    "desc": "Burn potency +2% (status, shared cap)",
    "cost": {
@@ -164,16 +140,13 @@
    "id": "or_wide",
    "idx": 5,
    "kind": "knot",
-   "ord": 39,
    "name": "Wider Halo",
-   "desc": "Holy Orbit circles +6 wider per rank.",
+   "desc": "Orbit size +2%",
    "branch": "magic",
-   "ring": 4,
-   "ang": 8.1,
-   "maxRank": 2,
-   "rankCost": 1.6,
+   "maxRank": 1,
+   "rankCost": 1,
    "cost": {
-    "gold": 600
+    "gold": 450
    },
    "requires": [
     "or_power"
@@ -182,38 +155,21 @@
     {
      "weapon": "holy_orbit",
      "stat": "radius",
-     "add": 6
+     "pct": 2
     }
-   ],
-   "v2": {
-    "effects": [
-     {
-      "weapon": "holy_orbit",
-      "stat": "radius",
-      "pct": 2
-     }
-    ],
-    "desc": "Orbit size +2%",
-    "cost": {
-     "gold": 450
-    },
-    "maxRank": 1,
-    "rankCost": 1
-   }
+   ]
   },
   {
    "id": "or_seventh",
    "idx": 6,
    "kind": "mastery",
-   "ord": 40,
    "name": "Seventh Light",
-   "desc": "Holy Orbit burns for +6% damage and circles 6 wider.",
+   "desc": "Orb power +1% and Orbit size +1%",
    "flavour": "Evolve the orbit and the circle widens.",
    "branch": "magic",
-   "ring": 5,
-   "ang": 6.5,
    "cost": {
-    "gold": 1500
+    "gold": 910,
+    "shards": 1
    },
    "requires": [
     "or_wide"
@@ -222,44 +178,24 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 6
+     "pct": 1
     },
     {
      "weapon": "holy_orbit",
      "stat": "radius",
-     "add": 6
+     "pct": 1
     }
    ],
    "unlock": {
     "t": "evolveWeapon",
     "id": "holy_orbit",
     "n": 1
-   },
-   "v2": {
-    "effects": [
-     {
-      "weapon": "holy_orbit",
-      "stat": "power",
-      "pct": 1
-     },
-     {
-      "weapon": "holy_orbit",
-      "stat": "radius",
-      "pct": 1
-     }
-    ],
-    "desc": "Orb power +1% and Orbit size +1%",
-    "cost": {
-     "gold": 910,
-     "shards": 1
-    }
    }
   },
   {
    "id": "or_tide",
    "idx": 7,
    "kind": "knot",
-   "inert": true,
    "name": "Turning Tide",
    "desc": "Orbit speed +2%",
    "cost": {
@@ -277,7 +213,6 @@
    "id": "or_ember",
    "idx": 8,
    "kind": "bead",
-   "inert": true,
    "name": "Votive Embers",
    "desc": "Burn potency +2% (status, shared cap)",
    "cost": {
@@ -299,7 +234,6 @@
    "id": "or_swing",
    "idx": 9,
    "kind": "knot",
-   "inert": true,
    "name": "Censer Swing",
    "desc": "Orbit speed +2%",
    "cost": {
@@ -317,7 +251,6 @@
    "id": "or_spin",
    "idx": 10,
    "kind": "knot",
-   "inert": true,
    "name": "Quick Circle",
    "desc": "Orbit speed +2%",
    "cost": {
@@ -335,7 +268,6 @@
    "id": "or_bright",
    "idx": 11,
    "kind": "knot",
-   "inert": true,
    "name": "Bright Ring",
    "desc": "Orbit size +2%",
    "cost": {
@@ -353,7 +285,6 @@
    "id": "or_vigil",
    "idx": 12,
    "kind": "bead",
-   "inert": true,
    "name": "Long Vigil",
    "desc": "Orb power +2%",
    "cost": {

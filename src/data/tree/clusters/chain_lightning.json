@@ -28,12 +28,9 @@
    "id": "gt_chain_lightning",
    "idx": 0,
    "kind": "heart",
-   "ord": 75,
    "name": "Chain Lightning",
    "desc": "Unlocks Chain Lightning: it can then appear in your level-up cards.",
    "branch": "magic",
-   "ring": 2,
-   "ang": 31,
    "cost": {
     "gold": 500
    },
@@ -63,12 +60,9 @@
    "id": "gt_thunder_judgment",
    "idx": 1,
    "kind": "socket",
-   "ord": 81,
    "name": "Thunder Judgment",
    "desc": "Unlocks the Thunder Judgment evolution for Chain Lightning. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 2,
-   "ang": 73,
    "cost": {
     "gold": 600
    },
@@ -99,12 +93,9 @@
    "id": "gt_static_storm",
    "idx": 2,
    "kind": "socket",
-   "ord": 78,
    "name": "Static Storm",
    "desc": "Unlocks the Static Storm evolution for Chain Lightning. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 2,
-   "ang": 1,
    "cost": {
     "gold": 600
    },
@@ -125,12 +116,9 @@
    "id": "gt_storm_tether",
    "idx": 3,
    "kind": "socket",
-   "ord": 80,
    "name": "Storm Tether",
    "desc": "Unlocks the Storm Tether evolution for Chain Lightning. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 3,
-   "ang": 46,
    "cost": {
     "gold": 600
    },
@@ -163,14 +151,11 @@
    "id": "cl_arc",
    "idx": 4,
    "kind": "bead",
-   "ord": 42,
    "name": "Forked Arc",
    "desc": "Chain Lightning jumps +1 time.",
    "branch": "magic",
-   "ring": 3,
-   "ang": 32.3,
    "cost": {
-    "gold": 600
+    "gold": 210
    },
    "requires": [
     "ma_area",
@@ -182,25 +167,17 @@
      "stat": "chains",
      "add": 1
     }
-   ],
-   "v2": {
-    "cost": {
-     "gold": 210
-    }
-   }
+   ]
   },
   {
    "id": "cl_power",
    "idx": 5,
    "kind": "knot",
-   "ord": 43,
    "name": "Static Heart",
-   "desc": "Chain Lightning strikes for +7% damage.",
+   "desc": "Power +2%",
    "branch": "magic",
-   "ring": 4,
-   "ang": 24.2,
    "cost": {
-    "gold": 570
+    "gold": 210
    },
    "requires": [
     "cl_arc"
@@ -209,28 +186,14 @@
     {
      "weapon": "chain_lightning",
      "stat": "power",
-     "pct": 7
+     "pct": 2
     }
-   ],
-   "v2": {
-    "effects": [
-     {
-      "weapon": "chain_lightning",
-      "stat": "power",
-      "pct": 2
-     }
-    ],
-    "desc": "Power +2%",
-    "cost": {
-     "gold": 210
-    }
-   }
+   ]
   },
   {
    "id": "cl_spark",
    "idx": 6,
    "kind": "knot",
-   "inert": true,
    "name": "Sparkwood",
    "desc": "Power +2%",
    "cost": {
@@ -248,7 +211,6 @@
    "id": "cl_reach",
    "idx": 7,
    "kind": "knot",
-   "inert": true,
    "name": "Long Reach",
    "desc": "Arc +2%",
    "cost": {
@@ -266,15 +228,11 @@
    "id": "cl_storm",
    "idx": 8,
    "kind": "knot",
-   "ord": 44,
    "name": "Storm Mantle",
-   "desc": "Chain Lightning reaches 6% further.",
+   "desc": "Arc +2%",
    "branch": "magic",
-   "ring": 5,
-   "ang": 19.4,
    "cost": {
-    "gold": 1560,
-    "shards": 1
+    "gold": 570
    },
    "requires": [
     "cl_power"
@@ -283,28 +241,14 @@
     {
      "weapon": "chain_lightning",
      "stat": "area",
-     "pct": 6
+     "pct": 2
     }
-   ],
-   "v2": {
-    "effects": [
-     {
-      "weapon": "chain_lightning",
-      "stat": "area",
-      "pct": 2
-     }
-    ],
-    "desc": "Arc +2%",
-    "cost": {
-     "gold": 570
-    }
-   }
+   ]
   },
   {
    "id": "cl_quick",
    "idx": 9,
    "kind": "knot",
-   "inert": true,
    "name": "Quick Charge",
    "desc": "Cooldown +2%",
    "cost": {
@@ -322,7 +266,6 @@
    "id": "cl_crack",
    "idx": 10,
    "kind": "knot",
-   "inert": true,
    "name": "Thunder Crack",
    "desc": "Power +2%",
    "cost": {
@@ -340,7 +283,6 @@
    "id": "cl_hum",
    "idx": 11,
    "kind": "knot",
-   "inert": true,
    "name": "Humming Air",
    "desc": "Cooldown +2%",
    "cost": {
@@ -358,7 +300,6 @@
    "id": "cl_ground",
    "idx": 12,
    "kind": "knot",
-   "inert": true,
    "name": "Grounded",
    "desc": "Arc +2%",
    "cost": {
@@ -376,7 +317,6 @@
    "id": "cl_kin",
    "idx": 13,
    "kind": "bead",
-   "inert": true,
    "name": "Storm-Caller",
    "desc": "Power +2%",
    "cost": {
@@ -399,7 +339,6 @@
    "id": "cl_crown",
    "idx": 14,
    "kind": "mastery",
-   "inert": true,
    "name": "Crown of Sparks",
    "desc": "Power +1% and Arc +1%",
    "cost": {

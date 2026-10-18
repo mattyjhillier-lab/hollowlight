@@ -28,12 +28,9 @@
    "id": "gt_spirit_bolts",
    "idx": 0,
    "kind": "heart",
-   "ord": 71,
    "name": "Spirit Bolts",
    "desc": "Unlocks Spirit Bolts: it can then appear in your level-up cards.",
    "branch": "magic",
-   "ring": 1,
-   "ang": 330,
    "cost": {
     "gold": 300
    },
@@ -53,12 +50,9 @@
    "id": "gt_spirit_tempest",
    "idx": 1,
    "kind": "socket",
-   "ord": 73,
    "name": "Spirit Tempest",
    "desc": "Unlocks the Spirit Tempest evolution for Spirit Bolts. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 1,
-   "ang": 300,
    "cost": {
     "gold": 400
    },
@@ -89,12 +83,9 @@
    "id": "gt_soul_lance",
    "idx": 2,
    "kind": "socket",
-   "ord": 76,
    "name": "Soul Lance",
    "desc": "Unlocks the Soul Lance evolution for Spirit Bolts. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 2,
-   "ang": 310,
    "cost": {
     "gold": 500
    },
@@ -125,12 +116,9 @@
    "id": "gt_returning_pages",
    "idx": 3,
    "kind": "socket",
-   "ord": 77,
    "name": "Returning Pages",
    "desc": "Unlocks the Returning Pages evolution for Spirit Bolts. Its recipe stays hidden.",
    "branch": "magic",
-   "ring": 2,
-   "ang": 326,
    "cost": {
     "gold": 600
    },
@@ -163,15 +151,13 @@
    "id": "bo_twin",
    "idx": 4,
    "kind": "mastery",
-   "ord": 37,
    "name": "Twin Wisps",
-   "desc": "Spirit Bolts strike for +6% damage and fly 6% faster.",
+   "desc": "Bolt power +1% and Swiftness +1%",
    "flavour": "Evolve the bolts and the wisps answer in pairs.",
    "branch": "magic",
-   "ring": 5,
-   "ang": -19.4,
    "cost": {
-    "gold": 1500
+    "gold": 910,
+    "shards": 1
    },
    "requires": [
     "bo_swift"
@@ -180,44 +166,24 @@
     {
      "weapon": "spirit_bolts",
      "stat": "power",
-     "pct": 6
+     "pct": 1
     },
     {
      "weapon": "spirit_bolts",
      "stat": "speed",
-     "pct": 6
+     "pct": 1
     }
    ],
    "unlock": {
     "t": "evolveWeapon",
     "id": "spirit_bolts",
     "n": 1
-   },
-   "v2": {
-    "effects": [
-     {
-      "weapon": "spirit_bolts",
-      "stat": "power",
-      "pct": 1
-     },
-     {
-      "weapon": "spirit_bolts",
-      "stat": "speed",
-      "pct": 1
-     }
-    ],
-    "desc": "Bolt power +1% and Swiftness +1%",
-    "cost": {
-     "gold": 910,
-     "shards": 1
-    }
    }
   },
   {
    "id": "bo_glyph",
    "idx": 5,
    "kind": "knot",
-   "inert": true,
    "name": "Bright Glyph",
    "desc": "Bolt power +2%",
    "cost": {
@@ -235,14 +201,11 @@
    "id": "bo_pierce",
    "idx": 6,
    "kind": "bead",
-   "ord": 35,
    "name": "Piercing Wisp",
    "desc": "Spirit Bolts pierce +1 enemy.",
    "branch": "magic",
-   "ring": 3,
-   "ang": -32.3,
    "cost": {
-    "gold": 600
+    "gold": 490
    },
    "requires": [
     "ma_cast",
@@ -254,25 +217,17 @@
      "stat": "pierce",
      "add": 1
     }
-   ],
-   "v2": {
-    "cost": {
-     "gold": 490
-    }
-   }
+   ]
   },
   {
    "id": "bo_swift",
    "idx": 7,
    "kind": "knot",
-   "ord": 36,
    "name": "Swift Wisps",
-   "desc": "Spirit Bolts fly 9% faster.",
+   "desc": "Swiftness +2%",
    "branch": "magic",
-   "ring": 4,
-   "ang": -24.2,
    "cost": {
-    "gold": 540
+    "gold": 290
    },
    "requires": [
     "bo_pierce"
@@ -281,28 +236,14 @@
     {
      "weapon": "spirit_bolts",
      "stat": "speed",
-     "pct": 9
+     "pct": 2
     }
-   ],
-   "v2": {
-    "effects": [
-     {
-      "weapon": "spirit_bolts",
-      "stat": "speed",
-      "pct": 2
-     }
-    ],
-    "desc": "Swiftness +2%",
-    "cost": {
-     "gold": 290
-    }
-   }
+   ]
   },
   {
    "id": "bo_ink",
    "idx": 8,
    "kind": "knot",
-   "inert": true,
    "name": "Iron Ink",
    "desc": "Bolt power +2%",
    "cost": {
@@ -320,7 +261,6 @@
    "id": "bo_quick",
    "idx": 9,
    "kind": "knot",
-   "inert": true,
    "name": "Quick Script",
    "desc": "Swiftness +2%",
    "cost": {
@@ -338,7 +278,6 @@
    "id": "bo_line",
    "idx": 10,
    "kind": "knot",
-   "inert": true,
    "name": "Running Line",
    "desc": "Swiftness +2%",
    "cost": {
@@ -356,7 +295,6 @@
    "id": "bo_page",
    "idx": 11,
    "kind": "knot",
-   "inert": true,
    "name": "Turned Page",
    "desc": "Bolt power +2%",
    "cost": {
@@ -374,7 +312,6 @@
    "id": "bo_hand",
    "idx": 12,
    "kind": "knot",
-   "inert": true,
    "name": "Steady Hand",
    "desc": "Swiftness +2%",
    "cost": {
@@ -392,7 +329,6 @@
    "id": "bo_kin",
    "idx": 13,
    "kind": "bead",
-   "inert": true,
    "name": "Rootbreaker",
    "desc": "Bolt power +2%",
    "cost": {
@@ -415,7 +351,6 @@
    "id": "bo_seal",
    "idx": 14,
    "kind": "knot",
-   "inert": true,
    "name": "Sealed Margin",
    "desc": "Bolt power +2%",
    "cost": {

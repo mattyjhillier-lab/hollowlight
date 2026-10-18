@@ -238,8 +238,8 @@ T('R11 a migration step can see a node that was retired (so it can refund it)', 
 
 T('R12 a migration step can see the full owned rank of a node whose maxRank was cut', () => {
   const disk = serializeSave(fullSave());
+  disk.tree.r = { ...disk.tree.r, rv_wide: 2 }; // an older build allowed two ranks; the rescale cut Watch to one (T3a)
   const fs = files();
-  specIn(cluster(fs, 'raven_flock'), 'rv_wide').maxRank = 1;
   core(fs).version = 4;
   const def = liveOf(fs);
   let seenByStep = null;

@@ -9,13 +9,10 @@
    "id": "ch_elias",
    "idx": 0,
    "kind": "hero",
-   "ord": 41,
    "name": "Votive Flame",
-   "desc": "Holy Orbit burns for +5% damage.",
+   "desc": "Holy Orbit +2%",
    "flavour": "Elias never let the candle gutter.",
    "branch": "magic",
-   "ring": 4,
-   "ang": 0,
    "cost": {
     "gold": 600
    },
@@ -26,30 +23,19 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 5
+     "pct": 2
     }
    ],
    "unlock": {
     "t": "useCharacter",
     "id": "elias",
     "n": 3
-   },
-   "v2": {
-    "effects": [
-     {
-      "weapon": "holy_orbit",
-      "stat": "power",
-      "pct": 2
-     }
-    ],
-    "desc": "Holy Orbit +2%"
    }
   },
   {
    "id": "el_wheel",
    "idx": 1,
    "kind": "hero",
-   "inert": true,
    "name": "Wide Wheel",
    "desc": "Candle Wheel ring +8% wider (still no Burn; W3 lock)",
    "cost": {
@@ -71,7 +57,6 @@
    "id": "el_lamp",
    "idx": 2,
    "kind": "hero",
-   "inert": true,
    "name": "Grave-Lamp",
    "desc": "Visual only: lantern trail lingers longer",
    "cost": {

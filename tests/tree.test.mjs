@@ -14,6 +14,8 @@ const DT = 1 / 60;
 const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
 const richSave = (extra = {}) => ({ ...defaultSave(), gold: 1e7, shards: 100, ...extra });
 const E = (id, i = 0) => def.nodes[id].effects[i];
+const soft = (S, C) => C * (1 - Math.exp(-S / C)); // the budget soft cap: total = C(1 - e^(-S/C))
+const chain = (id) => def.order.filter((x) => x !== id && pathToHub(def, id).ids.has(x)); // every node on the way to `id`, parents first
 const ownedPath = (save, ids) => { for (const id of ids) { const r = buy(save, id, def, data); assert.ok(r.ok, `${id}: ${r.reason}`); } };
 
 // ---- minimal synthetic trees for validation tests
@@ -23,7 +25,7 @@ const raw = (nodes) => ({ ...B, nodes });
 const bad = (nodes, re) => assert.throws(() => compileTree(raw(nodes), udata), re);
 
 test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes', () => {
-  assert.ok(def.list.length >= 60 && def.list.length <= 90, `nodes ${def.list.length}`);
+  assert.ok(def.list.length >= 120 && def.list.length <= 200, `nodes ${def.list.length}`);
   assert.deepEqual(Object.keys(def.branches).sort(), ['light', 'magic', 'spirit', 'summoner']);
   const locked = def.list.filter((i) => def.nodes[i].unlock && !def.nodes[i].teaser);
   assert.ok(locked.length >= 12, `locked ${locked.length}`);
@@ -96,13 +98,13 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
   assert.equal(s.tree.sp_reroll1, 1);
   assert.equal(s.gold, 1000 - r.cost.gold);
   assert.equal(buy(s, 'sp_reroll1', def, data).ok, false, 'max rank 1 already owned');
-  // multi-rank
+  // multi-rank (no shipped node has more than one rank since the v2 rescale: a synthetic tree proves the rank path)
+  const md = compileTree(raw([node('a', { maxRank: 2, cost: { gold: 10 }, rankCost: 2 })]), udata);
   const m = richSave();
-  m.tree.gt_raven_flock = 1; // gate owned (G1e: gated-weapon nodes need the unlock)
-  ownedPath(m, ['su_bond', 'su_pot', 'rv_talon']);
-  assert.equal(buy(m, 'rv_wide', def, data).rank, 1);
-  assert.equal(buy(m, 'rv_wide', def, data).rank, 2);
-  assert.equal(buy(m, 'rv_wide', def, data).ok, false);
+  assert.equal(buy(m, 'a', md, data).rank, 1);
+  assert.equal(buy(m, 'a', md, data).rank, 2);
+  assert.equal(buy(m, 'a', md, data).ok, false);
+  assert.equal(m.gold, 1e7 - 10 - 20);
   // shards
   const sh = richSave({ shards: 0 });
   ownedPath(sh, ['su_bond', 'su_rush']);
@@ -114,11 +116,11 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
 
 test('unlock conditions gate buying; teasers never buyable', () => {
   const s = richSave();
-  ownedPath(s, ['su_bond', 'su_call', 'wf_fang']);
-  ownedPath(s, ['wf_bleed']);
+  s.stats.killsByEnemy.wolf = 3000; // enough for the path (Red Thread needs 2500) but not for the chin lantern (4000)
+  ownedPath(s, chain('wf_third'));
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'condition');
   assert.equal(buy(s, 'wf_third', def, data).ok, false);
-  s.stats.killsByEnemy.wolf = 1000;
+  s.stats.killsByEnemy.wolf = 4000;
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'available');
   assert.ok(buy(s, 'wf_third', def, data).ok);
   assert.equal(nodeStatus(def, s, 'tz_marsh', data).state, 'teaser');
@@ -275,17 +277,17 @@ test('closestUnlocks ranks by progress; newly-met conditions come from a banked 
   const st = new SaveStore(mem());
   st.load();
   const ctx = { def, data };
-  const b1 = st.bankRun({ outcome: 'defeat', time: 300, level: 12, kills: 400, gold: 500, shards: 0, killsByEnemy: { wolf: 400, crow: 100 }, character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: null }] }, ctx);
+  const b1 = st.bankRun({ outcome: 'defeat', time: 240, level: 12, kills: 400, gold: 500, shards: 0, killsByEnemy: { wolf: 400, crow: 100 }, character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: null }] }, ctx);
   assert.deepEqual(b1.newlyMet, []);
   const c = closestUnlocks(def, st.data, data, 3);
   assert.equal(c.length, 3);
   assert.ok(c[0].frac >= c[1].frac && c[1].frac >= c[2].frac);
   assert.ok(c.every((x) => /\d+\/\d+/.test(x.text)));
-  const b2 = st.bankRun({ outcome: 'victory', time: 900, level: 50, kills: 3000, gold: 2000, shards: 5, killsByEnemy: { wolf: 700, crow: 1400, root_crawler: 50 }, bossKilled: true, bossId: 'elder_treant', character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: 'phantom_stampede' }] }, ctx);
+  const b2 = st.bankRun({ outcome: 'victory', time: 900, level: 50, kills: 3000, gold: 2000, shards: 5, killsByEnemy: { wolf: 3700, crow: 8000, root_crawler: 50 }, bossKilled: true, bossId: 'elder_treant', character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: 'phantom_stampede' }] }, ctx);
   for (const id of ['wf_third', 'rv_oath', 'li_last', 'li_elder', 'li_dawn', 'li_vow', 'li_scav']) assert.ok(b2.newlyMet.includes(id), id);
   assert.ok(!b2.newlyMet.includes('wf_fang'), 'nodes without a condition never appear');
   const s = st.data.stats;
-  assert.equal(s.killsByEnemy.wolf, 1100);
+  assert.equal(s.killsByEnemy.wolf, 4100);
   assert.equal(s.chapters.cursed_forest.clears, 1);
   assert.equal(s.chapters.cursed_forest.runs, 2);
   assert.equal(s.chapters.cursed_forest.bestTime, 900);
@@ -326,16 +328,18 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   const none = aggregateMods({}, def, data);
   assert.deepEqual(none, emptyEffects());
   const a = aggregateMods({ sp_edge: 1, sp_cd1: 1, sp_cd2: 1, sp_cd3: 1, sp_cd4: 1, ma_cast: 1, ma_area: 1, su_bond: 1, ma_focus: 1, li_vigor: 1, li_regen: 1 }, def, data);
-  assert.ok(Math.abs(a.mods.damage - (1 + E('sp_edge').pct / 100)) < 1e-9);
+  // every capped effect passes through the soft cap total = C(1 - e^(-S/C)) (docs/design/skill-tree-v2.md section 8)
+  assert.ok(Math.abs(a.mods.damage - (1 + soft(E('sp_edge').pct, 2.5) / 100)) < 1e-9);
   assert.ok(Math.abs(a.mods.abilityCd - 0.55) < 1e-9, `abilityCd ${a.mods.abilityCd}`);
-  assert.ok(Math.abs(a.mods.cooldown - (1 + E('ma_cast').pct / 100)) < 1e-9);
-  assert.ok(Math.abs(a.mods.area - (1 + E('ma_area').pct / 100)) < 1e-9);
-  assert.ok(Math.abs(a.player.maxHp - (1 + E('li_vigor').pct / 100)) < 1e-9);
-  assert.equal(a.player.levelHeal, E('li_regen').pct);
-  assert.equal(a.weaponBonus.ghost_wolves.power.pct, E('su_bond').pct, 'summon tag expands to wolves');
-  assert.equal(a.weaponBonus.raven_flock.power.pct, E('su_bond').pct);
-  assert.equal(a.weaponBonus.spirit_bolts.power.pct, E('ma_focus').pct, 'magic tag expands to bolts');
-  assert.equal(a.weaponBonus.holy_orbit.power.pct, E('ma_focus').pct);
+  assert.ok(Math.abs(a.mods.cooldown - (1 + soft(-E('ma_cast').pct, 3) / -100)) < 1e-9);
+  assert.ok(Math.abs(a.mods.area - (1 + soft(E('ma_area').pct, 4) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.maxHp - (1 + soft(E('li_vigor').pct, 6) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.levelHeal - soft(E('li_regen').pct, 1.5)) < 1e-9);
+  const tagS = soft(E('su_bond').pct, 5), tagM = soft(E('ma_focus').pct, 5);
+  assert.ok(Math.abs(a.weaponBonus.ghost_wolves.power.pct - tagS) < 1e-9, 'summon tag expands to wolves');
+  assert.ok(Math.abs(a.weaponBonus.raven_flock.power.pct - tagS) < 1e-9);
+  assert.ok(Math.abs(a.weaponBonus.spirit_bolts.power.pct - tagM) < 1e-9, 'magic tag expands to bolts');
+  assert.ok(Math.abs(a.weaponBonus.holy_orbit.power.pct - tagM) < 1e-9);
   assert.equal(a.weaponBonus.ghost_wolves.speed, undefined);
   // reroll / banish / auto / revive / rush
   const v = aggregateMods({ sp_reroll1: 1, sp_reroll2: 1, sp_reroll3: 1, sp_ban1: 1, sp_auto: 1, li_last: 1, su_rush: 1, ma_attune: 1 }, def, data);
@@ -343,12 +347,13 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   assert.equal(v.meta.banishes, 1);
   assert.equal(v.ability.autoHp, 0.3);
   assert.equal(v.player.revive, E('li_last').frac);
-  assert.deepEqual(v.rush, { pct: 25, secs: 6 });
+  assert.equal(v.rush.secs, 4);
+  assert.ok(v.rush.pct < 10 && v.rush.pct > 8, `rush ${v.rush.pct} (10% before the tag cap)`);
   assert.equal(v.evoLuck, 1.5);
   // keystone trade-off
   const k = aggregateMods({ su_key: 1 }, def, data);
-  assert.equal(k.weaponBonus.ghost_wolves.power.pct, E('su_key', 0).pct);
-  assert.equal(k.weaponBonus.spirit_bolts.power.pct, E('su_key', 1).pct);
+  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(E('su_key', 0).pct, 5)) < 1e-9);
+  assert.equal(k.weaponBonus.spirit_bolts.power.pct, E('su_key', 1).pct, 'penalties pass through the cap unscaled');
   assert.ok(E('su_key', 0).pct > 0 && E('su_key', 1).pct < 0, 'keystone trades one side for the other');
   // hostile ranks cannot push values out of bounds
   const h = aggregateMods({ sp_cd1: 1e9, li_vigor: 1e9, sp_reroll1: 1e9 }, def, data);
@@ -378,8 +383,8 @@ test('layout: coordinates are finite, virtualised queries return only nearby nod
   assert.ok(near.length < 12 && near.length > 0);
   for (const id of near) assert.ok(Math.abs(def.nodes[id].x) <= 150 && Math.abs(def.nodes[id].y) <= 150);
   const p = pathToHub(def, 'wf_third');
-  assert.ok(p.ids.has('su_bond') && p.ids.has('wf_third'));
-  assert.ok(p.edges.has('hub>su_bond'));
+  assert.ok(p.ids.has('wf_third') && p.ids.size >= 6, 'the chin lantern is reached along the wolf thread');
+  assert.ok([...p.edges].some((e) => e.startsWith('hub>')), 'a starter constellation hangs off the hub');
 });
 
 test('scalability: a generated 600-node tree compiles and queries quickly', () => {
@@ -424,7 +429,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   assert.equal(w.s.count, 3);
   assert.ok(Math.abs(w.s.power - 7 * 1.1) < 1e-9, `power ${w.s.power}`);
   const real = new Sim({ data, seed: 1, tree: fx({ su_bond: 1, wf_fang: 1 }) });
-  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (E('su_bond').pct + E('wf_fang').pct) / 100)) < 1e-9);
+  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (soft(E('su_bond').pct, 5) + soft(E('wf_fang').pct, 7)) / 100)) < 1e-9);
   sim.debugGrant('ghost_wolves', { count: 2, power: 1 });
   assert.equal(sim.weapons[0].s.count, 5, 'bonus persists through rank-ups and debug grants');
   run(sim, 5);
@@ -432,7 +437,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   const s2 = new Sim({ data, seed: 1, characterId: 'elias', tree: fx({ ma_cast: 1, bo_pierce: 1 }) });
   s2.addWeapon('spirit_bolts');
   assert.equal(s2.weapons[1].s.pierce, 1);
-  assert.ok(Math.abs(s2.mods.cooldown - (1 + E('ma_cast').pct / 100)) < 1e-9);
+  assert.ok(Math.abs(s2.mods.cooldown - (1 - soft(-E('ma_cast').pct, 3) / 100)) < 1e-9);
 });
 
 test('effects: reroll and banish are unavailable at the start and unlocked by the tree', () => {
@@ -469,16 +474,16 @@ test('effects: ability duration, auto-activate at low health', () => {
   sim.player.hp = sim.player.maxHp * 0.2;
   sim.step(DT, {});
   assert.ok(sim.ability.cdLeft > 0, 'auto-activated');
-  assert.ok(Math.abs(sim.buffs.rally - 7.5) < 0.1, `rally ${sim.buffs.rally}`);
+  assert.ok(Math.abs(sim.buffs.rally - 6.9) < 0.1, `rally ${sim.buffs.rally} (6 s x 1.15)`);
 });
 
 test('effects: max health, regeneration, hearts', () => {
   const sim = new Sim({ data, seed: 1, godMode: true, tree: fx({ li_vigor: 1, li_regen: 1 }) });
-  assert.equal(sim.player.maxHp, Math.round(60 * (1 + E('li_vigor').pct / 100)));
+  assert.equal(sim.player.maxHp, Math.round(60 * (1 + soft(E('li_vigor').pct, 6) / 100)));
   sim.player.hp = 10;
   sim.xp = sim.xpNeeded + 1;
   sim.checkLevelUp();
-  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * E('li_regen').pct / 100)) < 1e-9, `hp ${sim.player.hp}`);
+  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * soft(E('li_regen').pct, 1.5) / 100)) < 1e-9, `hp ${sim.player.hp}`);
   const reg = new Sim({ data, seed: 1, godMode: true, tree: { player: { regen: 1 } } });
   reg.player.hp = 10;
   reg.weapons.length = 0;
@@ -507,8 +512,8 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
   const base = r.dmgMult(w);
   r.xp = r.xpNeeded + 1;
   r.checkLevelUp();
-  assert.ok(r.buffs.rush > 5);
-  assert.ok(Math.abs(r.dmgMult(w) - base * 1.25) < 1e-9);
+  assert.ok(r.buffs.rush > 3);
+  assert.ok(Math.abs(r.dmgMult(w) - base * (1 + r.tfx.rush.pct / 100)) < 1e-9);
   assert.equal(new Sim({ data, seed: 2 }).dmgMult(w), base);
 
   const luck = new Sim({ data, seed: 2, tree: fx({ ma_attune: 1 }) });
@@ -600,11 +605,11 @@ test('G1e: no non-gate node text names a locked weapon or evolution (data-driven
 
 test('G1e: old saves that own gated-weapon nodes without the gate are repaired with a full refund', () => {
   const paid = (ids) => spentOf(Object.fromEntries(ids.map((i) => [i, 1])), def);
-  const raw0 = { ...defaultSave(), gold: 100, shards: 2, tree: { su_bond: 1, su_pot: 1, rv_talon: 1, rv_wide: 2, ma_focus: 1, ma_cast: 1, bo_pierce: 1, bo_swift: 1, cl_arc: 1 } };
+  const raw0 = { ...defaultSave(), gold: 100, shards: 2, tree: { su_bond: 1, su_pot: 1, rv_talon: 1, rv_quill: 1, ma_focus: 1, ma_cast: 1, cl_arc: 1, cl_power: 1 } };
   raw0.stats.killsByEnemy = {};
   const fixed = sanitize(raw0);
   assert.deepEqual(Object.keys(fixed.tree).sort(), ['ma_cast', 'ma_focus', 'su_bond', 'su_pot']);
-  const exp = spentOf({ rv_talon: 1, rv_wide: 2, bo_pierce: 1, bo_swift: 1 }, def);
+  const exp = spentOf({ rv_talon: 1, rv_quill: 1, cl_arc: 1, cl_power: 1 }, def);
   assert.equal(fixed.gold, 100 + exp.gold, 'spent gold refunded, not silently deleted');
   assert.equal(fixed.shards, 2 + exp.shards);
   // idempotent: a repaired save refunds nothing more
