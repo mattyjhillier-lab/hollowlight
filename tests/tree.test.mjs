@@ -227,7 +227,7 @@ test('every condition type: progress, text and completion', () => {
   };
   const P = (c) => conditionProgress(c, stats, def, data);
   assert.equal(P({ t: 'killEnemy', id: 'wolf', n: 1000 }).frac, 0.34);
-  assert.equal(P({ t: 'killEnemy', id: 'wolf', n: 1000 }).lines[0].text, 'Slay 1000 Forest Wolf');
+  assert.equal(P({ t: 'killEnemy', id: 'wolf', n: 1000 }).lines[0].text, 'Slay 1000 Fell Wolf');
   assert.equal(P({ t: 'killEnemy', id: 'crow', n: 10 }).done, false);
   assert.equal(P({ t: 'clearChapter', id: 'cursed_forest' }).done, true);
   assert.equal(P({ t: 'clearChapter', id: 'cursed_forest', n: 2 }).frac, 0.5);

@@ -11,7 +11,8 @@ import { data } from './helpers.mjs';
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 test('ids unchanged and every Husk type is a real enemy (saves, kill gates and tree conditions keep working)', () => {
-  assert.deepEqual(HUSK_IDS, ['wolf']); // EN0: the pipeline with the Fell Wolf rig; crow + crawler in EN2
+  assert.deepEqual(HUSK_IDS, ['wolf']); // EN1: Fell Wolf; crow + crawler in EN2
+  assert.equal(data.enemies.wolf.name, 'Fell Wolf');
   for (const id of HUSK_IDS) assert.ok(data.enemies[id], id);
 });
 
