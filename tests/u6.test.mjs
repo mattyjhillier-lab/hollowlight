@@ -357,3 +357,98 @@ test('BIBLE and LOCKED record that the defeat lantern dims, not out', () => {
   assert.ok(/dims, not out/i.test(R('docs/BIBLE.md')));
   assert.ok(/dims, not out|dim/i.test(R('docs/LOCKED.md')));
 });
+
+// ---------------------------------------------------------------- DR4: death recap ('Struck down by ...' + 'What hurt you' bars)
+const hurtOf = (over = {}) => ({ by: { wolf: 80, crow: 35, root_crawler: 25, bramble_hart: 10 }, hits: { wolf: 14, crow: 9, root_crawler: 3, bramble_hart: 1 }, lunge: 7, last: { src: 'wolf', kind: 'lunge', t: 391 }, ...over });
+
+test('DR4 recap: struck-down line from the last hit, names from game data', () => {
+  const v = mkView(res({ hurt: hurtOf() }));
+  const s = v.recap.struck;
+  assert.equal(`${s.lead} ${s.art} ${s.name}${s.tail} ${s.at}`, "Struck down by a Fell Wolf's lunge at 6:31");
+  const crow = C.hurtRecap({ hurt: hurtOf({ last: { src: 'crow', kind: 'contact', t: 70 } }) }, data, false).struck;
+  assert.equal(`${crow.lead} ${crow.art} ${crow.name}${crow.tail} ${crow.at}`, 'Struck down by a Grave Crow at 1:10');
+  const tre = C.hurtRecap({ hurt: hurtOf({ last: { src: 'elder_treant', kind: 'slam', t: 612 } }) }, data, false).struck;
+  assert.equal(`${tre.art} ${tre.name}${tre.tail}`, "an Elder Treant's slam");
+  const pip = C.hurtRecap({ hurt: hurtOf({ last: { src: 'stoat_piper', kind: 'thorn', t: 250 } }) }, data, false).struck;
+  assert.equal(`${pip.art} ${pip.name}${pip.tail}`, "a Stoat Piper's thorn");
+});
+
+test('DR4 recap: bars = top 3 sources by damage share of damage taken; a lunge note when most wolf hits were lunges', () => {
+  const r = C.hurtRecap({ hurt: hurtOf() }, data, false);
+  assert.deepEqual(r.rows.map((x) => x.id), ['wolf', 'crow', 'root_crawler']);
+  assert.deepEqual(r.rows.map((x) => x.pct), [53, 23, 17]);
+  assert.deepEqual(r.rows.map((x) => x.name), ['Fell Wolf', 'Grave Crow', 'Root Crawler']);
+  assert.equal(r.note, 'About half of the Fell Wolf hits were lunges');
+  assert.equal(C.hurtRecap({ hurt: hurtOf({ lunge: 12 }) }, data, false).note, 'Most of the Fell Wolf hits were lunges');
+  assert.equal(C.hurtRecap({ hurt: hurtOf({ lunge: 1 }) }, data, false).note, '');
+  assert.equal(C.hurtRecap({ hurt: hurtOf({ hits: { wolf: 2 }, lunge: 2 }) }, data, false).note, '', 'too few wolf hits to say anything');
+});
+
+test('DR4 recap: victory has no struck-down line; missing / hostile data gives nothing, never throws', () => {
+  assert.equal(C.hurtRecap({ hurt: hurtOf() }, data, true).struck, null);
+  assert.equal(C.hurtRecap({ hurt: hurtOf() }, data, true).rows.length, 3, 'bars still useful after a win');
+  for (const bad of [undefined, null, {}, { hurt: null }, { hurt: 5 }, { hurt: { by: 'x', last: 7 } }, { hurt: { by: { '<img src=x onerror=alert(1)>': 99, wolf: NaN, crow: -4 }, last: { src: '__proto__', kind: '<b>', t: NaN } } }]) {
+    const r = C.hurtRecap(bad, data, false);
+    assert.equal(r.struck, null); assert.deepEqual(r.rows, []); assert.equal(r.note, '');
+  }
+  const weird = C.hurtRecap({ hurt: { by: { wolf: 5 }, hits: { wolf: 99 }, lunge: 99, last: { src: 'wolf', kind: '<script>', t: Infinity } } }, data, false);
+  assert.equal(weird.struck.tail, '', 'unknown kind is plain contact'); assert.equal(weird.struck.at, 'at 0:00');
+  assert.equal(C.resultsView(res(), bank(), data).recap.rows.length, 0, 'a run without counters just has no recap');
+});
+
+test('DR4 recap renders as text only, keeps the one-screen drop order and the weapons list', () => {
+  const view = mkView(res({ hurt: hurtOf() }));
+  const { r } = build(view);
+  const txt = allText(r.root);
+  assert.match(txt, /Struck down by a Fell Wolf's lunge at 6:31/);
+  assert.match(txt, /What hurt you/);
+  assert.equal(byCls(r.root, 'u6-hurt')[0].children.length, 3, 'three bars');
+  assert.ok(byCls(r.root, 'u6-weps').length === 2, 'the weapons list is still there');
+  assert.ok(find(r.root, (n) => n.attrs && n.attrs['data-drop'] === 'hurt').length === 1);
+  assert.match(C.resultsSummary(view), /Struck down by a Fell Wolf's lunge at 6:31/);
+  const css = R('src/ui/results.js');
+  assert.match(css, /DROP_ORDER = \['weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'\]/);
+  assert.ok(!/innerHTML/.test(css.replace(/\/\/.*$/gm, '')));
+});
+
+test('DR4 recap: hostile strings stay inert (names only ever come from data tables)', () => {
+  const evil = '<img src=x onerror=alert(1)><script>alert(2)</script>';
+  const v = mkView(res({ hurt: { by: { [evil]: 50, wolf: 50 }, hits: {}, lunge: 0, last: { src: evil, kind: 'lunge', t: 5 } } }));
+  assert.equal(v.recap.struck, null, 'an id that is not an enemy in data never becomes text');
+  assert.deepEqual(v.recap.rows.map((x) => x.id), ['wolf']);
+  const { r } = build(v);
+  assert.ok(!allText(r.root).includes('<img') && !allText(r.root).includes('<script'));
+});
+
+test('DR4 sim counters feed the recap (hurt block of sim.result)', async () => {
+  const { Sim } = await import('../src/sim/Sim.js');
+  const sim = new Sim({ data, characterId: 'wren', seed: 3 });
+  sim.time = 391; sim.player.iframes = 0;
+  sim.damagePlayer(5, 'wolf', { kind: 'lunge', id: 9, x: 1, y: 2 });
+  sim.player.iframes = 0; sim.damagePlayer(3, 'crow');
+  const h = sim.result().hurt;
+  assert.deepEqual(h.by, { wolf: 5, crow: 3 }); assert.deepEqual(h.hits, { wolf: 1, crow: 1 }); assert.equal(h.lunge, 1);
+  assert.deepEqual(h.last, { src: 'crow', kind: 'contact', t: 391 });
+  assert.equal(C.hurtRecap(sim.result(), data, false).struck.name, 'Grave Crow');
+});
+
+test('DR4 fit(): weapons drop first, then the lunge note, then the recap bars; rows come back when there is room', () => {
+  const v = mkView(res({ hurt: hurtOf() }), bank({ closest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] }));
+  const { r } = build(v);
+  const dropped = () => (r.root.getAttribute('data-dropped') || '').split(' ').filter(Boolean);
+  const hiddenGroups = () => new Set(r.root.querySelectorAll('[data-drop]').filter((n) => n.hidden).map((n) => n.attrs['data-drop']));
+  const H = { weapons: 3, hurtnote: 1, hurt: 2, nudge: 1, arcl: 1, line: 1 }; // heights of each droppable group
+  let cap = 200;
+  const used = () => 90 + Object.entries(H).filter(([k]) => !hiddenGroups().has(k)).reduce((a, [, h]) => a + h, 0);
+  Object.defineProperty(r.main, 'clientHeight', { get: () => cap });
+  Object.defineProperty(r.main, 'scrollHeight', { get: () => used() });
+  for (const n of [r.panel, r.hero]) { Object.defineProperty(n, 'clientHeight', { get: () => 1000 }); Object.defineProperty(n, 'scrollHeight', { get: () => 10 }); }
+  const total = 90 + 3 + 1 + 2 + 1 + 1 + 1;
+  cap = total; r.fit(); assert.deepEqual(dropped(), [], 'room for everything');
+  cap = total - 3; r.fit(); assert.deepEqual(dropped(), ['weapons'], 'the weapon bars go first');
+  cap = total - 5; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote'], 'then the one-line note, the bars stay');
+  cap = total - 7; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt'], 'only then the recap bars');
+  cap = total - 8; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt', 'nudge']);
+  cap = total; r.fit(); assert.deepEqual(dropped(), [], 'everything returns');
+  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'\]/);
+});

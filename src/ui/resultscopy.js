@@ -27,6 +27,15 @@ export const RES = {
   chips: { level: 'Level', slain: 'Slain', evolved: 'Evolved', none: 'none' },
   bank: { gold: 'Gold banked', shards: 'Soul shards', total: 'total', bossBonus: 'boss bonus included' },
   weaponsLabel: 'Where the damage came from',
+  hurt: {
+    label: 'What hurt you',
+    struck: 'Struck down by',
+    at: 'at',
+    // possessive tails by hit kind: "a Fell Wolf's lunge". contact has no tail (just the name).
+    kinds: { lunge: "'s lunge", charge: "'s charge", slam: "'s slam", burst: "'s burst", thorn: "'s thorn" },
+    lungeMost: 'Most of the {name} hits were lunges',
+    lungeHalf: 'About half of the {name} hits were lunges',
+  },
   nudge: { closest: 'Closest unlock' },
   debug: 'Debug run: not saved.',
   again: { label: 'Again', hint: 'R' },
@@ -49,6 +58,34 @@ export function group(n) { return String(whole(n)).replace(/\B(?=(\d{3})+(?!\d))
 export function defeatLine(time) {
   const t = whole(time);
   return RES.defeat.lines[t < 180 ? 0 : t < 600 ? 1 : 2];
+}
+
+const KIND_IDS = ['contact', 'lunge', 'charge', 'slam', 'burst', 'thorn'];
+const article = (name) => (/^[aeiou]/i.test(name) ? 'an' : 'a');
+
+/** DR4 recap: who struck you down + the top sources of damage taken. r.hurt comes from the sim's counters (ids only); names come from data, never from the run. */
+export function hurtRecap(r, data, won) {
+  const h = r && r.hurt && typeof r.hurt === 'object' ? r.hurt : null;
+  const out = { struck: null, rows: [], note: '' };
+  if (!h) return out;
+  const nameOf = (id) => (data && data.enemies && typeof id === 'string' && Object.hasOwn(data.enemies, id) ? clip(data.enemies[id].name, 40) : '');
+  if (!won && h.last && typeof h.last === 'object') {
+    const nm = nameOf(h.last.src);
+    if (nm) {
+      const kind = KIND_IDS.includes(h.last.kind) ? h.last.kind : 'contact';
+      out.struck = { lead: RES.hurt.struck, art: article(nm), name: nm, tail: RES.hurt.kinds[kind] || '', at: `${RES.hurt.at} ${clock(h.last.t)}`, src: clip(h.last.src, 40) };
+    }
+  }
+  const by = h.by && typeof h.by === 'object' ? h.by : {};
+  const ids = Object.keys(by).filter((k) => nameOf(k) && whole(by[k]) > 0);
+  const total = ids.reduce((a, k) => a + whole(by[k]), 0);
+  if (total > 0) {
+    ids.sort((a, b) => whole(by[b]) - whole(by[a]) || (a < b ? -1 : 1));
+    out.rows = ids.slice(0, 3).map((k) => ({ id: clip(k, 40), name: nameOf(k), pct: Math.max(1, Math.min(100, Math.round((100 * whole(by[k])) / total))) }));
+    const wh = h.hits && typeof h.hits === 'object' ? whole(h.hits.wolf) : 0, lg = whole(h.lunge);
+    if (wh >= 4 && lg > 0 && nameOf('wolf')) { const s = lg / wh; const tpl = s >= 0.6 ? RES.hurt.lungeMost : s >= 0.35 ? RES.hurt.lungeHalf : ''; out.note = tpl.replace('{name}', nameOf('wolf')); }
+  }
+  return out;
 }
 
 /** Top-3 weapons by damage share. Shares are of the damage the weapons themselves dealt; a weapon that did none shows 0%. */
@@ -121,6 +158,7 @@ export function resultsView(r, bank, data) {
       note: typeof bank.note === 'string' ? clip(bank.note, 140) : '',
     } : { gold: whole(r.gold), shards: whole(r.shards) },
     weapons: weaponShares(r.weapons, data),
+    recap: hurtRecap(r, data, won),
     nudge,
     treeDot: newly.length > 0,
   };
@@ -129,7 +167,8 @@ export function resultsView(r, bank, data) {
 /** Screen-reader sentence for the whole summary (the visual count-up never reaches assistive tech). */
 export function resultsSummary(v) {
   const b = v.bank;
-  const parts = [v.title, `${v.timeLabel} ${v.time}`, v.near.map((s) => s.t).join('').trim(), `Level ${v.chips.level}`, `${v.chips.slain} slain`];
+  const st = v.recap && v.recap.struck;
+  const parts = [v.title, st ? `${st.lead} ${st.art} ${st.name}${st.tail} ${st.at}` : '', `${v.timeLabel} ${v.time}`, v.near.map((s) => s.t).join('').trim(), `Level ${v.chips.level}`, `${v.chips.slain} slain`];
   parts.push(`${group(b.gold)} gold${b.goldTotal != null ? ` banked, total ${group(b.goldTotal)}` : ''}`, `${group(b.shards)} soul shards${b.shardsTotal != null ? `, total ${group(b.shardsTotal)}` : ''}`);
   return parts.filter(Boolean).join('. ') + '.';
 }

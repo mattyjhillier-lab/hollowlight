@@ -71,6 +71,13 @@ html.touch .overlay.u6.u6-won, .overlay.u6.u6-won {
 .overlay.u6 .u6-bar > i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #8d6c34, #ffe0a0); }
 .overlay.u6 .u6-wep.is-evo .u6-bar > i { background: linear-gradient(90deg, #b47c1e, var(--lg-evo)); }
 
+.overlay.u6 .u6-struck { margin: 0; font: var(--fw-body) var(--fs-body)/1.25 var(--font-body); color: #efe0c0; max-width: 24em; }
+.overlay.u6 .u6-struck b { color: #ff8078; font-weight: var(--fw-body-strong); }
+.overlay.u6 .u6-hurtblk { display: flex; flex-direction: column; gap: clamp(2px, .5vh, 5px); }
+.overlay.u6 .u6-sublab { margin: 0; font-size: var(--fs-small); color: var(--lg-dim); }
+.overlay.u6 .u6-hurt .u6-wep { grid-template-columns: minmax(0, 1.4fr) minmax(40px, 1fr) 3.2em; }
+.overlay.u6 .u6-hurt .u6-bar > i { background: linear-gradient(90deg, #b24a47, #ff8078); }
+.overlay.u6 .u6-hurtnote { margin: 0; font: var(--fw-body) var(--fs-small)/1.25 var(--font-body); color: var(--lg-dim); }
 .overlay.u6 .u6-nudge { display: flex; flex-direction: column; gap: 5px; font: var(--fw-body) var(--fs-body)/1.25 var(--font-body); color: var(--lg-dim); }
 .overlay.u6 .u6-nudge b { color: var(--lg-text); font-weight: var(--fw-body-strong); }
 .overlay.u6 .u6-nudge__line { display: flex; flex-wrap: wrap; align-items: center; gap: .1em .5em; }

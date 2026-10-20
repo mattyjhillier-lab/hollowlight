@@ -1040,6 +1040,7 @@ export class Sim {
       gems: this.gemsTaken,
       abilityUses: this.abilityUses,
       blessings: this.blessingsTaken,
+      hurt: { by: { ...this.hurtBy }, hits: { ...this.hitsBy }, lunge: this.lungeHits, last: this.lastHit ? { src: this.lastHit.src, kind: this.lastHit.kind, t: this.lastHit.t } : null }, // DR4 recap (counters only)
     };
   }
 

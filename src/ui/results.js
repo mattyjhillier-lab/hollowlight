@@ -7,7 +7,7 @@ import { RES, resultsSummary, countAt, group } from './resultscopy.js';
 
 export const INPUT_LOCK_MS = 250;       // keys right after the screen appears are ignored (a mashed Space or R from the run must not restart it)
 export const COUNT_MS = 900;
-const DROP_ORDER = ['weapons', 'nudge', 'arcl', 'line'];   // short screens drop the lowest-priority rows first instead of scrolling
+const DROP_ORDER = ['weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'];   // short screens drop the lowest-priority rows first instead of scrolling
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const nowMs = () => (globalThis.performance && globalThis.performance.now ? globalThis.performance.now() : Date.now());
 
@@ -47,6 +47,11 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
   add(hero, lamp.svg);
   const txt = el('div', 'u6-herotext');
   add(txt, el('div', 'u6-kicker ty-kicker', v.kicker), el('h2', 'u6-title', v.title), el('p', 'u6-line', v.line, { 'data-drop': 'line' }));
+  const rc = v.recap || { struck: null, rows: [], note: '' };
+  if (rc.struck) { // DR4: who struck you down (names come from game data, text only)
+    const s = rc.struck;
+    add(txt, add(el('p', 'u6-struck'), el('span', null, `${s.lead} ${s.art} `), el('b', null, s.name), el('span', null, `${s.tail} ${s.at}`)));
+  }
   if (v.bark) add(txt, el('p', 'u6-bark', `“${v.bark}” ${v.heroName}`.trim()));
   add(hero, txt);
 
@@ -110,6 +115,26 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     }
     put(ul);
     root._fills = fills;
+  }
+
+  if (rc.rows.length) { // DR4: 'What hurt you' (top sources of damage taken, from the sim's counters)
+    const blk = el('div', 'u6-hurtblk', null, { 'data-drop': 'hurt' });
+    const ul = el('ul', 'u6-weps u6-hurt', null, { 'aria-label': RES.hurt.label });
+    add(blk, el('p', 'u6-sublab ty-kicker', RES.hurt.label));
+    for (const w of rc.rows) {
+      const li = el('li', 'u6-wep');
+      const bar = el('span', 'u6-bar', null, { 'aria-hidden': 'true' });
+      const fill = el('i', null);
+      fill.style.width = '0%';
+      add(bar, fill);
+      (root._fills = root._fills || []).push([fill, w.pct]);
+      add(li, el('span', 'u6-wep__name', null), bar, el('span', 'u6-wep__pc', `${w.pct}%`));
+      li.children[0].appendChild(el('span', null, w.name));
+      add(ul, li);
+    }
+    add(blk, ul);
+    if (rc.note) add(blk, el('p', 'u6-hurtnote', rc.note, { 'data-drop': 'hurtnote' }));
+    put(blk);
   }
 
   if (v.nudge) {
@@ -182,8 +207,18 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     const over = () => main.scrollHeight > main.clientHeight + 1 || sum.scrollHeight > sum.clientHeight + 1 || hero.scrollHeight > hero.clientHeight + 1;
     for (const key of DROP_ORDER) {
       if (!over()) break;
-      for (const r of rows) if (r.getAttribute('data-drop') === key) { r.hidden = true; hidden.push(key); }
+      let any = false;
+      for (const r of rows) if (r.getAttribute('data-drop') === key) { r.hidden = true; any = true; }
+      if (any) hidden.push(key);
     }
+    // second pass (DR4): dropping in order can remove a row that was not needed (a taller row ahead of it was the problem): bring back the
+    // highest-priority dropped rows that fit after all, so a short screen keeps as much as it can.
+    for (let i = hidden.length - 1; i >= 0; i--) {
+      const key = hidden[i];
+      for (const r of rows) if (r.getAttribute('data-drop') === key) r.hidden = false;
+      if (over()) { for (const r of rows) if (r.getAttribute('data-drop') === key) r.hidden = true; } else hidden[i] = null;
+    }
+    for (let i = hidden.length - 1; i >= 0; i--) if (hidden[i] === null) hidden.splice(i, 1);
     root.setAttribute('data-dropped', hidden.join(' '));
     return hidden;
   }
