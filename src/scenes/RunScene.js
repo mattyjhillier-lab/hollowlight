@@ -41,7 +41,8 @@ import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
 import { EnemyArt } from '../gfx/enemyrig.js'; // EN0-EN2 Husk animator + death beat (visual only)
 import { HUSK_TYPES, HUSK_IDS } from '../gfx/husk/frames.js';
-import { drawEnemyTells, drawThorns, drawBurstFx } from '../gfx/enemytells.js'; // EN3-EN5 telegraph decals + thorns (above the vignette)
+import { drawEnemyTells, drawThorns, drawBurstFx, drawWolfChevron, TELL_RO } from '../gfx/enemytells.js';
+import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2 shared telegraph rule (EN3-EN5 telegraph decals + thorns draw above the vignette)
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -251,6 +252,7 @@ export class RunScene extends Phaser.Scene {
     this.heroHit = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4001).setScale(inv('hero_wren_o')).setTintFill(HIT_RED).setVisible(false);
     this.hitG = this.add.graphics().setDepth(D_LIT + 4002);
     this.hitGOn = false;
+    this.wolfBudget = new WolfBudget(96); this.wolfE = new Array(96).fill(null); // DR2 wolf chevron budget (no per-frame allocation)
     this.liftD = null; this.liftR = null; this.liftId = -2; // attacker rim images (dark + light red), made on first use
     // A1b hero readability: warm ground pool (additive, lantern colour, off on Low) + soft dark backing so the pale hood separates from pale wolves/ground
     this.heroHalo = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO + 0.5).setTint(ROLE.lantern).setScale(2.6 * inv('glow'), 1.05 * inv('glow')).setVisible(false);
@@ -1064,6 +1066,8 @@ export class RunScene extends Phaser.Scene {
     const life = this.life;
     let ei = -1;
     let liftImg = null, liftE = null;
+    const wb = this.wolfBudget; wb.reset();
+    const wolfE = this.wolfE;
     const hitId = this.hitFx.liftA() > 0.02 ? this.hitFx.id : -2;
     const lowT = this.quality.tier === 'low';
     art.update(Math.min(0.1, this.game.loop.delta / 1000));
@@ -1175,16 +1179,18 @@ export class RunScene extends Phaser.Scene {
         }
       }
       if (e.tele) {
+        const thr = threatens(e, p); // DR2: only a warning that will actually reach the hero is bright
         if (e.boss) {
-          g.fillStyle(PAL.danger, 0.2).fillCircle(e.x, e.y, 74);
-          this.teleG.lineStyle(1, PAL.danger, 0.9).strokeCircle(e.x, e.y, 74);
-        } else if (e.ai) drawEnemyTells(this.teleG, e, this.reducedMotion());
-        else {
-          this.teleG.lineStyle(1, 0xff5a4a, 0.75).lineBetween(e.x, e.y, e.x + e.dx * 55, e.y + e.dy * 55);
-          this.teleG.fillStyle(0xff3b2f, 1).fillTriangle(e.x, e.y - 18, e.x - 3, e.y - 11, e.x + 3, e.y - 11);
-        }
+          const bf = thr ? 1 : TELE_FAINT;
+          g.fillStyle(TELL_RO, 0.2 * bf).fillCircle(e.x, e.y, 74);
+          this.teleG.lineStyle(1, TELL_RO, 0.9 * bf).strokeCircle(e.x, e.y, 74);
+        } else if (e.ai) drawEnemyTells(this.teleG, e, this.reducedMotion(), thr);
+        else { const wi = wb.add(d2, thr); if (wi >= 0) { wolfE[wi] = e; } } // Fell Wolf lunge: budgeted chevrons, drawn after the loop
       }
     }
+
+    wb.plan();
+    for (let wi = 0; wi < wb.n; wi++) { const md = wb.mode[wi]; if (md) drawWolfChevron(this.teleG, wolfE[wi], md); wolfE[wi] = null; }
 
     if (sim.eshots.length) drawThorns(this.teleG, sim.eshots, vx0, vy0, vx1, vy1, this.quality.tier === 'low');
 
@@ -1410,9 +1416,12 @@ export class RunScene extends Phaser.Scene {
         if (lit) lm.add(x, y1, 50, ROLE.lightning, 0.9 * a);
       } else if (f.kind === 'burst' || f.kind === 'fizzle') { drawBurstFx(fx, f, this.reducedMotion());
       } else if (f.kind === 'ring') {
-        const c = hex(f.color);
         const k = Math.max(0, f.ttl / 0.3);
-        fx.lineStyle(2, c, Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
+        if (f.color === '#7a4a1b') { // DR2: the Treant's slam landing is the tell resolving: tell red-orange on a dark rim, above the vignette (was a low-contrast brown)
+          const rr = f.r * (1.15 - 0.15 * k), a = Math.min(1, k + 0.2);
+          this.teleG.lineStyle(5, 0x1a1020, 0.7 * a).strokeCircle(f.x, f.y, rr);
+          this.teleG.lineStyle(3, TELL_RO, a).strokeCircle(f.x, f.y, rr);
+        } else fx.lineStyle(2, hex(f.color), Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
       } else if (f.kind === 'alphaarc') { // The Alpha bite: a pale-blue sweep arc across the bite direction (not a ring), fades in ~0.18 s
         const k = Math.max(0, f.ttl / 0.18);
         fx.lineStyle(3, hex(f.color), 0.7 * k).beginPath().arc(f.x, f.y, f.r * (1.05 - 0.1 * k), f.a - 1.0, f.a + 1.0).strokePath();
