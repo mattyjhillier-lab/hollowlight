@@ -101,11 +101,11 @@ export function toadA(st = {}) {
   // a constellation, never two-eyes-and-a-mouth: faceless rule F3)
   ms += husk(blob([M(-12, -5), M(-8, -10), M(0, -9), M(7, -11), M(15, -8), M(21, -3), M(19, 3), M(9, 5), M(-3, 5), M(-11, 2)]), M, { grain: [[[-8, -6], [4, -7], [16, -4]], [[-8, 3], [6, 3], [16, 2]]], crack: [[13, -9], [14, -5], [12, -3]], lichen: [[-8, 1, 2.2], [17, -5, 1.8]], chip: [[20, 0, 3, 0.1], [-11, -2, 2.6, 3.3]], hi: [[-6, -8], [6, -9]] });
   // sockets sized for the WL6d eye gate (the first, smaller set measured eye 2.2-2.9:1 near the lantern on High)
-  ms += knotSocket(rblob(...M(-3, -0.5), 3.2, 2.6, 8), 1.2) + knotSocket(rblob(...M(10.5, -1), 2.9, 2.4, 8, 0.3), 1.2) + knotSocket(rblob(...M(3.8, -6.2), 2.6, 2.2, 8, 0.6), 1.1);
+  ms += knotSocket(rblob(...M(-3, -0.5), 5.0, 4.0, 8), 1.2) + knotSocket(rblob(...M(10.5, -1), 4.5, 3.7, 8, 0.3), 1.2) + knotSocket(rblob(...M(3.8, -7.8), 4.1, 3.4, 8, 0.6), 1.1);
   ms += sprout(...M(-4, -9), -2.0, 0.6);
   if (st.maskOnly) return { b: `<g transform="translate(${f(-hx)},${f(-hy)})">${ms}</g>`, e: '' };
   if (!st.noMask) b += ms; else b += freed(hx - 2, hy - 2, SK, 0);
-  const E = [M(-3, -0.5), M(10.5, -1), M(3.8, -6.2)];
+  const E = [M(-3, -0.5), M(10.5, -1), M(3.8, -7.8)];
   const e = E.map((p, i) => (st.hurt ? eye(...p, 1.5, { shape: 'squint' }) : eye(...p, (i ? 1.4 : 1.7) + tl * 0.5, { shape: tl > 0.3 ? 'slit' : 'round' }))).join('');
   return finish(st, b, e, { w: 50, h: 58, seed: 31 });
 }

@@ -37,17 +37,17 @@ export const HUSK_TYPES = {
   },
   // EN3 Stoat Piper (ranged; HUSKS BATCH 2 A): upright sentry, ONE very high socket; tell = rears + pipe drops onto you + ember in the tip
   stoat_piper: {
-    fn: stoatA, tellT: 0.3, stride: 9, maskAt: [16, -64], mdx: 6, g: 0.7, box: [-44, -96, 100, 104], foot: 5, dayK: 0.88, hurtW: 40, mask: MASK_BOX, dayRim: 0.55,
+    fn: stoatA, tpw: 4, tellT: 0.3, stride: 9, maskAt: [16, -64], mdx: 6, g: 0.7, box: [-44, -96, 100, 104], foot: 5, dayK: 0.88, hurtW: 40, mask: MASK_BOX, dayRim: 0.55,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   // EN4 Puffback Toad (area denial; HUSKS BATCH 2 A): squat toad + spore blister, three tiny sockets in a triangle; tell = squats, blister swells, cracks glow
   puffback_toad: {
-    fn: toadA, tellT: 0.5, stride: 10, maskAt: [26, -24], mdx: 8, g: 0.8, box: [-40, -64, 84, 72], foot: 6, dayK: 1, hurtW: 50, mask: MASK_BOX, dayRim: 0.4,
+    fn: toadA, tpw: 4, tellT: 0.5, stride: 10, maskAt: [26, -24], mdx: 8, g: 0.8, box: [-40, -64, 84, 72], foot: 6, dayK: 1, hurtW: 50, mask: MASK_BOX, dayRim: 0.4,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   // EN5 Bramble Hart (charger; HUSKS BATCH 2 A): thorn-antler lyre twice the head, long deer-skull husk, two HIGH sockets that swing LOW on the tell
   bramble_hart: {
-    fn: hartA, tellT: 0.3, stride: 20, maskAt: [36, -66], mdx: 8, g: 0.62, box: [-48, -146, 152, 150], foot: 8, dayK: 1, hurtW: 70, mask: MASK_BOX, dayRim: 0.4,
+    fn: hartA, tpw: 4, tellT: 0.3, stride: 20, maskAt: [36, -66], mdx: 8, g: 0.62, box: [-48, -146, 152, 150], foot: 8, dayK: 1, hurtW: 70, mask: MASK_BOX, dayRim: 0.4,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };
@@ -58,7 +58,8 @@ export const FR_N = 9;
 export const RIM_FRAMES = ['w0', 'w1', 'w2', 'w3', 't0', 't1']; // outline frames for the cool night rim (hurt/body reuse w0)
 
 export const wpd = (type) => HUSK_TYPES[type].g / 4; // world units per du
-export const texPerDu = (type) => wpd(type) * TPW;
+export const tpwOf = (type) => HUSK_TYPES[type].tpw ?? TPW; // atlas texels per world unit of this type (EN3-EN5 species bake at 4: atlas size)
+export const texPerDu = (type) => wpd(type) * tpwOf(type);
 
 // apply the mock-up hurt squash (kit.js finish: translate(-W*0.06,0) scale(1.06,0.92) rotate(-5 about (-W*0.3, 0))) to a point
 export function hurtPoint(W, x, y) {
@@ -86,17 +87,20 @@ export const EYE_KINDS = ['g', 'c', 'G', 'h', 'H']; // glow, core, glow+core (on
 // Pure layout of every type's block in the atlas: grid of frames (cols fit ATLAS_W), rim block (half density) after the frames.
 // Returns { w, h, types: { [type]: { x, y, cols, fw, fh, mw, mh, rw, rh, rimY, frames: { name: { x, y, w, h, ox, oy } } } } } (pixels, origin = feet).
 export function layoutAtlas() {
-  let y = 0;
+  // One shared shelf: the next type's frames continue in the row the previous type left (the atlas has no per-type block edge; a type's sheet
+  // image is drawn from its first row down and only paints its own frames, the rest stays transparent), so the last partial rows are not wasted.
+  let x = 0, row = 0, rowH = 0;
   const out = { w: ATLAS_W, h: 0, types: {} };
   for (const id of HUSK_IDS) {
     const T = HUSK_TYPES[id], k = texPerDu(id);
     const fw = Math.ceil(T.box[2] * k) + 2, fh = Math.ceil(T.box[3] * k) + 2;
     const mw = Math.ceil(T.mask[2] * k) + 2, mh = Math.ceil(T.mask[3] * k) + 2;
     const frames = {};
-    let x = 0, row = y, rowH = 0;
+    let y = null; // top of the first row this type uses (set at its first placement)
     for (const [name] of T.frames) {
       const isM = name === 'm', w = isM ? mw : fw, h = isM ? mh : fh;
       if (x + w > ATLAS_W) { x = 0; row += rowH; rowH = 0; }
+      if (y === null) y = row;
       const bx = isM ? T.mask : T.box;
       frames[name] = { x, y: row, w, h, ox: 1 + -bx[0] * k, oy: 1 + -bx[1] * k };
       x += w; rowH = Math.max(rowH, h);
@@ -121,9 +125,8 @@ export function layoutAtlas() {
       }
     });
     out.types[id] = { y, fw, fh, mw, mh, rw, rh, frames };
-    y = row + rowH;
   }
-  out.h = y;
+  out.h = row + rowH;
   return out;
 }
 

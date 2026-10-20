@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HUSK_TYPES, HUSK_IDS, FR, layoutAtlas, typeSheet, eyeAnchors, eyeMeta, socketInfo, jitter, ATLAS_W, TPW, EYE_TEX, hurtPoint } from '../src/gfx/husk/frames.js';
+import { HUSK_TYPES, HUSK_IDS, FR, layoutAtlas, typeSheet, eyeAnchors, eyeMeta, socketInfo, jitter, ATLAS_W, TPW, tpwOf, EYE_TEX, hurtPoint } from '../src/gfx/husk/frames.js';
 import { walkFrame, crowFrame, CORPSE_CAPS } from '../src/gfx/enemyrig.js';
 import { parseParams } from '../src/params.js';
 import { data } from './helpers.mjs';
@@ -110,7 +110,7 @@ test('eyes are baked INTO the sockets (walk/tell/hurt frames), none on the freed
     for (let j = 0; j < SI.socks.length; j++) {
       for (const k of ['g', 'c', 'G', 'h', 'H']) assert.ok(L.types[id].frames['e' + k + j], `${id}:e${k}${j}`);
       const gf = L.types[id].frames['eg' + j];
-      assert.ok(gf.w <= Math.ceil((SI.socks[j].w + 6) * TPW * EYE_TEX * HUSK_TYPES[id].g / 4) + 2, 'glow frame = socket + thin spill');
+      assert.ok(gf.w <= Math.ceil((SI.socks[j].w + 6) * tpwOf(id) * EYE_TEX * HUSK_TYPES[id].g / 4) + 2, 'glow frame = socket + thin spill');
     }
     const glowCells = cells.slice(names.length).filter((c) => !c.includes('<circle') || c.includes('clip-path'));
     assert.ok(glowCells.some((c) => /clip-path="url\(#gk/.test(c)), id + ' glow clipped to the socket');

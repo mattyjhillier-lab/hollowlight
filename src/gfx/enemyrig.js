@@ -1,7 +1,7 @@
 // EN0-EN2: Husk enemy animator + death beat (Phaser side, visual only). Reads sim enemies (position, faceX, tele/state, flash) and never writes
 // to the sim. One pooled image per enemy from the chapter atlas (frame swap only), plus pooled death props (mask-pop, sinking body, warm mote).
 // Per-enemy animation memory lives on the pooled image (reset when the image is reused for another id); no per-frame allocation.
-import { HUSK_TYPES, FR, ATLAS_KEY, TPW, RIM_K, EYE_TEX, EYE_KINDS, eyeAnchors, eyeMeta, jitter, wpd } from './husk/frames.js';
+import { HUSK_TYPES, FR, ATLAS_KEY, TPW, RIM_K, EYE_TEX, EYE_KINDS, tpwOf, eyeAnchors, eyeMeta, jitter, wpd } from './husk/frames.js';
 
 const NAMES = Object.keys(FR);
 const STRIDE = { wolf: 15, crow: 1, root_crawler: 13 }; // world units moved per walk cycle (crow flaps on time instead); new types carry `stride` in HUSK_TYPES
@@ -38,12 +38,11 @@ export class EnemyArt {
     this.eyeMeta = eyeMeta(); // per socket: look clamp, core size (world units)
     this.eyeNames = {}; // [type][socket] = [glow, core, glow+core] atlas frame names (night layer)
     for (const id in HUSK_TYPES) this.eyeNames[id] = this.eyeMeta[id].map((m, j) => EYE_KINDS.map((k) => `${id}:e${k}${j}`));
-    this.eyeInv = 1 / (TPW * EYE_TEX);
+    this.eyeInvT = {}; this.invT = {}; this.rimInvT = {}; // world units per texel, per type (each type can bake at its own density)
+    for (const id in HUSK_TYPES) { const t = tpwOf(id); this.invT[id] = 1 / t; this.eyeInvT[id] = 1 / (t * EYE_TEX); this.rimInvT[id] = 1 / (t * RIM_K); }
     this.foot = {}; for (const id in HUSK_TYPES) this.foot[id] = HUSK_TYPES[id].foot;
     this.names = {}; for (const id in HUSK_TYPES) { this.names[id] = NAMES.map((n) => `${id}:${n}`); this.names[id].rim = NAMES.map((n) => `${id}:r${n}`); }
     this.j = { s: 1, v: 1, ph: 0, sp: 1 };
-    this.inv = 1 / TPW;
-    this.rimInv = 1 / (TPW * RIM_K);
     this.atlas = ATLAS_KEY;
     // rim frame per runtime frame: walk/tell have their own outline, hurt/body/mask reuse w0
     this.rimOf = Object.values(FR).map((f) => (f <= FR.t1 ? f : FR.w0));
@@ -86,7 +85,7 @@ export class EnemyArt {
     }
     if (e.tele && e.ai && e.ai.kind === 'fuse' && !low) { const q = 1 + 0.045 * Math.sin(img.teleT * (12 + 26 * img.teleT)); sx = q; sy = 2 - q; } // EN4 toad fuse: the blister throbs faster and faster
     if (f !== img.frn) { img.frn = f; img.setFrame(nm[f]); }
-    const s = img.js * this.inv;
+    const s = img.js * this.invT[e.type];
     if (img.sx0 !== sx * s) { img.sx0 = sx * s; img.setScale(sx * s, sy * s); }
     img.x = e.x; img.y = e.y + T.foot + bob; // plain writes (cheaper than the chained setter on a few hundred images)
     if (ei < 512) { this.fi[ei] = f; this.sc[ei] = img.js; this.dy[ei] = bob; }
@@ -116,9 +115,9 @@ export class EnemyArt {
     const T = HUSK_TYPES[type];
     c.type = type; c.t = 0; c.low = tier === 'low'; c.dur = c.low ? 0.9 : 1.1; c.calm = calm;
     c.x = img.x; c.y = img.y; c.fl = img.flipX ? -1 : 1; c.s = img.js || 1; c.depth = depthBase + img.y - T.foot;
-    c.body.setTexture(ATLAS_KEY, this.names[type][FR.b]).setFlipX(img.flipX).setScale(c.s * this.inv).setPosition(c.x, c.y).setDepth(c.depth).setAlpha(1).setVisible(true);
+    c.body.setTexture(ATLAS_KEY, this.names[type][FR.b]).setFlipX(img.flipX).setScale(c.s * this.invT[type]).setPosition(c.x, c.y).setDepth(c.depth).setAlpha(1).setVisible(true);
     c.body.setTint(img.lastTint ?? 0xffffff); // the body keeps its night/lit tint (never the white hit flash)
-    c.mask.setTexture(ATLAS_KEY, this.names[type][FR.m]).setFlipX(img.flipX).setScale(c.s * this.inv).setDepth(c.depth + 0.5).setVisible(!c.low);
+    c.mask.setTexture(ATLAS_KEY, this.names[type][FR.m]).setFlipX(img.flipX).setScale(c.s * this.invT[type]).setDepth(c.depth + 0.5).setVisible(!c.low);
     this.spawned++;
     if (!c.low) this.maskPops++;
     return c;
@@ -135,7 +134,7 @@ export class EnemyArt {
       live++;
       // freed body: brief hold, then sinks and fades (0.5 s)
       const k = Math.min(1, Math.max(0, (t - 0.08) / 0.5));
-      c.body.setAlpha(1 - k).setScale(c.s * this.inv * (1 + 0.04 * k), c.s * this.inv * (1 - 0.45 * k)).setPosition(c.x, c.y + k * 1.5);
+      c.body.setAlpha(1 - k).setScale(c.s * this.invT[c.type] * (1 + 0.04 * k), c.s * this.invT[c.type] * (1 - 0.45 * k)).setPosition(c.x, c.y + k * 1.5);
       if (k >= 1) c.body.setVisible(false);
       // mask: pops up and forward, tumbles, lands on the ground and fades (Med/High only)
       if (!c.low) {

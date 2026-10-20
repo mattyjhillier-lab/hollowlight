@@ -204,7 +204,7 @@ export class NightLayer {
         const oy = e.y + art.foot[e.type] + art.dy[i];
         const blink = bm < 1;
         const a0 = Math.min(1, eyeAlpha(arc.eyeA, this.lit[i], d.floorK) * ea.am * (blink ? 0.7 : 1) + ea.ab);
-        const gS = ks * art.eyeInv * (1 + (ea.sc - 1) * 0.3); // the glow grows a little (<= ~+9%) as the enemy closes in: it stays on the lip
+        const gS = ks * art.eyeInvT[e.type] * (1 + (ea.sc - 1) * 0.3); // the glow grows a little (<= ~+9%) as the enemy closes in: it stays on the lip
         const split = k < coreCap;
         const lx = ea.ox / LOOK_MAX;
         const ly = ea.oy / LOOK_MAX;
@@ -220,7 +220,7 @@ export class NightLayer {
           this.put(nm[split ? (c.bloom ? 3 : 0) : (c.bloom ? 4 : 2)], gx, gy, gS, gS * gOpen, fl < 0, a);
           slot++;
           if (split) {
-            const cS = ks * art.eyeInv * ea.sc * (1 + 0.25 * A[5]);
+            const cS = ks * art.eyeInvT[e.type] * ea.sc * (1 + 0.25 * A[5]);
             this.put(nm[1], e.x + A[2] * ks * fl + lx * mj.lx * ks, oy + A[3] * ks + ly * mj.ly * ks, cS, cS * open, fl < 0, a);
             slot++;
           }
@@ -281,7 +281,7 @@ export class NightLayer {
           if (af !== 255) {
             const rn = art.rimName(e.type, af);
             if (im.rn !== rn) { im.rn = rn; im.setFrame(rn); }
-            const k = art.sc[i] * art.rimInv;
+            const k = art.sc[i] * art.rimInvT[e.type];
             if (im.scaleX !== k) im.setScale(k);
             im.x = e.x; im.y = e.y + art.foot[e.type] + art.dy[i];
           } else { im.x = e.x; im.y = e.y; }
@@ -317,7 +317,7 @@ export class NightLayer {
         if (!im) { im = this.dayImg(art.atlas, rn, c.depthBase); dp.arr[dp.n] = im; }
         dp.n++;
         if (im.rn !== rn) { im.rn = rn; im.setFrame(rn); }
-        const k = art.sc[i] * art.rimInv;
+        const k = art.sc[i] * art.rimInvT[e.type];
         if (im.scaleX !== k) im.setScale(k);
         im.x = e.x; im.y = e.y + art.foot[e.type] + art.dy[i];
         im.flipX = e.faceX < 0; im.alpha = night ? T.poolRim : T.dayRim * dk;

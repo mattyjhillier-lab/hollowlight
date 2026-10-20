@@ -2,7 +2,7 @@
 // own code (no external references, no untrusted input), rasterised once through an <img> from a Blob URL, drawn into ONE canvas atlas.
 // One type per animation frame (lazy slices, like the W1b ground tiles) so the boot never stalls. The cool night-rim outlines (WL6b) are
 // derived in canvas from the baked walk/tell frames at half density. On any failure the game keeps the old flat sprites (ready stays false).
-import { layoutAtlas, typeSheet, HUSK_IDS, HUSK_TYPES, ATLAS_KEY, RIM_K, TPW } from './husk/frames.js';
+import { layoutAtlas, typeSheet, HUSK_IDS, HUSK_TYPES, ATLAS_KEY, RIM_K, TPW, tpwOf } from './husk/frames.js';
 
 const TAU = Math.PI * 2;
 export const BLUE_FLOOR = 48;
@@ -58,7 +58,7 @@ export function bakeHuskAtlas(scene) {
       HUSK_BAKE.stage = 'rims';
       for (const id of HUSK_IDS) {
         const fr = lay.types[id].frames;
-        for (const name in fr) if (fr[name].rim) rimInto(ctx, cv, fr[fr[name].rim], fr[name], Math.max(1.5, TPW * RIM_K * 1.0));
+        for (const name in fr) if (fr[name].rim) rimInto(ctx, cv, fr[fr[name].rim], fr[name], Math.max(1.5, tpwOf(id) * RIM_K * 1.0));
       }
       const tex = scene.textures.addCanvas(ATLAS_KEY, cv);
       for (const id of HUSK_IDS) {
