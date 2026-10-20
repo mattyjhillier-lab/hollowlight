@@ -112,7 +112,7 @@ function trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt) {
     const b = grid.get(key);
     if (b) b.push(q); else grid.set(key, [q]);
   }
-  const hit = dmg * tune(sim, w, 'trailHit', 0.24);
+  const hit = dmg * tune(sim, w, 'trailHit', 0.16);
   const gate = tune(sim, w, 'gate', 0.4);
   for (const e of sim.enemies) {
     if (e.dead) continue;
@@ -126,6 +126,29 @@ function trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt) {
     }
     if (on && sim.canHit(e, 'trail', gate)) { sim.hurt(e, hit); sim.bleed(e, bleedDps, bleedDur); }
   }
+}
+
+// Wolf target pick (spread rule, LOCKED: the pack hunts DIFFERENT foes). Candidates are foes within WOLF_LEASH of the hero (loot and gems stay
+// in reach); each wolf takes the unclaimed one with the best score (distance from the wolf + half its distance from the hero, so near-hero foes win
+// and a far rooted shooter or a tank across the field does not drag the pack away). Only when every foe in WOLF_LEASH is claimed does it widen to
+// WOLF_WIDE; only when nothing at all is unclaimed does a wolf SHARE, and then it joins the least-claimed foe (pack spreads over few foes; a lone
+// boss still takes the whole pack). A target that wanders past WOLF_DROP of the hero is dropped at once.
+const WOLF_LEASH = 150, WOLF_WIDE = 185, WOLF_DROP = 200;
+function wolfPick(sim, p, u, units, echoes) {
+  const claims = new Map();
+  for (const o of units) if (o !== u && o.target && !o.target.dead) claims.set(o.target.id, (claims.get(o.target.id) || 0) + 1);
+  if (echoes) for (const o of echoes) if (o.target && !o.target.dead) claims.set(o.target.id, (claims.get(o.target.id) || 0) + 1);
+  let best = null, bestS = Infinity, share = null, shareC = Infinity, shareS = Infinity;
+  for (const e of sim.enemies) {
+    if (e.dead) continue;
+    const dp = Math.hypot(e.x - p.x, e.y - p.y);
+    if (dp >= WOLF_WIDE) continue;
+    const c = claims.get(e.id) || 0;
+    const sc = Math.hypot(e.x - u.x, e.y - u.y) + 1.0 * dp + (dp >= WOLF_LEASH ? 400 : 0); // wide ring only after the whole leash is claimed
+    if (c === 0) { if (sc < bestS) { bestS = sc; best = e; } }
+    else if (c < shareC || (c === shareC && sc < shareS)) { shareC = c; shareS = sc; share = e; }
+  }
+  return best || share;
 }
 
 // ---------------------------------------------------------------- Ghost Wolves
@@ -170,13 +193,8 @@ const ghostWolves = {
       if (rallyT) {
         u.target = rallyT; // the whole pack converges on the rallied enemy
         u.retarget = 0.4;
-      } else if (!u.target || u.target.dead || u.retarget <= 0) {
-        // Hunt close to the player so loot and gems stay within reach.
-        const taken = new Set();
-        for (const o of units) if (o !== u && o.target && !o.target.dead) taken.add(o.target.id);
-        if (echoes) for (const o of echoes) if (o.target && !o.target.dead) taken.add(o.target.id);
-        const near = (e) => Math.hypot(e.x - p.x, e.y - p.y) < 150;
-        u.target = sim.nearestEnemy(u.x, u.y, 170, (e) => near(e) && !taken.has(e.id)) || sim.nearestEnemy(u.x, u.y, 170, near);
+      } else if (!u.target || u.target.dead || u.retarget <= 0 || Math.hypot(u.target.x - p.x, u.target.y - p.y) > WOLF_DROP) {
+        u.target = wolfPick(sim, p, u, units, echoes);
         u.retarget = 0.4;
       }
       const t = u.target;

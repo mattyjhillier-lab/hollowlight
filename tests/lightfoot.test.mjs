@@ -90,7 +90,7 @@ test('per-foe gate: a foe standing in many overlapping trail points takes at mos
   for (let i = 1; i < hits.length; i++) assert.ok(hits[i] - hits[i - 1] >= 0.4 - 1e-6, 'gap');
 });
 
-test('trail hit = 0.24 x bite, scales with Bite power, applies Rend bleed once for 4 s', () => {
+test('trail hit = 0.16 x bite, scales with Bite power, applies Rend bleed once for 4 s', () => {
   const probe = (power) => {
     const sim = mk({ count: 1, speed: 3, power, duration: 3 });
     const e = sim.spawnEnemy('dummy', sim.player.x + 400, sim.player.y);
@@ -104,7 +104,7 @@ test('trail hit = 0.24 x bite, scales with Bite power, applies Rend bleed once f
     return { first: seen[0], bite: w.s.power * sim.dmgMult(w), bleedDps: e.bleedDps, bleedT: e.bleedT, rend: w.s.duration };
   };
   const a = probe(1); const b = probe(5);
-  assert.ok(Math.abs(a.first - 0.24 * a.bite) < 1e-6, 'trail hit = 0.24 x bite');
+  assert.ok(Math.abs(a.first - 0.16 * a.bite) < 1e-6, 'trail hit = 0.16 x bite');
   assert.ok(b.first > a.first * 2, 'Bite power raises trail damage');
   assert.ok(Math.abs(b.bleedDps - b.bite * b.rend) < 1e-6, 'bleed = bite x Rend');
   assert.ok(b.bleedT > 3.9 && b.bleedT <= 4, 'bleed time 4 s');

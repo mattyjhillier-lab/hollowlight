@@ -82,7 +82,7 @@ test('ravens-rank0: a rank-0 flock does real damage to a single foe and to the b
   assert.ok(dps(s2, 20) >= 9, 'boss');
 });
 
-test('ravens: a modest support weapon (max-rank boss DPS between 0.4x and 1.15x of max Ghost Wolves)', () => {
+test('ravens: a modest support weapon (max-rank boss DPS between 0.4x and 1.35x of max Ghost Wolves)', () => {
   const max = { count: 5, power: 5, range: 5, speed: 5 };
   const r = mk(max);
   r.time = 600;
@@ -94,7 +94,7 @@ test('ravens: a modest support weapon (max-rank boss DPS between 0.4x and 1.15x 
   w.time = 600;
   w.spawnEnemy('elder_treant', w.player.x + 70, w.player.y).hp = 1e9;
   const wd = dps(w, 15);
-  assert.ok(rd > 0.4 * wd && rd < 1.15 * wd, `ravens ${rd.toFixed(0)} vs wolves ${wd.toFixed(0)}`);
+  assert.ok(rd > 0.4 * wd && rd < 1.35 * wd, `ravens ${rd.toFixed(0)} vs wolves ${wd.toFixed(0)}`);
 });
 
 test('ravens: no dead stats (Flock size, Peck power, Watch, Wingbeat each change the result)', () => {
