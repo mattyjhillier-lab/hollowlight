@@ -3,6 +3,7 @@
 //   * optional measured ablation (paired seeds, bot, GATES=all, Blessings on): win %, damage, survival time, hp lost for full minus node.
 //   node scripts/review/tree-impact.mjs [simSeeds=0] [out=docs/design/tree-impact.md] [chars=wren,elias]
 // Slices: ONLY=<cluster,...> measures only those clusters (rings / tools / a weapon id) and MEAS_OUT=<file.json> saves the raw measurement;
+//   HEAD_MD=<file.md> prepends a hand-written findings block (the generated tables follow it).
 //   MEAS_IN=<a.json,b.json,...> loads saved slices into the report (no sim). Win-point deltas of a single 0.05 PE node are far below the noise: read the paired damage delta (+-SE) and the 'detectable' flag.
 // simSeeds 0 = analytic only (instant). Measured columns need ~ nodes x chars x seeds bot runs (slow); noise per node is large, read them
 // as a sanity check next to the analytic PE, and trust the per-category group sweeps (impact-groups.mjs) for win %.
@@ -102,7 +103,7 @@ const simVerdict = (id) => {
   const m = meas && meas[id]; if (!m) return '-';
   const ds = Object.entries(m).map(([ch, x]) => ({ d: x.dmg.mean / meas._full[ch] * 100, se: x.dmg.se / meas._full[ch] * 100 }));
   const d = ds.reduce((a, x) => a + x.d, 0) / ds.length, se = Math.sqrt(ds.reduce((a, x) => a + x.se * x.se, 0)) / ds.length, z = d / (se || 1);
-  const c = z > 2 ? (d >= 3 ? 'strong' : d >= 1 ? 'medium' : 'weak') : 'below noise';
+  const c = z > 2 ? (d >= 3 ? 'strong' : d >= 1 ? 'medium' : 'weak') : 'not resolved';
   return `${c} (${d.toFixed(1)}% +-${se.toFixed(1)})`;
 };
 const L = [];
@@ -125,5 +126,6 @@ for (const r of rows.sort((a, b) => (order[a.klass] - order[b.klass]) || (b.dPE 
 }
 const dead = rows.filter((r) => /dead/.test(r.klass));
 L.push('', `## Dead / padding candidates (${dead.length})`, '', dead.map((r) => `- \`${r.id}\` ${r.desc}`).join('\n'), '');
-writeFileSync(outPath, L.join('\n'));
+const NL = String.fromCharCode(10);
+writeFileSync(outPath, (process.env.HEAD_MD ? readFileSync(process.env.HEAD_MD, 'utf8').trimEnd() + NL + NL + '---' + NL + NL : '') + L.join(NL));
 console.log(`wrote ${outPath}: ${rows.length} nodes, classes: ${JSON.stringify(rows.reduce((a, r) => (a[r.klass] = (a[r.klass] || 0) + 1, a), {}))}`);

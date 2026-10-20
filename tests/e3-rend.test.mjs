@@ -38,7 +38,7 @@ test('E3 a bite applies bleed at Rend x bite per second for the fixed 4 s; one i
 test('E3 / T3a no tree node buys bleed seconds any more: Deep Bite and Red Thread are Bleed potency nodes (status, shared cap)', () => {
   const nodes = Object.fromEntries(data.tree.nodes.map((n) => [n.id, n]));
   for (const id of ['wf_bleed', 'wf_rend']) {
-    assert.deepEqual(nodes[id].effects, [{ status: 'bleed', pct: 2 }], id);
+    assert.deepEqual(nodes[id].effects, [{ status: 'bleed', pct: 3 }], id);
     assert.ok(/Bleed/.test(nodes[id].desc) && !/\bs longer|0\.5s/.test(nodes[id].desc), nodes[id].desc);
   }
   for (const n of data.tree.nodes) for (const e of n.effects || []) assert.ok(!(e.stat === 'duration' && e.add >= 0.5), `${n.id} must not buy bleed seconds`);
