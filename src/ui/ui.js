@@ -281,8 +281,12 @@ export class UI {
     const a = document.activeElement;
     if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
     e.preventDefault();
-    const swallow = (k) => { if (k.key === ' ') { k.preventDefault(); window.removeEventListener('keyup', swallow, true); } };
+    // only THIS press's keyup: if it never arrives (focus lost), the swallow must not linger and eat a later gameplay keyup (CTL1)
+    const t0 = performance.now();
+    const off = () => { window.removeEventListener('keyup', swallow, true); window.removeEventListener('blur', off); };
+    const swallow = (k) => { if (k.key !== ' ') return; off(); if (performance.now() - t0 < 2000) k.preventDefault(); };
     window.addEventListener('keyup', swallow, true);
+    window.addEventListener('blur', off);
     a.click();
     return true;
   }

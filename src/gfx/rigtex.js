@@ -16,6 +16,14 @@ const put = (scene, key, cv) => {
   return scene.textures.addCanvas(key, cv);
 };
 
+// OL1: the flat sprite's pivot = the soles centre, marked as a custom pivot so Phaser mirrors a flipped sprite about the soles
+// (without it Phaser mirrors about the texture centre: the Low-tier / iframe / death sprite jumped sideways when facing left).
+function flatPivot(tex, box) {
+  const f = tex && tex.get();
+  if (!f) return;
+  f.customPivot = true; f.pivotX = -box.x0 / box.w; f.pivotY = -box.y0 / box.h;
+}
+
 // crowd outline: cream ring around the silhouette (drawn above everyone when 3+ enemies close in)
 function crowdOutline(scene, fcv, key) {
   const px = 1.1 / INV[key];
@@ -42,7 +50,7 @@ function makeEliasTextures(scene) {
   const fc = fcv.getContext('2d');
   fc.scale(E_FLAT_TEXEL, E_FLAT_TEXEL); fc.translate(-E_FLAT.x0, -E_FLAT.y0);
   drawEliasFlat(fc);
-  put(scene, 'hero_elias', fcv);
+  flatPivot(put(scene, 'hero_elias', fcv), E_FLAT);
   INV.hero_elias = DU / E_FLAT_TEXEL;
   crowdOutline(scene, fcv, 'hero_elias');
 }
@@ -59,7 +67,7 @@ export function makeRigTextures(scene) {
   const fc = fcv.getContext('2d');
   fc.scale(FLAT_TEXEL, FLAT_TEXEL); fc.translate(-FLAT.x0, -FLAT.y0);
   drawWrenFlat(fc);
-  put(scene, 'hero_wren', fcv);
+  flatPivot(put(scene, 'hero_wren', fcv), FLAT);
   INV.hero_wren = DU / FLAT_TEXEL;
   crowdOutline(scene, fcv, 'hero_wren');
   makeEliasTextures(scene);

@@ -190,7 +190,7 @@ export class HeroRig {
       const X = HEAD_EXPR[ex];
       const idleTilt = gentle ? 0 : wp.nod + (1 - amp) * Math.sin(this.t * 1.3) * 2.5;
       this.at(fx, fy, ANCHOR.neck[0], ANCHOR.neck[1], ca, sa, sx, sy, headBob);
-      this.head.setFrame(`w_head_${ex}`).setPosition(this._x, this._y).setRotation(lean + (X.tilt + idleTilt) * RAD * dir).setScale(K * hf.sx * turn, K * hf.sy) // the head never squashes with the steps.setFlipX(fl).setDepth(dBase + 0.004);
+      this.head.setFrame(`w_head_${ex}`).setPosition(this._x, this._y).setRotation(lean + (X.tilt + idleTilt) * RAD * dir).setScale(K * hf.sx * turn, K * hf.sy).setFlipX(fl).setDepth(dBase + 0.004); // the head never squashes with the steps (OL1: this comment had swallowed the flip + depth calls, so her head never turned left)
       // ember cage rides the spring
       this.ember.setPosition(this.es.x, this.es.y).setScale(K * 0.95 * flicker).setDepth(dBase + 0.005).setVisible(true);
     }

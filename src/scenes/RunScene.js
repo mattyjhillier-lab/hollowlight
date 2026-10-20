@@ -44,6 +44,8 @@ import { HUSK_TYPES, HUSK_IDS } from '../gfx/husk/frames.js';
 import { drawEnemyTells, drawThorns, drawBurstFx, drawWolfChevron, TELL_RO } from '../gfx/enemytells.js';
 import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2 shared telegraph rule
 import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTarget, skipSmallNumber, MUST_OUT_CAP, DEPTH_HERO_OUT } from '../gfx/crowdread.js'; // DR3 crowd readability rules
+import { HeroLine, OL_RES } from '../gfx/heroline.js'; // OL1: hero outline rebuilt from the hero's own transformed parts
+import { HeldKeys, bindHeldKeys } from '../input/keys.js'; // CTL1: own held-key tracker (window capture, cleared on blur/hidden)
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -246,11 +248,13 @@ export class RunScene extends Phaser.Scene {
     this.watch = new FbWatch(); // pickup / heal / damage-taken feedback from sim value changes (display-only)
     this.fbPing = { gem: -9, magnet: -9, aoe: -9 };
     this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(ROLE.lantern).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
-    this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + DEPTH_HERO_OUT).setScale(inv('hero_wren_o')).setVisible(false);
+    this.heroLine = new HeroLine(this, 'hero_line', ROLE.lanternCore); // OL1: one ring texture per frame from the hero's own parts (cream; the hit outline tints it red)
+    this.olParts = [];
+    this.heroOut = this.add.image(0, 0, 'hero_line').setDepth(D_LIT + DEPTH_HERO_OUT).setScale(1 / OL_RES).setVisible(false);
     this.heroOutA = 0;
     // DR1 hit feedback (display only): hero outline in light red ABOVE the crowd, a crescent on the side the hit came from, the attacker lifted + outlined
     this.hitFx = new HitFx();
-    this.heroHit = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + DEPTH_HERO_OUT + 1).setScale(inv('hero_wren_o')).setTintFill(HIT_RED).setVisible(false);
+    this.heroHit = this.add.image(0, 0, 'hero_line').setDepth(D_LIT + DEPTH_HERO_OUT + 1).setScale(1 / OL_RES).setTintFill(HIT_RED).setVisible(false);
     this.hitG = this.add.graphics().setDepth(D_LIT + DEPTH_HERO_OUT + 2);
     this.dens = new Density(); this.mrOut = []; this.mrN = 0; this.mustOf = {}; // DR3: crowd density (smoothed), cream outline images for the must-react types, which types they are
     for (const id in app.data.enemies) if (app.data.enemies[id].mustReact === true) this.mustOf[id] = true;
@@ -282,6 +286,16 @@ export class RunScene extends Phaser.Scene {
     });
     this.input.keyboard.addCapture('SPACE,UP,DOWN,LEFT,RIGHT');
     this.inputOut = { x: 0, y: 0, ability: false };
+    // CTL1: movement comes from our own tracker (sees every key first, drops everything when a keyup can be missed); the ability is a
+    // queued Space press made while the run is live (never one that activated a pause/card button), so neither can stick.
+    this.held = new HeldKeys();
+    this.abilityQ = false;
+    bindHeldKeys(this.held, window, document);
+    window.addEventListener('keydown', (e) => {
+      if ((e.code !== 'Space' && e.key !== ' ') || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+      const s = app.sim;
+      if (s && s.state === 'running' && !app.paused && !(app.ui && app.ui.settingsOpen)) this.abilityQ = true;
+    }, true);
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && app.sim && app.sim.state === 'running' && !app.paused) app.togglePause();
@@ -466,12 +480,12 @@ export class RunScene extends Phaser.Scene {
     }
     this.props.reset(((sim.seed | 0) ^ 0x9e0b5) | 0, [{ x: sim.player.x, y: sim.player.y, tall: START_CLEAR.tall, low: START_CLEAR.low }]); // W4: visual seed from the run seed, sim RNG untouched
     this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv(`hero_${sim.characterId}`)).setOrigin(0.5, 0.5).setVisible(true);
-    this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5);
-    this.heroHit.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5).setVisible(false);
+    this.heroHit.setVisible(false);
     this.hitFx.reset(); this.hitG.clear(); this.hitGOn = false; this.dens.reset();
     for (const r of this.rigs) r.bind(sim);
     this.rig = this.rigs.find((r) => r.active) || this.rigs[0];
-    if (this.rig.active) { const fb = this.rig.flatBox; this.heroOut.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroHit.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroBack.setScale((this.rig.backScale ? this.rig.backScale[0] : 1.15) * inv('glow'), (this.rig.backScale ? this.rig.backScale[1] : 1.5) * inv('glow')); }
+    this.olParts = this.rig.active ? [...this.rig.parts, this.rig.flat] : [this.playerImg]; // OL1: whatever of these is visible this frame gets outlined
+    if (this.rig.active) { this.heroBack.setScale((this.rig.backScale ? this.rig.backScale[0] : 1.15) * inv('glow'), (this.rig.backScale ? this.rig.backScale[1] : 1.5) * inv('glow')); }
     this.heroOutA = 0;
     this.parts.clear();
     this.nums.clear();
@@ -530,22 +544,19 @@ export class RunScene extends Phaser.Scene {
   readInput() {
     const k = this.keys;
     const o = this.inputOut;
-    let x = 0;
-    let y = 0;
-    if (k.A.isDown || k.LEFT.isDown) x -= 1;
-    if (k.D.isDown || k.RIGHT.isDown) x += 1;
-    if (k.W.isDown || k.UP.isDown) y -= 1;
-    if (k.S.isDown || k.DOWN.isDown) y += 1;
-    o.x = x;
-    o.y = y;
+    this.held.axis(o); // CTL1: physical keys held now; opposite keys = the one pressed last wins
     if (app.touch) app.touch.read(o); // analogue stick overrides keys while a finger is down
-    o.ability = Phaser.Input.Keyboard.JustDown(k.SPACE) || (app.touch ? app.touch.takeAbility() : false);
+    if (k && k.SPACE) Phaser.Input.Keyboard.JustDown(k.SPACE); // keep Phaser's own Space flag drained (no longer used for the ability)
+    const q = this.abilityQ;
+    this.abilityQ = false;
+    o.ability = q || (app.touch ? app.touch.takeAbility() : false);
     return o;
   }
 
   // Swallow any pending Space press while paused (stops it queuing an ability on resume).
   drainAbilityKey() {
     const k = this.keys;
+    this.abilityQ = false;
     if (k && k.SPACE) Phaser.Input.Keyboard.JustDown(k.SPACE);
   }
 
@@ -572,6 +583,7 @@ export class RunScene extends Phaser.Scene {
     info.particles = this.parts.count;
     info.tier = q.tier;
     info.mode = q.mode;
+    if (this.perf.on) info.input = this.held.describe(); // CTL1 ?debug=1 line: held keys + direction (+ why they were last cleared)
     this.perf.update(dt, this.workMs, info);
   }
 
@@ -725,7 +737,7 @@ export class RunScene extends Phaser.Scene {
   tickHit(sim, p, rig, lift, liftE, wv) {
     const hf = this.hitFx;
     const ra = hf.rimA();
-    this.heroHit.setVisible(ra > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(ra).setFlipX(p.faceX < 0);
+    this.heroHit.setVisible(ra > 0.02).setAlpha(ra); // OL1: placed with the cream outline (same per-frame ring texture)
     const aa = hf.arcA();
     const g = this.hitG;
     if (aa > 0.02) {
@@ -1225,8 +1237,13 @@ export class RunScene extends Phaser.Scene {
     // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
     const oa = this.heroOutA + (heroOutTarget(crowd >= 3) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120); // DR3: always on, stronger when crowded
     this.heroOutA = oa;
-    this.heroOut.setVisible(oa > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(oa).setFlipX(p.faceX < 0);
     this.tickHit(sim, p, rig, liftImg, liftE, wv);
+    if (oa > 0.02 || this.heroHit.visible) { // OL1: rebuilt from the parts exactly as drawn this frame (facing, lean, bob, squash, limbs, ember)
+      const c = this.heroLine.build(this.olParts, this.olParts.length, p.x, rig ? p.y + FEET : p.y);
+      this.heroOut.setPosition(c.x, c.y);
+      this.heroHit.setPosition(c.x, c.y);
+    }
+    this.heroOut.setVisible(oa > 0.02).setAlpha(oa);
 
     // spirit trails tick at ~30 Hz
     const trailOn = caps.trails > 0 && this.parts.count < this.parts.cap * 0.75 && !this.reducedMotion();

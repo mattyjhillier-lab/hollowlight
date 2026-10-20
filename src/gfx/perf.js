@@ -63,7 +63,7 @@ export class PerfOverlay {
     for (let i = 0; i < rn; i++) if (srt[i] > 25) slow++;
     this.rec = { fps: 1000 / ms, ms, p95, slow, work: wk, max: this.maxMs, sprites: info.sprites, particles: info.particles, calls: this.lastCalls, tier: info.tier };
     if (this.on) {
-      this.el.textContent = `${(1000 / ms).toFixed(0)} fps  ${ms.toFixed(1)} ms (max ${this.maxMs.toFixed(0)})\np95 ${p95.toFixed(1)} ms  slow(>25ms) ${slow}/${rn}\nwork ${wk.toFixed(1)} ms\nsprites ${info.sprites}  particles ${info.particles}\ncalls ${this.lastCalls}\ntier ${info.tier} (${info.mode})`;
+      this.el.textContent = `${(1000 / ms).toFixed(0)} fps  ${ms.toFixed(1)} ms (max ${this.maxMs.toFixed(0)})\np95 ${p95.toFixed(1)} ms  slow(>25ms) ${slow}/${rn}\nwork ${wk.toFixed(1)} ms\nsprites ${info.sprites}  particles ${info.particles}\ncalls ${this.lastCalls}\ntier ${info.tier} (${info.mode})${info.input ? `\n${info.input}` : ''}`;
     }
     this.acc = 0; this.frames = 0; this.sumMs = 0; this.sumWork = 0; this.maxMs = 0;
   }
