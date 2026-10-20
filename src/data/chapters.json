@@ -32,12 +32,12 @@
       },
       {
         "enemy": "stoat_piper",
-        "from": 120,
+        "from": 180,
         "to": 900,
         "rate0": 0.05,
         "rate1": 0.35,
         "curve": 0.8,
-        "maxAlive": 8,
+        "maxAlive": 4,
         "bossMul": 0.5
       },
       {
@@ -55,8 +55,8 @@
         "to": 900,
         "rate0": 0.025,
         "rate1": 0.12,
-        "maxAlive": 3,
-        "maxAliveAfter": { "t": 600, "n": 5 },
+        "maxAlive": 2,
+        "maxAliveAfter": { "t": 600, "n": 4 },
         "bossMul": 0.5
       }
     ],

@@ -37,7 +37,7 @@ test('data: telegraph types are valid, bounded, hostile ids are plain ids; each 
 
 test('waves: telegraph types spawn only from their locked times, with live caps; at most two must-react types before 6:00', () => {
   const W = data.chapters.cursed_forest.waves;
-  const at = { stoat_piper: 120, puffback_toad: 270, bramble_hart: 380 };
+  const at = { stoat_piper: 180, puffback_toad: 270, bramble_hart: 380 };
   let early = 0;
   for (const w of W) {
     assert.ok(fin(w.rate0) && fin(w.rate1) && w.from < w.to, w.enemy);
