@@ -7,7 +7,7 @@ import { RES, resultsSummary, countAt, group } from './resultscopy.js';
 
 export const INPUT_LOCK_MS = 250;       // keys right after the screen appears are ignored (a mashed Space or R from the run must not restart it)
 export const COUNT_MS = 900;
-const DROP_ORDER = ['weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'];   // short screens drop the lowest-priority rows first instead of scrolling
+const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'];   // short screens drop the lowest-priority rows first instead of scrolling
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const nowMs = () => (globalThis.performance && globalThis.performance.now ? globalThis.performance.now() : Date.now());
 
@@ -52,6 +52,7 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     const s = rc.struck;
     add(txt, add(el('p', 'u6-struck'), el('span', null, `${s.lead} ${s.art} `), el('b', null, s.name), el('span', null, `${s.tail} ${s.at}`)));
   }
+  if (rc.boss) add(txt, el('p', 'u6-struck u6-bossline', rc.boss, { 'data-drop': 'bossline' })); // the boss's HP left (boss-treant-v1 (f))
   if (v.bark) add(txt, el('p', 'u6-bark', `“${v.bark}” ${v.heroName}`.trim()));
   add(hero, txt);
 

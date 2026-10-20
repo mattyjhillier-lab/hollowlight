@@ -45,7 +45,7 @@ test('waves: telegraph types spawn only from their locked times, with live caps;
     if (data.enemies[w.enemy].ai) {
       assert.equal(w.from, at[w.enemy], w.enemy);
       assert.ok(w.maxAlive >= 1 && w.maxAlive <= 10, w.enemy + ' cap');
-      assert.ok(w.bossMul >= 0 && w.bossMul <= 1, w.enemy + ' boss rate');
+      assert.equal(w.bossMul, undefined, w.enemy + ': no boss-time rate any more (the waves stop at the 14:00 arrival)');
       if (w.from < 360) early++;
     }
   }

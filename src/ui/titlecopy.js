@@ -14,7 +14,7 @@ export const TITLE = {
 export const HERO = {
   kicker: 'Chapter 1 · Cursed Forest',
   title: 'Who carries the lantern?',
-  whisper: 'Survive 15 minutes. The Elder Treant wakes at 10:00.',
+  whisper: 'Hold the light till 14:00. Then the Elder Treant wakes.',
   back: 'Back',
   chosen: 'Chosen',
   ready: 'Ready',

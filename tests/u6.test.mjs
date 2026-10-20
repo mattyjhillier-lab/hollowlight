@@ -53,7 +53,7 @@ test('near-miss line: time short of dawn and best time, from the real run length
   assert.equal(v.title, 'The light dwindles');
   assert.equal(v.timeLabel, 'Time survived');
   assert.ok(Math.abs(v.arc.frac - 462 / 900) < 1e-9);
-  assert.equal(v.arc.bossLabel, 'Elder Treant 10:00');
+  assert.equal(v.arc.bossLabel, 'Elder Treant 14:00');
   assert.equal(v.arc.dawnLabel, 'Dawn 15:00');
   assert.equal(v.kicker, 'Night 1 · Cursed Forest · Wren');
 });
@@ -407,7 +407,7 @@ test('DR4 recap renders as text only, keeps the one-screen drop order and the we
   assert.ok(find(r.root, (n) => n.attrs && n.attrs['data-drop'] === 'hurt').length === 1);
   assert.match(C.resultsSummary(view), /Struck down by a Fell Wolf's lunge at 6:31/);
   const css = R('src/ui/results.js');
-  assert.match(css, /DROP_ORDER = \['weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'\]/);
+  assert.match(css, /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'\]/);
   assert.ok(!/innerHTML/.test(css.replace(/\/\/.*$/gm, '')));
 });
 
@@ -450,5 +450,29 @@ test('DR4 fit(): weapons drop first, then the lunge note, then the recap bars; r
   cap = total - 7; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt'], 'only then the recap bars');
   cap = total - 8; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt', 'nudge']);
   cap = total; r.fit(); assert.deepEqual(dropped(), [], 'everything returns');
-  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'\]/);
+  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'\]/);
+});
+
+// ---------------------------------------------------------------- Elder Treant fight (boss-treant-v1 (f)): fight-time recap + boss HP line + held clock
+test('boss fight defeat: struck-down line names the move and the fight time; the boss HP line; no "short of dawn" (t 890 / 930)', () => {
+  for (const t of [890, 930]) {
+    const fight = { at: 840, start: 843, time: t - 843, hpFrac: 0.176, phase: 2, phaseId: 'wrath' };
+    const r = res({ time: t, clock: 840, fight, hurt: hurtOf({ by: { elder_treant: 60, wolf: 10 }, last: { src: 'elder_treant', kind: 'sweep', t: 843 + 81 } }) });
+    const v = mkView(r);
+    const s = v.recap.struck;
+    assert.equal(`${s.lead} ${s.art} ${s.name}${s.tail} ${s.at}`, "Struck down by the Elder Treant's Vine Sweep, 1:21 into the fight");
+    assert.equal(v.recap.boss, 'The Elder Treant was at 18% (Wrath)');
+    assert.ok(v.near.map((x) => x.t).join('').startsWith('Fell in the final fight'));
+    assert.ok(Math.abs(v.arc.frac - 840 / 900) < 1e-9, 'the arc stops at the held 14:00');
+    assert.equal(v.time, C.clock(t), 'total run time stays on the card');
+  }
+  // unknown kinds fall back to contact; an add that struck keeps its own name; a fight where the boss was never hit has no HP line
+  const v2 = mkView(res({ time: 900, clock: 840, fight: { at: 840, start: 843, time: 57, hpFrac: 1, phase: 0, phaseId: 'awakening' }, hurt: hurtOf({ last: { src: 'treant_sapling', kind: 'contact', t: 899 } }) }));
+  assert.equal(v2.recap.struck.name, 'Sapling Husk'); assert.equal(v2.recap.boss, '');
+  const v3 = mkView(res({ time: 900, fight: { at: 840, start: 843, time: 57, hpFrac: 0.5, phase: 1, phaseId: '<b>' }, hurt: hurtOf({ last: { src: 'elder_treant', kind: '<img>', t: 899 } }) }));
+  assert.equal(v3.recap.struck.tail, ','); assert.equal(v3.recap.boss, 'The Elder Treant was at 50%');
+});
+test('boss fight victory: the arc reaches dawn; the boss bonus line', () => {
+  const v = mkView(res({ outcome: 'victory', time: 935, clock: 840, bossKilled: true, fight: { at: 840, start: 843, time: 92, hpFrac: 0, phase: 2, phaseId: 'wrath' } }));
+  assert.equal(v.arc.frac, 1); assert.equal(v.recap.struck, null); assert.equal(v.recap.boss, '');
 });

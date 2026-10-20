@@ -7,6 +7,7 @@ import { Sim } from '../src/sim/Sim.js';
 import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
 import { TIER_IDS, tierIndex } from '../src/sim/tiers.js';
 import { loadTree } from '../src/meta/treefs.mjs';
+import { tellHits } from '../src/sim/boss.js';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
@@ -96,8 +97,73 @@ export function dodgeVec(sim, out = _d) {
   return 1;
 }
 
+// BOSS DODGE MODEL (Elder Treant, docs/design/boss-treant-v1.md (h)): the bot reads the live boss tells (sim.fight.tells) like a player reads the
+// decals: it notices a tell REACT s after it starts, then steers at full weight to the nearest safe point (12 directions x 2 distances, the first
+// point outside every live harmful zone and inside the ring). Thorn fan: step out of the cone sideways; ring of thorns: slide round to the nearest gap.
+// Between tells it kites at KITE_MIN-KITE_MAX from the boss (outside slam reach, a lap round the ring), picking up gems within 60 u of its path and
+// shying from adds. DODGE=0 keeps the kiting but ignores every tell (the no-dodge baseline).
+export const KITE_MIN = 120, KITE_MAX = 170;
+const SAFE_D = [40, 80];
+function bossInput(sim, F) {
+  const p = sim.player, b = sim.boss, A = F.arena;
+  let ax = 0, ay = 0;
+  const now = sim.time;
+  if (DODGE) {
+    let threat = false;
+    for (const t of F.tells) if (t.harm && now - t.t0 >= REACT && tellHits(t, p.x, p.y, p.r + 4)) { threat = true; break; }
+    if (threat) {
+      let best = null, bd = Infinity;
+      for (const d of SAFE_D) for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2, x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+        if (Math.hypot(x - A.cx, y - A.cy) > A.r - p.r - 6) continue;
+        if (b && Math.hypot(x - b.x, y - b.y) < 34) continue;
+        let safe = true;
+        for (const t of F.tells) if (t.harm && tellHits(t, x, y, p.r + 6)) { safe = false; break; }
+        if (!safe) continue;
+        const score = d + (b ? Math.max(0, 90 - Math.hypot(x - b.x, y - b.y)) * 0.3 : 0);
+        if (score < bd) { bd = score; best = [x, y]; }
+      }
+      if (best) { const dx = best[0] - p.x, dy = best[1] - p.y, m = Math.hypot(dx, dy) || 1; return { x: dx / m, y: dy / m }; }
+    }
+    for (const t of F.tells) {
+      if (now - t.t0 < REACT || !b) continue;
+      const dx = p.x - t.x, dy = p.y - t.y, d = Math.hypot(dx, dy) || 1, ang = Math.atan2(dy, dx);
+      if (t.shape === 'fan') {
+        let da = ang - Math.atan2(t.ay, t.ax); while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+        if (Math.abs(da) < t.arc * (t.n - 1) / 2 + Math.atan2(p.r + 8, d)) { const s = da >= 0 ? 1 : -1; return { x: -dy / d * s, y: dx / d * s }; }
+      } else if (t.shape === 'nova') {
+        const slots = t.n + 2 * t.gaps, step = (2 * Math.PI) / slots, per = slots / t.gaps;
+        let bestA = 0, bestD = Infinity; // gap centres: slot index g*per + 0.5 (the two empty slots)
+        for (let g = 0; g < t.gaps; g++) { const ga = t.rot + (Math.ceil(g * per - 1e-9) + 0.5) * step; let da = ga - ang; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; if (Math.abs(da) < Math.abs(bestD)) { bestD = da; bestA = ga; } }
+        if (Math.abs(bestD) * d > 4) { const s = bestD >= 0 ? 1 : -1; return { x: -dy / d * s, y: dx / d * s }; }
+        return { x: 0, y: 0 };
+      }
+    }
+  }
+  // kite: hold KITE_MIN..KITE_MAX from the boss, circling; stay off the wall; shy from adds; take gems near the path
+  if (b && !b.dead) {
+    const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1;
+    const rad = d < KITE_MIN ? 1 : d > KITE_MAX ? -0.8 : 0;
+    const side = F.kiteSide || (F.kiteSide = 1);
+    ax += (dx / d) * rad + (-dy / d) * side * 0.8; ay += (dy / d) * rad + (dx / d) * side * 0.8;
+  }
+  const wx = p.x - A.cx, wy = p.y - A.cy, wd = Math.hypot(wx, wy) || 1;
+  if (wd > A.r - 40) { ax -= (wx / wd) * 1.2; ay -= (wy / wd) * 1.2; }
+  for (const e of sim.enemies) {
+    if (e.boss || e.dead) continue;
+    const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
+    if (d < 50) { ax += (dx / d) * (50 - d) / 50; ay += (dy / d) * (50 - d) / 50; }
+  }
+  let g0 = null, gd = 60;
+  for (const g of sim.gems) { const d = Math.hypot(g.x - p.x, g.y - p.y); if (d < gd) { gd = d; g0 = g; } }
+  if (g0) { ax += ((g0.x - p.x) / (gd || 1)) * 0.5; ay += ((g0.y - p.y) / (gd || 1)) * 0.5; }
+  if (DODGE && dodgeVec(sim)) { const m = Math.hypot(ax, ay) || 1; ax = (ax / m) * DODGE_KEEP + _d[0]; ay = (ay / m) * DODGE_KEEP + _d[1]; }
+  return { x: ax, y: ay };
+}
+
 function botInput(sim) {
   const p = sim.player;
+  if (sim.fight && sim.fight.stage === 'fight') { const v = bossInput(sim, sim.fight); return { x: v.x, y: v.y, ability: process.env.ABILITY !== 'off' && sim.ability.cdLeft <= 0 }; }
   let ax = 0, ay = 0;
   for (const e of sim.enemies) {
     const dx = p.x - e.x, dy = p.y - e.y;
@@ -173,7 +239,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {

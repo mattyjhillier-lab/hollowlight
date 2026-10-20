@@ -40,7 +40,7 @@ test('DR2 data: the real enemy tell parameters match what threatens() assumes', 
   assert.ok(w.speed > 0);
   const src = readFileSync(new URL('../src/sim/Sim.js', import.meta.url), 'utf8');
   assert.ok(/e\.stT = 0\.55;/.test(src) && /e\.speed \* 3\.2/.test(src) && /e\.stT = 0\.6;/.test(src), 'wolf tell 0.55 s, lunge 3.2x for 0.6 s');
-  assert.ok(/dist < 74 \+ p\.r/.test(src), 'slam radius 74');
+  assert.equal(data.enemies.elder_treant.fight.moves.slam.r, 74, 'slam radius 74 (boss.js tells; the renderer tests the tell itself)');
 });
 
 test('DR2 wolf budget: 4 full-strength threatening + 6 faint, nearest first', () => {

@@ -2,7 +2,7 @@
   "cursed_forest": {
     "name": "Cursed Forest",
     "bossId": "elder_treant",
-    "bossAt": 600,
+    "bossAt": 840,
     "bossShards": 5,
     "rootPatches": 70,
     "waves": [
@@ -37,8 +37,7 @@
         "rate0": 0.05,
         "rate1": 0.35,
         "curve": 0.8,
-        "maxAlive": 4,
-        "bossMul": 0.5
+        "maxAlive": 4
       },
       {
         "enemy": "puffback_toad",
@@ -46,8 +45,7 @@
         "to": 900,
         "rate0": 0.06,
         "rate1": 0.4,
-        "maxAlive": 10,
-        "bossMul": 0.5
+        "maxAlive": 10
       },
       {
         "enemy": "bramble_hart",
@@ -56,8 +54,7 @@
         "rate0": 0.025,
         "rate1": 0.12,
         "maxAlive": 2,
-        "maxAliveAfter": { "t": 600, "n": 4 },
-        "bossMul": 0.5
+        "maxAliveAfter": { "t": 600, "n": 4 }
       }
     ],
     "events": [

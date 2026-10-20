@@ -73,6 +73,7 @@ html.touch .overlay.u6.u6-won, .overlay.u6.u6-won {
 
 .overlay.u6 .u6-struck { margin: 0; font: var(--fw-body) var(--fs-body)/1.25 var(--font-body); color: #efe0c0; max-width: 24em; }
 .overlay.u6 .u6-struck b { color: #ff8078; font-weight: var(--fw-body-strong); }
+.overlay.u6 .u6-bossline { color: #d8c8a2; } /* the boss HP left (boss-treant-v1 (f)): quieter than the struck-down line */
 .overlay.u6 .u6-hurtblk { display: flex; flex-direction: column; gap: clamp(2px, .5vh, 5px); }
 .overlay.u6 .u6-sublab { margin: 0; font-size: var(--fs-small); color: var(--lg-dim); }
 .overlay.u6 .u6-hurt .u6-wep { grid-template-columns: minmax(0, 1.4fr) minmax(40px, 1fr) 3.2em; }

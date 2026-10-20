@@ -18,6 +18,8 @@ export const RES = {
   timeSurvived: 'Time survived',
   timeWon: 'Survived the night',
   shortOfDawn: 'short of dawn',
+  fellInFight: 'Fell in the final fight',
+  phases: { awakening: 'Awakening', blight: 'Blight', wrath: 'Wrath' },
   best: 'best',
   newBest: 'New best',
   slain: 'slain',
@@ -33,6 +35,10 @@ export const RES = {
     at: 'at',
     // possessive tails by hit kind: "a Fell Wolf's lunge". contact has no tail (just the name).
     kinds: { lunge: "'s lunge", charge: "'s charge", slam: "'s slam", burst: "'s burst", thorn: "'s thorn" },
+    // boss moves (Elder Treant, boss-treant-v1 (f)): named moves; the time is fight time ('1:21 into the fight') because the clock holds at 14:00
+    bossKinds: { slam: "'s Bark Slam,", roots: "'s Root Eruption,", sweep: "'s Vine Sweep,", thorn: "'s Thorn Volley,", nova: "'s Ring of Thorns,", lanes: "'s Root Lanes,", contact: ',' },
+    intoFight: 'into the fight',
+    bossAt: '{name} was at {pct}% ({phase})',
     lungeMost: 'Most of the {name} hits were lunges',
     lungeHalf: 'About half of the {name} hits were lunges',
   },
@@ -61,20 +67,34 @@ export function defeatLine(time) {
 }
 
 const KIND_IDS = ['contact', 'lunge', 'charge', 'slam', 'burst', 'thorn'];
+const BOSS_KINDS = ['contact', 'slam', 'roots', 'sweep', 'thorn', 'nova', 'lanes'];
 const article = (name) => (/^[aeiou]/i.test(name) ? 'an' : 'a');
 
 /** DR4 recap: who struck you down + the top sources of damage taken. r.hurt comes from the sim's counters (ids only); names come from data, never from the run. */
 export function hurtRecap(r, data, won) {
   const h = r && r.hurt && typeof r.hurt === 'object' ? r.hurt : null;
-  const out = { struck: null, rows: [], note: '' };
+  const out = { struck: null, rows: [], note: '', boss: '' };
   if (!h) return out;
   const nameOf = (id) => (data && data.enemies && typeof id === 'string' && Object.hasOwn(data.enemies, id) ? clip(data.enemies[id].name, 40) : '');
   if (!won && h.last && typeof h.last === 'object') {
     const nm = nameOf(h.last.src);
-    if (nm) {
+    const F = r.fight && typeof r.fight === 'object' ? r.fight : null;
+    const isBoss = !!(nm && F && data.enemies[h.last.src] && data.enemies[h.last.src].boss);
+    if (nm && isBoss) { // 'Struck down by the Elder Treant's Vine Sweep, 1:21 into the fight'
+      const kind = BOSS_KINDS.includes(h.last.kind) ? h.last.kind : 'contact';
+      out.struck = { lead: RES.hurt.struck, art: 'the', name: nm, tail: RES.hurt.bossKinds[kind], at: `${clock(fin(h.last.t) - fin(F.start))} ${RES.hurt.intoFight}`, src: clip(h.last.src, 40) };
+    } else if (nm) {
       const kind = KIND_IDS.includes(h.last.kind) ? h.last.kind : 'contact';
       out.struck = { lead: RES.hurt.struck, art: article(nm), name: nm, tail: RES.hurt.kinds[kind] || '', at: `${RES.hurt.at} ${clock(h.last.t)}`, src: clip(h.last.src, 40) };
     }
+  }
+  // progress = hope: how close the boss was (only when it was hit at all)
+  const Fb = r.fight && typeof r.fight === 'object' ? r.fight : null;
+  const bid = data && data.chapters && Object.hasOwn(data.chapters, r.chapter) ? data.chapters[r.chapter].bossId : null;
+  if (!won && Fb && fin(Fb.hpFrac) < 1 && nameOf(bid)) {
+    const pct = Math.max(1, Math.min(99, Math.ceil(100 * fin(Fb.hpFrac))));
+    const ph = typeof Fb.phaseId === 'string' && Object.hasOwn(RES.phases, Fb.phaseId) ? RES.phases[Fb.phaseId] : '';
+    out.boss = RES.hurt.bossAt.replace('{name}', `The ${nameOf(bid)}`).replace('{pct}', String(pct)).replace(' ({phase})', ph ? ` (${ph})` : '');
   }
   const by = h.by && typeof h.by === 'object' ? h.by : {};
   const ids = Object.keys(by).filter((k) => nameOf(k) && whole(by[k]) > 0);
@@ -128,8 +148,10 @@ export function resultsView(r, bank, data) {
     if (bank && bank.newBest) { seg(RES.newBest, true); seg(' · '); } 
     if (r.bossKilled) { seg(bossName, true); seg(` ${RES.slain}`); } else seg(RES.timeWon);
     if (bank && !bank.newBest) { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); }
+  } else if (r.fight && typeof r.fight === 'object') {
+    seg(RES.fellInFight, true); // the clock held at 14:00: 'short of dawn' would always read 1:00
   } else {
-    seg(clock(dawnAt - time), true); seg(` ${RES.shortOfDawn}`);
+    seg(clock(dawnAt - Math.min(time, fin(r.clock) || time)), true); seg(` ${RES.shortOfDawn}`);
     if (bank) { if (bank.newBest) { seg(' · '); seg(RES.newBest.toLowerCase(), true); } else { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); } }
   }
 
@@ -151,7 +173,7 @@ export function resultsView(r, bank, data) {
     heroName: clip(hero, 30),
     time: clock(time), timeLabel: won ? RES.timeWon : RES.timeSurvived,
     near,
-    arc: { frac: Math.max(0, Math.min(1, time / dawnAt)), boss: bossAt > 0 ? Math.min(1, bossAt / dawnAt) : null, bossLabel: `${bossName} ${clock(bossAt)}`, dawnLabel: `${RES.dawn} ${clock(dawnAt)}` },
+    arc: { frac: won ? 1 : Math.max(0, Math.min(1, (r.clock != null ? fin(r.clock) : time) / dawnAt)), boss: bossAt > 0 ? Math.min(1, bossAt / dawnAt) : null, bossLabel: `${bossName} ${clock(bossAt)}`, dawnLabel: `${RES.dawn} ${clock(dawnAt)}` },
     chips: { level: whole(r.level) || 1, slain: whole(r.kills), evolved: evoNames.length ? evoNames.length : 0, evolvedNames: evoNames.join(', ') },
     bank: bank ? {
       gold: whole(r.gold), goldTotal: whole(bank.gold), shards: whole(r.shards), shardsTotal: whole(bank.shards), bossBonus: !!r.bossKilled,

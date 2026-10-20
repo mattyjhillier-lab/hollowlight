@@ -25,13 +25,14 @@ test('caps: dawn birds 12 / 8 / 4 per tier, Low has no petals or shafts, array s
   assert.deepEqual(CUES, ['dawn_chorus_1', 'dawn_chorus_2', 'dawn_chorus_3']);
 });
 
-test('moment envelopes: first light ~8:00-9:00, hush ~10:00, flood 14:00-15:00, bounded 0..1, NaN safe', () => {
+test('moment envelopes: first light ~8:00-9:00, hush 13:40-14:00 held at the boss clock, flood only past 14:00 (victory beat), bounded 0..1, NaN safe', () => {
   const o = { first: 0, hush: 0, flood: 0 };
   phaseAt(0, o); assert.deepEqual(o, { first: 0, hush: 0, flood: 0 });
   phaseAt(520, o); assert.ok(o.first > 0.95 && o.hush === 0 && o.flood === 0);
-  phaseAt(600, o); assert.ok(o.hush > 0.99 && o.first === 0);
+  phaseAt(600, o); assert.ok(o.hush === 0 && o.first === 0, 'no hush at 10:00 any more (the boss is at 14:00)');
   phaseAt(700, o); assert.ok(o.hush === 0 && o.first === 0 && o.flood === 0);
-  phaseAt(860, o); assert.ok(o.flood > 0.8 && o.flood < 1);
+  phaseAt(840, o); assert.ok(o.hush > 0.99 && o.flood === 0, 'the held boss clock: hushed, no flood before the kill');
+  phaseAt(870, o); assert.ok(o.flood > 0.8 && o.flood < 1 && o.hush === 0);
   phaseAt(890, o); assert.equal(o.flood, 1);
   for (const s of [NaN, -5, Infinity, undefined]) { phaseAt(s, o); for (const k of ['first', 'hush', 'flood']) assert.ok(o[k] >= 0 && o[k] <= 1, `${s} ${k}`); }
 });
@@ -74,7 +75,7 @@ test('mods: fireflies rise + fade at first light, critters hush at ~10:00 and ar
   const f = new DawnField(1); const m = f.mod; const st = { calm: false, hx: 0, hy: 0, bright: 'normal' };
   f.setBudget(12, 10, 3);
   f.update(0.05, 520, VIEW, st); assert.ok(m.rise > 0.9 && m.fade > 0.6 && m.thin > 0.3 && !m.hush);
-  f.update(0.05, 600, VIEW, st); assert.ok(m.hush && m.slow > 0.5 && !m.eager);
+  f.update(0.05, 840, VIEW, st); assert.ok(m.hush && m.slow > 0.5 && !m.eager);
   f.update(0.05, 700, VIEW, st); assert.ok(!m.hush && m.rise === 0 && m.fade === 0 && m.slow === 0);
   f.update(0.05, 880, VIEW, st); assert.ok(m.eager && !m.hush && m.fade > 0.7);
   for (const k of ['rise', 'fade', 'slow', 'thin', 'flush']) assert.ok(m[k] >= 0 && m[k] <= 1, k);
@@ -115,5 +116,5 @@ test('visual only: no sim import, no Math.random, no allocation in update(), all
   const upd = src.slice(src.indexOf('  update(dt, s, view, st) {'));
   assert.ok(!/\bnew \w|=> |\.map\(|\.filter\(|\[\.\.\./.test(upd), 'update() allocates');
   for (const d of [BIRD_DEPTH + 0.2, PETAL_DEPTH, SHAFT_DEPTH]) assert.ok(d < 55000);
-  assert.ok(TM.burstAt >= TM.floodIn0 && TM.burstAt < 870 && TM.arriveFrom >= 480 && TM.arriveUntil <= 600);
+  assert.ok(TM.burstAt >= TM.floodIn0 && TM.burstAt > 840 && TM.floodIn0 > 840 && TM.burstAt < 870 && TM.arriveFrom >= 480 && TM.arriveUntil <= 600);
 });

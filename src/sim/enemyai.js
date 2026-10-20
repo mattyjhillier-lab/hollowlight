@@ -111,7 +111,11 @@ export function updateEnemyShots(sim, dt) {
   for (const s of sim.eshots) {
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt; s.age += dt;
     const dx = p.x - s.x, dy = p.y - s.y, rr = p.r + s.r;
-    if (dx * dx + dy * dy < rr * rr) { sim.damagePlayer(s.dmg, s.src, { kind: 'thorn', id: s.from ?? -1, x: s.x, y: s.y, dx: s.vx, dy: s.vy }); s.dead = true; }
+    if (dx * dx + dy * dy < rr * rr) {
+      // boss thorns (boss.js): through the fight's hit gate (>= hitGap between boss hits; a gated thorn flies on), kind thorn | nova for DR4
+      if (s.boss) { if (sim.fight && sim.fight.hitHero(s.dmg, s.kind, s.x, s.y, s.vx, s.vy)) s.dead = true; }
+      else { sim.damagePlayer(s.dmg, s.src, { kind: 'thorn', id: s.from ?? -1, x: s.x, y: s.y, dx: s.vx, dy: s.vy }); s.dead = true; }
+    }
     else if (s.life <= 0 || s.x < 0 || s.y < 0 || s.x > size || s.y > size) s.dead = true;
     if (s.dead) any = true;
     if (sim.state !== 'running') break;

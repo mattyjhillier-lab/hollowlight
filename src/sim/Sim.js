@@ -18,6 +18,9 @@ import { validateBlessings, blessingCount, blessTotals, healSwap } from './bless
 import { resolveTier } from './tiers.js';
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
+import { BossFight, validateFight } from './boss.js';
+
+const FIGHT_OK = new WeakSet(); // boss fight blocks already validated (shipped data: validated once per object, not per run)
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -149,6 +152,14 @@ export class Sim {
     this.boss = null;
     this.bossSpawned = false;
     this.bossKilled = false;
+    // ELDER TREANT fight (src/sim/boss.js): created at chapter.bossAt; spawnHalt then stops every wave and swarm for good.
+    const fdef = this.chapter.bossId && Object.hasOwn(data.enemies, this.chapter.bossId) ? data.enemies[this.chapter.bossId].fight : undefined;
+    if (fdef !== undefined && !FIGHT_OK.has(fdef)) { validateFight(fdef, data.enemies); FIGHT_OK.add(fdef); }
+    this.fightDef = fdef || null;
+    this.fight = null;
+    this.spawnHalt = false;
+    this.bossDmgBy = {}; // damage dealt to the boss by source weapon (counter only)
+    this._dt = 0;
 
     this.offer = null;
     this.banished = new Set();
@@ -178,6 +189,8 @@ export class Sim {
 
   // ------------------------------------------------------------------ helpers
   get minutes() { return this.time / 60; }
+  // The DISPLAY clock (HUD moon/timer, arc light, AL-6, results): it holds at the boss arrival (14:00) until the fight ends; sim.time keeps counting.
+  get clock() { return this.fightDef ? Math.min(this.time, this.chapter.bossAt) : this.time; }
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
@@ -248,6 +261,7 @@ export class Sim {
 
   hurt(e, amount, opts = {}) {
     if (e.dead || amount <= 0) return 0;
+    if (e.immuneT > 0) return 0; // the boss while rising / staggering at a phase change
     const amp = this.damageAmp(e);
     if (amp !== 1) {
       const extra = amount * (amp - 1);
@@ -255,8 +269,10 @@ export class Sim {
       this.ampBonus += extra;
       if (e.markT > 0 && e.markSrc) this.markBy[e.markSrc] = (this.markBy[e.markSrc] || 0) + extra;
     }
+    if (e.floorHp > 0 && e.hp - amount < e.floorHp) amount = Math.max(0, e.hp - e.floorHp); // a boss phase is never skipped by one big hit
     e.hp -= amount;
     this.damageDealt += amount;
+    if (this.fight) { if (e.boss) { this.fight.dmgBoss += amount; if (this._src) this.bossDmgBy[this._src] = (this.bossDmgBy[this._src] || 0) + amount; } else this.fight.dmgAdds += amount; }
     if (this._src) this.dmgBy[this._src] = (this.dmgBy[this._src] || 0) + amount;
     if (!opts.silent) { e.flash = 0.08; this.logHit(e, amount, false); }
     if (e.hp <= 0) { e.dead = true; e.killer = this._src; }
@@ -379,9 +395,10 @@ export class Sim {
   spawnEnemy(typeId, x, y) {
     const d = this.data.enemies[typeId];
     const hs = this.balance.hpScale;
-    const m = this.minutes;
-    const hpMul = (d.boss ? 1 : 1 + hs.linear * m + hs.quad * m * m) * (d.boss ? this.tier.bossHp : this.tier.enemyHp); // tier multipliers are exactly 1 on Twilight
-    const dmgMul = (1 + this.balance.dmgScale.linear * m) * this.tier.enemyDmg;
+    const m = this.fight ? this.fightDef.scaleMin : this.minutes; // boss-fight adds use a frozen run minute (no hidden ramp while the clock holds)
+    // fixed = the boss and its own adds (pods, saplings): data numbers x the tier only (tier enemyDmg applies to the boss too: LOCKED tiers row)
+    const hpMul = (d.boss || d.fixed ? 1 : 1 + hs.linear * m + hs.quad * m * m) * (d.boss ? this.tier.bossHp : this.tier.enemyHp); // tier multipliers are exactly 1 on Twilight
+    const dmgMul = (d.fixed ? 1 : 1 + this.balance.dmgScale.linear * m) * this.tier.enemyDmg;
     const size = this.balance.worldSize;
     const e = {
       id: this.nextId++, type: typeId,
@@ -409,13 +426,18 @@ export class Sim {
   }
 
   updateSpawns(dt) {
+    if (this.spawnHalt) return;
     const t = this.time;
+    if (this.fightDef && t >= this.chapter.bossAt) { // 14:00: the Elder Treant wakes (boss.js); nothing else spawns again
+      this.fight = new BossFight(this, this.fightDef, t);
+      this.fight.arrive();
+      return;
+    }
     const cap = this.balance.maxEnemies;
-    const bossLive = this.boss && !this.boss.dead;
     this.chapter.waves.forEach((wave, i) => {
       if (t < wave.from || t > wave.to) return;
       const k = (t - wave.from) / (wave.to - wave.from);
-      const rate = (wave.rate0 + (wave.rate1 - wave.rate0) * Math.pow(k, wave.curve || 1)) * (bossLive && wave.bossMul !== undefined ? wave.bossMul : 1);
+      const rate = (wave.rate0 + (wave.rate1 - wave.rate0) * Math.pow(k, wave.curve || 1));
       this.spawnAcc[i] = Math.min(4, this.spawnAcc[i] + rate * dt);
       // per-type live cap (EN3-EN5 must-react types), optionally raised after a time (maxAliveAfter: { t, n })
       const maxA = wave.maxAlive === undefined ? Infinity : (wave.maxAliveAfter && t >= wave.maxAliveAfter.t ? wave.maxAliveAfter.n : wave.maxAlive);
@@ -489,6 +511,7 @@ export class Sim {
       let vy = 0;
 
       if (e.ai && e.ai.immune === e.state) { e.heldT = 0; e.fearT = 0; } // control-immune state (Bramble Hart charge): fear/pin do nothing
+      if (e.fight) { e.heldT = 0; e.fearT = 0; } // bosses ignore fear / pin (locked status ruleset)
       if (e.heldT > 0) {
         e.heldT -= dt;
         e.tele = false;
@@ -536,31 +559,13 @@ export class Sim {
         const sway = Math.sin(this.time * 5 + e.phase) * e.speed * 0.9;
         vx = nx * e.speed - ny * sway;
         vy = ny * e.speed + nx * sway;
-      } else if (e.type === 'elder_treant') {
-        if (e.state === 'run') {
-          vx = nx * e.speed;
-          vy = ny * e.speed;
-          e.slamCd -= dt;
-          if (e.slamCd <= 0 && dist < 150) {
-            e.state = 'tele';
-            e.stT = 0.9;
-          }
-        } else if (e.state === 'tele') {
-          e.tele = true;
-          e.stT -= dt;
-          if (e.stT <= 0) {
-            e.tele = false;
-            e.state = 'run';
-            e.slamCd = 6.5;
-            this.addFx({ kind: 'ring', x: e.x, y: e.y, r: 74, ttl: 0.3, color: '#7a4a1b' });
-            this.pushEvent('slam');
-            if (dist < 74 + p.r) this.damagePlayer(e.dmg * 1.4, e.type, { kind: 'slam', id: e.id, x: e.x, y: e.y });
-            for (let k = 0; k < 3; k++) {
-              const a = this.rng.range(0, 6.2832);
-              this.spawnEnemy('root_crawler', e.x + Math.cos(a) * 40, e.y + Math.sin(a) * 40);
-            }
-          }
-        }
+      } else if (e.fight && this.fight) {
+        this.fight.step(e, dt, this._v); // boss.js: phases, moves, tells (control-immune)
+        vx = this._v[0];
+        vy = this._v[1];
+      } else if (e.hatchT !== undefined && this.fight) {
+        this.fight.podStep(e, dt); // a Seed Pod: still, hatches into a Sapling Husk
+        if (e.dead) continue;
       } else {
         vx = nx * e.speed;
         vy = ny * e.speed;
@@ -598,17 +603,34 @@ export class Sim {
       });
     }
 
+    if (this.fight) this.arenaClamp(); // the Root Ring: after separation, so nothing is pushed through the wall
+
     // Contact damage: the strongest overlapping enemy lands one hit per i-frame window.
     let worst = 0, wsrc = 'contact', wE = null;
     for (const e of this.enemies) {
       if (e.dead) continue;
+      if (e.fight && this.fight.stage !== 'fight') continue; // the boss rising out of the soil does not touch
       const dx = p.x - e.x;
       const dy = p.y - e.y;
-      const rr = p.r + e.r * 0.85;
+      const rr = p.r + e.r * (e.fight ? 1 : 0.85); // the boss trunk touches at its full radius (the hero is pushed out to pushOut)
       const dm = e.cdmg && e.state === 'charge' ? e.cdmg : e.dmg; // a charging Bramble Hart hits harder
       if (dx * dx + dy * dy < rr * rr && dm > worst) { worst = dm; wsrc = e.type; wE = e; }
     }
-    if (worst > 0) this.damagePlayer(worst, wsrc, { kind: wE.state === 'charge' ? (wE.type === 'wolf' ? 'lunge' : 'charge') : 'contact', id: wE.id, x: wE.x, y: wE.y });
+    if (worst > 0) {
+      if (wE.fight) this.fight.hitHero(worst, 'contact', wE.x, wE.y); // boss contact keeps the >= hitGap rule between boss hits
+      else this.damagePlayer(worst, wsrc, { kind: wE.state === 'charge' ? (wE.type === 'wolf' ? 'lunge' : 'charge') : 'contact', id: wE.id, x: wE.x, y: wE.y });
+    }
+  }
+
+  // Root Ring: every foe inside the wall (minus its radius); the hero is pushed out of the trunk (pushOut) and kept inside. No damage.
+  arenaClamp() {
+    const F = this.fight, p = this.player, b = this.boss;
+    for (const e of this.enemies) if (!e.dead) F.clampIn(e, e.r);
+    if (b && !b.dead && F.stage === 'fight') {
+      const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy), m = this.fightDef.pushOut;
+      if (d < m) { const ux = d > 1e-6 ? dx / d : 1, uy = d > 1e-6 ? dy / d : 0; p.x = b.x + ux * m; p.y = b.y + uy * m; }
+    }
+    if (F.stage !== 'intro') F.clampIn(p, p.r);
   }
 
   // ------------------------------------------------------------------ the rest of the frame
@@ -620,14 +642,25 @@ export class Sim {
     if (len > 1) { mx /= len; my /= len; }
     let spd = p.speed * (this.character.traits.moveSpeed || 1) * this.mods.speed * this.bless.speed;
     if (this.buffs.speedBoost > 0) spd *= this.buffs.speedMult;
+    let slow = 1;
     for (const pt of this.patches) {
+      if (pt.off) continue;
       const dx = p.x - pt.x;
       const dy = p.y - pt.y;
-      if (dx * dx + dy * dy < pt.r * pt.r) { spd *= 0.65; break; }
+      if (dx * dx + dy * dy < pt.r * pt.r) { slow = 0.65; break; }
     }
+    if (this.fight && slow === 1 && this.fight.brush.length) slow = this.fight.slowAt(p.x, p.y, p.r); // lane roots / slam spikes: slowing brush, never solid
+    spd *= slow;
     const size = this.balance.worldSize;
     p.x = clamp(p.x + mx * spd * dt, p.r, size - p.r);
     p.y = clamp(p.y + my * spd * dt, p.r, size - p.r);
+    if (this.fight) {
+      const F = this.fight, A = F.arena, ddx = p.x - A.cx, ddy = p.y - A.cy, d = Math.hypot(ddx, ddy), lim = A.r - p.r;
+      if (d > lim) { // the wall: during the arrival beat a hero left outside (world-edge clamp) is walked in; afterwards it is a hard stop
+        if (F.stage === 'intro') { const step = Math.min(d - lim, this.fightDef.arena.pull * dt); p.x -= (ddx / d) * step; p.y -= (ddy / d) * step; }
+        else F.clampIn(p, p.r);
+      }
+    }
     if (Math.abs(mx) > 0.1) p.faceX = mx > 0 ? 1 : -1;
     p.iframes = Math.max(0, p.iframes - dt);
     if (this.tfx.regen > 0) this.healPlayer(this.tfx.regen * dt);
@@ -864,9 +897,10 @@ export class Sim {
   cleanupDead() {
     let any = false;
     for (const e of this.enemies) {
-      if (!e.dead) continue;
+      if (!e.dead || e.counted) continue;
       any = true;
       this.alive[e.type] -= 1;
+      if (e.vanish) continue; // a hatched pod / an add crumbling at the boss's death: no kill, gem, gold or drops
       if (e.burst) { this.addGem(e.x, e.y, e.xp); this.logHit(e, 0, true); continue; } // EN4 Puffback Toad burst: spent, XP only (no kill credit/gold/drops)
       if (e.ai && e.ai.kind === 'fuse' && e.state === 'tele' && this.fx.length < 48) this.addFx({ kind: 'fizzle', x: e.x, y: e.y, r: 12, ttl: 0.35, color: '#9aa39a' }); // killed during the fuse: it only fizzles
       this.kills += 1;
@@ -875,17 +909,26 @@ export class Sim {
       this.logHit(e, 0, true);
       if (e.killer === 'ghost_wolves' && !e.boss && !e.echoKill && this.fallen.length < 16 && this.weapons.some((w) => w.evo === 'howling_legion')) this.fallen.push({ x: e.x, y: e.y });
       this.gold += e.gold * this.mods.gold * this.bless.gold;
+      if (e.bossAdd) { // boss-made adds: gems only (no hearts / magnets), at most addGems gems per fight (no farming without a timer)
+        if (this.fight.addGems < this.fightDef.addGems) { this.fight.addGems += 1; this.addGem(e.x, e.y, e.xp); }
+        continue;
+      }
       this.addGem(e.x, e.y, e.xp);
       this.rollDrops(e);
       if (e.boss) {
         this.bossKilled = true;
         this.shards += this.chapter.bossShards;
-        this.pushEvent('bossDead');
+        if (this.fight) { this.fight.over(); this.state = 'victory'; } // victory = the boss dies; the sim stops at the killing blow
+        this.pushEvent('bossDead', { x: e.x, y: e.y });
       }
     }
     if (any) this.enemies = this.enemies.filter((e) => !e.dead);
     this.units = this.units.filter((u) => !u.dead);
 
+    if (this.fight) { // recycle is off inside the ring; the adds that crumbled at the boss's death (already uncounted) leave too
+      if (this.fight.stage === 'over' && this.enemies.length) this.enemies = this.enemies.filter((e) => !e.dead);
+      return;
+    }
     // Recycle enemies that have been left far behind so the horde keeps finding you.
     const p = this.player;
     const far = this.balance.despawnDistance;
@@ -921,7 +964,7 @@ export class Sim {
       if (this.tfx.levelHeal > 0) this.healPlayer((this.player.maxHp * this.tfx.levelHeal) / 100);
       this.pushEvent('levelup');
     }
-    if (this.pending > 0 && this.state === 'running') this.beginLevelUp();
+    if (this.pending > 0 && this.state === 'running' && !(this.fight && this.fight.holdLevel(this._dt))) this.beginLevelUp(); // boss fight: the offer waits out a live tell (max 3 s) and the arrival beat
   }
 
   beginLevelUp() {
@@ -930,6 +973,7 @@ export class Sim {
   }
 
   withHealSwap(offer) {
+    if (this.fight && this.fight.live) return offer; // no heal-card swap while the boss lives (hearts come from the phase changes)
     const cards = healSwap(offer.cards, this.cardCtx, this.player.hp, this.player.maxHp, this.time, this.healSwapReady, () => fallbackCard('heal', this.data));
     return cards === offer.cards ? offer : { ...offer, cards };
   }
@@ -993,13 +1037,16 @@ export class Sim {
   }
 
   checkEnd() {
-    if (this.state === 'running' && this.time >= this.balance.runSeconds) this.state = 'victory';
+    // With a boss fight, victory is the kill (cleanupDead); surviving to a time no longer wins. A chapter without one keeps the timed dawn.
+    if (!this.fightDef && this.state === 'running' && this.time >= this.balance.runSeconds) this.state = 'victory';
   }
 
   step(dt, input = {}) {
     if (this.state !== 'running') return;
     dt = Math.min(dt, 0.05);
     this.time += dt;
+    this._dt = dt;
+    if (this.fight && this.fight.pre(dt)) { this.updateGems(dt); this.updateFx(dt); this.checkLevelUp(); return; } // the 1.2 s arrival freeze ('bossIntro'): the world holds, gems still fly in
     this.updatePlayer(dt, input);
     this.updateSpawns(dt);
     this.updateRally(dt);
@@ -1041,6 +1088,9 @@ export class Sim {
       abilityUses: this.abilityUses,
       blessings: this.blessingsTaken,
       hurt: { by: { ...this.hurtBy }, hits: { ...this.hitsBy }, lunge: this.lungeHits, last: this.lastHit ? { src: this.lastHit.src, kind: this.lastHit.kind, t: this.lastHit.t } : null }, // DR4 recap (counters only)
+      clock: this.clock,
+      // the boss fight (null if it never began): arrival time, fight start, fight length, the boss's HP left and its phase (DR4 'N into the fight')
+      fight: this.fight ? { at: this.fight.t0, start: this.fight.t0 + this.fightDef.intro.beat, time: this.fight.fightT, hpFrac: this.boss ? Math.max(0, this.boss.hp / this.boss.maxHp) : 1, phase: this.fight.phase, phaseId: this.fight.P.id } : null,
     };
   }
 

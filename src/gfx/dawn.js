@@ -2,8 +2,9 @@
 // no sim import, no Math.random. VISUAL ONLY: the clock is READ (run seconds on the 900 s reference run), every random number is the stateless hash from wind.js
 // (own stream from the visual seed), nothing here is ever read by the sim. Zero per-frame allocation: all state lives in typed arrays sized once.
 //   1. FIRST LIGHT (~8:00-9:00): fireflies drift upward and fade, fog thins, 1-3 sparrows glide in, land, then take off again.
-//   2. THE HUSH (~10:00, boss-time grey light): critters hush, motes slow, fireflies dim; released again after ~25 s.
-//   3. DAWN FLOOD (~14:00-15:00): a burst of birds takes flight across the view (cap CAPS.<tier>.ambient.birds 12 / 8 / 4), petals drift, soft warm light shafts,
+//   2. THE HUSH (13:40-14:00, the pre-boss calm; boss-treant-v1 (a)): critters hush, motes slow, fireflies dim; it HOLDS through the boss fight
+//      (the display clock parks at 14:00) and lifts only as the victory flood plays.
+//   3. DAWN FLOOD (after 14:00 on the display clock, i.e. only in the victory beat once the Elder Treant falls): a burst of birds takes flight across the view (cap CAPS.<tier>.ambient.birds 12 / 8 / 4), petals drift, soft warm light shafts,
 //      critters come out, and a soft colour flush on the restored ground (read by the vibrancy tick). VICTORY plays the final flush (+ a small flock).
 // Calm motion (reducedMotion) = static: no birds, petals or shafts (only the existing tint/fade/hush multipliers and the colour flush remain).
 // Low tier: 4 birds, no petals, no shafts. Reserved sound cue names (no audio is built): dawn_chorus_1 (first light), dawn_chorus_2 (hush), dawn_chorus_3 (flood / victory).
@@ -20,8 +21,8 @@ export const CUES = ['dawn_chorus_1', 'dawn_chorus_2', 'dawn_chorus_3']; // rese
 export const TM = {
   firstIn0: 465, firstIn1: 500, firstOut0: 545, firstOut1: 585, // first light envelope
   arriveFrom: 490, arriveUntil: 560, // sparrows only arrive inside this window (a run started later never plays them)
-  hushIn0: 570, hushIn1: 598, hushOut0: 625, hushOut1: 650, // boss-time hush
-  floodIn0: 835, floodIn1: 870, burstAt: 842, // dawn flood
+  hushIn0: 815, hushIn1: 838, hushOut0: 846, hushOut1: 866, // pre-boss hush 13:35-13:58, held while the clock holds at 14:00
+  floodIn0: 845, floodIn1: 880, burstAt: 848, // dawn flood: past the held 14:00, so it plays only in the victory beat (the scene runs the clock 840 -> 900)
 };
 
 // Per-tier extras (birds come from quality.js CAPS.<tier>.ambient.birds). Low: no petals, no shafts.

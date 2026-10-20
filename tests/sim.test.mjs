@@ -162,22 +162,21 @@ test('reroll and banish need to be unlocked (meta) and are consumed', () => {
   assert.ok(!some.offer.cards.some((c) => c.key === key));
 });
 
-test('boss spawns at the scheduled time and awards soul shards when killed', () => {
-  const sim = mk({ godMode: true, startTime: 598 });
-  run(sim, 3, { x: 0, y: 0 });
+test('the boss wakes at the scheduled time (14:00, after the arrival beat) and awards soul shards when killed', () => {
+  const sim = mk({ godMode: true, startTime: data.chapters.cursed_forest.bossAt - 2 });
+  run(sim, 2 + data.enemies.elder_treant.fight.intro.beat + 0.1, { x: 0, y: 0 });
   assert.ok(sim.bossSpawned);
   assert.ok(sim.boss && sim.boss.type === 'elder_treant');
-  sim.hurt(sim.boss, 1e9);
-  sim.step(DT, {});
+  for (let i = 0; i < 6 && !sim.bossKilled; i++) { sim.hurt(sim.boss, 1e9); run(sim, data.enemies.elder_treant.fight.stagger + 0.1); }
   assert.ok(sim.bossKilled);
+  assert.equal(sim.state, 'victory', 'victory = the kill');
   assert.equal(sim.shards, data.chapters.cursed_forest.bossShards);
 });
 
-test('surviving 15 minutes ends in victory; zero HP ends in defeat', () => {
+test('surviving to 15:00 no longer wins (the boss must die); zero HP ends in defeat', () => {
   const win = mk({ godMode: true, startTime: 898 });
   run(win, 4);
-  assert.equal(win.state, 'victory');
-  assert.equal(win.result().outcome, 'victory');
+  assert.notEqual(win.state, 'victory');
 
   const lose = mk({ characterId: 'wren' });
   lose.weapons.length = 0; // no defences

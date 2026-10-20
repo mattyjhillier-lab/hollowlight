@@ -9,5 +9,30 @@
     "ai": { "kind": "fuse", "grace": 0.8, "maxTells": 6, "trigger": 30, "fuse": 1.0, "burstR": 36, "burstDmg": 12 } },
   "bramble_hart": { "name": "Bramble Hart",   "hp": 45,   "speed": 40,  "dmg": 8,  "r": 10, "xp": 6, "gold": 3,   "color": "#56607a", "shape": "hart",   "mass": 4, "mustReact": true,
     "ai": { "kind": "charger", "grace": 0.8, "maxTells": 3, "firstCd": [2, 4], "range": 200, "tell": 0.8, "charge": 0.9, "chargeMul": 5, "chargeDmg": 12, "stagger": 0.6, "cd": 6, "cdRand": 2, "immune": "charge" } },
-  "elder_treant": { "name": "Elder Treant",   "hp": 3600, "speed": 18,  "dmg": 13, "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true }
+  "elder_treant": { "name": "Elder Treant",   "hp": 6000, "speed": 18,  "dmg": 8,  "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true, "fixed": true,
+    "fight": {
+      "arena": { "r": 230, "edge": 260, "ahead": 60, "rise": 120, "pull": 160 },
+      "intro": { "beat": 3.0, "freezeAt": 1.0, "freeze": 1.2, "grace": 2.0 },
+      "dmg": { "light": 6, "mid": 10, "heavy": 15 },
+      "hitGap": 0.6, "stagger": 1.0, "pushOut": 30, "scaleMin": 14, "addGems": 40, "levelHold": 3,
+      "phases": [
+        { "id": "awakening", "hpAt": 1.0,  "gap": 3.2, "speed": 18, "moves": { "slam": 3, "eruption": 3, "seeds": 2 } },
+        { "id": "blight",    "hpAt": 0.66, "gap": 2.8, "speed": 22, "moves": { "slam": 2, "eruption": 2, "seeds": 1.5, "sweep": 3, "fan": 2 }, "call": [["wolf", 6]] },
+        { "id": "wrath",     "hpAt": 0.33, "gap": 2.4, "speed": 26, "moves": { "slam": 2, "eruption": 2, "seeds": 1, "sweep": 2, "nova": 2, "lanes": 2.5 }, "call": [["wolf", 4], ["puffback_toad", 2]] }
+      ],
+      "moves": {
+        "slam":     { "tell": 1.2, "r": 74, "dmg": "heavy", "range": 110, "spikes": 4, "spikeR": 12, "spikeLife": 4, "spikePhase": 2 },
+        "eruption": { "tell": 1.0, "r": 26, "dmg": "mid", "n": [3, 4, 5], "near": 40, "far": 90 },
+        "seeds":    { "tell": 0.6, "fly": 1.1, "pods": [3, 6, 6], "near": 50, "far": 130, "hatch": 3, "pod": "treant_pod", "sapling": "treant_sapling", "cap": 8 },
+        "sweep":    { "tell": 1.2, "r": 130, "arc": 1.5708, "dmg": "heavy", "range": 160 },
+        "fan":      { "tell": 0.7, "n": 5, "spread": 0.2, "speed": 120, "shotR": 3, "dmg": "light" },
+        "nova":     { "tell": 1.0, "n": 14, "gaps": 4, "speed": 120, "shotR": 3, "dmg": "light" },
+        "lanes":    { "tell": 1.2, "w": 22, "n": [2, 3], "gap": 70, "dmg": "mid", "linger": 3, "slow": 0.65 }
+      },
+      "thornGap": 0.5,
+      "pressure": { "every": 30, "gapMul": 0.94, "floor": 0.7, "capAdd": 2, "capMax": 14, "lingerAdd": 1, "lingerMax": 6 },
+      "tiers": { "hard": { "fanFrom": 0, "novaGaps": 3 }, "expert": { "fanFrom": 0, "novaGaps": 3, "fanN": 7, "cross": true } }
+    } },
+  "treant_pod":     { "name": "Seed Pod",     "hp": 14,   "speed": 0,   "dmg": 0,  "r": 6,  "xp": 1, "gold": 0,   "color": "#6b5a3a", "shape": "pod",     "mass": 6, "fixed": true },
+  "treant_sapling": { "name": "Sapling Husk", "hp": 30,   "speed": 40,  "dmg": 6,  "r": 7,  "xp": 1, "gold": 1,   "color": "#5c5a52", "shape": "sapling", "mass": 1.5, "fixed": true }
 }
