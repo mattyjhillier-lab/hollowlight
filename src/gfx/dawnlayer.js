@@ -4,6 +4,7 @@
 import { DawnField, BIRD_MAX, PETAL_MAX, SHAFT_MAX } from './dawn.js';
 import { FRAME_NAMES, ATLAS_KEY, ORIGIN_Y } from './critteratlas.js';
 import { INV } from './style.js';
+import { petalMul } from './crowdread.js';
 
 export const BIRD_DEPTH = 4997;
 export const PETAL_DEPTH = 4998;
@@ -67,6 +68,7 @@ export class DawnLayer {
     f.update(dt, s, view, st);
     let shown = 0;
     const k = (INV[ATLAS_KEY] || 0.25) * BIRD_SCALE;
+    const pm = petalMul(st.dim); // DR3: petals fade while the crowd is thick
     for (let i = 0; i < BIRD_MAX; i++) {
       const a = f.ba[i];
       if (!f.st[i] || a < 0.01) { if (this.bird[i]) this.bird[i].setVisible(false); continue; }
@@ -80,7 +82,7 @@ export class DawnLayer {
       const a = f.pa[i];
       if (a < 0.01) { if (this.petal[i]) this.petal[i].setVisible(false); continue; }
       const im = this.petal[i] || this.makePetal(i);
-      im.setPosition(f.px[i], f.py[i]).setRotation(f.pr[i]).setDisplaySize(6.4, 3.6 * f.pk[i]).setAlpha(a).setVisible(true);
+      im.setPosition(f.px[i], f.py[i]).setRotation(f.pr[i]).setDisplaySize(6.4, 3.6 * f.pk[i]).setAlpha(a * pm).setVisible(true);
       shown++;
     }
     for (let i = 0; i < SHAFT_MAX; i++) {

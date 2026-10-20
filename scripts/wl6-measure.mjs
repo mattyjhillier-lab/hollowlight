@@ -176,6 +176,7 @@ async function contrast(out) {
           await open(c, q('wren', t), w, h, dpr, tier);
           const cx = 2600, cy = 2600;
           await sleep(600); await setup(c, cx, cy, t, ground === 'restored' ? 420 : 0); await sleep(1200);
+          if (process.env.DENS) await c.ev(`(()=>{const d=window.__app.scene.dens;if(d){d.update=function(){return d.k;};d.k=${Number(process.env.DENS) || 1};}return 1})()`); // DR3: pin the crowd-density value (1 = thick crowd: common enemies drawn 20% quieter) to measure the worst case; ignored by builds without the density rule
           if (ground === 'corrupt') await c.ev(`(()=>{const l=window.__app.scene.life;for(let k=0;k<4;k++)l.stampCorr(${cx},${cy},460,1);return 1})()`);
           await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies.length=0;const T=${JSON.stringify(MTYPES)};
             for(let i=0;i<3;i++)for(let j=0;j<3;j++){s.spawnEnemy(T[i],p.x+100,p.y);s.enemies[s.enemies.length-1]._va=i*3+j;}return s.enemies.length})()`);

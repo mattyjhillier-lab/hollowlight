@@ -5,6 +5,7 @@
 // Cadence: fields update every frame (cheap typed-array maths, zero allocation); images only get setters when something changed.
 import { FogField, AirField, EdgeField, TINTS, FLY_SIZE, MOTE_SIZE, airCount, FLY_MAX, MOTE_MAX, FOG_MAX, EDGE_A } from './airfield.js';
 import { wind, windScale } from './wind.js';
+import { fogMul, flyMul } from './crowdread.js';
 import { buildGlowTable, VIB_LEVELS } from './vibrancy.js';
 
 const GLOW_N = TINTS.length;
@@ -96,12 +97,13 @@ export class AirLayer {
     const nf = st.fog ? airCount(caps.atmos.fog, { phone: st.phone, max: FOG_MAX }) : 0;
     this.fog.setBudget(nf);
     const mod = st.mod || null; // AL-6 dawn multipliers (rise / fade / slow / thin), optional
+    const fm = fogMul(st.dim), ym = flyMul(st.dim); // DR3: thicker crowd = thinner fog, quieter fireflies/motes (visual only)
     this.fog.update(dt, t, view, life, this.wx, this.wy, reduced, this.world, mod ? mod.thin : 0);
     for (let i = 0; i < nf; i++) {
       const im = this.fogIm[i] || this.makeFog();
       const a = this.fog.a[i];
       if (a < 0.002) { im.setVisible(false); continue; }
-      im.setPosition(this.fog.x[i], this.fog.y[i]).setDisplaySize(this.fog.w[i], this.fog.h[i]).setAlpha(a).setVisible(true);
+      im.setPosition(this.fog.x[i], this.fog.y[i]).setDisplaySize(this.fog.w[i], this.fog.h[i]).setAlpha(a * fm).setVisible(true);
     }
     for (let i = nf; i < this.fogIm.length; i++) this.fogIm[i].setVisible(false);
     this.nFog = nf;
@@ -120,7 +122,7 @@ export class AirLayer {
       const ti = this.air.tint[i];
       const tk = ti + GLOW_N * (this.vibL + 1); // WL6c: the key includes the vibrancy level (vibL -1 = off)
       if (tk !== this.tintOf[i]) { this.tintOf[i] = tk; im.setTint(this.vibL >= 0 ? GLOW_TAB[this.vibL * GLOW_N + ti] : TINTS[ti]); }
-      im.setPosition(this.air.x[i], this.air.y[i]).setAlpha(a).setVisible(true);
+      im.setPosition(this.air.x[i], this.air.y[i]).setAlpha(a * ym).setVisible(true);
     }
     for (let i = 0; i < this.flyIm.length; i++) {
       const im = this.flyIm[i];

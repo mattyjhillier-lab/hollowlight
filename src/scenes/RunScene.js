@@ -42,7 +42,8 @@ import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapt
 import { EnemyArt } from '../gfx/enemyrig.js'; // EN0-EN2 Husk animator + death beat (visual only)
 import { HUSK_TYPES, HUSK_IDS } from '../gfx/husk/frames.js';
 import { drawEnemyTells, drawThorns, drawBurstFx, drawWolfChevron, TELL_RO } from '../gfx/enemytells.js';
-import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2 shared telegraph rule (EN3-EN5 telegraph decals + thorns draw above the vignette)
+import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2 shared telegraph rule
+import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTarget, skipSmallNumber, MUST_OUT_CAP, DEPTH_HERO_OUT } from '../gfx/crowdread.js'; // DR3 crowd readability rules
 
 const ADD = Phaser.BlendModes.ADD;
 // Allocation-free pseudo-random in [-0.5, 0.5) for lightning jitter (same value for the glow and core passes).
@@ -245,12 +246,14 @@ export class RunScene extends Phaser.Scene {
     this.watch = new FbWatch(); // pickup / heal / damage-taken feedback from sim value changes (display-only)
     this.fbPing = { gem: -9, magnet: -9, aoe: -9 };
     this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(ROLE.lantern).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
-    this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4000).setScale(inv('hero_wren_o')).setVisible(false);
+    this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + DEPTH_HERO_OUT).setScale(inv('hero_wren_o')).setVisible(false);
     this.heroOutA = 0;
     // DR1 hit feedback (display only): hero outline in light red ABOVE the crowd, a crescent on the side the hit came from, the attacker lifted + outlined
     this.hitFx = new HitFx();
-    this.heroHit = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4001).setScale(inv('hero_wren_o')).setTintFill(HIT_RED).setVisible(false);
-    this.hitG = this.add.graphics().setDepth(D_LIT + 4002);
+    this.heroHit = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + DEPTH_HERO_OUT + 1).setScale(inv('hero_wren_o')).setTintFill(HIT_RED).setVisible(false);
+    this.hitG = this.add.graphics().setDepth(D_LIT + DEPTH_HERO_OUT + 2);
+    this.dens = new Density(); this.mrOut = []; this.mrN = 0; this.mustOf = {}; // DR3: crowd density (smoothed), cream outline images for the must-react types, which types they are
+    for (const id in app.data.enemies) if (app.data.enemies[id].mustReact === true) this.mustOf[id] = true;
     this.hitGOn = false;
     this.wolfBudget = new WolfBudget(96); this.wolfE = new Array(96).fill(null); // DR2 wolf chevron budget (no per-frame allocation)
     this.liftD = null; this.liftR = null; this.liftId = -2; // attacker rim images (dark + light red), made on first use
@@ -354,6 +357,7 @@ export class RunScene extends Phaser.Scene {
     view.x0 = wv.x; view.y0 = wv.y; view.x1 = wv.right; view.y1 = wv.bottom;
     const live = sim.state !== 'dead';
     const P = app.params;
+    this.airSt.dim = this.dens.k; this.dawnSt.dim = this.dens.k;
     this.airSt.caps = caps; this.airSt.phone = this.swayPhone; this.airSt.reduced = reduced;
     this.airSt.fog = P.fog && live; this.airSt.motes = P.motes && live; this.airSt.edge = P.edge;
     // AL-6 dawn chorus: multipliers first (fireflies rise/fade, motes slow, fog thins, critters hush/return), then the pooled birds/petals/shafts
@@ -464,7 +468,7 @@ export class RunScene extends Phaser.Scene {
     this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv(`hero_${sim.characterId}`)).setOrigin(0.5, 0.5).setVisible(true);
     this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5);
     this.heroHit.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5).setVisible(false);
-    this.hitFx.reset(); this.hitG.clear(); this.hitGOn = false;
+    this.hitFx.reset(); this.hitG.clear(); this.hitGOn = false; this.dens.reset();
     for (const r of this.rigs) r.bind(sim);
     this.rig = this.rigs.find((r) => r.active) || this.rigs[0];
     if (this.rig.active) { const fb = this.rig.flatBox; this.heroOut.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroHit.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroBack.setScale((this.rig.backScale ? this.rig.backScale[0] : 1.15) * inv('glow'), (this.rig.backScale ? this.rig.backScale[1] : 1.5) * inv('glow')); }
@@ -991,6 +995,7 @@ export class RunScene extends Phaser.Scene {
       }
       const big = h.boss ? h.a >= h.mx * 0.01 : h.a >= 20 && h.a >= h.mx * 0.5;
       this.hitRef.add(h.a);
+      if (skipSmallNumber(this.dens.k, h.a, this.hitRef.ref, Math.hypot(h.x - p.x, h.y - p.y))) continue; // DR3: small numbers near the hero wait while the crowd is thick
       // AoE (> 5 non-kill hits in one frame): only the 2 biggest get a number, plus one soft ring (research 28 s3)
       if (aoe && h.a < aoeMin) continue;
       this.nums.spawn(h.x, h.y, h.a, h.id, KIND.DMG, big ? 0 : this.hitRef.ref, big);
@@ -1066,6 +1071,7 @@ export class RunScene extends Phaser.Scene {
     const life = this.life;
     let ei = -1;
     let liftImg = null, liftE = null;
+    const NEAR2 = FADE_R * FADE_R; const dk = this.dens.k * quietScale(this.arc.bodyK), mustOf = this.mustOf, mrCap = MUST_OUT_CAP[this.quality.tier] ?? 0; let near120 = 0, inView = 0, mrN = 0;
     const wb = this.wolfBudget; wb.reset();
     const wolfE = this.wolfE;
     const hitId = this.hitFx.liftA() > 0.02 ? this.hitFx.id : -2;
@@ -1076,7 +1082,10 @@ export class RunScene extends Phaser.Scene {
       if (ei < 512) art.fi[ei] = 255;
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
-      img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
+      const mr = mustOf[e.type] === true;
+      const d2n = (e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y);
+      img.setPosition(e.x, e.y).setDepth(D_LIT + (d2n < NEAR2 ? depthNear(p.y) : depthOf(e.y, mr))).setFlipX(e.faceX < 0); // DR3: must-react types sort above the common swarm; anything piled on the hero draws under her
+      inView++;
       if (e.id === hitId) { liftImg = img; liftE = e; img.setDepth(D_LIT + LIFT_Z); } // DR1: the enemy that hit is lifted above the crowd for 0.3 s
       const husk = art.on && HUSK_TYPES[e.type] !== undefined;
       if (husk) art.apply(img, e, ei, sim.time, lowT);
@@ -1091,7 +1100,8 @@ export class RunScene extends Phaser.Scene {
       const d2 = ddx * ddx + ddy * ddy;
       if (!e.boss) {
         if (d2 < 256) crowd++;
-        img.setAlpha(d2 < 100 && e.y > p.y ? 0.85 : 1); // enemies in front of the hero never fully hide it
+        if (d2 < 14400) near120++;
+        img.setAlpha(enemyAlpha(d2 < 1936 ? Math.sqrt(d2) : 1e9, dk, mr)); // DR3: common swarm quieter in a thick crowd; anything over the hero fades (she and her hits show)
       }
       if (e.flash > 0) tq = 100;
       else if (e.bleedT > 0) tq = 101;
@@ -1110,6 +1120,14 @@ export class RunScene extends Phaser.Scene {
         else if (tq === 101) img.setTint(ROLE.bleedTint); // blood red (Matt 2026-10-16), shared with bleed numbers and drips
         else if (tq === 0) { if (jv === 1) img.clearTint(); else img.setTint(img.lastTint = mulTint(0xffffff, jv)); }
         else { const v = Math.min(255, tq * 16 - 1); img.setTint(img.lastTint = mulTint((v << 16) | (v << 8) | v, jv)); }
+      }
+      if (mr && mrN < mrCap && husk) { // DR3: cream outline on the must-react types (shape cue, not colour alone), Husk atlas outline frame
+        let om = this.mrOut[mrN];
+        if (!om) { om = this.mrOut[mrN] = this.add.image(0, 0, art.atlas, art.rimName(e.type, 0)).setTintFill(ROLE.lanternCore); om.rn = ''; }
+        const rn = art.rimName(e.type, img.frn >= 0 ? img.frn : 0);
+        if (om.rn !== rn) { om.rn = rn; om.setFrame(rn); }
+        om.setScale(img.js * art.rimInvT[e.type] * 1.12).setPosition(e.x, e.y + art.foot[e.type]).setFlipX(e.faceX < 0).setDepth(img.depth - 0.4).setAlpha(0.85 * img.alpha).setVisible(true);
+        mrN++;
       }
       if (lit && e.boss) lm.add(e.x, e.y - 10, app.params.arc ? bossLightRadius(this.arc.y) : 90, ROLE.bossEye, 0.8);
       // bleed readout (visual only; reads the sim's running bleedTot): ~2 small pale-blue numbers a second per bleeding enemy
@@ -1189,6 +1207,9 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
+    for (let oi = mrN; oi < this.mrN; oi++) if (this.mrOut[oi]) this.mrOut[oi].setVisible(false);
+    this.mrN = mrN;
+    this.dens.update(near120, inView, Math.min(this.game.loop.delta, 100) / 1000);
     wb.plan();
     for (let wi = 0; wi < wb.n; wi++) { const md = wb.mode[wi]; if (md) drawWolfChevron(this.teleG, wolfE[wi], md); wolfE[wi] = null; }
 
@@ -1202,7 +1223,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     // silhouette pass: when 3+ enemies crowd the hero, a baked outline fades in above everyone
-    const oa = this.heroOutA + ((crowd >= 3 ? 0.7 : 0) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120);
+    const oa = this.heroOutA + (heroOutTarget(crowd >= 3) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120); // DR3: always on, stronger when crowded
     this.heroOutA = oa;
     this.heroOut.setVisible(oa > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(oa).setFlipX(p.faceX < 0);
     this.tickHit(sim, p, rig, liftImg, liftE, wv);

@@ -86,7 +86,7 @@ test('DR1 no salmon body fill after the white flash; the outline carries the hit
   const o = {};
   assert.equal(M.hurtFx(o, 0.01).tint, 1); assert.equal(M.hurtFx(o, 0.1).tint, 0); assert.equal(M.hurtFx(o, 0.2).tint, 0);
   assert.equal(HIT_RED, 0xff8078, 'locked damage-taken light red');
-  assert.ok(LIFT_Z < 4000, 'attacker sits below the hero outline (D_LIT + 4000)');
+  assert.ok(LIFT_Z < 9000, 'attacker sits below the hero outline stack (D_LIT + 9000)');
 });
 
 test('DR1 damage-taken number: 1.2x, a layer above, own lane (enemy numbers near it are held back 0.4 s)', () => {
