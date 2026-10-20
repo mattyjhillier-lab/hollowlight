@@ -240,3 +240,4 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - IDEA 2026-10-18 (Matt) DIFFICULTY TIERS: Normal/Hard/Expert per map, unlocked in the skill tree, harder = more resources (maybe a new resource), some upgrades locked behind tier clears; careful balance with tree economy; research first. = release-gate item 12 (replay loop). Design BEFORE tree T3.
 
 - QUEUED 2026-10-18: design pass (three options per piece) for the 4 extra v1 ideas: cosmetics, Twilight assist, daily seed + endless dusk, risk toggles/curses; economy re-model for curse income. Starts when an agent slot frees (after T3 / EN3-5).
+- PARKED 2026-10-20 (Matt): controller/gamepad support, some time after v1. Keep input going through src/input/keys.js (last-pressed wins on opposite keys) so a gamepad can feed the same layer. Do not build until Matt says.
