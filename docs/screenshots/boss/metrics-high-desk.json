@@ -1,92 +1,92 @@
 {
  "desk-50-defeat-results": {
   "ro": 0,
-  "bossL": 20.3,
-  "groundL": 16.3
+  "bossL": 20.2,
+  "groundL": 16.5
  },
  "desk-01-arrival-ring": {
   "ro": 0,
-  "bossL": 42.3,
-  "groundL": 66.4
+  "bossL": 45.5,
+  "groundL": 68
  },
  "desk-02-arrival-wake": {
   "ro": 0,
-  "bossL": 48.6,
-  "groundL": 55.3
+  "bossL": 46.5,
+  "groundL": 57
  },
  "desk-10-tell-slam": {
-  "ro": 0.32,
-  "bossL": 44.8,
-  "groundL": 59.6
+  "ro": 1.25,
+  "bossL": 46.5,
+  "groundL": 59.3
  },
  "desk-11-tell-eruption": {
-  "ro": 0.46,
-  "bossL": 46,
-  "groundL": 59.3
+  "ro": 0.62,
+  "bossL": 48.7,
+  "groundL": 59.8
  },
  "desk-12-tell-seeds": {
   "ro": 0,
-  "bossL": 47.2,
-  "groundL": 55.1
+  "bossL": 45.4,
+  "groundL": 53.1
  },
  "desk-20-phase2-call": {
   "ro": 0,
-  "bossL": 38,
-  "groundL": 54.4
+  "bossL": 43.3,
+  "groundL": 54.5
  },
  "desk-21-tell-sweep": {
-  "ro": 1.23,
-  "bossL": 45.9,
-  "groundL": 58.4
+  "ro": 0.95,
+  "bossL": 46,
+  "groundL": 48.8
  },
  "desk-22-tell-fan": {
-  "ro": 0.54,
-  "bossL": 47.4,
-  "groundL": 51
+  "ro": 0,
+  "bossL": 47.8,
+  "groundL": 34.5
  },
  "desk-30-phase3-call": {
   "ro": 0,
-  "bossL": 47.1,
-  "groundL": 53.2
+  "bossL": 43.4,
+  "groundL": 47.1
  },
  "desk-31-tell-lanes": {
-  "ro": 1.1,
-  "bossL": 45.7,
-  "groundL": 57.8
+  "ro": 0.06,
+  "bossL": 39.7,
+  "groundL": 43.8
  },
  "desk-32-tell-nova": {
-  "ro": 0.38,
-  "bossL": 45.7,
-  "groundL": 51.4
+  "ro": 0.02,
+  "bossL": 39,
+  "groundL": 31.1
  },
  "desk-40-victory-kneel": {
   "ro": 0,
-  "bossL": 52.5,
-  "groundL": 51.4
+  "bossL": 41.5,
+  "groundL": 32.7
  },
  "desk-41-victory-mask": {
   "ro": 0,
-  "bossL": 49.9,
-  "groundL": 49.2
+  "bossL": 42.5,
+  "groundL": 44.6
  },
  "desk-42-victory-flood": {
   "ro": 0,
-  "bossL": 51.6,
-  "groundL": 50.7
+  "bossL": 47.8,
+  "groundL": 46
  },
  "desk-43-victory-flood-full": {
-  "ro": 0,
-  "bossL": 59.1,
-  "groundL": 58.4
+  "ro": 0.15,
+  "bossL": 38.2,
+  "groundL": 16.1
  },
  "desk-44-victory-line": {
-  "ro": 0,
-  "bossL": 60.3,
-  "groundL": 59.6
+  "ro": 0.15,
+  "bossL": 38.3,
+  "groundL": 16.1
  },
  "desk-45-victory-results": {
-  "ro": 0,
-  "bossL": 41.1,
-  "groundL": 23.7
+  "ro": 0.15,
+  "bossL": 38.3,
+  "groundL": 16.1
  }
 }

@@ -6,87 +6,87 @@
  },
  "port-01-arrival-ring": {
   "ro": 0,
-  "bossL": 31,
-  "groundL": 56.3
+  "bossL": 48.1,
+  "groundL": 69.9
  },
  "port-02-arrival-wake": {
   "ro": 0,
   "bossL": 30.5,
-  "groundL": 50
+  "groundL": 49.9
  },
  "port-10-tell-slam": {
-  "ro": 0.48,
+  "ro": 0.43,
   "bossL": 44.3,
-  "groundL": 60
+  "groundL": 59.8
  },
  "port-11-tell-eruption": {
-  "ro": 0.4,
-  "bossL": 33,
-  "groundL": 54.2
+  "ro": 0.18,
+  "bossL": 33.1,
+  "groundL": 53.1
  },
  "port-12-tell-seeds": {
   "ro": 0,
-  "bossL": 29.2,
-  "groundL": 49.8
+  "bossL": 29,
+  "groundL": 49.3
  },
  "port-20-phase2-call": {
   "ro": 0,
-  "bossL": 28.6,
-  "groundL": 49.9
+  "bossL": 29.9,
+  "groundL": 50.1
  },
  "port-21-tell-sweep": {
-  "ro": 1.29,
-  "bossL": 38,
-  "groundL": 57.8
+  "ro": 1.67,
+  "bossL": 37.7,
+  "groundL": 58
  },
  "port-22-tell-fan": {
-  "ro": 0.19,
-  "bossL": 29.9,
-  "groundL": 46.1
+  "ro": 0.23,
+  "bossL": 31.3,
+  "groundL": 44
  },
  "port-30-phase3-call": {
   "ro": 0,
-  "bossL": 30.7,
-  "groundL": 50.4
+  "bossL": 28.4,
+  "groundL": 46.5
  },
  "port-31-tell-lanes": {
-  "ro": 0.8,
-  "bossL": 37.3,
-  "groundL": 58.6
+  "ro": 1.36,
+  "bossL": 36.4,
+  "groundL": 57.7
  },
  "port-32-tell-nova": {
-  "ro": 0.26,
-  "bossL": 38.6,
-  "groundL": 58.7
+  "ro": 0.48,
+  "bossL": 37.7,
+  "groundL": 57.3
  },
  "port-40-victory-kneel": {
   "ro": 0,
-  "bossL": 36.7,
-  "groundL": 57.2
+  "bossL": 39.1,
+  "groundL": 55.2
  },
  "port-41-victory-mask": {
   "ro": 0,
-  "bossL": 36.3,
-  "groundL": 55.4
+  "bossL": 39.8,
+  "groundL": 52.5
  },
  "port-42-victory-flood": {
   "ro": 0,
-  "bossL": 38,
-  "groundL": 56.7
+  "bossL": 40.5,
+  "groundL": 53.2
  },
  "port-43-victory-flood-full": {
   "ro": 0,
-  "bossL": 40.2,
-  "groundL": 60.8
+  "bossL": 42.2,
+  "groundL": 56.5
  },
  "port-44-victory-line": {
   "ro": 0,
-  "bossL": 42.2,
-  "groundL": 61.9
+  "bossL": 41.9,
+  "groundL": 57
  },
  "port-45-victory-results": {
   "ro": 1.84,
-  "bossL": 26.4,
-  "groundL": 25
+  "bossL": 25.6,
+  "groundL": 27.2
  }
 }
