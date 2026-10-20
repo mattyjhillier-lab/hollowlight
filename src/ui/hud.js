@@ -129,6 +129,19 @@ export class Hud {
     if (r && x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) this.wake();
   }
 
+  // Elder Treant arrival banner (boss-treant-v1 (a)): bark-textured title + a quiet line, 2.4 s; text only (textContent), Calm = no letter-spacing sweep
+  bossBanner(title, sub, animate) {
+    const el = this.bossIntro;
+    el.textContent = '';
+    const t = this.doc.createElement('span'); t.className = 'bi-title'; t.textContent = String(title).toUpperCase();
+    const s = this.doc.createElement('span'); s.className = 'bi-sub'; s.textContent = String(sub);
+    el.append(t, s);
+    el.classList.add('is-bark');
+    el.classList.remove('on');
+    if (animate) { void el.offsetWidth; el.classList.add('on'); }
+    else { el.style.opacity = '1'; clearTimeout(this.bannerT); this.bannerT = setTimeout(() => { el.style.opacity = ''; }, 2400); }
+  }
+
   update(sim, data) {
     const p = sim.player, t = sim.time;
     this.t = t;
@@ -162,12 +175,16 @@ export class Hud {
 
     // moon arc + timer
     const run = sim.balance.runSeconds;
-    const tf = moonT(t, run);
+    const ck = Number.isFinite(sim.clock) ? sim.clock : t; // boss fight: the display clock holds at 14:00 (sim.clock), the run time keeps counting
+    const held = !!(sim.fight && sim.fight.live);
+    const dawn = !!(sim.fight && sim.state === 'victory'); // the Treant fell: the moon reaches the dawn line
+    const tf = dawn ? 1 : moonT(ck, run);
     const mp = moonPoint(tf, ARC);
     this.attr('moon', this.moonSvg.moon, 'transform', `translate(${mp.x.toFixed(1)},${mp.y.toFixed(1)})`);
     this.attr('lit', this.moonSvg.lit, 'stroke-dasharray', `${(tf * 100).toFixed(1)} 100`);
     this.sty('trackdot', this.trackDot, 'left', `${(tf * 100).toFixed(1)}%`);
-    this.set('time', this.time, fmtTime(Math.max(0, run - t)));
+    this.set('time', this.time, held ? 'HELD' : dawn ? 'DAWN' : fmtTime(Math.max(0, run - ck))); // no timer in the fight: the moon parks on the dawn line
+    if (this.prev.held !== held) { this.prev.held = held; this.moon.classList.toggle('is-held', held); }
 
     // boss bar
     const b = sim.boss && !sim.boss.dead ? sim.boss : null;

@@ -43,6 +43,8 @@
 .h-arc svg { width: 100%; height: auto; }
 .h-timeplate { position: absolute; left: calc(39 * var(--hu)); top: calc(46 * var(--hu)); width: calc(112 * var(--hu)); height: calc(36 * var(--hu)); border-radius: 999px; background: linear-gradient(rgba(45, 37, 32, .78), rgba(23, 18, 15, .78)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); display: flex; align-items: center; justify-content: center; }
 .h-timetxt { font-size: calc(25 * var(--hu)); letter-spacing: .06em; }
+.h-moon.is-held .h-timetxt { color: #ffd98a; letter-spacing: .14em; } /* boss fight: the clock holds at 14:00 (boss-treant-v1 (a)) */
+.h-moon.is-held .h-timeplate { border-color: rgba(255, 206, 120, .95); box-shadow: 0 0 calc(8 * var(--hu)) rgba(255, 190, 90, .45), 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); }
 .h-track, .h-trackdot, .h-tracksun { display: none; }
 .h-boss { position: absolute; left: 50%; top: calc(var(--mt) + 68 * var(--hu)); width: calc(460 * var(--hu)); transform: translateX(-50%); display: none; text-align: center; }
 .h-boss.on { display: block; }

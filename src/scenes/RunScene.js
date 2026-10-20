@@ -45,6 +45,8 @@ import { drawEnemyTells, drawThorns, drawBurstFx, drawWolfChevron, TELL_RO } fro
 import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2 shared telegraph rule
 import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTarget, skipSmallNumber, MUST_OUT_CAP, DEPTH_HERO_OUT } from '../gfx/crowdread.js'; // DR3 crowd readability rules
 import { HeroLine, OL_RES } from '../gfx/heroline.js'; // OL1: hero outline rebuilt from the hero's own transformed parts
+import { BossView, ADD_SCALE, ADD_ORIGIN } from '../gfx/boss/bossview.js'; // Elder Treant fight: arena, tells, boss art, victory flood
+import { POD_KEY, SAP_KEY } from '../gfx/boss/bossart.js';
 import { HeldKeys, bindHeldKeys } from '../input/keys.js'; // CTL1: own held-key tracker (window capture, cleared on blur/hidden)
 
 const ADD = Phaser.BlendModes.ADD;
@@ -221,6 +223,8 @@ export class RunScene extends Phaser.Scene {
     this.dawn = this.add.rectangle(0, 0, 760, 440, 0xffa888).setScrollFactor(0).setDepth(D_VIG - 2).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.gradeTint = -1;
 
+    this.bossView = new BossView(this, { lit: D_LIT, ground: -395, tele: D_VIG + 3 });
+    INV[POD_KEY] = INV[SAP_KEY] = ADD_SCALE;
     this.pools = {
       wolf: new SpritePool(this, 'wolf'),
       crow: new SpritePool(this, 'crow'),
@@ -229,6 +233,8 @@ export class RunScene extends Phaser.Scene {
       puffback_toad: new SpritePool(this, 'toad'),
       bramble_hart: new SpritePool(this, 'hart'),
       elder_treant: new SpritePool(this, 'treant'),
+      treant_pod: new SpritePool(this, POD_KEY, (i) => i.setOrigin(ADD_ORIGIN[0], ADD_ORIGIN[1])),
+      treant_sapling: new SpritePool(this, SAP_KEY, (i) => i.setOrigin(ADD_ORIGIN[0], ADD_ORIGIN[1])),
       uWolf: new SpritePool(this, 'wolfU'),
       uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves
       uRaven: new SpritePool(this, 'raven'),
@@ -395,10 +401,10 @@ export class RunScene extends Phaser.Scene {
     const st = this.dawnSt; const bud = this.dawnBud; const ph = this.swayPhone;
     const dc = DAWN_CAPS[this.quality.tier] || DAWN_CAPS.low;
     bud.birds = on ? airN(caps.ambient.birds, ph, 12) : 0; bud.petals = on ? airN(dc.petals, ph, 10) : 0; bud.shafts = on ? airN(dc.shafts, ph, 3) : 0;
-    st.calm = reduced; st.phone = ph; st.victory = on && sim.state === 'victory'; st.hx = sim.player.x; st.hy = sim.player.y; st.bright = this.arc.mode || 'normal';
+    st.calm = reduced; st.phone = ph; st.victory = on && sim.state === 'victory' && (!sim.fight || this.bossView.floodOn()); st.hx = sim.player.x; st.hy = sim.player.y; st.bright = this.arc.mode || 'normal'; // boss fight: the victory flush waits for the flood
     dw.setTint(this.lmOn ? 0xffffff : this.gradeNow);
     if (!on) { dw.field.mod.flush = 0; dw.field.mod.rise = dw.field.mod.fade = dw.field.mod.slow = dw.field.mod.thin = 0; dw.field.mod.hush = dw.field.mod.eager = false; if (dw.count) dw.hideAll(); return; }
-    dw.update(dt, (sim.time / app.data.balance.runSeconds) * DAWN_REF, view, st, bud);
+    dw.update(dt, (this.showClock(sim) / app.data.balance.runSeconds) * DAWN_REF, view, st, bud);
   }
 
   // WL6c: restored-world vibrancy (visual only). vib = arc saturation x (0.85 + 0.15 x restored share of the view); the ground shader gets it every frame
@@ -463,6 +469,7 @@ export class RunScene extends Phaser.Scene {
     this.air.reset(((sim.seed | 0) ^ 0xa1f10) | 0); // W5 fog / fireflies / motes (own hash stream)
     this.critters.reset(((sim.seed | 0) ^ 0xc41773) | 0); // AL-5 critters (own hash stream)
     this.dawnFx.reset(((sim.seed | 0) ^ 0xda3c5) | 0); // AL-6 dawn chorus (own hash stream)
+    this.bossView.reset(sim);
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
     const size = app.data.balance.worldSize;
@@ -495,7 +502,7 @@ export class RunScene extends Phaser.Scene {
     for (const r of this.rings) r.on = false;
     this.evoBeat = null;
     this.gradeTint = -1;
-    this.updateGrade(sim.time / app.data.balance.runSeconds);
+    this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
   }
@@ -800,6 +807,9 @@ export class RunScene extends Phaser.Scene {
     this.evoBeat = { w: evo ? evo.weapon : '', t: 0, life: 0.55 };
   }
 
+  // display clock for the arc light + AL-6: holds at 14:00 in the boss fight, runs to dawn across the victory flood (bossview.js)
+  showClock(sim) { return this.bossView ? this.bossView.clock(sim) : sim.time; }
+
   bossIntro() {
     const b = this.sim.boss;
     this.flash(PAL.lavender, 0.35, 0.6);
@@ -863,8 +873,8 @@ export class RunScene extends Phaser.Scene {
       this.zoomT += dt;
       const k = Math.min(1, this.zoomT / this.zoomDur);
       const e = k < 0.12 ? k / 0.12 : (1 - k) * (1 - k) * 1.2;
-      cam.setZoom(this.baseZoom * (1 + this.zoomAmp * Math.min(1, e)));
-    } else if (cam.zoom !== this.baseZoom) cam.setZoom(this.baseZoom);
+      cam.setZoom(this.baseZoom * this.bossView.zoomK() * (1 + this.zoomAmp * Math.min(1, e)));
+    } else if (cam.zoom !== this.baseZoom * this.bossView.zoomK()) cam.setZoom(this.baseZoom * this.bossView.zoomK()); // boss fight: -8% (portrait: its own zoom), eased
     if (this.flashR.visible) {
       this.flashT += dt;
       const k = this.flashT / this.flashLife;
@@ -928,14 +938,14 @@ export class RunScene extends Phaser.Scene {
     sim.view.hw = wv.width / 2; sim.view.hh = wv.height / 2; // EN3-EN5: telegraph enemies only start a tell inside the real camera view
     let halos = 0;
 
-    this.updateGrade(sim.time / app.data.balance.runSeconds);
+    this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds);
     this.sec0(8); this.tickAmbient(sim); this.sec1(8);
     const lm = this.lm;
     const lit = this.lmOn;
     if (lit) lm.begin(wv.centerX, wv.centerY, this.cameras.main.zoom, caps.lights);
 
     // player: lantern pool + ground ring (readability) + lantern light
-    { const cam = this.cameras.main; followStep(this.camF, p.x, p.y, Math.min(this.game.loop.delta, 100) / 1000, cam.zoom, cam.width, cam.height); cam.setScroll(this.camF.sx, this.camF.sy); }
+    { const cam = this.cameras.main, ct = this.bossView.camTarget(p.x, p.y, cam.width / cam.zoom / 2, cam.height / cam.zoom / 2); followStep(this.camF, ct[0], ct[1], Math.min(this.game.loop.delta, 100) / 1000, cam.zoom, cam.width, cam.height); cam.setScroll(this.camF.sx, this.camF.sy); }
     this.sec0(2); this.tickLife(sim, p); this.sec1(2);
     this.sec0(3); this.tickSway(sim, p, caps); this.sec1(3);
     this.sec0(4); this.tickProps(sim, p, caps); this.sec1(4);
@@ -1226,6 +1236,10 @@ export class RunScene extends Phaser.Scene {
     for (let wi = 0; wi < wb.n; wi++) { const md = wb.mode[wi]; if (md) drawWolfChevron(this.teleG, wolfE[wi], md); wolfE[wi] = null; }
 
     if (sim.eshots.length) drawThorns(this.teleG, sim.eshots, vx0, vy0, vx1, vy1, this.quality.tier === 'low');
+    // Elder Treant fight (gfx/boss/bossview.js): ring, roots, brush, the boss art, its tells (DR2 shared style, above the vignette), the victory flood
+    this.bossView.update(sim, Math.min(this.game.loop.delta, 100) / 1000, this.quality.tier, this.reducedMotion(), lit ? lm : null, this.life, wv);
+    if (sim.fight) this.bossView.drawTells(this.teleG, sim, this.reducedMotion());
+    if (this.bossView.usingArt && sim.boss) { const bs = pl.elder_treant.map.get(sim.boss.id); if (bs) bs.img.setVisible(false); } // the baked First Husk replaces the flat placeholder
 
     if (nlOn) {
       const nc = this.nlc;
@@ -1647,7 +1661,7 @@ export class RunScene extends Phaser.Scene {
     for (let i = 0, n = Math.min(es.length, 400); i < n; i++) {
       const e = es[i];
       if (e.dead || e.hp <= 0) continue;
-      if (e.boss) this.life.stampCorr(e.x, e.y, 130, 0.03); else this.life.stampCorr(e.x, e.y, 42, 0.011);
+      if (e.boss) this.life.stampCorr(e.x, e.y, e.fight ? 70 : 130, e.fight ? 0.01 : 0.03); else this.life.stampCorr(e.x, e.y, 42, 0.011); // the fight boss stays ~90 s: a smaller, slower stain (no black hole under it)
       if (low) { const k = ((e.x / 180) | 0) * 64 + ((e.y / 180) | 0); const b = bin.get(k); if (b) { b.n++; b.x += e.x; b.y += e.y; } else bin.set(k, { n: 1, x: e.x, y: e.y }); }
     }
     if (!low) { for (const b of this.corrBlobs) if (b.visible) b.setVisible(false); return; }

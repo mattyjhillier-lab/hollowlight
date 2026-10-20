@@ -48,6 +48,7 @@ export const app = {
     this.sim = sim;
     this.paused = false;
     this.banked = false;
+    this.endPending = false;
     this.lastState = 'running';
     this.ui.hideAll();
     this.ui.showHud();
@@ -137,9 +138,12 @@ export const app = {
       else if (prev === 'levelup') this.ui.hideLevelUp();
       if (sim.state === 'victory' || sim.state === 'defeat') {
         this.ui.hidePause();
-        this.ui.showEnd(sim, this.bankRun(sim));
+        // the Elder Treant victory beat plays in the world first (bossview.js: ~6 s, any key / tap after 1.5 s skips)
+        if (this.scene.bossView && this.scene.bossView.endWait(sim) > 0) this.endPending = true;
+        else this.ui.showEnd(sim, this.bankRun(sim));
       }
     }
+    if (this.endPending && this.scene.bossView.endWait(sim) <= 0) { this.endPending = false; this.ui.showEnd(sim, this.bankRun(sim)); }
 
     this.hudAcc += dt;
     if (this.hudAcc > 0.08) {
@@ -156,10 +160,12 @@ export const app = {
 
   onEvent(ev) {
     const d = this.data;
+    if (this.scene.bossView && ev.type.startsWith('boss')) this.scene.bossView.onEvent(ev);
+    if (ev.type === 'bossWake') { this.ui.hudView.bossBanner('The Elder Treant wakes', 'the oldest mask in the forest', !this.save.data.settings.reducedMotion); return; }
     if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); } // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
     else if (ev.type === 'boss') {
       const b = this.sim && this.sim.boss;
-      this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion);
+      if (!(b && b.fight)) this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion); // the fight has its own banner (bossWake)
       this.scene.bossIntro();
     } else if (ev.type === 'levelup') this.scene.levelBurst();
     else if (ev.type === 'swarm') this.ui.toast(ev.enemy === 'wolf' ? 'A wolf pack closes in' : 'A murder of crows descends');
@@ -173,7 +179,8 @@ export const app = {
     else if (ev.type === 'rally') { this.ui.toast('Rally the Pack'); this.scene.rallyMoment(); }
     else if (ev.type === 'wheel') this.ui.toast('Candle Wheel');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
-    else if (ev.type === 'bossDead') this.ui.toast('The Elder Treant falls (+soul shards)');
+    else if (ev.type === 'bossDead') { if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
+    else if (ev.type === 'bossPhase') this.ui.toast(ev.phase === 1 ? 'The Elder Treant blights: Husks answer its call' : 'The Elder Treant rages: its heart glows');
     else if (ev.type === 'slam') this.scene.shake(160, 0.008);
   },
 

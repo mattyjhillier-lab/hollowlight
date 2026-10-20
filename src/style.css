@@ -169,6 +169,10 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .bossintro { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; font-family: var(--font-head); font-size: 3.2em; font-weight: 700; letter-spacing: .3em; color: var(--cream); -webkit-text-stroke: .07em var(--ink); paint-order: stroke fill; text-shadow: 0 .06em .18em rgba(0, 0, 0, .7); }
 .bossintro.on { animation: bossintro 2.2s ease-out; }
 @keyframes bossintro { 0% { opacity: 0; letter-spacing: .6em; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; letter-spacing: .3em; } }
+/* Elder Treant arrival (boss-treant-v1 (a)): bark-textured title (Husk bark greys, never red) + a quiet italic line; 2.6 s */
+.bossintro.is-bark.on { animation-duration: 2.6s; }
+.bossintro .bi-title { display: block; background: linear-gradient(180deg, #ece8d6 0%, #c8c3ad 38%, #8b846d 70%, #6f6857 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bossintro .bi-sub { display: block; margin-top: .35em; font-size: .36em; letter-spacing: .14em; font-style: italic; font-weight: 400; color: #e9dfc6; -webkit-text-stroke: .05em var(--ink); }
 .perf { position: absolute; right: .6em; top: 6.8em; padding: .3em .5em; background: rgba(7, 7, 13, .7); color: var(--ice); font-size: clamp(7px, 1.3cqw, 15px); white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; border-radius: .4em; font-family: ui-monospace, Consolas, monospace; }
 
 /* ---------- skill tree screen (plain placeholder styling; re-skin later) ---------- */

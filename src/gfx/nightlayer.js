@@ -331,7 +331,7 @@ export class NightLayer {
     let nb = 0;
     for (let i = 0; i < n; i++) {
       const e = es[i];
-      if (!e.boss) continue;
+      if (!e.boss || e.fight) continue; // the Elder Treant fight boss has its amber eyes baked into its sockets (gfx/boss/bossart.js): no floating dots
       for (let j = 0; j < BOSS_EYES.length; j++) {
         const x = e.x + BOSS_EYES[j][0];
         const y = e.y + BOSS_EYES[j][1];
