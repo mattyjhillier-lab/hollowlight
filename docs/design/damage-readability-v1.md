@@ -4,7 +4,7 @@ Date 2026-10-20. Source: Matt's playtest (Wren, built game): "there are points w
 
 Goal: the player always understands (a) THAT they were hit, (b) WHERE from and WHAT hit them, (c) how much health is left, without clutter, and the big swarms stay big but legible. Design only: no game code, no LOCKED edits. Mock-ups: `docs/mockups/damage-readability/` (README there).
 
-Status: RESEARCH + DESIGN done; REVIEW (independent second look) and Matt's four decisions pending. Measured on 59c0062; the wolf AI changed right after (c2be534 spread rule + hero leash), so the wolf share and crowding numbers should be re-run with `scripts/dr-hitprobe.mjs` before DR1 (render findings unaffected).
+Status: LOCKED 2026-10-20 (all option A, see docs/LOCKED.md 'DAMAGE + CROWD READABILITY'); BUILD in progress as chunks DR1 (hit feedback + direction), DR2 (enemy warnings), DR3 (crowd readability), DR4 (death recap): see the BUILT rows in LOCKED.md. (Original status: RESEARCH + DESIGN done; REVIEW and Matt's four decisions pending.) Measured on 59c0062; the wolf AI changed right after (c2be534 spread rule + hero leash), so the wolf share and crowding numbers should be re-run with `scripts/dr-hitprobe.mjs` before DR1 (render findings unaffected).
 
 ---
 

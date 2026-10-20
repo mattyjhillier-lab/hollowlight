@@ -115,7 +115,7 @@ try {
       if (!hit) { console.log('no hit', name, view); await c.ev('(()=>{window.__app.scene.hitStop=0;return 1})()'); continue; }
       metrics.push({ name, view, tag: 'hit', ...hit }); console.log(JSON.stringify({ name, view, hit }));
       // pin the render-time cues (hit state, numbers, rig hurt timer) to exact ages so a slow machine still captures 30 / 120 / 300 ms after the hit
-      await c.ev("(()=>{const S=window.__app.scene;if(S.hitFx)S.hitFx.update=function(){};const o=S.nums.update.bind(S.nums);S.nums.update=function(){o(0);};return 1})()");
+      await c.ev("(()=>{const S=window.__app.scene;if(S.hitFx)S.hitFx.update=function(){};const o=S.nums.update.bind(S.nums);S.nums.update=function(){o(0);};for(const q of S.nums.pool.slots)if(q.on&&q.age>0.45){q.on=false;q.dirty=false;}return 1})()"); // numbers older than 0.45 s at the hit would already be gone: drop them so the 'near the -N' count is only what really sits beside it
       for (const ms of (view === 'desk' ? [30, 120, 300] : [60, 200])) {
         await c.ev(`(()=>{const S=window.__app.scene,t=${ms}/1000;if(S.hitFx)S.hitFx.t=t;if(S.rig)S.rig.hurtT=t;for(const q of S.nums.pool.slots)if(q.on)q.age=t;return 1})()`);
         await sleep(150);

@@ -1,0 +1,70 @@
+[
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "crowd",
+  "redPct": 2.27,
+  "lightRedPx": 0,
+  "occluders": 1,
+  "tellsLive": 19,
+  "hurtNum": true,
+  "numsNearHurt": 3,
+  "heroHitA": 1,
+  "hfT": 0.13,
+  "hfN": 4
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit",
+  "src": "wolf",
+  "kind": "contact",
+  "id": 16,
+  "am": 9.025,
+  "n40": 88,
+  "n80": 126,
+  "t": 690.9000000000008
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit-30ms",
+  "redPct": 0.13,
+  "lightRedPx": 0,
+  "occluders": 0,
+  "tellsLive": 26,
+  "hurtNum": true,
+  "numsNearHurt": 1,
+  "heroHitA": 1,
+  "hfT": 0.03,
+  "hfN": 5
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit-120ms",
+  "redPct": 0.08,
+  "lightRedPx": 0,
+  "occluders": 0,
+  "tellsLive": 26,
+  "hurtNum": true,
+  "numsNearHurt": 1,
+  "heroHitA": 1,
+  "hfT": 0.12,
+  "hfN": 5
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit-300ms",
+  "redPct": 0.09,
+  "lightRedPx": 0,
+  "occluders": 0,
+  "tellsLive": 26,
+  "hurtNum": true,
+  "numsNearHurt": 1,
+  "heroHitA": 0,
+  "hfT": 0.3,
+  "hfN": 5
+ }
+]
