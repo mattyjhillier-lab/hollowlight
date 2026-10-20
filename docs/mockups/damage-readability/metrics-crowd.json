@@ -1,0 +1,122 @@
+[
+ {
+  "name": "crowd-before-desk",
+  "view": "desk",
+  "redPct": 10.14,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 20.86,
+  "occluders": 22,
+  "tellsLive": 29
+ },
+ {
+  "name": "crowd-crowdB-desk",
+  "view": "desk",
+  "redPct": 9.61,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 20.29,
+  "occluders": 0,
+  "tellsLive": 29
+ },
+ {
+  "name": "crowd-crowdA-desk",
+  "view": "desk",
+  "redPct": 1.31,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 19.96,
+  "occluders": 0,
+  "tellsLive": 30
+ },
+ {
+  "name": "crowd-crowdC-desk",
+  "view": "desk",
+  "redPct": 1.34,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 19.78,
+  "occluders": 0,
+  "tellsLive": 30
+ },
+ {
+  "name": "crowd-before-land",
+  "view": "land",
+  "redPct": 4.73,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 22.72,
+  "occluders": 26,
+  "tellsLive": 28
+ },
+ {
+  "name": "crowd-crowdB-land",
+  "view": "land",
+  "redPct": 4.26,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 21.92,
+  "occluders": 0,
+  "tellsLive": 28
+ },
+ {
+  "name": "crowd-crowdA-land",
+  "view": "land",
+  "redPct": 4.98,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 20.95,
+  "occluders": 0,
+  "tellsLive": 22
+ },
+ {
+  "name": "crowd-crowdC-land",
+  "view": "land",
+  "redPct": 4.79,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 20.82,
+  "occluders": 0,
+  "tellsLive": 22
+ },
+ {
+  "name": "crowd-before-port",
+  "view": "port",
+  "redPct": 0.11,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 24.68,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "crowd-crowdB-port",
+  "view": "port",
+  "redPct": 0.07,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 23.78,
+  "occluders": 0,
+  "tellsLive": 4
+ },
+ {
+  "name": "crowd-crowdA-port",
+  "view": "port",
+  "redPct": 5.75,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 22.67,
+  "occluders": 0,
+  "tellsLive": 18
+ },
+ {
+  "name": "crowd-crowdC-port",
+  "view": "port",
+  "redPct": 5.51,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 22.46,
+  "occluders": 0,
+  "tellsLive": 18
+ }
+]

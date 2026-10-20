@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Defeat Recap Options</title>
+<!-- Static mock-up of the three 'what hit me' recap options on the defeat results screen (U6 layout, Warm Lantern look).
+     Open with ?opt=A|B|C. Numbers are a real bot run (Wren, seed 7 pattern; see damage-readability-v1.md section 2). Docs only. -->
+<style>
+  @font-face { font-family: "Hollowlight Chancery"; src: url("../../../src/assets/fonts/hollowlight-chancery.woff2") format("woff2"); }
+  @font-face { font-family: "Alegreya Sans"; src: url("../../../src/assets/fonts/alegreya-sans-400.woff2") format("woff2"); }
+  :root { --ink:#16120f; --panel:#231c17; --line:#7a6440; --cream:#fff3dc; --muted:#cbbfa8; --brass:#e0b765; --hurt:#ff8078; --tell:#ff5a3c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: radial-gradient(ellipse at 22% 40%, #3a2a16 0, #14110e 55%) #14110e; color: var(--cream); font-family: "Alegreya Sans", system-ui, sans-serif; }
+  .wrap { display: grid; grid-template-columns: 40% 1fr; gap: 2vw; height: 100%; padding: 2.4vh 2.4vw; }
+  .left { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .kicker { letter-spacing: .14em; font-size: 1.05rem; color: var(--muted); }
+  h1 { font-family: "Hollowlight Chancery", Georgia, serif; font-weight: 400; font-size: 4.2rem; line-height: 1; margin: .3em 0 .2em; }
+  .struck { margin-top: .6em; font-size: 1.25rem; display: flex; gap: .5em; align-items: center; justify-content: center; }
+  .struck b { color: var(--cream); }
+  .glyph { width: 1.9em; height: 1.9em; border-radius: 50%; display: inline-grid; place-items: center; background: #1a1020; border: 2px solid var(--hurt); }
+  .glyph svg { width: 70%; height: 70%; }
+  .card { background: linear-gradient(#2a211a, #1d1713); border: 1.5px solid var(--line); border-radius: 18px; padding: 2.2vh 1.6vw; display: flex; flex-direction: column; gap: 1.4vh; }
+  .time { font-weight: 800; font-size: 3.2rem; line-height: 1; } .time small { font-size: .9rem; letter-spacing: .12em; color: var(--muted); font-weight: 400; margin-left: .6em; }
+  .row { display: grid; grid-template-columns: 2.2em 8em 1fr 3em; align-items: center; gap: .6em; font-size: 1.1rem; }
+  .bar { height: .7em; border-radius: 1em; background: #0e0b09; overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, #a35a52, var(--hurt)); border-radius: 1em; }
+  .row .pct { text-align: right; color: var(--muted); }
+  .sec { font-size: .95rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  .strip { display: flex; gap: .55em; align-items: flex-end; }
+  .hit { display: flex; flex-direction: column; align-items: center; gap: .25em; font-size: .95rem; color: var(--muted); }
+  .hit .glyph { width: 2.4em; height: 2.4em; border-color: #8a6a5a; }
+  .hit.final .glyph { width: 3em; height: 3em; border-color: var(--hurt); box-shadow: 0 0 14px rgba(255,128,120,.55); }
+  .hit b { color: var(--hurt); font-size: 1.05rem; }
+  .tip { border: 1.5px solid var(--brass); border-radius: 14px; padding: 1.2vh 1vw; background: #2b2216; display: grid; grid-template-columns: 3.2em 1fr; gap: .8em; align-items: center; font-size: 1.15rem; line-height: 1.3; }
+  .tip .glyph { width: 3em; height: 3em; border-color: var(--brass); }
+  .btns { display: flex; gap: 1vw; margin-top: auto; } .btns span { flex: 1; text-align: center; border: 1.5px solid var(--brass); border-radius: 14px; padding: 1.4vh 0; font-weight: 700; font-size: 1.2rem; } .btns span.go { background: linear-gradient(#f6b864, #d98a2f); color: #2a1a0a; }
+  .note { position: fixed; right: 1vw; bottom: .6vh; font-size: .8rem; color: #8d806b; }
+  .opt { display: none; } body[data-opt="A"] .oA, body[data-opt="B"] .oB, body[data-opt="C"] .oC { display: flex; }
+  @media (max-width: 600px) {
+    .wrap { grid-template-columns: 1fr; padding: 16px; gap: 12px; overflow: auto; }
+    h1 { font-size: 2.6rem; } .time { font-size: 2.4rem; } .row { grid-template-columns: 2em 6.6em 1fr 2.6em; font-size: 1rem; }
+    .left { justify-content: flex-start; padding-top: 8px; } .card { padding: 14px; gap: 10px; }
+  }
+</style>
+</head>
+<body data-opt="A">
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="g-wolf" viewBox="0 0 24 24"><path d="M3 15l4-7 3 2 3-5 2 6 5 1-3 4H7z" fill="#cfd6e6"/></symbol>
+    <symbol id="g-crow" viewBox="0 0 24 24"><path d="M3 13c4-6 9-7 13-5l5-2-3 5c0 4-4 7-9 7l-3 3 1-4z" fill="#cfd6e6"/></symbol>
+    <symbol id="g-root" viewBox="0 0 24 24"><path d="M4 16c0-5 4-8 8-8s8 3 8 8z M8 8V4M12 8V3M16 8V4" stroke="#cfd6e6" stroke-width="2" fill="#cfd6e6"/></symbol>
+    <symbol id="g-thorn" viewBox="0 0 24 24"><path d="M3 12l15-4-3 4 3 4z" fill="#ff8a50" stroke="#2a2236" stroke-width="1.5"/></symbol>
+    <symbol id="g-hart" viewBox="0 0 24 24"><path d="M6 3l2 5 4 2 4-2 2-5M8 8l-3-2M16 8l3-2M9 11h6l1 9h-8z" stroke="#cfd6e6" stroke-width="1.8" fill="none"/></symbol>
+  </defs>
+</svg>
+<div class="wrap">
+  <div class="left">
+    <div class="kicker">NIGHT 1 · CURSED FOREST · WREN</div>
+    <h1>The light dwindles</h1>
+    <div class="struck opt oA"><span class="glyph"><svg><use href="#g-wolf"/></svg></span><span>Struck down by a <b>Fell Wolf</b>'s lunge at 6:31</span></div>
+    <div class="struck opt oB"><span>Struck down by a <b>Fell Wolf</b></span></div>
+    <div class="struck opt oC"><span class="glyph"><svg><use href="#g-wolf"/></svg></span><span>Struck down by a <b>Fell Wolf</b></span></div>
+  </div>
+  <div class="card">
+    <div class="time">6:31<small>TIME SURVIVED</small></div>
+    <!-- option A: hits taken by source -->
+    <div class="opt oA" style="flex-direction:column;gap:1vh">
+      <div class="sec">What hurt you</div>
+      <div class="row"><span class="glyph"><svg><use href="#g-wolf"/></svg></span>Fell Wolves<span class="bar"><i style="width:58%"></i></span><span class="pct">58%</span></div>
+      <div class="row"><span class="glyph"><svg><use href="#g-crow"/></svg></span>Grave Crows<span class="bar"><i style="width:21%"></i></span><span class="pct">21%</span></div>
+      <div class="row"><span class="glyph"><svg><use href="#g-root"/></svg></span>Root Crawlers<span class="bar"><i style="width:13%"></i></span><span class="pct">13%</span></div>
+      <div class="row"><span class="glyph"><svg><use href="#g-hart"/></svg></span>Bramble Harts<span class="bar"><i style="width:4%"></i></span><span class="pct">4%</span></div>
+      <div class="row" style="color:var(--muted)"><span></span>Half of the wolf hits were lunges<span></span><span></span></div>
+    </div>
+    <!-- option B: last five hits strip -->
+    <div class="opt oB" style="flex-direction:column;gap:1vh">
+      <div class="sec">The last five hits</div>
+      <div class="strip">
+        <div class="hit"><span class="glyph"><svg><use href="#g-crow"/></svg></span><b>-3</b>6:12</div>
+        <div class="hit"><span class="glyph"><svg><use href="#g-wolf"/></svg></span><b>-5</b>6:19</div>
+        <div class="hit"><span class="glyph"><svg><use href="#g-root"/></svg></span><b>-11</b>6:24</div>
+        <div class="hit"><span class="glyph"><svg><use href="#g-crow"/></svg></span><b>-3</b>6:29</div>
+        <div class="hit final"><span class="glyph"><svg><use href="#g-wolf"/></svg></span><b>-5</b>6:31</div>
+      </div>
+      <div class="row" style="color:var(--muted);grid-template-columns:1fr">The last five hits took 27 health in 19 seconds</div>
+    </div>
+    <!-- option C: one plain-words tip from the top source -->
+    <div class="opt oC" style="flex-direction:column;gap:1vh">
+      <div class="sec">A word from the lantern</div>
+      <div class="tip"><span class="glyph"><svg><use href="#g-wolf"/></svg></span><span>Fell Wolves dealt most of your hurt. When a wolf <b>crouches and its hackles rise</b>, it is about to lunge in a straight line: step sideways.</span></div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:1vw;font-size:1.05rem"><span>LEVEL <b>9</b></span><span>SLAIN <b>412</b></span><span>GOLD <b>+312</b></span></div>
+    <div class="btns"><span>Main menu</span><span class="go">Again</span><span>Tree</span></div>
+  </div>
+</div>
+<div class="note">Mock-up: damage readability recap option <span id="o">A</span></div>
+<script>
+  // only A, B or C is accepted; anything else falls back to A
+  const v = new URLSearchParams(location.search).get('opt');
+  const o = ['A', 'B', 'C'].includes(v) ? v : 'A';
+  document.body.dataset.opt = o; document.getElementById('o').textContent = o;
+</script>
+</body>
+</html>

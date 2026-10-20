@@ -1,0 +1,82 @@
+[
+ {
+  "name": "thorn-before-desk",
+  "view": "desk",
+  "redPct": 5.44,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.59,
+  "occluders": 14,
+  "tellsLive": 18
+ },
+ {
+  "name": "thorn-tellA-desk",
+  "view": "desk",
+  "redPct": 1.61,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.9,
+  "occluders": 14,
+  "tellsLive": 18
+ },
+ {
+  "name": "thorn-tellB-desk",
+  "view": "desk",
+  "redPct": 1.7,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 15.3,
+  "occluders": 14,
+  "tellsLive": 18
+ },
+ {
+  "name": "thorn-tellC-desk",
+  "view": "desk",
+  "redPct": 8.15,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 15.38,
+  "occluders": 14,
+  "tellsLive": 18
+ },
+ {
+  "name": "thorn-before-port",
+  "view": "port",
+  "redPct": 5.06,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.08,
+  "occluders": 15,
+  "tellsLive": 16
+ },
+ {
+  "name": "thorn-tellA-port",
+  "view": "port",
+  "redPct": 2.94,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.32,
+  "occluders": 15,
+  "tellsLive": 16
+ },
+ {
+  "name": "thorn-tellB-port",
+  "view": "port",
+  "redPct": 2.85,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.39,
+  "occluders": 15,
+  "tellsLive": 16
+ },
+ {
+  "name": "thorn-tellC-port",
+  "view": "port",
+  "redPct": 9.67,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.2,
+  "occluders": 15,
+  "tellsLive": 16
+ }
+]
