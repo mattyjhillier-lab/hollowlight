@@ -12,12 +12,12 @@ if (!isMainThread && workerData && workerData.impactWorker) {
   const { data } = await import('../../tests/helpers.mjs');
   const { loadTree } = await import('../../src/meta/treefs.mjs');
   const { compileTree, presetTree, aggregateMods } = await import('../../src/meta/tree.js');
-  const K = Number(process.env.TREE_K || 1); // what-if: scale every combat pct face AND every category cap by K (ceiling-raise experiment, never shipped)
+  const K = Number(process.env.TREE_K || 1), KC = Number(process.env.TREE_KC || K), KF = Number(process.env.TREE_KF || K); // what-if: scale every combat pct face AND every category cap by K (ceiling-raise experiment, never shipped)
   const def = compileTree(loadTree(data).live, data);
-  if (K !== 1) {
-    for (const id of def.list) for (const e of def.nodes[id].effects) { if (e.pct !== undefined && (e.weapon !== undefined || ['damage', 'cooldown', 'area'].includes(e.mod) || ['maxHp', 'levelHeal'].includes(e.player) || e.status !== undefined)) e.pct *= K; }
-    for (const c of Object.values(def.rule.categories)) c.cap *= K;
-    def.rule.perWeapon.cap *= K;
+  if (KC !== 1 || KF !== 1) {
+    for (const id of def.list) for (const e of def.nodes[id].effects) { if (e.pct !== undefined && (e.weapon !== undefined || ['damage', 'cooldown', 'area'].includes(e.mod) || ['maxHp', 'levelHeal'].includes(e.player) || e.status !== undefined)) e.pct *= KF; }
+    for (const c of Object.values(def.rule.categories)) c.cap *= KC;
+    def.rule.perWeapon.cap *= KC;
   }
   const full = presetTree(def, 'full', true), fullNoGates = presetTree(def, 'full', false), half = presetTree(def, 'half', true);
   parentPort.on('message', (job) => {

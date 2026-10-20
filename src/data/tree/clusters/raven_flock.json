@@ -259,7 +259,7 @@
    "idx": 10,
    "kind": "mastery",
    "name": "Black Feather Oath",
-   "desc": "Peck power +1% and Watch +1%",
+   "desc": "Peck power +2% and Watch +2%",
    "flavour": "The crows now count you as kin.",
    "branch": "summoner",
    "cost": {
@@ -273,12 +273,12 @@
     {
      "weapon": "raven_flock",
      "stat": "power",
-     "pct": 1
+     "pct": 2
     },
     {
      "weapon": "raven_flock",
      "stat": "range",
-     "pct": 1
+     "pct": 2
     }
    ],
    "unlock": {

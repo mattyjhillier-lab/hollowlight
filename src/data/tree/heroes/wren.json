@@ -10,7 +10,7 @@
    "idx": 0,
    "kind": "hero",
    "name": "Orphan's Instinct",
-   "desc": "Ghost Wolves bite +2%",
+   "desc": "Ghost Wolves bite +4%",
    "flavour": "Wren taught the pack to hunt.",
    "branch": "summoner",
    "cost": {
@@ -23,7 +23,7 @@
     {
      "weapon": "ghost_wolves",
      "stat": "power",
-     "pct": 2
+     "pct": 4
     }
    ],
    "unlock": {

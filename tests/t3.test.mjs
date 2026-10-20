@@ -18,11 +18,11 @@ const own = (ids) => Object.fromEntries(ids.map((i) => [i, 1]));
 const full = () => presetTree(def, 'full', true);
 
 test('T3a the budget rule reaches the compiled tree and aggregateMods applies it', () => {
-  assert.ok(RULE && RULE.categories.dmg.cap === 2.7 && RULE.perWeapon.cap === 8.6);
+  assert.ok(RULE && RULE.categories.dmg.cap === 5.4 && RULE.perWeapon.cap === 17.2);
   assert.deepEqual(aggregateMods({}, def, data).softcap, {});
   const a = aggregateMods(own(['sp_edge', 'sp_mastery', 'li_dawn']), def, data);
-  assert.ok(Math.abs(a.mods.damage - (1 + soft(3, 2.7) / 100)) < 1e-9, 'three +1% damage nodes pass through C(1 - e^(-S/C)), C = 2.5');
-  assert.ok(Math.abs(a.softcap.dmg.total - soft(3, 2.7)) < 1e-9 && a.softcap.dmg.S === 3);
+  assert.ok(Math.abs(a.mods.damage - (1 + soft(3, 5.4) / 100)) < 1e-9, 'three +1% damage nodes pass through C(1 - e^(-S/C)), C = 5.4');
+  assert.ok(Math.abs(a.softcap.dmg.total - soft(3, 5.4)) < 1e-9 && a.softcap.dmg.S === 3);
 });
 
 test('T3a one cap per category: the whole tree can never pass a category cap, however many nodes are added', () => {
@@ -62,7 +62,7 @@ test('T3a the soft cap is the budget: every capped category of the full tree equ
 test('T3a negatives pass through the cap unscaled; flat adds are never scaled; the keystone trade stays a real trade', () => {
   const k = aggregateMods(own(['su_key']), def, data);
   assert.equal(k.weaponBonus.spirit_bolts.power.pct, -3);
-  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(3, 6.4)) < 1e-9);
+  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(3, 12.8)) < 1e-9);
   const p = aggregateMods(own(['gt_spirit_bolts', 'bo_pierce']), def, data);
   assert.equal(p.weaponBonus.spirit_bolts.pierce.add, 1, 'Pierce +1 is a whole foe, not a percentage');
   const g = aggregateMods(own(['li_glass']), def, data);
@@ -71,9 +71,9 @@ test('T3a negatives pass through the cap unscaled; flat adds are never scaled; t
 
 test('T3a the new effect kinds reach aggregateMods: status potency / seconds, Firm Grip, Wide Wheel, visuals', () => {
   const a = aggregateMods(own(['wf_bleed', 'wf_rend', 'or_kindle', 'or_ember', 'rv_eye', 'wr_grip', 'el_wheel', 'wr_spark', 'el_lamp']), def, data);
-  const S = 2 + 2 + 2 + 2 + 0.5 * RULE.markFace; // bleed 4, burn 4, mark 0.5 s -> 2 points
-  const fac = soft(S, 8) / S;
-  assert.ok(Math.abs(a.status.bleed - 4 * fac) < 1e-9 && Math.abs(a.status.burn - 4 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
+  const S = 3 + 3 + 3 + 3 + 0.5 * RULE.markFace; // bleed 6, burn 6, mark 0.5 s -> 2 points
+  const fac = soft(S, 16) / S;
+  assert.ok(Math.abs(a.status.bleed - 6 * fac) < 1e-9 && Math.abs(a.status.burn - 6 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
   assert.equal(a.ability.rallySecs, 0.5);
   assert.equal(a.ability.wheel, 8);
   assert.deepEqual(a.visuals.sort(), ['graveLamp', 'kinSparks']);

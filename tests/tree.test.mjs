@@ -332,9 +332,9 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   assert.ok(Math.abs(a.mods.damage - (1 + soft(E('sp_edge').pct, def.rule.categories.dmg.cap) / 100)) < 1e-9);
   assert.ok(Math.abs(a.mods.abilityCd - 0.55) < 1e-9, `abilityCd ${a.mods.abilityCd}`);
   assert.ok(Math.abs(a.mods.cooldown - (1 + soft(-E('ma_cast').pct, def.rule.categories.cast.cap) / -100)) < 1e-9);
-  assert.ok(Math.abs(a.mods.area - (1 + soft(E('ma_area').pct, 4) / 100)) < 1e-9);
-  assert.ok(Math.abs(a.player.maxHp - (1 + soft(E('li_vigor').pct, 6) / 100)) < 1e-9);
-  assert.ok(Math.abs(a.player.levelHeal - soft(E('li_regen').pct, 1.5)) < 1e-9);
+  assert.ok(Math.abs(a.mods.area - (1 + soft(E('ma_area').pct, 8) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.maxHp - (1 + soft(E('li_vigor').pct, 12) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.levelHeal - soft(E('li_regen').pct, 3)) < 1e-9);
   const tagS = soft(E('su_bond').pct, def.rule.categories.tagS.cap), tagM = soft(E('ma_focus').pct, def.rule.categories.tagM.cap);
   assert.ok(Math.abs(a.weaponBonus.ghost_wolves.power.pct - tagS) < 1e-9, 'summon tag expands to wolves');
   assert.ok(Math.abs(a.weaponBonus.raven_flock.power.pct - tagS) < 1e-9);
@@ -479,11 +479,11 @@ test('effects: ability duration, auto-activate at low health', () => {
 
 test('effects: max health, regeneration, hearts', () => {
   const sim = new Sim({ data, seed: 1, godMode: true, tree: fx({ li_vigor: 1, li_regen: 1 }) });
-  assert.equal(sim.player.maxHp, Math.round(60 * (1 + soft(E('li_vigor').pct, 6) / 100)));
+  assert.equal(sim.player.maxHp, Math.round(60 * (1 + soft(E('li_vigor').pct, 12) / 100)));
   sim.player.hp = 10;
   sim.xp = sim.xpNeeded + 1;
   sim.checkLevelUp();
-  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * soft(E('li_regen').pct, 1.5) / 100)) < 1e-9, `hp ${sim.player.hp}`);
+  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * soft(E('li_regen').pct, 3) / 100)) < 1e-9, `hp ${sim.player.hp}`);
   const reg = new Sim({ data, seed: 1, godMode: true, tree: { player: { regen: 1 } } });
   reg.player.hp = 10;
   reg.weapons.length = 0;

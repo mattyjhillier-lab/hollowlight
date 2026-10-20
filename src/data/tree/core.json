@@ -210,54 +210,54 @@
  "retired": [],
  "budget": {
   "base": {
-   "combat": 15.5,
+   "combat": 31,
    "sustain": 5
   },
   "perChapter": {
-   "combat": 1.5,
+   "combat": 3,
    "sustain": 0.5
   },
-  "knotMax": 3,
+  "knotMax": 6,
   "optionShareMin": 0.6,
   "flatFace": 2,
   "markFace": 4,
   "rushFace": 0.0375,
   "perWeapon": {
-   "cap": 8.6,
+   "cap": 17.2,
    "weight": 0.08,
    "refWeapons": 5
   },
   "categories": {
    "dmg": {
-    "cap": 2.7,
+    "cap": 5.4,
     "weight": 1
    },
    "tagS": {
-    "cap": 6.4,
+    "cap": 12.8,
     "weight": 0.35
    },
    "tagM": {
-    "cap": 6.4,
+    "cap": 12.8,
     "weight": 0.35
    },
    "cast": {
-    "cap": 3.6,
+    "cap": 7.2,
     "weight": 0.3
    },
    "area": {
-    "cap": 4,
+    "cap": 8,
     "weight": 0.12
    },
    "hp": {
-    "cap": 6,
+    "cap": 12,
     "weight": 0.2
    },
    "heal": {
-    "cap": 1.5,
+    "cap": 3,
     "weight": 0.4
    },
    "status": {
-    "cap": 8,
+    "cap": 16,
     "weight": 0.15
    },
    "lore": {
@@ -291,11 +291,11 @@
   "loreShare": 0.2,
   "perTier": {
    "1": {
-    "combat": 2.5,
+    "combat": 5,
     "sustain": 0
    },
    "2": {
-    "combat": 0.6,
+    "combat": 1.2,
     "sustain": 0
    }
   }

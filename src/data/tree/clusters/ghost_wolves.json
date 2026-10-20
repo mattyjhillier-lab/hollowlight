@@ -126,7 +126,7 @@
    "idx": 4,
    "kind": "bead",
    "name": "Deep Bite",
-   "desc": "Bleed potency +2% (status, shared cap)",
+   "desc": "Bleed potency +3% (status, shared cap)",
    "branch": "summoner",
    "cost": {
     "gold": 390
@@ -137,7 +137,7 @@
    "effects": [
     {
      "status": "bleed",
-     "pct": 2
+     "pct": 3
     }
    ]
   },
@@ -163,14 +163,14 @@
    "idx": 6,
    "kind": "bead",
    "name": "Red Thread",
-   "desc": "Bleed potency +2% (status, shared cap)",
+   "desc": "Bleed potency +3% (status, shared cap)",
    "cost": {
     "gold": 570
    },
    "effects": [
     {
      "status": "bleed",
-     "pct": 2
+     "pct": 3
     }
    ],
    "unlock": {
@@ -184,7 +184,7 @@
    "idx": 7,
    "kind": "mastery",
    "name": "Packmaster's Calling",
-   "desc": "Bite power +1% and Wolf speed +1%",
+   "desc": "Bite power +2% and Wolf speed +2%",
    "flavour": "A thousand fallen wolves whisper your name.",
    "branch": "summoner",
    "cost": {
@@ -198,12 +198,12 @@
     {
      "weapon": "ghost_wolves",
      "stat": "power",
-     "pct": 1
+     "pct": 2
     },
     {
      "weapon": "ghost_wolves",
      "stat": "speed",
-     "pct": 1
+     "pct": 2
     }
    ],
    "unlock": {

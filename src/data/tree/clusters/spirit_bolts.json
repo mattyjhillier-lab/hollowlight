@@ -152,7 +152,7 @@
    "idx": 4,
    "kind": "mastery",
    "name": "Twin Wisps",
-   "desc": "Bolt power +1% and Swiftness +1%",
+   "desc": "Bolt power +2% and Swiftness +2%",
    "flavour": "Evolve the bolts and the wisps answer in pairs.",
    "branch": "magic",
    "cost": {
@@ -166,12 +166,12 @@
     {
      "weapon": "spirit_bolts",
      "stat": "power",
-     "pct": 1
+     "pct": 2
     },
     {
      "weapon": "spirit_bolts",
      "stat": "speed",
-     "pct": 1
+     "pct": 2
     }
    ],
    "unlock": {

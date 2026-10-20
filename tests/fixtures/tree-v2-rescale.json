@@ -1374,12 +1374,12 @@
    {
     "weapon": "chain_lightning",
     "stat": "power",
-    "pct": 1
+    "pct": 2
    },
    {
     "weapon": "chain_lightning",
     "stat": "area",
-    "pct": 1
+    "pct": 2
    }
   ],
   "cost": {
@@ -1497,7 +1497,7 @@
   "effects": [
    {
     "status": "bleed",
-    "pct": 2
+    "pct": 3
    }
   ],
   "cost": {
@@ -1538,7 +1538,7 @@
   "effects": [
    {
     "status": "bleed",
-    "pct": 2
+    "pct": 3
    }
   ],
   "cost": {
@@ -1563,12 +1563,12 @@
    {
     "weapon": "ghost_wolves",
     "stat": "power",
-    "pct": 1
+    "pct": 2
    },
    {
     "weapon": "ghost_wolves",
     "stat": "speed",
-    "pct": 1
+    "pct": 2
    }
   ],
   "cost": {
@@ -1794,7 +1794,7 @@
   "effects": [
    {
     "status": "burn",
-    "pct": 2
+    "pct": 3
    }
   ],
   "cost": {
@@ -1836,12 +1836,12 @@
    {
     "weapon": "holy_orbit",
     "stat": "power",
-    "pct": 1
+    "pct": 2
    },
    {
     "weapon": "holy_orbit",
     "stat": "radius",
-    "pct": 1
+    "pct": 2
    }
   ],
   "cost": {
@@ -1887,7 +1887,7 @@
   "effects": [
    {
     "status": "burn",
-    "pct": 2
+    "pct": 3
    }
   ],
   "cost": {
@@ -2236,12 +2236,12 @@
    {
     "weapon": "raven_flock",
     "stat": "power",
-    "pct": 1
+    "pct": 2
    },
    {
     "weapon": "raven_flock",
     "stat": "range",
-    "pct": 1
+    "pct": 2
    }
   ],
   "cost": {
@@ -2472,12 +2472,12 @@
    {
     "weapon": "spirit_bolts",
     "stat": "power",
-    "pct": 1
+    "pct": 2
    },
    {
     "weapon": "spirit_bolts",
     "stat": "speed",
-    "pct": 1
+    "pct": 2
    }
   ],
   "cost": {
@@ -2717,7 +2717,7 @@
    {
     "weapon": "holy_orbit",
     "stat": "power",
-    "pct": 2
+    "pct": 4
    }
   ],
   "cost": {
@@ -2785,7 +2785,7 @@
    {
     "weapon": "ghost_wolves",
     "stat": "power",
-    "pct": 2
+    "pct": 4
    }
   ],
   "cost": {

@@ -85,7 +85,7 @@
     {
      "drop": "heartHeal",
      "pct": 10,
-     "pe": 0.4
+     "pe": 0.8
     },
     {
      "mod": "damage",
@@ -131,7 +131,7 @@
     {
      "mod": "damage",
      "pct": 2,
-     "pe": 0.6
+     "pe": 1.2
     },
     {
      "player": "maxHp",

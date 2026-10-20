@@ -125,14 +125,14 @@
    "idx": 4,
    "kind": "bead",
    "name": "Kindling",
-   "desc": "Burn potency +2% (status, shared cap)",
+   "desc": "Burn potency +3% (status, shared cap)",
    "cost": {
     "gold": 390
    },
    "effects": [
     {
      "status": "burn",
-     "pct": 2
+     "pct": 3
     }
    ]
   },
@@ -164,7 +164,7 @@
    "idx": 6,
    "kind": "mastery",
    "name": "Seventh Light",
-   "desc": "Orb power +1% and Orbit size +1%",
+   "desc": "Orb power +2% and Orbit size +2%",
    "flavour": "Evolve the orbit and the circle widens.",
    "branch": "magic",
    "cost": {
@@ -178,12 +178,12 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 1
+     "pct": 2
     },
     {
      "weapon": "holy_orbit",
      "stat": "radius",
-     "pct": 1
+     "pct": 2
     }
    ],
    "unlock": {
@@ -214,14 +214,14 @@
    "idx": 8,
    "kind": "bead",
    "name": "Votive Embers",
-   "desc": "Burn potency +2% (status, shared cap)",
+   "desc": "Burn potency +3% (status, shared cap)",
    "cost": {
     "gold": 570
    },
    "effects": [
     {
      "status": "burn",
-     "pct": 2
+     "pct": 3
     }
    ],
    "unlock": {

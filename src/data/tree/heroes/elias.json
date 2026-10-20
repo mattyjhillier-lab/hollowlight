@@ -10,7 +10,7 @@
    "idx": 0,
    "kind": "hero",
    "name": "Votive Flame",
-   "desc": "Holy Orbit +2%",
+   "desc": "Holy Orbit +4%",
    "flavour": "Elias never let the candle gutter.",
    "branch": "magic",
    "cost": {
@@ -23,7 +23,7 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 2
+     "pct": 4
     }
    ],
    "unlock": {

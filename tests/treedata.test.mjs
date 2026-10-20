@@ -154,11 +154,11 @@ test('T1 the v2 view puts every node at a computed position with no overlap, and
   const b = budgetOf(v2Def, RULE, W);
   assert.deepEqual(b.violations, []);
   console.log(formatBudget(b));
-  assert.ok(b.combatAtCap <= 15.5 && Math.abs(b.combatAtCap - 15.18) < 1e-9, `combat PE at cap ${b.combatAtCap} (DT0 trims: 15.18)`);
+  assert.ok(b.combatAtCap <= 31 && Math.abs(b.combatAtCap - 30.36) < 1e-9, `combat PE at cap ${b.combatAtCap} (x2 ceiling rule: 30.36)`);
   assert.ok(Math.abs(b.sustainPE - 5) < 1e-9, `sustain ${b.sustainPE}`);
   assert.ok(b.combatPE < b.combatAtCap);
   const pool = ruleCaps(RULE, W).cats.wpn;
-  assert.ok(Math.abs(pool.C * pool.w * pool.count - 3.44) < 1e-9, 'per-weapon pool is 3.44 PE at cap (cap 7 + 1.6 loaned from the lore + choice reserve)');
+  assert.ok(Math.abs(pool.C * pool.w * pool.count - 6.88) < 1e-9, 'per-weapon pool is 6.88 PE at cap (x2 ceiling rule on the Lever-1 pool of 3.44, which was cap 7 + 1.6 loaned from the lore + choice reserve)');
 });
 
 // ---------------------------------------------------------------- budget failure cases
@@ -176,12 +176,12 @@ test('T1 budget FAILS: extra sustain, second revive, knot over 3%, cluster node 
   assert.match(budgetOfFiles(fs).violations.join('|'), /revive nodes 2/);
   fs = files(); get(fs, 'core.json').nodes.push(ringNode({ effects: [{ player: 'revive', frac: 0.5 }] }));
   assert.match(budgetOfFiles(fs).violations.join('|'), /revive health above 20%/);
-  fs = files(); get(fs, 'clusters/ghost_wolves.json').outline.find((n) => n.id === 'wf_scent').effects = [{ weapon: 'ghost_wolves', stat: 'power', pct: 4 }];
-  assert.match(budgetOfFiles(fs).violations.join('|'), /wf_scent: wpn:ghost_wolves \+4 is above the 3% knot limit/);
+  fs = files(); get(fs, 'clusters/ghost_wolves.json').outline.find((n) => n.id === 'wf_scent').effects = [{ weapon: 'ghost_wolves', stat: 'power', pct: 7 }];
+  assert.match(budgetOfFiles(fs).violations.join('|'), /wf_scent: wpn:ghost_wolves \+7 is above the 6% knot limit/);
   fs = files(); get(fs, 'clusters/ghost_wolves.json').outline.find((n) => n.id === 'wf_scent').effects = [{ mod: 'damage', pct: 1 }];
   assert.match(budgetOfFiles(fs).violations.join('|'), /wf_scent: a cluster node may only add to its own weapon pool/);
-  fs = files(); get(fs, 'core.json').budget.categories.area.cap = 12;
-  assert.match(budgetOfFiles(fs).violations.join('|'), /combat PE-at-cap 16\.\d+ is above the ceiling 15\.5/);
+  fs = files(); get(fs, 'core.json').budget.categories.area.cap = 20;
+  assert.match(budgetOfFiles(fs).violations.join('|'), /combat PE-at-cap 31\.\d+ is above the ceiling 31/);
   fs = files(); get(fs, 'core.json').nodes.push(ringNode({ effects: [{ mod: 'gold', pct: 5 }] }));
   assert.match(budgetOfFiles(fs).violations.join('|'), /gold total 17 above 12/);
   fs = files(); get(fs, 'core.json').nodes.push(ringNode({ effects: [{ unlock: 'rerolls', n: 1 }] }));
@@ -190,10 +190,10 @@ test('T1 budget FAILS: extra sustain, second revive, knot over 3%, cluster node 
 
 test('T1 budget rule is snapshot-tested: changing a cap, weight or limit is a visible deliberate edit', () => {
   assert.deepEqual(RULE, {
-    base: { combat: 15.5, sustain: 5 }, perChapter: { combat: 1.5, sustain: 0.5 }, perTier: { 1: { combat: 2.5, sustain: 0 }, 2: { combat: 0.6, sustain: 0 } }, knotMax: 3, optionShareMin: 0.6, flatFace: 2, markFace: 4, rushFace: 0.0375,
+    base: { combat: 31, sustain: 5 }, perChapter: { combat: 3, sustain: 0.5 }, perTier: { 1: { combat: 5, sustain: 0 }, 2: { combat: 1.2, sustain: 0 } }, knotMax: 6, optionShareMin: 0.6, flatFace: 2, markFace: 4, rushFace: 0.0375,
     loreShare: 0.2,
-    perWeapon: { cap: 8.6, weight: 0.08, refWeapons: 5 },
-    categories: { dmg: { cap: 2.7, weight: 1 }, tagS: { cap: 6.4, weight: 0.35 }, tagM: { cap: 6.4, weight: 0.35 }, cast: { cap: 3.6, weight: 0.3 }, area: { cap: 4, weight: 0.12 }, hp: { cap: 6, weight: 0.2 }, heal: { cap: 1.5, weight: 0.4 }, status: { cap: 8, weight: 0.15 }, lore: { cap: 0, weight: 0.6 }, choice: { cap: 0, weight: 0.8 } },
+    perWeapon: { cap: 17.2, weight: 0.08, refWeapons: 5 },
+    categories: { dmg: { cap: 5.4, weight: 1 }, tagS: { cap: 12.8, weight: 0.35 }, tagM: { cap: 12.8, weight: 0.35 }, cast: { cap: 7.2, weight: 0.3 }, area: { cap: 8, weight: 0.12 }, hp: { cap: 12, weight: 0.2 }, heal: { cap: 3, weight: 0.4 }, status: { cap: 16, weight: 0.15 }, lore: { cap: 0, weight: 0.6 }, choice: { cap: 0, weight: 0.8 } },
     sustain: { revive: 4, perReroll: 0.1, perBanish: 0.1, heartDrop: 0.04, heartHeal: 0.04, heartPity: 0.016, reviveMaxFrac: 0.2, rerollMax: 3, banishMax: 3, reviveMax: 1 },
     utility: { speed: 5, pickup: 20, xp: 7.5, gold: 12, abilityCdMax: 50 },
   });
@@ -210,7 +210,7 @@ test('T1 per-chapter rule: a band node scoped to chapter 2 may add at most 1.5 P
   assert.deepEqual(ok.violations, []);
   assert.equal(ok.chapters[2].combat, 1);
   assert.equal(ok.combatAtCap, budgetOf(v2Def, RULE, W).combatAtCap, 'chapter 1 ceiling unchanged');
-  assert.match(mk(2).violations.join('|'), /chapter 2 combat 2\.00 is above the per-chapter allowance 1\.5/);
+  assert.match(mk(4).violations.join('|'), /chapter 2 combat 4\.00 is above the per-chapter allowance 3/);
   // a band node must carry its chapter scope, and may not sit in chapter 1
   const fs = files();
   get(fs, 'core.json').namespaces.c2 = { kind: 'chapter', owners: ['marsh'] };
@@ -395,7 +395,7 @@ for (const n of [1000, 2000]) {
     assert.deepEqual(layoutIssues(r.composed.info, r.def), []);
     const b = budgetOf(r.def, r.composed.info.core.budget, Object.keys(r.composed.info.clusters).length);
     assert.deepEqual(b.violations, []);
-    assert.ok(Math.abs(b.combatAtCap - 15.18) < 0.01, `pool stays fixed as weapons grow: ${b.combatAtCap}`);
+    assert.ok(Math.abs(b.combatAtCap - 30.36) < 0.01, `pool stays fixed as weapons grow: ${b.combatAtCap}`);
     // C.12 targets: compile + validate <= 40 ms (1000) / 80 ms (2000) on an idle machine, and the same for composing the fragments.
     // The test allows 8x (the full suite runs every test file at once on one machine; scripts/tree-validate.mjs --synthetic N checks the real targets on an idle one) and prints the real numbers.
     const target = n === 1000 ? 40 : 80;
@@ -433,7 +433,7 @@ test('T1 scripts/tree-validate.mjs passes on the shipped tree (exit 0) and print
   const { spawnSync } = await import('node:child_process');
   const r = spawnSync(process.execPath, ['scripts/tree-validate.mjs', '--table'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' });
   assert.equal(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /budget: combat PE at cap 15.18/);
+  assert.match(r.stdout, /budget: combat PE at cap 30.36/);
   assert.match(r.stdout, /ids and idx match the append-only snapshot/);
 });
 

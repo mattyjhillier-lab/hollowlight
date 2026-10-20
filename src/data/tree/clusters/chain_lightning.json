@@ -340,7 +340,7 @@
    "idx": 14,
    "kind": "mastery",
    "name": "Crown of Sparks",
-   "desc": "Power +1% and Arc +1%",
+   "desc": "Power +2% and Arc +2%",
    "cost": {
     "gold": 910,
     "shards": 1
@@ -349,12 +349,12 @@
     {
      "weapon": "chain_lightning",
      "stat": "power",
-     "pct": 1
+     "pct": 2
     },
     {
      "weapon": "chain_lightning",
      "stat": "area",
-     "pct": 1
+     "pct": 2
     }
    ],
    "unlock": {

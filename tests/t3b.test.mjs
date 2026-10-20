@@ -244,8 +244,8 @@ test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and i
   assert.deepEqual(layoutIssues(composed.info, v2), []);
   const b = budgetOf(v2, composed.info.core.budget, 5);
   assert.deepEqual(b.violations, []);
-  assert.ok(Math.abs(b.combatAtCap - 15.18) < 1e-9 && Math.abs(b.sustainPE - 5) < 1e-9, `${b.combatAtCap} / ${b.sustainPE}`);
-  assert.deepEqual(b.tiers, { 1: { combat: 2.5, allowance: 2.5 }, 2: { combat: 0.6, allowance: 0.6 } }, 'Deep Dusk +2.5 (Fourth Card 1.0 + Fifth Hook 1.5), Long Night +0.6 (the larger keystone side)');
+  assert.ok(Math.abs(b.combatAtCap - 30.36) < 1e-9 && Math.abs(b.sustainPE - 5) < 1e-9, `${b.combatAtCap} / ${b.sustainPE}`);
+  assert.deepEqual(b.tiers, { 1: { combat: 5, allowance: 5 }, 2: { combat: 1.2, allowance: 1.2 } }, 'Deep Dusk +5.0 (Fourth Card 2.0 + Fifth Hook 3.0), Long Night +1.2 (the larger keystone side); the x2 ceiling rule scales tier allowances');
 });
 
 test('DT4 inert (pending) nodes are exactly the ones whose sim / UI hook is not built yet; they cannot be bought, aggregated or forged into a save', () => {
@@ -332,12 +332,12 @@ test('DT0 the tier budget: each tier has its own allowance, an over-allowance or
   const mk = (mut) => { const fs = clone(readTreeFiles()); mut(fs); const c = composeTree(fs, data); return budgetOf(compileTree(c.v2, data), c.info.core.budget, 5); };
   const get = (fs, p) => fs.find((f) => f.path === p).json;
   assert.deepEqual(mk(() => {}).violations, []);
-  assert.match(mk((fs) => { get(fs, 'tools/cardfan.json').nodes.find((n) => n.id === 'cd_fourth').effects[0].pe = 2; }).violations.join('|'), /tier 1 combat 3\.50 is above the per-tier allowance 2\.5/);
+  assert.match(mk((fs) => { get(fs, 'tools/cardfan.json').nodes.find((n) => n.id === 'cd_fourth').effects[0].pe = 4; }).violations.join('|'), /tier 1 combat 7\.00 is above the per-tier allowance 5/);
   assert.match(mk((fs) => { delete get(fs, 'tools/cardfan.json').nodes.find((n) => n.id === 'cd_fourth').effects[0].pe; get(fs, 'tools/cardfan.json').nodes.find((n) => n.id === 'cd_fourth').effects.push({ mod: 'damage', pct: 2 }); }).violations.join('|'), /cd_fourth: a tier-scoped effect needs a pe estimate/);
   assert.match(mk((fs) => { delete get(fs, 'core.json').budget.perTier; }).violations.join('|'), /tier 1 combat .* allowance 0/);
-  assert.match(mk((fs) => { get(fs, 'tools/nightgate.json').nodes.find((n) => n.id === 'df_vigil').effects[0].pe = 1.5; }).violations.join('|'), /tier 2 combat 1\.50 is above/);
+  assert.match(mk((fs) => { get(fs, 'tools/nightgate.json').nodes.find((n) => n.id === 'df_vigil').effects[0].pe = 2.5; }).violations.join('|'), /tier 2 combat 2\.50 is above/);
   // a Twilight-scoped choice perk that is too big pushes the choice category past its saturation / the ceiling
-  assert.match(mk((fs) => { get(fs, 'core.json').budget.categories.choice.cap = 20; }).violations.join('|'), /combat PE-at-cap 3\d\.\d+ is above the ceiling 15\.5/);
+  assert.match(mk((fs) => { get(fs, 'core.json').budget.categories.choice.cap = 20; }).violations.join('|'), /combat PE-at-cap 4\d\.\d+ is above the ceiling 31/);
 });
 
 // ------------------------------------------------------------------ Dawnglass in the tree
