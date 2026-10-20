@@ -5,6 +5,8 @@
 export const KIND = { DMG: 0, BIG: 1, HEAL: 2, HURT: 3, BLEED: 4, BURN: 5 }; // BLEED: batched damage-over-time tick, small, pale blue, first to be dropped
 export const MERGE_WINDOW = 0.12; // s
 export const MAX_SLOTS = 40;
+export const LANE_R = 24; // DR1: world units around the damage-taken number where enemy numbers are held back ...
+export const LANE_T = 0.4; // ... for this long (seconds), so '-N' reads in its own lane
 const LIFE = [0.5, 0.7, 0.9, 0.9, 0.7, 0.7]; // per kind, seconds
 const RISE = [20, 22, 16, 16, 14, 14]; // px of float (none when reduced motion)
 
@@ -55,6 +57,7 @@ export class NumPool {
     this.reduced = false;
     this.seed = 0x9e3779b9;
     this.pose = { dy: 0, scale: 1, alpha: 1 }; // reused output of poseOf
+    this.laneT = 0; this.laneX = 0; this.laneY = 0; // DR1 lane around the latest '-N'
   }
 
   setCap(n) {
@@ -62,7 +65,7 @@ export class NumPool {
     while (this.alive > this.cap) this.dropSmallest();
   }
 
-  clear() { for (const s of this.slots) { s.on = false; s.dirty = false; } this.alive = 0; }
+  clear() { for (const s of this.slots) { s.on = false; s.dirty = false; } this.alive = 0; this.laneT = 0; }
 
   jit() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return (this.seed >>> 8) / 16777216 - 0.5; }
 
@@ -94,6 +97,8 @@ export class NumPool {
     x = fin(x, 0); y = fin(y, 0);
     const dmg = kind === KIND.DMG || kind === KIND.BIG;
     const S = this.slots;
+    if (this.laneT > 0 && kind !== KIND.HURT && kind !== KIND.HEAL && Math.abs(x - this.laneX) < LANE_R && Math.abs(y - this.laneY) < LANE_R) return null; // held back for the damage-taken number's lane
+    if (kind === KIND.HURT) { this.laneT = LANE_T; this.laneX = x; this.laneY = y; }
     if (dmg) {
       for (let i = 0; i < S.length; i++) {
         const n = S[i];
@@ -128,12 +133,13 @@ export class NumPool {
       n.mul = m;
       n.kind = m > 1 ? KIND.BIG : KIND.DMG;
     } else if (n.kind === KIND.BLEED || n.kind === KIND.BURN) n.mul = 0.8;
-    else n.mul = 1.15; // player lanes: slightly larger than a normal hit so they read near the hero
+    else n.mul = n.kind === KIND.HURT ? 1.2 : 1.15; // player lanes: slightly larger than a normal hit so they read near the hero (damage taken 1.2x, DR1)
     n.life = LIFE[n.kind];
   }
 
   update(dt) {
     dt = fin(dt, 0);
+    if (this.laneT > 0) this.laneT = Math.max(0, this.laneT - dt);
     for (let i = 0; i < this.slots.length; i++) {
       const s = this.slots[i];
       if (!s.on) continue;

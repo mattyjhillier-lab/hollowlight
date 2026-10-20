@@ -114,6 +114,7 @@ export class UI {
 
   hurt() {
     const f = this.hud.flash;
+    if (this.hudView && this.hudView.hurtDip) this.hudView.hurtDip();
     f.classList.add('on');
     requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
   }

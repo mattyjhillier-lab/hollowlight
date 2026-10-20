@@ -7,6 +7,8 @@ import { NumPool, KIND, fmtSigned } from './numpool.js';
 import { PAL, ROLE } from './palette.js';
 
 export const GLYPHS = '0123456789k+-.M';
+export const HURT_UP = 5; // DR1: the damage-taken number (and its plate) draws this many depth steps above the weapon numbers
+const PLATE = 0x0a1022;
 const TINT = [PAL.cream, 0xffdcae, 0x8fe3c8, 0xff8078, ROLE.bleed, ROLE.burn]; // normal, big (warmer, never gold), heal (soft teal), taken (light red), bleed tick (blood red), burn tick (lilac)
 
 export function makeDigitFont(scene) {
@@ -26,6 +28,8 @@ export class DamageNumbers {
     this.pool = new NumPool(24);
     this.texts = new Array(this.pool.slots.length).fill(null);
     this.big = new Array(this.pool.slots.length).fill(false); // which font each text currently uses
+    this.plate = scene.add.graphics().setDepth(depth + HURT_UP - 1); // DR1: dark plate under the damage-taken number
+    this.plateOn = false;
   }
 
   get enabled() { return this.pool.enabled; }
@@ -37,6 +41,7 @@ export class DamageNumbers {
 
   clear() {
     this.pool.clear();
+    this.plate.clear(); this.plateOn = false;
     for (const t of this.texts) if (t) t.setVisible(false);
   }
 
@@ -47,6 +52,7 @@ export class DamageNumbers {
     const P = this.pool;
     P.update(dt);
     const S = P.slots;
+    let plates = 0;
     for (let i = 0; i < S.length; i++) {
       const s = S[i];
       let t = this.texts[i];
@@ -63,6 +69,15 @@ export class DamageNumbers {
       }
       const o = P.poseOf(s);
       t.setVisible(true).setPosition(s.x, s.y + o.dy).setScale(2 * o.scale * inv('digits')).setAlpha(o.alpha);
+      if (s.kind === KIND.HURT) {
+        t.setDepth(this.depth + HURT_UP);
+        if (!plates) this.plate.clear();
+        plates++;
+        const w = (s.sign.length + String(Math.floor(s.val)).length) * 8.4 * o.scale + 7, h = 13.5 * o.scale + 5;
+        this.plate.fillStyle(PLATE, 0.78 * o.alpha).fillRoundedRect(s.x - w / 2, s.y + o.dy - h / 2, w, h, 4);
+        this.plateOn = true;
+      } else if (t.depth !== this.depth) t.setDepth(this.depth);
     }
+    if (!plates && this.plateOn) { this.plate.clear(); this.plateOn = false; }
   }
 }

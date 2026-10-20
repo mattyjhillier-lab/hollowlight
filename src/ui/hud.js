@@ -111,6 +111,7 @@ export class Hud {
   ping(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
   pulseThread() { this.ping(this.thread, 'pulse'); } // a gem landed
   flareHp() { this.ping(this.lamp.svg.parentNode, 'flare'); } // a heart landed
+  hurtDip() { this.ping(this.lamp.svg.parentNode, 'hurt'); } // DR1: the lantern flame dips and rims light red for 0.3 s when the hero is hit
   tickCoin() { this.ping(this.coin, 'tick'); } // gold came in
 
   set(key, node, value) { if (this.cache[key] !== value) { this.cache[key] = value; node.textContent = value; return true; } return false; }

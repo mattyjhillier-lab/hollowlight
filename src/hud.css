@@ -73,7 +73,7 @@
 .h-abkey { position: absolute; left: 50%; top: 100%; transform: translate(-50%, calc(4 * var(--hu))); padding: calc(3 * var(--hu)) calc(14 * var(--hu)); border-radius: 999px; font: 700 max(14px, calc(14 * var(--hu))) var(--font-ui); letter-spacing: .08em; color: var(--cream); background: linear-gradient(rgba(45, 37, 32, .9), rgba(23, 18, 15, .9)); border: calc(1.6 * var(--hu)) solid var(--brass-d); white-space: nowrap; }
 .hud .toast { position: absolute; top: calc(var(--mt) + 122 * var(--hu)); left: 50%; transform: translateX(-50%) translateY(-.4em); padding: .45em 1.2em; background: rgba(23, 18, 15, .85); border: 1px solid var(--brass-d); border-radius: 999px; color: var(--cream); opacity: 0; transition: opacity .25s, transform .25s; white-space: nowrap; font-size: max(14px, 1em); }
 .hud .toast.show { opacity: 1; transform: translateX(-50%); }
-.hurtflash { position: absolute; inset: 0; box-shadow: inset 0 0 6em 1.5em rgba(217, 83, 79, .6); opacity: 0; transition: opacity .35s; pointer-events: none; }
+.hurtflash { position: absolute; inset: 0; box-shadow: inset 0 0 6em 1.5em rgba(255, 128, 120, .55); opacity: 0; transition: opacity .35s; pointer-events: none; }
 .hurtflash.on { opacity: 1; transition: none; }
 @media (prefers-reduced-motion: reduce) { .h-strip, .h-frost, .h-tfill, .h-bfill { transition: none; } .h-frost.on { animation: none; } .h-knot.flare, .h-ability.ready::before, .h-lantern.low .h-lamp { animation: none; } }
 
@@ -137,6 +137,11 @@ html.touch .h-ability, html.touch .h-pause, html.touch .h-abkey { display: none;
 .h-lamp::after { content: ""; position: absolute; inset: -22%; border-radius: 50%; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255, 171, 58, .8), rgba(255, 171, 58, 0) 66%); }
 .h-lamp.flare::after { animation: hlampg .7s ease-out; }
 @keyframes hlampg { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
+.h-lamp.hurt svg { transform-origin: 50% 85%; animation: hlamphurt .3s ease-out; }
+@keyframes hlamphurt { 0% { transform: scale(.82); opacity: .55; filter: drop-shadow(0 0 calc(7 * var(--hu)) rgba(255, 128, 120, .95)); } 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0 rgba(255, 128, 120, 0)); } }
+@keyframes hlamphurtc { 0% { opacity: .55; filter: drop-shadow(0 0 calc(7 * var(--hu)) rgba(255, 128, 120, .95)); } 100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(255, 128, 120, 0)); } }
+.reduced-motion .h-lamp.hurt svg { animation-name: hlamphurtc; }
+@media (prefers-reduced-motion: reduce) { .h-lamp.hurt svg { animation-name: hlamphurtc; } }
 .h-coin.tick { animation: hcoin .26s ease-out; }
 @keyframes hcoin { 0% { transform: scale(1.07); box-shadow: 0 0 calc(10 * var(--hu)) rgba(216, 178, 106, .85), 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); } 100% { transform: scale(1); } }
 .h-knot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(2.4 * var(--hu)) solid rgba(255, 224, 160, .9); opacity: 0; pointer-events: none; }

@@ -6,7 +6,8 @@ import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { HeroRig } from '../gfx/herorig.js';
 import { EliasRig } from '../gfx/eliasrig.js';
-import { FEET } from '../gfx/wrenart.js';
+import { FEET, DU } from '../gfx/wrenart.js';
+import { HitFx, HIT_RED, LIFT_Z, iframeFlick, FLICK_ALPHA } from '../gfx/hitfx.js'; // DR1 hit feedback state + invulnerability look
 import { heroHaloAlpha } from '../gfx/rigmath.js';
 import { PerfOverlay } from '../gfx/perf.js';
 import { PAL, ROLE, gradeAt, ambientAt } from '../gfx/palette.js';
@@ -245,6 +246,12 @@ export class RunScene extends Phaser.Scene {
     this.playerGlow = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO).setTint(ROLE.lantern).setAlpha(0.2).setScale(10 * inv('glow')).setVisible(false);
     this.heroOut = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4000).setScale(inv('hero_wren_o')).setVisible(false);
     this.heroOutA = 0;
+    // DR1 hit feedback (display only): hero outline in light red ABOVE the crowd, a crescent on the side the hit came from, the attacker lifted + outlined
+    this.hitFx = new HitFx();
+    this.heroHit = this.add.image(0, 0, 'hero_wren_o').setDepth(D_LIT + 4001).setScale(inv('hero_wren_o')).setTintFill(HIT_RED).setVisible(false);
+    this.hitG = this.add.graphics().setDepth(D_LIT + 4002);
+    this.hitGOn = false;
+    this.liftD = null; this.liftR = null; this.liftId = -2; // attacker rim images (dark + light red), made on first use
     // A1b hero readability: warm ground pool (additive, lantern colour, off on Low) + soft dark backing so the pale hood separates from pale wolves/ground
     this.heroHalo = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO + 0.5).setTint(ROLE.lantern).setScale(2.6 * inv('glow'), 1.05 * inv('glow')).setVisible(false);
     this.heroBack = this.add.image(0, 0, 'glow').setDepth(D_LIT).setTint(0x0a1022).setScale(1.15 * inv('glow'), 1.5 * inv('glow')).setAlpha(0.34).setVisible(false);
@@ -454,9 +461,11 @@ export class RunScene extends Phaser.Scene {
     this.props.reset(((sim.seed | 0) ^ 0x9e0b5) | 0, [{ x: sim.player.x, y: sim.player.y, tall: START_CLEAR.tall, low: START_CLEAR.low }]); // W4: visual seed from the run seed, sim RNG untouched
     this.playerImg.setTexture(`hero_${sim.characterId}`).setScale(inv(`hero_${sim.characterId}`)).setOrigin(0.5, 0.5).setVisible(true);
     this.heroOut.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5);
+    this.heroHit.setTexture(`hero_${sim.characterId}_o`).setScale(inv(`hero_${sim.characterId}_o`)).setOrigin(0.5, 0.5).setVisible(false);
+    this.hitFx.reset(); this.hitG.clear(); this.hitGOn = false;
     for (const r of this.rigs) r.bind(sim);
     this.rig = this.rigs.find((r) => r.active) || this.rigs[0];
-    if (this.rig.active) { const fb = this.rig.flatBox; this.heroOut.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroBack.setScale((this.rig.backScale ? this.rig.backScale[0] : 1.15) * inv('glow'), (this.rig.backScale ? this.rig.backScale[1] : 1.5) * inv('glow')); }
+    if (this.rig.active) { const fb = this.rig.flatBox; this.heroOut.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroHit.setOrigin(-fb.x0 / fb.w, -fb.y0 / fb.h); this.heroBack.setScale((this.rig.backScale ? this.rig.backScale[0] : 1.15) * inv('glow'), (this.rig.backScale ? this.rig.backScale[1] : 1.5) * inv('glow')); }
     this.heroOutA = 0;
     this.parts.clear();
     this.nums.clear();
@@ -682,13 +691,71 @@ export class RunScene extends Phaser.Scene {
   feedback(sim, p) {
     const f = this.watch.step(sim);
     const hud = app.ui && app.ui.hudView;
-    if (f.hurt > 0) this.nums.spawn(p.x + 24, p.y - 16, f.hurt, -1, KIND.HURT, 0, false);
+    if (f.hurt > 0) { // DR1: '-N' above the head on a dark plate, a layer above the weapon numbers
+      const fb = this.rig.active ? this.rig.flatBox : null;
+      this.nums.spawn(p.x, fb ? p.y + FEET + fb.y0 * DU - 3 : p.y - 18, f.hurt, -1, KIND.HURT, 0, false);
+    }
     if (f.heal > 0) this.nums.spawn(p.x - 24, p.y - 20, f.heal, -2, KIND.HEAL, 0, false);
     if (f.gem) {
       if (hud) hud.pulseThread();
       if (this.quality.tier !== 'low') this.burst(p.x, p.y - 4, 3, PAL.teal, 40, 0.35, 0.3);
     }
     if (f.gold && hud) hud.tickCoin();
+  }
+
+  // DR1: the sim 'hurt' event (attacker id, kind, position). Starts the light-red outline, the attacker lift and the crescent (render time).
+  hurtFx(ev) {
+    const sim = this.sim;
+    if (!sim) return;
+    const p = sim.player;
+    this.hitFx.trigger(ev, p.x, p.y);
+    const hf = this.hitFx;
+    if (hf.kind === 'thorn' && hf.id >= 0) { // the thorn is gone: find the Piper that shot it (if it still lives) and aim the crescent at it
+      for (const e of sim.enemies) if (e.id === hf.id && !e.dead) { hf.ax = e.x; hf.ay = e.y; hf.shooter = true; break; }
+    }
+  }
+
+  // Per frame cues of the latest hit (render dt). `lift` = the attacker's image/enemy if it was drawn this frame.
+  tickHit(sim, p, rig, lift, liftE, wv) {
+    const hf = this.hitFx;
+    const ra = hf.rimA();
+    this.heroHit.setVisible(ra > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(ra).setFlipX(p.faceX < 0);
+    const aa = hf.arcA();
+    const g = this.hitG;
+    if (aa > 0.02) {
+      const live = lift && liftE && hf.kind !== 'thorn';
+      const ang = hf.angle(live ? liftE.x : hf.ax, live ? liftE.y : hf.ay);
+      const cx = p.x, cy = p.y + 2;
+      g.clear();
+      g.lineStyle(5, 0x1a1020, 0.72 * aa).beginPath().arc(cx, cy, 25, ang - 1.05, ang + 1.05).strokePath();
+      g.lineStyle(2.6, HIT_RED, aa).beginPath().arc(cx, cy, 25, ang - 1.05, ang + 1.05).strokePath();
+      // a thorn whose shooter is off screen (or gone): a small chevron on the view edge, in its direction
+      if (hf.kind === 'thorn' && !(hf.shooter && lift)) {
+        const ux = Math.cos(ang), uy = Math.sin(ang);
+        const tx = Math.abs(ux) > 1e-3 ? ((ux > 0 ? wv.right : wv.x) - 14 - p.x) / ux : 1e9, ty = Math.abs(uy) > 1e-3 ? ((uy > 0 ? wv.bottom : wv.y) - 14 - p.y) / uy : 1e9;
+        const d = Math.max(30, Math.min(tx, ty)), qx = p.x + ux * d, qy = p.y + uy * d, nx = -uy, ny = ux;
+        g.fillStyle(0x1a1020, 0.8 * aa).fillTriangle(qx + ux * 7, qy + uy * 7, qx - ux * 5 + nx * 7, qy - uy * 5 + ny * 7, qx - ux * 5 - nx * 7, qy - uy * 5 - ny * 7);
+        g.fillStyle(HIT_RED, aa).fillTriangle(qx + ux * 5, qy + uy * 5, qx - ux * 3 + nx * 5, qy - uy * 3 + ny * 5, qx - ux * 3 - nx * 5, qy - uy * 3 - ny * 5);
+      }
+      this.hitGOn = true;
+    } else if (this.hitGOn) { g.clear(); this.hitGOn = false; }
+    // attacker: lifted above the crowd with a dark rim + light-red rim for 0.3 s (Husk atlas outline frame; flat sprites just lift)
+    const la = hf.liftA();
+    const art = this.enArt;
+    if (la > 0.02 && lift && liftE && art.on && HUSK_TYPES[liftE.type]) {
+      if (!this.liftD) {
+        this.liftD = this.add.image(0, 0, art.atlas, art.rimName(liftE.type, 0)).setTintFill(0x1a1020);
+        this.liftR = this.add.image(0, 0, art.atlas, art.rimName(liftE.type, 0)).setTintFill(HIT_RED);
+        this.liftD.rn = this.liftR.rn = '';
+      }
+      const rn = art.rimName(liftE.type, lift.frn >= 0 ? lift.frn : 0);
+      const k = lift.js * art.rimInvT[liftE.type];
+      const y = liftE.y + art.foot[liftE.type];
+      for (const im of [this.liftD, this.liftR]) {
+        if (im.rn !== rn) { im.rn = rn; im.setFrame(rn); }
+        im.setScale(k * (im === this.liftD ? 1.35 : 1)).setPosition(liftE.x, y).setFlipX(liftE.faceX < 0).setDepth(D_LIT + LIFT_Z - (im === this.liftD ? 1 : 0.5)).setAlpha(la).setVisible(true);
+      }
+    } else if (this.liftD && this.liftD.visible) { this.liftD.setVisible(false); this.liftR.setVisible(false); }
   }
 
   // Rally the Pack: warm amber ring from the lantern, a small flare where the pup sits, an ember puff (no gold: gold is for evolutions).
@@ -772,6 +839,7 @@ export class RunScene extends Phaser.Scene {
     this.nums.reduced = !!st.reducedMotion;
     this.parts.update(dt);
     this.nums.update(dt);
+    this.hitFx.update(dt);
     // zoom punch: quick rise, smooth fall
     if (this.zoomT < this.zoomDur) {
       this.zoomT += dt;
@@ -857,7 +925,7 @@ export class RunScene extends Phaser.Scene {
     if (rig) this.rig.update(sim, this.quality.tier, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, caps, this.parts);
     else {
       this.playerImg.setPosition(p.x, p.y).setDepth(D_LIT + p.y).setFlipX(p.faceX < 0);
-      this.playerImg.setAlpha(p.iframes > 0 && Math.floor(sim.time * 24) % 2 ? 0.45 : 1);
+      this.playerImg.setAlpha(iframeFlick(p.iframes, sim.time, sim.state === 'defeat') ? FLICK_ALPHA : 1);
     }
     const lx = rig ? this.rig.emberX : p.x; // the ember is her lantern light
     const ly = rig ? this.rig.emberY : p.y - 4;
@@ -995,6 +1063,8 @@ export class RunScene extends Phaser.Scene {
     const coldCap = this.gbOn ? (caps.halos >= 160 ? 80 : 40) : 0;
     const life = this.life;
     let ei = -1;
+    let liftImg = null, liftE = null;
+    const hitId = this.hitFx.liftA() > 0.02 ? this.hitFx.id : -2;
     const lowT = this.quality.tier === 'low';
     art.update(Math.min(0.1, this.game.loop.delta / 1000));
     for (const e of sim.enemies) {
@@ -1003,6 +1073,7 @@ export class RunScene extends Phaser.Scene {
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       img.setPosition(e.x, e.y).setDepth(D_LIT + e.y).setFlipX(e.faceX < 0);
+      if (e.id === hitId) { liftImg = img; liftE = e; img.setDepth(D_LIT + LIFT_Z); } // DR1: the enemy that hit is lifted above the crowd for 0.3 s
       const husk = art.on && HUSK_TYPES[e.type] !== undefined;
       if (husk) art.apply(img, e, ei, sim.time, lowT);
       if (cold < coldCap) { // W3 cold enemy glow: only on ink-dark ground, soft, steady (no flicker); helps dark enemies separate from the ink
@@ -1128,6 +1199,7 @@ export class RunScene extends Phaser.Scene {
     const oa = this.heroOutA + ((crowd >= 3 ? 0.7 : 0) - this.heroOutA) * Math.min(1, this.game.loop.delta / 120);
     this.heroOutA = oa;
     this.heroOut.setVisible(oa > 0.02).setPosition(p.x, rig ? p.y + FEET : p.y).setAlpha(oa).setFlipX(p.faceX < 0);
+    this.tickHit(sim, p, rig, liftImg, liftE, wv);
 
     // spirit trails tick at ~30 Hz
     const trailOn = caps.trails > 0 && this.parts.count < this.parts.cap * 0.75 && !this.reducedMotion();

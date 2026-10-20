@@ -156,7 +156,7 @@ export const app = {
 
   onEvent(ev) {
     const d = this.data;
-    if (ev.type === 'hurt') { this.scene.shake(); if (!this.save.data.settings.reducedMotion) this.ui.hurt(); }
+    if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); } // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
     else if (ev.type === 'boss') {
       const b = this.sim && this.sim.boss;
       this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion);

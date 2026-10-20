@@ -69,7 +69,7 @@ test('pup pose has hysteresis (no flicker between sit and bound)', () => {
 
 test('hurt and death timelines', () => {
   const o = {};
-  assert.equal(M.hurtFx(o, 0.01).tint, 1); assert.equal(M.hurtFx(o, 0.1).tint, 2); assert.equal(M.hurtFx(o, 0.3).tint, 0);
+  assert.equal(M.hurtFx(o, 0.01).tint, 1); assert.equal(M.hurtFx(o, 0.1).tint, 0, 'DR1: no body fill after the white flash'); assert.equal(M.hurtFx(o, 0.3).tint, 0);
   assert.equal(M.hurtFx(o, 9).active, false); assert.equal(M.hurtFx(o, NaN).tint, 0);
   const d = {};
   M.deathFx(d, 0); assert.equal(d.alpha, 1);

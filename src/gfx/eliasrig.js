@@ -4,6 +4,7 @@
 import { DU, FEET, TEX } from './wrenart.js';
 import { E_ANCHOR, E_EXPR, E_FLAT, E_FLAT_TEXEL } from './eliasart.js';
 import * as M from './rigmath.js';
+import { iframeFlick, FLICK_ALPHA } from './hitfx.js';
 
 export const ELIAS_ATLAS = 'elias_rig';
 const K = DU / TEX; // world units per atlas texel
@@ -127,7 +128,7 @@ export class EliasRig {
     const lean = this.leanS * RAD;
     const ca = Math.cos(lean); const sa = Math.sin(lean);
 
-    const flick = p.iframes > 0 && !dead && Math.floor(sim.time * 24) % 2 === 1;
+    const flick = iframeFlick(p.iframes, sim.time, dead); // DR1: steady, no 12 Hz swap (also under Calm)
     const wantFlat = tier === 'low' || dead || flick;
     if (!this.ready) { this.ready = true; this.mode = ''; }
 
@@ -153,7 +154,7 @@ export class EliasRig {
       if (this.mode !== 'flat') { for (const q of this.parts) q.setVisible(false); this.mode = 'flat'; flat.setVisible(true); }
       this.at(fx, fy, 0, 0, ca, sa, sx, sy, bob);
       flat.setPosition(this._x, this._y).setRotation(lean).setScale(sx * FS, sy * FS).setFlipX(dir < 0).setDepth(dBase);
-      flat.setAlpha(dead ? alpha : flick ? 0.45 : 1);
+      flat.setAlpha(dead ? alpha : flick ? FLICK_ALPHA : 1);
       if (dead) { this.at(fx, fy - rise * DU, 0, 0, ca, sa, sx, sy, 0); flat.setPosition(this._x, this._y); }
       this.cGlow.setVisible(false);
     } else {

@@ -3,6 +3,7 @@
 // Tiers: med/high = rig parts (7 Wren images incl. ember glow, 4 pup images); low = one flat Wren sprite + one flat pup sprite.
 import { DU, FEET, TEX, ANCHOR, PUP_K, PUP_NECK, REST, HEAD_EXPR, pupAnchors, FLAT, FLAT_TEXEL, PUP_FLAT } from './wrenart.js';
 import * as M from './rigmath.js';
+import { iframeFlick, FLICK_ALPHA } from './hitfx.js';
 
 export const ATLAS = 'wren_rig';
 const K = DU / TEX; // world units per atlas texel (the pup flats share it: same texel density per pup unit)
@@ -140,7 +141,7 @@ export class HeroRig {
     const ca = Math.cos(lean); const sa = Math.sin(lean);
 
     // ----- mode: rig (med/high), flat (low, death, iframe flicker frames) -----
-    const flick = p.iframes > 0 && !dead && Math.floor(sim.time * 24) % 2 === 1;
+    const flick = iframeFlick(p.iframes, sim.time, dead); // DR1: steady, no 12 Hz swap (also under Calm)
     const wantFlat = tier === 'low' || dead || flick;
     if (!this.ready) { this.ready = true; this.es.x = fx; this.es.y = fy - 60 * DU; this.ps.x = fx - dir * 10; this.ps.y = fy + 1; this.mode = ''; }
 
@@ -167,7 +168,7 @@ export class HeroRig {
       if (this.mode !== 'flat') { for (const q of this.parts) q.setVisible(false); this.mode = 'flat'; flat.setVisible(true); }
       this.at(fx, fy, 0, 0, ca, sa, sx, sy, bob);
       flat.setPosition(this._x, this._y).setRotation(lean).setScale(sx * FS, sy * FS).setFlipX(dir < 0).setDepth(dBase);
-      flat.setAlpha(dead ? alpha : flick ? 0.45 : 1);
+      flat.setAlpha(dead ? alpha : flick ? FLICK_ALPHA : 1);
       if (dead) { this.at(fx, fy - rise * DU, 0, 0, ca, sa, sx, sy, 0); flat.setPosition(this._x, this._y); }
       this.ember.setVisible(false);
     } else {

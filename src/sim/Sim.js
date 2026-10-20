@@ -114,6 +114,9 @@ export class Sim {
     const tv = this.balance.tellView || { hw: 266, hh: 150 };
     this.view = { hw: tv.hw, hh: tv.hh };
     this.hurtBy = {}; // damage taken by source (counter only)
+    this.hitsBy = {}; // hits taken by source (counter only; DR4 recap)
+    this.lungeHits = 0; // hits taken from a wolf lunge (counter only)
+    this.lastHit = null; // DR1/DR4: { src, kind, id, t, amt, x, y } of the latest hit that landed (counter only, never read by the sim)
     this._v = [0, 0];
     this.gems = [];
     this.pickups = [];
@@ -333,13 +336,20 @@ export class Sim {
   }
 
   // src = what hurt the hero (enemy type id; counter only, never read by the sim: bot/sweep damage-by-source readout)
-  damagePlayer(amount, src = 'contact') {
+  // meta (optional, counters + render only): { kind: contact|lunge|charge|slam|burst|thorn, id: attacker id, x, y: attacker position (thorn: its origin side), dx, dy: thorn travel direction }
+  damagePlayer(amount, src = 'contact', meta = null) {
     const p = this.player;
     if (p.iframes > 0 || this.state !== 'running') return;
     this.hurtBy[src] = (this.hurtBy[src] || 0) + amount;
+    this.hitsBy[src] = (this.hitsBy[src] || 0) + 1;
+    const kind = meta && meta.kind ? meta.kind : 'contact';
+    if (kind === 'lunge') this.lungeHits += 1;
+    const ax = meta && Number.isFinite(meta.x) ? meta.x : p.x, ay = meta && Number.isFinite(meta.y) ? meta.y : p.y;
+    const id = meta && Number.isFinite(meta.id) ? meta.id : -1;
+    this.lastHit = { src, kind, id, t: this.time, amt: amount, x: ax, y: ay };
     if (!this.godMode) p.hp -= amount;
     p.iframes = this.balance.playerIframes;
-    if (!this.godMode) this.pushEvent('hurt');
+    if (!this.godMode) this.pushEvent('hurt', { src, kind, id, amt: amount, x: ax, y: ay, dx: meta && Number.isFinite(meta.dx) ? meta.dx : 0, dy: meta && Number.isFinite(meta.dy) ? meta.dy : 0 });
     if (p.hp <= 0) {
       if (this.reviveLeft > 0) {
         this.reviveLeft -= 1;
@@ -544,7 +554,7 @@ export class Sim {
             e.slamCd = 6.5;
             this.addFx({ kind: 'ring', x: e.x, y: e.y, r: 74, ttl: 0.3, color: '#7a4a1b' });
             this.pushEvent('slam');
-            if (dist < 74 + p.r) this.damagePlayer(e.dmg * 1.4, e.type);
+            if (dist < 74 + p.r) this.damagePlayer(e.dmg * 1.4, e.type, { kind: 'slam', id: e.id, x: e.x, y: e.y });
             for (let k = 0; k < 3; k++) {
               const a = this.rng.range(0, 6.2832);
               this.spawnEnemy('root_crawler', e.x + Math.cos(a) * 40, e.y + Math.sin(a) * 40);
@@ -589,16 +599,16 @@ export class Sim {
     }
 
     // Contact damage: the strongest overlapping enemy lands one hit per i-frame window.
-    let worst = 0, wsrc = 'contact';
+    let worst = 0, wsrc = 'contact', wE = null;
     for (const e of this.enemies) {
       if (e.dead) continue;
       const dx = p.x - e.x;
       const dy = p.y - e.y;
       const rr = p.r + e.r * 0.85;
       const dm = e.cdmg && e.state === 'charge' ? e.cdmg : e.dmg; // a charging Bramble Hart hits harder
-      if (dx * dx + dy * dy < rr * rr && dm > worst) { worst = dm; wsrc = e.type; }
+      if (dx * dx + dy * dy < rr * rr && dm > worst) { worst = dm; wsrc = e.type; wE = e; }
     }
-    if (worst > 0) this.damagePlayer(worst, wsrc);
+    if (worst > 0) this.damagePlayer(worst, wsrc, { kind: wE.state === 'charge' ? (wE.type === 'wolf' ? 'lunge' : 'charge') : 'contact', id: wE.id, x: wE.x, y: wE.y });
   }
 
   // ------------------------------------------------------------------ the rest of the frame

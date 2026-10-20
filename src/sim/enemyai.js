@@ -53,7 +53,7 @@ function ranged(sim, e, A, dt, nx, ny, dist, out) {
       e.tele = false;
       e.state = 'root'; e.stT = A.recoil; e.aiCd = A.cd + sim.rng.range(0, A.cdRand);
       const mx = e.x + e.dx * A.muzzle, my = e.y + e.dy * A.muzzle;
-      sim.eshots.push({ id: sim.nextId++, src: e.type, x: mx, y: my, vx: e.dx * A.shotSpeed, vy: e.dy * A.shotSpeed, life: A.shotLife, age: 0, r: A.shotR, dmg: A.shotDmg * e.dmgMul, dead: false });
+      sim.eshots.push({ id: sim.nextId++, src: e.type, from: e.id, x: mx, y: my, vx: e.dx * A.shotSpeed, vy: e.dy * A.shotSpeed, life: A.shotLife, age: 0, r: A.shotR, dmg: A.shotDmg * e.dmgMul, dead: false });
       sim.pushEvent('thorn');
     }
   }
@@ -73,7 +73,7 @@ function fuse(sim, e, A, dt, nx, ny, dist, out) {
     if (e.stT <= 0) {
       e.tele = false;
       const p = sim.player;
-      if (Math.hypot(p.x - e.x, p.y - e.y) < A.burstR + p.r) sim.damagePlayer(A.burstDmg * e.dmgMul, e.type);
+      if (Math.hypot(p.x - e.x, p.y - e.y) < A.burstR + p.r) sim.damagePlayer(A.burstDmg * e.dmgMul, e.type, { kind: 'burst', id: e.id, x: e.x, y: e.y });
       e.burst = true; e.dead = true; e.hp = 0;
       if (sim.fx.length < 48) sim.addFx({ kind: 'burst', x: e.x, y: e.y, r: A.burstR, ttl: 0.45, color: '#c9d2c4' });
       sim.pushEvent('burst');
@@ -111,7 +111,7 @@ export function updateEnemyShots(sim, dt) {
   for (const s of sim.eshots) {
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt; s.age += dt;
     const dx = p.x - s.x, dy = p.y - s.y, rr = p.r + s.r;
-    if (dx * dx + dy * dy < rr * rr) { sim.damagePlayer(s.dmg, s.src); s.dead = true; }
+    if (dx * dx + dy * dy < rr * rr) { sim.damagePlayer(s.dmg, s.src, { kind: 'thorn', id: s.from ?? -1, x: s.x, y: s.y, dx: s.vx, dy: s.vy }); s.dead = true; }
     else if (s.life <= 0 || s.x < 0 || s.y < 0 || s.x > size || s.y > size) s.dead = true;
     if (s.dead) any = true;
     if (sim.state !== 'running') break;

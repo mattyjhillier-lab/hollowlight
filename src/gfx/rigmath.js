@@ -113,10 +113,11 @@ export function pupPose(st, speed, dt) {
   return st.run;
 }
 
-// Hurt timeline (seconds since the hit). tint: 0 none, 1 white flash (0-60 ms), 2 red (to 0.25 s).
+// Hurt timeline (seconds since the hit). tint: 0 none, 1 white flash (0-60 ms). DR1: the salmon body fill is gone; the hit reads from the light-red
+// outline drawn above the crowd (hitfx.js), so the body keeps its own colours after the white flash.
 export function hurtFx(o, t) {
   const k = fin(t, 9);
-  o.tint = k < 0.06 ? 1 : k < 0.25 ? 2 : 0;
+  o.tint = k < 0.06 ? 1 : 0;
   const q = k < 0.25 ? 1 - k / 0.25 : 0;
   o.sx = 1 + 0.12 * q; o.sy = 1 - 0.12 * q; o.lean = -9 * q; // squash then spring back
   o.active = k < 0.6; // glints/ears/pup stay in the hurt pose a little longer
