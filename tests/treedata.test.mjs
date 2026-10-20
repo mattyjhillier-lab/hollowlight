@@ -158,7 +158,7 @@ test('T1 the v2 view puts every node at a computed position with no overlap, and
   assert.ok(Math.abs(b.sustainPE - 5) < 1e-9, `sustain ${b.sustainPE}`);
   assert.ok(b.combatPE < b.combatAtCap);
   const pool = ruleCaps(RULE, W).cats.wpn;
-  assert.ok(Math.abs(pool.C * pool.w * pool.count - 2.8) < 1e-9, 'per-weapon pool is 2.8 PE at cap (cap 7, DT0 trim)');
+  assert.ok(Math.abs(pool.C * pool.w * pool.count - 3.44) < 1e-9, 'per-weapon pool is 3.44 PE at cap (cap 7 + 1.6 loaned from the lore + choice reserve)');
 });
 
 // ---------------------------------------------------------------- budget failure cases
@@ -192,8 +192,8 @@ test('T1 budget rule is snapshot-tested: changing a cap, weight or limit is a vi
   assert.deepEqual(RULE, {
     base: { combat: 15.5, sustain: 5 }, perChapter: { combat: 1.5, sustain: 0.5 }, perTier: { 1: { combat: 2.5, sustain: 0 }, 2: { combat: 0.6, sustain: 0 } }, knotMax: 3, optionShareMin: 0.6, flatFace: 2, markFace: 4, rushFace: 0.0375,
     loreShare: 0.2,
-    perWeapon: { cap: 7, weight: 0.08, refWeapons: 5 },
-    categories: { dmg: { cap: 2.5, weight: 1 }, tagS: { cap: 5, weight: 0.35 }, tagM: { cap: 5, weight: 0.35 }, cast: { cap: 3, weight: 0.3 }, area: { cap: 4, weight: 0.12 }, hp: { cap: 6, weight: 0.2 }, heal: { cap: 1.5, weight: 0.4 }, status: { cap: 8, weight: 0.15 }, lore: { cap: 2, weight: 0.6 }, choice: { cap: 1, weight: 0.8 } },
+    perWeapon: { cap: 8.6, weight: 0.08, refWeapons: 5 },
+    categories: { dmg: { cap: 2.7, weight: 1 }, tagS: { cap: 6.4, weight: 0.35 }, tagM: { cap: 6.4, weight: 0.35 }, cast: { cap: 3.6, weight: 0.3 }, area: { cap: 4, weight: 0.12 }, hp: { cap: 6, weight: 0.2 }, heal: { cap: 1.5, weight: 0.4 }, status: { cap: 8, weight: 0.15 }, lore: { cap: 0, weight: 0.6 }, choice: { cap: 0, weight: 0.8 } },
     sustain: { revive: 4, perReroll: 0.1, perBanish: 0.1, heartDrop: 0.04, heartHeal: 0.04, heartPity: 0.016, reviveMaxFrac: 0.2, rerollMax: 3, banishMax: 3, reviveMax: 1 },
     utility: { speed: 5, pickup: 20, xp: 7.5, gold: 12, abilityCdMax: 50 },
   });
@@ -362,7 +362,7 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   assert.deepEqual(b.violations, []);
   assert.equal(b.W, 6);
   const base = budgetOf(v2Def, RULE, W);
-  assert.ok(Math.abs(b.combatAtCap - base.combatAtCap) < 1e-9, 'a new weapon adds choices, not power: the pool stays 2.8 PE');
+  assert.ok(Math.abs(b.combatAtCap - base.combatAtCap) < 1e-9, 'a new weapon adds choices, not power: the pool stays 3.44 PE');
   // the live (game) tree is untouched by it: all new nodes are inert and the gates of a missing live weapon are not required
   assert.equal(c.live.nodes.filter((n) => n.id.startsWith('lw_')).every((n) => n.inert), true);
   // and a broken copy of the fixture fails loudly
