@@ -175,59 +175,10 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .bossintro .bi-sub { display: block; margin-top: .35em; font-size: .36em; letter-spacing: .14em; font-style: italic; font-weight: 400; color: #e9dfc6; -webkit-text-stroke: .05em var(--ink); }
 .perf { position: absolute; right: .6em; top: 6.8em; padding: .3em .5em; background: rgba(7, 7, 13, .7); color: var(--ice); font-size: clamp(7px, 1.3cqw, 15px); white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; border-radius: .4em; font-family: ui-monospace, Consolas, monospace; }
 
-/* ---------- skill tree screen (plain placeholder styling; re-skin later) ---------- */
+/* ---------- skill tree screen: see src/ui/treescreen.css (T4 Lantern Trails) ---------- */
 .overlay.layer-tree { padding: 0; justify-content: flex-start; align-items: stretch; text-align: left; z-index: 4; background: rgba(7, 7, 13, .97); }
-.tree-top { display: flex; gap: .6em; align-items: center; padding: .6em .8em; flex-wrap: wrap; }
-.tree-bank { flex: 1; color: var(--gold); min-width: 8em; }
-.tree-zoom { min-width: 2.6em; padding: .5em .7em; }
-.tree-view { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; cursor: grab; outline: none; }
-.tree-view:active { cursor: grabbing; }
-.tree-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.tree-world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
-.tree-hub, .tree-branch { position: absolute; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; }
-.tree-hub { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--ice); display: grid; place-items: center; font-size: 11px; color: var(--ice); background: var(--glass-solid); }
-.tree-branch { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
-.tree-node { --c: var(--muted); position: absolute; width: 46px; height: 46px; padding: 0; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid var(--c); background: var(--glass-solid); color: var(--text); font: inherit; font-size: 11px; cursor: pointer; opacity: .9; transition: box-shadow .35s, filter .35s, opacity .35s; }
-.tree-node .tn-rank { position: relative; }
-.tree-node .tn-label { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; width: 110px; font-size: 11px; line-height: 1.15; text-align: center; color: var(--text); pointer-events: none; }
-.tree-world.far .tn-label { display: none; }
-.tree-node .tn-ring { position: absolute; inset: -6px; border-radius: 50%; background: conic-gradient(var(--c) calc(var(--p, 0) * 1%), transparent 0); -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%); mask: radial-gradient(circle, transparent 60%, #000 62%); opacity: 0; pointer-events: none; }
-.tree-node.st-condition .tn-ring { opacity: .9; }
-.tree-node.st-locked, .tree-node.st-excluded, .tree-node.st-condition, .tree-node.st-teaser { filter: grayscale(1); opacity: .45; }
-.tree-node.st-teaser { border-style: dashed; }
-.tree-node.st-available { background: var(--panel-solid); }
-.tree-node.st-available.afford { box-shadow: 0 0 10px var(--c); }
-.tree-node.st-owned { background: var(--c); color: #071019; filter: brightness(1.15); box-shadow: 0 0 16px var(--c), 0 0 4px #fff inset; }
-.tree-node.partial { box-shadow: 0 0 8px var(--c); }
-.tree-node.key { border-width: 3px; border-radius: 30%; }
-.tree-node.path { box-shadow: 0 0 12px #fff; opacity: 1; }
-.tree-node.sel { outline: 2px solid #fff; outline-offset: 3px; opacity: 1; }
-.tree-node.new { animation: treeNew 1.6s ease-in-out infinite; }
-@keyframes treeNew { 50% { box-shadow: 0 0 22px 4px var(--gold); } }
-.tree-panel { padding: .6em 1em; min-height: 6em; max-height: 32%; overflow: auto; background: var(--glass-solid); border-top: 1px solid var(--line); }
-.tp-title { font-family: var(--font-head); font-size: 1.15em; }
-.tp-meta, .tp-flavour { color: var(--muted); font-size: .85em; }
-.tp-flavour { font-style: italic; }
-.tp-desc { margin: .3em 0; }
-.tp-line.warn { color: #ff8b95; }
-.tp-msg { color: var(--muted); }
-.tp-line.ok, .tp-prog.done { color: var(--good); }
-.tp-prog { margin: .2em 0; font-size: .9em; }
-.tp-bar { height: .4em; background: rgba(255, 255, 255, .12); border-radius: 99px; overflow: hidden; margin-top: .15em; max-width: 22em; }
-.tp-bar i { display: block; height: 100%; background: var(--teal); }
-.tp-buy { margin-top: .4em; }
-.tp-buy.armed { color: var(--gold); }
-.tp-buy:disabled, .tree-top .btn:disabled { opacity: .45; cursor: default; }
-.tree-help { padding: .25em 1em .5em; color: var(--muted); font-size: .75em; background: var(--glass-solid); }
-@container (max-width: 520px) { .tree-help { display: none; } .tree-panel { max-height: 45%; } }
-/* G1c: gate wording (plain; reuses tokens) */
-.tree-gatekey { position: absolute; left: .8em; top: .5em; font-size: .75em; letter-spacing: .06em; color: var(--muted); pointer-events: none; max-width: 60%; }
-.tree-node.gate { border-style: double; border-width: 4px; }
-.tree-node.gate .tn-rank { font-size: 8px; letter-spacing: .06em; }
-.tp-line.perm { color: var(--gold); font-size: .85em; }
 .firstrun { color: var(--muted); margin: 0 0 1em; max-width: 36em; text-align: center; }
 .firstrun .btn { margin-top: .5em; }
-.tree-panel { font-size: .85em; }
 
 /* ---------- TOUCH-1: phone controls (PROVISIONAL layout; HUD design sheet #1 will replace it) ---------- */
 html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
@@ -253,11 +204,9 @@ html.touch .keys { display: none; }
 /* menus: scroll if tall, 44px hit targets, no hover dependence */
 html.touch .overlay { overflow-y: auto; justify-content: safe center; touch-action: pan-y; padding-left: max(2em, env(safe-area-inset-left)); padding-right: max(2em, env(safe-area-inset-right)); padding-bottom: max(2em, env(safe-area-inset-bottom)); }
 html.touch .overlay.layer-tree { padding: 0; touch-action: none; }
-html.touch .btn, html.touch .tree-zoom { min-height: 44px; min-width: 44px; }
+html.touch .btn { min-height: 44px; min-width: 44px; }
 html.touch .card .ban { min-height: 44px; padding: .25em 1em; }
 html.touch .charcard { min-height: 44px; }
-html.touch .tree-view { touch-action: none; }
-html.touch .tree-panel { touch-action: pan-y; }
 @media (max-height: 480px) {
   html.touch .overlay { padding-top: 6px; padding-bottom: 6px; }
   html.touch .overlay h1 { font-size: 1.9em; margin: 0; }

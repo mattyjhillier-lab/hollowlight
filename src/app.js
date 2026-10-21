@@ -1,6 +1,6 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
 import { Sim } from './sim/Sim.js';
-import data from './data/index.js';
+import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
 import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
 import { newlyLines } from './meta/gatewords.js';
@@ -9,6 +9,7 @@ import { resolveBrightness } from './gfx/arc.js';
 import { touchEnabled } from './input/stick.js';
 import { parseParams } from './params.js';
 import { tierIndex } from './sim/tiers.js';
+import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
@@ -71,6 +72,7 @@ export const app = {
     return {
       def: treeDef,
       data,
+      view: this.treeView || (this.treeView = buildTreeView(treeInfo, treeDef, data)),
       save: () => this.save.data,
       markSeen: (id) => this.save.markSeen(id),
       buy: (id) => {
@@ -82,6 +84,9 @@ export const app = {
         const r = respecTree(this.save.data, treeDef);
         this.save.saveNow();
         return r;
+      },
+      clearRegrowth: () => {
+        if (this.save.data.notes && this.save.data.notes.regrowth) { delete this.save.data.notes.regrowth; this.save.saveNow(); }
       },
       onClose: () => this.showMenu(),
     };

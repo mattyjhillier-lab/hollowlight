@@ -8,6 +8,7 @@ const fmtTime = (s) => {
 };
 
 import { TreeScreen } from './treescreen.js';
+import './treescreen.css';
 import { Hud } from './hud.js';
 import { OfferView } from './cardsui.js';
 import { orderOffer } from './cardview.js';

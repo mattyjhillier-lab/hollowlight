@@ -1,0 +1,164 @@
+/* Skill tree screen T4 (LOCKED look 'A Lantern Trails'; mock-up docs/mockups/tree-screen-v2/option-a.html). Lantern Glass tokens.
+   Every class is ts- prefixed so the game's global .btn/.bar/.toast rules never leak in. Size classes come from the screen's own
+   measured size (ts-port = phone portrait, ts-short = phone landscape), not the window, because the screen lives inside #stage. */
+.ts {
+  --ts-night: #0c1220; --ts-glassA: var(--lg-glass-top, #303c56); --ts-glassB: var(--lg-glass-bot, #161c2a); --ts-brass: #d8b26a; --ts-cream: #fff3dc;
+  --ts-mute: #b3bbcf; --ts-teal: #6fd3c5; --ts-lock: #59627a; --ts-wick: #fff6e0; --ts-ink: #3a2412;
+  --ts-panel: rgba(16, 21, 34, .985); --ts-line: rgba(216, 178, 106, .38); --ts-band: #0b101c;
+  position: absolute; inset: 0; overflow: hidden; pointer-events: auto; background: var(--ts-night); color: var(--ts-cream);
+  font: 15px/1.35 var(--font-body); text-align: left; touch-action: none;
+}
+.ts button { font: inherit; color: inherit; cursor: pointer; }
+.ts button:focus-visible { outline: 2px solid var(--ts-teal); outline-offset: 2px; }
+.ts-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ts-mapwrap { position: absolute; inset: 0; outline: none; cursor: grab; touch-action: none; }
+.ts.ts-pan .ts-mapwrap { cursor: grabbing; }
+.ts-map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ts-items { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+/* pooled lantern buttons: invisible over their lantern (the canvas draws it); a teal ring shows keyboard focus */
+#ui .ts .ts-item { position: absolute; left: 0; top: 0; padding: 0; margin: 0; border: 0; border-radius: 50%; background: transparent; pointer-events: none; opacity: 1; }
+#ui .ts .ts-item:focus { outline: none; }
+#ui .ts .ts-item:focus-visible { outline: 3px solid var(--ts-teal); outline-offset: 2px; box-shadow: 0 0 0 6px rgba(12, 18, 32, .7); }
+
+/* toolbar: a solid band (never floats over map names) */
+.ts-bar { position: absolute; left: 0; right: 0; top: 0; min-height: 60px; display: flex; align-items: center; gap: 8px; padding: 8px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right));
+  background: linear-gradient(var(--ts-band), #0b101cf2); border-bottom: 1px solid #d8b26a2a; z-index: 6; }
+.ts-title { font-family: var(--font-display); font-size: 22px; color: var(--ts-cream); margin-right: auto; white-space: nowrap; text-shadow: 0 0 12px #ffb35a66; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ts-purse { display: flex; gap: 6px; }
+.ts-pill { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 4px 10px; border-radius: 17px; background: linear-gradient(var(--ts-glassA), var(--ts-glassB)); border: 1px solid var(--ts-line); font-weight: 700; font-size: 14px; white-space: nowrap; font-feature-settings: "tnum" 1; }
+.ts-pill.short { border-color: var(--ts-lock); border-style: dashed; }
+.ts-pill i { font-style: normal; width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.ts-i-gold { background: radial-gradient(circle at 35% 30%, #fff3c4, #e7b34c 60%, #8d6c34); }
+.ts-i-shard { background: radial-gradient(circle at 35% 30%, #f3e6ff, #b9a2ff 60%, #5b3f9a); border-radius: 2px !important; transform: rotate(45deg); }
+.ts-i-glass { background: radial-gradient(circle at 35% 30%, #ffe2c8, #ffb89a 45%, #9fe3ff); border-radius: 50% 50% 50% 0 !important; transform: rotate(-45deg); }
+.ts-btn { min-height: 44px; min-width: 44px; padding: 6px 14px; border-radius: 22px; border: 1px solid var(--ts-line); background: linear-gradient(var(--ts-glassA), var(--ts-glassB)); font-weight: 700; font-size: 14px; white-space: nowrap; color: var(--ts-cream); }
+.ts-btn.on { border-color: var(--ts-wick); box-shadow: 0 0 0 1px var(--ts-wick) inset, 0 0 14px #ffb35a55; }
+.ts-btn:disabled { opacity: .5; cursor: default; }
+.ts-round { padding: 0; width: 44px; font-size: 18px; }
+.ts-badge { min-width: 26px; height: 26px; border-radius: 13px; background: var(--ts-wick); color: var(--ts-ink); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; box-shadow: 0 0 10px #ffb35a; padding: 0 6px; }
+.ts-badge.zero { background: var(--ts-lock); color: var(--ts-cream); box-shadow: none; }
+.ts-lightable { display: inline-flex; align-items: center; gap: 8px; }
+
+/* side panel / bottom sheet: Lantern details + Goals tab */
+.ts-panel { position: absolute; right: 12px; top: 72px; bottom: 12px; width: 340px; z-index: 7; background: var(--ts-panel); border: 1px solid var(--ts-line); border-radius: 16px; padding: 12px 16px 0; display: none; flex-direction: column; gap: 8px; overflow: auto; touch-action: pan-y; }
+.ts-panel.open { display: flex; }
+.ts-tabs { display: flex; gap: 6px; margin-right: 44px; }
+.ts-tab { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid transparent; background: none; color: var(--ts-mute); font-weight: 700; }
+.ts-tab[aria-selected="true"] { color: var(--ts-cream); border-color: var(--ts-line); background: #ffffff0c; }
+.ts-tab:disabled { opacity: .45; cursor: default; }
+.ts-detail { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.ts-kick { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--lg-brass-text, #f5dfae); font-weight: 700; }
+.ts h2.ts-name, .ts h3.ts-h3 { margin: 0; font-family: var(--font-display); font-weight: 400; letter-spacing: normal; color: var(--ts-cream); }
+.ts h2.ts-name { font-size: 26px; line-height: 1.1; }
+.ts h3.ts-h3 { font-size: 22px; margin-bottom: 8px; }
+.ts-state { align-self: flex-start; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 12px; border: 1px solid; }
+.ts-st-ready { color: var(--ts-ink); background: var(--ts-wick); border-color: var(--ts-wick); box-shadow: 0 0 12px #ffb35a88; }
+.ts-st-open { color: #f5dfae; border-color: var(--ts-brass); }
+.ts-st-challenge { color: #9fe6dc; border-color: var(--ts-teal); border-style: dashed; }
+.ts-st-notyet, .ts-st-fog { color: var(--ts-mute); border-color: var(--ts-lock); border-style: dotted; }
+.ts-st-lit { color: var(--ts-cream); border-color: var(--ts-cream); }
+.ts-why { font-size: 14px; color: var(--ts-wick); }
+.ts-desc { font-size: 16px; }
+.ts-flav { font-family: var(--font-whisper); font-style: italic; color: var(--ts-mute); font-size: 15px; }
+.ts-steps { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ts-steps li { font-size: 14px; display: grid; grid-template-columns: 24px 1fr; gap: 4px; }
+.ts-steps li b { width: 20px; height: 20px; border-radius: 10px; border: 1px solid var(--ts-lock); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: var(--ts-mute); }
+.ts-steps li.done { color: var(--ts-teal); }
+.ts-steps li.done b { border-color: var(--ts-teal); color: var(--ts-teal); }
+.ts-meta { font-size: 13px; color: var(--ts-mute); }
+.ts-cost { display: flex; gap: 6px; flex-wrap: wrap; }
+/* the Light/Pin buttons stay in view at the bottom of the panel, however long the text (LOCKED T4 bug: Buy cut off on phone landscape) */
+.ts-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 0 12px; position: sticky; bottom: 0; background: var(--ts-panel); box-shadow: 0 -10px 12px -6px var(--ts-panel); z-index: 1; }
+.ts-primary { flex: 1; min-height: 48px; border-radius: 24px; border: 1px solid var(--ts-wick); background: linear-gradient(#ffe9b8, #e3a64a); color: var(--ts-ink) !important; font-weight: 700; font-size: 16px; padding: 4px 12px; }
+.ts-primary[disabled] { background: linear-gradient(var(--ts-glassA), var(--ts-glassB)); color: var(--ts-mute) !important; border-color: var(--ts-lock); cursor: default; }
+.ts-primary.confirm { background: linear-gradient(#fff6e0, #ffcf7a); box-shadow: 0 0 18px #ffb35a; }
+.ts-msg { font-size: 14px; color: var(--ts-teal); min-height: 1em; }
+.ts-close { position: absolute; right: 6px; top: 6px; background: none; border: 0; font-size: 24px; color: var(--ts-mute) !important; min-width: 44px; min-height: 44px; }
+.ts-handle { display: none; }
+.ts-bar2 { height: 6px; border-radius: 3px; background: #ffffff18; margin-top: 4px; overflow: hidden; }
+.ts-bar2 b { display: block; height: 100%; background: linear-gradient(90deg, #3aa79a, var(--ts-teal)); border-radius: 3px; }
+.ts-bar2.gold b { background: linear-gradient(90deg, #b98a3a, var(--ts-wick)); }
+.ts-goal { display: block; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid #ffffff14; padding: 8px 2px; min-height: 48px; }
+.ts-gt { display: flex; justify-content: space-between; gap: 6px; font-weight: 700; font-size: 15px; }
+.ts-rw { font-size: 14px; color: var(--ts-wick); }
+.ts-gs { font-size: 13px; color: var(--ts-mute); }
+.ts-tag { font-size: 12px; color: var(--ts-mute); font-weight: 700; white-space: nowrap; }
+.ts-tag.pin { color: var(--ts-wick); }
+.ts-empty { font-size: 14px; color: var(--ts-mute); padding: 8px 2px; }
+
+/* calm Next-step bar */
+.ts-step { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 12px; max-width: min(620px, calc(100% - 140px));
+  background: var(--ts-panel); border: 1px solid var(--ts-line); border-radius: 28px; padding: 6px 6px 6px 18px; box-shadow: 0 6px 24px #0008; }
+.ts-steptext { font-size: 15px; line-height: 1.25; min-width: 0; }
+.ts-steptext b { color: var(--ts-wick); }
+.ts-steptext small { display: block; color: var(--ts-mute); font-size: 13px; }
+.ts-step .ts-btn { flex: none; }
+.ts.ts-sel .ts-step, .ts.ts-pan .ts-step { display: none; }
+
+/* zoom buttons + edge arrow */
+.ts-zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 4; }
+.ts.ts-sel .ts-zoom { right: 364px; }
+.ts-edge { position: absolute; z-index: 4; display: none; align-items: center; gap: 6px; min-height: 44px; padding: 4px 12px; border-radius: 22px; border: 1px solid var(--ts-wick); background: var(--ts-panel); color: var(--ts-wick) !important; font-weight: 700; font-size: 13px; transform: translate(-50%, -50%); }
+.ts-edge.show { display: inline-flex; }
+.ts-edge i { font-style: normal; display: inline-block; }
+
+/* sheets: index + legend */
+.ts-sheet { position: absolute; z-index: 9; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, 94%); max-height: 86%; overflow: auto; background: var(--ts-panel); border: 1px solid var(--ts-line); border-radius: 16px; padding: 14px 16px; display: none; touch-action: pan-y; }
+.ts-sheet.open { display: block; }
+.ts-idx { display: flex; width: 100%; align-items: center; gap: 10px; background: none; border: 0; border-top: 1px solid #ffffff14; padding: 8px 2px; min-height: 48px; text-align: left; }
+.ts-sw { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.ts-nm { flex: 1; font-weight: 700; }
+.ts-ct { color: var(--ts-mute); font-size: 13px; }
+.ts-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 0; }
+.ts-end { justify-content: flex-end; }
+.ts-legend { display: grid; grid-template-columns: 44px 1fr; gap: 8px 10px; align-items: center; font-size: 15px; }
+.ts-legend canvas { width: 44px; height: 44px; }
+.ts-legend small { display: block; color: var(--ts-mute); font-size: 13px; }
+.ts-scrim { position: absolute; inset: 0; background: #0009; z-index: 8; display: none; }
+.ts-scrim.open { display: block; }
+.ts-toast { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); z-index: 10; background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 14px; padding: 10px 16px; font: 18px var(--font-display); color: var(--ts-wick); display: none; text-align: center; max-width: 90%; pointer-events: none; }
+.ts-toast.open { display: block; }
+/* first-visit tip (fades away) */
+.ts-tip { position: absolute; z-index: 9; left: 50%; bottom: 84px; transform: translateX(-50%); width: min(440px, calc(100% - 32px)); background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 16px; padding: 14px 16px; box-shadow: 0 0 30px #ffb35a44; display: none; transition: opacity .8s; }
+.ts-tip.open { display: block; }
+.ts-tip.fade { opacity: 0; }
+.ts-tiph { font: 20px var(--font-display); color: var(--ts-wick); margin-bottom: 6px; }
+.ts-tipp { font-size: 15px; margin-bottom: 6px; }
+
+/* ---------- phone landscape (short screen) ---------- */
+.ts.ts-short .ts-bar { min-height: 52px; padding-top: 4px; padding-bottom: 4px; gap: 6px; }
+.ts.ts-short .ts-title { font-size: 18px; }
+.ts.ts-short .ts-pill { min-height: 30px; padding: 2px 8px; font-size: 13px; }
+.ts.ts-short .ts-btn { font-size: 13px; padding: 4px 10px; }
+.ts.ts-short .ts-round { padding: 0; }
+.ts.ts-short .ts-panel { top: 58px; bottom: 6px; right: max(6px, env(safe-area-inset-right)); width: 46%; padding: 8px 12px 0; gap: 6px; }
+.ts.ts-short .ts-tabs .ts-tab { min-height: 44px; }
+.ts.ts-short .ts-flav { display: none; }
+.ts.ts-short h2.ts-name { font-size: 21px; }
+.ts.ts-short .ts-desc { font-size: 15px; }
+.ts.ts-short.ts-sel .ts-zoom { right: calc(46% + 14px); }
+.ts.ts-short .ts-zoom { bottom: 6px; }
+.ts.ts-short .ts-zx { display: none; }
+.ts.ts-short .ts-step { bottom: 6px; max-width: calc(100% - 130px); }
+.ts.ts-short .ts-tip { bottom: 64px; }
+.ts.ts-short .ts-ph-hide { display: none; }
+/* ---------- phone portrait ---------- */
+.ts.ts-port .ts-bar { min-height: 104px; flex-wrap: wrap; align-content: center; row-gap: 6px; padding-top: max(8px, env(safe-area-inset-top)); }
+.ts.ts-port .ts-title { font-size: 19px; flex: 1 0 40%; }
+.ts.ts-port .ts-panel { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 56%; border-radius: 18px 18px 0 0; padding: 6px 16px 0; }
+.ts.ts-port .ts-actions { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+.ts.ts-port .ts-handle { display: block; width: 44px; height: 5px; border-radius: 3px; background: #ffffff40; margin: 2px auto 4px; }
+.ts.ts-port .ts-tabs { margin-right: 40px; }
+.ts.ts-port.ts-sel .ts-zoom { display: none; }
+.ts.ts-port .ts-zx { display: none; }
+.ts.ts-port .ts-zoom { bottom: calc(84px + env(safe-area-inset-bottom)); }
+.ts.ts-port .ts-step { left: 12px; right: 12px; transform: none; max-width: none; bottom: calc(12px + env(safe-area-inset-bottom)); }
+.ts.ts-port .ts-tip { bottom: calc(84px + env(safe-area-inset-bottom)); }
+.ts.ts-port .ts-hide-port { display: none; }
+.ts.ts-port .ts-lightable { order: 5; }
+.ts.ts-port .ts-bar .ts-btn { padding: 4px 12px; }
+.ts.ts-port .ts-bar .ts-round { padding: 0; }
+
+/* Calm motion (setting or system): no fades or slides */
+.ts.ts-calm *, .ts.ts-calm { transition: none !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .ts * { transition: none !important; animation: none !important; } }
