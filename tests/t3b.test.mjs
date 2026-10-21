@@ -28,7 +28,7 @@ test('DT0 tiers.json validates: three registered tiers, Twilight exactly 1, hard
   assert.deepEqual(Object.keys(data.tiers.template), TIER_IDS);
   const t = data.tiers.template;
   for (const k of ['enemyHp', 'enemyDmg', 'density', 'bossHp', 'heartPity']) assert.ok(t.normal[k] === 1 && t.hard[k] >= 1 && t.expert[k] >= t.hard[k], k);
-  assert.deepEqual([t.hard.enemyHp, t.hard.enemyDmg, t.hard.bossHp, t.expert.enemyHp, t.expert.enemyDmg, t.expert.bossHp, t.expert.heartPity], [1.45, 1.15, 1.5, 2, 1.3, 2, 1.3], 'locked multipliers (docs/LOCKED.md DIFFICULTY TIERS)');
+  assert.deepEqual([t.hard.enemyHp, t.hard.enemyDmg, t.hard.bossHp, t.expert.enemyHp, t.expert.enemyDmg, t.expert.bossHp, t.expert.heartPity], [1.2, 1.15, 1.5, 2, 1.3, 2, 1.3], 'locked multipliers (docs/LOCKED.md DIFFICULTY TIERS; Deep Dusk enemy HP 1.45 -> 1.2 reopened 2026-10-21 Tree economy + Deep Dusk)');
   for (const id of TIER_IDS) for (const m of t[id].marks.kinds) assert.ok(MARK_IDS.includes(m));
   assert.equal(t.normal.glass.first, 0, 'Twilight pays no Dawnglass');
 });
@@ -38,7 +38,7 @@ test('DT0 tier validator rejects hostile / mistaken data', () => {
   bad((d) => { d.template.normal.enemyHp = 1.1; }, /Twilight .* exactly 1/);
   bad((d) => { d.template.hard.enemyHp = 5; }, /1\.\.4/);
   bad((d) => { d.template.hard.enemyHp = 0.9; }, /1\.\.4/);
-  bad((d) => { d.template.expert.enemyHp = 1.2; }, /below the tier under it/);
+  bad((d) => { d.template.expert.enemyHp = 1.1; }, /below the tier under it/);
   bad((d) => { d.template.hard.marks.kinds = ['laser']; }, /registered mark ids/);
   bad((d) => { d.template.hard.marks.share = 0.9; }, /0\.\.0\.3/);
   bad((d) => { d.template.hard.marks.from = 99999; }, /0\.\.1200/);
@@ -60,12 +60,12 @@ test('DT0 resolveTier: an unknown or forged tier always resolves to Twilight; ch
   assert.equal(resolveTier(null, 'cursed_forest', 'hard'), IDENTITY);
   assert.equal(resolveTier({ template: null }, 'cursed_forest', 'hard'), IDENTITY);
   const h = resolveTier(data.tiers, 'cursed_forest', 'hard');
-  assert.equal(h.id, 'hard'); assert.equal(h.idx, 1); assert.equal(h.enemyHp, 1.45); assert.ok(Object.isFrozen(h));
+  assert.equal(h.id, 'hard'); assert.equal(h.idx, 1); assert.equal(h.enemyHp, 1.2); assert.ok(Object.isFrozen(h));
   const t2 = clone(data.tiers); t2.chapters.cursed_forest = { hard: { enemyHp: 1.6, glass: { boss: 3 } } };
   const o = resolveTier(t2, 'cursed_forest', 'hard');
   assert.equal(o.enemyHp, 1.6); assert.equal(o.glass.boss, 3); assert.equal(o.glass.dawn, 2, 'other fields inherit the template');
-  assert.equal(resolveTier(t2, 'other_chapter', 'hard').enemyHp, 1.45, 'another chapter keeps the template');
-  assert.equal(resolveTier(t2, '__proto__', 'hard').enemyHp, 1.45);
+  assert.equal(resolveTier(t2, 'other_chapter', 'hard').enemyHp, 1.2, 'another chapter keeps the template');
+  assert.equal(resolveTier(t2, '__proto__', 'hard').enemyHp, 1.2);
   assert.deepEqual(TIER_IDS.map(tierIndex), [0, 1, 2]); assert.equal(tierIndex('nope'), 0); assert.equal(tierIndex(undefined), 0);
 });
 
@@ -83,12 +83,12 @@ function spawnStats(tier, id = 'wolf') {
   return { hp: e.hp, dmg: e.dmg };
 }
 
-test('DT0 tier multipliers: enemy HP x1.45 / x2.0, damage x1.15 / x1.3, boss HP x1.5 / x2.0; Twilight and a forged tier are identical to no tier at all', () => {
+test('DT0 tier multipliers: enemy HP x1.2 / x2.0, damage x1.15 / x1.3, boss HP x1.5 / x2.0; Twilight and a forged tier are identical to no tier at all', () => {
   const base = spawnStats(undefined), tw = spawnStats('normal');
   assert.deepEqual(tw, base, 'Twilight = the old numbers, bit for bit');
   for (const bad of ['hard ', '__proto__', 5, null, {}]) assert.deepEqual(spawnStats(bad), base, String(bad));
   const hard = spawnStats('hard'), exp = spawnStats('expert');
-  assert.ok(Math.abs(hard.hp / base.hp - 1.45) < 1e-12 && Math.abs(hard.dmg / base.dmg - 1.15) < 1e-12);
+  assert.ok(Math.abs(hard.hp / base.hp - 1.2) < 1e-12 && Math.abs(hard.dmg / base.dmg - 1.15) < 1e-12);
   assert.ok(Math.abs(exp.hp / base.hp - 2) < 1e-12 && Math.abs(exp.dmg / base.dmg - 1.3) < 1e-12);
   const boss = (t) => spawnStats(t, 'elder_treant').hp;
   assert.ok(Math.abs(boss('hard') / boss('normal') - 1.5) < 1e-12 && Math.abs(boss('expert') / boss('normal') - 2) < 1e-12);
@@ -240,7 +240,8 @@ test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and i
   assert.deepEqual(Object.values(composed.info.tools).map((t) => t.slot).sort(), ['far10', 'far2', 'far4', 'far6', 'far8'], 'the five far slots of layout L-A');
   for (const [t, ids] of Object.entries(TOOL)) for (const id of ids) assert.ok(v2.nodes[id], `${t}/${id}`);
   const moved = ['li_reach', 'li_scav', 'li_hearts', 'li_heal', 'li_magnet', 'sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'sp_auto', 'li_last'];
-  for (const id of moved) { const n = composed.info.nodes.find((x) => x.id === id); assert.equal(n.frag, 'core', `${id} keeps its core idx slot`); assert.ok(n.tool, `${id} is placed in a tool cluster`); }
+  const besideParent = ['li_hearts', 'li_heal', 'li_magnet', 'sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'sp_auto', 'li_last']; // T3c: next ranks moved back beside their parent
+  for (const id of moved) { const n = composed.info.nodes.find((x) => x.id === id); assert.equal(n.frag, 'core', `${id} keeps its core idx slot`); assert.equal(!!n.tool, !besideParent.includes(id), `${id} placement`); }
   assert.deepEqual(layoutIssues(composed.info, v2), []);
   const b = budgetOf(v2, composed.info.core.budget, 5);
   assert.deepEqual(b.violations, []);
@@ -249,7 +250,7 @@ test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and i
 });
 
 test('DT4 inert (pending) nodes are exactly the ones whose sim / UI hook is not built yet; they cannot be bought, aggregated or forged into a save', () => {
-  assert.deepEqual(def.pendingList.slice().sort(), [...INERT, ...def.pendingList.filter((i) => i.startsWith('bs_'))].sort(), 'tool pending set');
+  assert.deepEqual(def.pendingList.slice().sort(), [...INERT, 'br_almanac', 'br_cardfan', 'br_hearthkey', ...def.pendingList.filter((i) => i.startsWith('bs_'))].sort(), 'tool pending set (+ the bridges of the three inert groups)');
   assert.equal(def.pendingList.filter((i) => i.startsWith('bs_')).length, 13, 'the Almanac (Fell Wolf, Grave Crow, Root Crawler, Elder Treant + Full Almanac)');
   for (const id of def.pendingList) { assert.equal(def.nodes[id], undefined, id); assert.ok(!def.list.includes(id)); }
   const forged = { ...own(def.pendingList), ...own(['li_reach']) };

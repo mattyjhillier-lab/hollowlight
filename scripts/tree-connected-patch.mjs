@@ -1,4 +1,5 @@
-// CONNECTED-UNLOCK RULE: dry-run data patch + the rule itself, for the economy/balance analysis (LOCKED 2026-10-21 'Tree look +
+// CONNECTED-UNLOCK RULE: dry-run data patch + the rule itself, for the economy/balance analysis (APPLIED to the data in T3c 2026-10-21: a re-run
+// now finds 0 edits; the engine rule is tree.js isLinked, the checks are treelayout.js connectIssues) (LOCKED 2026-10-21 'Tree look +
 // connected-unlock rule'). NOTHING here writes game data: it patches an in-memory copy of the composed tree so scripts/tree-timeline.mjs
 // can model the rule, and prints the exact list of data edits a later build chunk would make.
 //

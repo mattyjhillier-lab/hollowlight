@@ -159,15 +159,16 @@ T('R16 no DOM sink exists anywhere in src (no innerHTML/outerHTML/insertAdjacent
   assert.deepEqual(hits.map((h) => h.replace(/\\/g, '/')), [], 'an HTML sink appeared: it must never receive save/import data');
 });
 
-T('R17 an import cannot bypass the graph: inert nodes, missing requires/requiresAny, rivals and teasers are dropped (same rules as v1)', () => {
+T('R17 an import cannot bypass the graph: inert nodes, missing weapon gates, rivals and teasers are dropped (links gate buying only since T3c)', () => {
   const forged = { ...Object.fromEntries(treeDef.pendingList.map((id) => [id, 1])), wf_third: 1, rv_oath: 1, ma_key: 1, li_glass: 1, tz_marsh: 1, tz_crown: 1 };
   const s = parseSave(JSON.stringify({ version: 3, gold: 0, stats: BIG_STATS, tree: forged })).save;
   assert.ok(!treeDef.pendingList.some((id) => s.tree[id]), 'no inert node');
-  assert.ok(!s.tree.wf_third && !s.tree.rv_oath, 'requires enforced');
+  assert.ok(s.tree.wf_third && !s.tree.rv_oath, 'connected-unlock rule: an unlinked owned lantern is kept (it gates buying), a lantern without its weapon gate is dropped');
   assert.ok(!(s.tree.ma_key && s.tree.li_glass) || !treeDef.nodes.ma_key.excludes.includes('li_glass'));
   assert.ok(!s.tree.tz_marsh && !s.tree.tz_crown, 'teasers');
   const v2 = compileTree(composeTree(readTreeFiles(), data).v2, data);
-  assert.equal(sanitizeTree({ gt_raven_flock: 1, rv_watch: 1 }, BIG_STATS, v2, data).rv_watch, undefined, 'requiresAny enforced');
+  assert.equal(sanitizeTree({ rv_watch: 1 }, BIG_STATS, v2, data).rv_watch, undefined, 'gate enforced on every requiresAny route');
+  assert.equal(sanitizeTree({ gt_raven_flock: 1, rv_watch: 1 }, BIG_STATS, v2, data).rv_watch, 1, 'gate owned: kept');
 });
 
 T('R18 sanitize is idempotent and the store round trip (save, load, export, import) is lossless for a full tree', () => {

@@ -1,0 +1,65 @@
+{
+ "_comment": "T3c connected-unlock patch (2026-10-21, docs/design/tree-connected-patch.md): ids whose requires changed (far root now hangs from its bridge; needs-all join became any-one) plus the new live bridge lantern. Positions are not part of the golden snapshot.",
+ "li_reach": {
+  "effects": [
+   {
+    "mod": "pickup",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 200,
+   "shards": 0
+  },
+  "rankCost": 1.5,
+  "maxRank": 4,
+  "requires": [
+   "br_satchel"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "sp_cd1": {
+  "effects": [
+   {
+    "mod": "abilityCd",
+    "pct": -10
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "sp_reroll1",
+   "sp_ban1"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "br_satchel": {
+  "effects": [
+   {
+    "perk": "gemPull",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 250,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "su_pot",
+   "li_coin"
+  ],
+  "excludes": [],
+  "unlock": null
+ }
+}

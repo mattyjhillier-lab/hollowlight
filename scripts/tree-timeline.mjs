@@ -10,12 +10,13 @@
 //   options: --players N  --runs N  --seed N  --json out.json  --presets out.json (snapshot saves for the tree-screen prototype)
 //   CONNECTED-UNLOCK analysis (LOCKED 2026-10-21; scripts/tree-connected-patch.mjs; docs/design/tree-connected-patch.md):
 //     --rule connected|today   connected (default) = the locked rule + its four exceptions on the dry-run patched tree; today = the old rules
-//     --price flat|depth|creep|both   depth = gold rises along depth (--k slope per step, total tree gold kept); creep = each stat buy raises
-//                                     the rest of its group by --creep (fraction, default 0.06; gates/options/keystones stay flat); both = depth + creep
+//     --price creep|flat|depth|both   creep (default, BUILT in T3c) = the engine's rising price (core.price.creep, 8%; --creep overrides): each
+//                                     purchase raises the rest of its group (gates/hearts/seals/masteries/keys/keystones stay flat); flat = no rise;
+//                                     depth = gold rises along depth (--k slope per step, total tree gold kept); both = depth + creep
 //     --econ 36k|1018          income calibration: 36k = bot measured 2026-10-21 with the Elder Treant at 36000 HP (default); 1018 = the old one
 //     --tiers live|proposal    tier rewards: live = src/data/tiers.json; proposal = TIER_PROPOSAL below
-//     --links directed|both    directed = today's one-way requires (a lantern opens only from its parent side); both = any linked
-//                              neighbour opens it (needs an engine change: gates keep one-way links, gated constellations still need their heart)
+//     --links both|directed    both (default, BUILT in T3c: tree.js isLinked) = any linked neighbour opens it; directed = the old one-way
+//                              requires, modelled on top of the engine for comparison only
 import { writeFileSync } from 'node:fs';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
 import { composeTree } from '../src/meta/treedata.js';
@@ -36,12 +37,12 @@ const safeOut = (p) => { if (p && (!/^[\w./\\:-]+\.json$/.test(p) || p.includes(
 const JSON_OUT = safeOut(val('--json', null));
 const PRESETS_OUT = safeOut(val('--presets', null));
 const RULE = val('--rule', 'connected') === 'today' ? 'today' : 'connected';
-const PRICE = ['flat', 'depth', 'creep', 'both'].includes(val('--price', 'flat')) ? val('--price', 'flat') : 'flat';
+const PRICE = ['flat', 'depth', 'creep', 'both'].includes(val('--price', 'creep')) ? val('--price', 'creep') : 'creep';
 const K = Math.max(0, Math.min(1, Number(val('--k', 0.12))));
-const CREEP = Math.max(0, Math.min(0.3, Number(val('--creep', 0.06))));
+const CREEP_ARG = val('--creep', null);
 const ECON = val('--econ', '36k') === '1018' ? '1018' : '36k';
 const TIERS = val('--tiers', 'live') === 'proposal' ? 'proposal' : 'live';
-const LINKS = val('--links', 'directed') === 'both' ? 'both' : 'directed'; // both = a link works in either direction (Matt's words: linked to ANY owned lantern)
+const LINKS = val('--links', 'both') === 'directed' ? 'directed' : 'both'; // both = a link works in either direction (Matt's words: linked to ANY owned lantern)
 
 // ------------------------------------------------------------------ calibration (MODEL; sources in the header)
 const CAL = {
@@ -62,7 +63,10 @@ const CAL = {
 // the full tree mostly earns more by living longer: loss gold 1,848-1,977 at ~11:00 vs 801-1,021 at ~7:40 starter). Deep Dusk full tree: win
 // 6% / 8%, win gold 2,466 / 3,039; Long Night full tree: win 6% / 0% (32 seeds). NOTE tiers.json goldMul is NOT applied anywhere in src today.
 const ECON36 = { goldWin: Number(process.env.GOLD_WIN || 2800), strongKit: Number(process.env.STRONG_KIT || 0.07) };
-const CALIB = val('--calib', 'measured') === 'model' ? 'model' : 'measured'; // measured = Deep Dusk / Long Night odds scaled to the bot sweep above
+const CALIB = val('--calib', 'measured') === 'model' ? 'model' : 'measured';
+// --ddwin W: the bot's measured full-tree Deep Dusk win rate (0..1); the model scales its hard-tier odds so a full tree + full skill wins W
+// (default 0.07 = the 1.45x HP measurement of 2026-10-21; T3c re-measure at 1.2x HP is in docs/LOCKED.md 'T3c BUILT')
+const DD_M = Math.max(0.01, Math.min(1.5, Number(val('--ddwin', 0.07)) / 0.35)); // measured = Deep Dusk / Long Night odds scaled to the bot sweep above
 if (ECON === '36k') Object.assign(CAL, ECON36);
 // tier rewards: live data or the proposal (gold multiplier, shards per boss, Dawnglass [boss, dawn, first clear, -, marked cap, run cap])
 const TIERS_LIVE = JSON.parse(readFileSync(new URL('../src/data/tiers.json', import.meta.url), 'utf8')).template;
@@ -77,7 +81,7 @@ const tierPay = (t) => {
 };
 // win odds (human model), calibrated to the locked bands: no-tree Twilight 15-30%; full tree 45-75%; Deep Dusk full 25-40 (+daybreak 35-55); Long Night 5-15 (+daybreak 15-30)
 function winP(tier, f, opts, skill, day) {
-  const m = CALIB !== 'measured' || tier === 'normal' ? 1 : tier === 'hard' ? 0.2 : 0.17; // full tree + full skill: hard 0.35 -> 0.07, expert 0.18 -> 0.03 (bot)
+  const m = CALIB !== 'measured' || tier === 'normal' ? 1 : tier === 'hard' ? DD_M : 0.17; // full tree + full skill: hard 0.35 -> 0.07 (Deep Dusk 1.45x HP), expert 0.18 -> 0.03 (bot)
   return m * winP0(tier, f, opts, skill, day);
 }
 function winP0(tier, f, opts, skill, day) {
@@ -111,6 +115,9 @@ const rawTree = LIVE ? composed.live : composed.v2;
 const patched = RULE === 'connected' ? connectedPatch(rawTree, composed.info, data) : null;
 const def = patched ? patched.def : compileTree(rawTree, data);
 const linkedHub = RULE === 'connected' ? makeConnected(def, composed.info) : () => true;
+// rising price lives in the engine now (nodeStatus / buy / respec read def.creep and save.creep): the model only picks the rate
+const CREEP = PRICE === 'creep' || PRICE === 'both' ? (CREEP_ARG !== null ? Math.max(0, Math.min(0.3, Number(CREEP_ARG))) : def.creep) : 0;
+def.creep = CREEP;
 const HEART = {}; for (const [w, c] of Object.entries(composed.info.clusters)) HEART[w] = c.heart;
 const nb = (id) => [...def.nodes[id].requires, ...(def.nodes[id].requiresAny || []), ...def.children[id]];
 const linked = (s, id) => {
@@ -120,24 +127,10 @@ const linked = (s, id) => {
   if (nb(id).some(own)) return true;
   return !n.requires.length && !n.requiresAny && linkedHub(s, id);
 };
-// status under the rule: with --links both, a lantern the engine calls 'locked' (parent side not owned) opens from a linked owned child
-function statusOf(s, id) {
-  const st = nodeStatus(def, s, id, data);
-  if (LINKS === 'both' && st.state === 'locked' && st.rank === 0 && !def.nodes[id].permanent && linked(s, id)) {
-    const open = !(st.cond && !st.cond.done);
-    return { ...st, state: open ? 'available' : 'condition', buyable: open };
-  }
-  return st;
-}
-function buyNode(s, id) {
-  const res = buy(s, id, def, data);
-  if (res.ok || LINKS !== 'both') return res;
-  const st = statusOf(s, id);
-  if (!st.buyable || !st.affordable) return res;
-  s.gold -= st.next.gold; s.shards -= st.next.shards; if (st.next.glass) s.dawnglass -= st.next.glass;
-  s.tree[id] = (s.tree[id] || 0) + 1;
-  return { ok: true };
-}
+// status and purchase are the engine's own (connected-unlock rule + rising price are built in tree.js); --links directed additionally holds
+// back lanterns not linked from their parent side (statusAll), for comparison only
+const statusOf = (s, id) => nodeStatus(def, s, id, data);
+const buyNode = (s, id) => buy(s, id, def, data);
 const IDS = def.list.filter((id) => !def.nodes[id].teaser);
 const W = Object.keys(composed.info.clusters).length;
 // depth = lanterns from the hub along the links (requires: deepest parent; requiresAny: nearest parent); a hub-linked lantern inside a
@@ -159,7 +152,6 @@ if (LINKS === 'both') { // undirected distance from the hub-linked entries
   for (let i = 0; i < q.length; i++) for (const x of nb(q[i])) if (DEPTH[x] === undefined) { DEPTH[x] = DEPTH[q[i]] + 1; q.push(x); }
 }
 const priced = (id) => !def.nodes[id].permanent && !def.nodes[id].teaser;
-const creepable = (id) => priced(id) && !def.nodes[id].keystone && !['heart', 'socket', 'gate', 'mastery', 'key'].includes(def.nodes[id].kind);
 const goldOfAll = (id, g) => { const n = def.nodes[id]; let t = 0; for (let r = 1; r <= n.maxRank; r++) t += Math.max(10, Math.round((g * Math.pow(n.rankCost, r - 1)) / 10) * 10); return t; };
 const BASE = Object.fromEntries(def.list.map((id) => [id, def.nodes[id].cost.gold]));
 if (PRICE === 'depth' || PRICE === 'both') {
@@ -194,9 +186,6 @@ const SIG = { wren: 'ghost_wolves', elias: 'holy_orbit' };
 const regionOf = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : n.region || 'rings'); };
 const REGIONS = {};
 for (const id of IDS) (REGIONS[regionOf(id)] ||= []).push(id);
-const creepGroup = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); }; // core rings creep per branch
-const CREEP_GROUPS = {};
-for (const id of IDS) (CREEP_GROUPS[creepGroup(id)] ||= []).push(id);
 const hasTiers = IDS.some((id) => tierOfGate[id]);
 // exclusive pairs (keystones): only one side can ever be owned, so 'everything' = all nodes minus the smaller side of each group
 const exclSeen = new Set(); let exclLost = 0;
@@ -364,7 +353,6 @@ function simulatePlayer(p) {
       }
       const res = buyNode(s, pick.id);
       if (!res.ok) break;
-      if ((PRICE === 'creep' || PRICE === 'both') && creepable(pick.id)) { const reg = creepGroup(pick.id); for (const x of CREEP_GROUPS[reg]) if (x !== pick.id && creepable(x) && !owned(s, x)) def.nodes[x].cost.gold = Math.round(def.nodes[x].cost.gold * (1 + CREEP)); }
       bought++; boughtIds.push(pick.id);
     }
     noBuy = bought ? 0 : noBuy + 1;

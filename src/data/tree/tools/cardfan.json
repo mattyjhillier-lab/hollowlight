@@ -32,7 +32,10 @@
      64.7,
      89
     ]
-   }
+   },
+   "requires": [
+    "br_cardfan"
+   ]
   },
   {
    "id": "cd_peek",
@@ -52,7 +55,7 @@
    "branch": "spirit",
    "inert": true,
    "requires": [
-    "sp_reroll2"
+    "br_cardfan"
    ],
    "unlock": {
     "t": "bestLevel",
@@ -90,7 +93,10 @@
      -64.7,
      89
     ]
-   }
+   },
+   "requires": [
+    "br_cardfan"
+   ]
   },
   {
    "id": "cd_radar",
@@ -117,7 +123,10 @@
      -104.6,
      34
     ]
-   }
+   },
+   "requires": [
+    "br_cardfan"
+   ]
   },
   {
    "id": "cd_favour",

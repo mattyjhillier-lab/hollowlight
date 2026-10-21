@@ -202,6 +202,12 @@
    "owners": [
     "nightgate"
    ]
+  },
+  "br": {
+   "kind": "ring",
+   "owners": [
+    "core"
+   ]
   }
  },
  "legacyIds": [
@@ -299,6 +305,9 @@
     "sustain": 0
    }
   }
+ },
+ "price": {
+  "creep": 0.08
  },
  "nodes": [
   {
@@ -423,7 +432,9 @@
    "cost": {
     "gold": 200
    },
-   "requires": [],
+   "requires": [
+    "br_satchel"
+   ],
    "effects": [
     {
      "mod": "pickup",
@@ -522,10 +533,6 @@
    "cost": {
     "gold": 300
    },
-   "requires": [
-    "sp_reroll1",
-    "sp_ban1"
-   ],
    "effects": [
     {
      "mod": "abilityCd",
@@ -535,7 +542,11 @@
    "place": {
     "ring": "hearth",
     "i": 9
-   }
+   },
+   "requiresAny": [
+    "sp_reroll1",
+    "sp_ban1"
+   ]
   },
   {
    "id": "sp_reroll2",
@@ -557,11 +568,8 @@
     }
    ],
    "place": {
-    "tool": "cardfan",
-    "at": [
-     0,
-     -110
-    ]
+    "ring": "wick",
+    "i": 0
    }
   },
   {
@@ -584,11 +592,8 @@
     }
    ],
    "place": {
-    "tool": "cardfan",
-    "at": [
-     64.7,
-     -89
-    ]
+    "ring": "wick",
+    "i": 1
    }
   },
   {
@@ -611,11 +616,8 @@
     }
    ],
    "place": {
-    "tool": "cardfan",
-    "at": [
-     104.6,
-     -34
-    ]
+    "ring": "wick",
+    "i": 3
    }
   },
   {
@@ -638,11 +640,8 @@
     }
    ],
    "place": {
-    "tool": "cardfan",
-    "at": [
-     104.6,
-     34
-    ]
+    "ring": "wick",
+    "i": 2
    }
   },
   {
@@ -763,10 +762,10 @@
     }
    ],
    "place": {
-    "tool": "hearthkey",
+    "near": "sp_cd2",
     "at": [
-     0,
-     -80
+     74,
+     -51
     ]
    },
    "unlock": {
@@ -824,11 +823,8 @@
     }
    ],
    "place": {
-    "tool": "satchel",
-    "at": [
-     0,
-     90
-    ]
+    "ring": "wick",
+    "i": 10
    }
   },
   {
@@ -851,11 +847,8 @@
     }
    ],
    "place": {
-    "tool": "satchel",
-    "at": [
-     -63.6,
-     63.6
-    ]
+    "ring": "hearth",
+    "i": 5
    }
   },
   {
@@ -882,11 +875,8 @@
     }
    ],
    "place": {
-    "tool": "satchel",
-    "at": [
-     -90,
-     0
-    ]
+    "ring": "wick",
+    "i": 14
    },
    "maxRank": 2,
    "rankCost": 1.4
@@ -1068,7 +1058,7 @@
    ],
    "place": {
     "ring": "wick",
-    "i": 18
+    "i": 8
    }
   },
   {
@@ -1119,7 +1109,7 @@
    ],
    "place": {
     "ring": "wick",
-    "i": 20
+    "i": 11
    }
   },
   {
@@ -1143,7 +1133,7 @@
    ],
    "place": {
     "ring": "wick",
-    "i": 21
+    "i": 12
    }
   },
   {
@@ -1166,8 +1156,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 22
+    "near": "ma_focus",
+    "at": [
+     53,
+     73
+    ]
    }
   },
   {
@@ -1191,8 +1184,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 23
+    "near": "ma_focus",
+    "at": [
+     -14,
+     89
+    ]
    }
   },
   {
@@ -1217,8 +1213,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 24
+    "near": "ma_attune",
+    "at": [
+     -85,
+     30
+    ]
    }
   },
   {
@@ -1241,8 +1240,11 @@
     }
    ],
    "place": {
-    "ring": "wick",
-    "i": 25
+    "near": "sp_dur",
+    "at": [
+     89,
+     11
+    ]
    }
   },
   {
@@ -1277,8 +1279,11 @@
    ],
    "keystone": true,
    "place": {
-    "ring": "dusk",
-    "i": 0
+    "near": "su_rush",
+    "at": [
+     42,
+     80
+    ]
    }
   },
   {
@@ -1313,8 +1318,11 @@
    ],
    "keystone": true,
    "place": {
-    "ring": "dusk",
-    "i": 1
+    "near": "ma_attune",
+    "at": [
+     99,
+     -68
+    ]
    }
   },
   {
@@ -1351,8 +1359,11 @@
    ],
    "keystone": true,
    "place": {
-    "ring": "dusk",
-    "i": 2
+    "near": "li_hearts",
+    "at": [
+     60,
+     67
+    ]
    }
   },
   {
@@ -1385,8 +1396,11 @@
    ],
    "keystone": true,
    "place": {
-    "ring": "dusk",
-    "i": 3
+    "near": "li_magnet",
+    "at": [
+     -21,
+     87
+    ]
    }
   },
   {
@@ -1415,10 +1429,10 @@
     "id": "cursed_forest"
    },
    "place": {
-    "tool": "hearthkey",
+    "near": "li_regen",
     "at": [
-     -69.3,
-     40
+     74,
+     51
     ]
    }
   },
@@ -1448,8 +1462,11 @@
     "id": "elder_treant"
    },
    "place": {
-    "ring": "dusk",
-    "i": 5
+    "near": "li_last",
+    "at": [
+     74,
+     51
+    ]
    }
   },
   {
@@ -1488,8 +1505,11 @@
     ]
    },
    "place": {
-    "ring": "dusk",
-    "i": 6
+    "near": "sp_edge",
+    "at": [
+     89,
+     11
+    ]
    }
   },
   {
@@ -1518,8 +1538,11 @@
     "n": 3
    },
    "place": {
-    "ring": "dusk",
-    "i": 7
+    "near": "ma_pow3",
+    "at": [
+     -86,
+     -27
+    ]
    }
   },
   {
@@ -1548,8 +1571,11 @@
    },
    "hidden": true,
    "place": {
-    "ring": "dusk",
-    "i": 8
+    "near": "li_vow",
+    "at": [
+     -60,
+     67
+    ]
    }
   },
   {
@@ -1624,6 +1650,109 @@
     "ring": "fog",
     "i": 2
    }
+  },
+  {
+   "id": "br_satchel",
+   "idx": 48,
+   "kind": "ring",
+   "name": "Satchel Path",
+   "desc": "Lights the path to The Satchel. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "su_pot",
+    "li_coin"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 7
+   }
+  },
+  {
+   "id": "br_almanac",
+   "idx": 49,
+   "kind": "ring",
+   "name": "Almanac Path",
+   "desc": "Lights the path to The Almanac. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "ma_cast",
+    "su_rush"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 10
+   },
+   "inert": true
+  },
+  {
+   "id": "br_cardfan",
+   "idx": 50,
+   "kind": "ring",
+   "name": "Card Fan Path",
+   "desc": "Lights the path to The Card Fan. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "sp_cd3",
+    "sp_cd4"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 2
+   },
+   "inert": true
+  },
+  {
+   "id": "br_hearthkey",
+   "idx": 51,
+   "kind": "ring",
+   "name": "Hearth-key Path",
+   "desc": "Lights the path to The Hearth-key. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "li_regen",
+    "li_coin"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 5
+   },
+   "inert": true
   }
  ]
 }

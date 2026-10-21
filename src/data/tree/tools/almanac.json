@@ -33,7 +33,10 @@
      0,
      -130
     ]
-   }
+   },
+   "requires": [
+    "br_almanac"
+   ]
   },
   {
    "id": "bs_wolf2",
@@ -126,7 +129,10 @@
      130,
      0
     ]
-   }
+   },
+   "requires": [
+    "br_almanac"
+   ]
   },
   {
    "id": "bs_crow2",
@@ -219,7 +225,10 @@
      0,
      130
     ]
-   }
+   },
+   "requires": [
+    "br_almanac"
+   ]
   },
   {
    "id": "bs_crawl2",
@@ -312,7 +321,10 @@
      -130,
      0
     ]
-   }
+   },
+   "requires": [
+    "br_almanac"
+   ]
   },
   {
    "id": "bs_treant2",
@@ -400,12 +412,6 @@
    ],
    "branch": "spirit",
    "inert": true,
-   "requires": [
-    "bs_wolf1",
-    "bs_crow1",
-    "bs_crawl1",
-    "bs_treant1"
-   ],
    "unlock": {
     "t": "all",
     "of": [
@@ -436,7 +442,13 @@
      0,
      0
     ]
-   }
+   },
+   "requiresAny": [
+    "bs_wolf1",
+    "bs_crow1",
+    "bs_crawl1",
+    "bs_treant1"
+   ]
   }
  ]
 }

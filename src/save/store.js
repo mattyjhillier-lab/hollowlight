@@ -155,7 +155,7 @@ export class SaveStore {
     const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);
     this.keptRaw = this.readOnly ? this.keptRaw : null;
     this.saveNow();
-    return { gold: this.data.gold, shards: this.data.shards, dawnglass: this.data.dawnglass, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet, tier };
+    return { gold: this.data.gold, shards: this.data.shards, dawnglass: this.data.dawnglass, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet, tier, runGold: pos(r.gold) + (tier ? tier.goldBonus : 0) };
   }
 
   exportText() { if (this.keptRaw !== null) return this.keptRaw; return JSON.stringify(serializeSave(this.data), null, 2); }

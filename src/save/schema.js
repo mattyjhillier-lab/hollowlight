@@ -1,5 +1,5 @@
 // Save schema, migrations and strict validation. Pure JS, no DOM. All input is untrusted.
-import { sanitizeTree, sanitizeSeen } from '../meta/tree.js';
+import { sanitizeTree, sanitizeSeen, sanitizeCreep } from '../meta/tree.js';
 import { encodeTree, decodeTree, decodeTreeRaw, encodeSeen, decodeSeen, isCompact } from '../meta/treecodec.js';
 import { OLD_TREE_VERSION, runTreeSteps } from '../meta/migrations/index.js';
 import { BRIGHTNESS_STORED } from '../gfx/arc.js';
@@ -37,6 +37,7 @@ export function defaultSave(now = Date.now()) {
     stats: defaultStats(),
     unlocks: {},
     tree: {},
+    creep: {}, // rising-price steps per owned lantern ({id: steps}; src/meta/tree.js creepSteps): refunds pay back exactly what was paid
     seen: {},
     notes: {},
     settings: defaultSettings(),
@@ -190,7 +191,7 @@ export function sanitize(raw, now = Date.now()) {
   const refund = { gold: 0, shards: 0 };
   const treeIn = isCompact(raw.tree) ? decodeTree(raw.tree, TREE).tree : raw.tree;
   const seenIn = isCompact(raw.seen) ? decodeSeen(raw.seen, TREE) : raw.seen;
-  const tree = TREE ? sanitizeTree(treeIn, stats, TREE, TREE_DATA, refund) : {};
+  const tree = TREE ? sanitizeTree(treeIn, stats, TREE, TREE_DATA, refund, raw.creep) : {};
   return {
     version: SAVE_VERSION,
     createdAt: created,
@@ -201,6 +202,7 @@ export function sanitize(raw, now = Date.now()) {
     stats,
     unlocks: cleanMap(raw.unlocks),
     tree,
+    creep: TREE ? sanitizeCreep(raw.creep, tree, TREE) : {},
     seen: TREE ? sanitizeSeen(seenIn, TREE) : {},
     notes: notesOf(raw.notes),
     settings: {

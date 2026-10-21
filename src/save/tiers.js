@@ -60,10 +60,12 @@ const heroesOf = (data) => Object.keys(data.characters).filter((h) => !data.char
 
 // Fold one finished run into the save's tier records and pay the first-dawn bounty. `r` is the sim's run result (trusted shape, still
 // clamped here). `ctx` = { data, unlockedTiers?: ['chapter:tier'] }. A tier the save has not opened (gate not owned) is recorded as Twilight,
-// so a forged or debug tier id can never mint Dawnglass. Returns { tier, glass, shards, firstDawn, stars }.
+// so a forged or debug tier id can never mint Dawnglass or bonus gold. Returns { tier, glass, shards, firstDawn, stars, goldBonus }.
+// goldBonus: the tier's gold multiplier (tiers.json goldMul: Deep Dusk 1.5, Long Night 2.0) applied to the run's gold here, where it is banked
+// (bankRun has already added r.gold once; the bonus is the extra share). Twilight pays no bonus.
 export function recordTierRun(save, r, ctx) {
   const data = ctx && ctx.data;
-  const none = { tier: 'normal', glass: 0, shards: 0, firstDawn: false, stars: 0 };
+  const none = { tier: 'normal', glass: 0, shards: 0, firstDawn: false, stars: 0, goldBonus: 0 };
   if (!data || !isObj(data.chapters) || !isObj(data.characters) || !isObj(save) || !isObj(save.stats) || !isObj(r)) return none;
   const cid = typeof r.chapter === 'string' && own(data.chapters, r.chapter) ? r.chapter : null;
   if (!cid) return none;
@@ -77,7 +79,13 @@ export function recordTierRun(save, r, ctx) {
   const rec = own(ch, tid) && isObj(ch[tid]) ? ch[tid] : (ch[tid] = emptyTier());
   const won = r.outcome === 'victory';
   rec.runs = num(rec.runs, 0, 1e9) + 1;
-  const out = { tier: tid, glass: 0, shards: 0, firstDawn: false, stars: rec.stars | 0 };
+  const out = { tier: tid, glass: 0, shards: 0, firstDawn: false, stars: rec.stars | 0, goldBonus: 0 };
+  if (tid !== 'normal') {
+    const mul = resolveTier(data.tiers, cid, tid).goldMul; // validated 1..5 by validateTiers
+    out.goldBonus = Math.max(0, Math.floor(num(r.gold, 0, 1e9) * (mul - 1)));
+    save.gold = Math.min(1e12, num(save.gold, 0, 1e12) + out.goldBonus);
+    save.stats.totalGold = Math.min(1e12, num(save.stats.totalGold, 0, 1e12) + out.goldBonus);
+  }
   rec.best = isObj(rec.best) ? rec.best : { t: 0, kills: 0, level: 0 };
   rec.best.t = Math.max(num(rec.best.t, 0, 1e7), num(r.time, 0, 1e7));
   rec.best.kills = Math.max(num(rec.best.kills, 0, 1e9), num(r.kills, 0, 1e9));

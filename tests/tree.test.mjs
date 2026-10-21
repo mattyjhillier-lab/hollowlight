@@ -140,13 +140,15 @@ test('respec refunds everything for free and clears the tree', () => {
   const s = defaultSave();
   s.gold = 5000; s.shards = 3;
   ownedPath(s, ['sp_reroll1', 'sp_ban1', 'su_bond', 'su_pot']);
-  const spent = spentOf(s.tree, def);
+  const spent = spentOf(s.tree, def, s.creep); // rising price: what was actually paid
+  assert.ok(spent.gold > spentOf(s.tree, def).gold, 'su_pot was bought after su_bond in the Summoner ring, so it cost one rising-price step more');
   const goldAfter = s.gold;
   const out = respec(s, def);
   assert.deepEqual(out, spent);
   assert.equal(s.gold, goldAfter + spent.gold);
   assert.equal(s.gold, 5000);
   assert.deepEqual(s.tree, {});
+  assert.deepEqual(s.creep, {}, 'price steps cleared with the tree');
   respec(s, def);
   assert.equal(s.gold, 5000, 'second respec refunds nothing');
 });
@@ -161,10 +163,11 @@ test('sanitizeTree: unknown ids, junk, huge/negative ranks, prerequisite and con
   assert.equal(t.su_bond, undefined, 'string rank dropped');
   assert.equal(t.li_vigor, 1, 'fractional floored');
   assert.equal(t.nope, undefined);
-  assert.equal(t.sp_cd1, undefined, 'needs sp_ban1 too, which was negative');
-  assert.equal(t.sp_cd3, undefined, 'missing prerequisite sp_cd2');
-  assert.equal(t.wf_third, undefined, 'missing prereqs and unmet kill condition');
-  assert.equal(t.li_last, undefined, 'chapter not cleared');
+  // connected-unlock rule (2026-10-21): links and conditions gate BUYING only; an owned lantern is never dropped for them
+  assert.equal(t.sp_cd1, 1, 'kept: links gate buying, not owning');
+  assert.equal(t.sp_cd3, 1, 'kept although sp_cd2 is not owned');
+  assert.equal(t.wf_third, 1, 'kept: starter constellation, no gate missing');
+  assert.equal(t.li_last, 1, 'kept: conditions gate buying only');
   assert.equal(t.tz_marsh, undefined, 'teaser');
   assert.equal(t.ma_focus, 1, 'huge rank clamped to max');
   assert.equal(Object.getPrototypeOf(t), Object.prototype);

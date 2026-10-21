@@ -57,3 +57,48 @@ export function layoutIssues(info, def) {
   }
   return issues;
 }
+
+// CONNECTED-UNLOCK RULE checks (LOCKED 2026-10-21 'Tree look + connected-unlock rule'; engine: tree.js isLinked). Run on the LIVE tree by
+// tree-validate and npm test (a group that is still inert is reported by the caller as pending, and must pass before it goes live).
+//  1. a hub-linked lantern touches the lit hub: Hearth/Wick distance, or an accepted exception (weapon hearts, tier/hero gates = permanent;
+//     constellation and hero lanterns = their own heart rule E1-E3); anything further needs its group's gold-only bridge (E4)
+//  2. no far link (> LINK_FAR) except a bridge's own path trail
+//  3. no group whose only ways in are challenges (every challenge lantern needs a gold-only sibling route), and no bridge that leads only to
+//     challenges (250 gold spent into nothing)
+export const NEAR_HUB = 360; // hearth (150) + wick (300) rings + 60
+export const LINK_FAR = 350;
+const isBridge = (id) => id.startsWith('br_');
+export function connectIssues(info, def) {
+  const issues = [];
+  const toolOf = Object.create(null);
+  for (const n of info.nodes) if (n.tool) toolOf[n.id] = n.tool;
+  const groupOf = (id) => toolOf[id] || (def.nodes[id].cluster ? `cluster:${def.nodes[id].cluster}` : 'rings');
+  const challenge = (id) => !!def.nodes[id].unlock && !def.nodes[id].permanent;
+  for (const id of def.list) {
+    const n = def.nodes[id];
+    if (n.teaser || n.requires.length || n.requiresAny) continue;
+    const d = Math.hypot(n.x, n.y);
+    if (!n.permanent && !n.cluster && d > NEAR_HUB) issues.push(`${id} hangs from the hub ${Math.round(d)} units away: hang its group from one gold-only bridge lantern`);
+  }
+  for (const e of def.edges) {
+    if (e.from === 'hub' || isBridge(e.from) || isBridge(e.to) || def.nodes[e.to].teaser) continue;
+    const a = def.nodes[e.from], b = def.nodes[e.to];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d > LINK_FAR) issues.push(`${e.from} -> ${e.to} is a far link (${Math.round(d)} > ${LINK_FAR}): move the lantern beside its parent`);
+  }
+  const entries = Object.create(null);
+  for (const id of def.list) {
+    const n = def.nodes[id];
+    if (n.teaser) continue;
+    const g = groupOf(id);
+    const outside = !n.requires.length && !n.requiresAny ? true : [...n.requires, ...(n.requiresAny || []), ...def.children[id]].some((x) => !def.nodes[x].teaser && groupOf(x) !== g);
+    if (outside) (entries[g] || (entries[g] = [])).push(id);
+  }
+  for (const [g, ids] of Object.entries(entries)) if (ids.every(challenge)) issues.push(`group ${g}: every way in is a challenge (${ids.join(', ')}): give it a gold-only lantern`);
+  for (const id of def.list) {
+    if (!isBridge(id)) continue;
+    const kids = def.children[id].filter((k) => !def.nodes[k].teaser);
+    if (!kids.length || kids.every(challenge)) issues.push(`bridge ${id} leads only to challenges (${kids.join(', ') || 'nothing'})`);
+  }
+  return issues;
+}

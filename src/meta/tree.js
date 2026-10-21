@@ -429,8 +429,25 @@ export function compileTree(raw, data) {
   }
   const rule = isObj(raw.budget) ? raw.budget : null; // the budget RULE (core.budget): aggregateMods applies its soft caps
   const treeVersion = Number.isInteger(raw.treeVersion) && raw.treeVersion >= 3 && raw.treeVersion <= 99 ? raw.treeVersion : 3; // content version the compact save is written with (migrations/index.js)
-  return { version: 1, treeVersion, rule, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags, retiredIds };
+  // CONNECTED-UNLOCK RULE (LOCKED 2026-10-21): each constellation's heart (its weapon gate). Seals, hero lanterns and every other lantern of
+  // a gated constellation open only once its heart is lit (E1/E2); a starter constellation has no heart and counts as lit (E3).
+  const hearts = Object.create(null);
+  for (const id of list) { const n = nodes[id]; if (n.cluster && n.permanent && n.effects.some((e) => isObj(e) && e.unlock === 'weapon')) hearts[n.cluster] = id; }
+  // RISING PRICE (LOCKED 2026-10-21 'Tree economy'): each purchase in a group raises that group's remaining prices by `creep` (core.price.creep).
+  // Group = constellation, tool fragment, or core ring branch. Gates, hearts, seals, masteries, keys and keystones stay flat.
+  const creep = isObj(raw.price) && fin(raw.price.creep) && raw.price.creep >= 0 && raw.price.creep <= 0.3 ? raw.price.creep : 0;
+  const cgroup = Object.create(null);
+  const cmembers = Object.create(null);
+  for (const id of list) {
+    const n = nodes[id];
+    if (n.permanent || n.teaser || n.keystone || CREEP_FLAT.includes(n.kind)) continue;
+    const g = n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`);
+    cgroup[id] = g;
+    (cmembers[g] || (cmembers[g] = [])).push(id);
+  }
+  return { version: 1, treeVersion, rule, nodes, list, order, edges, branches, cells, children, evoWeapon, ringStep, minGap, cell: CELL, pending, pendingList, frags, retiredIds, hearts, creep, cgroup, cmembers };
 }
+const CREEP_FLAT = ['heart', 'socket', 'gate', 'mastery', 'key'];
 
 function checkEffect(e, data, where) {
   if (!isObj(e)) fail(`${where}: bad effect`);
@@ -503,21 +520,56 @@ function checkEffect(e, data, where) {
 }
 
 // ---------------------------------------------------------------- costs
-export function costFor(node, rank) {
+// steps = rising-price steps (purchases already made in the node's group when it was first bought); 0 = the base price.
+export function costFor(node, rank, steps = 0, creep = 0) {
   const g = node.cost.gold;
-  const gold = g === 0 ? 0 : Math.max(10, Math.round((g * Math.pow(node.rankCost, rank - 1)) / 10) * 10);
+  const m = steps > 0 && creep > 0 ? Math.pow(1 + creep, steps) : 1;
+  const gold = g === 0 ? 0 : Math.max(10, Math.round((g * Math.pow(node.rankCost, rank - 1) * m) / 10) * 10);
   return { gold, shards: node.cost.shards, glass: node.cost.glass || 0 };
 }
 
-export function spentOf(tree, def) {
+// Purchases made so far in a node's price group, not counting the node itself (the most rising-price steps it can have).
+export function creepCount(def, tree, id) {
+  const g = def.cgroup && def.cgroup[id];
+  if (!g || !def.creep) return 0;
+  let c = 0;
+  for (const x of def.cmembers[g]) if (x !== id) c += Math.min(def.nodes[x].maxRank, Math.max(0, Math.floor(rankOf(tree, x))));
+  return c;
+}
+// Steps a node is priced at: an unowned node at the group's purchases so far; an owned one at what was stored when it was first bought
+// (save.creep; bounded by the purchases still owned, so a forged value can never price above what was legally possible).
+export function creepSteps(def, save, id) {
+  const tree = (save && save.tree) || {};
+  const max = creepCount(def, tree, id);
+  if (rankOf(tree, id) < 1) return max;
+  const c = save && isObj(save.creep) && own(save.creep, id) ? save.creep[id] : 0;
+  return Math.min(max, clampInt(c, 0, 1e4));
+}
+
+// Gold actually paid for the owned ranks. creep = the save's stored price steps ({id: steps}, see creepSteps); null = base prices.
+export function spentOf(tree, def, creep = null) {
   let gold = 0;
   let shards = 0;
   let glass = 0;
+  const save = { tree, creep };
   for (const id of def.list) {
     const r = Math.min(def.nodes[id].maxRank, Math.max(0, Math.floor(rankOf(tree, id))));
-    for (let k = 1; k <= r; k++) { const c = costFor(def.nodes[id], k); gold += c.gold; shards += c.shards; glass += c.glass; }
+    const st = r > 0 && creep ? creepSteps(def, save, id) : 0;
+    for (let k = 1; k <= r; k++) { const c = costFor(def.nodes[id], k, st, def.creep); gold += c.gold; shards += c.shards; glass += c.glass; }
   }
   return { gold, shards, glass };
+}
+
+// Untrusted save.creep -> clean {id: steps}: known, owned, rising-price nodes only; steps an integer 1..purchases still owned in the group.
+export function sanitizeCreep(raw, tree, def) {
+  const out = {};
+  if (!def || !isObj(raw) || !isObj(tree)) return out;
+  for (const id of def.list) {
+    if (!own(raw, id) || !own(tree, id) || !(def.cgroup && def.cgroup[id])) continue;
+    const s = Math.min(clampInt(raw[id], 0, 1e4), creepCount(def, tree, id));
+    if (s >= 1) out[id] = s;
+  }
+  return out;
 }
 
 export function totalCost(def) {
@@ -528,7 +580,6 @@ export function totalCost(def) {
 
 // ---------------------------------------------------------------- state
 const rankOf = (tree, id) => (tree && own(tree, id) && fin(tree[id]) ? tree[id] : 0);
-const stJoin = (a) => a.join(', ');
 
 // First unowned gate among a node's ancestors, or null.
 function lockedGate(def, tree, id) {
@@ -542,7 +593,29 @@ function gateLockText(def, gid, data) {
   return `Locked: unlock ${data && data.weapons && own(data.weapons, e.id) ? data.weapons[e.id].name : pretty(e.id)} first`;
 }
 
-// state: owned | available | locked (prerequisites) | condition | excluded | teaser
+// Linked lanterns (either direction): parents (requires / requiresAny) and children, teasers left out.
+function neighbours(def, id) {
+  const n = def.nodes[id];
+  const out = [];
+  for (const x of [...n.requires, ...(n.requiresAny || []), ...(def.children[id] || [])]) if (!out.includes(x) && !def.nodes[x].teaser) out.push(x);
+  return out;
+}
+// CONNECTED-UNLOCK RULE (LOCKED 2026-10-21 'Tree look + connected-unlock rule'): a lantern opens when it is directly linked to ANY owned
+// lantern; links work from EITHER side. Hub-linked lanterns touch the lit hub (scripts/tree-validate + connectIssues keep those to the
+// Hearth/Wick rings and the accepted exceptions: weapon hearts and tier/hero gates are hub challenges (E1); a far group hangs from one
+// gold-only bridge (E4)). Inside a gated constellation everything but the heart waits for the heart (E2: seals open once the spirit is woken);
+// a starter constellation has no heart and counts as lit (E3). Gate ancestors are checked separately (lockedGate), so gated content still
+// needs its gate on every route. Conditions are checked after this, by the caller.
+export function isLinked(def, tree, id) {
+  const n = def.nodes[id];
+  const h = n.cluster && def.hearts ? def.hearts[n.cluster] : null;
+  if (h && h !== id && rankOf(tree, h) < 1) return false;
+  if (!n.requires.length && !n.requiresAny) return true;
+  for (const x of neighbours(def, id)) if (rankOf(tree, x) >= 1) return true;
+  return false;
+}
+
+// state: owned | available | locked (not linked to an owned lantern, or its gate is not owned) | condition | excluded | teaser
 export function nodeStatus(def, save, id, data) {
   const n = def.nodes[id];
   const tree = save.tree || {};
@@ -550,20 +623,22 @@ export function nodeStatus(def, save, id, data) {
   const out = { id, rank, max: n.maxRank, state: 'available', reason: null, cond: null, affordable: false, cost: null, next: null, buyable: false };
   if (n.unlock) out.cond = conditionProgress(n.unlock, save.stats, def, data);
   if (rank >= n.maxRank) { out.state = 'owned'; return out; }
-  out.next = costFor(n, rank + 1);
+  out.next = costFor(n, rank + 1, creepSteps(def, save, id), def.creep); // the price shown is the price paid (rising price included)
   out.affordable = (save.gold || 0) >= out.next.gold && (save.shards || 0) >= out.next.shards && (save.dawnglass || 0) >= out.next.glass;
   if (n.teaser) { out.state = 'teaser'; out.reason = 'Not yet discoverable.'; return out; }
   if (rank === 0) {
     const rival = n.excludes.find((x) => rankOf(tree, x) > 0);
     if (rival) { out.state = 'excluded'; out.reason = `Closed by ${def.nodes[rival].name}.`; return out; }
-    const miss = n.requires.filter((r) => rankOf(tree, r) < 1);
-    const anyMiss = n.requiresAny && !n.requiresAny.some((r) => rankOf(tree, r) >= 1);
-    if (miss.length || anyMiss) {
+    const gm = lockedGate(def, tree, id);
+    if (gm || !isLinked(def, tree, id)) {
       out.state = 'locked';
-      const gm = lockedGate(def, tree, id);
-      const parts = miss.map((m) => def.nodes[m].name);
-      if (anyMiss) parts.push(`one of ${n.requiresAny.map((m) => def.nodes[m].name).join(' or ')}`);
-      out.reason = gm ? gateLockText(def, gm, data) : `Requires ${stJoin(parts)}.`;
+      if (gm) out.reason = gateLockText(def, gm, data);
+      else {
+        const h = n.cluster && def.hearts ? def.hearts[n.cluster] : null;
+        const nb = h && h !== id && rankOf(tree, h) < 1 ? [h] : neighbours(def, id);
+        const names = nb.slice(0, 3).map((m) => def.nodes[m].name);
+        out.reason = names.length === 1 ? `Requires ${names[0]}.` : `Requires one of ${names.join(' or ')}${nb.length > 3 ? ' or another linked lantern' : ''}.`;
+      }
       return out;
     }
     if (out.cond && !out.cond.done) { out.state = 'condition'; out.reason = 'Unlock condition not met.'; return out; }
@@ -588,14 +663,19 @@ export function buy(save, id, def, data) {
   if (!c.ok) return c;
   if (!isObj(save.tree) || Object.getPrototypeOf(save.tree) !== Object.prototype) save.tree = {};
   const rank = rankOf(save.tree, id) + 1;
+  const steps = rank === 1 ? creepCount(def, save.tree, id) : 0;
   save.gold -= c.cost.gold;
   save.shards -= c.cost.shards;
   if (c.cost.glass) save.dawnglass = (save.dawnglass || 0) - c.cost.glass;
   save.tree[id] = rank;
+  if (steps > 0) { // remember the price step it was bought at: its later ranks and its refund use exactly what was paid
+    if (!isObj(save.creep) || Object.getPrototypeOf(save.creep) !== Object.prototype) save.creep = {};
+    save.creep[id] = steps;
+  }
   return { ok: true, cost: c.cost, rank };
 }
 
-// v1 respec: free and total. Refund = cost recomputed from the owned nodes (never a stored total).
+// v1 respec: free and total. Refund = cost recomputed from the owned nodes and their stored price steps (exactly what was paid).
 export function respec(save, def) {
   // Unlock nodes (weapon/evolution/hero gates) are permanent: kept, never refunded.
   const kept = {};
@@ -607,11 +687,13 @@ export function respec(save, def) {
       if (def.nodes[id].permanent) kept[id] = r; else refundable[id] = r;
     }
   }
-  const spent = spentOf(refundable, def);
+  // every rising-price node is refundable (gates stay flat), so the stored steps are bounded by the same purchases as when they were paid
+  const spent = spentOf(refundable, def, isObj(save.creep) ? save.creep : null);
   save.gold = Math.min(1e12, (save.gold || 0) + spent.gold);
   save.shards = Math.min(1e12, (save.shards || 0) + spent.shards);
   if (spent.glass) save.dawnglass = Math.min(1e9, (save.dawnglass || 0) + spent.glass);
   save.tree = kept;
+  if (save.creep !== undefined) save.creep = {};
   return spent;
 }
 
@@ -619,34 +701,41 @@ export function respec(save, def) {
 // rival (excluded) nodes, teasers and unmet unlock conditions are dropped. Parents are processed first.
 // Optional `refund` ({gold, shards}) is filled for owned nodes dropped ONLY because their unlock gate is
 // not owned (saves from before the gate-dependency rule): spent gold is never silently lost.
-export function sanitizeTree(rawTree, stats, def, data, refund = null) {
+// rawCreep = the save's untrusted price steps: a refund pays back what the dropped node cost (bounded like sanitizeCreep).
+export function sanitizeTree(rawTree, stats, def, data, refund = null, rawCreep = null) {
   const clean = {};
   if (!def || !isObj(rawTree)) return clean;
-  const refunded = new Set();
+  let steps = null; // the raw save's price steps, bounded against its own (clamped) purchases; read only when a refund is due
   for (const id of def.order) {
     if (!own(rawTree, id)) continue;
     const n = def.nodes[id];
     const rank = clampInt(rawTree[id], 0, n.maxRank);
     if (rank < 1 || n.teaser) continue;
     if (n.excludes.some((r) => own(clean, r))) continue;
-    // Unlock conditions gate BUYING (canBuy / nodeStatus), not owning: a node already paid for is never dropped here when its condition
-    // later gets stricter or a stat regresses (gates stay permanent; the cost was paid). Graph rules below still apply.
-    const missing = n.requires.filter((r) => !own(clean, r));
-    if (n.requiresAny && !n.requiresAny.some((r) => own(clean, r))) missing.push(...n.requiresAny); // at least one alternative must be owned
-    if (missing.length) {
-      // gate-only breakage: every missing prerequisite is an unowned gate node or a node refunded for that reason
-      if (refund && missing.every((r) => refunded.has(r) || def.nodes[r].permanent)) {
-        refunded.add(id);
-        const c = spentOf({ [id]: rank }, def);
-        refund.gold = (refund.gold || 0) + c.gold;
-        refund.shards = (refund.shards || 0) + c.shards;
-        refund.glass = (refund.glass || 0) + c.glass;
+    // Unlock conditions AND links gate BUYING (canBuy / nodeStatus), not owning (connected-unlock rule 2026-10-21): a node already paid for is
+    // never dropped here when its condition gets stricter, a stat regresses or the data re-links it (gates keep requires [] and are never
+    // dropped). Only a node whose weapon/evolution GATE is not owned is dropped, with a full refund (pre-gate saves; hostile imports).
+    if ((n.gateAnc || []).some((g) => !own(clean, g))) {
+      if (refund) {
+        if (steps === null) steps = isObj(rawCreep) ? sanitizeCreep(rawCreep, rawTreeClamped(rawTree, def), def) : {};
+        const st = own(steps, id) ? steps[id] : 0;
+        for (let k = 1; k <= rank; k++) {
+          const c = costFor(n, k, st, def.creep);
+          refund.gold = (refund.gold || 0) + c.gold;
+          refund.shards = (refund.shards || 0) + c.shards;
+          refund.glass = (refund.glass || 0) + c.glass;
+        }
       }
       continue;
     }
     clean[id] = rank;
   }
   return clean;
+}
+function rawTreeClamped(rawTree, def) {
+  const o = {};
+  for (const id of def.list) if (own(rawTree, id)) { const r = clampInt(rawTree[id], 0, def.nodes[id].maxRank); if (r > 0) o[id] = r; }
+  return o;
 }
 
 // ---------------------------------------------------------------- effects

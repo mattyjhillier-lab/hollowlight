@@ -27,14 +27,16 @@ const W = Object.keys(real.info.clusters).length;
 // ---------------------------------------------------------------- live tree == the v2 rescale (T3a)
 const GOLD = fx('tree-v2-rescale.json'); // Appendix A of skill-tree-v2.md (T3a)
 const MOVED = fx('tree-t3b-moved.json'); // the four existing ids the tool-cluster build changed afterwards (Satchel steps, Kinder Hearts, Lodestar)
+const T3C = fx('tree-t3c-connected.json'); // T3c connected-unlock patch: li_reach hangs from its bridge, sp_cd1 needs-all -> any-one, + the live bridge br_satchel
 const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df'];
 const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
 
 test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ranks / requires / condition skill-tree-v2 Appendix A specifies', () => {
-  for (const id of Object.keys(GOLD)) assert.deepEqual(snap(liveDef.nodes[id]), MOVED[id] || GOLD[id], id);
+  for (const id of Object.keys(GOLD)) assert.deepEqual(snap(liveDef.nodes[id]), T3C[id] || MOVED[id] || GOLD[id], id);
+  for (const id of Object.keys(T3C)) if (id !== '_comment') assert.deepEqual(snap(liveDef.nodes[id]), T3C[id], `T3c ${id}`);
   for (const id of Object.keys(MOVED)) assert.ok(Object.hasOwn(GOLD, id), `${id} is a pre-existing id`);
   // every other live node is a tool-cluster lantern (its own fragment): covered by tests/t3b.test.mjs
-  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
+  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
 });
 
 test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids; the live tree IS the v2 view', () => {
@@ -113,7 +115,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 156);
+  assert.equal(real.info.nodes.length, 160, '156 + the four T3c bridge lanterns (one live, three inert with their groups)');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);
@@ -145,7 +147,8 @@ test('T1 requiresAny: a route that skips the gate fails compile; sanitiser, stat
   assert.match(nodeStatus(g, { tree: { gt_raven_flock: 1 }, stats }, 'rv_watch', data).reason, /one of/);
   const clean = sanitizeTree({ ...own, rv_watch: 1 }, stats, g, data);
   assert.equal(clean.rv_watch, 1);
-  assert.equal(sanitizeTree({ gt_raven_flock: 1, rv_watch: 1 }, stats, g, data).rv_watch, undefined, 'apex without either neighbour is dropped');
+  assert.equal(sanitizeTree({ gt_raven_flock: 1, rv_watch: 1 }, stats, g, data).rv_watch, 1, 'connected-unlock rule: links gate BUYING only, an owned apex is kept');
+  assert.equal(sanitizeTree({ rv_watch: 1 }, stats, g, data).rv_watch, undefined, 'without its weapon gate it is still dropped');
   const p = pathToHub(g, 'rv_watch', own);
   assert.ok(p.ids.has('rv_eye') && !p.ids.has('rv_beat'), 'path prefers the owned side');
 });
@@ -167,7 +170,7 @@ const budgetOfFiles = (fs, d = data) => {
   const def = compileTree(c.v2, d);
   return budgetOf(def, c.info.core.budget, Object.keys(c.info.clusters).length);
 };
-const ringNode = (over = {}) => ({ id: 'li_zz', idx: 48, kind: 'ring', inert: true, name: 'Test', desc: 'Test node', cost: { gold: 100 }, place: { ring: 'dusk', i: 10 }, effects: [{ drop: 'heart', pct: 10 }], ...over });
+const ringNode = (over = {}) => ({ id: 'li_zz', idx: 60, kind: 'ring', inert: true, name: 'Test', desc: 'Test node', cost: { gold: 100 }, place: { ring: 'dusk', i: 11 }, effects: [{ drop: 'heart', pct: 10 }], ...over });
 
 test('T1 budget FAILS: extra sustain, second revive, knot over 3%, cluster node adding a global effect, raised rule', () => {
   let fs = files(); get(fs, 'core.json').nodes.push(ringNode());

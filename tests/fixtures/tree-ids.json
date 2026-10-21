@@ -622,5 +622,21 @@
  "co_glean": [
   "co",
   2
+ ],
+ "br_satchel": [
+  "core",
+  48
+ ],
+ "br_almanac": [
+  "core",
+  49
+ ],
+ "br_cardfan": [
+  "core",
+  50
+ ],
+ "br_hearthkey": [
+  "core",
+  51
  ]
 }

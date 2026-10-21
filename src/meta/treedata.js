@@ -130,6 +130,7 @@ function checkCore(c) {
     for (const [k, v] of Object.entries(b.perTier)) { ensure(/^[1-9]$/.test(k) && isObj(v), `budget.perTier.${k}`); num(v.combat, 0, 100, `budget.perTier.${k}.combat`); num(v.sustain, 0, 100, `budget.perTier.${k}.sustain`); }
   }
   num(b.knotMax, 0, 100, 'budget.knotMax'); num(b.optionShareMin, 0, 1, 'budget.optionShareMin'); num(b.flatFace, 0, 10, 'budget.flatFace'); num(b.markFace, 0, 20, 'budget.markFace'); num(b.rushFace, 0, 1, 'budget.rushFace');
+  if (c.price !== undefined) ensure(isObj(c.price) && Object.keys(c.price).every((k) => k === 'creep') && fin(c.price.creep) && c.price.creep >= 0 && c.price.creep <= 0.3, 'core.json: price.creep must be 0..0.3');
   num(b.perWeapon.cap, 0, 100, 'budget.perWeapon.cap'); num(b.perWeapon.weight, 0, 10, 'budget.perWeapon.weight'); num(b.perWeapon.refWeapons, 1, 100, 'budget.perWeapon.refWeapons');
   for (const [k, v] of Object.entries(b.categories)) { ensure(/^[a-zA-Z][a-zA-Z0-9_]{0,23}$/.test(k) && isObj(v), `budget category ${k}`); num(v.cap, 0, 1000, `budget.${k}.cap`); num(v.weight, 0, 10, `budget.${k}.weight`); }
 }
@@ -230,6 +231,13 @@ export function composeTree(files, data = null) {
       ensure(typeof s.place.tool === 'string' && own(tools, s.place.tool), `${s.id}: place.tool must name a tool cluster`);
       checkAt(s.place.at, s.id);
       addSpec(s, { frag: 'core', owner: 'core', ownerKind: 'core', region: 'rings', tool: s.place.tool });
+      continue;
+    }
+    if (isObj(s.place) && s.place.near !== undefined) {
+      // a lantern placed beside its parent (connected-unlock rule, 2026-10-21): {near: <core node id>, at: [dx, dy]}, resolved after every ring slot
+      ensure(Object.keys(s.place).length === 2 && typeof s.place.near === 'string' && ID_RE.test(s.place.near) && s.place.near !== s.id && core.nodes.some((o) => o && o.id === s.place.near), `${s && s.id}: place.near must name another core lantern`);
+      checkAt(s.place.at, s.id);
+      addSpec(s, { frag: 'core', owner: 'core', ownerKind: 'core', region: 'rings', near: s.place.near });
       continue;
     }
     ensure(isObj(s.place) && typeof s.place.ring === 'string' && own(core.rings, s.place.ring) && !['heroes', 'sky', 'far', 'bands'].includes(s.place.ring), `${s.id}: ring node needs place {ring, i}`);
@@ -378,6 +386,7 @@ export function composeTree(files, data = null) {
   for (const a of allNodes) {
     const s = a.spec;
     let p;
+    if (a.near) continue; // resolved below, once its parent has a position
     if (a.ownerKind === 'core' && s.place.tool) { const [cx, cy] = clusterCentre(core, tools[s.place.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
     else if (a.ownerKind === 'core') p = ringPos(core, s.place);
     else if (a.ownerKind === 'tool') { const [cx, cy] = clusterCentre(core, tools[a.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
@@ -396,6 +405,15 @@ export function composeTree(files, data = null) {
       p = polar(b.r0 + b.width * (a.chapterOrder - 2) + 40, ((s.place.band + 0.5) * 360) / b.slots);
     }
     positions[s.id] = p;
+  }
+  // 'near' lanterns: a parent may itself be near-placed (a short chain); each pass places every lantern whose parent is placed, so a cycle or
+  // an unresolvable parent fails instead of looping
+  let wait = allNodes.filter((a) => a.near);
+  while (wait.length) {
+    const next = wait.filter((a) => !own(positions, a.near));
+    ensure(next.length < wait.length, `place.near cannot be resolved for ${next.map((a) => a.spec.id).join(', ')}`);
+    for (const a of wait) if (own(positions, a.near)) { const [px, py] = positions[a.near]; positions[a.spec.id] = [r1(px + a.spec.place.at[0]), r1(py + a.spec.place.at[1])]; }
+    wait = next;
   }
 
   const common = (a) => {
@@ -453,11 +471,12 @@ export function composeTree(files, data = null) {
     return o;
   });
   const layout = { ...core.layout, minGap: core.layout.v2MinGap ?? core.layout.minGap };
-  const v2 = { version: 2, treeVersion: core.version, retired: core.retired, layout, branches: core.branches, budget: core.budget, nodes: v2Nodes };
+  const price = core.price || null; // rising price (LOCKED 2026-10-21): compileTree reads price.creep
+  const v2 = { version: 2, treeVersion: core.version, retired: core.retired, layout, branches: core.branches, budget: core.budget, price, nodes: v2Nodes };
   // LIVE = every non-inert node (v2 values) + the inert specs as pending data. Same compile rules as v2; inert nodes carry no prerequisites.
   const inertIds = new Set(allNodes.filter((a) => a.spec.inert === true).map((a) => a.spec.id));
   const live = {
-    version: 1, treeVersion: core.version, retired: core.retired, layout, branches: core.branches, budget: core.budget,
+    version: 1, treeVersion: core.version, retired: core.retired, layout, branches: core.branches, budget: core.budget, price,
     nodes: [
       ...v2Nodes.filter((n) => !inertIds.has(n.id)),
       ...v2Nodes.filter((n) => inertIds.has(n.id)).map((n) => {

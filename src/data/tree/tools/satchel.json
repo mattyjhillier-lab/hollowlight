@@ -24,7 +24,9 @@
    "branch": "light",
    "maxRank": 3,
    "rankCost": 1.6,
-   "requires": [],
+   "requires": [
+    "br_satchel"
+   ],
    "place": {
     "at": [
      63.6,

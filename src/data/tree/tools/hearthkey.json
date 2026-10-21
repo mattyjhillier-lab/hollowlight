@@ -23,7 +23,7 @@
    "branch": "spirit",
    "inert": true,
    "requires": [
-    "sp_auto"
+    "br_hearthkey"
    ],
    "unlock": {
     "t": "abilityUses",
@@ -78,7 +78,10 @@
      69.3,
      40
     ]
-   }
+   },
+   "requires": [
+    "br_hearthkey"
+   ]
   },
   {
    "id": "rs_bless",

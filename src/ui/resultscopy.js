@@ -176,7 +176,7 @@ export function resultsView(r, bank, data) {
     arc: { frac: won ? 1 : Math.max(0, Math.min(1, (r.clock != null ? fin(r.clock) : time) / dawnAt)), boss: bossAt > 0 ? Math.min(1, bossAt / dawnAt) : null, bossLabel: `${bossName} ${clock(bossAt)}`, dawnLabel: `${RES.dawn} ${clock(dawnAt)}` },
     chips: { level: whole(r.level) || 1, slain: whole(r.kills), evolved: evoNames.length ? evoNames.length : 0, evolvedNames: evoNames.join(', ') },
     bank: bank ? {
-      gold: whole(r.gold), goldTotal: whole(bank.gold), shards: whole(r.shards), shardsTotal: whole(bank.shards), bossBonus: !!r.bossKilled,
+      gold: bank.runGold != null ? whole(bank.runGold) : whole(r.gold), goldTotal: whole(bank.gold), shards: whole(r.shards), shardsTotal: whole(bank.shards), bossBonus: !!r.bossKilled, // runGold includes the tier gold bonus
       note: typeof bank.note === 'string' ? clip(bank.note, 140) : '',
     } : { gold: whole(r.gold), shards: whole(r.shards) },
     weapons: weaponShares(r.weapons, data),

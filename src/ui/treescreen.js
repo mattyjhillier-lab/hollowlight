@@ -360,7 +360,7 @@ export class TreeScreen {
     if (!this.sel) {
       const save = this.api.save();
       p.append(mk('div', 'tp-title', 'The Hollow remembers'));
-      const spent = spentOf(save.tree, this.def);
+      const spent = spentOf(save.tree, this.def, save.creep); // what was actually paid (rising price)
       p.append(mk('div', 'tp-line', `Nodes owned: ${Object.keys(save.tree).length} of ${this.def.list.filter((i) => !this.def.nodes[i].teaser).length} · spent ${spent.gold} gold, ${spent.shards} shards`));
       p.append(mk('div', 'tp-line', 'Select a node to see its cost, effect and what unlocks it.'));
       return;
