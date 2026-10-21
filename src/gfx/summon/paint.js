@@ -33,7 +33,8 @@ function body(c, f, ox, oy) {
   blob(c, cx, cy, f.w * 0.3, f.h * (f.ay > 0.6 ? 0.22 : 0.3), 0, col);
   ember(c, cx, cy, Math.min(f.w, f.h) * 0.06);
 }
-export const PAINTERS = { wolf: body, alpha: body, echo: body, raven: body, low: body, glyph: body, flame: body, decal: body };
+export const PAINTERS = { wolf: () => {}, // S1: the wolf frames are painted by the async wolf bake (atlas.js bakeWolfArt)
+   alpha: body, echo: body, raven: body, low: body, glyph: body, flame: body, decal: body };
 
 // Draws every frame at its packed rect, clipped so a painter can never bleed into a neighbour. Returns the number of frames drawn.
 export function paintAll(c, packed) {

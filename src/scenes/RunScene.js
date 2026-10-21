@@ -36,7 +36,9 @@ import { AirLayer, makeEdgeTextures } from '../gfx/airlayer.js'; // W5 fog, fire
 import { DawnLayer } from '../gfx/dawnlayer.js'; // AL-6 dawn chorus (birds, petals, light shafts; visual only)
 import { airN, DAWN_CAPS, REF as DAWN_REF } from '../gfx/dawn.js';
 import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
-import { makeSummonAtlas, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas (baked, not drawn from yet)
+import { makeSummonAtlas, bakeWolfArt, SUM_ART, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas; S1 wolf art baked into it async
+import { WOLF_WPD, WOLF_FOOT, WOLF_JITTER, OV_OFF } from '../gfx/summon/wolf.js';
+import { wolfFrame, wolfLook } from '../gfx/summon/wolfanim.js';
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
@@ -78,6 +80,9 @@ function drawLifeDebug(d, life, p) {
 }
 
 const hex = (s) => parseInt(s.slice(1), 16);
+const WOLF_GLOW = 0x9fd8ff; // S1: wolf halo retinted to the locked wolf role colour
+const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the High bloom is on (it halves a small sprite's value; this keeps the spirit lit)
+const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
 function makeTextures(scene) {
   makeStyleTextures(scene, STYLE);
@@ -86,7 +91,7 @@ function makeTextures(scene) {
   const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
   INV[CRIT_KEY] = makeCritterAtlas(scene, mk); // AL-5 critter atlas
   const sa = makeSummonAtlas(scene, mk, { enabled: app.params.summons !== false }); // S0: ?summons=0 skips the bake
-  if (sa) { INV[SUM_KEY] = sa.inv; scene.sumBakeMs = sa.ms; }
+  if (sa) { INV[SUM_KEY] = sa.inv; scene.sumBakeMs = sa.ms; scene.sumAtlas = sa; }
   makeEdgeTextures(scene, mk); // W5 edge-wall fade ramps
 }
 
@@ -240,6 +245,9 @@ export class RunScene extends Phaser.Scene {
       treant_sapling: new SpritePool(this, SAP_KEY, (i) => i.setOrigin(ADD_ORIGIN[0], ADD_ORIGIN[1])),
       uWolf: new SpritePool(this, 'wolfU'),
       uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves
+      uWolfA: new SpritePool(this, SUM_KEY), // S1 Lantern-Heart wolves (sum_atlas frames)
+      uWolfOv: new SpritePool(this, SUM_KEY), // S1 pack-variety overlays (notched ear / chest tuft / curl tail)
+      uWolfL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S1 self-light: an additive copy of the wolf frame while the bloom is on
       uRaven: new SpritePool(this, 'raven'),
       uOrb: new SpritePool(this, 'orb'),
       gem: new SpritePool(this, 'gem'),
@@ -345,8 +353,10 @@ export class RunScene extends Phaser.Scene {
     this.enArt = new EnemyArt(this);
     this.enArt.bake = HUSK_BAKE; // readout (tests / harness)
     const ready = () => window.dispatchEvent(new Event('scene-ready'));
+    const wolfBake = this.sumAtlas ? bakeWolfArt(this.sumAtlas) : Promise.resolve(false); // S1: wolf art (until it lands, today's wolf sprite)
+    this.sumArt = SUM_ART; // readout (tests / harness)
     if (STYLE === 'a' && app.params.husks) {
-      const bake = bakeHuskAtlas(this).then((ok) => { this.enArt.enable(ok); });
+      const bake = Promise.all([bakeHuskAtlas(this).then((ok) => { this.enArt.enable(ok); }), wolfBake]);
       if (app.params.auto) Promise.race([bake, new Promise((r) => setTimeout(r, 4000))]).then(ready); // dev/harness auto-runs start on the Husks
       else ready(); // the title shows at once; the bake (~0.3-1 s) finishes long before anyone starts a run (flat sprites until then)
     } else ready();
@@ -639,6 +649,33 @@ export class RunScene extends Phaser.Scene {
   }
 
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
+
+  // S1 Ghost Wolf A (Lantern-Heart Pack): one image + an optional variety overlay per wolf, pose from the sim state (render only, reads the unit).
+  // Feet sit WOLF_FOOT below the sim position; the great Alpha (u.r > 6) scales with its radius until the S2 Alpha frames land. A wolf drawn in
+  // front of the hero and overlapping her box drops to 0.55 alpha so it never hides her (DR3 occluders).
+  drawWolfA(u, p, dt, low) {
+    const pl = this.pools, st = this.wolfSt || (this.wolfSt = new Map());
+    let s = st.get(u.id);
+    if (!s) { s = {}; st.set(u.id, s); }
+    s.seen = this.fxTick;
+    const fi = low ? 0 : wolfFrame(s, u, dt, this.reducedMotion());
+    const look = wolfLook(u.id, WOLF_JITTER), big = u.r > 6 ? u.r / 4 : 1;
+    const k = WOLF_WPD * look.k * big, dir = u.faceX < 0 ? -1 : 1, fy = u.y + WOLF_FOOT * big;
+    // DR3 rule shared with the crowd: within FADE_R of the hero a wolf draws just under her; beyond it, one whose box still overlaps her box
+    // from the front drops to 0.55 alpha (never an opaque occluder)
+    const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y;
+    const hl = 8.5 * k / WOLF_WPD; // half the wolf's length (world units)
+    const front = !near && u.y > p.y && Math.abs(u.x - p.x) < 12 + hl && fy - 15 * k / WOLF_WPD < p.y + 6 && fy > p.y - 30;
+    const a = u.shade ? 0.5 : front ? 0.55 : 1;
+    const img = pl.uWolfA.get(u.id);
+    img.setFrame(low ? 'flat_wolf' : 'wolf_' + fi).setOrigin(0.5, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy).setFlipX(dir < 0).setScale(low ? k / 0.75 : k).setAlpha(a);
+    if (this.bloom && WOLF_SELF > 0) pl.uWolfL.get(u.id).setFrame('wolf_' + fi).setOrigin(0.5, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy + 0.0005).setFlipX(dir < 0).setScale(k).setAlpha(a * WOLF_SELF);
+    if (!low && look.ov >= 0) {
+      const o = OV_OFF[fi][look.ov];
+      pl.uWolfOv.get(u.id).setFrame('wolf_ov' + look.ov).setOrigin(0.5, 90 / 96).setPosition(u.x + o[0] * k * dir, fy + o[1] * k).setDepth(D_LIT + dy + 0.001).setFlipX(dir < 0).setScale(k).setAlpha(a);
+    }
+    if ((this.fxTick & 127) === 0 && st.size > 64) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
+  }
 
   // Candle Wheel (Elias): a ring of cream light with a patch of restored colour inside, opening from the centre and
   // fading at the end. Existing primitives only (no new art). Low tier: one disc + one ring. Reduced motion: no opening/pulse.
@@ -1295,6 +1332,9 @@ export class RunScene extends Phaser.Scene {
 
     // summons: bright (above the grade) + additive halo
     let echoN = 0;
+    const wolfArt = SUM_ART.wolf && !!this.sumAtlas; // S1 Lantern-Heart wolves once the art is baked (?summons=0: never)
+    const lowWolf = this.quality.tier === 'low';
+    const wdt = Math.max(0, Math.min(0.1, sim.time - (this.wolfT ?? sim.time))); this.wolfT = sim.time;
     const wwv = sim.weapons.find((w) => w.id === 'ghost_wolves');
     const wEvo = wwv ? wwv.evo : null;
     if (wEvo === 'phantom_stampede' && caps.trail && caps.trail.dots > 0 && wwv.rt.trail) { // Low tier: faint paw dots instead of ribbons (hit zone unchanged)
@@ -1305,8 +1345,9 @@ export class RunScene extends Phaser.Scene {
       if (u.hidden) { if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6); continue; } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
-        pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(u.shade ? 0.5 : u.r > 6 ? 0.78 : 0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale((u.r > 6 ? 5 : u.r / 4 * 1.12) * pl.haloU.inv).setAlpha(u.r > 6 ? 0.45 : 0.62); // the great wolf keeps a modest halo so its body still reads
+        if (wolfArt) this.drawWolfA(u, p, wdt, lowWolf);
+        else pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(u.shade ? 0.5 : u.r > 6 ? 0.78 : 0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
+        if (wolfArt ? !lowWolf && halos++ < caps.halos : halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y - (wolfArt ? 1 : 0)).setTint(wolfArt ? WOLF_GLOW : ROLE.spiritA).setScale((u.r > 6 ? 5 : u.r / 4 * (wolfArt ? WOLF_HALO_K : 1.12)) * pl.haloU.inv).setAlpha(u.r > 6 ? 0.45 : wolfArt ? WOLF_HALO_A : 0.62); // the great wolf keeps a modest halo so its body still reads (S1: Low flats have the glow baked in, no halo)
         if (wEvo === 'phantom_stampede') fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved wolves only: thin gold rim (never on enemies)
         else if (wEvo === 'dire_alpha' && !u.shade) { // The Alpha: gold rim on the great wolf only (the ghost shades stay plain), pale-blue frost mane along its back
           fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(u.x, u.y, u.r * 1.3);

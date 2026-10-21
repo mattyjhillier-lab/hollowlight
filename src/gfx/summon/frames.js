@@ -11,9 +11,11 @@ const F = [];
 const add = (group, name, w, h, ax, ay, role) => F.push({ id: F.length, name, group, w, h, ax, ay, role });
 const seq = (group, prefix, n, w, h, ax, ay, role) => { for (let i = 0; i < n; i++) add(group, `${prefix}${i}`, w, h, ax, ay, role); };
 
-// wolves: 128x96 texels = 42.7 x 32 u; feet line at 86% down, body centred
-seq('wolf', 'wolf_', 6, 128, 96, 0.5, 0.86, 'wolf'); // lope x4, bite, sit
-seq('wolf', 'wolf_ov', 3, 128, 96, 0.5, 0.86, 'wolf'); // notched ear, chest tuft, curl tail
+// wolves (S1): 128x96 texels = the wolf.js du box at 1 texel per du (drawn at WOLF_WPD world units per du, ~16 u long = 39 px desktop);
+// feet line at 90/96 down (du y = 0 in the [-90, 6] box)
+const WOLF_AY = 90 / 96;
+seq('wolf', 'wolf_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // lope x4, bite, sit
+seq('wolf', 'wolf_ov', 3, 128, 96, 0.5, WOLF_AY, 'wolf'); // notched ear, chest tuft, curl tail
 seq('alpha', 'alpha_', 6, 176, 128, 0.5, 0.86, 'wolf'); // 1.7x, gold rim added at use time
 seq('echo', 'echo_', 6, 128, 96, 0.5, 0.86, 'wolf'); // hollow outline wolf
 // ravens (centre-anchored flyers)
@@ -29,7 +31,7 @@ add('flame', 'wax_bead', 24, 24, 0.5, 0.5, 'orbit');
 // impact / hit decals
 ['crescent', 'crackstar', 'ink', 'star', 'feather', 'waxseal', 'paw', 'petal', 'mote', 'crescent2'].forEach((n) => add('decal', 'decal_' + n, 48, 48, 0.5, 0.5, 'fx'));
 // Low-tier flats (glow baked in, no halo)
-add('low', 'flat_wolf', 96, 72, 0.5, 0.86, 'wolf');
+add('low', 'flat_wolf', 96, 72, 0.5, WOLF_AY, 'wolf'); // S1: Low-tier wolf (same du box at 0.75 texel per du)
 add('low', 'flat_raven', 48, 48, 0.5, 0.5, 'raven');
 add('low', 'flat_glyph', 48, 48, 0.5, 0.5, 'bolt');
 add('low', 'flat_flame', 48, 48, 0.5, 0.78, 'orbit');

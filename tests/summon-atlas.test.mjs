@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { FRAMES, FRAME_COUNT, FRAME_BY_NAME, PACK, packFrames, texelsTotal, TEXELS_PER_UNIT, PAGE_W, MAX_PAGE_H, SUM_KEY } from '../src/gfx/summon/frames.js';
 import { makeSummonAtlas, drawSummonAtlas } from '../src/gfx/summon/atlas.js';
 import { parseParams } from '../src/params.js';
+import { zoomFor } from '../src/gfx/style.js';
+import { WOLF_LEN_DU, WOLF_WPD, WOLF_JITTER, WOLF_BOX } from '../src/gfx/summon/wolf.js';
 
 const count = (g) => FRAMES.filter((f) => f.group === g).length;
 
@@ -31,8 +33,13 @@ test('summon frames: unique names and ids, sizes and anchors in range', () => {
   });
 });
 
-test('summon frames: wolf is 36-42 world units wide (locked), Alpha is ~1.7x', () => {
-  for (const f of FRAMES.filter((x) => /^wolf_\d$/.test(x.name))) { const u = f.w / TEXELS_PER_UNIT; assert.ok(u >= 36 && u <= 43, `${f.name} ${u}`); }
+test('summon frames: wolf is 36-42 px long on the 1280x720 desktop (locked) incl. the 4% jitter, Alpha frame is ~1.7x', () => {
+  const z = zoomFor(1280, 720); // device px per world unit
+  for (const j of [-1, 1]) { const px = WOLF_LEN_DU * WOLF_WPD * (1 + j * WOLF_JITTER) * z; assert.ok(px >= 36 && px <= 42, String(px)); }
+  // the wolf frame box is the du box at 1 texel per du, so the wolf fits its frame
+  for (const f of FRAMES.filter((x) => /^wolf_(\d|ov\d)$/.test(x.name))) { assert.equal(f.w, WOLF_BOX[2]); assert.equal(f.h, WOLF_BOX[3]); }
+  // ~0.75x a Fell Wolf (Husk wolf: g 0.62 -> 0.155 world units per du)
+  assert.ok(WOLF_WPD / 0.155 > 0.9 && WOLF_WPD / 0.155 < 1.1);
   const a = FRAME_BY_NAME.alpha_0.w / TEXELS_PER_UNIT, w = FRAME_BY_NAME.wolf_0.w / TEXELS_PER_UNIT;
   assert.ok(a / w >= 1.3 && a / w <= 1.8, String(a / w)); // drawn at 1.7x, baked a little under that density
   // ground anchors sit low (feet), flyers centred
