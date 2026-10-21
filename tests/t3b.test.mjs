@@ -38,7 +38,7 @@ test('DT0 tier validator rejects hostile / mistaken data', () => {
   bad((d) => { d.template.normal.enemyHp = 1.1; }, /Twilight .* exactly 1/);
   bad((d) => { d.template.hard.enemyHp = 5; }, /1\.\.4/);
   bad((d) => { d.template.hard.enemyHp = 0.9; }, /1\.\.4/);
-  bad((d) => { d.template.expert.enemyHp = 1.1; }, /below the tier under it/);
+  bad((d) => { d.template.expert.enemyHp = 1.05; }, /below the tier under it/);
   bad((d) => { d.template.hard.marks.kinds = ['laser']; }, /registered mark ids/);
   bad((d) => { d.template.hard.marks.share = 0.9; }, /0\.\.0\.3/);
   bad((d) => { d.template.hard.marks.from = 99999; }, /0\.\.1200/);
@@ -83,12 +83,12 @@ function spawnStats(tier, id = 'wolf') {
   return { hp: e.hp, dmg: e.dmg };
 }
 
-test('DT0 tier multipliers: enemy HP x1.2 / x2.0, damage x1.15 / x1.3, boss HP x1.5 / x2.0; Twilight and a forged tier are identical to no tier at all', () => {
+test('DT0 tier multipliers: enemy HP x1.1 / x2.0, damage x1.15 / x1.3, boss HP x1.5 / x2.0; Twilight and a forged tier are identical to no tier at all', () => {
   const base = spawnStats(undefined), tw = spawnStats('normal');
   assert.deepEqual(tw, base, 'Twilight = the old numbers, bit for bit');
   for (const bad of ['hard ', '__proto__', 5, null, {}]) assert.deepEqual(spawnStats(bad), base, String(bad));
   const hard = spawnStats('hard'), exp = spawnStats('expert');
-  assert.ok(Math.abs(hard.hp / base.hp - 1.2) < 1e-12 && Math.abs(hard.dmg / base.dmg - 1.15) < 1e-12);
+  assert.ok(Math.abs(hard.hp / base.hp - 1.1) < 1e-12 && Math.abs(hard.dmg / base.dmg - 1.15) < 1e-12);
   assert.ok(Math.abs(exp.hp / base.hp - 2) < 1e-12 && Math.abs(exp.dmg / base.dmg - 1.3) < 1e-12);
   const boss = (t) => spawnStats(t, 'elder_treant').hp;
   assert.ok(Math.abs(boss('hard') / boss('normal') - 1.5) < 1e-12 && Math.abs(boss('expert') / boss('normal') - 2) < 1e-12);
