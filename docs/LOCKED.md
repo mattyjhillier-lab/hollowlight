@@ -273,3 +273,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 
 | Summons art #3 per-weapon (2026-10-21) | Ghost Wolves = A Lantern-Heart Pack. Ravens = A Letter Ravens. (Bolts, Chain, Orbit, shared FX still to confirm.) | Matt, one-tap |
 | Boss HP (2026-10-21) | Elder Treant HP 6000 gives a ~13 s fight vs 75-100 s target. Matt: test 24k and 36k via boss-sweep what-ifs, pick the one nearest target; starter win-rate effect goes to FINAL retune. 6000 is reopened only for this. | Matt, one-tap |
+
+| Summons art #3 per-weapon, rest (2026-10-21) | Spirit Bolts = A Ink Glyph Orb (S5 tries 1.3x/16 px, keep whichever passes the gem-confusion check). Chain Lightning = A Storm Thread (Thunder pillar height capped below HUD band). Holy Orbit = A Candle Flames. Shared FX = A "Light in, light out" (covered by the family-look pick). All five weapons now locked; build S0-S8 per docs/design/summons-art-v1.md section 6. | Matt, one-tap |
