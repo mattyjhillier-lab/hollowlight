@@ -1,0 +1,96 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { FRAMES, FRAME_COUNT, FRAME_BY_NAME, PACK, packFrames, texelsTotal, TEXELS_PER_UNIT, PAGE_W, MAX_PAGE_H, SUM_KEY } from '../src/gfx/summon/frames.js';
+import { makeSummonAtlas, drawSummonAtlas } from '../src/gfx/summon/atlas.js';
+import { parseParams } from '../src/params.js';
+
+const count = (g) => FRAMES.filter((f) => f.group === g).length;
+
+test('summon frames: counts match the section 5 budget', () => {
+  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_') && !f.name.startsWith('wolf_ov')).length, 6);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_ov')).length, 3);
+  assert.equal(count('alpha'), 6);
+  assert.equal(count('echo'), 6);
+  assert.equal(count('raven'), 7);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('raven_flat')).length, 2);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('glyph_')).length, 5);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('page_')).length, 2);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('flame_big')).length, 3);
+  assert.equal(FRAMES.filter((f) => /^flame_\d/.test(f.name)).length, 3);
+  assert.equal(count('decal'), 10);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('flat_')).length, 4);
+});
+
+test('summon frames: unique names and ids, sizes and anchors in range', () => {
+  assert.equal(new Set(FRAMES.map((f) => f.name)).size, FRAME_COUNT);
+  FRAMES.forEach((f, i) => {
+    assert.equal(f.id, i); assert.ok(Number.isInteger(f.w) && Number.isInteger(f.h) && f.w >= 16 && f.h >= 16 && f.w <= 256 && f.h <= 256, f.name);
+    assert.ok(f.ax > 0 && f.ax < 1 && f.ay > 0 && f.ay < 1, f.name);
+    assert.equal(FRAME_BY_NAME[f.name], f);
+  });
+});
+
+test('summon frames: wolf is 36-42 world units wide (locked), Alpha is ~1.7x', () => {
+  for (const f of FRAMES.filter((x) => /^wolf_\d$/.test(x.name))) { const u = f.w / TEXELS_PER_UNIT; assert.ok(u >= 36 && u <= 43, `${f.name} ${u}`); }
+  const a = FRAME_BY_NAME.alpha_0.w / TEXELS_PER_UNIT, w = FRAME_BY_NAME.wolf_0.w / TEXELS_PER_UNIT;
+  assert.ok(a / w >= 1.3 && a / w <= 1.8, String(a / w)); // drawn at 1.7x, baked a little under that density
+  // ground anchors sit low (feet), flyers centred
+  assert.ok(FRAME_BY_NAME.wolf_0.ay > 0.8); assert.equal(FRAME_BY_NAME.raven_up.ay, 0.5);
+});
+
+test('summon pack: no overlaps, inside the page, height within the memory budget, deterministic', () => {
+  const p = PACK.frames;
+  assert.equal(p.length, FRAME_COUNT);
+  for (const f of p) { assert.ok(f.x >= 0 && f.y >= 0 && f.x + f.w <= PAGE_W && f.y + f.h <= PACK.h, f.name); }
+  for (let i = 0; i < p.length; i++) for (let j = i + 1; j < p.length; j++) {
+    const a = p[i], b = p[j];
+    assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, `${a.name} overlaps ${b.name}`);
+  }
+  assert.ok(PACK.h <= MAX_PAGE_H && PACK.h % 16 === 0 && PACK.h * PAGE_W * 4 <= 2.5 * 1048576, String(PACK.h)); // <= 2.5 MB GPU
+  assert.deepEqual(packFrames().frames.map((f) => [f.x, f.y]), p.map((f) => [f.x, f.y]));
+  assert.ok(texelsTotal() <= PAGE_W * PACK.h, 'frames fit the page'); // memory: PAGE_W * h * 4 bytes
+});
+
+// minimal fake 2D context: counts calls, accepts everything the painter uses
+function fakeCtx() {
+  const calls = { fill: 0, clip: 0, clear: 0 };
+  const grad = { addColorStop() {} };
+  const c = new Proxy({}, {
+    get: (_, k) => {
+      if (k === 'calls') return calls;
+      if (k === 'createLinearGradient' || k === 'createRadialGradient') return () => grad;
+      if (k === 'fill') return () => { calls.fill++; };
+      if (k === 'clip') return () => { calls.clip++; };
+      if (k === 'clearRect') return () => { calls.clear++; };
+      return () => {};
+    },
+    set: () => true,
+  });
+  return c;
+}
+const fakeCanvas = (w, h) => { const c = fakeCtx(); return { width: w, height: h, getContext: () => c, ctx: c }; };
+
+test('summon atlas: bakes every frame once, clipped; registers one named texture frame each', () => {
+  const cv = fakeCanvas(PAGE_W, PACK.h);
+  assert.equal(drawSummonAtlas(cv), FRAME_COUNT);
+  assert.equal(cv.ctx.calls.clip, FRAME_COUNT); assert.ok(cv.ctx.calls.fill > FRAME_COUNT);
+  const added = []; let removed = 0, key = null, made = null;
+  const scene = { textures: { exists: () => true, remove: () => { removed++; }, addCanvas: (k, c) => { key = k; return { add: (n, s, x, y, w, h) => added.push({ n, x, y, w, h }) }; } } };
+  let t = 0;
+  const r = makeSummonAtlas(scene, (w, h) => { made = [w, h]; return fakeCanvas(w, h); }, { now: () => (t += 5) });
+  assert.equal(key, SUM_KEY); assert.equal(removed, 1); assert.deepEqual(made, [PAGE_W, PACK.h]);
+  assert.equal(added.length, FRAME_COUNT);
+  for (const a of added) { const f = FRAME_BY_NAME[a.n]; assert.ok(f && a.w === f.w && a.h === f.h); }
+  assert.equal(r.inv, 1 / TEXELS_PER_UNIT); assert.equal(r.ms, 5);
+});
+
+test('summon atlas: ?summons=0 bakes nothing and touches no texture (today\'s sprites stay)', () => {
+  assert.equal(parseParams('').summons, true);
+  assert.equal(parseParams('?summons=0').summons, false);
+  assert.equal(parseParams('?summons=x').summons, true);
+  let touched = 0;
+  const scene = { textures: new Proxy({}, { get: () => () => { touched++; } }) };
+  assert.equal(makeSummonAtlas(scene, () => { touched++; return fakeCanvas(1, 1); }, { enabled: false }), null);
+  assert.equal(touched, 0);
+});

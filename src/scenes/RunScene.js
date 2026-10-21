@@ -36,6 +36,7 @@ import { AirLayer, makeEdgeTextures } from '../gfx/airlayer.js'; // W5 fog, fire
 import { DawnLayer } from '../gfx/dawnlayer.js'; // AL-6 dawn chorus (birds, petals, light shafts; visual only)
 import { airN, DAWN_CAPS, REF as DAWN_REF } from '../gfx/dawn.js';
 import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
+import { makeSummonAtlas, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas (baked, not drawn from yet)
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
@@ -84,6 +85,8 @@ function makeTextures(scene) {
   INV[ATLAS_KEY] = makeAmbAtlas(scene, (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // AL-1 sway atlas
   const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
   INV[CRIT_KEY] = makeCritterAtlas(scene, mk); // AL-5 critter atlas
+  const sa = makeSummonAtlas(scene, mk, { enabled: app.params.summons !== false }); // S0: ?summons=0 skips the bake
+  if (sa) { INV[SUM_KEY] = sa.inv; scene.sumBakeMs = sa.ms; }
   makeEdgeTextures(scene, mk); // W5 edge-wall fade ramps
 }
 
