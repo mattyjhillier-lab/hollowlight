@@ -238,7 +238,7 @@ test('T3c tier gold bonus is paid where the run is banked: Deep Dusk x1.5, Long 
 
 test('T3c Deep Dusk eased: enemy HP x1.2 (reopened from 1.45), other Deep Dusk multipliers unchanged, Long Night unchanged', () => {
   const h = resolveTier(data.tiers, 'cursed_forest', 'hard');
-  assert.deepEqual([h.enemyHp, h.enemyDmg, h.density, h.bossHp, h.goldMul], [1.2, 1.15, 1.15, 1.5, 1.5]);
+  assert.deepEqual([h.enemyHp, h.enemyDmg, h.density, h.bossHp, h.goldMul], [1.1, 1.15, 1.15, 1.5, 1.5]);
   const e = resolveTier(data.tiers, 'cursed_forest', 'expert');
   assert.deepEqual([e.enemyHp, e.enemyDmg, e.density, e.bossHp, e.goldMul], [2, 1.3, 1.3, 2, 2]);
 });

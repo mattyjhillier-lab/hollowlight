@@ -28,7 +28,7 @@ test('DT0 tiers.json validates: three registered tiers, Twilight exactly 1, hard
   assert.deepEqual(Object.keys(data.tiers.template), TIER_IDS);
   const t = data.tiers.template;
   for (const k of ['enemyHp', 'enemyDmg', 'density', 'bossHp', 'heartPity']) assert.ok(t.normal[k] === 1 && t.hard[k] >= 1 && t.expert[k] >= t.hard[k], k);
-  assert.deepEqual([t.hard.enemyHp, t.hard.enemyDmg, t.hard.bossHp, t.expert.enemyHp, t.expert.enemyDmg, t.expert.bossHp, t.expert.heartPity], [1.2, 1.15, 1.5, 2, 1.3, 2, 1.3], 'locked multipliers (docs/LOCKED.md DIFFICULTY TIERS; Deep Dusk enemy HP 1.45 -> 1.2 reopened 2026-10-21 Tree economy + Deep Dusk)');
+  assert.deepEqual([t.hard.enemyHp, t.hard.enemyDmg, t.hard.bossHp, t.expert.enemyHp, t.expert.enemyDmg, t.expert.bossHp, t.expert.heartPity], [1.1, 1.15, 1.5, 2, 1.3, 2, 1.3], 'locked multipliers (docs/LOCKED.md DIFFICULTY TIERS; Deep Dusk enemy HP 1.45 -> 1.1 reopened 2026-10-21 Tree economy + Deep Dusk)');
   for (const id of TIER_IDS) for (const m of t[id].marks.kinds) assert.ok(MARK_IDS.includes(m));
   assert.equal(t.normal.glass.first, 0, 'Twilight pays no Dawnglass');
 });
@@ -60,12 +60,12 @@ test('DT0 resolveTier: an unknown or forged tier always resolves to Twilight; ch
   assert.equal(resolveTier(null, 'cursed_forest', 'hard'), IDENTITY);
   assert.equal(resolveTier({ template: null }, 'cursed_forest', 'hard'), IDENTITY);
   const h = resolveTier(data.tiers, 'cursed_forest', 'hard');
-  assert.equal(h.id, 'hard'); assert.equal(h.idx, 1); assert.equal(h.enemyHp, 1.2); assert.ok(Object.isFrozen(h));
+  assert.equal(h.id, 'hard'); assert.equal(h.idx, 1); assert.equal(h.enemyHp, 1.1); assert.ok(Object.isFrozen(h));
   const t2 = clone(data.tiers); t2.chapters.cursed_forest = { hard: { enemyHp: 1.6, glass: { boss: 3 } } };
   const o = resolveTier(t2, 'cursed_forest', 'hard');
   assert.equal(o.enemyHp, 1.6); assert.equal(o.glass.boss, 3); assert.equal(o.glass.dawn, 2, 'other fields inherit the template');
-  assert.equal(resolveTier(t2, 'other_chapter', 'hard').enemyHp, 1.2, 'another chapter keeps the template');
-  assert.equal(resolveTier(t2, '__proto__', 'hard').enemyHp, 1.2);
+  assert.equal(resolveTier(t2, 'other_chapter', 'hard').enemyHp, 1.1, 'another chapter keeps the template');
+  assert.equal(resolveTier(t2, '__proto__', 'hard').enemyHp, 1.1);
   assert.deepEqual(TIER_IDS.map(tierIndex), [0, 1, 2]); assert.equal(tierIndex('nope'), 0); assert.equal(tierIndex(undefined), 0);
 });
 

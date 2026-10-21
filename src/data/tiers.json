@@ -10,7 +10,7 @@
   },
   "hard": {
    "name": "Deep Dusk",
-   "enemyHp": 1.2, "enemyDmg": 1.15, "density": 1.15, "bossHp": 1.5, "heartPity": 1,
+   "enemyHp": 1.1, "enemyDmg": 1.15, "density": 1.15, "bossHp": 1.5, "heartPity": 1,
    "goldMul": 1.5, "shards": 7, "firstShards": 1,
    "glass": { "boss": 2, "dawn": 2, "first": 6, "marked": 1, "markedCap": 2, "runCap": 6 },
    "marks": { "share": 0.05, "from": 240, "max": 1, "kinds": ["ironbark", "swiftshade", "emberwake"] }
