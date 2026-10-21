@@ -8,11 +8,21 @@
 //   node scripts/tree-timeline.mjs --live               only the nodes the game runs today (inert nodes excluded: no tiers, no Almanac)
 //   node scripts/tree-timeline.mjs --nodes 1000         growth check: real tree + synthetic constellations (scripts/tree-synth.mjs), chapters + economy rule C.13
 //   options: --players N  --runs N  --seed N  --json out.json  --presets out.json (snapshot saves for the tree-screen prototype)
+//   CONNECTED-UNLOCK analysis (LOCKED 2026-10-21; scripts/tree-connected-patch.mjs; docs/design/tree-connected-patch.md):
+//     --rule connected|today   connected (default) = the locked rule + its four exceptions on the dry-run patched tree; today = the old rules
+//     --price flat|depth|creep|both   depth = gold rises along depth (--k slope per step, total tree gold kept); creep = each stat buy raises
+//                                     the rest of its group by --creep (fraction, default 0.06; gates/options/keystones stay flat); both = depth + creep
+//     --econ 36k|1018          income calibration: 36k = bot measured 2026-10-21 with the Elder Treant at 36000 HP (default); 1018 = the old one
+//     --tiers live|proposal    tier rewards: live = src/data/tiers.json; proposal = TIER_PROPOSAL below
+//     --links directed|both    directed = today's one-way requires (a lantern opens only from its parent side); both = any linked
+//                              neighbour opens it (needs an engine change: gates keep one-way links, gated constellations still need their heart)
 import { writeFileSync } from 'node:fs';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
 import { composeTree } from '../src/meta/treedata.js';
 import { compileTree, nodeStatus, buy, conditionProgress, softFactors, presetTree, aggregateMods } from '../src/meta/tree.js';
 import { loadRealData, synthTree } from './tree-synth.mjs';
+import { connectedPatch, makeConnected } from './tree-connected-patch.mjs';
+import { readFileSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const val = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
@@ -25,10 +35,17 @@ const SEED = Number(val('--seed', 7));
 const safeOut = (p) => { if (p && (!/^[\w./\\:-]+\.json$/.test(p) || p.includes('..'))) { console.error('output path must be a plain .json path'); process.exit(1); } return p; };
 const JSON_OUT = safeOut(val('--json', null));
 const PRESETS_OUT = safeOut(val('--presets', null));
+const RULE = val('--rule', 'connected') === 'today' ? 'today' : 'connected';
+const PRICE = ['flat', 'depth', 'creep', 'both'].includes(val('--price', 'flat')) ? val('--price', 'flat') : 'flat';
+const K = Math.max(0, Math.min(1, Number(val('--k', 0.12))));
+const CREEP = Math.max(0, Math.min(0.3, Number(val('--creep', 0.06))));
+const ECON = val('--econ', '36k') === '1018' ? '1018' : '36k';
+const TIERS = val('--tiers', 'live') === 'proposal' ? 'proposal' : 'live';
+const LINKS = val('--links', 'directed') === 'both' ? 'both' : 'directed'; // both = a link works in either direction (Matt's words: linked to ANY owned lantern)
 
 // ------------------------------------------------------------------ calibration (MODEL; sources in the header)
 const CAL = {
-  goldWin: 2689, // bot Twilight win gold (economy 9.3); human = x humanGold
+  goldWin: 2689, // bot Twilight win gold (economy 9.3); human = x humanGold (overwritten by --econ 36k below)
   humanGold: 0.75,
   killsFull: { wolf: 800, crow: 900, root_crawler: 190 }, // bot per full run (skill-tree-v2 9)
   humanKills: 0.85,
@@ -39,8 +56,31 @@ const CAL = {
   clusterRuns: 5, // growth mode: a constellation costs ~5 runs of gold at its chapter (C.13 economy rule)
   perChapterClusters: 7,
 };
+// --econ 36k: bot sweep 2026-10-21 (boss HP 36000, Blessings on, random pick, scratch econ sweep in the analysis report): Twilight win gold
+// starter Wren/Elias mean, full tree (GATES=all META=full) win gold; the model keeps the loss curve (t/900)^ramp, checked against the measured loss gold.
+// measured 2026-10-21 (48 seeds per cell): Twilight win gold starter Wren 2,800 / Elias 2,792, full tree 2,979 / 3,008 (strongKit ~0.07 on a win;
+// the full tree mostly earns more by living longer: loss gold 1,848-1,977 at ~11:00 vs 801-1,021 at ~7:40 starter). Deep Dusk full tree: win
+// 6% / 8%, win gold 2,466 / 3,039; Long Night full tree: win 6% / 0% (32 seeds). NOTE tiers.json goldMul is NOT applied anywhere in src today.
+const ECON36 = { goldWin: Number(process.env.GOLD_WIN || 2800), strongKit: Number(process.env.STRONG_KIT || 0.07) };
+const CALIB = val('--calib', 'measured') === 'model' ? 'model' : 'measured'; // measured = Deep Dusk / Long Night odds scaled to the bot sweep above
+if (ECON === '36k') Object.assign(CAL, ECON36);
+// tier rewards: live data or the proposal (gold multiplier, shards per boss, Dawnglass [boss, dawn, first clear, -, marked cap, run cap])
+const TIERS_LIVE = JSON.parse(readFileSync(new URL('../src/data/tiers.json', import.meta.url), 'utf8')).template;
+const TIER_PROPOSAL = {
+  hard: { goldMul: 1.6, shards: 7, firstShards: 2, glass: { boss: 2, dawn: 3, first: 8, markedCap: 2, runCap: 7 } },
+  expert: { goldMul: 2.2, shards: 10, firstShards: 3, glass: { boss: 3, dawn: 5, first: 12, markedCap: 3, runCap: 11 } },
+};
+const tierPay = (t) => {
+  const L = TIERS_LIVE[t];
+  const P = TIERS === 'proposal' && TIER_PROPOSAL[t] ? { ...L, ...TIER_PROPOSAL[t], glass: { ...L.glass, ...TIER_PROPOSAL[t].glass } } : L;
+  return { goldMul: P.goldMul, shards: P.shards, firstShards: P.firstShards || 0, g: [P.glass.boss, P.glass.dawn, P.glass.first, P.glass.marked, P.glass.markedCap, P.glass.runCap] };
+};
 // win odds (human model), calibrated to the locked bands: no-tree Twilight 15-30%; full tree 45-75%; Deep Dusk full 25-40 (+daybreak 35-55); Long Night 5-15 (+daybreak 15-30)
 function winP(tier, f, opts, skill, day) {
+  const m = CALIB !== 'measured' || tier === 'normal' ? 1 : tier === 'hard' ? 0.2 : 0.17; // full tree + full skill: hard 0.35 -> 0.07, expert 0.18 -> 0.03 (bot)
+  return m * winP0(tier, f, opts, skill, day);
+}
+function winP0(tier, f, opts, skill, day) {
   if (tier === 'normal') return 0.2 + 0.15 * skill + 0.12 * f + 0.1 * opts;
   if (tier === 'hard') return 0.02 + 0.08 * skill + 0.15 * f + 0.1 * opts + 0.12 * day.hard;
   return 0.0 + 0.05 * skill + 0.08 * f + 0.05 * opts + 0.12 * day.expert;
@@ -67,9 +107,70 @@ if (NODES) {
   }
 }
 const composed = composeTree(files, data);
-const def = compileTree(LIVE ? composed.live : composed.v2, data);
+const rawTree = LIVE ? composed.live : composed.v2;
+const patched = RULE === 'connected' ? connectedPatch(rawTree, composed.info, data) : null;
+const def = patched ? patched.def : compileTree(rawTree, data);
+const linkedHub = RULE === 'connected' ? makeConnected(def, composed.info) : () => true;
+const HEART = {}; for (const [w, c] of Object.entries(composed.info.clusters)) HEART[w] = c.heart;
+const nb = (id) => [...def.nodes[id].requires, ...(def.nodes[id].requiresAny || []), ...def.children[id]];
+const linked = (s, id) => {
+  if (LINKS === 'directed' || def.nodes[id].permanent) return linkedHub(s, id);
+  const n = def.nodes[id]; const own = (x) => ((s.tree || {})[x] || 0) >= 1;
+  if (n.cluster && HEART[n.cluster] && !own(HEART[n.cluster])) return false; // a gated constellation still needs its heart
+  if (nb(id).some(own)) return true;
+  return !n.requires.length && !n.requiresAny && linkedHub(s, id);
+};
+// status under the rule: with --links both, a lantern the engine calls 'locked' (parent side not owned) opens from a linked owned child
+function statusOf(s, id) {
+  const st = nodeStatus(def, s, id, data);
+  if (LINKS === 'both' && st.state === 'locked' && st.rank === 0 && !def.nodes[id].permanent && linked(s, id)) {
+    const open = !(st.cond && !st.cond.done);
+    return { ...st, state: open ? 'available' : 'condition', buyable: open };
+  }
+  return st;
+}
+function buyNode(s, id) {
+  const res = buy(s, id, def, data);
+  if (res.ok || LINKS !== 'both') return res;
+  const st = statusOf(s, id);
+  if (!st.buyable || !st.affordable) return res;
+  s.gold -= st.next.gold; s.shards -= st.next.shards; if (st.next.glass) s.dawnglass -= st.next.glass;
+  s.tree[id] = (s.tree[id] || 0) + 1;
+  return { ok: true };
+}
 const IDS = def.list.filter((id) => !def.nodes[id].teaser);
 const W = Object.keys(composed.info.clusters).length;
+// depth = lanterns from the hub along the links (requires: deepest parent; requiresAny: nearest parent); a hub-linked lantern inside a
+// gated constellation counts from its heart (E2/E1)
+const heartOf = {}; for (const [w, c] of Object.entries(composed.info.clusters)) heartOf[w] = c.heart;
+const DEPTH = {};
+for (const id of def.order) {
+  const n = def.nodes[id];
+  const all = n.requires.map((r) => DEPTH[r] ?? 1);
+  const any = (n.requiresAny || []).map((r) => DEPTH[r] ?? 1);
+  let d = Math.max(all.length ? Math.max(...all) : 0, any.length ? Math.min(...any) : 0);
+  if (!all.length && !any.length && n.cluster && heartOf[n.cluster] && heartOf[n.cluster] !== id) d = 1;
+  DEPTH[id] = d + 1;
+}
+if (LINKS === 'both') { // undirected distance from the hub-linked entries
+  const q = def.list.filter((id) => !def.nodes[id].requires.length && !def.nodes[id].requiresAny);
+  for (const id of def.list) delete DEPTH[id];
+  for (const id of q) DEPTH[id] = 1;
+  for (let i = 0; i < q.length; i++) for (const x of nb(q[i])) if (DEPTH[x] === undefined) { DEPTH[x] = DEPTH[q[i]] + 1; q.push(x); }
+}
+const priced = (id) => !def.nodes[id].permanent && !def.nodes[id].teaser;
+const creepable = (id) => priced(id) && !def.nodes[id].keystone && !['heart', 'socket', 'gate', 'mastery', 'key'].includes(def.nodes[id].kind);
+const goldOfAll = (id, g) => { const n = def.nodes[id]; let t = 0; for (let r = 1; r <= n.maxRank; r++) t += Math.max(10, Math.round((g * Math.pow(n.rankCost, r - 1)) / 10) * 10); return t; };
+const BASE = Object.fromEntries(def.list.map((id) => [id, def.nodes[id].cost.gold]));
+if (PRICE === 'depth' || PRICE === 'both') {
+  const ids = def.list.filter((id) => priced(id) && BASE[id] > 0);
+  const flatTot = ids.reduce((a, id) => a + goldOfAll(id, BASE[id]), 0);
+  const raw = Object.fromEntries(ids.map((id) => [id, BASE[id] * (1 + K * (DEPTH[id] - 1))]));
+  const tot = ids.reduce((a, id) => a + goldOfAll(id, raw[id]), 0);
+  for (const id of ids) BASE[id] = Math.max(10, Math.round((raw[id] * flatTot) / tot / 10) * 10);
+}
+const resetPrices = () => { for (const id of def.list) def.nodes[id].cost.gold = BASE[id]; };
+resetPrices();
 const rule = def.rule;
 const peOf = (tree) => {
   const f = softFactors(tree, def);
@@ -93,6 +194,9 @@ const SIG = { wren: 'ghost_wolves', elias: 'holy_orbit' };
 const regionOf = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : n.region || 'rings'); };
 const REGIONS = {};
 for (const id of IDS) (REGIONS[regionOf(id)] ||= []).push(id);
+const creepGroup = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); }; // core rings creep per branch
+const CREEP_GROUPS = {};
+for (const id of IDS) (CREEP_GROUPS[creepGroup(id)] ||= []).push(id);
 const hasTiers = IDS.some((id) => tierOfGate[id]);
 // exclusive pairs (keystones): only one side can ever be owned, so 'everything' = all nodes minus the smaller side of each group
 const exclSeen = new Set(); let exclLost = 0;
@@ -103,6 +207,7 @@ const OWNABLE = IDS.length - exclLost;
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 // ------------------------------------------------------------------ one player
+const TRY = CALIB === 'measured' ? 0.05 : 0.12; // a player tries a tier when it looks winnable at all
 function newSave() {
   return {
     gold: 0, shards: 0, dawnglass: 0, tree: {},
@@ -114,11 +219,13 @@ const MAX_CH = Math.max(1, ...chapterOf.values());
 const chapterReached = (s) => (NODES ? Math.min(MAX_CH, 1 + Math.floor(s.stats.chapters.cursed_forest.clears / 3)) : 1); // growth: the next chapter opens every 3 clears
 
 function statusAll(s) {
-  const out = { afford: [], short: [], cond: [], lockedPre: 0 };
+  const out = { afford: [], short: [], cond: [], lockedPre: 0, held: 0, goldLeft: 0 };
   for (const id of IDS) {
     if (NODES && chapterOf.has(id) && chapterOf.get(id) > chapterReached(s)) continue; // a later chapter's band is fogged
-    const st = nodeStatus(def, s, id, data);
+    const st = statusOf(s, id);
     if (st.state === 'owned') continue;
+    if (st.state !== 'excluded' && st.state !== 'teaser' && !def.nodes[id].unlock) { out.goldLeft++; (out.goldIds ||= []).push(id); } // a gold-only lantern still to buy somewhere
+    if ((st.state === 'available' || st.state === 'condition') && !linked(s, id)) { out.held++; out.lockedPre++; continue; } // the rule: not linked to anything lit
     if (st.state === 'available') (st.affordable ? out.afford : out.short).push({ id, st });
     else if (st.state === 'condition') out.cond.push({ id, st });
     else if (st.state === 'locked') out.lockedPre++;
@@ -127,6 +234,7 @@ function statusAll(s) {
 }
 
 function simulatePlayer(p) {
+  resetPrices();
   const R = rng(SEED * 1000 + p);
   const trait = { saver: R() < 0.4, favWren: 0.55 + R() * 0.15, skillRate: 10 + R() * 8 };
   const s = newSave();
@@ -156,13 +264,14 @@ function simulatePlayer(p) {
     const tiers = s.stats.tiers.cursed_forest;
     const clears = (t) => (tiers[t] ? tiers[t].clears : 0);
     let tier = 'normal';
-    if (owned(s, 'gt_cursed_forest_expert') && clears('hard') >= 1 && winP('expert', f, opts, skill, day) >= 0.12 && R() < 0.75) tier = 'expert';
-    else if (owned(s, 'gt_cursed_forest_hard') && winP('hard', f, opts, skill, day) >= 0.12 && R() < 0.75) tier = 'hard';
+    if (owned(s, 'gt_cursed_forest_expert') && clears('hard') >= 1 && winP('expert', f, opts, skill, day) >= TRY && R() < 0.75) tier = 'expert';
+    else if (owned(s, 'gt_cursed_forest_hard') && winP('hard', f, opts, skill, day) >= TRY && R() < 0.75) tier = 'hard';
     const pw = winP(tier, f, opts, skill, day);
     const win = R() < pw;
     const t = win ? CAL.runSecs : Math.round(270 + R() * 570); // deaths spread 4:30-14:00
     const frac = Math.pow(t / CAL.runSecs, CAL.ramp);
-    const tierMul = tier === 'normal' ? 1 : tier === 'hard' ? 1.5 : 2;
+    const pay = tierPay(tier);
+    const tierMul = pay.goldMul;
     const dens = tier === 'normal' ? 1 : tier === 'hard' ? 1.15 : 1.3;
     const ch = chapterReached(s);
     const mods = aggregateMods(s.tree, def, data, { tier: tier === 'normal' ? 0 : tier === 'hard' ? 1 : 2 });
@@ -176,7 +285,7 @@ function simulatePlayer(p) {
     const T = (tiers[tier] ||= { runs: 0, clears: 0, stars: 0, heroes: {} });
     T.runs++;
     let shards = 0; let glass = 0;
-    const tierData = { normal: { shards: 5, g: [0, 0, 0, 0, 0, 0] }, hard: { shards: 7, g: [2, 2, 6, 1, 2, 6] }, expert: { shards: 10, g: [3, 4, 10, 1, 3, 10] } }[tier];
+    const tierData = pay;
     const [gBoss, gDawn, gFirst, , gMarkCap, gCap] = tierData.g;
     if (boss) { st.bossKills.elder_treant = (st.bossKills.elder_treant || 0) + 1; shards += tierData.shards; glass += gBoss; }
     const marked = tier === 'normal' ? 0 : Math.round(kills * (tier === 'hard' ? 0.05 : 0.1) * Math.max(0, 1 - 240 / Math.max(t, 241)));
@@ -188,7 +297,7 @@ function simulatePlayer(p) {
       T.clears++;
       const H = (T.heroes[hero] ||= { clears: 0, first: false });
       H.clears++;
-      if (!H.first) { H.first = true; glass += gFirst; if (tier !== 'normal') shards += 1; }
+      if (!H.first) { H.first = true; glass += gFirst; shards += tierData.firstShards; }
       T.stars |= 1;
       if (T.heroes.wren && T.heroes.elias) T.stars |= 2;
       if (R() < 0.3) T.stars |= 4;
@@ -253,8 +362,9 @@ function simulatePlayer(p) {
         const need = Math.min(...big.map((x) => x.st.next.gold));
         if (s.gold - pick.st.next.gold < need) break;
       }
-      const res = buy(s, pick.id, def, data);
+      const res = buyNode(s, pick.id);
       if (!res.ok) break;
+      if ((PRICE === 'creep' || PRICE === 'both') && creepable(pick.id)) { const reg = creepGroup(pick.id); for (const x of CREEP_GROUPS[reg]) if (x !== pick.id && creepable(x) && !owned(s, x)) def.nodes[x].cost.gold = Math.round(def.nodes[x].cost.gold * (1 + CREEP)); }
       bought++; boughtIds.push(pick.id);
     }
     noBuy = bought ? 0 : noBuy + 1;
@@ -270,12 +380,16 @@ function simulatePlayer(p) {
     for (const id of boughtIds) if (firstBuy[id] === undefined) firstBuy[id] = r;
     for (const [reg, ids] of Object.entries(REGIONS)) if (ids.every((id) => owned(s, id))) mark(`complete ${reg}`, r);
     const post = statusAll(s);
+    const frontier = post.afford.length + post.short.length; // lanterns linked + condition met (buyable with enough gold) after this run's buys
+    if (post.goldLeft === 0) mark('no gold lantern left (sink opens)', r);
+    if (process.env.DEBUG_NTB && frontier === 0 && post.goldLeft > 0) console.error(`nothing to buy: player ${p} run ${r}: gold-only left ${post.goldIds.join(',')}`);
     const somethingNext = pre.afford.length > 0 || nearest <= 2 || condNear <= 3;
     const visible = pre.afford.length + pre.short.length + condVisible > 0;
     rows.push({
       r, hero, tier, win, t, gold, shards, glass, bank: s.gold,
       owned: ownN, pe: peOf(s.tree), weapons: weapons.length, evos: evos.length,
       affordPre: pre.afford.length, affordPost: post.afford.length, short: pre.short.length, nearestRuns: nearest, condVisible, condNear, bought,
+      frontier, held: pre.held, nothingToBuy: frontier === 0 && post.goldLeft > 0, spent: income.reduce((a, b) => a + b, 0) - s.gold,
       deadAfford: !(pre.afford.length > 0 || nearest <= 2), deadChase: !somethingNext, deadVisible: !visible && ownN < OWNABLE, wall: noBuy >= 3 && ownN < OWNABLE,
       done: ownN >= OWNABLE,
     });
@@ -293,15 +407,16 @@ const mode = NODES ? `GROWTH ${def.list.length} nodes (synthetic constellations 
 const out = [];
 const log = (s = '') => { out.push(s); console.log(s); };
 log(`Skill tree timeline: ${mode}`);
+log(`Links: ${LINKS}. Rule: ${RULE}${patched ? ` (dry-run patch: ${patched.edits.length} edits, ${patched.bridges.length} bridges; unlinked ${patched.report.unreachable.length}, far links ${patched.report.far.length})` : ''}. Price: ${PRICE}${PRICE === 'depth' || PRICE === 'both' ? ` k=${K}` : ''}${PRICE === 'creep' || PRICE === 'both' ? ` creep=${CREEP}` : ''}. Econ: ${ECON} (win gold ${CAL.goldWin}, calib ${CALIB}). Tier rewards: ${TIERS}.`);
 log(`${PLAYERS} human-model players x ${RUNS} runs, seed ${SEED}. Full-tree combat PE ${PE_FULL.toFixed(2)}. Tiers modelled: ${hasTiers ? 'yes' : 'no (tier gates inert)'}. ${Math.round(performance.now() - t0)} ms`);
 log('MODEL, not the Sim: income/kills/win odds calibrated to economy 9.3 and the locked win bands (header of this script).');
 log('');
 const CK = NODES ? [1, 2, 3, 5, 10, 20, 40, 60, 80, 100, 140, 180, 220, 260, 300].filter((r) => r <= RUNS) : [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100].filter((r) => r <= RUNS);
-log('run | owned (of ' + OWNABLE + ' ownable) | power PE | weapons/evos open | gold this run | affordable after the run | nearest not-affordable (runs) | goals in progress | win% | dead: nothing near / nothing to chase');
+log('run | owned (of ' + OWNABLE + ' ownable) | buyable (linked, condition met; any gold) | power PE | weapons/evos open | gold this run | affordable after the run | nearest not-affordable (runs) | goals in progress | win% | dead: nothing near / nothing to chase');
 for (const r of CK) {
   const rs = players.map((p) => p.rows[r - 1]);
   const pc = (k) => Math.round((rs.filter((x) => x[k]).length / rs.length) * 100);
-  log(`${String(r).padStart(3)} | ${fmt(med(rs.map((x) => x.owned)))} (${fmt(q(rs.map((x) => x.owned), 0.1))}-${fmt(q(rs.map((x) => x.owned), 0.9))}) | ${fmt(med(rs.map((x) => x.pe)), 2)} | ${fmt(med(rs.map((x) => x.weapons)))}/${fmt(med(rs.map((x) => x.evos)))} | ${fmt(med(rs.map((x) => x.gold)))} | ${fmt(med(rs.map((x) => x.affordPre)))} [buys ${fmt(med(rs.map((x) => x.bought)))}] (p10 ${fmt(q(rs.map((x) => x.affordPre), 0.1))}) | ${fmt(med(rs.map((x) => x.nearestRuns)), 1)} | ${fmt(med(rs.map((x) => x.condVisible)))} | ${pc('win')}% | ${pc('deadAfford')}% / ${pc('deadChase')}%`);
+  log(`${String(r).padStart(3)} | ${fmt(med(rs.map((x) => x.owned)))} (${fmt(q(rs.map((x) => x.owned), 0.1))}-${fmt(q(rs.map((x) => x.owned), 0.9))}) | ${fmt(med(rs.map((x) => x.frontier)))} (p10 ${fmt(q(rs.map((x) => x.frontier), 0.1))}) | ${fmt(med(rs.map((x) => x.pe)), 2)} | ${fmt(med(rs.map((x) => x.weapons)))}/${fmt(med(rs.map((x) => x.evos)))} | ${fmt(med(rs.map((x) => x.gold)))} | ${fmt(med(rs.map((x) => x.affordPre)))} [buys ${fmt(med(rs.map((x) => x.bought)))}] (p10 ${fmt(q(rs.map((x) => x.affordPre), 0.1))}) | ${fmt(med(rs.map((x) => x.nearestRuns)), 1)} | ${fmt(med(rs.map((x) => x.condVisible)))} | ${pc('win')}% | ${pc('deadAfford')}% / ${pc('deadChase')}%`);
 }
 log('');
 log('Milestones: run number, median (p10-p90), share of players who reached it');
@@ -332,6 +447,16 @@ summarise(dz('deadAfford'), 'A. pacing rule broken (nothing affordable now, near
 summarise(dz('deadChase'), 'B. nothing to chase (A and no condition goal within ~3 runs)');
 summarise(dz('deadVisible'), 'C. nothing visible at all (no buyable or in-progress node)');
 summarise(dz('wall'), 'D. grind wall (3+ runs in a row without a purchase)');
+summarise(dz('nothingToBuy'), 'E. NOTHING TO BUY (target 0): no linked lantern with its condition met, while gold-only lanterns remain');
+const heldRuns = players.flatMap((p) => p.rows.filter((x) => x.held > 0 && !x.done));
+log(`  lanterns held back by the connected rule (buyable under today's rules but not linked): median ${fmt(med(heldRuns.map((x) => x.held)))} in ${heldRuns.length} player-runs; run 1 ${fmt(med(players.map((p) => p.rows[0].held)))}, run 3 ${fmt(med(players.map((p) => p.rows[Math.min(2, RUNS - 1)].held)))}, run 10 ${fmt(med(players.map((p) => p.rows[Math.min(9, RUNS - 1)].held)))}`);
+{
+  const byD = {};
+  for (const id of IDS) if (priced(id) && BASE[id] > 0) (byD[DEPTH[id]] ||= []).push(BASE[id]);
+  log(`  price by depth (rank-1 gold, mean [n]): ${Object.entries(byD).sort((a, b) => a[0] - b[0]).map(([d, a]) => `d${d} ${Math.round(a.reduce((x, y) => x + y, 0) / a.length)} [${a.length}]`).join(', ')}`);
+  const spentEnd = players.map((p) => p.rows[p.rows.length - 1].spent);
+  log(`  gold spent by run ${RUNS}: median ${fmt(med(spentEnd))}; bank at run ${RUNS}: median ${fmt(med(players.map((p) => p.rows[p.rows.length - 1].bank)))}`);
+}
 // the longest stretch without a purchase per player
 const longest = players.map((p) => { let m = 0, c = 0; for (const x of p.rows) { if (x.done) break; c = x.bought ? 0 : c + 1; m = Math.max(m, c); } return m; });
 log(`  longest stretch without a purchase: median ${med(longest)}, max ${Math.max(...longest)} runs`);
@@ -342,6 +467,13 @@ const allIds = IDS.map((id) => [id, med(players.map((p) => p.firstBuy[id] ?? Inf
 log(`Long poles (bought last, median run): ${allIds.slice(0, 10).map(([id, r]) => `${id} ${fmt(r)}`).join(', ')}`);
 log(`Whole tree (all ${OWNABLE} ownable): median run ${fmt(med(fin))}, ${Math.round((fin.filter(Number.isFinite).length / PLAYERS) * 100)}% finished within ${RUNS} runs.`);
 
+{
+  const msMed = (k) => { const v = players.map((p) => p.ms[k]).filter((x) => x !== undefined); return v.length ? `${fmt(med(v))} (${Math.round((v.length / PLAYERS) * 100)}%)` : '-'; };
+  const allRuns = players.flatMap((p) => p.rows.filter((x) => !x.done));
+  const pct = (k) => ((allRuns.filter((x) => x[k]).length / Math.max(1, allRuns.length)) * 100).toFixed(1);
+  const r1 = players.map((p) => p.rows[0]);
+  log(`SUMMARY links=${LINKS} rule=${RULE} price=${PRICE} econ=${ECON} tiers=${TIERS} | run1 buyable ${fmt(med(r1.map((x) => x.affordPre)))} buys ${fmt(med(r1.map((x) => x.bought)))} | buyable@3/10/25 ${[3, 10, 25].map((r) => fmt(med(players.map((p) => p.rows[Math.min(r, RUNS) - 1].frontier)))).join('/')} | nothing-to-buy ${pct('nothingToBuy')}% | dead A ${pct('deadAfford')}% B ${pct('deadChase')}% wall ${pct('wall')}% | 50% ${msMed('50% of nodes')} 90% ${msMed('90% of nodes')} sink ${msMed('no gold lantern left (sink opens)')} whole ${msMed('whole tree')} | Twilight ${msMed('first Twilight clear')} DD open ${msMed('open Deep Dusk')} DD clear ${msMed('first Deep Dusk clear')} LN clear ${msMed('first Long Night clear')}`);
+}
 if (JSON_OUT) { writeFileSync(JSON_OUT, JSON.stringify({ mode, players: PLAYERS, runs: RUNS, seed: SEED, peFull: PE_FULL, rows: players.map((p) => p.rows), milestones: players.map((p) => p.ms) })); console.log(`wrote ${JSON_OUT}`); }
 if (PRESETS_OUT) {
   // the median player by 'whole tree' run (or by owned count at the end) gives the prototype its save presets
