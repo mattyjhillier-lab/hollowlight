@@ -42,7 +42,7 @@ test('shipped fight data validates; bad data throws', () => {
   for (const b of bad) { const f = clone(); b(f); assert.throws(() => validateFight(f, data.enemies)); }
   for (const id of BOSS_MOVES) assert.ok(F.moves[id].tell >= 0.7 || id === 'seeds', `${id} tell`);
   assert.equal(F.moves.slam.tell, 1.2); assert.equal(F.moves.sweep.tell, 1.2);
-  assert.equal(data.enemies.elder_treant.hp, 6000);
+  assert.equal(data.enemies.elder_treant.hp, 36000);
   assert.deepEqual([F.dmg.light, F.dmg.mid, F.dmg.heavy], [6, 10, 15]);
 });
 

@@ -9,7 +9,7 @@
     "ai": { "kind": "fuse", "grace": 0.8, "maxTells": 6, "trigger": 30, "fuse": 1.0, "burstR": 36, "burstDmg": 12 } },
   "bramble_hart": { "name": "Bramble Hart",   "hp": 45,   "speed": 40,  "dmg": 8,  "r": 10, "xp": 6, "gold": 3,   "color": "#56607a", "shape": "hart",   "mass": 4, "mustReact": true,
     "ai": { "kind": "charger", "grace": 0.8, "maxTells": 3, "firstCd": [2, 4], "range": 200, "tell": 0.8, "charge": 0.9, "chargeMul": 5, "chargeDmg": 12, "stagger": 0.6, "cd": 6, "cdRand": 2, "immune": "charge" } },
-  "elder_treant": { "name": "Elder Treant",   "hp": 6000, "speed": 18,  "dmg": 8,  "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true, "fixed": true,
+  "elder_treant": { "name": "Elder Treant",   "hp": 36000, "speed": 18,  "dmg": 8,  "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true, "fixed": true,
     "fight": {
       "arena": { "r": 230, "edge": 260, "ahead": 60, "rise": 120, "pull": 160 },
       "intro": { "beat": 3.0, "freezeAt": 1.0, "freeze": 1.2, "grace": 2.0 },
