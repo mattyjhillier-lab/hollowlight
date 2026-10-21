@@ -11,6 +11,7 @@ export const QUALITIES = ['auto', 'low', 'med', 'high'];
 export const BRIGHTNESS = BRIGHTNESS_STORED; // 'auto' = Brighter on phone-sized/touch devices, Normal elsewhere (resolved at draw time)
 export const TOUCH_MODES = ['auto', 'on', 'off'];
 export const STICK_NAMES = ['small', 'medium', 'large'];
+export const AUTO_RULE_NAMES = ['hp30', 'hp50', 'crowd25', 'off']; // Hearth-key 'Chosen Moment' (T6; same list as Sim AUTO_RULES, tested)
 export const RECENT_RUNS = 10;
 
 const MAX_NUM = 1e12;
@@ -23,7 +24,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium' };
+  return { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30' };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -215,6 +216,7 @@ export function sanitize(raw, now = Date.now()) {
       brightness: BRIGHTNESS.includes(st.brightness) ? st.brightness : ds.brightness,
       touchMode: TOUCH_MODES.includes(st.touchMode) ? st.touchMode : ds.touchMode,
       stickSize: STICK_NAMES.includes(st.stickSize) ? st.stickSize : ds.stickSize,
+      autoRule: AUTO_RULE_NAMES.includes(st.autoRule) ? st.autoRule : ds.autoRule,
     },
   };
 }

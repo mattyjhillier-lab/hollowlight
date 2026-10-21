@@ -25,12 +25,13 @@ test('T3c patch: every live lantern links to something lit, no far links, every 
   assert.deepEqual(connectIssues(composed.info, def), []);
   const inert = new Set(composed.info.nodes.filter((n) => n.inert).map((n) => n.id));
   const pend = connectIssues(composed.info, v2);
-  assert.equal(pend.length, 6, pend.join('\n'));
+  assert.equal(pend.length, 0, pend.join('\n')); // T6: Card Fan / Almanac / Hearth-key each have a gold-only way in (cd_peek, bs_wolf1, rs_autoset)
   for (const i of pend) assert.ok((i.match(/\b[a-z]{2}_[a-z0-9_]+/g) || []).every((x) => inert.has(x) || !composed.info.nodes.some((n) => n.id === x)), i);
   assert.deepEqual(layoutIssues(composed.info, v2), []);
   // the four bridges: 250 gold, gem pull +5% (utility only), Dusk ring, only br_satchel is live (the other three wait with their groups)
   for (const b of ['br_satchel', 'br_almanac', 'br_cardfan', 'br_hearthkey']) { const n = v2.nodes[b]; assert.equal(n.cost.gold, 250); assert.deepEqual(n.effects, [{ perk: 'gemPull', pct: 5 }]); assert.ok(!n.unlock && n.requiresAny.length === 2); }
-  assert.ok(def.nodes.br_satchel && !def.nodes.br_almanac && def.pending.br_almanac);
+  assert.ok(def.nodes.br_satchel && def.nodes.br_almanac && def.nodes.br_cardfan && def.nodes.br_hearthkey, 'T6: all four bridges are live');
+  for (const id of ['cd_peek', 'bs_wolf1', 'rs_autoset']) assert.ok(def.nodes[id] && !def.nodes[id].unlock, `${id}: its group's gold-only way in`);
   assert.deepEqual(['li_reach', 'co_pull'].map((i) => def.nodes[i].requires), [['br_satchel'], ['br_satchel']]);
   assert.deepEqual([def.nodes.sp_cd1.requires, def.nodes.sp_cd1.requiresAny], [[], ['sp_reroll1', 'sp_ban1']], 'needs-all join is now any-one');
   assert.deepEqual(v2.nodes.bs_page.requiresAny, ['bs_wolf1', 'bs_crow1', 'bs_crawl1', 'bs_treant1']);

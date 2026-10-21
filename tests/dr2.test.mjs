@@ -39,7 +39,7 @@ test('DR2 data: the real enemy tell parameters match what threatens() assumes', 
   const w = data.enemies.wolf;
   assert.ok(w.speed > 0);
   const src = readFileSync(new URL('../src/sim/Sim.js', import.meta.url), 'utf8');
-  assert.ok(/e\.stT = 0\.55;/.test(src) && /e\.speed \* 3\.2/.test(src) && /e\.stT = 0\.6;/.test(src), 'wolf tell 0.55 s, lunge 3.2x for 0.6 s');
+  assert.ok(/WOLF_TELL = 0\.55;/.test(src) && /e\.stT = e\.teleT = this\.wolfTell;/.test(src) && /e\.speed \* 3\.2/.test(src) && /e\.stT = 0\.6;/.test(src), 'wolf tell 0.55 s (+0.1 s with the Almanac Tells lantern, T6), lunge 3.2x for 0.6 s');
   assert.equal(data.enemies.elder_treant.fight.moves.slam.r, 74, 'slam radius 74 (boss.js tells; the renderer tests the tell itself)');
 });
 

@@ -37,6 +37,7 @@ export const SET = {
   damageNumbers: { label: 'Damage numbers', help: 'Show a number when a hit lands.' },
   touchMode: { label: 'Touch controls', help: 'Auto shows them on touch screens.', opts: [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']] },
   stickSize: { label: 'Joystick size', help: 'Size of the thumb stick on a touch screen.', opts: [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']] },
+  autoRule: { label: 'Ability fires itself', help: 'Chosen Moment: below 30% or 50% health, or when 25+ foes are near.', opts: [['hp30', '30% HP'], ['hp50', '50% HP'], ['crowd25', '25+ foes'], ['off', 'Off']] },
   fullscreen: { label: 'Full screen', help: 'Play without the browser around the game.', on: 'Full screen', off: 'Exit full screen' },
   keys: 'Move: WASD or arrows. Ability: Space. Pause: Esc. Pick a card: 1 to 4. Reroll: R.',
   keysLabel: 'Keyboard',

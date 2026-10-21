@@ -247,7 +247,7 @@ export class UI {
     const s = buildSettings({
       settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
       storageNote: h.storageNote ? h.storageNote() : null,
-      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave },
+      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave, hasAutoRule: h.hasAutoRule },
       onBack: () => this.hideSettings(),
       onRebuild: (m, t) => this.showSettings(m, t),
     });

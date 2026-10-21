@@ -112,6 +112,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   const controls = group(SET.tabs[2].label,
     choice({ ...SET.touchMode, options: SET.touchMode.opts, value: st.touchMode, onChange: (v) => set({ touchMode: v }) }),
     choice({ ...SET.stickSize, options: SET.stickSize.opts, value: st.stickSize, onChange: (v) => set({ stickSize: v }) }),
+    api.hasAutoRule && api.hasAutoRule() ? choice({ ...SET.autoRule, options: SET.autoRule.opts, value: st.autoRule, onChange: (v) => set({ autoRule: v }) }) : null,
     fullscreenRow(pwa), keys);
 
   // ---- Saves: export / import / reset, each with its old confirmation ----

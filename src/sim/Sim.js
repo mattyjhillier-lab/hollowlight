@@ -11,6 +11,9 @@ import {
   computeStats,
   xpForLevel,
   fallbackCard,
+  previewDraw,
+  offerFromPreview,
+  startOffer,
   BURN_RATE,
   BURN_TIME,
 } from './cards.js';
@@ -24,6 +27,22 @@ const FIGHT_OK = new WeakSet(); // boss fight blocks already validated (shipped 
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// T6 tool clusters (docs/design/difficulty-tiers-economy-v1.md 8.2; all inert without the matching owned lantern):
+// Almanac Tells: a Fell Wolf's lunge tell starts TELL_EARLY s sooner (the boss gets a brighter tell ring, render only, bossview.js).
+export const TELL_EARLY = 0.1;
+export const WOLF_TELL = 0.55;
+// Hearth-key 'Chosen Moment': the auto-fire rules (Settings). crowd25 = 25+ foes within AUTO_NEAR world units of the hero.
+export const AUTO_RULES = ['hp30', 'hp50', 'crowd25', 'off'];
+export const AUTO_NEAR = 140;
+export const AUTO_CROWD = 25;
+// Almanac lore: tree map enemy id -> +% damage against that type (2 at most per type, as aggregateMods clamps it); anything else is dropped.
+function cleanLore(raw, enemies) {
+  const out = Object.create(null);
+  if (!raw || typeof raw !== 'object') return out;
+  for (const k of Object.keys(raw)) if (Object.hasOwn(enemies, k) && Number.isFinite(raw[k]) && raw[k] > 0) out[k] = Math.min(2, raw[k]);
+  return out;
+}
+
 // MARK (W8b): +15% damage taken from ALL sources for 3 s, refresh only (re-marking resets the timer, never stacks), bosses included.
 // TOTAL DAMAGE-AMP CAP (Matt 2026-10-16): the product of every temporary damage amp (Mark, a source amp such as Rally the Pack +50%)
 // is capped at x1.75; applied in exactly one place (Sim.damageAmp, used by Sim.hurt).
@@ -32,7 +51,7 @@ export const MARK_TIME = 3;
 export const AMP_CAP = 1.75;
 
 export class Sim {
-  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal' }) {
+  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null }) {
     this.data = data;
     this.balance = data.balance;
     this.chapterId = chapterId;
@@ -86,7 +105,21 @@ export class Sim {
       gemCall: !!T.perks?.gemCall,
       heartPity: T.drops?.heartPity || 0,
       magnetPity: T.drops?.magnetPity || 0,
+      // T6 Almanac / Card Fan
+      lore: cleanLore(T.lore, data.enemies),
+      tells: new Set(Array.isArray(T.tells) ? T.tells.filter((id) => typeof id === 'string' && Object.hasOwn(data.enemies, id)) : []),
+      peek: Array.isArray(T.info) && T.info.includes('peek'),
+      loudStir: Array.isArray(T.info) && T.info.includes('stir'),
     };
+    this.hasLore = Object.keys(this.tfx.lore).length > 0;
+    this.wolfTell = WOLF_TELL + (this.tfx.tells.has('wolf') ? TELL_EARLY : 0);
+    // tier-bought (aggregateMods already drops them below their tier): Fourth Card / Fifth Hook
+    this.offerSize = this.balance.offerSize + clamp(Math.floor(T.perks?.offerSize || 0), 0, 2);
+    this.weaponSlots = this.balance.weaponSlots + clamp(Math.floor(T.perks?.weaponSlot || 0), 0, 2);
+    // Hearth-key 'Chosen Moment': the auto-fire rule replaces Last Whistle's fixed 30% rule (null = not owned)
+    this.autoRule = T.perks?.autoRule ? (AUTO_RULES.includes(autoRule) ? autoRule : 'hp30') : null;
+    this.favour = null; // Card Fan 'Favoured Spirit': the weapon marked at run start
+    this.peekNext = null; // Card Fan 'Second Sight': the next offer, drawn now
     this.reviveLeft = this.tfx.revive > 0 ? 1 : 0;
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
@@ -185,6 +218,42 @@ export class Sim {
     }
 
     this.addWeapon(this.character.weapon);
+    // run-start offers (T6): Kindred Start, Favoured Spirit, Lantern Blessing, in that order; the world waits (state 'levelup', offer.start)
+    this.startQueue = [];
+    if (T.perks?.startWeapon) this.startQueue.push('kindred');
+    if (T.perks?.favour) this.startQueue.push('favour');
+    if (T.perks?.startBlessing && this.blessDef) this.startQueue.push('blessing');
+    if (this.startQueue.length) this.nextStartOffer();
+  }
+
+  nextStartOffer() {
+    while (this.startQueue.length) {
+      const kind = this.startQueue.shift();
+      const cards = startOffer(this.cardCtx, this.rng, kind);
+      if (!cards.length) continue;
+      this.state = 'levelup';
+      this.offer = { cards, gold: [], start: kind };
+      return true;
+    }
+    return false;
+  }
+
+  setAutoRule(v) { if (this.autoRule !== null && AUTO_RULES.includes(v)) this.autoRule = v; }
+
+  autoFires() {
+    const r = this.autoRule;
+    if (r === 'off' || this.ability.cdLeft > 0) return false;
+    const p = this.player;
+    if (r === 'hp30') return p.hp < p.maxHp * 0.3;
+    if (r === 'hp50') return p.hp < p.maxHp * 0.5;
+    const R2 = AUTO_NEAR * AUTO_NEAR;
+    let n = 0;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const dx = e.x - p.x, dy = e.y - p.y;
+      if (dx * dx + dy * dy < R2 && ++n >= AUTO_CROWD) return true;
+    }
+    return false;
   }
 
   // ------------------------------------------------------------------ helpers
@@ -194,7 +263,7 @@ export class Sim {
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions, offerSize: this.offerSize, weaponSlots: this.weaponSlots, favour: this.favour, loudStir: this.tfx.loudStir };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).
@@ -262,6 +331,7 @@ export class Sim {
   hurt(e, amount, opts = {}) {
     if (e.dead || amount <= 0) return 0;
     if (e.immuneT > 0) return 0; // the boss while rising / staggering at a phase change
+    if (this.hasLore) { const l = this.tfx.lore[e.type]; if (l) amount *= 1 + l / 100; } // Almanac Habits / Weakness: +1-2% against that type
     const amp = this.damageAmp(e);
     if (amp !== 1) {
       const extra = amount * (amp - 1);
@@ -534,7 +604,7 @@ export class Sim {
           e.chargeCd -= dt;
           if (e.chargeCd <= 0 && dist < 130) {
             e.state = 'tele';
-            e.stT = 0.55;
+            e.stT = e.teleT = this.wolfTell; // teleT: the renderer's chevron grows over the real windup
             e.dx = nx;
             e.dy = ny;
           }
@@ -969,7 +1039,9 @@ export class Sim {
 
   beginLevelUp() {
     this.state = 'levelup';
-    this.offer = this.withHealSwap(generateOffer(this.cardCtx, this.rng));
+    const ctx = this.cardCtx;
+    this.offer = this.withHealSwap(this.peekNext ? offerFromPreview(ctx, this.rng, this.peekNext) : generateOffer(ctx, this.rng));
+    if (this.tfx.peek) this.peekNext = previewDraw(ctx, this.rng); // Second Sight: shown dimmed under this offer
   }
 
   withHealSwap(offer) {
@@ -993,8 +1065,8 @@ export class Sim {
     return true;
   }
 
-  canReroll() { return this.state === 'levelup' && this.rerollsLeft > 0; }
-  canBanish() { return this.state === 'levelup' && this.banishesLeft > 0; }
+  canReroll() { return this.state === 'levelup' && this.rerollsLeft > 0 && !(this.offer && this.offer.start); }
+  canBanish() { return this.state === 'levelup' && this.banishesLeft > 0 && !(this.offer && this.offer.start); }
 
   reroll() {
     if (!this.canReroll()) return false;
@@ -1015,6 +1087,16 @@ export class Sim {
     if (this.state !== 'levelup' || !this.offer) return false;
     const card = this.offer.cards.concat(this.offer.gold).find((c) => c.key === key);
     if (!card) return false;
+    if (this.offer.start) { // a run-start offer (T6): not a level-up, pending is untouched
+      if (card.kind === 'favour') this.favour = card.weaponId;
+      else if (card.kind === 'blessing') { this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1); this.blessingsTaken += 1; }
+      else if (card.kind === 'weapon') applyCard(this.cardCtx, card);
+      this.offer = null;
+      if (this.nextStartOffer()) return true;
+      if (this.pending > 0) this.beginLevelUp();
+      else this.state = 'running';
+      return true;
+    }
     if (card.kind === 'fallback') {
       if (card.fallback === 'heal') { this.healPlayer(this.player.maxHp * 0.35); if (card.swapped) this.healSwapReady = this.time + this.blessDef.heal.cooldown; }
       else if (card.fallback === 'gold') this.gold += 25;
@@ -1058,6 +1140,7 @@ export class Sim {
     this.updateZones(dt);
     this.ability.cdLeft = Math.max(0, this.ability.cdLeft - dt);
     if (input.ability) this.useAbility();
+    else if (this.autoRule !== null) { if (this.autoFires()) this.useAbility(); }
     else if (this.tfx.autoHp > 0 && this.player.hp < this.player.maxHp * this.tfx.autoHp) this.useAbility();
     this.cleanupDead();
     this.updateGems(dt);

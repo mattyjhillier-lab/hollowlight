@@ -274,6 +274,7 @@ export class BossView {
     const F = sim.fight;
     if (!F || !F.tells.length) { this.drawArrow(g, sim); return; }
     const p = sim.player, now = sim.time;
+    const lb = sim.tfx && sim.tfx.tells && sim.boss && sim.tfx.tells.has(sim.boss.type) ? 0.25 : 0; // Almanac 'Elder Treant: Tells' (T6): a brighter tell ring
     for (const t of F.tells) {
       const k = Math.max(0, Math.min(1, (now - t.t0) / Math.max(0.01, t.t1 - t.t0)));
       const thr = t.harm && tellHits(t, p.x, p.y, p.r);
@@ -284,7 +285,7 @@ export class BossView {
         g.fillStyle(TELL_RO, 0.06 * f).fillCircle(t.x, t.y, t.r);
         g.fillStyle(TELL_RO, fillA).fillCircle(t.x, t.y, Math.max(1, t.r * k));
         g.lineStyle(3.5, RIM, 0.45 * f).strokeCircle(t.x, t.y, t.r);
-        g.lineStyle(1.8, TELL_RO, (0.55 + 0.4 * k) * f).strokeCircle(t.x, t.y, t.r);
+        g.lineStyle(1.8 + lb * 4, TELL_RO, Math.min(1, 0.55 + lb + 0.4 * k) * f).strokeCircle(t.x, t.y, t.r);
       } else if (t.shape === 'cone') {
         const a = Math.atan2(t.ay, t.ax), h = t.arc / 2;
         g.fillStyle(TELL_RO, (thr ? 0.1 : 0.16) * f);
@@ -292,14 +293,14 @@ export class BossView {
         g.fillStyle(TELL_RO, (thr ? 0.1 : 0.18) * f);
         g.slice(t.x, t.y, t.r * k, a - h, a + h, false); g.fillPath();
         g.lineStyle(3.5, RIM, 0.45 * f); g.slice(t.x, t.y, t.r, a - h, a + h, false); g.strokePath();
-        g.lineStyle(1.8, TELL_RO, (0.55 + 0.4 * k) * f); g.slice(t.x, t.y, t.r, a - h, a + h, false); g.strokePath();
+        g.lineStyle(1.8 + lb * 4, TELL_RO, Math.min(1, 0.55 + lb + 0.4 * k) * f); g.slice(t.x, t.y, t.r, a - h, a + h, false); g.strokePath();
       } else if (t.shape === 'lane') {
         const px = -t.ay * t.w / 2, py = t.ax * t.w / 2, x1 = t.x + t.ax * t.len, y1 = t.y + t.ay * t.len;
         g.fillStyle(TELL_RO, (thr ? 0.1 : 0.08 + 0.1 * k) * f);
         g.fillTriangle(t.x + px, t.y + py, x1 + px, y1 + py, x1 - px, y1 - py);
         g.fillTriangle(t.x + px, t.y + py, x1 - px, y1 - py, t.x - px, t.y - py);
         g.lineStyle(3, RIM, 0.4 * f); g.lineBetween(t.x + px, t.y + py, x1 + px, y1 + py); g.lineBetween(t.x - px, t.y - py, x1 - px, y1 - py);
-        g.lineStyle(1.6, TELL_RO, (0.5 + 0.45 * k) * f); g.lineBetween(t.x + px, t.y + py, x1 + px, y1 + py); g.lineBetween(t.x - px, t.y - py, x1 - px, y1 - py);
+        g.lineStyle(1.6 + lb * 4, TELL_RO, Math.min(1, 0.5 + lb + 0.45 * k) * f); g.lineBetween(t.x + px, t.y + py, x1 + px, y1 + py); g.lineBetween(t.x - px, t.y - py, x1 - px, y1 - py);
         // ground cracks along the lane centre, growing with the tell
         g.lineStyle(1.2, TELL_RO, 0.7 * f);
         for (let d = 0; d < t.len * k; d += 14) g.lineBetween(t.x + t.ax * d, t.y + t.ay * d, t.x + t.ax * (d + 8) + px * 0.25, t.y + t.ay * (d + 8) + py * 0.25);

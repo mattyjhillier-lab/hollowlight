@@ -21,14 +21,9 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "br_hearthkey"
    ],
-   "unlock": {
-    "t": "abilityUses",
-    "n": 100
-   },
    "place": {
     "at": [
      69.3,
@@ -52,7 +47,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "any",
     "of": [
@@ -100,7 +94,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "rs_start"
    ],

@@ -22,12 +22,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
-   "unlock": {
-    "t": "killEnemy",
-    "id": "wolf",
-    "n": 1000
-   },
    "place": {
     "at": [
      0,
@@ -54,7 +48,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_wolf1"
    ],
@@ -86,7 +79,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_wolf2"
    ],
@@ -118,7 +110,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "killEnemy",
     "id": "crow",
@@ -150,7 +141,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_crow1"
    ],
@@ -214,7 +204,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "killEnemy",
     "id": "root_crawler",
@@ -246,7 +235,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_crawl1"
    ],
@@ -310,7 +298,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "bossKill",
     "id": "elder_treant",
@@ -342,7 +329,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_treant1"
    ],
@@ -363,7 +349,7 @@
    "idx": 11,
    "kind": "ring",
    "name": "Elder Treant: Tells",
-   "desc": "Its attack tell shows 0.1 s earlier.",
+   "desc": "Its attack tells glow brighter.",
    "cost": {
     "gold": 500
    },
@@ -374,7 +360,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_treant2"
    ],

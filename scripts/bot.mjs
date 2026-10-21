@@ -193,6 +193,7 @@ function botInput(sim) {
 function pick(sim, rng) {
   const offer = sim.offer;
   if (offer.gold.length) return offer.gold[0].key;
+  if (offer.start === 'favour') return offer.cards[0].key; // T6 Favoured Spirit: the bot marks its hero's own weapon (listed first)
   // Rerolls: redraw a hand with no weapon card and no stat already in progress. Banish: drop fallback cards.
   if (sim.banishesLeft > 0) { const f = offer.cards.find((c) => c.kind === 'fallback' && c.fallback !== 'heal'); if (f && sim.banish(f.key)) return pick(sim, rng); }
   if (sim.rerollsLeft > 0 && !offer.cards.some((c) => c.kind === 'weapon' || (c.kind === 'stat' && c.rank >= 1)) && sim.reroll()) return pick(sim, rng);

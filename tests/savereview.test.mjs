@@ -227,6 +227,7 @@ T('R11 a migration step can see a node that was retired (so it can refund it)', 
   const c = core(fs);
   const gone = c.nodes.find((n) => n.id === 'sp_cd4');
   c.nodes = c.nodes.filter((n) => n.id !== 'sp_cd4');
+  const bridge = c.nodes.find((n) => n.id === 'br_cardfan'); delete bridge.requiresAny; bridge.requires = ['sp_cd3']; // T6: the live Card Fan bridge also hangs from sp_cd4
   c.retired.push({ id: 'sp_cd4', frag: 'core', idx: gone.idx });
   c.version = 4;
   const def = liveOf(fs);

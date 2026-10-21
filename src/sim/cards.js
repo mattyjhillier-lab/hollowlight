@@ -77,14 +77,19 @@ export function availableEvolutions(w, data, unlocked) {
 
 // EVO-HINT (display only): true when taking this stat card would leave BOTH stats of an unlocked,
 // not-yet-taken evolution pair at max rank. Never exposes which evolution or partner stat.
-export function stirs(w, statKey, data, unlocked) {
+// loud (Card Fan 'Louder Stirring', T6): it also stirs when the PARTNER stat is at rank LOUD_STIR_RANK or more (an earlier hint; still never names it).
+export const LOUD_STIR_RANK = 2;
+export function stirs(w, statKey, data, unlocked, loud = false) {
   if (w.evo) return false;
   const max = data.balance.maxRank;
-  if ((w.ranks[statKey] || 0) + 1 < max) return false;
+  const finishing = (w.ranks[statKey] || 0) + 1 >= max;
+  if (!finishing && !loud) return false;
   for (const [id, e] of Object.entries(data.evolutions)) {
     if (e.weapon !== w.id || !e.pair.includes(statKey) || !evoOpen(e, id, unlocked)) continue;
     const other = e.pair[0] === statKey ? e.pair[1] : e.pair[0];
-    if ((w.ranks[other] || 0) >= max) return true;
+    const pr = w.ranks[other] || 0;
+    if (finishing && pr >= max) return true;
+    if (loud && pr >= LOUD_STIR_RANK) return true;
   }
   return false;
 }
@@ -102,7 +107,7 @@ function weaponCard(id, data) {
   };
 }
 
-function statCard(w, statKey, data, unlocked) {
+function statCard(w, statKey, data, unlocked, loud = false) {
   const def = data.weapons[w.id];
   const s = def.stats[statKey];
   const rank = w.ranks[statKey];
@@ -123,7 +128,7 @@ function statCard(w, statKey, data, unlocked) {
     maxRank: data.balance.maxRank,
     evoHints,
     color: def.color,
-    ...(stirs(w, statKey, data, unlocked) ? { stirs: true } : {}),
+    ...(stirs(w, statKey, data, unlocked, loud) ? { stirs: true } : {}),
   };
 }
 
@@ -152,7 +157,7 @@ export function fallbackCard(kind, data) {
 export function buildPool(ctx) {
   const { weapons, data, banished } = ctx;
   const pool = [];
-  const slots = data.balance.weaponSlots;
+  const slots = ctx.weaponSlots || data.balance.weaponSlots; // Fifth Hook (tier-bought) raises it on Deep Dusk+ only
   if (weapons.length < slots) {
     const owned = new Set(weapons.map((w) => w.id));
     for (const id of Object.keys(data.weapons)) {
@@ -170,11 +175,15 @@ export function buildPool(ctx) {
       let wt = pairs.length ? nudge.pair * (ctx.evoLuck || 1) : 1;
       // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
       if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= nudge.partnerRank)) wt *= nudge.partnerMult;
-      pool.push({ card: statCard(w, statKey, data, ctx.unlockedEvolutions), w: wt });
+      if (ctx.favour === w.id) wt *= FAVOUR_WEIGHT; // Card Fan 'Favoured Spirit' (T6): the marked weapon's stat cards come more often
+      pool.push({ card: statCard(w, statKey, data, ctx.unlockedEvolutions, !!ctx.loudStir), w: wt });
     }
   }
   return pool.filter((p) => !banished.has(p.card.key));
 }
+
+export const FAVOUR_WEIGHT = 1.5;
+const offerSizeOf = (ctx) => ctx.offerSize || ctx.data.balance.offerSize; // Fourth Card (tier-bought) raises it on Deep Dusk+ only
 
 function drawWeighted(pool, n, rng) {
   const items = pool.slice();
@@ -227,13 +236,13 @@ export function drawNormalCards(ctx, rng, count, exclude = new Set()) {
 }
 
 export function generateOffer(ctx, rng) {
-  const n = ctx.data.balance.offerSize;
+  const n = offerSizeOf(ctx);
   return { cards: drawNormalCards(ctx, rng, n), gold: goldCards(ctx) };
 }
 
 // Re-draw only the normal cards; gold evolution cards stay put.
 export function rerollOffer(ctx, rng, offer) {
-  const n = ctx.data.balance.offerSize;
+  const n = offerSizeOf(ctx);
   return { cards: drawNormalCards(ctx, rng, n), gold: offer.gold };
 }
 
@@ -242,9 +251,49 @@ export function banishCard(ctx, rng, offer, key) {
   ctx.banished.add(key);
   const keep = offer.cards.filter((c) => c.key !== key);
   const exclude = new Set(keep.map((c) => c.key));
-  const n = ctx.data.balance.offerSize;
+  const n = offerSizeOf(ctx);
   const fresh = drawNormalCards(ctx, rng, n - keep.length, exclude);
   return { cards: keep.concat(fresh), gold: offer.gold };
+}
+
+// Card Fan 'Second Sight' (T6): the preview drawn at the last offer. Cards still in the pool are kept (fresh copies: ranks and text are current);
+// a card a pick removed (a weapon taken, a stat maxed, a banish) is replaced by a fresh draw, as the lantern's text warns.
+export function previewDraw(ctx, rng) {
+  return drawNormalCards(ctx, rng, offerSizeOf(ctx));
+}
+export function offerFromPreview(ctx, rng, preview) {
+  const n = offerSizeOf(ctx);
+  const live = new Map(buildPool(ctx).map((p) => [p.card.key, p.card]));
+  const kept = [];
+  for (const c of preview || []) if (kept.length < n && c && live.has(c.key) && !kept.some((k) => k.key === c.key)) kept.push(live.get(c.key));
+  const fresh = kept.length < n ? drawNormalCards(ctx, rng, n - kept.length, new Set(kept.map((c) => c.key))) : [];
+  return { cards: kept.concat(fresh), gold: goldCards(ctx) };
+}
+
+// Run-start offers (Hearth-key 'Kindred Start', Card Fan 'Favoured Spirit', Hearth-key 'Lantern Blessing'; T6). Not level-ups: no reroll,
+// banish, heal swap or fallback cards. kindred = 3 unlocked weapons not yet owned (a free weapon card); favour = every unlocked weapon
+// (mark one); blessing = 3 Blessings (inside the caps, as any Blessing card).
+export const START_KINDS = ['kindred', 'favour', 'blessing'];
+export function startOffer(ctx, rng, kind) {
+  const { data, weapons } = ctx;
+  const open = Object.keys(data.weapons).filter((id) => !data.weapons[id].treeGate || (ctx.unlockedWeapons && ctx.unlockedWeapons.has(id)));
+  let cards = [];
+  if (kind === 'kindred') {
+    if (weapons.length >= (ctx.weaponSlots || data.balance.weaponSlots)) return [];
+    const owned = new Set(weapons.map((w) => w.id));
+    cards = drawWeighted(open.filter((id) => !owned.has(id)).map((id) => ({ card: weaponCard(id, data), w: 1 })), 3, rng);
+  } else if (kind === 'favour') {
+    const first = weapons.length ? weapons[0].id : null;
+    cards = open.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0)).map((id) => favourCard(id, data));
+  } else if (kind === 'blessing') {
+    cards = drawWeighted(blessingPool(ctx), 3, rng);
+  }
+  return cards;
+}
+
+function favourCard(id, data) {
+  const def = data.weapons[id];
+  return { key: `v:${id}`, kind: 'favour', weaponId: id, title: def.name, desc: 'Favoured this run: its upgrade cards come more often.', badge: 'FAVOUR', color: def.color };
 }
 
 // Applies weapon / stat / evolution cards. Fallback cards are handled by the Sim.

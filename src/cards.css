@@ -90,6 +90,12 @@
 .layer-levelup .card.quiet:has(.c-whisper) .c-icon { grid-row: 1 / span 3; }
 .layer-levelup .card.quiet > .lg-card__key { top: 50%; transform: translateY(-50%); right: calc(14 * var(--u)); }
 
+/* ---------- Second Sight (T6): the next offer, one dimmed line under this one ---------- */
+.lu-peek { display: flex; align-items: baseline; gap: calc(10 * var(--u)); max-width: min(100%, calc(900 * var(--u))); opacity: .62; font: var(--fw-body) max(13px, calc(15 * var(--u)))/1.25 var(--font-body); color: var(--lg-dim); }
+.lu-plabel { flex: none; font-weight: var(--fw-body-bold); letter-spacing: .14em; text-transform: uppercase; color: var(--lg-brass-text); }
+.lu-ptext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.layer-levelup .card.is-favour .c-num { font-size: max(24px, calc(36 * var(--u))); }
+
 /* ---------- Reroll / Banish: the kit's pill buttons ---------- */
 .lu-actions { display: flex; gap: calc(14 * var(--u)); justify-content: center; flex-wrap: wrap; }
 .layer-levelup .lu-btn { width: auto; flex: none; min-height: 52px; padding: .15em .8em .15em .5em; gap: .45em; }

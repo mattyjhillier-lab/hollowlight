@@ -43,6 +43,7 @@ export const app = {
       startTime: p.startTime,
       godMode: p.god,
       tier: p.tier || 'normal', // dev ?tier= (whitelisted in params.js); the map-select UI arrives with DT7
+      autoRule: this.save.data.settings.autoRule, // used only if 'Chosen Moment' is owned (sanitised whitelist; the Sim whitelists again)
     });
     if (p.grant) this.applyGrants(sim, p.grant);
     if (p.bless) this.applyBless(sim, p.bless);
@@ -243,7 +244,8 @@ export const app = {
     return {
       getSettings: () => ({ ...this.save.data.settings }),
       resolvedBrightness: (stored) => resolveBrightness(stored, this.isPhone()),
-      setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); },
+      setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); if (this.sim) this.sim.setAutoRule(this.save.data.settings.autoRule); },
+      hasAutoRule: () => !!aggregateMods(this.save.data.tree, treeDef, data).perks.autoRule, // 'Chosen Moment' owned: show the auto-fire choice
       exportSave: () => this.save.exportText(),
       maxSaveBytes: MAX_SAVE_BYTES,
       checkImport: (t) => this.save.checkImport(t),

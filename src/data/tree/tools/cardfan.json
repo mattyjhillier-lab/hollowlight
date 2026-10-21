@@ -21,7 +21,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "evolveWeapon",
     "id": "any",
@@ -53,14 +52,9 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "br_cardfan"
    ],
-   "unlock": {
-    "t": "bestLevel",
-    "n": 30
-   },
    "place": {
     "at": [
      0,
@@ -144,7 +138,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "cd_stir"
    ],

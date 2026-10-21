@@ -243,11 +243,11 @@
     "weight": 0.35
    },
    "tagM": {
-    "cap": 12.8,
+    "cap": 11.4,
     "weight": 0.35
    },
    "cast": {
-    "cap": 7.2,
+    "cap": 5.6,
     "weight": 0.3
    },
    "area": {
@@ -267,11 +267,11 @@
     "weight": 0.15
    },
    "lore": {
-    "cap": 0,
+    "cap": 1.6,
     "weight": 0.6
    },
    "choice": {
-    "cap": 0,
+    "cap": 0.8,
     "weight": 0.8
    }
   },
@@ -1699,8 +1699,7 @@
    "place": {
     "ring": "dusk",
     "i": 10
-   },
-   "inert": true
+   }
   },
   {
    "id": "br_cardfan",
@@ -1725,8 +1724,7 @@
    "place": {
     "ring": "dusk",
     "i": 2
-   },
-   "inert": true
+   }
   },
   {
    "id": "br_hearthkey",
@@ -1751,8 +1749,7 @@
    "place": {
     "ring": "dusk",
     "i": 5
-   },
-   "inert": true
+   }
   }
  ]
 }

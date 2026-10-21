@@ -1,7 +1,7 @@
 // HUD-2: the level-up offer screen (design sheet #1, Direction A). Presentation only: all offer logic stays in the Sim.
 // U5: restyled to Lantern Glass, Lit (kit classes lg-card / lg-badge / lg-pips / lg-btn from kit.css; scoped overrides in cards.css). Behaviour is unchanged.
 // DOM is built with createElement + textContent only (no innerHTML, no data in markup). One render per offer; no per-frame work.
-import { orderOffer, cardModel, clampText, cardLabel } from './cardview.js';
+import { orderOffer, cardModel, clampText, cardLabel, peekLine } from './cardview.js';
 import { cardIcon } from './cardicons.js';
 
 export const INPUT_LOCK_MS = 250; // ignore picks right after the screen opens (mis-tap guard, research 28)
@@ -9,6 +9,13 @@ export const TITLE_TEXT = 'The light stirs';
 export const QUIET_LABEL = 'Quiet gifts';
 export const QUIET_WHISPER = 'Take one. They ask nothing.';
 export const WHISPER_MAX = 48;
+// T6 run-start offers (Hearth-key / Card Fan): their own title and line instead of 'The light stirs' / LEVEL n
+export const START_COPY = {
+  kindred: ['Kindred Start', 'Before the dusk · choose your second spirit'],
+  favour: ['Favoured Spirit', 'Mark one spirit for this run'],
+  blessing: ['Lantern Blessing', 'Start with one Blessing'],
+};
+export const PEEK_LABEL = 'Next';
 export const DESC_MAX = 64;
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -45,13 +52,14 @@ export class OfferView {
     const nm = main.length;
     const cl = this.host.classList;
     cl.add('lg-kit');
-    if (this.host.setAttribute) { this.host.setAttribute('role', 'dialog'); this.host.setAttribute('aria-modal', 'true'); this.host.setAttribute('aria-label', 'Level up: choose one'); }
+    const start = sim.offer && Object.hasOwn(START_COPY, sim.offer.start) ? START_COPY[sim.offer.start] : null;
+    if (this.host.setAttribute) { this.host.setAttribute('role', 'dialog'); this.host.setAttribute('aria-modal', 'true'); this.host.setAttribute('aria-label', start ? `${start[0]}: choose one` : 'Level up: choose one'); }
     const act = this.doc.activeElement;
     const hadFocus = !!(act && this.host.contains && act !== this.host && this.host.contains(act)); // a keyboard user keeps their place after reroll/banish
     const head = this.el('div', 'lu-head');
-    head.append(this.el('h2', 'lu-title', TITLE_TEXT));
+    head.append(this.el('h2', 'lu-title', start ? start[0] : TITLE_TEXT));
     this.sub = this.el('div', 'lu-sub');
-    this.subText = `LEVEL ${sim.level} · CHOOSE ONE${sim.pending > 1 ? ` · +${sim.pending - 1} MORE` : ''}`;
+    this.subText = start ? start[1].toUpperCase() : `LEVEL ${sim.level} · CHOOSE ONE${sim.pending > 1 ? ` · +${sim.pending - 1} MORE` : ''}`;
     this.sub.textContent = this.subText;
     head.append(this.sub);
     if (note) head.append(this.el('div', 'lu-note', clampText(note, 40)));
@@ -80,20 +88,27 @@ export class OfferView {
     const actions = this.el('div', 'lu-actions');
     this.rerollBtn = null;
     this.banishBtn = null;
-    if (sim.rerollsLeft > 0) {
+    if (!start && sim.rerollsLeft > 0) { // a run-start offer cannot be rerolled or banished (T6)
       this.rerollBtn = this.pill('reroll', 'R', 'Reroll', sim.rerollsLeft);
       this.rerollBtn.addEventListener('click', () => this.h.reroll());
       actions.appendChild(this.rerollBtn);
     }
-    if (sim.banishesLeft > 0) {
+    if (!start && sim.banishesLeft > 0) {
       this.banishBtn = this.pill('banish', 'B', 'Banish', sim.banishesLeft);
       this.banishBtn.setAttribute('aria-pressed', 'false');
       this.banishBtn.addEventListener('click', () => this.toggleBanish());
       actions.appendChild(this.banishBtn);
     }
     if (this.rerollBtn || this.banishBtn) foot.appendChild(actions);
+    // Second Sight: the next offer, dimmed, under this one (display only; the sim keeps it unless a pick removes a card)
+    const pl = !start && sim.peekNext ? peekLine(sim.peekNext, data, maxRank) : '';
+    if (pl) {
+      const peek = this.el('div', 'lu-peek');
+      peek.append(this.el('span', 'lu-plabel', PEEK_LABEL), this.el('span', 'lu-ptext', pl));
+      foot.appendChild(peek);
+    }
 
-    this.host.replaceChildren(head, mainRow, foot);
+    this.host.replaceChildren(...(nm ? [head, mainRow, foot] : [head, foot]));
     this.host.classList.remove('banishing');
     this.setSel(0);
     if (hadFocus && this.els[0] && this.els[0].focus) this.els[0].focus({ preventScroll: true });

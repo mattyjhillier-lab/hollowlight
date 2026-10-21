@@ -1,6 +1,6 @@
 // HUD-2: pure view-model helpers for the level-up cards (no DOM, no Phaser; unit-testable in Node).
 // Rules: display only. A card never names an evolution recipe: stat cards show their own stat and weapon only.
-import { statValue, formatValue, hintText } from '../sim/cards.js';
+import { statValue, formatValue, hintText, FAVOUR_WEIGHT } from '../sim/cards.js';
 
 export const CLAMP = { title: 26, unit: 24, tag: 20, desc: 96, num: 7, stirs: 24, from: 30, label: 220 };
 export const COUNT_KEYS = new Set(['count', 'chains', 'pierce']); // shown as a new total, not a percentage
@@ -20,6 +20,7 @@ export function cardClass(card) {
   if (!card || typeof card !== 'object') return 'stat';
   if (card.kind === 'evolution') return 'evolve';
   if (card.kind === 'weapon') return 'new';
+  if (card.kind === 'favour') return 'favour'; // Card Fan 'Favoured Spirit' run-start mark (T6)
   if (card.kind === 'blessing') return 'blessing';
   if (card.kind === 'fallback') return card.swapped ? 'blessing' : 'fallback';
   return card.stirs === true ? 'stirs' : 'stat';
@@ -75,6 +76,7 @@ export function effectOf(card, data) {
       const key = Object.keys(def.stats).find((x) => COUNT_KEYS.has(x)) || Object.keys(def.stats)[0];
       return { mode: 'count', num: clampText(formatValue(def.stats[key].fmt, statValue(def, key, 0)), CLAMP.num), unit: clampText(def.stats[key].name, CLAMP.unit) };
     }
+    if (k === 'favour') return { mode: 'label', num: `×${FAVOUR_WEIGHT}`, unit: 'upgrade cards' };
     if (k === 'blessing') {
       const d = data.blessings && data.blessings.items && data.blessings.items[card.blessId];
       if (d && Number.isFinite(d.perRank)) return { mode: 'percent', num: clampText(pct(Math.round(d.perRank * 1000) / 10), CLAMP.num), unit: clampText(BLESS_UNIT[card.effect] || '', CLAMP.unit) };
@@ -100,7 +102,7 @@ export function cardModel(card, data, maxRank = 5) {
   let title = card && card.title;
   let desc = card && card.desc;
   if (card && card.kind === 'stat' && data.weapons[card.weaponId]) { const st = data.weapons[card.weaponId].stats[card.stat]; title = st.name; desc = hintText(data.weapons[card.weaponId], card.stat, card.rank); }
-  const tag = cls === 'evolve' ? 'EVOLVE' : cls === 'new' ? 'NEW' : cls === 'stat' || cls === 'stirs' ? weaponName : '';
+  const tag = cls === 'evolve' ? 'EVOLVE' : cls === 'new' ? 'NEW' : cls === 'favour' ? 'FAVOUR' : cls === 'stat' || cls === 'stirs' ? weaponName : '';
   return {
     cls,
     key: card && typeof card.key === 'string' ? card.key : '',
@@ -116,11 +118,22 @@ export function cardModel(card, data, maxRank = 5) {
   };
 }
 
+// Card Fan 'Second Sight' (T6): one plain line naming the cards of the NEXT offer ('Ghost Wolves: Bite power · New: Raven Flock'), clamped.
+export function peekLine(cards, data, maxRank = 5) {
+  if (!Array.isArray(cards)) return '';
+  const parts = [];
+  for (const c of cards.slice(0, 6)) {
+    const m = cardModel(c, data, maxRank);
+    parts.push(m.cls === 'new' ? `New: ${m.title}` : m.cls === 'stat' || m.cls === 'stirs' ? (m.tag ? `${m.tag}: ${m.title}` : m.title) : m.title);
+  }
+  return clampText(parts.filter(Boolean).join(' · '), 120);
+}
+
 // Screen-reader name for a card: plain clamped text, no markup. Rank is the rank AFTER this pick, as the pips show it.
 export function cardLabel(m) {
-  const kindWord = m.cls === 'evolve' ? 'Evolution' : m.cls === 'new' ? 'New spirit' : m.cls === 'blessing' ? 'Blessing' : '';
+  const kindWord = m.cls === 'evolve' ? 'Evolution' : m.cls === 'new' ? 'New spirit' : m.cls === 'blessing' ? 'Blessing' : m.cls === 'favour' ? 'Favour' : '';
   const rank = m.pips && m.pips.total ? `rank ${m.pips.filled} of ${m.pips.total}` : '';
   const effect = `${m.num || ''} ${m.unit || ''}`.trim();
-  const weapon = m.tag && m.tag !== 'EVOLVE' && m.tag !== 'NEW' ? m.tag : '';
+  const weapon = m.tag && m.tag !== 'EVOLVE' && m.tag !== 'NEW' && m.tag !== 'FAVOUR' ? m.tag : '';
   return clampText([kindWord, weapon, m.title, effect, rank, m.desc, m.stirs].filter(Boolean).join('. '), CLAMP.label);
 }

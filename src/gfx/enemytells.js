@@ -23,7 +23,7 @@ function dashes(g, x, y, ux, uy, total, on, off) {
 // DR2 Fell Wolf lunge: a small chevron on the GROUND at the wolf's feet pointing along the locked lunge (replaces the long line + the floating
 // triangle on every wolf). mode 2 = full strength (this lunge will reach the hero), 1 = faint. Dark rim, squashed to the ground plane.
 export function drawWolfChevron(g, e, mode) {
-  const k = Math.max(0, Math.min(1, 1 - e.stT / WOLF_TELL_T)), a = mode === 2 ? 0.55 + 0.4 * k : TELE_FAINT;
+  const k = Math.max(0, Math.min(1, 1 - e.stT / (e.teleT || WOLF_TELL_T))), a = mode === 2 ? 0.55 + 0.4 * k : TELE_FAINT;
   const ux = e.dx, uy = e.dy * 0.7, px = -e.dy * 5, py = e.dx * 5 * 0.7; // y squashed: a decal lying on the ground
   const fx = e.x + ux * 7, fy = e.y + 5 + uy * 7; // starts just ahead of the paws
   const tx = fx + ux * 15, ty = fy + uy * 15;

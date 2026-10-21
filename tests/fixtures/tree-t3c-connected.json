@@ -1,5 +1,5 @@
 {
- "_comment": "T3c connected-unlock patch (2026-10-21, docs/design/tree-connected-patch.md): ids whose requires changed (far root now hangs from its bridge; needs-all join became any-one) plus the new live bridge lantern. Positions are not part of the golden snapshot.",
+ "_comment": "T3c connected-unlock patch (2026-10-21, docs/design/tree-connected-patch.md): ids whose requires changed (far root now hangs from its bridge; needs-all join became any-one) plus the new live bridge lantern. Positions are not part of the golden snapshot. T6 (2026-10-21): br_almanac / br_cardfan / br_hearthkey went live with their groups.",
  "li_reach": {
   "effects": [
    {
@@ -57,6 +57,69 @@
   "requires": [],
   "requiresAny": [
    "su_pot",
+   "li_coin"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "br_almanac": {
+  "effects": [
+   {
+    "perk": "gemPull",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 250,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "ma_cast",
+   "su_rush"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "br_cardfan": {
+  "effects": [
+   {
+    "perk": "gemPull",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 250,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "sp_cd3",
+   "sp_cd4"
+  ],
+  "excludes": [],
+  "unlock": null
+ },
+ "br_hearthkey": {
+  "effects": [
+   {
+    "perk": "gemPull",
+    "pct": 5
+   }
+  ],
+  "cost": {
+   "gold": 250,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": [
+   "li_regen",
    "li_coin"
   ],
   "excludes": [],

@@ -749,6 +749,7 @@ export function emptyEffects() {
     perks: { gemPull: 0, gemCall: false, offerSize: 0, weaponSlot: 0, favour: false, startWeapon: false, startBlessing: false, autoRule: false, blessChoice: false }, // tool-cluster perks (hooks for the simple ones; the rest is read by later chunks)
     lore: {}, // Almanac: enemy id -> damage % (cap 2 per type)
     info: [], // Almanac / Card Fan information perks (read by the UI chunks)
+    tells: [], // Almanac Tells: enemy ids whose attack tell shows earlier (boss: a brighter tell ring)
     status: { bleed: 0, burn: 0, mark: 0, pin: 0 }, // bleed/burn: potency % ; mark/pin: extra seconds (all inside the shared Status cap)
     visuals: [],
     softcap: {},
@@ -831,7 +832,7 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') out.perks[e.perk] += e.n * r;
       else if (e.perk && own(out.perks, e.perk)) out.perks[e.perk] = true;
       else if (e.lore) out.lore[e.lore] = Math.min(2, (out.lore[e.lore] || 0) + e.pct * r);
-      else if (e.info) { if (!out.info.includes(e.info)) out.info.push(e.info); }
+      else if (e.info) { if (!out.info.includes(e.info)) out.info.push(e.info); if (e.info === 'tells' && e.enemy && !out.tells.includes(e.enemy)) out.tells.push(e.enemy); }
       else if (e.perk === 'rush') out.rush = { pct: Math.max(out.rush ? out.rush.pct : 0, e.pct * r * m), secs: Math.max(out.rush ? out.rush.secs : 0, e.secs) };
       else if (e.weapon) {
         const ids = ['@summon', '@magic', '@all'].includes(e.weapon)

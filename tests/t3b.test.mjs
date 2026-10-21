@@ -233,7 +233,8 @@ test('DT0 new condition leaves: clearTier (with hero), stars, killMarked, openCh
 
 // ------------------------------------------------------------------ tool clusters: data
 const TOOL = { satchel: ['li_reach', 'co_pull', 'li_scav', 'co_call', 'li_hearts', 'li_heal', 'li_magnet', 'co_glean'], cardfan: ['sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'cd_stir', 'cd_peek', 'cd_bars', 'cd_radar', 'cd_favour', 'cd_fourth'], hearthkey: ['sp_auto', 'rs_autoset', 'rs_start', 'rs_bless', 'li_last', 'rs_slot5'], nightgate: ['gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'] };
-const INERT = ['cd_stir', 'cd_peek', 'cd_bars', 'cd_radar', 'cd_favour', 'cd_fourth', 'rs_autoset', 'rs_start', 'rs_bless', 'rs_slot5', 'gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'];
+// T6: still inert = needs a feature that is not built (Hollow marks, chests / minibosses, a codex, an enemy tell for crows / crawlers, the tier select + Dawnglass)
+const INERT = ['cd_bars', 'cd_radar', 'cd_fourth', 'rs_slot5', 'bs_crow3', 'bs_crawl3', 'bs_page', 'gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'];
 
 test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and idx, every new node has a permanent (fragment, idx), layout and budget pass', () => {
   assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel']);
@@ -245,13 +246,13 @@ test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and i
   assert.deepEqual(layoutIssues(composed.info, v2), []);
   const b = budgetOf(v2, composed.info.core.budget, 5);
   assert.deepEqual(b.violations, []);
-  assert.ok(Math.abs(b.combatAtCap - 30.36) < 1e-9 && Math.abs(b.sustainPE - 5) < 1e-9, `${b.combatAtCap} / ${b.sustainPE}`);
+  assert.ok(Math.abs(b.combatAtCap - 30.99) < 1e-9 && Math.abs(b.sustainPE - 5) < 1e-9, `${b.combatAtCap} / ${b.sustainPE}`); // T6: lore 1.6 + choice 0.8 reclaimed, cast 7.2 -> 5.6, magic tag 12.8 -> 11.4
   assert.deepEqual(b.tiers, { 1: { combat: 5, allowance: 5 }, 2: { combat: 1.2, allowance: 1.2 } }, 'Deep Dusk +5.0 (Fourth Card 2.0 + Fifth Hook 3.0), Long Night +1.2 (the larger keystone side); the x2 ceiling rule scales tier allowances');
 });
 
 test('DT4 inert (pending) nodes are exactly the ones whose sim / UI hook is not built yet; they cannot be bought, aggregated or forged into a save', () => {
-  assert.deepEqual(def.pendingList.slice().sort(), [...INERT, 'br_almanac', 'br_cardfan', 'br_hearthkey', ...def.pendingList.filter((i) => i.startsWith('bs_'))].sort(), 'tool pending set (+ the bridges of the three inert groups)');
-  assert.equal(def.pendingList.filter((i) => i.startsWith('bs_')).length, 13, 'the Almanac (Fell Wolf, Grave Crow, Root Crawler, Elder Treant + Full Almanac)');
+  assert.deepEqual(def.pendingList.slice().sort(), INERT.slice().sort(), 'tool pending set (T6: the bridges and the built Card Fan / Almanac / Hearth-key lanterns are live)');
+  assert.equal(def.pendingList.filter((i) => i.startsWith('bs_')).length, 3, 'the Almanac lanterns that wait: crow / crawler Tells (no attack tell exists) and Full Almanac (codex + chests)');
   for (const id of def.pendingList) { assert.equal(def.nodes[id], undefined, id); assert.ok(!def.list.includes(id)); }
   const forged = { ...own(def.pendingList), ...own(['li_reach']) };
   assert.deepEqual(sanitizeTree(forged, { killsByEnemy: { wolf: 1e9 } }, def, data), { li_reach: 1 });
@@ -395,7 +396,7 @@ test('DT4 the Almanac data only names enemies that exist (lore / tells), and eve
     assert.ok(Object.hasOwn(data.enemies, enemy), `${id} -> ${enemy}`);
   }
   for (const pre of ['wolf', 'crow', 'crawl', 'treant']) {
-    const n = (k) => { const u = v2.nodes[`bs_${pre}${k}`].unlock; return u.n; };
+    const n = (k) => { const u = v2.nodes[`bs_${pre}${k}`].unlock; return u ? u.n : 0; }; // T6: bs_wolf1 is the Almanac's gold-only way in (no slay count)
     assert.ok(n(1) < n(2) && n(2) < n(3), pre);
   }
   assert.equal(v2.nodes.bs_page.effects.find((e) => e.info === 'codex').pe, 0.05);
