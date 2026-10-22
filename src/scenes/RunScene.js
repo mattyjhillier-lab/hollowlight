@@ -43,6 +43,10 @@ import { bakeRavenArt, ravenReady } from '../gfx/summon/atlas.js'; // S3 Letter 
 import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
 import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
+import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
+import { FLAME_BOX, FLAME_WPD, WHEEL_K } from '../gfx/summon/orbit.js';
+import { FLAME_AY, PETAL_AY } from '../gfx/summon/frames.js';
+import { flameFrame, flare, flareK, orbitSkin, flowerAt, reformK, streakK, streakRot, FLARE_K, FLOWER_T, ORBIT_CAPS } from '../gfx/summon/orbitanim.js';
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
@@ -89,6 +93,7 @@ const WOLF_GLOW = 0x9fd8ff; // S1: wolf halo retinted to the locked wolf role co
 const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the High bloom is on (it halves a small sprite's value; this keeps the spirit lit)
 const ALPHA_HALO = 3.4; // S2: the Alpha's own frame carries a 1.7x baked glow, so its extra halo shrinks (friendly coverage near the hero <= today + 5 pts)
 const RAVEN_SELF = 1, RAVEN_HALO = 0.75, RAVEN_HALO_A = 0.6, RAVEN_GLOW = 0xb79cff; // S3: raven self-light (High bloom only), halo size / alpha / locked violet
+const ORB_SELF = 0.2, ORB_GLOW = 0xd9ccff, ORB_HALO = 0.75, ORB_HALO_A = 0.42; // S4: flame self-light (High bloom only; flare adds to it), halo retinted to the locked orbit glow, size / alpha
 const SHADE_A = 0.8; // Matt 2026-10-22: the Alpha's 2 ghost shades 0.5 -> 0.65 -> 0.8 (Low L* gap vs the Fell Wolf was 12-18)
 const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
@@ -265,6 +270,9 @@ export class RunScene extends Phaser.Scene {
       ravFeather: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_feather').setDepth(D_HALO + 1)), // S3 Wall of Wings loose paper feathers
       ravSeal: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_waxseal').setDepth(D_PART - 1)), // S3 Talon Mark wax-seal disc under the chevron
       uOrb: new SpritePool(this, 'orb'),
+      uOrbA: new SpritePool(this, SUM_KEY), // S4 Candle Flames (sum_atlas frames)
+      uOrbL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S4 self-light copy while the High bloom is on (and the flare on hit)
+      orbPetal: new SpritePool(this, SUM_KEY, (i) => i.setFrame('flame_petal').setOrigin(0.5, PETAL_AY)), // S4 Judgement Wheel flower of flame (6 petals per burst)
       gem: new SpritePool(this, 'gem'),
       heart: new SpritePool(this, 'heart'),
       magnet: new SpritePool(this, 'magnet'),
@@ -727,6 +735,83 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
+  // S4 Candle Flames: one image per light (+ an additive self-light copy while the High bloom is on, brighter during the flare on hit); flicker
+  // frame, lean into the spin and the flare from orbitanim (render only, reads the unit). Evolved lights wear the gold rim (orbitSkin: Sanctum Halo
+  // small candles, Judgement Wheel big flames, Vesper Tide). Same DR3 rule as the other summons: within FADE_R of the hero a light draws just
+  // under her; one over her from the front drops to 0.55 alpha. kMul: a re-forming Judgement Wheel light grows in. Low: the flat frame, no lean.
+  drawFlameA(u, p, dt, low, evo, kMul = 1, aMul = 1, streak = 0) {
+    const pl = this.pools, st = this.orbSt || (this.orbSt = new Map());
+    let s = st.get(u.id);
+    if (!s) { s = {}; st.set(u.id, s); }
+    s.seen = this.fxTick;
+    const calm = this.reducedMotion();
+    const fi = flameFrame(s, u, dt, calm || low);
+    let sk = orbitSkin(evo, low, fi);
+    if (!frameReady(sk.fr)) sk = { ...orbitSkin(null, low, fi), size: sk.size }; // gold frames bake lazily: the plain flame until then
+    const fk = calm ? 0 : flareK(s);
+    const k = (FLAME_BOX[2] * FLAME_WPD * sk.size * kMul * (1 + (low ? 0.6 : 1) * FLARE_K * fk)) / 32; // world units per texel
+    const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y + 30;
+    const front = !near && u.y > p.y - 4 && Math.abs(u.x - p.x) < 14 && Math.abs(u.y - (p.y - 12)) < 22;
+    const a = (front ? 0.55 : 1) * aMul;
+    let rot = low ? 0 : s.lean, sx = k, sy = k;
+    if (streak > 0) { rot = streakRot(rot, u.x - p.x, u.y - p.y, streak); sx = k * (1 - 0.12 * streak); sy = k * (1 + 0.45 * streak); } // S4 Vesper Tide: the flame stretches into a streak, tip trailing back toward Elias
+    pl.uOrbA.get(u.id).setFrame(sk.fr).setOrigin(0.5, FLAME_AY).setPosition(u.x, u.y).setDepth(D_LIT + dy).setRotation(rot).setScale(sx, sy).setAlpha(a);
+    const la = low ? 0 : (this.bloom ? ORB_SELF : 0) + 0.6 * fk;
+    if (la > 0.01) pl.uOrbL.get(u.id).setFrame(sk.fr).setOrigin(0.5, FLAME_AY).setPosition(u.x, u.y).setDepth(D_LIT + dy + 0.0005).setRotation(rot).setScale(sx, sy).setAlpha(Math.min(1, la) * a).setTint(0xf4efff);
+    if ((this.fxTick & 127) === 32 && st.size > 32) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
+    return s;
+  }
+
+  // S4 Judgement Wheel flower of flame: a burst opens 6 gold-rimmed petals at the burst point (High/Med, oldest dropped past the tier cap; Low: none,
+  // the sim's blast rings stay). drawFlowers runs once a frame; Calm: full size, fade only.
+  addFlower(x, y, t, caps) {
+    if (!caps.flowers) return;
+    const fl = this.orbFlowers || (this.orbFlowers = []);
+    if (fl.length >= caps.flowers) fl.shift();
+    fl.push({ x, y, t0: t, id: (this.flowerId = ((this.flowerId || 0) + 1) % 1000) });
+  }
+  drawFlowers(t, hp) {
+    const fl = this.orbFlowers;
+    if (!fl || !fl.length) return;
+    const calm = this.reducedMotion(), k0 = (FLAME_BOX[2] * FLAME_WPD * WHEEL_K) / 32;
+    for (let i = fl.length - 1; i >= 0; i--) {
+      const f = fl[i], st = flowerAt((t - f.t0) / FLOWER_T, calm);
+      if (!st) { fl.splice(i, 1); continue; }
+      const near = Math.hypot(f.x - hp.x, f.y - hp.y) < FADE_R + 14; // DR3: a flower over the hero draws under her, at 0.55
+      const dy = near ? Math.min(f.y, depthNear(hp.y)) : f.y + 31, a = st.alpha * (near ? 0.55 : 1);
+      for (let j = 0; j < 6; j++) this.pools.orbPetal.get(f.id * 6 + j).setPosition(f.x, f.y).setRotation((j * Math.PI) / 3).setScale(k0 * st.scale).setAlpha(a).setDepth(D_LIT + dy);
+    }
+  }
+
+  // S4 orbit ground (render only, reads the lights): Candle Flames = a faint halo ring pressed into the soil joining the lights (a dark groove + a
+  // lilac line, at the lights' mean distance; fades out while the Candle Wheel holds them); Sanctum Halo = the consecrated ground disc with a
+  // stained-glass petal ring and a gold hairline (replaces the W5 fills; still, no flicker). Drawn on the ground layer under the grade.
+  drawOrbitGround(g, sim, p, ow, caps) {
+    const rt = ow.rt, lock = rt.lock || 0;
+    if (ow.evo === 'sanctum_halo' && rt.ground) {
+      const r = rt.ground.r, n = caps.petals; // petals between 0.78 r and 0.94 r
+      g.fillStyle(0xfff3dc, 0.07).fillCircle(p.x, p.y, r);
+      g.fillStyle(ROLE.burn, 0.06).fillCircle(p.x, p.y, r * 0.7);
+      for (let i = 0; i < n; i++) { // stained-glass petals, alternating cream / lilac, with a darker leading
+        const a0 = (i / n) * Math.PI * 2, a1 = ((i + 0.85) / n) * Math.PI * 2, r1 = r * 0.78, r2 = r * 0.94;
+        const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+        const pts = [p.x + c0 * r1, p.y + s0 * r1, p.x + c0 * r2, p.y + s0 * r2, p.x + c1 * r2, p.y + s1 * r2, p.x + c1 * r1, p.y + s1 * r1];
+        g.fillStyle(i % 2 ? ROLE.burn : 0xfff3dc, 0.1);
+        g.beginPath(); g.moveTo(pts[0], pts[1]); for (let j = 2; j < 8; j += 2) g.lineTo(pts[j], pts[j + 1]); g.closePath(); g.fillPath();
+        g.lineStyle(1, 0xa996e8, 0.28); g.strokePath();
+      }
+      g.lineStyle(1.2, 0xffd36b, 0.75).strokeCircle(p.x, p.y, r);
+      return;
+    }
+    if (!caps.ring || lock >= 0.99) return;
+    let sum = 0, n = 0;
+    for (const u of sim.units) if (u.kind === 'orb') { sum += Math.hypot(u.x - p.x, u.y - p.y); n++; }
+    if (!n) return;
+    const r = sum / n, fa = 1 - lock;
+    g.lineStyle(3, 0x2a2046, 0.16 * fa).strokeCircle(p.x, p.y + 0.6, r);
+    g.lineStyle(1, 0xd9ccff, 0.3 * fa).strokeCircle(p.x, p.y, r);
+  }
+
   // Candle Wheel (Elias): a ring of cream light with a patch of restored colour inside, opening from the centre and
   // fading at the end. Existing primitives only (no new art). Low tier: one disc + one ring. Reduced motion: no opening/pulse.
   drawWheel(g, z, lm, caps, time) {
@@ -1126,8 +1211,13 @@ export class RunScene extends Phaser.Scene {
       if (lit) lm.add(z.x, z.y, z.r, c, 0.55 * a);
     }
     // W5 Sanctum Halo: faint ember glow on the burning ground inside the candle ring, thin gold rim on the ring only (never on enemies); still, no flicker
+    const ow = sim.weapons.find((w) => w.id === 'holy_orbit'), oCaps = ORBIT_CAPS[this.quality.tier] || ORBIT_CAPS.med;
+    if (ow && this.sumAtlas) bakeOrbitArt(this.sumAtlas, !!ow.evo); // S4: lazy, idempotent (fast path once baked)
+    const orbArt = !!this.sumAtlas && orbitReady();
+    if (ow && orbArt) this.drawOrbitGround(g, sim, p, ow, oCaps); // S4: soil ring / consecrated ground (replaces the W5 fills below)
     const hw = sim.weapons.find((w) => w.evo === 'sanctum_halo');
-    if (hw && hw.rt.ground) {
+    if (hw && hw.rt.ground && orbArt) { if (lit) lm.add(p.x, p.y, hw.rt.ground.r, 0xffb35c, 0.35); }
+    else if (hw && hw.rt.ground) {
       const hr = hw.rt.ground.r;
       g.fillStyle(0xffb35c, 0.07).fillCircle(p.x, p.y, hr);
       g.fillStyle(ROLE.burn, 0.05).fillCircle(p.x, p.y, hr * 0.62);
@@ -1271,8 +1361,14 @@ export class RunScene extends Phaser.Scene {
           const ph = (sim.time * 2.2 + e.id * 0.31) % 1;
           const lx = Math.round(e.x + ((e.id * 5) % 7) - 3);
           const ly = Math.round(e.y - e.r * 0.4 - ph * 9);
-          fx.fillStyle(ROLE.burn, 0.9 * (1 - ph)).fillRect(lx, ly, 2, 3);
-          fx.fillStyle(ROLE.burnHot, 0.8 * (1 - ph)).fillRect(lx, ly + 1, 1, 1);
+          if (this.sumAtlas) { // S4: a small lilac flame lick (tongue, no outline, no bead: never read as an orbit flame), the hot core inside
+            const lw = 1.8 * (1 - ph * 0.4), lh = 4.5 * (1 - ph * 0.3);
+            fx.fillStyle(ROLE.burn, 0.95 * (1 - ph)).fillTriangle(lx - lw, ly + 2, lx + lw, ly + 2, lx + 0.4, ly + 2 - lh);
+            fx.fillStyle(ROLE.burnHot, 0.85 * (1 - ph)).fillTriangle(lx - lw * 0.45, ly + 2, lx + lw * 0.45, ly + 2, lx + 0.2, ly + 2 - lh * 0.55);
+          } else {
+            fx.fillStyle(ROLE.burn, 0.9 * (1 - ph)).fillRect(lx, ly, 2, 3);
+            fx.fillStyle(ROLE.burnHot, 0.8 * (1 - ph)).fillRect(lx, ly + 1, 1, 1);
+          }
         }
         if (sim.time >= img.uNext && bleedNums < 6) {
           const d = e.burnTot - img.uLast;
@@ -1399,7 +1495,19 @@ export class RunScene extends Phaser.Scene {
       for (let i = tr.length - 1, k = 0; i >= 0 && k < caps.trail.dots; i -= 3, k++) fx.fillStyle(ROLE.spiritA, 0.3 * (tr[i].t / (tr[i].l || 1))).fillCircle(tr[i].x, tr[i].y, 2);
     }
     for (const u of sim.units) {
-      if (u.hidden) { if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6); continue; } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
+      if (u.hidden) {
+        if (u.kind === 'orb' && orbArt) { // S4 Judgement Wheel: the light bursts into a flower of flame (6 petals), rests as an ember, then re-forms
+          const s = this.orbSt && this.orbSt.get(u.id);
+          if (s && !s.hid && ow && ow.evo === 'judgement_wheel') this.addFlower(u.x, u.y, sim.time, oCaps);
+          if (s) { s.hid = true; s.seen = this.fxTick; }
+          const rk = reformK(u.disabledT, this.reducedMotion());
+          if (rk > 0 && u.x >= vx0 && u.x <= vx1 && u.y >= vy0 && u.y <= vy1) this.drawFlameA(u, p, wdt, this.quality.tier === 'low', ow && ow.evo, 0.25 + 0.75 * rk, 0.5 + 0.5 * rk);
+          else g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6);
+          continue;
+        }
+        if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6);
+        continue;
+      } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
         if (wolfArt) this.drawWolfA(u, p, wdt, lowWolf, wEvo);
@@ -1451,17 +1559,28 @@ export class RunScene extends Phaser.Scene {
       } else if (u.kind === 'orb') {
         // A2: with Elias the flame ring is render-only smaller / dimmer (hit radius unchanged) so he stays the focal point
         const eo = this.rig.id === 'elias' && this.rig.active;
-        pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setScale((eo ? 0.8 : 1) * pl.uOrb.inv);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale((eo ? 0.8 : 1.1) * pl.haloU.inv).setAlpha(eo ? 0.4 : 0.55);
-        if (tw && tw.rt.tide && tw.rt.tide.out && caps.drips > 0 && !this.reducedMotion()) { // Vesper Tide swell: each light stretches into a short bright streak back toward Elias
-          const sd = Math.hypot(u.x - p.x, u.y - p.y) || 1;
-          fx.lineStyle(2, 0xf3eaff, 0.6).lineBetween(u.x, u.y, u.x - ((u.x - p.x) / sd) * 7, u.y - ((u.y - p.y) / sd) * 7);
+        if (orbArt) { // S4 Candle Flames (flare on contact: the sim's own hit test, read only)
+          const lowOrb = this.quality.tier === 'low';
+          const sk = tw && tw.rt.tide && caps.drips > 0 && !this.reducedMotion() ? streakK(tw.rt.tide.out, tw.rt.ph) : 0;
+          const s = this.drawFlameA(u, p, wdt, lowOrb, ow && ow.evo, 1, 1, sk);
+          s.hid = false;
+          if (!this.reducedMotion() && (this.fxTick + u.id) % 2 === 0) { let hit = false; sim.grid.neighbours(u, (e) => { if (!hit && !e.dead && (e.x - u.x) * (e.x - u.x) + (e.y - u.y) * (e.y - u.y) < (e.r + u.r + 1) * (e.r + u.r + 1)) hit = true; }); if (hit) flare(s); }
+          const big = ow && ow.evo === 'judgement_wheel' ? WHEEL_K : 1;
+          if (!lowOrb && halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y - 2).setTint(ORB_GLOW).setScale(ORB_HALO * big * pl.haloU.inv).setAlpha(ORB_HALO_A);
+        } else {
+          pl.uOrb.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setScale((eo ? 0.8 : 1) * pl.uOrb.inv);
+          if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritC).setScale((eo ? 0.8 : 1.1) * pl.haloU.inv).setAlpha(eo ? 0.4 : 0.55);
+        }
+        if (!orbArt && tw && tw.rt.tide && tw.rt.tide.out && caps.drips > 0 && !this.reducedMotion()) { // Vesper Tide swell: each light stretches into a short bright streak back toward Elias (S4: the flame itself stretches, drawFlameA)
+          const sd = Math.hypot(u.x - p.x, u.y - p.y) || 1, ux = (u.x - p.x) / sd, uy = (u.y - p.y) / sd;
+          fx.lineStyle(2, 0xf3eaff, 0.6).lineBetween(u.x, u.y, u.x - ux * 7, u.y - uy * 7);
         }
         if (ribOn) ribAdd(u, PAL.lavender, Math.min(0.35, this.ribCaps.spirits.life)); else trail(u.x, u.y, PAL.lavender, eo ? 0.2 : 0.3);
         if (lit) lm.add(u.x, u.y, eo ? 32 : 40, ROLE.spiritC, eo ? 0.55 : 0.8);
       }
     }
 
+    if (orbArt) this.drawFlowers(sim.time, p); else this.orbFlowers = null;
     this.sec0(5); this.tickRibbons(sim, p, lx, ly, nSrc); this.sec1(5);
 
     // projectiles. W10 Spirit Bolts evolutions (visual only, reads the sim): a thin gold rim on the EVOLVED glyph only (never on enemies, nearest caps.halos);
@@ -1583,6 +1702,8 @@ export class RunScene extends Phaser.Scene {
           const rr = f.r * (1.15 - 0.15 * k), a = Math.min(1, k + 0.2);
           this.teleG.lineStyle(5, 0x1a1020, 0.7 * a).strokeCircle(f.x, f.y, rr);
           this.teleG.lineStyle(3, TELL_RO, a).strokeCircle(f.x, f.y, rr);
+        } else if ((f.color === '#c79bff' || f.color === '#ffd98a') && this.sumAtlas && orbitReady()) { // S4: the Judgement Wheel blast radius stays readable as a thin ring; the flower of flame carries the burst
+          fx.lineStyle(1, hex(f.color), 0.55 * Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
         } else fx.lineStyle(2, hex(f.color), Math.min(1, k + 0.2)).strokeCircle(f.x, f.y, f.r * (1.15 - 0.15 * k));
       } else if (f.kind === 'alphaarc') { // The Alpha bite: a pale-blue sweep arc across the bite direction (not a ring), fades in ~0.18 s
         const k = Math.max(0, f.ttl / 0.18);

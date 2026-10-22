@@ -53,9 +53,9 @@ export function paw(c, f, ox, oy) {
 }
 const none = () => {};
 // S3: the raven frames (plain, gold, Low flats) are painted by the lazy raven bake (atlas.js bakeRavenArt); feather + wax seal are canvas decals
-export const NAMED = { decal_paw: paw, decal_feather: featherDecal, decal_waxseal: waxSealDecal, raven_flat0: none, raven_flat1: none };
+export const NAMED = { decal_paw: paw, decal_feather: featherDecal, decal_waxseal: waxSealDecal, raven_flat0: none, raven_flat1: none, flat_flame: none, flat_flameg: none }; // S4: the flame frames are painted by the lazy orbit bake
 export const PAINTERS = { wolf: none, // S1/S2: every wolf frame (base, overlays, Alpha, Echo, rimmed, Light Trails) is painted by the async wolf bake (atlas.js bakeWolfArt)
-   alpha: none, echo: none, wolfg: none, lfoot: none, raven: none, ravg: none, low: body, glyph: body, flame: body, decal: body };
+   alpha: none, echo: none, wolfg: none, lfoot: none, raven: none, ravg: none, low: body, glyph: body, flame: none, flameg: none, decal: body };
 
 // Draws every frame at its packed rect, clipped so a painter can never bleed into a neighbour. Returns the number of frames drawn.
 export function paintAll(c, packed) {

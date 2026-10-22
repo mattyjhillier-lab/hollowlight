@@ -9,7 +9,7 @@ import { WOLF_LEN_DU, WOLF_WPD, WOLF_JITTER, WOLF_BOX, ALPHA_K, ALPHA_BOX } from
 const count = (g) => FRAMES.filter((f) => f.group === g).length;
 
 test('summon frames: counts match the section 5 budget', () => {
-  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4 + 6 + 6 + 1 + 6); // S2: + gold-rimmed pack 6, Light Trails 6, Low evolved flat; S3: + gold raven poses 6
+  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4 + 6 + 6 + 1 + 6 + 1); // S2: + gold-rimmed pack 6, Light Trails 6, Low evolved flat; S3: + gold raven poses 6; S4: big flames 3 + bead -> gold flames 3 + petal, + Low gold flame
   assert.equal(count('ravg'), 6);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_') && !f.name.startsWith('wolf_ov')).length, 6);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_ov')).length, 3);
@@ -19,10 +19,10 @@ test('summon frames: counts match the section 5 budget', () => {
   assert.equal(FRAMES.filter((f) => f.name.startsWith('raven_flat')).length, 2);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('glyph_')).length, 5);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('page_')).length, 2);
-  assert.equal(FRAMES.filter((f) => f.name.startsWith('flame_big')).length, 3);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('flameg_')).length, 3); assert.ok(FRAME_BY_NAME.flame_petal && !FRAME_BY_NAME.flame_big0 && !FRAME_BY_NAME.wax_bead);
   assert.equal(FRAMES.filter((f) => /^flame_\d/.test(f.name)).length, 3);
   assert.equal(count('decal'), 10);
-  assert.equal(FRAMES.filter((f) => f.name.startsWith('flat_')).length, 5);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('flat_')).length, 6);
   assert.equal(count('wolfg'), 6); assert.equal(count('lfoot'), 6);
 });
 
