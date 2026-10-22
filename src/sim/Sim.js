@@ -199,6 +199,25 @@ export class Sim {
     this.rerollsLeft = (meta.rerolls || 0) + (T.meta?.rerolls || 0);
     this.banishesLeft = (meta.banishes || 0) + (T.meta?.banishes || 0);
 
+    // EN6-EN8 miniboss on the run clock (chapter.minis; enemies-v1.md 2.7 A, Branch-Mane #3 at 11:30) + its Lantern Reliquary chest.
+    // Schedule = the locked times + the tier's extra times (an extra one takes the hp/chest odds of the scheduled one before it); fixed hp (no hpScale).
+    this.miniSched = [];
+    const MS = this.chapter.minis;
+    if (MS && Object.hasOwn(data.enemies, MS.id) && data.enemies[MS.id].mini && Array.isArray(MS.at)) {
+      const list = MS.at.map((t, i) => ({ t, hp: MS.hp[i], odds: MS.chest[i] }));
+      for (const t of this.tier.miniExtra) { let prev = list[0]; for (const m of list) if (m.t <= t) prev = m; list.push({ t, hp: prev.hp, odds: prev.odds }); }
+      list.sort((a, b) => a.t - b.t);
+      this.miniSched = list.filter((m) => Number.isFinite(m.t) && m.t >= startTime && Number.isFinite(m.hp) && m.hp > 0);
+    }
+    this.miniWarn = MS && Number.isFinite(MS.warn) ? MS.warn : 30;
+    this.miniNext = 0; // index of the next scheduled miniboss
+    this.mini = null; // the live miniboss (HUD bar), null when none
+    this.miniKills = 0;
+    this.chests = 0; // Lantern Reliquaries opened (counter; tree 'openChest' condition later)
+    this.largeChests = 0; // pity: never two Large chests in one run
+    this.chestLog = []; // tier of each chest dropped (counter only)
+    this.miniLog = []; // { t: arrival, k: kill time | null } per Branch-Mane (counter only: bot time-to-kill)
+
     this.spawnAcc = this.chapter.waves.map(() => 0);
     this.eventsDone = new Set();
     this.chapter.events.forEach((ev, i) => { if (ev.t < startTime) this.eventsDone.add(i); });
@@ -467,7 +486,7 @@ export class Sim {
     const hs = this.balance.hpScale;
     const m = this.fight ? this.fightDef.scaleMin : this.minutes; // boss-fight adds use a frozen run minute (no hidden ramp while the clock holds)
     // fixed = the boss and its own adds (pods, saplings): data numbers x the tier only (tier enemyDmg applies to the boss too: LOCKED tiers row)
-    const hpMul = (d.boss || d.fixed ? 1 : 1 + hs.linear * m + hs.quad * m * m) * (d.boss ? this.tier.bossHp : this.tier.enemyHp); // tier multipliers are exactly 1 on Twilight
+    const hpMul = (d.boss || d.fixed || d.mini ? 1 : 1 + hs.linear * m + hs.quad * m * m) * (d.boss ? this.tier.bossHp : this.tier.enemyHp); // tier multipliers are exactly 1 on Twilight; the miniboss has fixed hp (spawnMini) x the tier enemy HP
     const dmgMul = (d.fixed ? 1 : 1 + this.balance.dmgScale.linear * m) * this.tier.enemyDmg;
     const size = this.balance.worldSize;
     const e = {
@@ -489,6 +508,26 @@ export class Sim {
     return e;
   }
 
+  // EN6 Branch-Mane: spawned at the view edge (the normal spawn ring) with its scheduled hp; control immune, leashed, never recycled
+  spawnMini(m) {
+    const id = this.chapter.minis.id, pt = this.ringPoint(this.rng.range(0, 6.2832));
+    const e = this.spawnEnemy(id, pt.x, pt.y);
+    e.hp = e.maxHp = m.hp * this.tier.enemyHp;
+    e.mini = true; e.odds = m.odds; e.howlCd = e.ai.howl.first; e.phase2 = false; e.rep = false;
+    this.mini = e;
+    this.miniLog.push({ t: this.time, k: null });
+    this.pushEvent('mini', { id: e.id, enemy: id, n: this.miniNext });
+    return e;
+  }
+
+  // the HUD countdown chip: seconds until the next miniboss while inside the warning window, else -1
+  get miniSoon() {
+    const m = this.miniSched[this.miniNext];
+    if (!m || this.spawnHalt) return -1;
+    const s = m.t - this.time;
+    return s > 0 && s <= this.miniWarn ? s : -1;
+  }
+
   ringPoint(angle, extra = 0) {
     const p = this.player;
     const d = this.balance.spawnDistance + extra;
@@ -503,6 +542,7 @@ export class Sim {
       this.fight.arrive();
       return;
     }
+    for (let ms = this.miniSched[this.miniNext]; ms && t >= ms.t; ms = this.miniSched[this.miniNext]) { this.miniNext += 1; if (t - ms.t < 2) this.spawnMini(ms); } // a time jump (tests, debug) skips a long-past one
     const cap = this.balance.maxEnemies;
     this.chapter.waves.forEach((wave, i) => {
       if (t < wave.from || t > wave.to) return;
@@ -580,7 +620,7 @@ export class Sim {
       let vx = 0;
       let vy = 0;
 
-      if (e.ai && e.ai.immune === e.state) { e.heldT = 0; e.fearT = 0; } // control-immune state (Bramble Hart charge): fear/pin do nothing
+      if (e.ai && (e.ai.immune === e.state || e.ai.immune === 'all')) { e.heldT = 0; e.fearT = 0; } // control-immune state (Bramble Hart charge) / always (Branch-Mane): fear/pin do nothing
       if (e.fight) { e.heldT = 0; e.fearT = 0; } // bosses ignore fear / pin (locked status ruleset)
       if (e.heldT > 0) {
         e.heldT -= dt;
@@ -857,6 +897,11 @@ export class Sim {
     const b = this.balance.drops;
     const p = this.player;
     const low = p.hp < p.maxHp * 0.5 ? 2 : 1;
+    if (e.mini) { // EN6/EN8: a heart + the Lantern Reliquary (tier rolled now from this miniboss's odds)
+      this.addPickup('heart', e.x - 14, e.y + 4);
+      this.dropChest(e);
+      return;
+    }
     if (e.boss) {
       this.addPickup('heart', e.x - 12, e.y);
       this.addPickup('magnet', e.x + 12, e.y);
@@ -871,7 +916,45 @@ export class Sim {
   }
 
   addPickup(type, x, y) {
-    this.pickups.push({ id: this.nextId++, type, x, y, ttl: this.balance.drops.ttl });
+    const k = { id: this.nextId++, type, x, y, ttl: this.balance.drops.ttl };
+    this.pickups.push(k);
+    return k;
+  }
+
+  // EN8 Lantern Reliquary tier: 0 small / 1 medium / 2 large from [small, medium, large] odds (%); the tier's Large bonus is taken from Small first,
+  // then Medium; pity: never two Large chests in one run (a second Large becomes Medium).
+  chestTier(odds) {
+    let [s, m, l] = Array.isArray(odds) && odds.length === 3 && odds.every((v) => Number.isFinite(v) && v >= 0) ? odds : [100, 0, 0];
+    let add = this.tier.chestLarge;
+    const fromS = Math.min(s, add); s -= fromS; add -= fromS; const fromM = Math.min(m, add); m -= fromM; l += fromS + fromM;
+    const r = this.rng.next() * (s + m + l || 1);
+    let t = r < s ? 0 : r < s + m ? 1 : 2;
+    if (t === 2 && this.largeChests >= 1) t = 1;
+    if (t === 2) this.largeChests += 1;
+    return t;
+  }
+
+  dropChest(e) {
+    const tier = this.chestTier(e.odds);
+    const k = this.addPickup('chest', e.x + 10, e.y);
+    k.tier = tier; k.ttl = Infinity; // a chest waits for you (no blink-out)
+    this.chestLog.push(tier);
+    this.pushEvent('chestDrop', { id: k.id, tier, x: k.x, y: k.y });
+    return k;
+  }
+
+  // Opened by walking onto it: the floor (XP burst + heal + gold) always; Medium adds a Blessing choice (1 of 3), Large adds a Blessing choice + one
+  // free stat rank (1 of 3 owned-weapon stats; never names an evolution). The choices reuse the run-start offer screen (pending level-ups untouched).
+  openChest(k) {
+    const C = this.balance.chest, p = this.player;
+    this.chests += 1;
+    this.healPlayer(p.maxHp * C.heal);
+    this.xp += Math.ceil(this.xpNeeded * C.xpLevel);
+    this.gold += C.gold;
+    this.pushEvent('chest', { id: k.id, tier: k.tier, x: k.x, y: k.y });
+    if (k.tier >= 1 && this.blessDef) this.startQueue.push('chestBless');
+    if (k.tier >= 2) this.startQueue.push('chestStat');
+    if (this.startQueue.length) this.nextStartOffer(); // an empty choice (every Blessing capped / every stat maxed) is skipped: the floor stays
   }
 
   updatePickups(dt) {
@@ -885,6 +968,11 @@ export class Sim {
       const dx = p.x - k.x;
       const dy = p.y - k.y;
       const d = Math.hypot(dx, dy) || 0.001;
+      if (k.type === 'chest') { // never pulled; opens when you walk onto it (waits out a live boss tell or the arrival beat)
+        if (d < this.balance.chest.reach + p.r && this.state === 'running' && !(this.fight && (this.fight.stage === 'intro' || this.fight.move))) { this.openChest(k); continue; }
+        keep.push(k);
+        continue;
+      }
       if (d < this.balance.pickupRadius * this.mods.pickup * this.bless.pickup * 0.6) {
         const step = Math.min(d, this.balance.magnetSpeed * dt);
         k.x += (dx / d) * step;
@@ -977,14 +1065,15 @@ export class Sim {
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
       if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
       this.logHit(e, 0, true);
-      if (e.killer === 'ghost_wolves' && !e.boss && !e.echoKill && this.fallen.length < 16 && this.weapons.some((w) => w.evo === 'howling_legion')) this.fallen.push({ x: e.x, y: e.y });
+      if (e.killer === 'ghost_wolves' && !e.boss && !e.mini && !e.echoKill && this.fallen.length < 16 && this.weapons.some((w) => w.evo === 'howling_legion')) this.fallen.push({ x: e.x, y: e.y });
       this.gold += e.gold * this.mods.gold * this.bless.gold;
       if (e.bossAdd) { // boss-made adds: gems only (no hearts / magnets), at most addGems gems per fight (no farming without a timer)
         if (this.fight.addGems < this.fightDef.addGems) { this.fight.addGems += 1; this.addGem(e.x, e.y, e.xp); }
         continue;
       }
-      this.addGem(e.x, e.y, e.xp);
+      if (e.xp > 0) this.addGem(e.x, e.y, e.xp); // the Branch-Mane drops no gem: its Lantern Reliquary carries the XP
       this.rollDrops(e);
+      if (e.mini) { this.miniKills += 1; for (const L of this.miniLog) if (L.k === null) { L.k = this.time; break; } if (this.mini === e) this.mini = null; this.pushEvent('miniDead', { id: e.id, x: e.x, y: e.y }); }
       if (e.boss) {
         this.bossKilled = true;
         this.shards += this.chapter.bossShards;
@@ -1003,7 +1092,7 @@ export class Sim {
     const p = this.player;
     const far = this.balance.despawnDistance;
     for (const e of this.enemies) {
-      if (e.boss) continue;
+      if (e.boss || e.mini) continue; // the Branch-Mane is leashed instead (enemyai alpha): it lopes back, never despawns
       const dx = e.x - p.x;
       const dy = e.y - p.y;
       if (dx * dx + dy * dy > far * far) {
@@ -1090,7 +1179,7 @@ export class Sim {
     if (this.offer.start) { // a run-start offer (T6): not a level-up, pending is untouched
       if (card.kind === 'favour') this.favour = card.weaponId;
       else if (card.kind === 'blessing') { this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1); this.blessingsTaken += 1; }
-      else if (card.kind === 'weapon') applyCard(this.cardCtx, card);
+      else if (card.kind === 'weapon' || card.kind === 'stat') applyCard(this.cardCtx, card); // stat = the Large chest's free rank
       this.offer = null;
       if (this.nextStartOffer()) return true;
       if (this.pending > 0) this.beginLevelUp();
@@ -1170,6 +1259,7 @@ export class Sim {
       gems: this.gemsTaken,
       abilityUses: this.abilityUses,
       blessings: this.blessingsTaken,
+      minis: this.miniKills, chests: this.chests, chestTiers: this.chestLog.slice(), miniLog: this.miniLog.map((L) => ({ ...L })), // EN6-EN8 counters
       hurt: { by: { ...this.hurtBy }, hits: { ...this.hitsBy }, lunge: this.lungeHits, last: this.lastHit ? { src: this.lastHit.src, kind: this.lastHit.kind, t: this.lastHit.t } : null }, // DR4 recap (counters only)
       clock: this.clock,
       // the boss fight (null if it never began): arrival time, fight start, fight length, the boss's HP left and its phase (DR4 'N into the fight')

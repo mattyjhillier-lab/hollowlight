@@ -14,6 +14,8 @@ export const START_COPY = {
   kindred: ['Kindred Start', 'Before the dusk · choose your second spirit'],
   favour: ['Favoured Spirit', 'Mark one spirit for this run'],
   blessing: ['Lantern Blessing', 'Start with one Blessing'],
+  chestBless: ['Lantern Reliquary', 'The light inside · choose a Blessing'], // EN8 chest choices (same screen, own title)
+  chestStat: ['Lantern Reliquary', 'A free rank · choose one'],
 };
 export const PEEK_LABEL = 'Next';
 export const DESC_MAX = 64;

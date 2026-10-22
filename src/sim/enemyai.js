@@ -12,6 +12,7 @@ export function aiStep(sim, e, dt, nx, ny, dist, out) {
   if (A.kind === 'ranged') ranged(sim, e, A, dt, nx, ny, dist, out);
   else if (A.kind === 'fuse') fuse(sim, e, A, dt, nx, ny, dist, out);
   else if (A.kind === 'charger') charger(sim, e, A, dt, nx, ny, dist, out);
+  else if (A.kind === 'alpha') alpha(sim, e, A, dt, nx, ny, dist, out);
   else { out[0] = nx * e.speed; out[1] = ny * e.speed; }
 }
 
@@ -102,6 +103,57 @@ function charger(sim, e, A, dt, nx, ny, dist, out) {
     e.stT -= dt;
     if (e.stT <= 0) { e.state = 'run'; e.aiCd = A.cd + sim.rng.range(0, A.cdRand); }
   }
+}
+
+// ---- Branch-Mane (EN6 miniboss, Grey Alpha role; enemies-v1.md 2.7 A): a CHASER on the run clock. HOWL every howl.every s (the first howl.first s
+// after it arrives): stands still for howl.pose s (mane up), then calls howl.calls Fell Wolves from the view edge (howl.callsP2 after the phase
+// change; at most howl.cap called wolves alive). LINE CHARGE like the hart (tell, direction locked, lane drawn) at x chargeMul for `charge` s,
+// chargeDmg contact, cd `cd`; after the phase change (hp below phaseAt) each charge repeats ONCE (re-aimed, a fresh tell). Control immune in every
+// state (ai.immune 'all', Sim.updateEnemies), takes bleed/burn/mark. Leash: more than `leash` u from the hero it lopes back at x leashMul (never despawns).
+function alpha(sim, e, A, dt, nx, ny, dist, out) {
+  out[0] = 0; out[1] = 0;
+  const H = A.howl;
+  if (!e.phase2 && e.hp < e.maxHp * A.phaseAt) { e.phase2 = true; sim.pushEvent('miniPhase', { id: e.id, x: e.x, y: e.y }); }
+  e.howlCd -= dt;
+  if (e.state === 'run') {
+    const sp = dist > A.leash ? e.speed * A.leashMul : e.speed;
+    out[0] = nx * sp; out[1] = ny * sp;
+    e.aiCd -= dt;
+    if (e.howlCd <= 0 && e.grace <= 0) { e.state = 'howl'; e.stT = H.pose; sim.pushEvent('howl', { id: e.id, x: e.x, y: e.y }); }
+    else if (e.aiCd <= 0 && dist < A.range && canTell(sim, e, A)) startTell(sim, e, A, nx, ny);
+  } else if (e.state === 'howl') {
+    e.stT -= dt;
+    if (e.stT <= 0) { e.state = 'run'; e.howlCd = H.every; callPack(sim, e, H); }
+  } else if (e.state === 'tele') {
+    e.tele = true;
+    e.stT -= dt;
+    if (e.stT <= 0) { e.tele = false; e.state = 'charge'; e.stT = A.charge; sim.pushEvent('charge'); }
+  } else if (e.state === 'charge') {
+    out[0] = e.dx * e.speed * A.chargeMul; out[1] = e.dy * e.speed * A.chargeMul;
+    e.stT -= dt;
+    if (e.stT <= 0) {
+      if (e.phase2 && !e.rep) { e.rep = true; e.state = 'run'; e.aiCd = 0; } // phase 2: the charge repeats once (a fresh tell as soon as a token is free)
+      else { e.rep = false; e.state = 'run'; e.aiCd = A.cd + sim.rng.range(0, A.cdRand || 0); }
+    }
+  }
+}
+function startTell(sim, e, A, nx, ny) {
+  e.state = 'tele'; e.tele = true; e.stT = A.tell; e.dx = nx; e.dy = ny; e.faceX = nx >= 0 ? 1 : -1;
+  sim.tells[e.type] = (sim.tells[e.type] || 0) + 1;
+}
+// the howl's pack: Fell Wolves from the view edge (the normal spawn ring), at most H.cap of this alpha's called wolves alive, never over maxEnemies
+function callPack(sim, e, H) {
+  let alive = 0;
+  for (const o of sim.enemies) if (o.calledBy === e.id && !o.dead) alive++;
+  const want = (e.phase2 ? H.callsP2 : H.calls) + (sim.tier.miniHowl || 0);
+  const n = Math.min(want, H.cap - alive, sim.balance.maxEnemies - sim.enemies.length);
+  const base = sim.rng.range(0, 6.2832);
+  for (let i = 0; i < n; i++) {
+    const pt = sim.ringPoint(base + sim.rng.range(-0.9, 0.9), sim.rng.range(0, 30));
+    const w = sim.spawnEnemy(H.enemy, pt.x, pt.y);
+    w.calledBy = e.id;
+  }
+  if (sim.fx.length < 48) sim.addFx({ kind: 'howl', x: e.x, y: e.y, r: 70, ttl: 0.9, color: '#6a58a0' }); // the ring of veins (visual)
 }
 
 // Enemy projectiles (thorns): straight, slow, hit the player only (never enemies or summons), die on hit / life end / world edge.

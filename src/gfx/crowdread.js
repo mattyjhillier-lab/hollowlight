@@ -2,7 +2,7 @@
 // Threat hierarchy: common swarmers (wolf, crow, root crawler) are drawn a little quieter and UNDERNEATH; the must-react types (Stoat Piper, Puffback
 // Toad, Bramble Hart, later the miniboss) keep full strength, get a cream outline and draw ON TOP; enemies overlapping the hero fade so she and her
 // hits show; ambient layers (fog, fireflies, petals) and small numbers dim while the crowd is thick (density-aware effect budget, eased over ~0.5 s).
-export const MUST_REACT = { stoat_piper: true, puffback_toad: true, bramble_hart: true, miniboss: true };
+export const MUST_REACT = { stoat_piper: true, puffback_toad: true, bramble_hart: true, branch_mane: true }; // branch_mane = the EN6 miniboss
 export const isMustReact = (type) => MUST_REACT[type] === true;
 
 // depth bands (added to D_LIT): filler + hero y-sort in 0..4000 as before; must-react types sort above all of them (still y-sorted among themselves);

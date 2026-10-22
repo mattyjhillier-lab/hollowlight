@@ -197,6 +197,32 @@ const SPRITES = {
       emberEye(c, 14.6, 7.2, 0.6); emberEye(c, 16.4, 7.8, 0.45);
     },
   },
+  // EN6 flat fallback (atlas not baked yet / Low): a big slate wolf, pale dead-branch mane, pale husk snout, THREE amber eyes (boss amber)
+  mane: {
+    w: 30, h: 22, shadow: [15, 20.6, 11, 2.2], enemy: 1,
+    draw: (c) => {
+      const F = 0x3c4562, M = 0xd0ccb8, BR = 0xcfcbbb, AM = 0xffb84a;
+      for (const x of [7, 10, 19, 22]) { c.fillStyle = sh(F, x < 15 ? 0.7 : 0.9); c.beginPath(); c.roundRect(x, 15, 2.2, 5.4, 0.8); c.fill(); }
+      line(c, 6, 12, 2, 9, 0.6, 6, 2.6, sh(F, 0.9)); // tail
+      ell(c, 14, 13, 9, 4.6, lg(c, 14, 8, 14, 18, [[0, sh(F, 1.2)], [1, sh(F, 0.7)]])); // body
+      for (const [x0, x1, y1] of [[9, 6, 3], [12, 11, 1.2], [15, 16, 0.6], [18, 21, 2]]) line(c, x0, 9.6, (x0 + x1) / 2, 5, x1, y1, 1.2, sh(BR, 1)); // the branch mane
+      ell(c, 22.4, 9.4, 4.4, 4, sh(F, 1.05)); // head
+      c.beginPath(); c.moveTo(21, 7.4); c.lineTo(29.4, 9.6); c.lineTo(29, 11.2); c.lineTo(21.6, 12.2); c.closePath(); c.fillStyle = sh(M, 1); c.fill(); // old husk snout
+      const am = (x, y, r) => { circ(c, x, y, r * 2.2, rg(c, x, y, 0, r * 2.2, [[0, css(AM, 0.8)], [1, css(AM, 0)]])); circ(c, x, y, r, sh(AM, 1.05)); circ(c, x, y, r * 0.5, sh(ROLE.eyeCore, 1)); };
+      am(23.4, 9.2, 0.75); am(25.8, 9.6, 0.6); am(23.9, 7.4, 0.5);
+    },
+  },
+  // EN8 flat fallback: the Lantern Reliquary (wood box, warm brass bands, peaked roof, warm seam light); the baked art replaces it (reliqtex.js)
+  chest: {
+    w: 14, h: 13, shadow: [7, 12.4, 5.4, 1.1],
+    draw: (c) => {
+      const WD = 0x6e5f58, BRS = 0xb98f4e;
+      c.fillStyle = lg(c, 0, 5, 0, 12, [[0, sh(WD, 1.2)], [1, sh(WD, 0.75)]]); c.beginPath(); c.roundRect(2, 5.6, 10, 6.4, 0.8); c.fill();
+      poly(c, [1.2, 5.8, 7, 1.4, 12.8, 5.8], sh(WD, 1.05)); // roof
+      c.fillStyle = sh(BRS, 1.1); c.fillRect(2.2, 5.6, 1.2, 6.4); c.fillRect(10.6, 5.6, 1.2, 6.4); c.fillRect(6.2, 5.6, 1.6, 2.6); // bands + clasp
+      c.fillStyle = 'rgba(255,217,138,0.95)'; c.fillRect(2, 5.4, 10, 0.7); // seam light
+    },
+  },
   treant: {
     w: 64, h: 72, shadow: [32, 66.5, 23, 5], enemy: 1, big: 1, rim: ROLE.barkRim,
     draw: (c) => {

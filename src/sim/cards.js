@@ -273,7 +273,7 @@ export function offerFromPreview(ctx, rng, preview) {
 // Run-start offers (Hearth-key 'Kindred Start', Card Fan 'Favoured Spirit', Hearth-key 'Lantern Blessing'; T6). Not level-ups: no reroll,
 // banish, heal swap or fallback cards. kindred = 3 unlocked weapons not yet owned (a free weapon card); favour = every unlocked weapon
 // (mark one); blessing = 3 Blessings (inside the caps, as any Blessing card).
-export const START_KINDS = ['kindred', 'favour', 'blessing'];
+export const START_KINDS = ['kindred', 'favour', 'blessing', 'chestBless', 'chestStat'];
 export function startOffer(ctx, rng, kind) {
   const { data, weapons } = ctx;
   const open = Object.keys(data.weapons).filter((id) => !data.weapons[id].treeGate || (ctx.unlockedWeapons && ctx.unlockedWeapons.has(id)));
@@ -285,8 +285,12 @@ export function startOffer(ctx, rng, kind) {
   } else if (kind === 'favour') {
     const first = weapons.length ? weapons[0].id : null;
     cards = open.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0)).map((id) => favourCard(id, data));
-  } else if (kind === 'blessing') {
+  } else if (kind === 'blessing' || kind === 'chestBless') { // EN8: a Medium/Large Lantern Reliquary's Blessing choice (same pool, same caps)
     cards = drawWeighted(blessingPool(ctx), 3, rng);
+  } else if (kind === 'chestStat') { // EN8: a Large Lantern Reliquary's free stat rank: 3 owned-weapon stats not yet maxed (a plain stat card: never names an evolution)
+    const pool = [];
+    for (const w of weapons) for (const k of Object.keys(data.weapons[w.id].stats)) if (w.ranks[k] < data.balance.maxRank) pool.push({ card: statCard(w, k, data, ctx.unlockedEvolutions, !!ctx.loudStir), w: 1 });
+    cards = drawWeighted(pool, 3, rng);
   }
   return cards;
 }

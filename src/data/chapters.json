@@ -5,6 +5,7 @@
     "bossAt": 840,
     "bossShards": 5,
     "rootPatches": 70,
+    "minis": { "id": "branch_mane", "at": [200, 420, 690], "hp": [700, 1600, 3200], "warn": 30, "chest": [[55, 40, 5], [20, 60, 20], [0, 50, 50]] },
     "waves": [
       {
         "enemy": "wolf",

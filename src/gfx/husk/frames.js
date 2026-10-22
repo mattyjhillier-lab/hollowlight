@@ -5,6 +5,7 @@ import { resetAll, defs, setGrainBox, EYES, SOCKS, clearEyes, setEyeSpecies, glo
 import { EXTRA_DEFS } from './kit.js';
 import { wolfA, crowA, crawlerA } from './husks.js';
 import { stoatA, toadA, hartA } from './husks2.js';
+import { maneA } from './husks3.js';
 
 export const ATLAS_KEY = 'en_atlas';
 export const TPW = 5; // atlas texels per world unit (Wren ~5.9; 2.1x the 720p desktop zoom, 1.4x at 1080p)
@@ -48,6 +49,12 @@ export const HUSK_TYPES = {
   // EN5 Bramble Hart (charger; HUSKS BATCH 2 A): thorn-antler lyre twice the head, long deer-skull husk, two HIGH sockets that swing LOW on the tell
   bramble_hart: {
     fn: hartA, tpw: 4, tellT: 0.3, stride: 20, maskAt: [36, -66], mdx: 8, g: 0.62, box: [-48, -146, 152, 150], foot: 8, dayK: 1, hurtW: 70, mask: MASK_BOX, dayRim: 0.4,
+    frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
+  },
+  // EN6 Branch-Mane (miniboss, HUSKS BATCH 3 A): the Splitsnout wolf x1.7 (g 1.05 vs 0.62), mane of pale dead branches, THREE amber sockets;
+  // tell / howl = the mane rattles up and spreads (t0 half, t1 full). Always fully lit (scene). Bakes at 3.5 texels/world unit (atlas size: ~0.85 MB).
+  branch_mane: {
+    fn: maneA, tpw: 3.5, tellT: 0.25, stride: 24, maskAt: [46, -52], mdx: 12, g: 1.05, box: [-88, -112, 176, 124], foot: 8, dayK: 1, hurtW: 80, mask: MASK_BOX, dayRim: 0.4,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };

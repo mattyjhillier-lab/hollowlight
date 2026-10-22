@@ -197,7 +197,7 @@ test('G5 above the dark: eyes, rims and telegraphs never go through the lightmap
   assert.ok(/this\.nums = new DamageNumbers\(this, D_PART \+ 10\)/.test(scene));
   assert.ok(!/MULTIPLY/.test(layer), 'night layer images are additive, not multiplied by the arc');
   assert.ok(/teleG\.lineStyle/.test(scene) && !/fx\.lineStyle\(1, 0xff5a4a/.test(scene), 'charge line is drawn on the above-vignette layer');
-  assert.ok(/e\.boss/.test(scene) && /tq = 200 \+ nl\.tq\[ei\]/.test(scene) && /!e\.boss && ei < 512\) tq = 200/.test(scene), 'boss is never given the far tint');
+  assert.ok(/e\.boss/.test(scene) && /tq = 200 \+ nl\.tq\[ei\]/.test(scene) && /!e\.boss(?: && !e\.mini)? && ei < 512\) tq = 200/.test(scene), 'boss is never given the far tint');
   // the layer's depths are constants set at creation (no per-frame setDepth sorting)
   assert.ok(!/setDepth/.test(layer.slice(layer.indexOf('  draw('), layer.indexOf('  // Night look off')).replace('.setDepth(c.depthBase - 1)', '').replace('.setDepth(this.depth - 0.5)', '')));
 });

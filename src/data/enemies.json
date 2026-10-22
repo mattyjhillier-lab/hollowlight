@@ -9,6 +9,9 @@
     "ai": { "kind": "fuse", "grace": 0.8, "maxTells": 6, "trigger": 30, "fuse": 1.0, "burstR": 36, "burstDmg": 12 } },
   "bramble_hart": { "name": "Bramble Hart",   "hp": 45,   "speed": 40,  "dmg": 8,  "r": 10, "xp": 6, "gold": 3,   "color": "#56607a", "shape": "hart",   "mass": 4, "mustReact": true,
     "ai": { "kind": "charger", "grace": 0.8, "maxTells": 3, "firstCd": [2, 4], "range": 200, "tell": 0.8, "charge": 0.9, "chargeMul": 5, "chargeDmg": 12, "stagger": 0.6, "cd": 6, "cdRand": 2, "immune": "charge" } },
+  "branch_mane": { "name": "Branch-Mane",   "hp": 700,  "speed": 52,  "dmg": 8,  "r": 14, "xp": 0, "gold": 0,   "color": "#3c4562", "shape": "mane",   "mass": 20, "mustReact": true, "mini": true,
+    "ai": { "kind": "alpha", "grace": 0.8, "maxTells": 1, "firstCd": [4.5, 5.5], "range": 200, "tell": 0.7, "charge": 0.7, "chargeMul": 4, "chargeDmg": 14, "cd": 7, "cdRand": 0, "immune": "all", "phaseAt": 0.5, "leash": 500, "leashMul": 2,
+      "howl": { "first": 3, "every": 12, "pose": 0.6, "calls": 4, "callsP2": 6, "cap": 8, "enemy": "wolf" } } },
   "elder_treant": { "name": "Elder Treant",   "hp": 36000, "speed": 18,  "dmg": 8,  "r": 26, "xp": 60, "gold": 100, "color": "#2f5a2a", "shape": "treant", "mass": 40, "boss": true, "fixed": true,
     "fight": {
       "arena": { "r": 230, "edge": 260, "ahead": 60, "rise": 120, "pull": 160 },

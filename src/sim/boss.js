@@ -149,6 +149,7 @@ export class BossFight {
       sim.alive[e.type] -= 1;
     }
     sim.enemies.length = 0;
+    sim.mini = null; // a Branch-Mane still alive at 14:00 crumbles with the rest (no chest)
     sim.eshots.length = 0;
     for (const g of sim.gems) g.mag = true; // one free magnet for every gem on the map
     const a = sim.rng.range(0, TAU), ux = Math.cos(a), uy = Math.sin(a);
@@ -161,6 +162,8 @@ export class BossFight {
     const keep = [];
     for (const k of sim.pickups) {
       if (Math.hypot(k.x - cx, k.y - cy) < R.r - 12) { keep.push(k); continue; }
+      if (k.type === 'chest') { const d = Math.hypot(k.x - cx, k.y - cy) || 1; k.x = cx + ((k.x - cx) / d) * (R.r - 30); k.y = cy + ((k.y - cy) / d) * (R.r - 30); keep.push(k); continue; } // EN8: an unopened Reliquary is carried inside the ring
+
       if (k.type === 'heart') { sim.healPlayer(p.maxHp * sim.balance.drops.heartHeal * sim.tfx.heartHeal); sim.pushEvent('heart'); }
     }
     sim.pickups = keep;

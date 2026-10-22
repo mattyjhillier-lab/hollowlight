@@ -44,6 +44,7 @@
     "ttl": 45,
     "pityHeartForce": 75
   },
+  "chest": { "heal": 0.3, "xpLevel": 0.5, "gold": 25, "reach": 12 },
   "magnetSpeed": 260,
   "despawnDistance": 510,
   "spawnDistance": 340,

@@ -12,7 +12,7 @@ const R = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 test('DR3 must-react types come from the enemy data (mustReact flag), the boss is not one', () => {
   for (const id of ['stoat_piper', 'puffback_toad', 'bramble_hart']) assert.ok(data.enemies[id].mustReact, id);
   for (const id of ['wolf', 'crow', 'root_crawler']) assert.ok(!data.enemies[id].mustReact, id);
-  assert.ok(C.isMustReact('stoat_piper') && C.isMustReact('puffback_toad') && C.isMustReact('bramble_hart') && C.isMustReact('miniboss'));
+  assert.ok(C.isMustReact('stoat_piper') && C.isMustReact('puffback_toad') && C.isMustReact('bramble_hart') && C.isMustReact('branch_mane')); // branch_mane = the EN6 miniboss
   assert.ok(!C.isMustReact('wolf') && !C.isMustReact('crow') && !C.isMustReact('root_crawler') && !C.isMustReact('__proto__') && !C.isMustReact(undefined));
 });
 
@@ -85,7 +85,7 @@ test('DR3 hero outline always on', () => {
 test('DR3 outline caps per tier; Low is depth-only (simple)', () => {
   assert.equal(C.MUST_OUT_CAP.low, 0); assert.ok(C.MUST_OUT_CAP.high >= C.MUST_OUT_CAP.med);
   const live = Object.values(data.enemies).filter((e) => e.mustReact).length;
-  assert.ok(live === 3);
+  assert.ok(live === 4); // piper, toad, hart + the Branch-Mane miniboss (EN6)
 });
 
 test('DR3 render wiring: depth bands, fade, outline images, density budget, no new per-frame allocation in the loop', () => {
