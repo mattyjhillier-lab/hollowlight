@@ -14,7 +14,7 @@ const PORT = 9561, HTTP = 4271;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
 const VIEWS = { desk: [1280, 720, 1], land: [844, 390, 2], port: [390, 844, 2] };
-const MIX = ['wolf', 'wolf', 'crow', 'root_crawler', 'wolf', 'crow', 'stoat_piper', 'puffback_toad'];
+const MIX = ['wolf', 'wolf', 'crow', 'root_crawler', 'wolf', 'crow', 'stoat_piper', 'wolf'];
 
 function serve(dir) {
   const root = resolve(dir);
@@ -64,6 +64,7 @@ const shot = async (c, file, clip) => {
   writeFileSync(file, Buffer.from(r.data, 'base64'));
 };
 const autoPick = (c) => c.ev("(()=>{const a=window.__app,s=a.sim;if(s&&s.state==='levelup'&&s.offer&&s.offer.cards[0])a.pick(s.offer.cards[0].key);return 1})()");
+const settle = async (c) => { for (let i = 0; i < 12; i++) { if (await c.ev("window.__app.sim.state==='running'")) return; await autoPick(c); await sleep(150); } };
 const fmt = (t) => `${Math.floor(t / 60)}m${String(t % 60).padStart(2, '0')}`;
 
 // a calm crowd + the Branch-Mane 95 u right of the hero (facing her); idx = which scheduled one (hp)
@@ -79,7 +80,7 @@ async function world(out) {
   mkdirSync(out, { recursive: true });
   const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
   try {
-    for (const [t, idx, light] of [[200, 0, 'night'], [690, 2, 'day']]) {
+    for (const [t, idx, light] of [[200, 0, 'night'], [690, 2, 'dusk'], [810, 2, 'light']]) {
       for (const view of ['desk', 'land', 'port']) {
         const [w, h, dpr] = VIEWS[view];
         const hero = view === 'port' ? 'elias' : 'wren';
@@ -97,21 +98,22 @@ async function world(out) {
         await shot(c, join(out, `${base}-2-charge-tell.jpg`)); if (crop) await shot(c, join(out, `${base}-2-charge-tell-crop2x.png`), crop);
         await freeze(c, false);
         // howl: pose + the vein ring
-        await c.ev(`(()=>{const s=window.__app.sim,m=s.mini;m.state='run';m.tele=false;m.howlCd=0;m.aiCd=99;return 1})()`);
+        await c.ev(`(()=>{const s=window.__app.sim,m=s.mini;m.x=s.player.x+70;m.y=s.player.y-12;m.faceX=-1;m.state='run';m.tele=false;m.howlCd=0;m.aiCd=99;return 1})()`);
         await sleep(520); await freeze(c, true); await sleep(200);
         await shot(c, join(out, `${base}-3-howl.jpg`)); if (crop) await shot(c, join(out, `${base}-3-howl-crop2x.png`), crop);
         await freeze(c, false);
         // the Reliquary: all three tiers on the ground beside the hero (the miniboss gone), then a Small one opening
         await c.ev(`(()=>{const s=window.__app.sim,p=s.player;s.enemies=s.enemies.filter(e=>!e.mini);s.alive.branch_mane=0;s.mini=null;s.pickups.length=0;for(const [i,tr] of [[0,0],[1,1],[2,2]]){const k=s.addPickup('chest',p.x+50+i*34,p.y+18);k.tier=tr;k.ttl=Infinity;}return 1})()`);
         await sleep(700);
-        await shot(c, join(out, `${base}-4-chests.jpg`)); if (crop) await shot(c, join(out, `${base}-4-chests-crop2x.png`), { x: 520, y: 260, width: 300, height: 180, scale: 3 });
+        await shot(c, join(out, `${base}-4-chests.jpg`)); if (crop) await shot(c, join(out, `${base}-4-chests-crop2x.png`), { x: 690, y: 330, width: 280, height: 130, scale: 3 });
         await c.ev(`(()=>{const s=window.__app.sim,p=s.player;const k=s.pickups.find(q=>q.type==='chest'&&q.tier===0);k.x=p.x;k.y=p.y;return 1})()`);
         await sleep(260); await shot(c, join(out, `${base}-5-open.jpg`)); if (crop) await shot(c, join(out, `${base}-5-open-crop2x.png`), crop);
+        await sleep(600); await settle(c); // the Small chest's XP may have levelled her up: pick through it first
         // a Large one: the Blessing choice screen, then the free stat rank
         await c.ev(`(()=>{const s=window.__app.sim,p=s.player;const k=s.pickups.find(q=>q.type==='chest'&&q.tier===2);k.x=p.x;k.y=p.y;return 1})()`);
         await sleep(900); await shot(c, join(out, `${base}-6-choice-bless.jpg`));
         await autoPick(c); await sleep(700); await shot(c, join(out, `${base}-7-choice-stat.jpg`));
-        await autoPick(c); await sleep(300);
+        await autoPick(c); await sleep(300); await settle(c);
         // the countdown chip 15 s before the next one
         await c.ev(`(()=>{const s=window.__app.sim;s.pickups.length=0;s.mini=null;s.miniSched=[{t:s.time+15,hp:700,odds:[55,40,5]}];s.miniNext=0;return 1})()`);
         await sleep(700); await shot(c, join(out, `${base}-8-chip.jpg`), view === 'port' ? null : { x: 0, y: 0, width: w, height: Math.round(h * 0.35) });
@@ -121,6 +123,29 @@ async function world(out) {
   } finally { await c.close(); srv.close(); }
 }
 
+// DR gates with the miniboss on screen (desk, High): its depth vs the hero (on her = under her), vs a common wolf (must-react sorts above),
+// the hero outline layer above everything, the cream must-react outline drawn, the charge lane only bright when it reaches her (threatens).
+async function dr(out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(process.env.DIST || 'dist'); const c = await launch();
+  try {
+    await open(c, 'auto=wren&seed=7&t=200&god=1&grant=ghost_wolves:speed=3,power=3', 1280, 720, 1);
+    await sleep(400); await stage(c, 200, 0, 30); await sleep(3000);
+    const R = {};
+    for (const [tag, dx] of [['on-hero', 12], ['near', 60]]) {
+      R[tag] = await c.ev(`(async()=>{const a=window.__app,s=a.sim,sc=a.scene,p=s.player,m=s.mini;m.x=p.x+${dx};m.y=p.y+4;m.state='run';m.howlCd=99;m.aiCd=99;
+        const w=s.spawnEnemy('wolf',p.x+${dx}+2,p.y+30);sc.hitStop=999;await new Promise(r=>setTimeout(r,250));
+        const mi=sc.pools.branch_mane.get(m.id),wi=sc.pools.wolf.get(w.id),hero=sc.playerImg.depth;
+        const out=sc.mrOut.filter(o=>o.visible).length;sc.hitStop=0;
+        return {mane:mi.depth,wolf:wi.depth,heroY:hero,heroOut:sc.heroOut.depth,heroOutVisible:sc.heroOut.visible,mustOutlines:out,maneAlpha:mi.alpha};})()`);
+    }
+    R.lane = await c.ev(`(async()=>{const a=window.__app,s=a.sim,p=s.player,m=s.mini;m.x=p.x+110;m.y=p.y;m.state='tele';m.tele=true;m.stT=0.4;m.dx=-1;m.dy=0;const sc=a.scene;sc.hitStop=999;await new Promise(r=>setTimeout(r,200));const tg=sc.teleG.depth;sc.hitStop=0;return {teleDepth:tg};})()`);
+    writeFileSync(join(out, 'dr-mini.json'), JSON.stringify(R, null, 1));
+    console.log(JSON.stringify(R));
+  } finally { await c.close(); srv.close(); }
+}
+
 const [mode, out] = process.argv.slice(2);
-if (mode === 'world') await world(out || 'docs/screenshots/minibosses');
+if (mode === 'dr') await dr(out || 'docs/screenshots/minibosses');
+else if (mode === 'world') await world(out || 'docs/screenshots/minibosses');
 else console.log('usage: node scripts/mini-shots.mjs world <outDir>');

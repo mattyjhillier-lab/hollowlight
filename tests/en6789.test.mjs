@@ -153,7 +153,7 @@ test('chest open: walk onto it; floor always (heal 30%, XP burst, gold); Medium 
   assert.equal(s.chests, 1);
   assert.ok(s.player.hp >= 50 - 1e-9, 'heal 30%');
   assert.ok(s.gold - g0 >= 25);
-  assert.ok(s.xp - xp0 >= Math.ceil(need * 0.5) - 1e-9 || s.level > 1);
+  assert.ok(s.xp - xp0 + s.gems.reduce((a, g) => a + g.v, 0) >= Math.ceil(need * 0.5) - 1e-9 && s.gems.every((g) => g.mag), "XP burst = gems flying to her"); void xp0;
   assert.equal(s.state, 'levelup'); assert.equal(s.offer.start, 'chestBless');
   assert.equal(s.offer.cards.length, 3); for (const c of s.offer.cards) assert.equal(c.kind, 'blessing');
   const pend = s.pending;
@@ -183,16 +183,16 @@ test('chest: Small = floor only; all Blessings capped + all stats maxed = floor 
   assert.ok(t.state === 'running' || (t.offer && t.offer.cards.length > 0));
 });
 
-test('tiers: Deep Dusk +1 howl wolf; Long Night a 4th Branch-Mane at 8:40; Twilight cannot carry the knobs; forged values fall back', () => {
+test('tiers: Deep Dusk +1 howl wolf; Long Night a 4th Branch-Mane at 8:20; Twilight cannot carry the knobs; forged values fall back', () => {
   assert.equal(resolveTier(data.tiers, 'cursed_forest', 'hard').miniHowl, 1);
-  assert.deepEqual([...resolveTier(data.tiers, 'cursed_forest', 'expert').miniExtra], [520]);
+  assert.deepEqual([...resolveTier(data.tiers, "cursed_forest", "expert").miniExtra], [500]); // 8:20 (was 8:40 in the tier sheet: 20 s from the 9:00 swarm)
   assert.deepEqual([...resolveTier(data.tiers, 'cursed_forest', 'normal').miniExtra], []);
   const bad = JSON.parse(JSON.stringify(data.tiers)); bad.template.normal.miniHowl = 1;
   assert.throws(() => validateTiers(bad));
   const bad2 = JSON.parse(JSON.stringify(data.tiers)); bad2.template.hard.miniExtra = ['x'];
   assert.throws(() => validateTiers(bad2));
   const x = arena(17, { tier: 'expert' });
-  assert.deepEqual(x.miniSched.map((m) => m.t), [200, 420, 520, 690]);
+  assert.deepEqual(x.miniSched.map((m) => m.t), [200, 420, 500, 690]);
   assert.equal(x.miniSched[2].hp, 1600);
   const h = arena(18, { tier: 'hard' });
   h.time = 199.99; run(h, 0.02); const m = mane(h); m.howlCd = 0; m.grace = 0; run(h, 0.7);
@@ -236,4 +236,8 @@ test('render: Branch-Mane bakes amber eyes in 3 sockets, the Reliquary art is br
   assert.match(R('src/ui/hud.js'), /sim\.mini && !sim\.mini\.dead/);
   assert.match(R('src/ui/cardsui.js'), /chestBless:.*chestStat:/s);
   assert.ok(!/innerHTML/.test(R('src/gfx/minibossview.js')));
+});
+
+test('tier extra Branch-Manes also sit >= 30 s from every swarm', () => {
+  for (const tid of ['hard', 'expert']) for (const t of resolveTier(data.tiers, 'cursed_forest', tid).miniExtra) for (const ev of data.chapters.cursed_forest.events) assert.ok(Math.abs(ev.t - t) >= 30, `${tid} ${t} vs ${ev.t}`);
 });

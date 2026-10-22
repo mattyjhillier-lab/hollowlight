@@ -53,8 +53,9 @@ export async function bakeReliquary(scene) {
 
 export class MiniView {
   // scene: RunScene (addRing / burst / stop / shake helpers); depths: { lit, ground } ; flatInv: world units per texel of the flat 'chest' sprite
-  constructor(scene, depths, flatInv) {
-    this.scene = scene; this.D = depths; this.flatInv = flatInv || 0.25;
+  constructor(scene, depths, flatInv, glowInv) {
+    this.scene = scene; this.D = depths; this.flatInv = flatInv || 0.25; this.glowInv = glowInv || 0.1;
+    this.glows = []; // one soft additive warm glow under each chest (the reward reads at true size, day and night)
     this.chests = []; this.chestN = 0; // pooled images
     this.opening = []; for (let i = 0; i < 3; i++) this.opening.push({ t: 9, x: 0, y: 0, tier: 0, img: null });
     this.sprouts = []; for (let i = 0; i < 4; i++) this.sprouts.push({ t: 99, x: 0, y: 0 });
@@ -64,7 +65,7 @@ export class MiniView {
 
   chestImg(i) {
     let im = this.chests[i];
-    if (!im) { im = this.chests[i] = this.scene.add.image(0, 0, 'chest'); im.fr = -1; im.key0 = 'chest'; }
+    if (!im) { im = this.chests[i] = this.scene.add.image(0, 0, 'chest'); im.fr = -1; im.key0 = 'chest'; this.glows[i] = this.scene.add.image(0, 0, 'glow').setBlendMode(1).setTint(LANTERN); }
     return im;
   }
 
@@ -109,7 +110,7 @@ export class MiniView {
     // howl veins: cold-violet crack lines spreading from its feet over the fx life
     for (const f of sim.fx) {
       if (f.kind !== 'howl') continue;
-      const k = calm ? 0.7 : 1 - Math.max(0, Math.min(1, f.ttl / 0.9)), R = f.r * (calm ? 1 : 0.35 + 0.65 * k), a = calm ? 0.45 : 0.75 * (1 - k * 0.7);
+      const k = calm ? 0.7 : 1 - Math.max(0, Math.min(1, f.ttl / 1.2)), R = f.r * (calm ? 1 : 0.35 + 0.65 * k), a = calm ? 0.45 : 0.75 * (1 - k * 0.7);
       g.lineStyle(1.6, VEIN, a);
       for (let i = 0; i < 9; i++) {
         const an = i * 0.698 + (f.x % 1), c = Math.cos(an), s = Math.sin(an) * 0.7; // squashed: lying on the ground
@@ -136,6 +137,7 @@ export class MiniView {
       im.setPosition(k.x, k.y + 3).setDepth(this.D.lit + k.y - 2).setAlpha(1).setVisible(true);
       if (!calm) im.setScale(im.scaleX * (1 + br * 0.25), im.scaleY);
       if (lm) lm.add(k.x, k.y - 6, 34 + 6 * (k.tier | 0), LANTERN, 0.5 + br);
+      this.glows[n - 1].setPosition(k.x, k.y - 4).setScale((2.8 + 0.5 * (k.tier | 0)) * this.glowInv, 2.0 * this.glowInv).setDepth(this.D.lit + k.y - 3).setAlpha(0.75 + 0.1 * (k.tier | 0) + br).setVisible(true);
     }
     // opening beats (the open frame lifts and fades over 0.8 s)
     for (const o of this.opening) {
@@ -144,9 +146,10 @@ export class MiniView {
       const im = this.chestImg(n++), u = Math.min(1, o.t / 0.8);
       this.setChest(im, o.tier, true);
       im.setPosition(o.x, o.y + 3 - (calm ? 0 : 3 * u)).setDepth(this.D.lit + o.y - 2).setAlpha(1 - u * u).setVisible(true);
+      this.glows[n - 1].setPosition(o.x, o.y - 10).setScale(3.2 * this.glowInv, 3.6 * this.glowInv).setDepth(this.D.lit + o.y - 1).setAlpha(0.8 * (1 - u)).setVisible(true);
       if (lm) lm.add(o.x, o.y - 14, 60 * (1 - u * 0.5), CORE, 0.8 * (1 - u));
     }
-    for (let i = n; i < this.chestN; i++) this.chests[i].setVisible(false);
+    for (let i = n; i < this.chestN; i++) { this.chests[i].setVisible(false); this.glows[i].setVisible(false); }
     this.chestN = n;
   }
 }

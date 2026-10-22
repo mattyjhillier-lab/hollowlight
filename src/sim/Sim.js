@@ -874,6 +874,7 @@ export class Sim {
     const pick = this.balance.pickupRadius * this.mods.pickup * this.bless.pickup;
     const keep = [];
     for (const g of this.gems) {
+      if (g.hold > 0) { g.hold -= dt; keep.push(g); continue; } // EN8 chest gems: they hang in the spilled light for a beat, then fly in
       const dx = p.x - g.x;
       const dy = p.y - g.y;
       const d = Math.hypot(dx, dy) || 0.001;
@@ -949,7 +950,9 @@ export class Sim {
     const C = this.balance.chest, p = this.player;
     this.chests += 1;
     this.healPlayer(p.maxHp * C.heal);
-    this.xp += Math.ceil(this.xpNeeded * C.xpLevel);
+    // the XP burst pours out as six gems that fly to the hero (the opening beat shows before any level-up screen)
+    const xp = Math.ceil(this.xpNeeded * C.xpLevel), n = 6;
+    for (let i = 0; i < n; i++) { const a = (i / n) * 6.2832; this.addGem(k.x + Math.cos(a) * 14, k.y - 10 + Math.sin(a) * 8, xp / n); const g = this.gems[this.gems.length - 1]; g.mag = true; g.hold = 0.6 + i * 0.05; }
     this.gold += C.gold;
     this.pushEvent('chest', { id: k.id, tier: k.tier, x: k.x, y: k.y });
     if (k.tier >= 1 && this.blessDef) this.startQueue.push('chestBless');

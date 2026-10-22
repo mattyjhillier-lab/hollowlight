@@ -52,9 +52,9 @@ export const HUSK_TYPES = {
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
   // EN6 Branch-Mane (miniboss, HUSKS BATCH 3 A): the Splitsnout wolf x1.7 (g 1.05 vs 0.62), mane of pale dead branches, THREE amber sockets;
-  // tell / howl = the mane rattles up and spreads (t0 half, t1 full). Always fully lit (scene). Bakes at 3.5 texels/world unit (atlas size: ~0.85 MB).
+  // tell / howl = the mane rattles up and spreads (t0 half, t1 full). Always fully lit (scene). Bakes at 3.2 texels/world unit (atlas size: ~0.7 MB).
   branch_mane: {
-    fn: maneA, tpw: 3.5, tellT: 0.25, stride: 24, maskAt: [46, -52], mdx: 12, g: 1.05, box: [-88, -112, 176, 124], foot: 8, dayK: 1, hurtW: 80, mask: MASK_BOX, dayRim: 0.4,
+    fn: maneA, tpw: 3.2, tellT: 0.25, stride: 24, maskAt: [46, -52], mdx: 12, g: 1.05, box: [-88, -112, 176, 124], foot: 8, dayK: 1, hurtW: 80, mask: MASK_BOX, dayRim: 0.4,
     frames: [['w0', { ph: 0 }], ['w1', { ph: 0.25 }], ['w2', { ph: 0.5 }], ['w3', { ph: 0.75 }], ['t0', { tele: 0.5 }], ['t1', { tele: 1 }], ['h', { hurt: 1, ph: 0.1 }], ['b', { ph: 0, noMask: 1 }], ['m', { maskOnly: 1 }]],
   },
 };

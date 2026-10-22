@@ -20,6 +20,7 @@ if (process.env.ENEMY_PATCH) {
 }
 if (process.env.WAVE_PATCH) { const P = JSON.parse(process.env.WAVE_PATCH); for (const ch of Object.values(data.chapters)) for (const w of ch.waves) if (Object.hasOwn(P, w.enemy)) Object.assign(w, P[w.enemy]); } // WAVE_PATCH='{"stoat_piper":{"maxAlive":4}}'
 if (process.env.NO_ENEMY) { const drop = process.env.NO_ENEMY.split(','); for (const ch of Object.values(data.chapters)) ch.waves = ch.waves.filter((w) => !drop.includes(w.enemy)); }
+if (process.env.MINI_PATCH) { const P = JSON.parse(process.env.MINI_PATCH); for (const ch of Object.values(data.chapters)) if (ch.minis) for (const k of ['at', 'hp', 'chest']) if (Array.isArray(P[k])) ch.minis[k] = P[k]; } // EN6 probe: MINI_PATCH='{"hp":[450,1600,3200]}'
 if (process.env.NO_MINI === '1') for (const ch of Object.values(data.chapters)) delete ch.minis; // EN6-EN8 ablation: no Branch-Mane, no chests
 if (process.env.NO_CHEST === '1') data.balance = { ...data.balance, chest: { ...data.balance.chest, reach: -1e9 } }; // EN8 ablation: the Branch-Mane comes but its chest is never opened
 data.tree = loadTree(data).live; // fragments in src/data/tree/ (src/meta/treedata.js)
@@ -186,7 +187,7 @@ function botInput(sim) {
     ax += ((best.x - p.x) / d) * 0.6; ay += ((best.y - p.y) / d) * 0.6;
   }
   // EN8: a dropped Lantern Reliquary within 300 u is walked to (a player goes for it once the area is calm; the bot just heads over)
-  for (const k of sim.pickups) if (k.type === 'chest') { const dx = k.x - p.x, dy = k.y - p.y, d = Math.hypot(dx, dy) || 1; if (d < 300) { ax += (dx / d) * 0.8; ay += (dy / d) * 0.8; } break; }
+  if (process.env.NO_CHEST !== '1') for (const k of sim.pickups) if (k.type === 'chest') { const dx = k.x - p.x, dy = k.y - p.y, d = Math.hypot(dx, dy) || 1; if (d < 300) { ax += (dx / d) * 0.8; ay += (dy / d) * 0.8; } break; }
   if (DODGE && dodgeVec(sim)) { const m = Math.hypot(ax, ay) || 1; ax = (ax / m) * DODGE_KEEP + _d[0]; ay = (ay / m) * DODGE_KEEP + _d[1]; }
   // drift back toward world centre when near the edge
   const c = sim.balance.worldSize / 2;

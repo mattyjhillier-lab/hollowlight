@@ -119,7 +119,10 @@ function alpha(sim, e, A, dt, nx, ny, dist, out) {
     const sp = dist > A.leash ? e.speed * A.leashMul : e.speed;
     out[0] = nx * sp; out[1] = ny * sp;
     e.aiCd -= dt;
-    if (e.howlCd <= 0 && e.grace <= 0) { e.state = 'howl'; e.stT = H.pose; sim.pushEvent('howl', { id: e.id, x: e.x, y: e.y }); }
+    if (e.howlCd <= 0 && e.grace <= 0) {
+      e.state = 'howl'; e.stT = H.pose; sim.pushEvent('howl', { id: e.id, x: e.x, y: e.y });
+      if (sim.fx.length < 48) sim.addFx({ kind: 'howl', x: e.x, y: e.y, r: 70, ttl: 1.2, color: '#6a58a0' }); // the ring of veins spreads through the pose (visual)
+    }
     else if (e.aiCd <= 0 && dist < A.range && canTell(sim, e, A)) startTell(sim, e, A, nx, ny);
   } else if (e.state === 'howl') {
     e.stT -= dt;
@@ -153,7 +156,6 @@ function callPack(sim, e, H) {
     const w = sim.spawnEnemy(H.enemy, pt.x, pt.y);
     w.calledBy = e.id;
   }
-  if (sim.fx.length < 48) sim.addFx({ kind: 'howl', x: e.x, y: e.y, r: 70, ttl: 0.9, color: '#6a58a0' }); // the ring of veins (visual)
 }
 
 // Enemy projectiles (thorns): straight, slow, hit the player only (never enemies or summons), die on hit / life end / world edge.

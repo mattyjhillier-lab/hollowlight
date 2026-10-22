@@ -233,7 +233,7 @@ export class RunScene extends Phaser.Scene {
     this.gradeTint = -1;
 
     this.bossView = new BossView(this, { lit: D_LIT, ground: -395, tele: D_VIG + 3 });
-    this.miniView = new MiniView(this, { lit: D_LIT, ground: D_LIT - 95 }, INV.chest);
+    this.miniView = new MiniView(this, { lit: D_LIT, ground: D_LIT - 95 }, INV.chest, INV.glow);
     INV[POD_KEY] = INV[SAP_KEY] = ADD_SCALE;
     this.pools = {
       wolf: new SpritePool(this, 'wolf'),
@@ -1170,7 +1170,7 @@ export class RunScene extends Phaser.Scene {
         img.setAlpha(enemyAlpha(d2 < 1936 ? Math.sqrt(d2) : 1e9, dk, mr)); // DR3: common swarm quieter in a thick crowd; anything over the hero fades (she and her hits show)
       }
       if (e.flash > 0) tq = 100;
-      else if (e.bleedT > 0) tq = 101;
+      else if (e.bleedT > 0 && !e.mini) tq = 101; // the Branch-Mane keeps its own colours under bleed (drips + numbers still show)
       else if (e.markT > 0 && !e.boss && !e.mini) tq = 102; // W8b Mark: light violet body tint (all tiers, static; boss only gets the omen)
       else if (nlOn && !e.boss && !e.mini && ei < 512) tq = 200 + nl.tq[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
       else if (lit && !e.boss && !e.mini) { // the Branch-Mane is always fully lit (never the far tint), like the boss
