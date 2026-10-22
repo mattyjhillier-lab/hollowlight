@@ -83,6 +83,7 @@ function drawLifeDebug(d, life, p) {
 const hex = (s) => parseInt(s.slice(1), 16);
 const WOLF_GLOW = 0x9fd8ff; // S1: wolf halo retinted to the locked wolf role colour
 const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the High bloom is on (it halves a small sprite's value; this keeps the spirit lit)
+const ALPHA_HALO = 3.4; // S2: the Alpha's own frame carries a 1.7x baked glow, so its extra halo shrinks (friendly coverage near the hero <= today + 5 pts)
 const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
 function makeTextures(scene) {
@@ -1353,7 +1354,7 @@ export class RunScene extends Phaser.Scene {
       if (u.kind === 'wolf') {
         if (wolfArt) this.drawWolfA(u, p, wdt, lowWolf, wEvo);
         else pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(u.shade ? 0.5 : u.r > 6 ? 0.78 : 0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
-        if (wolfArt ? !lowWolf && halos++ < caps.halos : halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y - (wolfArt ? 1 : 0)).setTint(wolfArt ? WOLF_GLOW : ROLE.spiritA).setScale((u.r > 6 ? 5 : u.r / 4 * (wolfArt ? WOLF_HALO_K : 1.12)) * pl.haloU.inv).setAlpha(u.r > 6 ? 0.45 : wolfArt ? WOLF_HALO_A : 0.62); // the great wolf keeps a modest halo so its body still reads (S1: Low flats have the glow baked in, no halo)
+        if (wolfArt ? !lowWolf && halos++ < caps.halos : halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y - (wolfArt ? 1 : 0)).setTint(wolfArt ? WOLF_GLOW : ROLE.spiritA).setScale((u.r > 6 ? (wolfArt ? ALPHA_HALO : 5) : u.r / 4 * (wolfArt ? WOLF_HALO_K : 1.12)) * pl.haloU.inv).setAlpha(u.r > 6 ? 0.45 : wolfArt ? WOLF_HALO_A : 0.62); // the great wolf keeps a modest halo so its body still reads (S1: Low flats have the glow baked in, no halo)
         if (wolfArt) { /* S2: gold rim, frost mane and streamers are baked into the evolved frames (wolfSkin) */ } else if (wEvo === 'phantom_stampede') fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved wolves only: thin gold rim (never on enemies)
         else if (wEvo === 'dire_alpha' && !u.shade) { // The Alpha: gold rim on the great wolf only (the ghost shades stay plain), pale-blue frost mane along its back
           fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(u.x, u.y, u.r * 1.3);
