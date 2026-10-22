@@ -89,7 +89,7 @@ const WOLF_GLOW = 0x9fd8ff; // S1: wolf halo retinted to the locked wolf role co
 const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the High bloom is on (it halves a small sprite's value; this keeps the spirit lit)
 const ALPHA_HALO = 3.4; // S2: the Alpha's own frame carries a 1.7x baked glow, so its extra halo shrinks (friendly coverage near the hero <= today + 5 pts)
 const RAVEN_SELF = 1, RAVEN_HALO = 0.75, RAVEN_HALO_A = 0.6, RAVEN_GLOW = 0xb79cff; // S3: raven self-light (High bloom only), halo size / alpha / locked violet
-const SHADE_A = 0.65; // S2 open item: the Alpha's 2 ghost shades 0.5 -> 0.65 (Low L* gap vs the Fell Wolf was 12-18)
+const SHADE_A = 0.8; // Matt 2026-10-22: the Alpha's 2 ghost shades 0.5 -> 0.65 -> 0.8 (Low L* gap vs the Fell Wolf was 12-18)
 const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
 function makeTextures(scene) {
