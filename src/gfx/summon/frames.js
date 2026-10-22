@@ -14,6 +14,8 @@ const seq = (group, prefix, n, w, h, ax, ay, role) => { for (let i = 0; i < n; i
 // wolves (S1): 128x96 texels = the wolf.js du box at 1 texel per du (drawn at WOLF_WPD world units per du, ~16 u long = 39 px desktop);
 // feet line at 90/96 down (du y = 0 in the [-90, 6] box)
 const WOLF_AY = 90 / 96;
+// S4 flame box [-14, -29, 28, 42] du: body centre at y = -9 du, flame base (wick top) at y = 4 du
+export const FLAME_AY = 20 / 42, PETAL_AY = 33 / 42;
 seq('wolf', 'wolf_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // lope x4, bite, sit
 seq('wolf', 'wolf_ov', 3, 128, 96, 0.5, WOLF_AY, 'wolf'); // notched ear, chest tuft, curl tail
 // S2 wolf evolutions: The Alpha (frost mane, amber eyes, gold rim baked) at 1 texel per du in its 132 x 96 du box, drawn 1.7x (S0 baked 176 x 128;
@@ -37,17 +39,21 @@ add('glyph', 'gtail_0', 74, 32, 44 / 46, 0.5, 'bolt');
 add('glyph', 'gtail_1', 74, 32, 44 / 46, 0.5, 'bolt');
 add('glyph', 'lance_0', 144, 23, 172 / 176, 0.5, 'bolt');
 add('glyph', 'gtorn', 48, 48, 0.5, 0.5, 'bolt');
-// holy orbit flames
-seq('flame', 'flame_', 3, 48, 64, 0.5, 0.78, 'orbit');
-seq('flame', 'flame_big', 3, 64, 80, 0.5, 0.78, 'orbit');
-add('flame', 'wax_bead', 24, 24, 0.5, 0.5, 'orbit');
+// holy orbit flames (S4 Candle Flames): 32 x 48 texels for the 28 x 42 du box (orbit.js FLAME_BOX); anchor = the flame body centre (the sim light);
+// flame_ = base flicker x3, flameg_ = gold-rimmed evolved flicker x3 (Sanctum Halo / Vesper Tide; drawn 1.45x for Judgement Wheel), flame_petal =
+// gold flame without wick or bead (one petal of the Judgement Wheel flower; anchored at its base). S0's big-flame and wax-bead frames dropped
+// (the Wheel's big flames are the gold frames drawn larger; the bead is part of every flame).
+seq('flame', 'flame_', 3, 32, 48, 0.5, FLAME_AY, 'orbit');
+seq('flameg', 'flameg_', 3, 32, 48, 0.5, FLAME_AY, 'orbit');
+add('flameg', 'flame_petal', 32, 48, 0.5, PETAL_AY, 'orbit');
 // impact / hit decals
 ['crescent', 'crackstar', 'ink', 'star', 'feather', 'waxseal', 'paw', 'petal', 'mote', 'crescent2'].forEach((n) => add('decal', 'decal_' + n, 48, 48, 0.5, 0.5, 'fx'));
 // Low-tier flats (glow baked in, no halo)
 add('low', 'flat_wolf', 96, 72, 0.5, WOLF_AY, 'wolf'); // S1: Low-tier wolf (same du box at 0.75 texel per du)
 add('low', 'flat_raven', 48, 48, 0.5, 0.5, 'raven');
 add('low', 'flat_glyph', 48, 48, 0.5, 0.5, 'bolt');
-add('low', 'flat_flame', 48, 48, 0.5, 0.78, 'orbit');
+add('low', 'flat_flame', 32, 48, 0.5, FLAME_AY, 'orbit'); // S4: Low-tier flame (glow baked in)
+add('low', 'flat_flameg', 32, 48, 0.5, FLAME_AY, 'orbit'); // S4: Low-tier evolved flame (gold rim baked)
 add('low', 'flat_wolfg', 96, 72, 0.5, WOLF_AY, 'wolf'); // S2: Low-tier evolved wolf (gold rim baked; the Alpha uses it at 1.7x)
 
 export const FRAMES = F.map((f) => Object.freeze(f));

@@ -7,6 +7,7 @@ import { paintAll } from './paint.js';
 import { wolfSheet } from './wolf.js';
 import { ravenSheet, POSES, GOLD_POSES } from './raven.js';
 import { glyphSheet } from './glyph.js';
+import { flameSheet } from './orbit.js';
 
 export { SUM_KEY };
 export const SUM_ART = { wolf: false, wolfMs: 0, wolfMainMs: 0, error: '', promise: null }; // wolfMs = wall time incl. the async SVG decode; wolfMainMs = main-thread work only
@@ -53,7 +54,7 @@ export function makeSummonAtlas(scene, mkCanvas, { enabled = true, now = () => (
 export const BOOT_KINDS = ['base', 'ov', 'flat'];
 export const EVO_KINDS = { howling_legion: ['gold', 'echo', 'flatg'], phantom_stampede: ['lfoot', 'flatg'], dire_alpha: ['alpha', 'flatg'] };
 SUM_ART.kinds = new Set(); SUM_ART.evoMs = 0; SUM_ART.evoMaxStepMs = 0; SUM_ART.pending = new Set();
-const KIND_OF = [['ravg_', 'rgold'], ['raven_flat1', 'rflatg'], ['raven_flat0', 'rflat'], ['raven_', 'rbase'], ['wolfg_', 'gold'], ['lfoot_', 'lfoot'], ['alpha_', 'alpha'], ['echo_', 'echo'], ['flat_wolfg', 'flatg'], ['wolf_ov', 'ov'], ['wolf_', 'base'], ['flat_wolf', 'flat']];
+const KIND_OF = [['flameg_', 'fgold'], ['flame_petal', 'fpetal'], ['flame_', 'fbase'], ['flat_flameg', 'fflatg'], ['flat_flame', 'fflat'], ['ravg_', 'rgold'], ['raven_flat1', 'rflatg'], ['raven_flat0', 'rflat'], ['raven_', 'rbase'], ['wolfg_', 'gold'], ['lfoot_', 'lfoot'], ['alpha_', 'alpha'], ['echo_', 'echo'], ['flat_wolfg', 'flatg'], ['wolf_ov', 'ov'], ['wolf_', 'base'], ['flat_wolf', 'flat']];
 // S5 glyph kinds (prefix order matters: glyph_rim before glyph_)
 KIND_OF.unshift(['glyph_rim', 'grim'], ['glyph_', 'gbase'], ['gtail_', 'gbase'], ['flat_glyph', 'gflat'], ['page_', 'gpage'], ['lance_', 'glance'], ['gtorn', 'gtorn']);
 export const kindOf = (frame) => { for (const [p, k] of KIND_OF) if (frame.startsWith(p)) return k; return null; };
@@ -163,6 +164,26 @@ export function bakeWolfEvo(sa, evo) {
       return true;
     } catch (e) { SUM_ART.error = String((e && e.message) || e); for (const k of need) SUM_ART.pending.delete(k); return false; }
   })();
+}
+
+// S4 Candle Flames: nothing at boot. The plain flames (flicker x3 + Low flat) bake lazily the first time the run owns Holy Orbit, the gold-rimmed
+// evolved flames (+ the Judgement Wheel petal + Low gold flat) on its first evolution; one frame per idle task. Until a kind lands RunScene keeps
+// today's orb sprite (plain) or the plain flame (gold). ?summons=0: never (no atlas).
+export const ORBIT_BAKE = [
+  ...[0, 1, 2].map((i) => ['flame_' + i, 'fbase', i]), ['flat_flame', 'fflat', 0],
+  ...[0, 1, 2].map((i) => ['flameg_' + i, 'fgold', i]), ['flame_petal', 'fpetal', 0], ['flat_flameg', 'fflatg', 0],
+];
+export const ORBIT_KINDS = { base: ['fbase', 'fflat'], gold: ['fgold', 'fpetal', 'fflatg'] };
+export function orbitRects(packed = PACK) {
+  return ORBIT_BAKE.map(([name, kind, i]) => { const f = packed.frames[FRAME_BY_NAME[name].id]; return { name, kind, i, x: f.x, y: f.y, w: f.w, h: f.h }; });
+}
+SUM_ART.orbit = false;
+export const orbitReady = () => SUM_ART.orbit;
+export function bakeOrbitArt(sa, evolved = false) {
+  if (SUM_ART.orbit && (!evolved || SUM_ART.kinds.has('fflatg'))) return null; // fast path: called every frame while the orbit is owned
+  const p = bakeKinds(sa, ORBIT_KINDS.base, orbitRects, flameSheet, () => { SUM_ART.orbit = true; });
+  if (evolved) bakeKinds(sa, ORBIT_KINDS.gold, orbitRects, flameSheet);
+  return p;
 }
 
 // S5 Ink Glyph Orb: nothing at boot. The orbs + ink tails (+ Low flat) bake lazily the first time the run owns Spirit Bolts; each evolution's frames
