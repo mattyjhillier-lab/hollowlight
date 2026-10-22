@@ -9,8 +9,8 @@ import { parseParams } from '../src/params.js';
 import { data } from './helpers.mjs';
 
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
-const NEW_IDS = ['stoat_piper', 'puffback_toad', 'bramble_hart']; // EN3-EN5 telegraph types in the atlas (in build order)
-const WANT_EYES = { wolf: 2, crow: 1, root_crawler: 2, stoat_piper: 1, puffback_toad: 3, bramble_hart: 2 };
+const NEW_IDS = ['stoat_piper', 'puffback_toad', 'bramble_hart', 'branch_mane']; // EN3-EN5 telegraph types + the EN6 miniboss in the atlas (in build order)
+const WANT_EYES = { wolf: 2, crow: 1, root_crawler: 2, stoat_piper: 1, puffback_toad: 3, bramble_hart: 2, branch_mane: 3 };
 
 test('ids unchanged and every Husk type is a real enemy (saves, kill gates and tree conditions keep working)', () => {
   assert.deepEqual(HUSK_IDS.slice(0, 3), ['wolf', 'crow', 'root_crawler']); // batch 1 order kept (atlas layout); EN3-EN5 append the new types
@@ -41,8 +41,10 @@ test('atlas layout: every frame of every type is present, inside the atlas, no o
   }
   // budget: batch 1 = 1.22 MB (incl. half-density rims + socket-eye frames); each EN3-EN5 type adds ~0.3-0.45 MB at the same texel density
   // (the ~1 MB/chapter target from the design sheet is exceeded: reported, see docs/LOCKED.md EN3-EN5 rows)
-  assert.ok(bytes <= 1.25e6 + 0.45e6 * NEW_IDS.length, 'frame bytes ' + bytes);
-  assert.ok(L.w * L.h * 4 <= 2.1e6 + 0.9e6 * NEW_IDS.length, 'GPU bytes');
+  // the EN6 miniboss is x1.7 a wolf: it gets its own allowance (0.9 MB at 3.5 texels/world unit; reported in docs/LOCKED.md EN6)
+  const minis = NEW_IDS.filter((id) => data.enemies[id].mini).length, regular = NEW_IDS.length - minis;
+  assert.ok(bytes <= 1.25e6 + 0.45e6 * regular + 0.9e6 * minis, 'frame bytes ' + bytes);
+  assert.ok(L.w * L.h * 4 <= 2.1e6 + 0.9e6 * regular + 0.9e6 * minis, 'GPU bytes');
 });
 
 test('true size: wolf ~hero-sized (~50 px long on a 720p desktop), crow smaller, crawler wolf-sized', () => {
@@ -89,7 +91,8 @@ test('eye anchors: per type count (wolf pair, crow one high, crawler wide pair),
       assert.ok(Math.abs((a0[1][0] - a0[0][0]) - (a1[1][0] - a1[0][0])) < 1e-6 && Math.abs((a0[1][1] - a0[0][1]) - (a1[1][1] - a1[0][1])) < 1e-6, id + ' rigid');
     }
     // sockets are small: the glow sprite never exceeds the socket + a thin spill (the old floating ball was 2.7x the socket)
-    for (const m of M[id]) assert.ok(m.w < 2.5 && m.h < 2.0, `${id} socket ${m.w.toFixed(2)} x ${m.h.toFixed(2)} wu`);
+    const sk = data.enemies[id].mini ? 1.7 : 1; // the miniboss is a wolf x1.7 (its sockets scale with it)
+    for (const m of M[id]) assert.ok(m.w < 2.5 * sk && m.h < 2.0 * sk, `${id} socket ${m.w.toFixed(2)} x ${m.h.toFixed(2)} wu`);
   }
   assert.ok(E.wolf[FR.h][0][4] < 1, 'hurt squints');
   assert.equal(E.wolf[FR.t1][0][5], 1, 'wolf tell flares');
@@ -105,7 +108,7 @@ test('eyes are baked INTO the sockets (walk/tell/hurt frames), none on the freed
     const { svg } = typeSheet(id, L);
     const cells = svg.split('<svg x=').slice(1);
     const names = HUSK_TYPES[id].frames.map(([n]) => n);
-    names.forEach((n, i) => { const has = cells[i].includes('#ff9a66'); assert.equal(has, n !== 'b' && n !== 'm', `${id}:${n} baked eye`); });
+    names.forEach((n, i) => { const has = cells[i].includes(data.enemies[id].mini ? '#ffd08a' : '#ff9a66'); /* the miniboss bakes the locked boss amber */ assert.equal(has, n !== 'b' && n !== 'm', `${id}:${n} baked eye`); });
     const SI = socketInfo(id);
     for (let j = 0; j < SI.socks.length; j++) {
       for (const k of ['g', 'c', 'G', 'h', 'H']) assert.ok(L.types[id].frames['e' + k + j], `${id}:e${k}${j}`);

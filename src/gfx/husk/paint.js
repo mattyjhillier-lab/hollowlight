@@ -148,6 +148,8 @@ export function specks(cx, cy, rx, ry, n, col, o = {}) {
 
 // ---------- eyes (WL6b: ember halo under a SOLID cream core, white hot centre). shape: round | almond | slit | squint | wide | x ----------
 export const EYE = '#ff5a3c', BOSS_EYE = '#ffb84a', CORE = '#ffe9c4';
+// species whose eyes are the locked boss AMBER (the miniboss; the Treant paints its own): baked iris, lip catch and night glow switch to amber
+export const AMBER = { branch_mane: true };
 // species core (pupil) shape, centred on 0,0, sized to its socket S: wolf = narrow slanted slit, crow = one big round core with a highlight,
 // root crawler = a wide low oval. flare (tell) = longer/brighter; returns { svg, hw, hh } (half extents for the look clamp, du).
 export function coreShape(sp, S, flare = 0, hot = true) {
@@ -176,7 +178,7 @@ function bakedEye(S, ex, ey, squint, flare) {
   const id = nid('sk'), lid = nid('sl');
   D.push(`<clipPath id="${id}"><path d="${S.d}"/></clipPath><clipPath id="${lid}"><rect x="${f(S.x0 - 4)}" y="${f(S.cy + S.h * 0.08)}" width="${f(S.w + 8)}" height="${f(S.h)}"/></clipPath>`);
   const irx = S.w * 0.42 * (1 + 0.1 * flare), iry = S.h * 0.42 * (1 + 0.1 * flare);
-  const iris = rad([[0, '#ffc48a', 1], [0.3, '#ff7a45', 1], [0.72, '#e0402e', 1], [1, '#5a1626', 0.9]]);
+  const iris = AMBER[SPECIES] ? rad([[0, '#fff0c8', 1], [0.3, '#ffd07a', 1], [0.72, BOSS_EYE, 1], [1, '#6a3a12', 0.9]]) : rad([[0, '#ffc48a', 1], [0.3, '#ff7a45', 1], [0.72, '#e0402e', 1], [1, '#5a1626', 0.9]]); // miniboss: the locked boss amber
   const c = coreShape(SPECIES, S, flare);
   const top = squint ? 0.62 : 0.24, bot = squint ? 0.3 : 0;
   let s = `<g clip-path="url(#${id})"><ellipse cx="${f(ex)}" cy="${f(ey)}" rx="${f(irx)}" ry="${f(iry)}" fill="url(#${iris})"/>`;
@@ -185,7 +187,7 @@ function bakedEye(S, ex, ey, squint, flare) {
   s += `<path d="${S.d}" transform="translate(0,${f(-(S.h * (1 - top)))})" fill="${VOID}" opacity=".93" filter="url(#sb1)"/>`; // brow / upper lid
   if (bot) s += `<path d="${S.d}" transform="translate(0,${f(S.h * (1 - bot))})" fill="${VOID}" opacity=".9" filter="url(#sb1)"/>`; // lower lid (squint)
   s += `<path d="${S.d}" fill="none" stroke="${VOID}" stroke-width="2.2" opacity=".7" filter="url(#sb1)"/></g>`; // inner shadow: the hole has depth
-  s += `<g clip-path="url(#${lid})"><path d="${S.d}" fill="none" stroke="#ff9a66" stroke-width="1.1" opacity=".55"/></g>`; // the ember lights the lower lip
+  s += `<g clip-path="url(#${lid})"><path d="${S.d}" fill="none" stroke="${AMBER[SPECIES] ? '#ffd08a' : '#ff9a66'}" stroke-width="1.1" opacity=".55"/></g>`; // the ember (amber on a miniboss) lights the lower lip
   return s;
 }
 // NIGHT glow sprite for socket S (additive, in its own atlas frame): ember light FILLING the socket outline (brightest at the iris, under the
@@ -194,6 +196,12 @@ function bakedEye(S, ex, ey, squint, flare) {
 // 3-5 px eye; the hot frame has a cream-white heart (still clipped to the socket) so the eye keeps its >= 3:1 read through the bloom.
 export function glowSvg(S, ex, ey, withCore, hot) {
   const id = nid('gk'), g = nid('gg'), R = Math.max(S.w, S.h) * 0.62;
+  if (AMBER[SPECIES]) { // miniboss night glow: the same socket fill in the locked boss amber (never red-orange: amber = boss/miniboss only)
+    D.push(`<clipPath id="${id}"><path d="${S.d}"/></clipPath><radialGradient id="${g}" gradientUnits="userSpaceOnUse" cx="${f(ex)}" cy="${f(ey)}" r="${f(R)}">${hot ? '<stop offset="0" stop-color="#fff8e8" stop-opacity="1"/><stop offset=".4" stop-color="#ffe0a0" stop-opacity="1"/><stop offset=".7" stop-color="#ffb84a" stop-opacity=".95"/>' : '<stop offset="0" stop-color="#ffe8c0" stop-opacity="1"/><stop offset=".3" stop-color="#ffcc78" stop-opacity="1"/><stop offset=".6" stop-color="#ffb84a" stop-opacity=".9"/>'}<stop offset="1" stop-color="#c07a28" stop-opacity=".5"/></radialGradient>`);
+    let a = hot ? `<path d="${S.d}" fill="none" stroke="#ffc070" stroke-width="6" opacity=".5" filter="url(#sb2)"/>` : '';
+    a += `<path d="${S.d}" fill="none" stroke="${BOSS_EYE}" stroke-width="2.6" opacity="${hot ? '.4' : '.22'}" filter="url(#sb1)"/>`;
+    return a + `<g clip-path="url(#${id})"><path d="${S.d}" fill="url(#${g})"/>` + (withCore ? `<g transform="translate(${f(ex)},${f(ey)})">${coreShape(SPECIES, S).svg}</g>` : '') + '</g>';
+  }
   D.push(`<clipPath id="${id}"><path d="${S.d}"/></clipPath><radialGradient id="${g}" gradientUnits="userSpaceOnUse" cx="${f(ex)}" cy="${f(ey)}" r="${f(R)}">${hot ? '<stop offset="0" stop-color="#fff4e0" stop-opacity="1"/><stop offset=".4" stop-color="#ffc890" stop-opacity="1"/><stop offset=".7" stop-color="#ff6a40" stop-opacity=".95"/>' : '<stop offset="0" stop-color="#ffd2a0" stop-opacity="1"/><stop offset=".3" stop-color="#ffa064" stop-opacity="1"/><stop offset=".6" stop-color="#ff5a3c" stop-opacity=".9"/>'}<stop offset="1" stop-color="#d0302a" stop-opacity=".5"/></radialGradient>`);
   let s = hot ? `<path d="${S.d}" fill="none" stroke="#ff8a50" stroke-width="6" opacity=".5" filter="url(#sb2)"/>` : ''; // hot: soft lip glow that survives the bloom's blur-mix
   s += `<path d="${S.d}" fill="none" stroke="${EYE}" stroke-width="2.6" opacity="${hot ? '.4' : '.22'}" filter="url(#sb1)"/>`;

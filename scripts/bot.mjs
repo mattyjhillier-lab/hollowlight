@@ -20,6 +20,9 @@ if (process.env.ENEMY_PATCH) {
 }
 if (process.env.WAVE_PATCH) { const P = JSON.parse(process.env.WAVE_PATCH); for (const ch of Object.values(data.chapters)) for (const w of ch.waves) if (Object.hasOwn(P, w.enemy)) Object.assign(w, P[w.enemy]); } // WAVE_PATCH='{"stoat_piper":{"maxAlive":4}}'
 if (process.env.NO_ENEMY) { const drop = process.env.NO_ENEMY.split(','); for (const ch of Object.values(data.chapters)) ch.waves = ch.waves.filter((w) => !drop.includes(w.enemy)); }
+if (process.env.MINI_PATCH) { const P = JSON.parse(process.env.MINI_PATCH); for (const ch of Object.values(data.chapters)) if (ch.minis) for (const k of ['at', 'hp', 'chest']) if (Array.isArray(P[k])) ch.minis[k] = P[k]; } // EN6 probe: MINI_PATCH='{"hp":[450,1600,3200]}'
+if (process.env.NO_MINI === '1') for (const ch of Object.values(data.chapters)) delete ch.minis; // EN6-EN8 ablation: no Branch-Mane, no chests
+if (process.env.NO_CHEST === '1') data.balance = { ...data.balance, chest: { ...data.balance.chest, reach: -1e9 } }; // EN8 ablation: the Branch-Mane comes but its chest is never opened
 data.tree = loadTree(data).live; // fragments in src/data/tree/ (src/meta/treedata.js)
 data.tiers = load('tiers'); // difficulty tiers (src/data/tiers.json)
 // TIER=normal|hard|expert (Twilight / Deep Dusk / Long Night; default normal = byte-identical to before tiers existed)
@@ -83,13 +86,13 @@ export function dodgeVec(sim, out = _d) {
   for (const e of sim.enemies) {
     if (!e.ai || e.dead) continue;
     const A = e.ai;
-    if (A.kind === 'charger' && e.state === 'charge') { n += laneAway(p, e.x, e.y, e.dx, e.dy, p.r + e.r + 8, e.speed * A.chargeMul * e.stT + 10, out); continue; }
+    if ((A.kind === 'charger' || A.kind === 'alpha') && e.state === 'charge') { n += laneAway(p, e.x, e.y, e.dx, e.dy, p.r + e.r + 8, e.speed * A.chargeMul * e.stT + 10, out); continue; }
     if (!e.tele) continue;
     const age = (A.tell ?? A.fuse ?? 0) - e.stT;
     if (age < REACT) continue;
     const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
     if (A.kind === 'fuse') { if (d < A.burstR + p.r + 4) { out[0] += dx / d; out[1] += dy / d; n++; } }
-    else if (A.kind === 'charger') n += laneAway(p, e.x, e.y, e.dx, e.dy, p.r + e.r + 8, e.speed * A.chargeMul * A.charge + 10, out);
+    else if (A.kind === 'charger' || A.kind === 'alpha') n += laneAway(p, e.x, e.y, e.dx, e.dy, p.r + e.r + 8, e.speed * A.chargeMul * A.charge + 10, out);
   }
   const m = Math.hypot(out[0], out[1]);
   if (!n || m < 1e-6) { out[0] = 0; out[1] = 0; return 0; }
@@ -183,6 +186,8 @@ function botInput(sim) {
     const d = Math.sqrt(bd) || 1;
     ax += ((best.x - p.x) / d) * 0.6; ay += ((best.y - p.y) / d) * 0.6;
   }
+  // EN8: a dropped Lantern Reliquary within 300 u is walked to (a player goes for it once the area is calm; the bot just heads over)
+  if (process.env.NO_CHEST !== '1') for (const k of sim.pickups) if (k.type === 'chest') { const dx = k.x - p.x, dy = k.y - p.y, d = Math.hypot(dx, dy) || 1; if (d < 300) { ax += (dx / d) * 0.8; ay += (dy / d) * 0.8; } break; }
   if (DODGE && dodgeVec(sim)) { const m = Math.hypot(ax, ay) || 1; ax = (ax / m) * DODGE_KEEP + _d[0]; ay = (ay / m) * DODGE_KEEP + _d[1]; }
   // drift back toward world centre when near the edge
   const c = sim.balance.worldSize / 2;
@@ -217,6 +222,7 @@ export function playRun(charId, seed, opts = {}) {
   const t0 = Date.now();
   while (sim.state === 'running' || sim.state === 'levelup') {
     if (sim.state === 'levelup') {
+      if (sim.offer.start && sim.offer.start.startsWith('chest')) { const key = pick(sim, rng); if (key.startsWith('b:')) blessPicks++; sim.pickCard(key); continue; } // EN8 chest choices are not level-ups
       levelups++;
       if (!sim.offer.gold.length && sim.offer.cards.every((c) => c.kind === 'fallback')) { filler++; if (marks.filler === undefined) marks.filler = Math.round(sim.time); }
       const real = sim.offer.cards.filter((c) => c.kind === 'weapon' || c.kind === 'stat' || c.kind === 'evolution').length + sim.offer.gold.length;
@@ -240,7 +246,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {

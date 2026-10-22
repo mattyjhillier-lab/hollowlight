@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { Sim } from '../src/sim/Sim.js';
 import { data } from './helpers.mjs';
 
-const TELL_TYPES = Object.keys(data.enemies).filter((k) => data.enemies[k].ai);
+const TELL_TYPES = Object.keys(data.enemies).filter((k) => data.enemies[k].ai && !data.enemies[k].mini); // the EN6 miniboss (ai kind 'alpha') has its own tests (en6789)
 // a quiet arena: no waves, no events, no boss; the hero's weapons removed so nothing kills the test enemy
 function arena(seed = 1) {
   const ch = { ...data.chapters.cursed_forest, waves: [], events: [], bossAt: 1e9 };

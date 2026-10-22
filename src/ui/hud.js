@@ -187,11 +187,26 @@ export class Hud {
     if (this.prev.held !== held) { this.prev.held = held; this.moon.classList.toggle('is-held', held); }
 
     // boss bar
-    const b = sim.boss && !sim.boss.dead ? sim.boss : null;
-    if (b) {
+    // EN7: the same bar carries the Branch-Mane miniboss (one notch at 50%: its one phase change) and, 30 s before one arrives, a quiet chip
+    // 'The Branch-Mane stirs 0:12' (no bar). Text only (textContent via set()).
+    const b = (sim.boss && !sim.boss.dead ? sim.boss : null) || (sim.mini && !sim.mini.dead ? sim.mini : null);
+    const soon = !b && Number.isFinite(sim.miniSoon) && sim.miniSoon > 0 ? sim.miniSoon : -1;
+    const mode = b ? (b.mini ? 'mini' : 'boss') : soon > 0 ? 'chip' : '';
+    if (this.prev.bmode !== mode) {
+      this.prev.bmode = mode;
+      this.boss.classList.toggle('is-mini', mode === 'mini');
+      this.boss.classList.toggle('is-chip', mode === 'chip');
+    }
+    if (b || soon > 0) {
       if (!this.prev.boss) { this.prev.boss = true; this.boss.classList.add('on'); this.ping(this.boss, 'enter'); }
-      this.set('bossname', this.bossName, this.opts.bossName ? this.opts.bossName(b.type) : 'Boss');
-      this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(b.hp, b.maxHp) * 100).toFixed(1)}%`);
+      const nm = (type) => (this.opts.bossName ? this.opts.bossName(type) : 'Boss');
+      if (b) {
+        this.set('bossname', this.bossName, nm(b.type));
+        this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(b.hp, b.maxHp) * 100).toFixed(1)}%`);
+      } else {
+        const id = sim.chapter && sim.chapter.minis ? sim.chapter.minis.id : null;
+        this.set('bossname', this.bossName, `The ${id ? nm(id) : 'old alpha'} stirs  ${fmtTime(Math.ceil(soon))}`);
+      }
     } else if (this.prev.boss) { this.prev.boss = false; this.boss.classList.remove('on'); }
 
     this.set('gold', this.goldNum, String(Math.max(0, whole(sim.gold, Math.floor))));

@@ -20,6 +20,8 @@ export const IDENTITY = Object.freeze({
   id: 'normal', idx: 0, name: 'Twilight', enemyHp: 1, enemyDmg: 1, density: 1, bossHp: 1, heartPity: 1,
   goldMul: 1, shards: 5, glass: Object.freeze({ boss: 0, dawn: 0, first: 0, marked: 0, markedCap: 0, runCap: 0 }), firstShards: 0,
   marks: Object.freeze({ share: 0, from: 0, max: 1, kinds: Object.freeze([]) }),
+  // EN6-EN8 miniboss / chest tier knobs (difficulty-tiers-economy-v1 tables): +N howl wolves per howl, extra Branch-Mane times (s), Large chest odds +pts
+  miniHowl: 0, miniExtra: Object.freeze([]), chestLarge: 0,
 });
 
 function checkBlock(b, where) {
@@ -33,6 +35,9 @@ function checkBlock(b, where) {
     if (!isObj(b.glass)) throw new Error(`tiers: ${where}.glass`);
     for (const [k, v] of Object.entries(b.glass)) if (!own(IDENTITY.glass, k) || !(Number.isInteger(v) && v >= 0 && v <= 100)) throw new Error(`tiers: ${where}.glass.${k}`);
   }
+  if (b.miniHowl !== undefined && !(Number.isInteger(b.miniHowl) && b.miniHowl >= 0 && b.miniHowl <= 3)) throw new Error(`tiers: ${where}.miniHowl must be 0..3`);
+  if (b.chestLarge !== undefined && !(Number.isInteger(b.chestLarge) && b.chestLarge >= 0 && b.chestLarge <= 30)) throw new Error(`tiers: ${where}.chestLarge must be 0..30`);
+  if (b.miniExtra !== undefined && !(Array.isArray(b.miniExtra) && b.miniExtra.length <= 2 && b.miniExtra.every((t) => fin(t, 30, 1200)))) throw new Error(`tiers: ${where}.miniExtra must be up to 2 times in 30..1200 s`);
   if (b.marks !== undefined) {
     const m = b.marks;
     if (!isObj(m)) throw new Error(`tiers: ${where}.marks`);
@@ -55,6 +60,7 @@ export function validateTiers(raw) {
   if (n.goldMul !== undefined && n.goldMul !== 1) throw new Error('tiers: Twilight goldMul must be 1');
   if (n.marks && n.marks.share) throw new Error('tiers: Twilight has no marks');
   if (n.glass && Object.values(n.glass).some((v) => v !== 0)) throw new Error('tiers: Twilight pays no Dawnglass');
+  if (n.miniHowl || n.chestLarge || (n.miniExtra && n.miniExtra.length)) throw new Error('tiers: Twilight keeps the locked miniboss and chest');
   // each harder tier is at least as hard as the one below it (a data typo cannot make Long Night easier than Deep Dusk)
   for (let i = 1; i < TIER_IDS.length; i++) for (const k of MULS) if ((raw.template[TIER_IDS[i]][k] ?? 1) < (raw.template[TIER_IDS[i - 1]][k] ?? 1)) throw new Error(`tiers: ${TIER_IDS[i]}.${k} is below the tier under it`);
   const chapters = isObj(raw.chapters) ? raw.chapters : {};
@@ -81,6 +87,9 @@ export function resolveTier(tiers, chapterId, tierId) {
   t.glass = { ...IDENTITY.glass, ...(base.glass || {}), ...((over && over.glass) || {}) };
   t.marks = { ...IDENTITY.marks, ...(base.marks || {}), ...((over && over.marks) || {}) };
   for (const k of MULS) t[k] = fin(t[k], 1, 4) ? t[k] : 1;
+  t.miniExtra = Object.freeze(Array.isArray(t.miniExtra) ? t.miniExtra.filter((v) => fin(v, 30, 1200)).slice(0, 2) : []);
+  if (!(Number.isInteger(t.miniHowl) && t.miniHowl >= 0 && t.miniHowl <= 3)) t.miniHowl = 0;
+  if (!(Number.isInteger(t.chestLarge) && t.chestLarge >= 0 && t.chestLarge <= 30)) t.chestLarge = 0;
   return Object.freeze(t);
 }
 

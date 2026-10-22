@@ -82,6 +82,7 @@ export class EnemyArt {
       f = walkFrame(e.type, img.ph, low);
       if (e.state === 'charge') { if (T.tellT !== undefined && e.ai) { f = FR.t1; sx = 1.14; sy = 0.92; } else { f = FR.w1; sx = 1.1; sy = 0.93; } } // the lunge (wolf: stretched, legs out; Bramble Hart: crown down, stretched)
       else if (e.state === 'stagger') f = FR.t0; // EN5 hart recovery: head half up, still (the punish window)
+      else if (e.state === 'howl') { f = FR.t1; sy = 1.06; sx = 0.97; } // EN6 Branch-Mane howl: mane up and spread, the body rears a little (no lane)
     }
     if (e.tele && e.ai && e.ai.kind === 'fuse' && !low) { const q = 1 + 0.045 * Math.sin(img.teleT * (12 + 26 * img.teleT)); sx = q; sy = 2 - q; } // EN4 toad fuse: the blister throbs faster and faster
     if (f !== img.frn) { img.frn = f; img.setFrame(nm[f]); }

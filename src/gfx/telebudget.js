@@ -31,7 +31,7 @@ export function threatens(e, p) {
     return segDist2(p.x, p.y, e.x, e.y, e.x + fin(e.dx) * L, e.y + fin(e.dy) * L) < R * R;
   }
   if (A.kind === 'fuse') { const R = fin(A.burstR) + pr + 2; const dx = p.x - e.x, dy = p.y - e.y; return dx * dx + dy * dy < R * R; }
-  if (A.kind === 'charger') {
+  if (A.kind === 'charger' || A.kind === 'alpha') { // Bramble Hart / Branch-Mane line charge
     const L = fin(e.speed) * fin(A.chargeMul) * fin(A.charge), R = pr + fin(e.r) * 0.85 + WOLF_MARGIN;
     return segDist2(p.x, p.y, e.x, e.y, e.x + fin(e.dx) * L, e.y + fin(e.dy) * L) < R * R;
   }

@@ -50,6 +50,7 @@ import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2
 import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTarget, skipSmallNumber, MUST_OUT_CAP, DEPTH_HERO_OUT } from '../gfx/crowdread.js'; // DR3 crowd readability rules
 import { HeroLine, OL_RES } from '../gfx/heroline.js'; // OL1: hero outline rebuilt from the hero's own transformed parts
 import { BossView, ADD_SCALE, ADD_ORIGIN } from '../gfx/boss/bossview.js'; // Elder Treant fight: arena, tells, boss art, victory flood
+import { MiniView, bakeReliquary } from '../gfx/minibossview.js'; // EN7/EN8 Branch-Mane extras + Lantern Reliquary chest (render only)
 import { POD_KEY, SAP_KEY } from '../gfx/boss/bossart.js';
 import { HeldKeys, bindHeldKeys } from '../input/keys.js'; // CTL1: own held-key tracker (window capture, cleared on blur/hidden)
 
@@ -235,6 +236,7 @@ export class RunScene extends Phaser.Scene {
     this.gradeTint = -1;
 
     this.bossView = new BossView(this, { lit: D_LIT, ground: -395, tele: D_VIG + 3 });
+    this.miniView = new MiniView(this, { lit: D_LIT, ground: D_LIT - 95 }, INV.chest, INV.glow);
     INV[POD_KEY] = INV[SAP_KEY] = ADD_SCALE;
     this.pools = {
       wolf: new SpritePool(this, 'wolf'),
@@ -243,6 +245,7 @@ export class RunScene extends Phaser.Scene {
       stoat_piper: new SpritePool(this, 'piper'),
       puffback_toad: new SpritePool(this, 'toad'),
       bramble_hart: new SpritePool(this, 'hart'),
+      branch_mane: new SpritePool(this, 'mane'),
       elder_treant: new SpritePool(this, 'treant'),
       treant_pod: new SpritePool(this, POD_KEY, (i) => i.setOrigin(ADD_ORIGIN[0], ADD_ORIGIN[1])),
       treant_sapling: new SpritePool(this, SAP_KEY, (i) => i.setOrigin(ADD_ORIGIN[0], ADD_ORIGIN[1])),
@@ -359,7 +362,7 @@ export class RunScene extends Phaser.Scene {
     const wolfBake = this.sumAtlas ? bakeWolfArt(this.sumAtlas) : Promise.resolve(false); // S1: wolf art (until it lands, today's wolf sprite)
     this.sumArt = SUM_ART; // readout (tests / harness)
     if (STYLE === 'a' && app.params.husks) {
-      const bake = Promise.all([bakeHuskAtlas(this).then((ok) => { this.enArt.enable(ok); }), wolfBake]);
+      const bake = Promise.all([bakeHuskAtlas(this).then((ok) => { this.enArt.enable(ok); }), wolfBake, bakeReliquary(this)]);
       if (app.params.auto) Promise.race([bake, new Promise((r) => setTimeout(r, 4000))]).then(ready); // dev/harness auto-runs start on the Husks
       else ready(); // the title shows at once; the bake (~0.3-1 s) finishes long before anyone starts a run (flat sprites until then)
     } else ready();
@@ -1125,6 +1128,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     for (const k of sim.pickups) {
+      if (k.type === 'chest') continue; // EN8: the Lantern Reliquary is drawn by this.miniView
       const bob = Math.sin(sim.time * 5 + k.id) * 1.5;
       pl[k.type].get(k.id).setPosition(k.x, k.y + bob).setDepth(D_LIT - 90).setAlpha(k.ttl < 6 && Math.floor(k.ttl * 6) % 2 ? 0.35 : 1);
       if (caps.gemGlow) pl.haloG.get(k.id).setPosition(k.x, k.y + bob).setTint(k.type === 'magnet' ? ROLE.magnet : ROLE.heart).setScale(0.9 * pl.haloG.inv).setAlpha(0.4 + 0.15 * Math.sin(sim.time * 4));
@@ -1172,10 +1176,10 @@ export class RunScene extends Phaser.Scene {
         img.setAlpha(enemyAlpha(d2 < 1936 ? Math.sqrt(d2) : 1e9, dk, mr)); // DR3: common swarm quieter in a thick crowd; anything over the hero fades (she and her hits show)
       }
       if (e.flash > 0) tq = 100;
-      else if (e.bleedT > 0) tq = 101;
-      else if (e.markT > 0 && !e.boss) tq = 102; // W8b Mark: light violet body tint (all tiers, static; boss only gets the omen)
-      else if (nlOn && !e.boss && ei < 512) tq = 200 + nl.tq[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
-      else if (lit && !e.boss) {
+      else if (e.bleedT > 0 && !e.mini) tq = 101; // the Branch-Mane keeps its own colours under bleed (drips + numbers still show)
+      else if (e.markT > 0 && !e.boss && !e.mini) tq = 102; // W8b Mark: light violet body tint (all tiers, static; boss only gets the omen)
+      else if (nlOn && !e.boss && !e.mini && ei < 512) tq = 200 + nl.tq[ei]; // WL6b: cool far tint from the arc, blended by how lit the enemy is (boss: never tinted)
+      else if (lit && !e.boss && !e.mini) { // the Branch-Mane is always fully lit (never the far tint), like the boss
         tq = d2 >= 28900 ? 10 : Math.round((0.62 + 0.38 * (1 - Math.sqrt(d2) / 170)) * 16);
       } else tq = 0;
       if (img.tq !== tq || (tq >= 200 && img.tv !== nl.ver)) {
@@ -1284,6 +1288,7 @@ export class RunScene extends Phaser.Scene {
     if (sim.eshots.length) drawThorns(this.teleG, sim.eshots, vx0, vy0, vx1, vy1, this.quality.tier === 'low');
     // Elder Treant fight (gfx/boss/bossview.js): ring, roots, brush, the boss art, its tells (DR2 shared style, above the vignette), the victory flood
     this.bossView.update(sim, Math.min(this.game.loop.delta, 100) / 1000, this.quality.tier, this.reducedMotion(), lit ? lm : null, this.life, wv);
+    this.miniView.update(sim, Math.min(this.game.loop.delta, 100) / 1000, this.quality.tier, this.reducedMotion(), lit ? lm : null);
     if (sim.fight) this.bossView.drawTells(this.teleG, sim, this.reducedMotion());
     if (this.bossView.usingArt && sim.boss) { const bs = pl.elder_treant.map.get(sim.boss.id); if (bs) bs.img.setVisible(false); } // the baked First Husk replaces the flat placeholder
 

@@ -75,6 +75,7 @@ try {
     await key('keyDown', d[0], d[1], d[2]);
     for (let k = 0; k < 6; k++) {
       await sleep(500);
+      if (process.env.MINI === '1') await c.ev(`(()=>{const s=window.__app.sim,p=s.player;if(s.spawnMini&&!s.mini){const m=s.spawnMini({hp:1e9,odds:[0,0,100]});m.grace=0;}if(!s.pickups.some(k=>k.type==='chest')){const k=s.addPickup('chest',p.x+60,p.y+20);k.tier=2;k.ttl=Infinity;k.x=p.x+60;}else for(const k of s.pickups)if(k.type==='chest'){k.x=p.x+60;k.y=p.y+20;}return 1})()`); // EN6 perf: one live Branch-Mane (howls, charges) + a Large chest in view
       if (inj) await c.ev(`(()=>{const a=window.__app,s=a.sim;if(s.state==='levelup'&&s.offer&&s.offer.cards[0])a.pick(s.offer.cards[0].key);const T=${JSON.stringify(PTYPES)};let k=0;while(s.enemies.length<${inj}){const an=(k*2.399)%6.2832,dd=50+((k*37)%260);s.spawnEnemy(T[k%T.length],s.player.x+Math.cos(an)*dd,s.player.y+Math.sin(an)*dd);k++}return 1})()`);
     }
     await key('keyUp', d[0], d[1], d[2]);
