@@ -16,7 +16,7 @@ const PORT = 9547, HTTP = 4261;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
 const VIEWS = { desk: [1280, 720, 1], land: [844, 390, 2], port: [390, 844, 2] };
-const GRANT = 'ghost_wolves:count=5,speed=3,power=3';
+const GRANT = process.env.GRANT || 'ghost_wolves:count=5,speed=3,power=3'; // S2: GRANT=ghost_wolves:count=5,speed=5,power=5:dire_alpha etc. for the evolved looks
 const fmt = (t) => `${Math.floor(t / 60)}m${String(t % 60).padStart(2, '0')}`;
 const cleanups = [];
 const cleanupAll = () => { while (cleanups.length) { try { cleanups.pop()(); } catch { /* ignore */ } } };
@@ -208,7 +208,7 @@ async function contrast(out) {
           const nW = await c.ev(POS); await sleep(250); await c.ev(POS); await sleep(250);
           const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect(),k=R.width/wv.width*${dpr};
             const P=(x,y,r,kind)=>({kind,x:(R.left+(x-wv.x)/wv.width*R.width)*${dpr},y:(R.top+(y-wv.y)/wv.height*R.height)*${dpr},r:r*k});
-            return JSON.stringify([...s.units.filter(u=>u.kind==='wolf').map(u=>P(u.x,u.y-1,9,'spirit')),...s.enemies.map(e=>P(e.x,e.y-3,e.r*1.6,'fell'))])})()`));
+            return JSON.stringify([...s.units.filter(u=>u.kind==='wolf'${process.env.NOSHADE ? '&&!u.shade' : ''}).map(u=>P(u.x,u.y-(u.r>6?4:1),u.r>6?15:9,'spirit')),...s.enemies.map(e=>P(e.x,e.y-3,e.r*1.6,'fell'))])})()`));
           const a = await png(c, process.env.KEEP ? join(out, `c-${view}-${fmt(t)}-${tier}-${ground}.png`) : null);
           await c.ev('(()=>{const S=window.__app.scene;S.__h=S.quality.caps.halos;S.quality.caps.halos=0;return 1})()'); await sleep(250);
           const hh = await png(c, null);

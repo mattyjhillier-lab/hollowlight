@@ -31,14 +31,15 @@ import { PropLayer } from '../gfx/proplayer.js';
 import { PushField, pushBudget } from '../gfx/pushfield.js';
 import { makePropAtlas, ATLAS_KEY as PROP_KEY } from '../gfx/propatlas.js';
 import { START_CLEAR } from '../gfx/propfield.js';
-import { RibbonSet, RibbonLayer, ribbonCaps } from '../gfx/ribbons.js';
+import { RibbonSet, RibbonLayer, ribbonCaps, RIBBON_DEPTH } from '../gfx/ribbons.js';
 import { AirLayer, makeEdgeTextures } from '../gfx/airlayer.js'; // W5 fog, fireflies/motes, edge wall (visual only)
 import { DawnLayer } from '../gfx/dawnlayer.js'; // AL-6 dawn chorus (birds, petals, light shafts; visual only)
 import { airN, DAWN_CAPS, REF as DAWN_REF } from '../gfx/dawn.js';
 import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
 import { makeSummonAtlas, bakeWolfArt, SUM_ART, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas; S1 wolf art baked into it async
-import { WOLF_WPD, WOLF_FOOT, WOLF_JITTER, OV_OFF } from '../gfx/summon/wolf.js';
-import { wolfFrame, wolfLook } from '../gfx/summon/wolfanim.js';
+import { WOLF_WPD, WOLF_FOOT, WOLF_JITTER, OV_OFF, OV_OFF_LF, ALPHA_K } from '../gfx/summon/wolf.js';
+import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
+import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
@@ -190,6 +191,7 @@ export class RunScene extends Phaser.Scene {
     this.dawnBud = { birds: 0, petals: 0, shafts: 0 };
     this.ribSet = new RibbonSet(1000, 12, 64); // W2 trails (+ W7b Lightfoot trail segments) (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
+    this.pawLayer = this.sumAtlas ? new PawLayer(this, SUM_KEY, RIBBON_DEPTH + 1, 300) : null; // S2: pawprints over the soft trail ribbon, under every creature/halo/pickup/number
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
     this.ribKey = '';
@@ -477,7 +479,7 @@ export class RunScene extends Phaser.Scene {
     this.life.clearFloor();
     this.starterGlade(sim);
     this.life.reset();
-    this.ribSet.reset(); this.ribLayer.clear();
+    this.ribSet.reset(); this.ribLayer.clear(); if (this.pawLayer) this.pawLayer.clear(); if (this.wolfSt) this.wolfSt.clear();
     this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
     this.air.reset(((sim.seed | 0) ^ 0xa1f10) | 0); // W5 fog / fireflies / motes (own hash stream)
     this.critters.reset(((sim.seed | 0) ^ 0xc41773) | 0); // AL-5 critters (own hash stream)
@@ -541,7 +543,7 @@ export class RunScene extends Phaser.Scene {
     if (this.enArt) this.enArt.clear();
     this.hideAmbient();
     this.sway.clear();
-    this.ribSet.reset(); this.ribLayer.clear();
+    this.ribSet.reset(); this.ribLayer.clear(); if (this.pawLayer) this.pawLayer.clear(); if (this.wolfSt) this.wolfSt.clear();
     for (const p of Object.values(this.pools)) p.clear();
     this.groundG.clear();
     this.fxG.clear();
@@ -651,27 +653,29 @@ export class RunScene extends Phaser.Scene {
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
 
   // S1 Ghost Wolf A (Lantern-Heart Pack): one image + an optional variety overlay per wolf, pose from the sim state (render only, reads the unit).
-  // Feet sit WOLF_FOOT below the sim position; the great Alpha (u.r > 6) scales with its radius until the S2 Alpha frames land. A wolf drawn in
-  // front of the hero and overlapping her box drops to 0.55 alpha so it never hides her (DR3 occluders).
-  drawWolfA(u, p, dt, low) {
+  // S2: the evolution skin (wolfSkin: gold-rimmed pack, Light Trails streamers, 1.7x Alpha, hollow Echo) picks the frame and size. Feet sit
+  // WOLF_FOOT below the sim position. A wolf drawn in front of the hero and overlapping her box drops to 0.55 alpha (DR3 occluders).
+  // aMul / rise: the Echo's own fade and rise (world units it still sits below its feet while rising out of the fallen foe).
+  drawWolfA(u, p, dt, low, evo = null, aMul = 1, rise = 0) {
     const pl = this.pools, st = this.wolfSt || (this.wolfSt = new Map());
     let s = st.get(u.id);
     if (!s) { s = {}; st.set(u.id, s); }
     s.seen = this.fxTick;
     const fi = low ? 0 : wolfFrame(s, u, dt, this.reducedMotion());
-    const look = wolfLook(u.id, WOLF_JITTER), big = u.r > 6 ? u.r / 4 : 1;
-    const k = WOLF_WPD * look.k * big, dir = u.faceX < 0 ? -1 : 1, fy = u.y + WOLF_FOOT * big;
+    const sk = wolfSkin(evo, u, low, fi, ALPHA_K);
+    const look = wolfLook(u.id, WOLF_JITTER), big = sk.size;
+    const k = WOLF_WPD * (big > 1 ? 1 : look.k) * big, dir = u.faceX < 0 ? -1 : 1, fy = u.y + WOLF_FOOT * big + rise;
     // DR3 rule shared with the crowd: within FADE_R of the hero a wolf draws just under her; beyond it, one whose box still overlaps her box
     // from the front drops to 0.55 alpha (never an opaque occluder)
     const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y;
     const hl = 8.5 * k / WOLF_WPD; // half the wolf's length (world units)
     const front = !near && u.y > p.y && Math.abs(u.x - p.x) < 12 + hl && fy - 15 * k / WOLF_WPD < p.y + 6 && fy > p.y - 30;
-    const a = u.shade ? 0.5 : front ? 0.55 : 1;
+    const a = (u.shade ? 0.5 : front ? 0.55 : 1) * aMul;
     const img = pl.uWolfA.get(u.id);
-    img.setFrame(low ? 'flat_wolf' : 'wolf_' + fi).setOrigin(0.5, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy).setFlipX(dir < 0).setScale(low ? k / 0.75 : k).setAlpha(a);
-    if (this.bloom && WOLF_SELF > 0) pl.uWolfL.get(u.id).setFrame('wolf_' + fi).setOrigin(0.5, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy + 0.0005).setFlipX(dir < 0).setScale(k).setAlpha(a * WOLF_SELF);
-    if (!low && look.ov >= 0) {
-      const o = OV_OFF[fi][look.ov];
+    img.setFrame(sk.fr).setOrigin(sk.ax, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy).setFlipX(dir < 0).setScale(k / sk.texel).setAlpha(a);
+    if (this.bloom && WOLF_SELF > 0 && u.kind !== 'echo') pl.uWolfL.get(u.id).setFrame(sk.fr).setOrigin(sk.ax, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy + 0.0005).setFlipX(dir < 0).setScale(k / sk.texel).setAlpha(a * WOLF_SELF);
+    if (sk.ov && look.ov >= 0) {
+      const o = (sk.ov === 'lf' ? OV_OFF_LF : OV_OFF)[fi][look.ov];
       pl.uWolfOv.get(u.id).setFrame('wolf_ov' + look.ov).setOrigin(0.5, 90 / 96).setPosition(u.x + o[0] * k * dir, fy + o[1] * k).setDepth(D_LIT + dy + 0.001).setFlipX(dir < 0).setScale(k).setAlpha(a);
     }
     if ((this.fxTick & 127) === 0 && st.size > 64) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
@@ -1345,16 +1349,16 @@ export class RunScene extends Phaser.Scene {
       if (u.hidden) { if (u.kind === 'orb') g.fillStyle(ROLE.burn, 0.35).fillCircle(u.x, u.y, 1.6); continue; } // W6: a resting Judgement Wheel light shows as a tiny lilac ember until it re-forms
       if (u.x < vx0 || u.x > vx1 || u.y < vy0 || u.y > vy1) continue;
       if (u.kind === 'wolf') {
-        if (wolfArt) this.drawWolfA(u, p, wdt, lowWolf);
+        if (wolfArt) this.drawWolfA(u, p, wdt, lowWolf, wEvo);
         else pl.uWolf.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uWolf.inv).setAlpha(u.shade ? 0.5 : u.r > 6 ? 0.78 : 0.85); // A1b: render-only 12% smaller / dimmer so Wren is the focal point (hitbox u.r unchanged)
         if (wolfArt ? !lowWolf && halos++ < caps.halos : halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y - (wolfArt ? 1 : 0)).setTint(wolfArt ? WOLF_GLOW : ROLE.spiritA).setScale((u.r > 6 ? 5 : u.r / 4 * (wolfArt ? WOLF_HALO_K : 1.12)) * pl.haloU.inv).setAlpha(u.r > 6 ? 0.45 : wolfArt ? WOLF_HALO_A : 0.62); // the great wolf keeps a modest halo so its body still reads (S1: Low flats have the glow baked in, no halo)
-        if (wEvo === 'phantom_stampede') fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved wolves only: thin gold rim (never on enemies)
+        if (wolfArt) { /* S2: gold rim, frost mane and streamers are baked into the evolved frames (wolfSkin) */ } else if (wEvo === 'phantom_stampede') fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved wolves only: thin gold rim (never on enemies)
         else if (wEvo === 'dire_alpha' && !u.shade) { // The Alpha: gold rim on the great wolf only (the ghost shades stay plain), pale-blue frost mane along its back
           fx.lineStyle(1, 0xffd27a, 0.5).strokeCircle(u.x, u.y, u.r * 1.3);
           const dir = u.faceX < 0 ? -1 : 1; // static strokes (no shimmer), so reduced motion is unchanged
           for (let m = 0; m < 4; m++) { const sx = u.x - dir * u.r * (0.05 + 0.25 * m), sy = u.y - u.r * 0.72; fx.lineStyle(2, 0xcfeaff, 0.6).lineBetween(sx, sy, sx - dir * u.r * 0.3, sy - u.r * 0.42); }
         }
-        if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life * 1.15, true); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
+        if (wolfArt && wEvo === 'phantom_stampede') { /* S2: the pawprint trail is this pack's ribbon; no extra spirit streaks (they drew the web of long straight lines) */ } else if (ribOn) ribAdd(u, ROLE.spiritA, this.ribCaps.spirits.life * 1.15, true); else trail(u.x, u.y + 1, ROLE.spiritA, 0.4);
         if (lit) lm.add(u.x, u.y, 40, ROLE.spiritA, 0.8);
       } else if (u.kind === 'echo') {
         // W6 Howling Legion echo: pale-blue translucent wolf, no gold rim; rises from the fallen foe, fades at the end. Nearest `caps.echoes` only.
@@ -1363,7 +1367,11 @@ export class RunScene extends Phaser.Scene {
         const rise = u.rise > 0 ? 1 - u.rise / 0.35 : 1;
         const fade = Math.min(1, u.life / 0.8);
         const a = 0.5 * fade * (rm ? 1 : 0.35 + 0.65 * rise);
-        pl.uEcho.get(u.id).setPosition(u.x, u.y - (rm ? 0 : (1 - rise) * -3)).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uEcho.inv).setTint(0xbfe6ff).setAlpha(a);
+        if (wolfArt) { // S2 Echo Pack: the hollow outline wolf rises out of the fallen foe (4 u below its feet -> standing) with pale motes
+          const born = !(this.wolfSt && this.wolfSt.has(u.id));
+          this.drawWolfA(u, p, wdt, lowWolf, wEvo, Math.min(1, a * 1.8), rm ? 0 : (1 - rise) * 4);
+          if (born && !rm && caps.trails > 0 && this.parts.count < this.parts.cap * 0.75) for (let m = 0; m < 4; m++) this.parts.emit(u.x + (m - 1.5) * 2.5, u.y - 1 - m, (m - 1.5) * 4, -20 - m * 3, 0.6, 0.55, 0.1, 0xe6f6ff, 0.7);
+        } else pl.uEcho.get(u.id).setPosition(u.x, u.y - (rm ? 0 : (1 - rise) * -3)).setDepth(D_LIT + u.y).setFlipX(u.faceX < 0).setScale((u.r / 4) * 0.88 * pl.uEcho.inv).setTint(0xbfe6ff).setAlpha(a);
         if (caps.trails > 0 && !rm && trailBudget > 0 && ((sim.time * 60 + u.id) | 0) % 5 === 0) { trailBudget--; this.parts.emit(u.x, u.y - 3, 0, -16, 0.55, 0.5, 0.05, 0x9fe8ff, 0.5); } // blue wisp rising from the body
         if (caps.halos > 40 && halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 0.9 * pl.haloU.inv).setAlpha(0.3 * fade);
       } else if (u.kind === 'raven') {
@@ -1616,7 +1624,7 @@ export class RunScene extends Phaser.Scene {
     const key = q.tier + (reduced ? 'r' : '') + (this.swayPhone ? 'p' : '');
     if (key !== this.ribKey || !this.ribCaps) { this.ribKey = key; this.ribCaps = ribbonCaps(q.caps.ribbon, { phone: this.swayPhone, reduced }); }
     const caps = this.ribCaps;
-    if (!app.params.trails || caps.segs <= 0 || sim.state === 'dead') { if (this.ribLayer.shown) this.ribLayer.clear(); return; }
+    if (!app.params.trails || caps.segs <= 0 || sim.state === 'dead') { if (this.ribLayer.shown) this.ribLayer.clear(); if (this.pawLayer && this.pawLayer.shown) this.pawLayer.clear(); return; }
     const h = this.ribHero;
     h.lx = lx; h.ly = ly;
     if (this.rig && this.rig.active) { h.sx = this.rig.scarfX; h.sy = this.rig.scarfY; } else { h.sx = p.x - (p.faceX < 0 ? -1 : 1) * 5; h.sy = p.y - 13; }
@@ -1628,8 +1636,14 @@ export class RunScene extends Phaser.Scene {
     if (ww && ww.rt.trail && ww.rt.trail.length) {
       const tc = q.caps.trail || { body: 0, core: 0 };
       const ph = this.swayPhone ? 0.85 : 1; // the trail is the evolution's whole look: phones keep most of it
-      n = this.ribSet.addTrail(ww.rt.trail, { body: Math.floor(tc.body * ph), core: Math.floor(tc.core * ph) }, ROLE.spiritA, 0xfff1c8);
-    }
+      const bodyN = Math.floor(tc.body * ph);
+      if (this.pawLayer && SUM_ART.wolf) { // S2: pawprints on the trail points over a soft ribbon (no long straight streaks), same point caps
+        const nh = this.trailHero || (this.trailHero = { x: 0, y: 0, r: 0 });
+        nh.x = p.x; nh.y = p.y; nh.r = 0.2 * this.cameras.main.worldView.height;
+        n = this.ribSet.addTrailSoft(ww.rt.trail, { body: bodyN }, ROLE.spiritA, nh);
+        this.pawLayer.render(ww.rt.trail, bodyN, this.dens.k);
+      } else n = this.ribSet.addTrail(ww.rt.trail, { body: bodyN, core: Math.floor(tc.core * ph) }, ROLE.spiritA, 0xfff1c8);
+    } else if (this.pawLayer && this.pawLayer.shown) this.pawLayer.clear();
     this.ribLayer.render(this.ribSet, n);
   }
 

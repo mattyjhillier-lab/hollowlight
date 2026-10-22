@@ -33,8 +33,26 @@ function body(c, f, ox, oy) {
   blob(c, cx, cy, f.w * 0.3, f.h * (f.ay > 0.6 ? 0.22 : 0.3), 0, col);
   ember(c, cx, cy, Math.min(f.w, f.h) * 0.06);
 }
-export const PAINTERS = { wolf: () => {}, // S1: the wolf frames are painted by the async wolf bake (atlas.js bakeWolfArt)
-   alpha: body, echo: body, raven: body, low: body, glyph: body, flame: body, decal: body };
+// S2 Light Trails pawprint (decal_paw): a cream pad + 4 toe beans with the wolf's tinted ink outline over a soft moon-blue glow; drawn near-white
+// so the scene can fade it; centred in its 48 x 48 frame, toes toward -y (the sprite is rotated to the stride heading + 90 deg).
+export const PAW_INK = [44, 90, 146], PAW_GLOW = [159, 216, 255];
+export function paw(c, f, ox, oy) {
+  const cx = ox + f.w / 2, cy = oy + f.h / 2, s = f.w / 48;
+  const g = c.createRadialGradient(cx, cy, 0, cx, cy, 22 * s);
+  g.addColorStop(0, rgb(PAW_GLOW, 0.55)); g.addColorStop(0.5, rgb(PAW_GLOW, 0.22)); g.addColorStop(1, rgb(PAW_GLOW, 0));
+  c.fillStyle = g; c.beginPath(); c.arc(cx, cy, 22 * s, 0, TAU); c.fill();
+  const toes = [[-8.6, -6.4, 3.3], [-3.1, -10.4, 3.5], [3.1, -10.4, 3.5], [8.6, -6.4, 3.3]];
+  const shape = (grow) => {
+    c.beginPath(); c.ellipse(cx, cy + 4.5 * s, (7.4 + grow) * s, (6 + grow) * s, 0, 0, TAU);
+    for (const [x, y, r] of toes) { c.moveTo(cx + (x + r + grow) * s, cy + y * s); c.arc(cx + x * s, cy + y * s, (r + grow) * s, 0, TAU); }
+  };
+  shape(1.6); c.fillStyle = rgb(PAW_INK, 0.9); c.fill();
+  shape(0); c.fillStyle = rgb(WARM, 1); c.fill();
+  c.beginPath(); c.ellipse(cx - 2 * s, cy + 2.6 * s, 3.2 * s, 2 * s, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.9)'; c.fill();
+}
+export const NAMED = { decal_paw: paw };
+export const PAINTERS = { wolf: () => {}, // S1/S2: every wolf frame (base, overlays, Alpha, Echo, rimmed, Light Trails) is painted by the async wolf bake (atlas.js bakeWolfArt)
+   alpha: () => {}, echo: () => {}, wolfg: () => {}, lfoot: () => {}, raven: body, low: body, glyph: body, flame: body, decal: body };
 
 // Draws every frame at its packed rect, clipped so a painter can never bleed into a neighbour. Returns the number of frames drawn.
 export function paintAll(c, packed) {
@@ -42,7 +60,7 @@ export function paintAll(c, packed) {
   for (const f of packed.frames) {
     c.save();
     c.beginPath(); c.rect(f.x, f.y, f.w, f.h); c.clip();
-    (PAINTERS[f.group] || body)(c, f, f.x, f.y);
+    (NAMED[f.name] || PAINTERS[f.group] || body)(c, f, f.x, f.y);
     c.restore(); n++;
   }
   return n;

@@ -16,8 +16,12 @@ const seq = (group, prefix, n, w, h, ax, ay, role) => { for (let i = 0; i < n; i
 const WOLF_AY = 90 / 96;
 seq('wolf', 'wolf_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // lope x4, bite, sit
 seq('wolf', 'wolf_ov', 3, 128, 96, 0.5, WOLF_AY, 'wolf'); // notched ear, chest tuft, curl tail
-seq('alpha', 'alpha_', 6, 176, 128, 0.5, 0.86, 'wolf'); // 1.7x, gold rim added at use time
-seq('echo', 'echo_', 6, 128, 96, 0.5, 0.86, 'wolf'); // hollow outline wolf
+// S2 wolf evolutions: The Alpha (frost mane, amber eyes, gold rim baked) at 1 texel per du in its 132 x 96 du box, drawn 1.7x (S0 baked 176 x 128;
+// 1 texel per du keeps the page inside the 2.5 MB budget and is still ~0.65 device px per texel at 1.7x on the desktop)
+seq('alpha', 'alpha_', 6, 132, 96, 0.5, WOLF_AY, 'wolf');
+seq('echo', 'echo_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // Echo Pack: hollow outline wolf
+seq('wolfg', 'wolfg_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // evolved pack (Howling Legion): the wolf with the gold rim baked in
+seq('lfoot', 'lfoot_', 6, 128, 96, 72 / 128, WOLF_AY, 'wolf'); // Light Trails: streaming ears/tail + gold rim (box 8 du back)
 // ravens (centre-anchored flyers)
 ['perch', 'up', 'down', 'swoop', 'peck', 'spread', 'dive'].forEach((n) => add('raven', 'raven_' + n, 64, 64, 0.5, 0.5, 'raven'));
 seq('low', 'raven_flat', 2, 48, 48, 0.5, 0.5, 'raven');
@@ -35,6 +39,7 @@ add('low', 'flat_wolf', 96, 72, 0.5, WOLF_AY, 'wolf'); // S1: Low-tier wolf (sam
 add('low', 'flat_raven', 48, 48, 0.5, 0.5, 'raven');
 add('low', 'flat_glyph', 48, 48, 0.5, 0.5, 'bolt');
 add('low', 'flat_flame', 48, 48, 0.5, 0.78, 'orbit');
+add('low', 'flat_wolfg', 96, 72, 0.5, WOLF_AY, 'wolf'); // S2: Low-tier evolved wolf (gold rim baked; the Alpha uses it at 1.7x)
 
 export const FRAMES = F.map((f) => Object.freeze(f));
 export const FRAME_COUNT = FRAMES.length;

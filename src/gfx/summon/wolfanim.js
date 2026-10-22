@@ -29,3 +29,20 @@ export function wolfLook(id, jitter = 0.04) {
   h = (h ^ (h >>> 15)) >>> 0; h = Math.imul(h, 2246822519) >>> 0; h = (h ^ (h >>> 13)) >>> 0;
   return { ov: (h % 4) - 1, k: 1 + jitter * ((((h >>> 8) % 1001) / 1000) * 2 - 1) };
 }
+
+// S2 evolution skins (LOCKED: same creature + gold rim + ONE signature change; gold only on evolved units). Pure: picks the atlas frame, the
+// render size (x the wolf), the frame's ground anchor x and the overlay offset table for one unit. Never reads anything but the unit's kind/shade.
+//   no evolution       wolf_N   (Low flat_wolf)
+//   howling_legion     wolfg_N  gold rim (the echoes are the signature: echo_N, hollow outline, no rim)
+//   phantom_stampede   lfoot_N  gold rim + streaming ears/tail (and the pawprint ribbon on the ground, pawtrail.js)
+//   dire_alpha         alpha_N  1.7x, frost mane, amber eyes, gold rim; its 2 shades stay plain wolves (drawn at half alpha by the caller)
+// Low tier: one flat per creature (flat_wolf / flat_wolfg, the Alpha's flat at 1.7x; echoes hold echo_0).
+export const LF_AX = 72 / 128;
+export function wolfSkin(evo, u, low, fi, ALPHA_K = 1.7) {
+  if (u.kind === 'echo') return { fr: 'echo_' + (low ? 0 : fi), size: 1, ax: 0.5, ov: null, texel: 1, gold: false };
+  if (evo === 'dire_alpha' && !u.shade) return low ? { fr: 'flat_wolfg', size: ALPHA_K, ax: 0.5, ov: null, texel: 0.75, gold: true } : { fr: 'alpha_' + fi, size: ALPHA_K, ax: 0.5, ov: null, texel: 1, gold: true };
+  const gold = !u.shade && (evo === 'phantom_stampede' || evo === 'howling_legion');
+  if (low) return { fr: gold ? 'flat_wolfg' : 'flat_wolf', size: 1, ax: 0.5, ov: null, texel: 0.75, gold };
+  if (gold && evo === 'phantom_stampede') return { fr: 'lfoot_' + fi, size: 1, ax: LF_AX, ov: 'lf', texel: 1, gold };
+  return { fr: (gold ? 'wolfg_' : 'wolf_') + fi, size: 1, ax: 0.5, ov: 'base', texel: 1, gold };
+}

@@ -4,12 +4,12 @@ import { FRAMES, FRAME_COUNT, FRAME_BY_NAME, PACK, packFrames, texelsTotal, TEXE
 import { makeSummonAtlas, drawSummonAtlas } from '../src/gfx/summon/atlas.js';
 import { parseParams } from '../src/params.js';
 import { zoomFor } from '../src/gfx/style.js';
-import { WOLF_LEN_DU, WOLF_WPD, WOLF_JITTER, WOLF_BOX } from '../src/gfx/summon/wolf.js';
+import { WOLF_LEN_DU, WOLF_WPD, WOLF_JITTER, WOLF_BOX, ALPHA_K, ALPHA_BOX } from '../src/gfx/summon/wolf.js';
 
 const count = (g) => FRAMES.filter((f) => f.group === g).length;
 
 test('summon frames: counts match the section 5 budget', () => {
-  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4);
+  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4 + 6 + 6 + 1); // S2: + gold-rimmed pack 6, Light Trails 6, Low evolved flat
   assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_') && !f.name.startsWith('wolf_ov')).length, 6);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_ov')).length, 3);
   assert.equal(count('alpha'), 6);
@@ -21,7 +21,8 @@ test('summon frames: counts match the section 5 budget', () => {
   assert.equal(FRAMES.filter((f) => f.name.startsWith('flame_big')).length, 3);
   assert.equal(FRAMES.filter((f) => /^flame_\d/.test(f.name)).length, 3);
   assert.equal(count('decal'), 10);
-  assert.equal(FRAMES.filter((f) => f.name.startsWith('flat_')).length, 4);
+  assert.equal(FRAMES.filter((f) => f.name.startsWith('flat_')).length, 5);
+  assert.equal(count('wolfg'), 6); assert.equal(count('lfoot'), 6);
 });
 
 test('summon frames: unique names and ids, sizes and anchors in range', () => {
@@ -40,8 +41,9 @@ test('summon frames: wolf is 36-42 px long on the 1280x720 desktop (locked) incl
   for (const f of FRAMES.filter((x) => /^wolf_(\d|ov\d)$/.test(x.name))) { assert.equal(f.w, WOLF_BOX[2]); assert.equal(f.h, WOLF_BOX[3]); }
   // ~0.75x a Fell Wolf (Husk wolf: g 0.62 -> 0.155 world units per du)
   assert.ok(WOLF_WPD / 0.155 > 0.9 && WOLF_WPD / 0.155 < 1.1);
-  const a = FRAME_BY_NAME.alpha_0.w / TEXELS_PER_UNIT, w = FRAME_BY_NAME.wolf_0.w / TEXELS_PER_UNIT;
-  assert.ok(a / w >= 1.3 && a / w <= 1.8, String(a / w)); // drawn at 1.7x, baked a little under that density
+  // S2: the Alpha is baked at 1 texel per du (132 x 96 du box, room for the frost mane) and DRAWN at ALPHA_K = 1.7x the wolf
+  assert.equal(ALPHA_K, 1.7); assert.deepEqual([FRAME_BY_NAME.alpha_0.w, FRAME_BY_NAME.alpha_0.h], [ALPHA_BOX[2], ALPHA_BOX[3]]);
+  for (const j of [0]) { const px = WOLF_LEN_DU * WOLF_WPD * ALPHA_K * z; assert.ok(px >= 61 && px <= 71, String(px + j)); }
   // ground anchors sit low (feet), flyers centred
   assert.ok(FRAME_BY_NAME.wolf_0.ay > 0.8); assert.equal(FRAME_BY_NAME.raven_up.ay, 0.5);
 });
