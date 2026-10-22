@@ -208,7 +208,7 @@ async function contrast(out) {
           const nW = await c.ev(POS); await sleep(250); await c.ev(POS); await sleep(250);
           const pts = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,s=window.__app.sim,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect(),k=R.width/wv.width*${dpr};
             const P=(x,y,r,kind)=>({kind,x:(R.left+(x-wv.x)/wv.width*R.width)*${dpr},y:(R.top+(y-wv.y)/wv.height*R.height)*${dpr},r:r*k});
-            return JSON.stringify([...s.units.filter(u=>u.kind==='wolf'${process.env.NOSHADE ? '&&!u.shade' : ''}).map(u=>P(u.x,u.y-(u.r>6?4:1),u.r>6?15:9,'spirit')),...s.enemies.map(e=>P(e.x,e.y-3,e.r*1.6,'fell'))])})()`));
+            return JSON.stringify([...s.units.filter(u=>u.kind==='wolf'${process.env.NOSHADE ? '&&!u.shade' : ''}${process.env.SHADEONLY ? '&&u.shade' : ''}).map(u=>P(u.x,u.y-(u.r>6?4:1),u.r>6?15:9,'spirit')),...s.enemies.map(e=>P(e.x,e.y-3,e.r*1.6,'fell'))])})()`));
           const a = await png(c, process.env.KEEP ? join(out, `c-${view}-${fmt(t)}-${tier}-${ground}.png`) : null);
           await c.ev('(()=>{const S=window.__app.scene;S.__h=S.quality.caps.halos;S.quality.caps.halos=0;return 1})()'); await sleep(250);
           const hh = await png(c, null);

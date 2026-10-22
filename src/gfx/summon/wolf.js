@@ -137,6 +137,8 @@ const EXTRA = '<filter id="blur3" filterUnits="userSpaceOnUse" x="-3000" y="-300
   + '<feFlood flood-color="#e6f6ff"/><feComposite in2="edge" operator="in" result="line"/><feGaussianBlur in="line" stdDeviation=".5" result="lb"/>'
   + '<feComponentTransfer in="SourceGraphic" result="ghost"><feFuncA type="linear" slope="0.22"/></feComponentTransfer><feMerge><feMergeNode in="ghost"/><feMergeNode in="lb"/><feMergeNode in="lb"/></feMerge></filter>';
 
+export const RIM_DEFS = EXTRA; // S3: the ravens share the gold rim filter (grim) and blurs
+
 // Echo Pack: the same wolf as a hollow outline of light; it keeps a pale eye and its warm heart (friendly, never red), soft glow behind
 export function echoSvg(st = {}) {
   const { hx, hy } = wolfGeom(st);

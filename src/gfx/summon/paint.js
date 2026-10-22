@@ -2,6 +2,7 @@
 // (L2 tinted outline, H2 soft gradient with a WARM rim, P1 chibi, warm ember heart) plus placeholder silhouettes per group.
 // The real creature art lands in S1-S7 and replaces PAINTERS entries only; frame ids, sizes and anchors stay fixed.
 // Pure drawing against a 2D context (testable with a fake ctx); no DOM at import time.
+import { featherDecal, waxSealDecal } from './raven.js';
 const TAU = Math.PI * 2;
 export const ROLE_COL = {
   wolf: [159, 216, 255], raven: [183, 156, 255], bolt: [127, 240, 255], orbit: [232, 224, 255], fx: [255, 241, 200],
@@ -50,9 +51,11 @@ export function paw(c, f, ox, oy) {
   shape(0); c.fillStyle = rgb(WARM, 1); c.fill();
   c.beginPath(); c.ellipse(cx - 2 * s, cy + 2.6 * s, 3.2 * s, 2 * s, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.9)'; c.fill();
 }
-export const NAMED = { decal_paw: paw };
-export const PAINTERS = { wolf: () => {}, // S1/S2: every wolf frame (base, overlays, Alpha, Echo, rimmed, Light Trails) is painted by the async wolf bake (atlas.js bakeWolfArt)
-   alpha: () => {}, echo: () => {}, wolfg: () => {}, lfoot: () => {}, raven: body, low: body, glyph: body, flame: body, decal: body };
+const none = () => {};
+// S3: the raven frames (plain, gold, Low flats) are painted by the lazy raven bake (atlas.js bakeRavenArt); feather + wax seal are canvas decals
+export const NAMED = { decal_paw: paw, decal_feather: featherDecal, decal_waxseal: waxSealDecal, raven_flat0: none, raven_flat1: none };
+export const PAINTERS = { wolf: none, // S1/S2: every wolf frame (base, overlays, Alpha, Echo, rimmed, Light Trails) is painted by the async wolf bake (atlas.js bakeWolfArt)
+   alpha: none, echo: none, wolfg: none, lfoot: none, raven: none, ravg: none, low: body, glyph: body, flame: body, decal: body };
 
 // Draws every frame at its packed rect, clipped so a painter can never bleed into a neighbour. Returns the number of frames drawn.
 export function paintAll(c, packed) {

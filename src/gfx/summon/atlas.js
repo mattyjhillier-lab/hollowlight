@@ -5,6 +5,7 @@
 import { PACK, SUM_KEY, TEXELS_PER_UNIT, PAGE_W, FRAME_BY_NAME } from './frames.js';
 import { paintAll } from './paint.js';
 import { wolfSheet } from './wolf.js';
+import { ravenSheet, POSES, GOLD_POSES } from './raven.js';
 
 export { SUM_KEY };
 export const SUM_ART = { wolf: false, wolfMs: 0, wolfMainMs: 0, error: '', promise: null }; // wolfMs = wall time incl. the async SVG decode; wolfMainMs = main-thread work only
@@ -51,15 +52,15 @@ export function makeSummonAtlas(scene, mkCanvas, { enabled = true, now = () => (
 export const BOOT_KINDS = ['base', 'ov', 'flat'];
 export const EVO_KINDS = { howling_legion: ['gold', 'echo', 'flatg'], phantom_stampede: ['lfoot', 'flatg'], dire_alpha: ['alpha', 'flatg'] };
 SUM_ART.kinds = new Set(); SUM_ART.evoMs = 0; SUM_ART.evoMaxStepMs = 0; SUM_ART.pending = new Set();
-const KIND_OF = [['wolfg_', 'gold'], ['lfoot_', 'lfoot'], ['alpha_', 'alpha'], ['echo_', 'echo'], ['flat_wolfg', 'flatg'], ['wolf_ov', 'ov'], ['wolf_', 'base'], ['flat_wolf', 'flat']];
+const KIND_OF = [['ravg_', 'rgold'], ['raven_flat1', 'rflatg'], ['raven_flat0', 'rflat'], ['raven_', 'rbase'], ['wolfg_', 'gold'], ['lfoot_', 'lfoot'], ['alpha_', 'alpha'], ['echo_', 'echo'], ['flat_wolfg', 'flatg'], ['wolf_ov', 'ov'], ['wolf_', 'base'], ['flat_wolf', 'flat']];
 export const kindOf = (frame) => { for (const [p, k] of KIND_OF) if (frame.startsWith(p)) return k; return null; };
 export const frameReady = (frame) => SUM_ART.kinds.has(kindOf(frame));
 
-async function rasterise(rects, sa) {
+async function rasterise(rects, sa, sheet = wolfSheet) {
   // the sheet is only as big as the rects' bounding box (a single evolution frame rasterises 128 x 96, not the whole page)
   const x0 = Math.min(...rects.map((r) => r.x)), y0 = Math.min(...rects.map((r) => r.y));
   const W = Math.max(...rects.map((r) => r.x + r.w)) - x0, H = Math.max(...rects.map((r) => r.y + r.h)) - y0;
-  const url = URL.createObjectURL(new Blob([wolfSheet(rects.map((r) => ({ ...r, x: r.x - x0, y: r.y - y0 })), W, H)], { type: 'image/svg+xml' }));
+  const url = URL.createObjectURL(new Blob([sheet(rects.map((r) => ({ ...r, x: r.x - x0, y: r.y - y0 })), W, H)], { type: 'image/svg+xml' }));
   let img;
   try { img = new Image(); img.decoding = 'async'; img.src = url; await img.decode(); } finally { URL.revokeObjectURL(url); }
   const t = performance.now();
@@ -87,6 +88,51 @@ export function bakeWolfArt(sa) {
     return SUM_ART.wolf;
   })();
   return SUM_ART.promise;
+}
+
+// S3 Letter Ravens: nothing at boot. The plain flock (7 poses + Low flat) bakes lazily the first time the run owns Raven Flock, the gold-rimmed
+// evolved poses (+ Low gold flat) on its first evolution; one frame per idle task. Until a kind lands RunScene keeps today's raven sprite
+// (plain) or the plain raven frame (gold). ?summons=0: never (no atlas).
+export const RAVEN_BAKE = [
+  ...POSES.map((p, i) => ['raven_' + p, 'rbase', i]), ['raven_flat0', 'rflat', 0],
+  ...GOLD_POSES.map((p, i) => ['ravg_' + p, 'rgold', i]), ['raven_flat1', 'rflatg', 0],
+];
+export const RAVEN_KINDS = { base: ['rbase', 'rflat'], gold: ['rgold', 'rflatg'] };
+export function ravenRects(packed = PACK) {
+  return RAVEN_BAKE.map(([name, kind, i]) => { const f = packed.frames[FRAME_BY_NAME[name].id]; return { name, kind, i, x: f.x, y: f.y, w: f.w, h: f.h }; });
+}
+SUM_ART.raven = false;
+export const ravenReady = () => SUM_ART.raven;
+// Bakes the given kinds one frame per task (idempotent: kinds already baked or pending are skipped). Resolves true when all landed.
+function bakeKinds(sa, need, rectsOf, sheet, onDone) {
+  need = need.filter((k) => !SUM_ART.kinds.has(k) && !SUM_ART.pending.has(k));
+  if (!need.length || !sa) return Promise.resolve(false);
+  for (const k of need) SUM_ART.pending.add(k);
+  return (async () => {
+    try {
+      if (SUM_ART.promise) await SUM_ART.promise; // never alongside the boot bake
+      for (const k of need) {
+        for (const r of rectsOf().filter((x) => x.kind === k)) {
+          await yieldTask();
+          const ms = await rasterise([r], sa, sheet);
+          SUM_ART.evoMs += ms; SUM_ART.evoMaxStepMs = Math.max(SUM_ART.evoMaxStepMs, ms);
+        }
+        await yieldTask();
+        const t = performance.now();
+        if (sa.tex && sa.tex.refresh) sa.tex.refresh();
+        const ms = performance.now() - t; SUM_ART.evoMs += ms; SUM_ART.evoMaxStepMs = Math.max(SUM_ART.evoMaxStepMs, ms);
+        SUM_ART.kinds.add(k); SUM_ART.pending.delete(k);
+      }
+      if (onDone) onDone();
+      return true;
+    } catch (e) { SUM_ART.error = String((e && e.message) || e); for (const k of need) SUM_ART.pending.delete(k); return false; }
+  })();
+}
+export function bakeRavenArt(sa, evolved = false) {
+  if (SUM_ART.raven && (!evolved || SUM_ART.kinds.has('rflatg'))) return null; // fast path: called every frame while the flock is owned
+  const p = bakeKinds(sa, RAVEN_KINDS.base, ravenRects, ravenSheet, () => { SUM_ART.raven = true; });
+  if (evolved) bakeKinds(sa, RAVEN_KINDS.gold, ravenRects, ravenSheet);
+  return p;
 }
 
 // S2: bake one evolution's frames lazily (idempotent). One frame per task; the texture is re-uploaded once per kind. Until a kind lands

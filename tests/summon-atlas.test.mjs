@@ -9,7 +9,8 @@ import { WOLF_LEN_DU, WOLF_WPD, WOLF_JITTER, WOLF_BOX, ALPHA_K, ALPHA_BOX } from
 const count = (g) => FRAMES.filter((f) => f.group === g).length;
 
 test('summon frames: counts match the section 5 budget', () => {
-  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4 + 6 + 6 + 1); // S2: + gold-rimmed pack 6, Light Trails 6, Low evolved flat
+  assert.equal(FRAME_COUNT, 6 + 3 + 6 + 6 + 7 + 2 + 5 + 2 + 3 + 3 + 1 + 10 + 4 + 6 + 6 + 1 + 6); // S2: + gold-rimmed pack 6, Light Trails 6, Low evolved flat; S3: + gold raven poses 6
+  assert.equal(count('ravg'), 6);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_') && !f.name.startsWith('wolf_ov')).length, 6);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('wolf_ov')).length, 3);
   assert.equal(count('alpha'), 6);

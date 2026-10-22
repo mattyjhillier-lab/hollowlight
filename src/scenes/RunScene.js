@@ -39,6 +39,9 @@ import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / 
 import { makeSummonAtlas, bakeWolfArt, bakeWolfEvo, frameReady, SUM_ART, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas; S1 wolf art baked into it async
 import { WOLF_WPD, WOLF_FOOT, WOLF_JITTER, OV_OFF, OV_OFF_LF, ALPHA_K } from '../gfx/summon/wolf.js';
 import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
+import { bakeRavenArt, ravenReady } from '../gfx/summon/atlas.js'; // S3 Letter Ravens (lazy bake on first flock)
+import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
+import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
 import { hash as visHash } from '../gfx/wind.js';
@@ -85,6 +88,8 @@ const hex = (s) => parseInt(s.slice(1), 16);
 const WOLF_GLOW = 0x9fd8ff; // S1: wolf halo retinted to the locked wolf role colour
 const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the High bloom is on (it halves a small sprite's value; this keeps the spirit lit)
 const ALPHA_HALO = 3.4; // S2: the Alpha's own frame carries a 1.7x baked glow, so its extra halo shrinks (friendly coverage near the hero <= today + 5 pts)
+const RAVEN_SELF = 1, RAVEN_HALO = 0.75, RAVEN_HALO_A = 0.6, RAVEN_GLOW = 0xb79cff; // S3: raven self-light (High bloom only), halo size / alpha / locked violet
+const SHADE_A = 0.65; // S2 open item: the Alpha's 2 ghost shades 0.5 -> 0.65 (Low L* gap vs the Fell Wolf was 12-18)
 const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
 function makeTextures(scene) {
@@ -255,6 +260,10 @@ export class RunScene extends Phaser.Scene {
       uWolfOv: new SpritePool(this, SUM_KEY), // S1 pack-variety overlays (notched ear / chest tuft / curl tail)
       uWolfL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S1 self-light: an additive copy of the wolf frame while the bloom is on
       uRaven: new SpritePool(this, 'raven'),
+      uRavenA: new SpritePool(this, SUM_KEY), // S3 Letter Ravens (sum_atlas frames)
+      uRavenL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S3 self-light copy while the High bloom is on (as the wolves)
+      ravFeather: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_feather').setDepth(D_HALO + 1)), // S3 Wall of Wings loose paper feathers
+      ravSeal: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_waxseal').setDepth(D_PART - 1)), // S3 Talon Mark wax-seal disc under the chevron
       uOrb: new SpritePool(this, 'orb'),
       gem: new SpritePool(this, 'gem'),
       heart: new SpritePool(this, 'heart'),
@@ -675,7 +684,7 @@ export class RunScene extends Phaser.Scene {
     const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y;
     const hl = 8.5 * k / WOLF_WPD; // half the wolf's length (world units)
     const front = !near && u.y > p.y && Math.abs(u.x - p.x) < 12 + hl && fy - 15 * k / WOLF_WPD < p.y + 6 && fy > p.y - 30;
-    const a = (u.shade ? 0.5 : front ? 0.55 : 1) * aMul;
+    const a = (u.shade ? SHADE_A : front ? 0.55 : 1) * aMul;
     const img = pl.uWolfA.get(u.id);
     img.setFrame(sk.fr).setOrigin(sk.ax, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy).setFlipX(dir < 0).setScale(k / sk.texel).setAlpha(a);
     if (this.bloom && WOLF_SELF > 0 && u.kind !== 'echo') pl.uWolfL.get(u.id).setFrame(sk.fr).setOrigin(sk.ax, 90 / 96).setPosition(u.x, fy).setDepth(D_LIT + dy + 0.0005).setFlipX(dir < 0).setScale(k / sk.texel).setAlpha(a * WOLF_SELF);
@@ -684,6 +693,38 @@ export class RunScene extends Phaser.Scene {
       pl.uWolfOv.get(u.id).setFrame('wolf_ov' + look.ov).setOrigin(0.5, 90 / 96).setPosition(u.x + o[0] * k * dir, fy + o[1] * k).setDepth(D_LIT + dy + 0.001).setFlipX(dir < 0).setScale(k).setAlpha(a);
     }
     if ((this.fxTick & 127) === 0 && st.size > 64) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
+  }
+
+  // S3 Letter Ravens: one image per raven (+ an additive self-light copy while the High bloom is on), pose from the sim state (ravenPose), skin from
+  // the evolution (ravenSkin: gold rim on the evolved verb's units). Same DR3 rule as the wolves: within FADE_R of the hero a raven draws just under
+  // her; one drawn over her from the front drops to 0.55 alpha. Low: the flat frame, no turn.
+  drawRavenA(u, p, dt, low, evo, lead, wedgeOn) {
+    const pl = this.pools, st = this.ravSt || (this.ravSt = new Map());
+    let s = st.get(u.id);
+    if (!s) { s = {}; st.set(u.id, s); }
+    s.seen = this.fxTick;
+    const ps = ravenPose(s, u, dt, { calm: this.reducedMotion(), talon: evo === 'dive_bombers', wedgeOn });
+    let sk = ravenSkin(evo, u, lead, low, ps.pose);
+    if (!frameReady(sk.fr)) sk = { ...ravenSkin(null, u, false, low, ps.pose), size: sk.size }; // gold frames bake lazily: plain raven until then
+    const fw = low ? 48 : 64, k = (RAVEN_BOX[2] * RAVEN_WPD * sk.size) / fw; // world units per texel
+    const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y + 30;
+    const front = !near && u.y > p.y - 4 && Math.abs(u.x - p.x) < 16 && Math.abs(u.y - (p.y - 12)) < 22;
+    const a = front ? 0.55 : 1, rot = low ? 0 : ps.rot;
+    pl.uRavenA.get(u.id).setFrame(sk.fr).setOrigin(0.5, 0.5).setPosition(u.x, u.y).setDepth(D_LIT + dy).setFlipX(ps.flip).setRotation(rot).setScale(k).setAlpha(a);
+    if (this.bloom && RAVEN_SELF > 0) pl.uRavenL.get(u.id).setFrame(sk.fr).setOrigin(0.5, 0.5).setPosition(u.x, u.y).setDepth(D_LIT + dy + 0.0005).setFlipX(ps.flip).setRotation(rot).setScale(k).setAlpha(a * RAVEN_SELF).setTint(0xf0e8ff); // faintly violet-tinted: value first (friend-or-foe read), the body/outline keep the role colour
+    if ((this.fxTick & 127) === 64 && st.size > 48) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
+  }
+
+  // S3 Wall of Wings: a slow ring of loose paper feathers between the two raven rings (High 14 / Med 9; Low keeps today's still circles). Turns
+  // slowly against the inner ring and each feather tumbles a little; reduced motion: still ring, no tumble.
+  drawWallFeathers(p, rt, time) {
+    const n = this.quality.tier === 'high' ? 14 : 9, R0 = (rt.wallR[0] + rt.wallR[1]) / 2, rm = this.reducedMotion();
+    const turn = rm ? 0 : -time * 0.35, sc = 7 / 36; // a ~7 u long feather (36 texels long in its 48 frame)
+    for (let i = 0; i < n; i++) {
+      const a = turn + (i * Math.PI * 2) / n, wob = rm ? 0 : Math.sin(time * 1.7 + i * 2.1);
+      const x = p.x + Math.cos(a) * (R0 + wob * 3), y = p.y + Math.sin(a) * (R0 + wob * 3) * 0.98;
+      this.pools.ravFeather.get(i).setPosition(x, y).setRotation(a + 1.2 + wob * 0.5).setScale(sc).setAlpha(0.72);
+    }
   }
 
   // Candle Wheel (Elias): a ring of cream light with a patch of restored colour inside, opening from the centre and
@@ -1249,6 +1290,7 @@ export class RunScene extends Phaser.Scene {
         const bob = Math.sin(sim.time * 6 + e.id) * 1.2;
         const a = e.markT < 0.6 ? (Math.floor(sim.time * 12) % 2 ? 0.25 : 0.9) : 0.9;
         const mx = Math.round(e.x), my = Math.round(e.y - e.r - (e.boss ? 14 : 9) + bob), k = e.boss ? 2 : 1;
+        if (this.sumAtlas && ravenReady()) this.pools.ravSeal.get(e.id).setPosition(mx, my - 1 * k).setScale((11 / 40) * k).setAlpha(a); // S3: violet wax-seal disc (~11 u) behind the locked chevron
         fx.fillStyle(0x2a1d3a, a * 0.85).fillTriangle(mx - 5 * k, my - 4 * k, mx + 5 * k, my - 4 * k, mx, my + 3 * k); // dark outline so it reads on grass and on pale foes
         fx.fillStyle(ROLE.mark, a).fillTriangle(mx - 4 * k, my - 3 * k, mx + 4 * k, my - 3 * k, mx, my + 1.5 * k);
       }
@@ -1330,7 +1372,10 @@ export class RunScene extends Phaser.Scene {
     // violet rings (dashed arcs on Med/High, still circles on Low and with reduced motion)
     const rvw = sim.weapons.find((w2) => w2.id === 'raven_flock');
     const rvEvo = rvw ? rvw.evo : null;
-    if (rvEvo === 'murder_storm' && rvw.rt.wallR) {
+    if (rvw && this.sumAtlas) bakeRavenArt(this.sumAtlas, !!rvEvo); // S3: lazy, idempotent (fast path once baked)
+    const ravenArt = !!this.sumAtlas && ravenReady(), lowRaven = this.quality.tier === 'low';
+    if (rvEvo === 'murder_storm' && rvw.rt.wallR && ravenArt && caps.drips > 0) this.drawWallFeathers(p, rvw.rt, sim.time); // S3: the paper-feather ring replaces the dashed arcs
+    else if (rvEvo === 'murder_storm' && rvw.rt.wallR) {
       const spin = rvw.rt.wang || 0, still = this.reducedMotion() || caps.drips === 0;
       for (let ri = 0; ri < 2; ri++) {
         const rr = rvw.rt.wallR[ri];
@@ -1383,9 +1428,14 @@ export class RunScene extends Phaser.Scene {
         if (caps.trails > 0 && !rm && trailBudget > 0 && ((sim.time * 60 + u.id) | 0) % 5 === 0) { trailBudget--; this.parts.emit(u.x, u.y - 3, 0, -16, 0.55, 0.5, 0.05, 0x9fe8ff, 0.5); } // blue wisp rising from the body
         if (caps.halos > 40 && halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritA).setScale(u.r / 4 * 0.9 * pl.haloU.inv).setAlpha(0.3 * fade);
       } else if (u.kind === 'raven') {
-        pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
-        if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
-        if (rvEvo) fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved flock only: thin gold rim (never on enemies)
+        if (ravenArt) { // S3 Letter Ravens: gold rim baked into the evolved verb's units (ravenSkin); Low: flat with the glow baked in, no halo
+          this.drawRavenA(u, p, wdt, lowRaven, rvEvo, !!(u.wedge && rvw.rt.wedge && rvw.rt.wedge[0] === u), !!rvw.rt.wedgeOn);
+          if (!lowRaven && halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(RAVEN_GLOW).setScale(RAVEN_HALO * pl.haloU.inv).setAlpha(RAVEN_HALO_A);
+        } else {
+          pl.uRaven.get(u.id).setPosition(u.x, u.y).setDepth(D_LIT + u.y + 30).setFlipX((u.faceX || 1) < 0);
+          if (halos++ < caps.halos) pl.haloU.get(u.id).setPosition(u.x, u.y).setTint(ROLE.spiritB).setScale(0.85 * pl.haloU.inv).setAlpha(0.55);
+          if (rvEvo) fx.lineStyle(1, 0xffd27a, 0.45).strokeCircle(u.x, u.y, 5.5); // evolved flock only: thin gold rim (never on enemies)
+        }
         if (u.wedge && rvw.rt.wedgeOn && caps.drips > 0) { // W9 Spearhead: short violet wake behind each wedge raven while the wedge flies (none on Low)
           fx.lineStyle(2, ROLE.spiritB, 0.16).lineBetween(u.x, u.y, u.x - rvw.rt.hx * 16, u.y - rvw.rt.hy * 16);
           fx.lineStyle(1, ROLE.spiritB2, 0.5).lineBetween(u.x, u.y, u.x - rvw.rt.hx * 12, u.y - rvw.rt.hy * 12);

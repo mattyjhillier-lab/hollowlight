@@ -23,7 +23,9 @@ seq('echo', 'echo_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // Echo Pack: hollow out
 seq('wolfg', 'wolfg_', 6, 128, 96, 0.5, WOLF_AY, 'wolf'); // evolved pack (Howling Legion): the wolf with the gold rim baked in
 seq('lfoot', 'lfoot_', 6, 128, 96, 72 / 128, WOLF_AY, 'wolf'); // Light Trails: streaming ears/tail + gold rim (box 8 du back)
 // ravens (centre-anchored flyers)
+// S3 Letter Ravens: 64 texels for the 88 du box (raven.js RAVEN_BOX); gold-rimmed evolved poses (ravg_, no peck); Low flats 0 = plain, 1 = gold
 ['perch', 'up', 'down', 'swoop', 'peck', 'spread', 'dive'].forEach((n) => add('raven', 'raven_' + n, 64, 64, 0.5, 0.5, 'raven'));
+['perch', 'up', 'down', 'swoop', 'spread', 'dive'].forEach((n) => add('ravg', 'ravg_' + n, 64, 64, 0.5, 0.5, 'raven'));
 seq('low', 'raven_flat', 2, 48, 48, 0.5, 0.5, 'raven');
 // spirit bolts
 seq('glyph', 'glyph_', 5, 64, 64, 0.5, 0.5, 'bolt');
@@ -46,17 +48,20 @@ export const FRAME_COUNT = FRAMES.length;
 export const FRAME_BY_NAME = Object.freeze(Object.fromEntries(FRAMES.map((f) => [f.name, f])));
 export const PAD = 2; // transparent gutter between frames (stops bilinear bleed)
 
-// Shelf packer: tall frames first, rows left to right. Returns { frames: [{...f, x, y}], w, h, used } with h rounded up to a multiple of 16.
+// Shelf packer: tall frames first, rows left to right; S3: first fit (a frame goes into the first earlier row with room at its right end, so the
+// tall rows' leftover gaps are used and the page stays inside the 2.5 MB budget). Returns { frames: [{...f, x, y}], w, h, used }, h a multiple of 16.
 export function packFrames(frames = FRAMES, pageW = PAGE_W) {
   const order = [...frames].sort((a, b) => b.h - a.h || b.w - a.w || a.id - b.id);
-  let x = 0, y = 0, rowH = 0;
+  const rows = []; // { y, h, x }
   const out = new Array(frames.length);
   for (const f of order) {
-    if (x + f.w + PAD > pageW) { x = 0; y += rowH + PAD; rowH = 0; }
-    out[f.id] = { ...f, x, y };
-    x += f.w + PAD; rowH = Math.max(rowH, f.h);
+    let r = rows.find((q) => f.h <= q.h && q.x + f.w <= pageW);
+    if (!r) { const last = rows[rows.length - 1]; r = { y: last ? last.y + last.h + PAD : 0, h: f.h, x: 0 }; rows.push(r); }
+    out[f.id] = { ...f, x: r.x, y: r.y };
+    r.x += f.w + PAD;
   }
-  const need = y + rowH;
+  const last = rows[rows.length - 1];
+  const need = last ? last.y + last.h : 0;
   const h = Math.ceil(need / 16) * 16; // NPOT height is fine for a clamped, non-mipmapped WebGL texture; saves ~1.7 MB vs a power of two
   return { frames: out, w: pageW, h, used: need };
 }

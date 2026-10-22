@@ -35,7 +35,7 @@ export function wolfLook(id, jitter = 0.04) {
 //   no evolution       wolf_N   (Low flat_wolf)
 //   howling_legion     wolfg_N  gold rim (the echoes are the signature: echo_N, hollow outline, no rim)
 //   phantom_stampede   lfoot_N  gold rim + streaming ears/tail (and the pawprint ribbon on the ground, pawtrail.js)
-//   dire_alpha         alpha_N  1.7x, frost mane, amber eyes, gold rim; its 2 shades stay plain wolves (drawn at half alpha by the caller)
+//   dire_alpha         alpha_N  1.7x, frost mane, amber eyes, gold rim; its 2 shades stay plain wolves (drawn at 0.65 alpha by the caller, S3)
 // Low tier: one flat per creature (flat_wolf / flat_wolfg, the Alpha's flat at 1.7x; echoes hold echo_0).
 export const LF_AX = 72 / 128;
 export function wolfSkin(evo, u, low, fi, ALPHA_K = 1.7) {
