@@ -28,8 +28,15 @@ seq('lfoot', 'lfoot_', 6, 128, 96, 72 / 128, WOLF_AY, 'wolf'); // Light Trails: 
 ['perch', 'up', 'down', 'swoop', 'spread', 'dive'].forEach((n) => add('ravg', 'ravg_' + n, 64, 64, 0.5, 0.5, 'raven'));
 seq('low', 'raven_flat', 2, 48, 48, 0.5, 0.5, 'raven');
 // spirit bolts
-seq('glyph', 'glyph_', 5, 64, 64, 0.5, 0.5, 'bolt');
-seq('glyph', 'page_', 2, 64, 64, 0.5, 0.5, 'bolt');
+seq('glyph', 'glyph_', 5, 48, 48, 0.5, 0.5, 'bolt'); // S5: 1.5 texels per du (>= 1.9 texels per device px at 1.3x on every view)
+seq('glyph', 'page_', 2, 48, 48, 0.5, 0.5, 'bolt');
+// S5 Ink Glyph Orb (glyph.js): gold rim overlay (evolved glyphs), ink tails (straight / curl; anchor = orb centre), Soul Lance capsule (anchor = head
+// tip), Spirit Tempest torn page
+add('glyph', 'glyph_rim', 48, 48, 0.5, 0.5, 'bolt');
+add('glyph', 'gtail_0', 74, 32, 44 / 46, 0.5, 'bolt');
+add('glyph', 'gtail_1', 74, 32, 44 / 46, 0.5, 'bolt');
+add('glyph', 'lance_0', 144, 23, 172 / 176, 0.5, 'bolt');
+add('glyph', 'gtorn', 48, 48, 0.5, 0.5, 'bolt');
 // holy orbit flames
 seq('flame', 'flame_', 3, 48, 64, 0.5, 0.78, 'orbit');
 seq('flame', 'flame_big', 3, 64, 80, 0.5, 0.78, 'orbit');

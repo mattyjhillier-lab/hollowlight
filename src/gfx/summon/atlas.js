@@ -6,6 +6,7 @@ import { PACK, SUM_KEY, TEXELS_PER_UNIT, PAGE_W, FRAME_BY_NAME } from './frames.
 import { paintAll } from './paint.js';
 import { wolfSheet } from './wolf.js';
 import { ravenSheet, POSES, GOLD_POSES } from './raven.js';
+import { glyphSheet } from './glyph.js';
 
 export { SUM_KEY };
 export const SUM_ART = { wolf: false, wolfMs: 0, wolfMainMs: 0, error: '', promise: null }; // wolfMs = wall time incl. the async SVG decode; wolfMainMs = main-thread work only
@@ -53,6 +54,8 @@ export const BOOT_KINDS = ['base', 'ov', 'flat'];
 export const EVO_KINDS = { howling_legion: ['gold', 'echo', 'flatg'], phantom_stampede: ['lfoot', 'flatg'], dire_alpha: ['alpha', 'flatg'] };
 SUM_ART.kinds = new Set(); SUM_ART.evoMs = 0; SUM_ART.evoMaxStepMs = 0; SUM_ART.pending = new Set();
 const KIND_OF = [['ravg_', 'rgold'], ['raven_flat1', 'rflatg'], ['raven_flat0', 'rflat'], ['raven_', 'rbase'], ['wolfg_', 'gold'], ['lfoot_', 'lfoot'], ['alpha_', 'alpha'], ['echo_', 'echo'], ['flat_wolfg', 'flatg'], ['wolf_ov', 'ov'], ['wolf_', 'base'], ['flat_wolf', 'flat']];
+// S5 glyph kinds (prefix order matters: glyph_rim before glyph_)
+KIND_OF.unshift(['glyph_rim', 'grim'], ['glyph_', 'gbase'], ['gtail_', 'gbase'], ['flat_glyph', 'gflat'], ['page_', 'gpage'], ['lance_', 'glance'], ['gtorn', 'gtorn']);
 export const kindOf = (frame) => { for (const [p, k] of KIND_OF) if (frame.startsWith(p)) return k; return null; };
 export const frameReady = (frame) => SUM_ART.kinds.has(kindOf(frame));
 
@@ -160,4 +163,25 @@ export function bakeWolfEvo(sa, evo) {
       return true;
     } catch (e) { SUM_ART.error = String((e && e.message) || e); for (const k of need) SUM_ART.pending.delete(k); return false; }
   })();
+}
+
+// S5 Ink Glyph Orb: nothing at boot. The orbs + ink tails (+ Low flat) bake lazily the first time the run owns Spirit Bolts; each evolution's frames
+// on that evolution (Tempest: gold rim + torn page; Lance: capsule; Pages: folded pages), one frame per idle task. Until a kind lands RunScene keeps
+// today's bolt sprite (base) or the plain orb (evolved look). ?summons=0: never (no atlas).
+export const GLYPH_BAKE = [
+  ...[0, 1, 2, 3, 4].map((i) => ['glyph_' + i, 'gbase', i]), ['gtail_0', 'gbase', 5], ['gtail_1', 'gbase', 6], ['flat_glyph', 'gflat', 0],
+  ['glyph_rim', 'grim', 0], ['gtorn', 'gtorn', 0], ['page_0', 'gpage', 0], ['page_1', 'gpage', 1], ['lance_0', 'glance', 0],
+];
+export const GLYPH_KINDS = { base: ['gbase', 'gflat'], spirit_tempest: ['grim', 'gtorn'], soul_lance: ['glance'], returning_pages: ['gpage'] };
+export function glyphRects(packed = PACK) {
+  return GLYPH_BAKE.map(([name, kind, i]) => { const f = packed.frames[FRAME_BY_NAME[name].id]; return { name, kind, i, x: f.x, y: f.y, w: f.w, h: f.h }; });
+}
+SUM_ART.bolt = false;
+export const boltReady = () => SUM_ART.bolt;
+export function bakeBoltArt(sa, evo = null) {
+  const evoK = (evo && GLYPH_KINDS[evo]) || [];
+  if (SUM_ART.bolt && evoK.every((k) => SUM_ART.kinds.has(k))) return null; // fast path: called every frame while Spirit Bolts is owned
+  const p = bakeKinds(sa, GLYPH_KINDS.base, glyphRects, glyphSheet, () => { SUM_ART.bolt = true; });
+  if (evoK.length) bakeKinds(sa, evoK, glyphRects, glyphSheet);
+  return p;
 }

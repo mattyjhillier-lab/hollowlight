@@ -57,6 +57,9 @@ export const NAMED = { decal_paw: paw, decal_feather: featherDecal, decal_waxsea
 export const PAINTERS = { wolf: none, // S1/S2: every wolf frame (base, overlays, Alpha, Echo, rimmed, Light Trails) is painted by the async wolf bake (atlas.js bakeWolfArt)
    alpha: none, echo: none, wolfg: none, lfoot: none, raven: none, ravg: none, low: body, glyph: body, flame: body, decal: body };
 
+// S5: every glyph frame (orbs, tails, rim, pages, lance, torn page) and the Low glyph flat are painted by the lazy glyph bake (atlas.js bakeBoltArt)
+PAINTERS.glyph = none; NAMED.flat_glyph = none;
+
 // Draws every frame at its packed rect, clipped so a painter can never bleed into a neighbour. Returns the number of frames drawn.
 export function paintAll(c, packed) {
   let n = 0;
