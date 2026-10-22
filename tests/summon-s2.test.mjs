@@ -137,3 +137,14 @@ test('S2 paw decal: painted once into decal_paw (named painter), inside its fram
   assert.ok(arcs.length >= 6);
   for (const c of arcs) { assert.ok(c[1] >= f.x && c[1] <= f.x + f.w && c[2] >= f.y && c[2] <= f.y + f.h, 'centre inside the frame'); }
 });
+
+test('S2 lazy bake: boot bakes only the base wolf; every frame a skin can use belongs to its evolution\'s kinds', async () => {
+  const { BOOT_KINDS, EVO_KINDS, kindOf } = await import('../src/gfx/summon/atlas.js');
+  assert.deepEqual(BOOT_KINDS, ['base', 'ov', 'flat']);
+  const wolf = { kind: 'wolf' }, shade = { kind: 'wolf', shade: true }, echo = { kind: 'echo' };
+  for (const evo of Object.keys(EVO_KINDS)) for (const u of evo === 'howling_legion' ? [wolf, echo] : evo === 'dire_alpha' ? [wolf, shade] : [wolf]) for (const low of [false, true]) for (let i = 0; i < 6; i++) {
+    const k = kindOf(wolfSkin(evo, u, low, i).fr);
+    assert.ok(BOOT_KINDS.includes(k) || EVO_KINDS[evo].includes(k), `${evo} ${k}`);
+  }
+  for (const [name, kind] of WOLF_BAKE) assert.equal(kindOf(name), kind, name);
+});

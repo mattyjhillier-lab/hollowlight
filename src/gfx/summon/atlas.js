@@ -45,28 +45,73 @@ export function makeSummonAtlas(scene, mkCanvas, { enabled = true, now = () => (
   return { inv: 1 / TEXELS_PER_UNIT, ms, tex, cv };
 }
 
-// S1: async wolf art bake (browser only). Resolves true when the wolf frames are in the texture.
+// S1: async wolf art bake (browser only). Resolves true when the BASE wolf frames (lope/bite/sit, overlays, Low flat) are in the texture.
+// S2: the evolution frames are NOT baked at boot (rasterising the filtered SVG is main-thread work: all 35 frames cost ~265 ms headless).
+// bakeWolfEvo() bakes only the kinds the run's wolf evolution needs, one frame per task (yielding between frames), on first evolution.
+export const BOOT_KINDS = ['base', 'ov', 'flat'];
+export const EVO_KINDS = { howling_legion: ['gold', 'echo', 'flatg'], phantom_stampede: ['lfoot', 'flatg'], dire_alpha: ['alpha', 'flatg'] };
+SUM_ART.kinds = new Set(); SUM_ART.evoMs = 0; SUM_ART.evoMaxStepMs = 0; SUM_ART.pending = new Set();
+const KIND_OF = [['wolfg_', 'gold'], ['lfoot_', 'lfoot'], ['alpha_', 'alpha'], ['echo_', 'echo'], ['flat_wolfg', 'flatg'], ['wolf_ov', 'ov'], ['wolf_', 'base'], ['flat_wolf', 'flat']];
+export const kindOf = (frame) => { for (const [p, k] of KIND_OF) if (frame.startsWith(p)) return k; return null; };
+export const frameReady = (frame) => SUM_ART.kinds.has(kindOf(frame));
+
+async function rasterise(rects, sa) {
+  // the sheet is only as big as the rects' bounding box (a single evolution frame rasterises 128 x 96, not the whole page)
+  const x0 = Math.min(...rects.map((r) => r.x)), y0 = Math.min(...rects.map((r) => r.y));
+  const W = Math.max(...rects.map((r) => r.x + r.w)) - x0, H = Math.max(...rects.map((r) => r.y + r.h)) - y0;
+  const url = URL.createObjectURL(new Blob([wolfSheet(rects.map((r) => ({ ...r, x: r.x - x0, y: r.y - y0 })), W, H)], { type: 'image/svg+xml' }));
+  let img;
+  try { img = new Image(); img.decoding = 'async'; img.src = url; await img.decode(); } finally { URL.revokeObjectURL(url); }
+  const t = performance.now();
+  const c = sa.cv.getContext('2d');
+  for (const r of rects) c.clearRect(r.x, r.y, r.w, r.h);
+  for (const r of rects) c.drawImage(img, r.x - x0, r.y - y0, r.w, r.h, r.x, r.y, r.w, r.h);
+  return performance.now() - t;
+}
+const yieldTask = () => new Promise((r) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 0)));
+
 export function bakeWolfArt(sa) {
   if (SUM_ART.promise) return SUM_ART.promise;
   SUM_ART.promise = (async () => {
     const t0 = performance.now();
     try {
-      const rects = wolfRects();
-      const t1 = performance.now();
-      const url = URL.createObjectURL(new Blob([wolfSheet(rects, PAGE_W, PACK.h)], { type: 'image/svg+xml' }));
-      SUM_ART.wolfMainMs = performance.now() - t1;
-      let img;
-      try { img = new Image(); img.decoding = 'async'; img.src = url; await img.decode(); } finally { URL.revokeObjectURL(url); }
-      const t2 = performance.now();
-      const c = sa.cv.getContext('2d');
-      for (const r of rects) c.clearRect(r.x, r.y, r.w, r.h);
-      for (const r of rects) c.drawImage(img, r.x, r.y, r.w, r.h, r.x, r.y, r.w, r.h);
+      const rects = wolfRects().filter((r) => BOOT_KINDS.includes(r.kind));
+      SUM_ART.wolfMainMs = await rasterise(rects, sa);
+      const t = performance.now();
       if (sa.tex && sa.tex.refresh) sa.tex.refresh();
+      SUM_ART.wolfMainMs += performance.now() - t;
+      for (const k of BOOT_KINDS) SUM_ART.kinds.add(k);
       SUM_ART.wolf = true;
-      SUM_ART.wolfMainMs += performance.now() - t2;
     } catch (e) { SUM_ART.error = String((e && e.message) || e); SUM_ART.wolf = false; }
     SUM_ART.wolfMs = performance.now() - t0;
     return SUM_ART.wolf;
   })();
   return SUM_ART.promise;
+}
+
+// S2: bake one evolution's frames lazily (idempotent). One frame per task; the texture is re-uploaded once per kind. Until a kind lands
+// RunScene draws the base wolf in its place (frameReady).
+export function bakeWolfEvo(sa, evo) {
+  const need = (EVO_KINDS[evo] || []).filter((k) => !SUM_ART.kinds.has(k) && !SUM_ART.pending.has(k));
+  if (!need.length || !sa) return Promise.resolve(false);
+  for (const k of need) SUM_ART.pending.add(k);
+  return (async () => {
+    try {
+      if (SUM_ART.promise) await SUM_ART.promise;
+      if (!SUM_ART.wolf) return false;
+      for (const k of need) {
+        for (const r of wolfRects().filter((x) => x.kind === k)) {
+          await yieldTask();
+          const ms = await rasterise([r], sa);
+          SUM_ART.evoMs += ms; SUM_ART.evoMaxStepMs = Math.max(SUM_ART.evoMaxStepMs, ms);
+        }
+        await yieldTask();
+        const t = performance.now();
+        if (sa.tex && sa.tex.refresh) sa.tex.refresh();
+        const ms = performance.now() - t; SUM_ART.evoMs += ms; SUM_ART.evoMaxStepMs = Math.max(SUM_ART.evoMaxStepMs, ms);
+        SUM_ART.kinds.add(k); SUM_ART.pending.delete(k);
+      }
+      return true;
+    } catch (e) { SUM_ART.error = String((e && e.message) || e); for (const k of need) SUM_ART.pending.delete(k); return false; }
+  })();
 }

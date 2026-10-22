@@ -183,7 +183,23 @@ async function atlas(out) { // the baked summon atlas page as PNG (frame review)
   } finally { cleanupAll(); }
 }
 
+async function bake(out) { // boot bake (base wolf) and the lazy evolution bake, cold loads, main-thread ms
+  mkdirSync(out, { recursive: true });
+  await serve(process.env.DIST || 'dist'); const rows = [];
+  try {
+    for (const evo of ['alpha', 'legion', 'trails']) for (let i = 0; i < Number(process.env.N || 3); i++) {
+      let c = null; for (let k = 0; k < 4 && !c; k++) { try { c = await launch(); } catch { await sleep(4000); } }
+      await open(c, `style=a&auto=wren&seed=3&god=1&debug=0&t=30&grant=${grant(evo)}`, 1280, 720, 1, 'high');
+      let o = null;
+      for (let k = 0; k < 100; k++) { o = JSON.parse(await c.ev('JSON.stringify({...window.__app.scene.sumArt,kinds:[...window.__app.scene.sumArt.kinds],pending:[...window.__app.scene.sumArt.pending]})')); if (o.kinds.length > 3 && !o.pending.length) break; await sleep(100); }
+      const row = { evo, bootMain: +o.wolfMainMs.toFixed(1), bootWall: +o.wolfMs.toFixed(1), evoMainTotal: +o.evoMs.toFixed(1), evoMaxStep: +o.evoMaxStepMs.toFixed(1), kinds: o.kinds.join(','), err: o.error };
+      rows.push(row); console.log(JSON.stringify(row));
+      c.close(); cleanups.splice(cleanups.indexOf(c.close), 1); await sleep(2500);
+    }
+  } finally { writeFileSync(join(out, 'bake.json'), JSON.stringify(rows, null, 1)); cleanupAll(); }
+}
+
 const [cmd, out] = process.argv.slice(2);
-const fn = { shots, coverage, depth, atlas }[cmd];
+const fn = { shots, coverage, depth, atlas, bake }[cmd];
 if (!fn || !out) { console.log('usage: node scripts/s2-wolf.mjs shots|coverage|depth <outDir>'); process.exit(1); }
 try { await fn(out); } catch (e) { console.error(e); cleanupAll(); process.exitCode = 1; }

@@ -36,7 +36,7 @@ import { AirLayer, makeEdgeTextures } from '../gfx/airlayer.js'; // W5 fog, fire
 import { DawnLayer } from '../gfx/dawnlayer.js'; // AL-6 dawn chorus (birds, petals, light shafts; visual only)
 import { airN, DAWN_CAPS, REF as DAWN_REF } from '../gfx/dawn.js';
 import { CritterLayer } from '../gfx/critterlayer.js'; // AL-5 sparrow / hare / moths (ambient only)
-import { makeSummonAtlas, bakeWolfArt, SUM_ART, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas; S1 wolf art baked into it async
+import { makeSummonAtlas, bakeWolfArt, bakeWolfEvo, frameReady, SUM_ART, SUM_KEY } from '../gfx/summon/atlas.js'; // S0 summon atlas; S1 wolf art baked into it async
 import { WOLF_WPD, WOLF_FOOT, WOLF_JITTER, OV_OFF, OV_OFF_LF, ALPHA_K } from '../gfx/summon/wolf.js';
 import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
@@ -662,7 +662,8 @@ export class RunScene extends Phaser.Scene {
     if (!s) { s = {}; st.set(u.id, s); }
     s.seen = this.fxTick;
     const fi = low ? 0 : wolfFrame(s, u, dt, this.reducedMotion());
-    const sk = wolfSkin(evo, u, low, fi, ALPHA_K);
+    let sk = wolfSkin(evo, u, low, fi, ALPHA_K);
+    if (!frameReady(sk.fr)) sk = { ...wolfSkin(null, u, low, fi, ALPHA_K), size: sk.size }; // S2: evolution frames bake lazily (a few frames); base wolf until then
     const look = wolfLook(u.id, WOLF_JITTER), big = sk.size;
     const k = WOLF_WPD * (big > 1 ? 1 : look.k) * big, dir = u.faceX < 0 ? -1 : 1, fy = u.y + WOLF_FOOT * big + rise;
     // DR3 rule shared with the crowd: within FADE_R of the hero a wolf draws just under her; beyond it, one whose box still overlaps her box
@@ -1341,6 +1342,7 @@ export class RunScene extends Phaser.Scene {
     const wdt = Math.max(0, Math.min(0.1, sim.time - (this.wolfT ?? sim.time))); this.wolfT = sim.time;
     const wwv = sim.weapons.find((w) => w.id === 'ghost_wolves');
     const wEvo = wwv ? wwv.evo : null;
+    if (wEvo && wolfArt) bakeWolfEvo(this.sumAtlas, wEvo); // S2: idempotent; bakes this evolution's frames one per task
     if (wEvo === 'phantom_stampede' && caps.trail && caps.trail.dots > 0 && wwv.rt.trail) { // Low tier: faint paw dots instead of ribbons (hit zone unchanged)
       const tr = wwv.rt.trail;
       for (let i = tr.length - 1, k = 0; i >= 0 && k < caps.trail.dots; i -= 3, k++) fx.fillStyle(ROLE.spiritA, 0.3 * (tr[i].t / (tr[i].l || 1))).fillCircle(tr[i].x, tr[i].y, 2);
