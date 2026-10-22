@@ -11,7 +11,7 @@ const CHROME = [process.env.CHROME, 'C:/Program Files/Google/Chrome/Application/
 const CPORT = 9482, SPORT = 4195;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.css': 'text/css' };
-const GRANT = 'holy_orbit:power=3;ghost_wolves:speed=3,power=3;raven_flock:power=3;spirit_bolts:power=3,pierce=2';
+const GRANT = process.env.GRANT || 'holy_orbit:power=3;ghost_wolves:speed=3,power=3;raven_flock:power=3;spirit_bolts:power=3,pierce=2'; // GRANT env: another loadout (S2 perf: an evolved pack)
 const serve = (dir) => { const root = resolve(dir); const srv = createServer((req, res) => { let p = decodeURIComponent((req.url || '/').split('?')[0]); if (p === '/') p = '/index.html'; const f = resolve(join(root, p)); if (!f.startsWith(root) || !existsSync(f)) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); res.end(readFileSync(f)); }); return new Promise((r) => srv.listen(SPORT, '127.0.0.1', () => r(srv))); };
 
 async function launch() {

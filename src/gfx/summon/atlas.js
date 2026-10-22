@@ -15,10 +15,17 @@ export function drawSummonAtlas(cv, packed = PACK) {
 }
 
 // wolf frames to bake: [frame name, kind, index]
+const SIX = [0, 1, 2, 3, 4, 5];
 export const WOLF_BAKE = [
-  ...[0, 1, 2, 3, 4, 5].map((i) => ['wolf_' + i, 'base', i]),
+  ...SIX.map((i) => ['wolf_' + i, 'base', i]),
   ...[0, 1, 2].map((i) => ['wolf_ov' + i, 'ov', i]),
   ['flat_wolf', 'flat', 0],
+  // S2 evolutions: gold-rimmed pack, Light Trails, The Alpha, Echo Pack, Low evolved flat
+  ...SIX.map((i) => ['wolfg_' + i, 'gold', i]),
+  ...SIX.map((i) => ['lfoot_' + i, 'lfoot', i]),
+  ...SIX.map((i) => ['alpha_' + i, 'alpha', i]),
+  ...SIX.map((i) => ['echo_' + i, 'echo', i]),
+  ['flat_wolfg', 'flatg', 0],
 ];
 export function wolfRects(packed = PACK) {
   return WOLF_BAKE.map(([name, kind, i]) => { const f = packed.frames[FRAME_BY_NAME[name].id]; return { name, kind, i, x: f.x, y: f.y, w: f.w, h: f.h }; });

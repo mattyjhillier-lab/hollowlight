@@ -8,11 +8,11 @@ import { Lstar } from '../src/gfx/husk/paint.js';
 
 test('wolf art: 6 poses + 3 overlays + Low flat, all from our own code (no external refs, no scripts)', () => {
   assert.equal(WOLF_POSES.length, 6);
-  assert.equal(WOLF_BAKE.length, 10);
+  assert.equal(WOLF_BAKE.length, 10 + 6 * 4 + 1); // S2: + rimmed pack, Light Trails, Alpha, Echo (6 each) + Low evolved flat
   const svg = wolfSheet(wolfRects(), PAGE_W, PACK.h);
   assert.ok(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"'));
   assert.ok(!/<script|href=|xlink|https?:|javascript:|<foreignObject|<image/i.test(svg.replace('xmlns="http://www.w3.org/2000/svg"', '')), 'self-contained, no references');
-  assert.equal((svg.match(/<svg x=/g) || []).length, 10);
+  assert.equal((svg.match(/<svg x=/g) || []).length, WOLF_BAKE.length);
   for (let i = 0; i < 6; i++) assert.ok(wolfSvg(WOLF_POSES[i]).length > 1000);
   for (let k = 0; k < 3; k++) assert.ok(wolfOverlaySvg(k).length > 50);
   // every bake rect is its atlas frame

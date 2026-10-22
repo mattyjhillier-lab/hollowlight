@@ -7,6 +7,14 @@ const lighten = (c, k) => { const r = (c >> 16) & 255; const g = (c >> 8) & 255;
 export const RIBBON_DEPTH = 54000; // below D_HALO (55000) and every lit sprite (60000+), above ground/sway/decals
 const JUMP = 90; // a step larger than this (pounce, teleport) breaks the ribbon instead of drawing a streak
 const MIN_STEP = 1.5; // world units the source must move before a point is added
+export const SOFT_MAX = 21; // S2 soft Light Trails ribbon: longest bridged gap (3 x the sim's 7 px point spacing)
+export const SOFT_W = 1.2, SOFT_A = 0.2; // S2 soft ribbon width (x the trail half-width) and peak alpha (tuned to the 15% coverage cap)
+export const SOFT_NEAR = 0.4; // S2 soft ribbon alpha multiplier inside 0.7 r of the hero, easing to 1 at 1.1 r
+export function softNear(x, y, hero) {
+  if (!hero || !(hero.r > 0)) return 1;
+  const d = Math.hypot(x - hero.x, y - hero.y) / hero.r, t = Math.max(0, Math.min(1, (d - 0.7) / 0.4));
+  return SOFT_NEAR + (1 - SOFT_NEAR) * t * t * (3 - 2 * t);
+}
 
 export class Ribbon {
   constructor(maxPts) {
@@ -153,6 +161,30 @@ export class RibbonSet {
         this.sx[c] = this.sx[k]; this.sy[c] = this.sy[k]; this.sl[c] = len; this.sr[c] = this.sr[k];
         this.sw[c] = q.hw * 0.8 * (0.45 + 0.55 * f); this.sa[c] = 0.55 * f; this.sc[c] = coreCol;
       }
+    }
+    return this.count;
+  }
+
+  // S2 Light Trails (Lantern-Heart wolves): the soft ribbon under the pawprints. Same newest caps.body points, one faint wide segment per
+  // consecutive pair of a wolf's points, never across a gap longer than SOFT_MAX (the old core + JUMP-long segments drew a web of straight
+  // streaks through the crowd). No hot core. Near the hero (hero = {x, y, r}: r = 0.2 screen heights in world units) the ribbon fades to
+  // SOFT_NEAR so the trail stays inside the 15% near-hero coverage cap and Wren stays the focal point; the pawprints keep full strength.
+  // Returns the new total count.
+  addTrailSoft(pts, caps, col, hero = null) {
+    const n = pts ? pts.length : 0;
+    const bodyN = Math.min(n, Math.max(0, caps.body | 0));
+    if (!bodyN) return this.count;
+    const last = new Map();
+    const from = n - bodyN;
+    for (let i = Math.max(0, from - 64); i < n && this.count < this.cap; i++) {
+      const q = pts[i]; const o = last.get(q.id); last.set(q.id, q);
+      if (i < from || !o) continue;
+      const dx = q.x - o.x; const dy = q.y - o.y; const len = Math.hypot(dx, dy);
+      if (!(len > 0.01) || len > SOFT_MAX) continue;
+      const f = Math.max(0, Math.min(1, q.t / (q.l || 1)));
+      const k = this.count++;
+      this.sx[k] = 0.5 * (q.x + o.x); this.sy[k] = 0.5 * (q.y + o.y); this.sl[k] = len; this.sr[k] = Math.atan2(dy, dx);
+      this.sw[k] = q.hw * SOFT_W * (0.5 + 0.5 * f); this.sa[k] = SOFT_A * (0.2 + 0.8 * f) * softNear(this.sx[k], this.sy[k], hero); this.sc[k] = col;
     }
     return this.count;
   }
