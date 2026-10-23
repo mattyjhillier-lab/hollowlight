@@ -14,8 +14,12 @@ function defaultStorage() {
 }
 
 export class SaveStore {
-  constructor(storage) {
+  // keys: per-lantern storage keys {save, backup, damaged} (FD1); default = the legacy single-save keys.
+  // opts.forceReadOnly: the lantern index is from a newer build, so this lantern is never written (downgrade guard, 24b).
+  constructor(storage, keys = null, opts = {}) {
     this.storage = storage === undefined ? defaultStorage() : storage;
+    this.keys = keys || { save: SAVE_KEY, backup: BACKUP_KEY, damaged: DAMAGED_KEY };
+    this.forceReadOnly = !!(opts && opts.forceReadOnly);
     this.persistent = true; // false once a read/write failed (progress lives in memory only)
     this.timer = null;
     this.persistAsked = false;
@@ -31,8 +35,8 @@ export class SaveStore {
 
   load() {
     let res = null;
-    const main = this._get(SAVE_KEY);
-    const bak = this._get(BACKUP_KEY);
+    const main = this._get(this.keys.save);
+    const bak = this._get(this.keys.backup);
     const rm = main !== null ? parseSave(main) : null;
     const rb = bak !== null ? parseSave(bak) : null;
     if (rm && rm.code === 'future') this._lock(main);
@@ -46,6 +50,7 @@ export class SaveStore {
     else if (rb && rb.ok) res = rb;
     this.data = res ? res.save : defaultSave();
     this.stamp = this.data.updatedAt;
+    if (this.forceReadOnly && !this.readOnly) this._lock(main !== null ? main : bak);
     return this.data;
   }
 
@@ -56,7 +61,7 @@ export class SaveStore {
     this.loadNote = NEWER_NOTE;
   }
 
-  _quarantine(text) { if (text !== this._get(DAMAGED_KEY)) this._set(DAMAGED_KEY, text); }
+  _quarantine(text) { if (text !== this._get(this.keys.damaged)) this._set(this.keys.damaged, text); }
 
   // Immediate write; keeps the previous good copy as the backup.
   // Refuses (returns false, writes nothing) when the stored save is from a newer version, when another tab saved newer
@@ -64,7 +69,7 @@ export class SaveStore {
   saveNow(force = false) {
     if (this.timer) { clearTimeout(this.timer); this.timer = null; }
     if (this.readOnly || !treeReady()) return false;
-    const prev = this._get(SAVE_KEY);
+    const prev = this._get(this.keys.save);
     const pr = prev !== null ? parseSave(prev) : null;
     if (pr && pr.code === 'future') { this._lock(prev); return false; }
     if (!force && pr && pr.ok && pr.save.updatedAt > this.stamp) {
@@ -74,8 +79,8 @@ export class SaveStore {
     }
     this.data.updatedAt = Math.max(Date.now(), this.stamp + 1);
     const text = JSON.stringify(serializeSave(this.data));
-    if (pr && pr.ok) this._set(BACKUP_KEY, prev);
-    const ok = this._set(SAVE_KEY, text);
+    if (pr && pr.ok) this._set(this.keys.backup, prev);
+    const ok = this._set(this.keys.save, text);
     if (ok) this.stamp = this.data.updatedAt;
     if (ok && !this.persistAsked) {
       this.persistAsked = true;

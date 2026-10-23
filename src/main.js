@@ -9,13 +9,18 @@ import { TouchControls } from './input/touch.js';
 import { STYLE, parseDpr } from './gfx/style.js';
 import './pwa/pwa.css';
 import { createPwa } from './pwa/index.js';
+import { Lanterns } from './save/lanterns.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
 app.pwa = createPwa(window);
 app.ui.pwa = app.pwa;
 if (import.meta.env.PROD) app.pwa.registerServiceWorker(); // never in vite dev
+// FD1: one save per lantern (profile); the first boot copies the legacy single save into lantern 1.
+app.lanterns = new Lanterns().init();
+app.save = app.lanterns.openActive();
 app.save.load();
+if (app.lanterns.note && !app.save.loadNote) app.save.loadNote = app.lanterns.note;
 app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
 app.applySettings();
 app.ui.setHandlers({
