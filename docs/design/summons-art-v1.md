@@ -141,3 +141,30 @@ Each chunk: tests green, sweeps byte-identical (render only), security check (no
 - WL6 night look: summons stay self-lit above the grade; no summon ground pool brighter than the lantern.
 
 Fit check: one family language (light-bodied chibi spirits with a warm heart, tinted outlines, warm rims) matching Wren v2/Elias v2/Husks; value-inverse of the enemies; gold only on evolved rims; no new colour family. Security check: docs and mock-ups only; mock-up code uses Node built-ins and a local headless Chrome (own PID, own port, own temp profile), no deps, no network, no AI tools; audit captures came from a local static server on a clean export of HEAD.
+
+## 9. Status after S7 + S8 (2026-10-23)
+
+S0-S7 built (see docs/LOCKED.md 'S0..S7 BUILT'). S8 verify pass run on the real build with all five weapons evolved at once (Howling Legion, Wall of Wings, Spirit Tempest, Thunder Judgment, Sanctum Halo: the busiest looks), harness `scripts/s7-fx.mjs` (shots / coverage / matrix / sheet). Raw numbers: docs/screenshots/summons/s8-matrix.json, s7-coverage.json; frames s7-*.jpg, contact sheet s8-confusion-sheet.png.
+
+Passing:
+- Sims byte-identical (sweep wren/elias 24 vs origin/dev); `?summons=0` = old visuals (no S7 FX, no rim budget); per-tier caps and the Calm rule enforced by tests (tests/summon-s7.test.mjs).
+- Friendly coverage near the hero (0.2 screen-h circle, High, N=5, all five evolved, 30 foes): S7 FX alone 1.1 / 1.0 / 0.3 % mean (max 2.0 / 2.5 / 0.6) desk / land / port. Every friendly visual, S7 build vs `?summons=0`: +3.9 / +1.7 / +2.3 points mean (inside +5; single-frame max +9.2 desk). Caveat: hiding every friendly also removes their lightmap glow, so the 'total' figure (82-88 %) is saturated by lighting; the S7-only figure is the clean one.
+- Cross-weapon confusion (sheet, 1x, colour + greyscale, night + day): told apart by SHAPE (wolf silhouette / raven / ringed orb with glyph / thin jagged line / teardrop / diamond). Value alone does NOT separate them (all light bodies; as S5 found for orb vs gem). Matt squint still open.
+- Perf pace.mjs headed RTX 3060, High, 350 foes, all five evolved, 2 interleaved pairs (25 s): work avg S6 11.47 / 13.27 ms, S7 12.70 / 11.57 ms (pair diffs +1.2 / -1.7: noise, no regression seen); ~52-64 fps, p95 work 20-27 ms on this shared machine.
+
+Remaining misses (contrast matrix, WL6 disc per kind vs the same frame with every friendly hidden; pass = median or core p90 >= 3:1; desk, staged 350, 220-320 alive at the frozen frame):
+
+| kind | 0:30 H/M/L | 4:00 | 8:00 | 11:30 | dawn |
+|---|---|---|---|---|---|
+| wolf | pass/pass/pass | 2.3 / pass / pass | 2.9 / pass / 2.9 | 2.7 / pass / pass | 1.8 / pass / pass |
+| raven | 2.4 / 1.9 / 1.5 | 2.0 / 2.0 / 1.5 | 2.3 / 2.2 / 1.7 | 1.7 / 1.8 / 1.8 | 1.6 / 1.8 / 2.0 |
+| flame | pass/pass/pass | 2.9 / pass / pass | 1.8 / 1.7 / 1.6 | 2.1 / 1.7 / 1.5 | 2.4 / 1.3 / 2.3 |
+| bolt (few samples) | 2.7 / pass / pass | - / pass / pass | 2.2 / - / - | - | 2.7 / - / - |
+| chain | pass / 2.6 / pass | 2.2 / 2.9 / 2.95 | 2.1 / 2.7 / 1.5 | 2.0 / 2.7 / 2.6 | 1.8 / 2.9 / 1.4 |
+
+(numbers = best of median / core when failing)
+1. The known HIGH-BLOOM DAYTIME loss: from 4:00 on, High fails for every kind (light bodies on the bright restored ground + bloom). Same finding as S1/S4/S6; needs Matt (bloom strength by daylight, or accept: the bodies still read by outline + shape).
+2. NEW: ravens fail everywhere, also at night and on Low. The Wall of Wings ring sits inside the cream lantern pool, where violet #d9caff is the same luminance as the pool; they read by hue, ink outline and paper tips, not value. Options for Matt: darker ink outline / value drop on ravens inside the pool, or accept.
+3. Flames and chain lose contrast in daylight on every tier (8:00+): white-lilac / white-cyan on the cream pool. Same class as 1 but not bloom-only.
+4. Method limits: one frozen frame per cell, 6-8 samples per kind, lightmap glow counted in the mask (lowers medians); treat single cells as +/- 0.5.
+Defaults taken (Matt may override): spawn ring 10 -> 2 u cream (#ffe9bc), mote colours cream-amber (#fff1c8..#ffdfa6), claw crescents pale blue, raven star lilac-white + cream feather, ink spatter 5 dots; rim budget order = draw order (wolves, ravens, flames, then glyph rims).

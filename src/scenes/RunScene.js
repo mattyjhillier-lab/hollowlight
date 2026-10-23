@@ -48,6 +48,7 @@ import { bakeBoltArt, boltReady } from '../gfx/summon/atlas.js'; // S5 Ink Glyph
 import { drawGlyph, drawTornPages } from '../gfx/summon/glyphdraw.js';
 import { CrackPool, chainCaps, decalCap, jagStep, pillarTop, HUD_BAND, drawArc, drawPillar, drawDome, drawBraid } from '../gfx/summon/chain.js'; // S6 Storm Thread (render only)
 import { FLAME_BOX, FLAME_WPD, WHEEL_K } from '../gfx/summon/orbit.js';
+import { BeatPool, HitPool, SpiritTracker, RimBudget, VERB_OF, fxCap } from '../gfx/summon/fxlight.js'; // S7 shared FX 'Light in, light out' (render only)
 import { FLAME_AY, PETAL_AY } from '../gfx/summon/frames.js';
 import { flameFrame, flare, flareK, orbitSkin, flowerAt, reformK, streakK, streakRot, FLARE_K, FLOWER_T, ORBIT_CAPS } from '../gfx/summon/orbitanim.js';
 import { makeCritterAtlas, ATLAS_KEY as CRIT_KEY } from '../gfx/critteratlas.js';
@@ -227,6 +228,11 @@ export class RunScene extends Phaser.Scene {
     this.corrBin = new Map();
     this.lowPoolT = 0;
     this.fxG = this.add.graphics().setDepth(D_FX).setBlendMode(Phaser.BlendModes.ADD);
+    // S7 Light in, light out: spawn/despawn beats under the bodies and pickups (D_LIT - 300); verb hits above the foes but under particles and numbers
+    this.lioG = this.add.graphics().setDepth(D_LIT - 300).setBlendMode(Phaser.BlendModes.ADD);
+    this.verbN = this.add.graphics().setDepth(D_PART - 21);
+    this.verbG = this.add.graphics().setDepth(D_PART - 20).setBlendMode(Phaser.BlendModes.ADD);
+    this.beats = new BeatPool(12); this.verbs = new HitPool(40); this.spirits = new SpiritTracker(); this.rimB = new RimBudget();
 
     // dusk-to-dawn: lightmap (Med/High, half-res multiply layer) or plain tint of ground + trees (Low / fallback) + vignette
     this.lm = new Lightmap(this, D_GRADE);
@@ -546,6 +552,7 @@ export class RunScene extends Phaser.Scene {
     this.fbPing.gem = this.fbPing.magnet = this.fbPing.aoe = -9;
     for (const r of this.rings) r.on = false;
     this.evoBeat = null;
+    this.beats.clear(); this.verbs.clear(); this.spirits.clear(); // S7
     this.gradeTint = -1;
     this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds);
     this.applyTier();
@@ -694,6 +701,7 @@ export class RunScene extends Phaser.Scene {
     const fi = low ? 0 : wolfFrame(s, u, dt, this.reducedMotion());
     let sk = wolfSkin(evo, u, low, fi, ALPHA_K);
     if (!frameReady(sk.fr)) sk = { ...wolfSkin(null, u, low, fi, ALPHA_K), size: sk.size }; // S2: evolution frames bake lazily (a few frames); base wolf until then
+    if (sk.gold && !this.rimB.take()) sk = { ...wolfSkin(null, u, low, fi, ALPHA_K), size: sk.size }; // S7: shared gold-rim budget (over the tier cap: plain frame)
     const look = wolfLook(u.id, WOLF_JITTER), big = sk.size;
     const k = WOLF_WPD * (big > 1 ? 1 : look.k) * big, dir = u.faceX < 0 ? -1 : 1, fy = u.y + WOLF_FOOT * big + rise;
     // DR3 rule shared with the crowd: within FADE_R of the hero a wolf draws just under her; beyond it, one whose box still overlaps her box
@@ -712,6 +720,20 @@ export class RunScene extends Phaser.Scene {
     if ((this.fxTick & 127) === 0 && st.size > 64) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
   }
 
+  // S7 Light in, light out (render only): spawn beat when a spirit appears (light gathers from the lantern, ring closes 0.25 s), 5 cream-amber
+  // motes when one leaves (0.4 s), the verb hits queued from the hit drain (<= 0.15 s). Tier caps: beats 12/8/3 in flight, decals shared with the
+  // S6 crack-stars (40/24/12, phone x0.6). Calm: fades only. ?summons=0 (no atlas): nothing drawn, tracker idle.
+  drawLightInOut(sim, lx, ly, vx0, vy0, vx1, vy1) {
+    const g = this.lioG, gl = this.verbG, gn = this.verbN;
+    g.clear(); gl.clear(); gn.clear();
+    if (!this.sumAtlas) return;
+    const t = sim.time, calm = this.reducedMotion(), b = this.beats, inView = (e) => e.x >= vx0 && e.x <= vx1 && e.y >= vy0 && e.y <= vy1;
+    b.setCap(fxCap(this.quality.tier, 'beats'));
+    this.spirits.update(sim.units, (e) => { if (inView(e)) b.add(0, t, e.x, e.y, lx, ly, e, e.id); }, (e) => { if (inView(e)) b.add(1, t, e.x, e.y, 0, 0, null, e.id); });
+    b.draw(g, t, calm, vx0, vy0, vx1, vy1);
+    this.verbs.draw(gl, gn, t, calm, vx0, vy0, vx1, vy1);
+  }
+
   // S3 Letter Ravens: one image per raven (+ an additive self-light copy while the High bloom is on), pose from the sim state (ravenPose), skin from
   // the evolution (ravenSkin: gold rim on the evolved verb's units). Same DR3 rule as the wolves: within FADE_R of the hero a raven draws just under
   // her; one drawn over her from the front drops to 0.55 alpha. Low: the flat frame, no turn.
@@ -723,6 +745,7 @@ export class RunScene extends Phaser.Scene {
     const ps = ravenPose(s, u, dt, { calm: this.reducedMotion(), talon: evo === 'dive_bombers', wedgeOn });
     let sk = ravenSkin(evo, u, lead, low, ps.pose);
     if (!frameReady(sk.fr)) sk = { ...ravenSkin(null, u, false, low, ps.pose), size: sk.size }; // gold frames bake lazily: plain raven until then
+    if (sk.gold && !this.rimB.take()) sk = { ...ravenSkin(null, u, false, low, ps.pose), size: sk.size }; // S7: shared gold-rim budget
     const fw = low ? 48 : 64, k = (RAVEN_BOX[2] * RAVEN_WPD * sk.size) / fw; // world units per texel
     const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y + 30;
     const front = !near && u.y > p.y - 4 && Math.abs(u.x - p.x) < 16 && Math.abs(u.y - (p.y - 12)) < 22;
@@ -757,6 +780,7 @@ export class RunScene extends Phaser.Scene {
     const fi = flameFrame(s, u, dt, calm || low);
     let sk = orbitSkin(evo, low, fi);
     if (!frameReady(sk.fr)) sk = { ...orbitSkin(null, low, fi), size: sk.size }; // gold frames bake lazily: the plain flame until then
+    if (sk.gold && !this.rimB.take()) sk = { ...orbitSkin(null, low, fi), size: sk.size }; // S7: shared gold-rim budget
     const fk = calm ? 0 : flareK(s);
     const k = (FLAME_BOX[2] * FLAME_WPD * sk.size * kMul * (1 + (low ? 0.6 : 1) * FLARE_K * fk)) / 32; // world units per texel
     const near = Math.hypot(u.x - p.x, u.y - p.y) < FADE_R, dy = near ? Math.min(u.y, depthNear(p.y)) : u.y + 30;
@@ -1178,6 +1202,8 @@ export class RunScene extends Phaser.Scene {
     if (!art.on && HUSK_BAKE.ready) art.enable(true);
     const nh = sim.hitN;
     sim.hitN = 0;
+    const lio = !!this.sumAtlas, vCap = lio ? Math.max(0, fxCap(this.quality.tier, 'decals', this.phone) - (this.crack ? this.crack.live(sim.time) : 0)) : 0; // S7: impact decals shared with the S6 crack-stars
+    this.rimB.begin(this.quality.tier, lio ? fxCap(this.quality.tier, 'rims') : 1e9);
     let nd = 0, top1 = 0, top2 = 0;
     for (let i = 0; i < nh; i++) { const h = sim.hitBuf[i]; if (h.kill) continue; nd++; if (h.a > top1) { top2 = top1; top1 = h.a; } else if (h.a > top2) top2 = h.a; }
     const aoe = nd > 5, aoeMin = top2;
@@ -1199,6 +1225,7 @@ export class RunScene extends Phaser.Scene {
         }
         continue;
       }
+      if (vCap > 0 && VERB_OF[h.src] && h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) this.verbs.add(VERB_OF[h.src], sim.time, h.x, h.y, h.id * 31 + i, vCap); // S7 verb hit (wolf claws / raven star + feather / glyph ink)
       const big = h.boss ? h.a >= h.mx * 0.01 : h.a >= 20 && h.a >= h.mx * 0.5;
       this.hitRef.add(h.a);
       if (skipSmallNumber(this.dens.k, h.a, this.hitRef.ref, Math.hypot(h.x - p.x, h.y - p.y))) continue; // DR3: small numbers near the hero wait while the crowd is thick
@@ -1590,6 +1617,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     if (orbArt) this.drawFlowers(sim.time, p); else this.orbFlowers = null;
+    this.drawLightInOut(sim, lx, ly, vx0, vy0, vx1, vy1); // S7
     this.sec0(5); this.tickRibbons(sim, p, lx, ly, nSrc); this.sec1(5);
 
     // projectiles. W10 Spirit Bolts evolutions (visual only, reads the sim): a thin gold rim on the EVOLVED glyph only (never on enemies, nearest caps.halos);
@@ -1620,7 +1648,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
     const gst = this.glyphSt || (this.glyphSt = new Map()), gdt = Math.max(0, Math.min(0.1, sim.time - (this.glyphT ?? sim.time))); this.glyphT = sim.time;
-    const gO = glyphArt ? { pools: { glyph: pl.uGlyph, tail: pl.uGlyphT, rim: pl.uGlyphR, self: this.bloom ? pl.uGlyphL : null }, selfA: GLYPH_SELF, low: this.quality.tier === 'low', tier: this.quality.tier, phone: this.phone, calm: still, k: this.glyphK, dt: gdt, depth: 0, counts: { tails: 0, rims: 0 }, st: gst, tick: this.fxTick, fxg: fx } : null;
+    const gO = glyphArt ? { pools: { glyph: pl.uGlyph, tail: pl.uGlyphT, rim: pl.uGlyphR, self: this.bloom ? pl.uGlyphL : null }, selfA: GLYPH_SELF, low: this.quality.tier === 'low', tier: this.quality.tier, phone: this.phone, calm: still, k: this.glyphK, dt: gdt, depth: 0, counts: { tails: 0, rims: this.rimB.n }, st: gst, tick: this.fxTick, fxg: fx } : null; // S7: glyph rims draw from the shared rim budget
     if (glyphArt && lw && lw.evo === 'spirit_tempest') drawTornPages(sim.fx, pl.uTorn, D_LIT + p.y + 41, this.glyphK);
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;

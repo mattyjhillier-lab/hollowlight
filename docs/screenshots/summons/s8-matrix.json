@@ -1,0 +1,711 @@
+[
+ {
+  "view": "desk",
+  "mom": "0:30",
+  "tier": "high",
+  "crowd": 223,
+  "s7": {
+   "beats": 0,
+   "hits": 13,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 40,
+   "units": 38,
+   "proj": 11,
+   "tier": "high"
+  },
+  "wolf": {
+   "n": 7,
+   "med": 3.34,
+   "min": 1.77,
+   "core": 3.96,
+   "pass": true
+  },
+  "raven": {
+   "n": 7,
+   "med": 2.17,
+   "min": 1.26,
+   "core": 2.35,
+   "pass": false
+  },
+  "flame": {
+   "n": 6,
+   "med": 4.04,
+   "min": 2.99,
+   "core": 5.24,
+   "pass": true
+  },
+  "bolt": {
+   "n": 6,
+   "med": 2.51,
+   "min": 1.87,
+   "core": 2.74,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 2.51,
+   "min": 1.19,
+   "core": 5.07,
+   "pass": true
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "0:30",
+  "tier": "med",
+  "crowd": 226,
+  "s7": {
+   "beats": 0,
+   "hits": 18,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 24,
+   "units": 38,
+   "proj": 3,
+   "tier": "med"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.95,
+   "min": 1.44,
+   "core": 4.2,
+   "pass": true
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.04,
+   "min": 1,
+   "core": 1.93,
+   "pass": false
+  },
+  "flame": {
+   "n": 7,
+   "med": 4.11,
+   "min": 1,
+   "core": 7.32,
+   "pass": true
+  },
+  "bolt": {
+   "n": 1,
+   "med": 3.76,
+   "min": 3.76,
+   "core": 5.11,
+   "pass": true
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.32,
+   "min": 1.16,
+   "core": 2.56,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "0:30",
+  "tier": "low",
+  "crowd": 223,
+  "s7": {
+   "beats": 0,
+   "hits": 11,
+   "cracks": 0,
+   "rims": 12,
+   "rimCap": 12,
+   "units": 38,
+   "proj": 4,
+   "tier": "low"
+  },
+  "wolf": {
+   "n": 7,
+   "med": 5.24,
+   "min": 1.91,
+   "core": 7.6,
+   "pass": true
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.47,
+   "min": 1.28,
+   "core": 1.12,
+   "pass": false
+  },
+  "flame": {
+   "n": 8,
+   "med": 3.21,
+   "min": 1.78,
+   "core": 7.86,
+   "pass": true
+  },
+  "bolt": {
+   "n": 2,
+   "med": 3.39,
+   "min": 2.83,
+   "core": 4.4,
+   "pass": true
+  },
+  "chain": {
+   "n": 8,
+   "med": 3.75,
+   "min": 1.11,
+   "core": 10.52,
+   "pass": true
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "4:00",
+  "tier": "high",
+  "crowd": 264,
+  "s7": {
+   "beats": 0,
+   "hits": 16,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 40,
+   "units": 38,
+   "proj": 1,
+   "tier": "high"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.07,
+   "min": 1.4,
+   "core": 2.33,
+   "pass": false
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.75,
+   "min": 1.11,
+   "core": 2.01,
+   "pass": false
+  },
+  "flame": {
+   "n": 7,
+   "med": 2.57,
+   "min": 1.46,
+   "core": 2.85,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.41,
+   "min": 1.21,
+   "core": 2.17,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "4:00",
+  "tier": "med",
+  "crowd": 280,
+  "s7": {
+   "beats": 0,
+   "hits": 16,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 24,
+   "units": 38,
+   "proj": 3,
+   "tier": "med"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.61,
+   "min": 1.52,
+   "core": 3.47,
+   "pass": true
+  },
+  "raven": {
+   "n": 6,
+   "med": 1.71,
+   "min": 1.03,
+   "core": 1.95,
+   "pass": false
+  },
+  "flame": {
+   "n": 7,
+   "med": 4.4,
+   "min": 1.03,
+   "core": 5.66,
+   "pass": true
+  },
+  "bolt": {
+   "n": 3,
+   "med": 2.41,
+   "min": 2.34,
+   "core": 4.4,
+   "pass": true
+  },
+  "chain": {
+   "n": 8,
+   "med": 2.01,
+   "min": 1.02,
+   "core": 2.89,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "4:00",
+  "tier": "low",
+  "crowd": 273,
+  "s7": {
+   "beats": 0,
+   "hits": 12,
+   "cracks": 0,
+   "rims": 12,
+   "rimCap": 12,
+   "units": 38,
+   "proj": 2,
+   "tier": "low"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 3.4,
+   "min": 1.34,
+   "core": 5.08,
+   "pass": true
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.47,
+   "min": 1.35,
+   "core": 1.15,
+   "pass": false
+  },
+  "flame": {
+   "n": 8,
+   "med": 1.81,
+   "min": 1.05,
+   "core": 4.65,
+   "pass": true
+  },
+  "bolt": {
+   "n": 2,
+   "med": 6.07,
+   "min": 2.29,
+   "core": 8.21,
+   "pass": true
+  },
+  "chain": {
+   "n": 6,
+   "med": 2.48,
+   "min": 1.04,
+   "core": 2.95,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "8:00",
+  "tier": "high",
+  "crowd": 295,
+  "s7": {
+   "beats": 0,
+   "hits": 23,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 40,
+   "units": 38,
+   "proj": 8,
+   "tier": "high"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.79,
+   "min": 1.27,
+   "core": 2.94,
+   "pass": false
+  },
+  "raven": {
+   "n": 6,
+   "med": 2.19,
+   "min": 1.09,
+   "core": 2.32,
+   "pass": false
+  },
+  "flame": {
+   "n": 7,
+   "med": 1.7,
+   "min": 1.28,
+   "core": 1.75,
+   "pass": false
+  },
+  "bolt": {
+   "n": 8,
+   "med": 2.1,
+   "min": 1.24,
+   "core": 2.22,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.58,
+   "min": 1.18,
+   "core": 2.13,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "8:00",
+  "tier": "med",
+  "crowd": 284,
+  "s7": {
+   "beats": 0,
+   "hits": 22,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 24,
+   "units": 38,
+   "proj": 0,
+   "tier": "med"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.31,
+   "min": 1.17,
+   "core": 3.56,
+   "pass": true
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.6,
+   "min": 1.03,
+   "core": 2.19,
+   "pass": false
+  },
+  "flame": {
+   "n": 6,
+   "med": 1.65,
+   "min": 1.07,
+   "core": 1.71,
+   "pass": false
+  },
+  "chain": {
+   "n": 3,
+   "med": 1.73,
+   "min": 1.21,
+   "core": 2.66,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "8:00",
+  "tier": "low",
+  "crowd": 285,
+  "s7": {
+   "beats": 0,
+   "hits": 12,
+   "cracks": 0,
+   "rims": 12,
+   "rimCap": 12,
+   "units": 38,
+   "proj": 1,
+   "tier": "low"
+  },
+  "wolf": {
+   "n": 7,
+   "med": 1.84,
+   "min": 1.08,
+   "core": 2.86,
+   "pass": false
+  },
+  "raven": {
+   "n": 6,
+   "med": 1.68,
+   "min": 1.4,
+   "core": 1.16,
+   "pass": false
+  },
+  "flame": {
+   "n": 8,
+   "med": 1.57,
+   "min": 1.03,
+   "core": 1.18,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.34,
+   "min": 1.03,
+   "core": 1.49,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "11:30",
+  "tier": "high",
+  "crowd": 301,
+  "s7": {
+   "beats": 0,
+   "hits": 20,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 40,
+   "units": 38,
+   "proj": 0,
+   "tier": "high"
+  },
+  "wolf": {
+   "n": 7,
+   "med": 2.56,
+   "min": 1.13,
+   "core": 2.67,
+   "pass": false
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.34,
+   "min": 1.06,
+   "core": 1.7,
+   "pass": false
+  },
+  "flame": {
+   "n": 6,
+   "med": 1.9,
+   "min": 1.03,
+   "core": 2.05,
+   "pass": false
+  },
+  "chain": {
+   "n": 7,
+   "med": 1.15,
+   "min": 1.06,
+   "core": 1.97,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "11:30",
+  "tier": "med",
+  "crowd": 317,
+  "s7": {
+   "beats": 0,
+   "hits": 20,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 24,
+   "units": 38,
+   "proj": 0,
+   "tier": "med"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.41,
+   "min": 1.28,
+   "core": 3.34,
+   "pass": true
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.12,
+   "min": 1.03,
+   "core": 1.77,
+   "pass": false
+  },
+  "flame": {
+   "n": 6,
+   "med": 1.62,
+   "min": 1.04,
+   "core": 1.71,
+   "pass": false
+  },
+  "chain": {
+   "n": 6,
+   "med": 1.74,
+   "min": 1.03,
+   "core": 2.67,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "11:30",
+  "tier": "low",
+  "crowd": 321,
+  "s7": {
+   "beats": 0,
+   "hits": 8,
+   "cracks": 0,
+   "rims": 12,
+   "rimCap": 12,
+   "units": 38,
+   "proj": 0,
+   "tier": "low"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.62,
+   "min": 1.1,
+   "core": 3.98,
+   "pass": true
+  },
+  "raven": {
+   "n": 8,
+   "med": 1.8,
+   "min": 1.18,
+   "core": 1.17,
+   "pass": false
+  },
+  "flame": {
+   "n": 7,
+   "med": 1.47,
+   "min": 1.08,
+   "core": 1.16,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.86,
+   "min": 1.03,
+   "core": 2.57,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "dawn",
+  "tier": "high",
+  "crowd": 297,
+  "s7": {
+   "beats": 0,
+   "hits": 30,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 40,
+   "units": 38,
+   "proj": 8,
+   "tier": "high"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 1.73,
+   "min": 1.22,
+   "core": 1.77,
+   "pass": false
+  },
+  "raven": {
+   "n": 7,
+   "med": 1.26,
+   "min": 1.11,
+   "core": 1.55,
+   "pass": false
+  },
+  "flame": {
+   "n": 6,
+   "med": 2.02,
+   "min": 1.2,
+   "core": 2.36,
+   "pass": false
+  },
+  "bolt": {
+   "n": 8,
+   "med": 2.48,
+   "min": 1.98,
+   "core": 2.65,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.31,
+   "min": 1.08,
+   "core": 1.84,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "dawn",
+  "tier": "med",
+  "crowd": 297,
+  "s7": {
+   "beats": 0,
+   "hits": 13,
+   "cracks": 0,
+   "rims": 24,
+   "rimCap": 24,
+   "units": 38,
+   "proj": 0,
+   "tier": "med"
+  },
+  "wolf": {
+   "n": 8,
+   "med": 2.3,
+   "min": 1.07,
+   "core": 3.15,
+   "pass": true
+  },
+  "raven": {
+   "n": 8,
+   "med": 1.28,
+   "min": 1.01,
+   "core": 1.78,
+   "pass": false
+  },
+  "flame": {
+   "n": 7,
+   "med": 1.28,
+   "min": 1,
+   "core": 1.33,
+   "pass": false
+  },
+  "chain": {
+   "n": 8,
+   "med": 1.57,
+   "min": 1.02,
+   "core": 2.87,
+   "pass": false
+  }
+ },
+ {
+  "view": "desk",
+  "mom": "dawn",
+  "tier": "low",
+  "crowd": 291,
+  "s7": {
+   "beats": 0,
+   "hits": 9,
+   "cracks": 0,
+   "rims": 12,
+   "rimCap": 12,
+   "units": 38,
+   "proj": 0,
+   "tier": "low"
+  },
+  "wolf": {
+   "n": 7,
+   "med": 1.96,
+   "min": 1.19,
+   "core": 3.55,
+   "pass": true
+  },
+  "raven": {
+   "n": 8,
+   "med": 1.97,
+   "min": 1.46,
+   "core": 1.22,
+   "pass": false
+  },
+  "flame": {
+   "n": 8,
+   "med": 1.2,
+   "min": 1.04,
+   "core": 2.3,
+   "pass": false
+  },
+  "chain": {
+   "n": 6,
+   "med": 1.06,
+   "min": 1.01,
+   "core": 1.41,
+   "pass": false
+  }
+ }
+]

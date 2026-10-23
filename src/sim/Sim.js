@@ -69,7 +69,7 @@ export class Sim {
     this.nextId = 1;
     this.events = [];
     // Preallocated ring of hit/kill records for the renderer (no per-hit allocation). Not part of the sim state.
-    this.hitBuf = Array.from({ length: 64 }, () => ({ x: 0, y: 0, a: 0, id: 0, mx: 0, boss: false, kill: false }));
+    this.hitBuf = Array.from({ length: 64 }, () => ({ x: 0, y: 0, a: 0, id: 0, mx: 0, boss: false, kill: false, src: null })); // src: render-only tag (S7 verb hits), never read by the sim
     this.hitN = 0;
 
     const size = this.balance.worldSize;
@@ -370,7 +370,7 @@ export class Sim {
 
   logHit(e, a, kill) {
     const h = this.hitBuf[this.hitN < 64 ? this.hitN++ : 63];
-    h.x = e.x; h.y = e.y; h.a = a; h.id = e.id; h.mx = e.maxHp; h.boss = e.boss; h.kill = kill;
+    h.x = e.x; h.y = e.y; h.a = a; h.id = e.id; h.mx = e.maxHp; h.boss = e.boss; h.kill = kill; h.src = this._src;
   }
 
   bleed(e, dps, dur) {
