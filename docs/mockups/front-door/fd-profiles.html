@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Front door 1A profiles</title><style>
+@font-face{font-family:HLC;src:url(../../../src/assets/fonts/hollowlight-chancery.woff2) format('woff2')}
+@font-face{font-family:HLCI;src:url(../../../src/assets/fonts/hollowlight-chancery-italic.woff2) format('woff2')}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-700.woff2) format('woff2');font-weight:700}
+:root{--ink:#140f0c;--brass:#d8b26a;--brassD:#8d6c34;--cream:#fff3dc;--dim:rgba(255,243,220,.82);--mute:#a8b0c4;--teal:#6fd3c5;--gold:#ffd36b;--lock:#6b7490;
+ --glassA:#303c56;--glassB:#161c2a;--night:#0c1220;--twi:#ffb867;--deep:#9aa8ff;--long:#d4ccff;--dawn1:#ffd0b0;--dawn2:#bfeaf0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;color:var(--cream);font-family:AS,"Segoe UI",sans-serif;font-size:16px}
+body{background:radial-gradient(ellipse 70% 60% at 50% 35%,#2a3550 0%,#141b2b 55%,#0a0f1a 100%)}
+h1,h2,h3,.disp{font-family:HLC,Georgia,serif;font-weight:400}
+.wh{font-family:HLCI,Georgia,serif}
+.gl{width:1em;height:1em;vertical-align:-.14em;display:inline-block}
+.lan{width:1.6em;height:2.1em}
+.coin,.shard,.glass{display:inline-block;vertical-align:-.12em;margin-right:.25em}
+.coin{width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b0,#d8b26a 60%,#8d6c34);box-shadow:0 0 0 1.5px var(--ink)}
+.shard{width:.72em;height:.9em;background:linear-gradient(135deg,#e9ddff,#9d86ff);clip-path:polygon(50% 0,100% 40%,70% 100%,30% 100%,0 40%)}
+.glass{width:.72em;height:.95em;background:linear-gradient(160deg,#fff7ee 0%,var(--dawn1) 45%,var(--dawn2) 100%);clip-path:polygon(50% 0,92% 34%,74% 100%,26% 100%,8% 34%)}
+.pill{display:inline-flex;align-items:center;gap:.25em;padding:.2em .75em;border-radius:99px;border:1.5px solid var(--brassD);background:rgba(12,9,8,.6);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.new{display:inline-block;background:var(--teal);color:#06231f;font-weight:700;font-size:12px;letter-spacing:.1em;padding:2px 10px 2px 8px;clip-path:polygon(0 0,100% 0,90% 50%,100% 100%,0 100%)}
+.panel{background:linear-gradient(180deg,var(--glassA),var(--glassB));border:2px solid var(--brass);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 8px 30px rgba(0,0,0,.45)}
+.btn{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 22px;border-radius:99px;font-family:HLC,Georgia,serif;font-size:21px;border:2px solid var(--brass);color:var(--cream);background:linear-gradient(180deg,#2e3a55,#18203a);box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 4px 14px rgba(0,0,0,.4);white-space:nowrap}
+.btn.pri{background:linear-gradient(180deg,#ffcf7a,#f19a3a);color:#2a1606;border-color:#ffe2a6;box-shadow:0 0 22px rgba(255,180,90,.45),inset 0 1px 0 #fff3cf}
+.btn.q{background:transparent;border-color:var(--brassD);font-size:18px}
+.btn .sub{display:block;font-family:HLCI,Georgia,serif;font-size:15px;opacity:.85}
+.kb{display:inline-block;min-width:26px;padding:1px 7px;border-radius:7px;font:700 12px AS,sans-serif;border:1.5px solid currentColor;opacity:.8;text-align:center}
+.focus{outline:3px solid var(--cream);outline-offset:4px}
+.thread{height:0;border-top:2px dashed rgba(216,178,106,.6)}
+.st{color:#8a93b0}.st.on{color:var(--gold)}.st:not(.on) path{fill:none;stroke:currentColor;stroke-width:1.8}
+.note{position:fixed;left:50%;top:2px;transform:translateX(-50%);font-size:11px;color:var(--mute);opacity:.55;white-space:nowrap}
+.touch .kb{display:none}
+@media (max-height:480px){.btn{min-height:44px;font-size:18px;padding:0 16px}.btn .sub{font-size:13px}}
+
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:28px 16px 18px;gap:14px}
+h2{font-size:44px}.sub2{color:var(--dim);font-size:18px;margin-top:-8px}
+.row{display:flex;gap:22px;align-items:flex-start;position:relative;margin-top:auto}
+.row:before{content:"";position:absolute;left:-30px;right:-30px;top:-14px;border-top:2px dashed rgba(216,178,106,.55)}
+.slot{width:300px;position:relative;padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px;border-radius:90px 90px 18px 18px;padding-top:44px}
+.slot:before{content:"";position:absolute;top:-16px;left:50%;width:14px;height:16px;margin-left:-7px;border:2px solid var(--brass);border-bottom:0;border-radius:8px 8px 0 0}
+.slot .face{display:flex;align-items:center;gap:12px}
+.slot img{width:74px;height:74px;border-radius:50% 50% 12px 12px;border:2px solid var(--brass);object-fit:cover;background:#1b2336}
+.slot h3{font-size:28px}.slot .meta{font-size:14px;color:var(--dim);line-height:1.35}
+.slot .tiers{display:flex;gap:10px;font-size:14px;color:var(--mute)}
+.slot .tiers span{display:inline-flex;align-items:center;gap:4px}
+.slot .acts{display:flex;gap:8px;margin-top:4px}.slot .acts .btn{flex:1}.slot .acts .btn.q{flex:0 0 52px;padding:0}
+.slot.empty{border-style:dashed;background:rgba(22,28,42,.55);align-items:center;justify-content:center;min-height:250px;text-align:center;color:var(--dim)}
+.slot.empty .plus{font-size:44px;font-family:HLC,Georgia,serif;color:var(--brass)}
+.foot2{margin-top:auto;display:flex;align-items:center;gap:16px;width:min(960px,100%);justify-content:space-between}
+.foot2 p{font-size:14px;color:var(--mute)}
+.tw{color:var(--twi)}.dd{color:var(--deep)}.ln{color:var(--long)}
+@media (max-height:480px){.slot{border-radius:60px 60px 16px 16px}.wrap{padding:14px 16px 10px;gap:6px}h2{font-size:30px}.sub2{font-size:14px;margin-top:-4px}.row{gap:12px;margin-top:16px}.slot{width:250px;padding:26px 12px 10px;gap:5px}.slot img{width:48px;height:48px}.slot h3{font-size:22px}.slot .meta{font-size:12px}.slot.empty{min-height:190px}.foot2 p{display:none}}
+@media (max-aspect-ratio:1/1){.row{flex-direction:column;gap:12px;width:100%;margin-top:8px}.row:before{display:none}.slot{width:100%;border-radius:18px;padding-top:14px}.slot:before{display:none}.slot.empty{min-height:84px;flex-direction:row;gap:12px}.slot img{width:56px;height:56px}h2{font-size:34px}.foot2{flex-direction:column-reverse;align-items:stretch}.foot2 .btn{width:100%}.slot .meta{font-size:13px}}
+</style><script>if(matchMedia('(pointer:coarse)').matches||innerWidth<900)document.documentElement.classList.add('touch')</script></head><body class="">
+<div class="wrap">
+  <h2>Whose lantern tonight?</h2>
+  <div class="sub2 wh">Each lantern keeps its own tree, heroes and nights.</div>
+  <div class="row">
+    <div class="slot panel focus">
+      <div class="face"><img src="../../../src/assets/heroes/wren.webp" alt=""><div><h3>Matt</h3><div class="meta">14 nights · last lit today<br>2,410 gold · 6 shards</div></div></div>
+      <div class="tiers"><span class="tw"><svg viewBox="0 0 24 24" class="gl"><path d="M5 16a7 7 0 0 1 14 0z" fill="currentColor"/><path d="M2 16.5h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> <span class="st on"><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st on"><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span></span><span class="dd"><svg viewBox="0 0 24 24" class="gl"><path d="M14.5 3.5a8.5 8.5 0 1 0 6 14.6A7 7 0 0 1 14.5 3.5z" fill="currentColor"/></svg> open</span></div>
+      <div class="acts"><div class="btn pri">Light it <span class="kb">Enter</span></div><div class="btn q" aria-label="Manage Matt">···</div></div>
+    </div>
+    <div class="slot panel">
+      <div class="face"><img src="../../../src/assets/heroes/elias.webp" alt=""><div><h3>Sam</h3><div class="meta">3 nights · last lit 2 days ago<br>380 gold</div></div></div>
+      <div class="tiers"><span class="tw"><svg viewBox="0 0 24 24" class="gl"><path d="M5 16a7 7 0 0 1 14 0z" fill="currentColor"/><path d="M2 16.5h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> <span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span></span></div>
+      <div class="acts"><div class="btn">Light it</div><div class="btn q" aria-label="Manage Sam">···</div></div>
+    </div>
+    <div class="slot panel empty"><div class="plus">+</div><div><b class="disp" style="font-size:22px">New lantern</b><div class="meta">Start fresh. Others are kept.</div></div></div>
+  </div>
+  <div class="foot2"><div class="btn">Back <span class="kb">Esc</span></div><p>Lanterns live in this browser only. Use ··· &gt; Export to keep a copy.</p></div>
+</div><div class="note">MOCK-UP · front-door-v1 · not game code</div></body></html>

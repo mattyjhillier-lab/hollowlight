@@ -1,0 +1,105 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Front door 2A map + tier</title><style>
+@font-face{font-family:HLC;src:url(../../../src/assets/fonts/hollowlight-chancery.woff2) format('woff2')}
+@font-face{font-family:HLCI;src:url(../../../src/assets/fonts/hollowlight-chancery-italic.woff2) format('woff2')}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-700.woff2) format('woff2');font-weight:700}
+:root{--ink:#140f0c;--brass:#d8b26a;--brassD:#8d6c34;--cream:#fff3dc;--dim:rgba(255,243,220,.82);--mute:#a8b0c4;--teal:#6fd3c5;--gold:#ffd36b;--lock:#6b7490;
+ --glassA:#303c56;--glassB:#161c2a;--night:#0c1220;--twi:#ffb867;--deep:#9aa8ff;--long:#d4ccff;--dawn1:#ffd0b0;--dawn2:#bfeaf0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;color:var(--cream);font-family:AS,"Segoe UI",sans-serif;font-size:16px}
+body{background:radial-gradient(ellipse 70% 60% at 50% 35%,#2a3550 0%,#141b2b 55%,#0a0f1a 100%)}
+h1,h2,h3,.disp{font-family:HLC,Georgia,serif;font-weight:400}
+.wh{font-family:HLCI,Georgia,serif}
+.gl{width:1em;height:1em;vertical-align:-.14em;display:inline-block}
+.lan{width:1.6em;height:2.1em}
+.coin,.shard,.glass{display:inline-block;vertical-align:-.12em;margin-right:.25em}
+.coin{width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b0,#d8b26a 60%,#8d6c34);box-shadow:0 0 0 1.5px var(--ink)}
+.shard{width:.72em;height:.9em;background:linear-gradient(135deg,#e9ddff,#9d86ff);clip-path:polygon(50% 0,100% 40%,70% 100%,30% 100%,0 40%)}
+.glass{width:.72em;height:.95em;background:linear-gradient(160deg,#fff7ee 0%,var(--dawn1) 45%,var(--dawn2) 100%);clip-path:polygon(50% 0,92% 34%,74% 100%,26% 100%,8% 34%)}
+.pill{display:inline-flex;align-items:center;gap:.25em;padding:.2em .75em;border-radius:99px;border:1.5px solid var(--brassD);background:rgba(12,9,8,.6);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.new{display:inline-block;background:var(--teal);color:#06231f;font-weight:700;font-size:12px;letter-spacing:.1em;padding:2px 10px 2px 8px;clip-path:polygon(0 0,100% 0,90% 50%,100% 100%,0 100%)}
+.panel{background:linear-gradient(180deg,var(--glassA),var(--glassB));border:2px solid var(--brass);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 8px 30px rgba(0,0,0,.45)}
+.btn{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 22px;border-radius:99px;font-family:HLC,Georgia,serif;font-size:21px;border:2px solid var(--brass);color:var(--cream);background:linear-gradient(180deg,#2e3a55,#18203a);box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 4px 14px rgba(0,0,0,.4);white-space:nowrap}
+.btn.pri{background:linear-gradient(180deg,#ffcf7a,#f19a3a);color:#2a1606;border-color:#ffe2a6;box-shadow:0 0 22px rgba(255,180,90,.45),inset 0 1px 0 #fff3cf}
+.btn.q{background:transparent;border-color:var(--brassD);font-size:18px}
+.btn .sub{display:block;font-family:HLCI,Georgia,serif;font-size:15px;opacity:.85}
+.kb{display:inline-block;min-width:26px;padding:1px 7px;border-radius:7px;font:700 12px AS,sans-serif;border:1.5px solid currentColor;opacity:.8;text-align:center}
+.focus{outline:3px solid var(--cream);outline-offset:4px}
+.thread{height:0;border-top:2px dashed rgba(216,178,106,.6)}
+.st{color:#8a93b0}.st.on{color:var(--gold)}.st:not(.on) path{fill:none;stroke:currentColor;stroke-width:1.8}
+.note{position:fixed;left:50%;top:2px;transform:translateX(-50%);font-size:11px;color:var(--mute);opacity:.55;white-space:nowrap}
+.touch .kb{display:none}
+@media (max-height:480px){.btn{min-height:44px;font-size:18px;padding:0 16px}.btn .sub{font-size:13px}}
+
+.wrap{position:absolute;inset:0;display:grid;grid-template-columns:1.08fr 1fr;grid-template-rows:auto 1fr auto;gap:14px 22px;padding:18px 24px 18px}
+.hd{grid-column:1/3;display:flex;align-items:center;gap:18px}
+.hd h2{font-size:40px;white-space:nowrap}.crumb{font-size:14px;color:var(--mute)}.crumb b{color:var(--cream)}
+.hd .purses{margin-left:auto;display:flex;gap:8px}
+.chs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
+.chs i{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--lock);font-style:normal;font-size:12px}
+.chs i.on{border:2px solid var(--brass);background:radial-gradient(#ffd38a,#b9822f);color:#2a1606;font-weight:700}
+.chs .t{width:14px;border-top:1.5px dashed var(--lock)}
+.map{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:0}
+.map .art{flex:1;width:100%;min-height:0;display:block;border-radius:16px 16px 0 0}
+.map .nm{position:absolute;left:22px;top:14px}.map .nm h3{font-size:40px;text-shadow:0 2px 8px #000}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:rgba(10,14,24,.85);border-radius:0 0 16px 16px}
+.tier{position:relative;min-height:72px;border-radius:14px;border:1.5px solid var(--brassD);background:rgba(24,30,46,.9);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.tier .n{font-family:HLC,Georgia,serif;font-size:22px;display:flex;align-items:center;gap:7px}
+.tier small{font-size:13px;color:var(--dim)}
+.tier.tw .n{color:var(--twi)}.tier.dd .n{color:var(--deep)}.tier.ln .n{color:var(--lock)}
+.tier.sel{border:2.5px solid var(--deep);box-shadow:0 0 0 3px rgba(154,168,255,.25),0 0 18px rgba(154,168,255,.35)}
+.tier.lock{border-style:dashed;background:rgba(14,18,28,.85)}
+.tier .new{position:absolute;top:-11px;right:10px}
+.bar{height:6px;border-radius:9px;background:#0b0f18;border:1px solid #2c3550;overflow:hidden;margin-top:3px}.bar i{display:block;height:100%;background:var(--teal)}
+.side{padding:16px 20px;display:flex;flex-direction:column;gap:8px}
+.side h3{font-size:30px;color:var(--deep);line-height:1.05}
+.side ul{list-style:none;display:flex;flex-direction:column;gap:5px;font-size:16px}
+.side li{position:relative;padding-left:15px}.side li:before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:50%;background:var(--deep)}
+.side .nudge{margin-top:auto}.tier .n{white-space:nowrap}
+.marks{display:inline-flex;gap:4px;vertical-align:-.15em}.marks b{display:inline-block;width:15px;height:15px;border:2px solid var(--deep);transform:rotate(45deg) scale(.8)}
+.marks b:nth-child(2){border-radius:50%;transform:none}.marks b:nth-child(3){clip-path:polygon(50% 0,100% 100%,0 100%);background:var(--deep);border:0}
+.earn{display:flex;flex-wrap:wrap;gap:8px;font-size:15px}.earn .pill.t{border-color:var(--teal);color:var(--teal)}
+.tools{font-size:14px;color:var(--dim)}.tools b{color:var(--cream)}
+.rec{display:flex;gap:16px;font-size:14px;color:var(--dim);align-items:center}
+.nudge{font-size:15px;color:var(--dim)}.nudge b{color:var(--teal)}
+.acts{grid-column:1/3;display:flex;gap:12px;align-items:center}
+.acts .sp{flex:1}
+.acts .btn.pri{min-width:300px}
+@media (max-height:480px){.wrap{gap:8px 14px;padding:8px 16px 8px;grid-template-columns:1fr 1fr}.hd h2{font-size:26px}.chs,.crumb{display:none}.map .nm h3{font-size:26px}.map .nm{top:8px;left:14px}
+ .tiers{gap:6px;padding:6px}.tier{min-height:52px;padding:4px 8px}.tier .n{font-size:17px}.tier small{font-size:12px}
+ .side{padding:8px 14px;gap:4px}.side h3{font-size:20px}.side ul{font-size:13px;gap:2px}.side li:nth-child(n+3){display:none}.earn{font-size:12px;gap:4px}.tools,.rec{display:none}.nudge{font-size:12px}.side .k{font-size:11px}
+ .acts .btn.pri{min-width:220px}.hd .purses{font-size:13px}}
+@media (max-aspect-ratio:1/1){.wrap{grid-template-columns:1fr;grid-template-rows:auto auto auto 1fr auto;gap:10px;padding:12px 16px 14px}.hd{grid-column:1;flex-wrap:wrap;gap:6px 10px}.hd h2{font-size:30px}.crumb{order:3;width:100%}.chs{display:none}
+ .hd h2{font-size:28px}.hd .purses{font-size:13px;gap:4px}.crumb{font-size:13px}.map{overflow:visible}.map .art{height:120px;flex:none}.map .nm h3{font-size:28px}.tiers{gap:6px;padding:8px}.tier{min-height:60px;padding:5px 7px}.tier .n{font-size:15px;gap:4px}.tier small{font-size:12px}.tier .bar{display:none}
+ .side{padding:12px 14px;gap:6px}.side h3{font-size:22px}.side ul{font-size:14px}.side li:nth-child(n+3){display:none}.earn{font-size:13px;gap:5px}.rec,.tools{display:none}.nudge{font-size:14px}
+ .acts{grid-column:1;flex-wrap:wrap;align-content:flex-end}.acts .btn.pri{order:-1;width:100%;min-width:0}.acts .sp{display:none}.acts .btn:not(.pri){flex:1}.nudge-p{display:block}}
+</style><script>if(matchMedia('(pointer:coarse)').matches||innerWidth<900)document.documentElement.classList.add('touch')</script></head><body class="">
+<div class="wrap">
+  <div class="hd"><h2>Choose your night</h2><span class="crumb"><b>Wren</b> › Cursed Forest › Deep Dusk</span><div class="chs" aria-label="Chapters"><i class="on">1</i><span class="t"></span><i title="Chapter 2 sleeps in the fog">?</i><span class="t"></span><i title="Chapter 3 sleeps in the fog">?</i><span class="t"></span><i title="Chapter 4 sleeps in the fog">?</i><span class="t"></span><i title="Chapter 5 sleeps in the fog">?</i><span class="t"></span><i title="Chapter 6 sleeps in the fog">?</i><span class="t"></span><i title="Chapter 7 sleeps in the fog">?</i><span class="t"></span><i title="Chapter 8 sleeps in the fog">?</i></div><div class="purses"><span class="pill"><i class="coin"></i>2,410</span><span class="pill"><i class="shard"></i>6</span><span class="pill" title="Dawnglass"><i class="glass"></i>4</span></div></div>
+  <div class="map panel">
+    <svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMax slice" class="art"><defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2140"/><stop offset="1" stop-color="#4b4a78"/></linearGradient><radialGradient id="lp" cx=".7" cy=".86" r=".38"><stop offset="0" stop-color="#ffd38a" stop-opacity=".65"/><stop offset="1" stop-color="#ffd38a" stop-opacity="0"/></radialGradient></defs><rect width="640" height="300" fill="url(#sk)"/><path d="M0 300 L40 70 L80 300z" fill="#11162a"/><path d="M80 300 L120 107 L160 300z" fill="#11162a"/><path d="M170 300 L210 144 L250 300z" fill="#11162a"/><path d="M260 300 L300 101 L340 300z" fill="#11162a"/><path d="M340 300 L380 138 L420 300z" fill="#11162a"/><path d="M430 300 L470 95 L510 300z" fill="#11162a"/><path d="M520 300 L560 132 L600 300z" fill="#11162a"/><path d="M580 300 L620 89 L660 300z" fill="#11162a"/><rect width="640" height="300" fill="url(#lp)"/><circle cx="448" cy="262" r="10" fill="#fff0c0"/><circle cx="90" cy="40" r="2.5" fill="#cfd6ff" opacity=".7"/><circle cx="250" cy="60" r="2.5" fill="#cfd6ff" opacity=".7"/><circle cx="330" cy="30" r="2.5" fill="#cfd6ff" opacity=".7"/><circle cx="520" cy="50" r="2.5" fill="#cfd6ff" opacity=".7"/><circle cx="600" cy="80" r="2.5" fill="#cfd6ff" opacity=".7"/></svg>
+    <div class="nm"><div class="k">Chapter 1</div><h3>Cursed Forest</h3></div>
+    <div class="tiers" role="radiogroup" aria-label="Night">
+      <div class="tier tw" role="radio" aria-checked="false"><span class="n"><svg viewBox="0 0 24 24" class="gl"><path d="M5 16a7 7 0 0 1 14 0z" fill="currentColor"/><path d="M2 16.5h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Twilight</span><small><span class="st on"><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st on"><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span> cleared 2x</small></div>
+      <div class="tier dd sel focus" role="radio" aria-checked="true"><span class="new">NEW</span><span class="n"><svg viewBox="0 0 24 24" class="gl"><path d="M14.5 3.5a8.5 8.5 0 1 0 6 14.6A7 7 0 0 1 14.5 3.5z" fill="currentColor"/></svg> Deep Dusk</span><small>Recommended next</small></div>
+      <div class="tier ln lock" role="radio" aria-disabled="true"><span class="n"><svg viewBox="0 0 24 24" class="gl"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.2"/></svg> Long Night</span><small>Clear Deep Dusk once · 0/1</small><div class="bar"><i style="width:0"></i></div></div>
+    </div>
+  </div>
+  <div class="side panel">
+    <div class="k"><svg viewBox="0 0 24 24" class="gl"><path d="M14.5 3.5a8.5 8.5 0 1 0 6 14.6A7 7 0 0 1 14.5 3.5z" fill="currentColor"/></svg> Deep Dusk · harder night</div>
+    <h3>The Hollow presses closer</h3>
+    <ul>
+      <li>Foes are tougher and hit a little harder</li>
+      <li>From 4:00 some foes bear a Hollow mark <span class="marks" aria-hidden="true"><b></b><b></b><b></b></span> (one rule each)</li>
+      <li>The Elder Treant is stronger</li>
+      <li>Blessings, hearts and your tree work as on Twilight</li>
+    </ul>
+    <div class="k">You earn</div>
+    <div class="earn"><span class="pill"><i class="coin"></i>gold x1.5</span><span class="pill"><i class="shard"></i>7 from the boss</span><span class="pill"><i class="glass"></i>Dawnglass up to 6</span><span class="pill t">first dawn +6</span></div>
+    <div class="tools">Night tools here: <b>Fourth Card</b> (owned) · Fifth Hook (not yet)</div>
+    <div class="rec">Best — · Clears 0 · <span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span><span class="st "><svg viewBox="0 0 24 24" class="gl"><path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z" fill="currentColor"/></svg></span></div>
+    <div class="nudge"><b>Next light:</b> clear Deep Dusk with Wren and with Elias to light the Fifth Hook.</div>
+  </div>
+  <div class="acts"><div class="btn">Back <span class="kb">Esc</span></div><div class="btn q">Skill Tree <span class="kb">T</span></div><span class="sp"></span><div class="btn pri">Begin with Wren <span class="kb">Enter</span></div></div>
+</div><div class="note">MOCK-UP · front-door-v1 · not game code</div></body></html>
