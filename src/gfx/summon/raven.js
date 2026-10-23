@@ -1,7 +1,7 @@
 // S3 Raven A "Letter Ravens" (LOCKED Summons art #3, docs/design/summons-art-v1.md 3.2): game port of the mock-up painter
 // docs/mockups/summons-art/ravens.mjs ravenA on the shared Husk paint engine. Pure JS: builds SVG strings only (no DOM); atlas.js rasterises them
 // lazily (first time the flock is owned; gold frames on first evolution) into the raven frames of `sum_atlas`.
-// Look: round chibi violet raven, big head, short pale beak, cream LETTER-PAPER wing tips with ink lines (#efe1c0, never white), warm wax-seal ember
+// Look: round chibi violet raven, big head, short pale beak, warm-grey LETTER-PAPER wing tips with ink lines (#cdbd9c, BL1; was #efe1c0; never white), warm wax-seal ember
 // on the chest; light body + dark tinted ink outline (value-inverse of the near-black Grave Crow, cream/ink eye, never red).
 // Units: du, origin = body centre (flyer), facing +x, y up negative. Frame box = RAVEN_BOX (64 texels for 88 du).
 // Game change vs the mock-up: no grain, no swoop/dive streak and no peck star inside the frame (the scene draws the wake; hit stars are S7).
@@ -9,7 +9,7 @@ import { part, blob, limb, glow, circ, f, resetAll, defs, setGrainBox } from '..
 import { RIM_DEFS } from './wolf.js';
 
 export const WARM = '#fff1c8', EMBER = '#ffcf7a', SEAL_INK = '#b5762a';
-export const PAPER = '#efe1c0', PAPER_FAR = '#d4c6a8'; // letter-paper tips: darker cream, never white (not numbers / pickups)
+export const PAPER = '#cdbd9c', PAPER_FAR = '#b3a586'; // letter-paper tips: warm grey (BL1, Matt 2026-10-23: darker than the old #efe1c0 so the tips separate from the cream lantern pool), never white (not numbers / pickups)
 // mock-up palette (ROLE.raven) with the body lifted a little (the High bloom pulls small bright sprites down, as on the wolves)
 export const R = { lt: '#faf7ff', c: '#d9caff', dk: '#b9a5f7', ink: '#34236e', glow: '#b79cff', wing: '#e3d8ff' };
 export const RAVEN_BOX = [-44, -44, 88, 88];
@@ -41,7 +41,7 @@ function wing(p, far, tips) {
   return s;
 }
 // paper tips (LOCKED) / violet-tinted fallback (if the paper ever fails the 'not numbers / pickups' check)
-export const TIPS = { paper: { near: PAPER, far: PAPER_FAR, lt: '#fbf3df', dk: '#e2cfa5' }, violet: { near: '#ddd0ff', far: '#b8a6e8', lt: '#efe8ff', dk: '#a993e6' } };
+export const TIPS = { paper: { near: PAPER, far: PAPER_FAR, lt: '#e2d6bb', dk: '#b29f7c' }, violet: { near: '#ddd0ff', far: '#b8a6e8', lt: '#efe8ff', dk: '#a993e6' } };
 
 export function ravenSvg(st = {}) {
   const p = st.pose || 'up', tips = TIPS[st.tips || 'paper'];

@@ -11,7 +11,7 @@ export const ORB_U = GLYPH_BOX[2] * GLYPH_WPD; // world units across a glyph fra
 export const LANCE_WPD = LANCE_U / (LANCE_LEN + 6); // capsule tail end (x 0) to head tip (x 166) = LANCE_U world units
 export const PAGE_K = 1.1;
 
-// o: { pools: { glyph, tail, rim, self? }, selfA, low, calm, k, dt, depth, counts: { tails, rims }, caps, st (Map) , fxg (Graphics) }
+// o: { pools: { glyph, tail, rim }, low, calm, k, dt, depth, counts: { tails, rims }, caps, st (Map) , fxg (Graphics) }
 export function drawGlyph(b, o) {
   const P = o.pools, k = o.k ?? GLYPH_K;
   let s = o.st.get(b.id);
@@ -27,7 +27,6 @@ export function drawGlyph(b, o) {
   const fr = page ? (b.back ? 'page_1' : 'page_0') : o.low ? 'flat_glyph' : look.fr;
   const tex = 48, sc = (ORB_U * k * (page ? PAGE_K : 1)) / tex;
   P.glyph.get(b.id).setFrame(fr).setOrigin(0.5, 0.5).setPosition(b.x, b.y).setRotation(0).setFlip(false, false).setScale(sc).setDepth(o.depth).setAlpha(1);
-  if (P.self && o.selfA > 0) P.self.get(b.id).setFrame(fr).setOrigin(0.5, 0.5).setPosition(b.x, b.y).setRotation(0).setFlip(false, false).setScale(sc).setDepth(o.depth + 0.0005).setAlpha(o.selfA); // High bloom only: additive self-light copy (as wolves / ravens)
   const cap = GLYPH_CAPS[o.tier] || GLYPH_CAPS.high;
   if (!o.low && !(page && b.back) && o.counts.tails < Math.round(cap.tails * (o.phone ? 0.85 : 1))) {
     o.counts.tails++;

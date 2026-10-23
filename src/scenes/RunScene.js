@@ -2,6 +2,7 @@
 // ready to be swapped for real sprite sheets later.
 import Phaser from 'phaser';
 import { app } from '../app.js';
+import { HLBloomFX } from '../gfx/bloompipe.js';
 import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { HeroRig } from '../gfx/herorig.js';
@@ -93,12 +94,12 @@ function drawLifeDebug(d, life, p) {
 }
 
 const hex = (s) => parseInt(s.slice(1), 16);
+const WOLF_SELF = 0.3; // BL1: additive self-light copy alpha under the High bloom, reduced from 0.65 (the bright-pass bloom no longer dims; kept small for the pale-on-cream daylight read)
 const WOLF_GLOW = 0x9fd8ff; // S1: wolf halo retinted to the locked wolf role colour
-const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the High bloom is on (it halves a small sprite's value; this keeps the spirit lit)
 const ALPHA_HALO = 3.4; // S2: the Alpha's own frame carries a 1.7x baked glow, so its extra halo shrinks (friendly coverage near the hero <= today + 5 pts)
-const RAVEN_SELF = 1, RAVEN_HALO = 0.75, RAVEN_HALO_A = 0.6, RAVEN_GLOW = 0xb79cff; // S3: raven self-light (High bloom only), halo size / alpha / locked violet
-const ORB_SELF = 0.2, ORB_GLOW = 0xd9ccff, ORB_HALO = 0.75, ORB_HALO_A = 0.42; // S4: flame self-light (High bloom only; flare adds to it), halo retinted to the locked orbit glow, size / alpha
-const GLYPH_HALO = 0.8, GLYPH_HALO_A = 0.5, GLYPH_SELF = 0.6; // S5: the glyph frame carries its own baked glow, so its halo is smaller than today's bolt halo
+const RAVEN_SELF = 0.6, RAVEN_HALO = 0.75, RAVEN_HALO_A = 0.6, RAVEN_GLOW = 0xb79cff; // S3/BL1: raven self-light under the High bloom, 1 -> 0.6 (the bright-pass bloom no longer dims; still needed for the >= 25 L* gap to the Grave Crow under the night light map and for day ground contrast), halo size / alpha / locked violet
+const ORB_GLOW = 0xd9ccff, ORB_HALO = 0.75, ORB_HALO_A = 0.42; // S4: flame halo retinted to the locked orbit glow, size / alpha
+const GLYPH_HALO = 0.8, GLYPH_HALO_A = 0.5; // S5: the glyph frame carries its own baked glow, so its halo is smaller than today's bolt halo
 const SHADE_A = 0.8; // Matt 2026-10-22: the Alpha's 2 ghost shades 0.5 -> 0.65 -> 0.8 (Low L* gap vs the Fell Wolf was 12-18)
 const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
@@ -273,17 +274,16 @@ export class RunScene extends Phaser.Scene {
       uEcho: new SpritePool(this, 'wolfU'), // W6: separate pool so the pale tint never leaks onto real wolves
       uWolfA: new SpritePool(this, SUM_KEY), // S1 Lantern-Heart wolves (sum_atlas frames)
       uWolfOv: new SpritePool(this, SUM_KEY), // S1 pack-variety overlays (notched ear / chest tuft / curl tail)
-      uWolfL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S1 self-light: an additive copy of the wolf frame while the bloom is on
       uRaven: new SpritePool(this, 'raven'),
+      uWolfL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S1 self-light: an additive copy of the wolf frame while the High bloom is on
       uRavenA: new SpritePool(this, SUM_KEY), // S3 Letter Ravens (sum_atlas frames)
-      uRavenL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S3 self-light copy while the High bloom is on (as the wolves)
+      uRavenL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S3 self-light copy while the High bloom is on (BL1: alpha 0.6)
       ravFeather: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_feather').setDepth(D_HALO + 1)), // S3 Wall of Wings loose paper feathers
       ravSeal: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_waxseal').setDepth(D_PART - 1)), // S3 Talon Mark wax-seal disc under the chevron
       uOrb: new SpritePool(this, 'orb'),
       uGlyph: new SpritePool(this, SUM_KEY), // S5 glyph orbs / pages / lance capsules (sum_atlas frames)
       uGlyphT: new SpritePool(this, SUM_KEY), // S5 ink tails
       uGlyphR: new SpritePool(this, SUM_KEY), // S5 gold rim overlay (Spirit Tempest glyphs)
-      uGlyphL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S5 self-light copy while the High bloom is on (as wolves / ravens)
       uTorn: new SpritePool(this, SUM_KEY), // S5 Spirit Tempest torn page at the burst
       uOrbA: new SpritePool(this, SUM_KEY), // S4 Candle Flames (sum_atlas frames)
       uOrbL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S4 self-light copy while the High bloom is on (and the flare on hit)
@@ -680,9 +680,12 @@ export class RunScene extends Phaser.Scene {
     // Built-in bloom: High tier only, WebGL only, feature-detected; fails silently.
     const cam = this.cameras.main;
     try {
-      if (this.bloom && !(c.bloom && app.params.bloom)) { cam.postFX.remove(this.bloom); this.bloom = null; }
-      if (c.bloom && app.params.bloom && !this.bloom && this.renderer.type === Phaser.WEBGL && cam.postFX && typeof cam.postFX.addBloom === 'function') {
-        this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 1, 0.55, 2);
+      if (this.bloom && !(c.bloom && app.params.bloom)) { cam.removePostPipeline(HLBloomFX); this.bloom = null; }
+      if (c.bloom && app.params.bloom && !this.bloom && this.renderer.type === Phaser.WEBGL && this.renderer.pipelines && typeof cam.setPostPipeline === 'function') {
+        // BL1: bright-pass bloom 'B tuned' added on top of the sharp frame (src/gfx/bloompipe.js); replaces the built-in addBloom (it dimmed the frame ~25%)
+        this.renderer.pipelines.addPostPipeline('HLBloom', HLBloomFX); // no-op once registered
+        cam.setPostPipeline(HLBloomFX);
+        this.bloom = cam.getPostPipeline(HLBloomFX) || null;
       }
     } catch (err) { this.bloom = null; }
   }
@@ -751,7 +754,7 @@ export class RunScene extends Phaser.Scene {
     const front = !near && u.y > p.y - 4 && Math.abs(u.x - p.x) < 16 && Math.abs(u.y - (p.y - 12)) < 22;
     const a = front ? 0.55 : 1, rot = low ? 0 : ps.rot;
     pl.uRavenA.get(u.id).setFrame(sk.fr).setOrigin(0.5, 0.5).setPosition(u.x, u.y).setDepth(D_LIT + dy).setFlipX(ps.flip).setRotation(rot).setScale(k).setAlpha(a);
-    if (this.bloom && RAVEN_SELF > 0) pl.uRavenL.get(u.id).setFrame(sk.fr).setOrigin(0.5, 0.5).setPosition(u.x, u.y).setDepth(D_LIT + dy + 0.0005).setFlipX(ps.flip).setRotation(rot).setScale(k).setAlpha(a * RAVEN_SELF).setTint(0xf0e8ff); // faintly violet-tinted: value first (friend-or-foe read), the body/outline keep the role colour
+    if (this.bloom) pl.uRavenL.get(u.id).setFrame(sk.fr).setOrigin(0.5, 0.5).setPosition(u.x, u.y).setDepth(D_LIT + dy + 0.0005).setFlipX(ps.flip).setRotation(rot).setScale(k).setAlpha(a * RAVEN_SELF).setTint(0xf0e8ff); // faintly violet-tinted: value first (friend-or-foe read)
     if ((this.fxTick & 127) === 64 && st.size > 48) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
   }
 
@@ -789,7 +792,7 @@ export class RunScene extends Phaser.Scene {
     let rot = low ? 0 : s.lean, sx = k, sy = k;
     if (streak > 0) { rot = streakRot(rot, u.x - p.x, u.y - p.y, streak); sx = k * (1 - 0.12 * streak); sy = k * (1 + 0.45 * streak); } // S4 Vesper Tide: the flame stretches into a streak, tip trailing back toward Elias
     pl.uOrbA.get(u.id).setFrame(sk.fr).setOrigin(0.5, FLAME_AY).setPosition(u.x, u.y).setDepth(D_LIT + dy).setRotation(rot).setScale(sx, sy).setAlpha(a);
-    const la = low ? 0 : (this.bloom ? ORB_SELF : 0) + 0.6 * fk;
+    const la = low ? 0 : 0.6 * fk; // flare on hit (BL1: the High-bloom self-light copies are gone; the bright-pass bloom no longer dims small sprites)
     if (la > 0.01) pl.uOrbL.get(u.id).setFrame(sk.fr).setOrigin(0.5, FLAME_AY).setPosition(u.x, u.y).setDepth(D_LIT + dy + 0.0005).setRotation(rot).setScale(sx, sy).setAlpha(Math.min(1, la) * a).setTint(0xf4efff);
     if ((this.fxTick & 127) === 32 && st.size > 32) for (const [id, v] of st) if (this.fxTick - v.seen > 60) st.delete(id);
     return s;
@@ -1052,6 +1055,7 @@ export class RunScene extends Phaser.Scene {
       const calm = !!st.reducedMotion;
       const key = Math.round(q * 900) * 8 + (mode === 'brighter' ? 1 : mode === 'clear' ? 2 : 0) * 2 + (calm ? 1 : 0);
       if (key !== this.arcKey) { this.arcKey = key; arcSample(q * 900, mode, calm, this.arc); this.arcVer = (this.arcVer | 0) + 1; }
+      if (this.bloom) this.bloom.day = Math.min(1, Math.max(0, (1 - this.arc.bodyK) / 0.28)); // BL1: daylight eases the High bloom (no glare on the cream pool)
       col = this.arc.low;
       this.ambient = this.arc.amb;
       dw = this.arc.dawn;
@@ -1648,7 +1652,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
     const gst = this.glyphSt || (this.glyphSt = new Map()), gdt = Math.max(0, Math.min(0.1, sim.time - (this.glyphT ?? sim.time))); this.glyphT = sim.time;
-    const gO = glyphArt ? { pools: { glyph: pl.uGlyph, tail: pl.uGlyphT, rim: pl.uGlyphR, self: this.bloom ? pl.uGlyphL : null }, selfA: GLYPH_SELF, low: this.quality.tier === 'low', tier: this.quality.tier, phone: this.phone, calm: still, k: this.glyphK, dt: gdt, depth: 0, counts: { tails: 0, rims: this.rimB.n }, st: gst, tick: this.fxTick, fxg: fx } : null; // S7: glyph rims draw from the shared rim budget
+    const gO = glyphArt ? { pools: { glyph: pl.uGlyph, tail: pl.uGlyphT, rim: pl.uGlyphR }, low: this.quality.tier === 'low', tier: this.quality.tier, phone: this.phone, calm: still, k: this.glyphK, dt: gdt, depth: 0, counts: { tails: 0, rims: this.rimB.n }, st: gst, tick: this.fxTick, fxg: fx } : null; // S7: glyph rims draw from the shared rim budget
     if (glyphArt && lw && lw.evo === 'spirit_tempest') drawTornPages(sim.fx, pl.uTorn, D_LIT + p.y + 41, this.glyphK);
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;

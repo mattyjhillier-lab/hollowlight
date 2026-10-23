@@ -22,7 +22,7 @@ test('raven art: 7 poses + 6 gold poses + 2 Low flats, all from our own code (no
 
 test('raven art: friendly value read (light violet body, ink outline, cream/ink eye never red), warm wax seal, paper tips darker cream (never white)', () => {
   assert.ok(Lstar(R.c) > 65, 'light body'); assert.ok(Lstar(R.ink) < 25, 'dark tinted outline');
-  assert.equal(PAPER, '#efe1c0'); assert.equal(TIPS.paper.near, '#efe1c0'); assert.ok(Lstar(PAPER) < Lstar('#ffffff') - 5);
+  assert.equal(PAPER, '#cdbd9c'); assert.equal(TIPS.paper.near, '#cdbd9c'); assert.ok(Lstar(PAPER) < Lstar('#efe1c0') - 5, 'BL1 warm grey: darker than the old cream'); assert.ok(Lstar(PAPER) < Lstar('#ffffff') - 5);
   for (const p of POSES) {
     const s = ravenSvg({ pose: p });
     assert.ok(s.includes(PAPER), p + ' paper tips'); assert.ok(s.includes('#ffcf7a'), p + ' wax seal ember');
