@@ -138,6 +138,23 @@ export class Lanterns {
 
   openActive() { return this.open(this.index.active); }
 
+  // FD3: read-only look at a lantern's save for the "Whose lantern?" cards and per-lantern export. Never writes (no quarantine,
+  // no migration write-back). -> { status: 'ok' | 'backup' | 'empty' | 'newer' | 'damaged', save, text } ; save is sanitised or null.
+  peek(id) {
+    if (!this.legacyMode && !this.has(id)) return null;
+    const k = this.legacyMode ? { save: SAVE_KEY, backup: BACKUP_KEY } : lanternKeys(id);
+    const main = this._get(k.save);
+    const bak = this._get(k.backup);
+    for (const t of [main, bak]) {
+      if (t === null) continue;
+      const r = parseSave(t);
+      if (r.ok) return { status: t === main ? 'ok' : 'backup', save: r.save, text: t };
+      if (r.code === 'future') return { status: 'newer', save: null, text: t };
+    }
+    if (main === null && bak === null) return { status: 'empty', save: null, text: null };
+    return { status: 'damaged', save: null, text: main !== null ? main : bak };
+  }
+
   setActive(id) {
     this._refresh();
     if (this.locked || this.legacyMode) return { ok: false, code: 'locked', error: 'Lanterns cannot be changed right now.' };

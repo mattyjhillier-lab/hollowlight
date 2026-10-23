@@ -19,6 +19,8 @@ import { EvoPlate, plateModel } from './evoplate.js';
 import './evoplate.css';
 import './title.css';
 import { buildTitle, buildHeroSelect } from './title.js';
+import { buildLanternScreen } from './lanternsui.js';
+import './lanterns.css';
 import { heroView } from './titlecopy.js';
 import { buildPause } from './pause.js';
 import { buildSettings } from './settings.js';
@@ -125,20 +127,30 @@ export class UI {
   showStart(onPick) {
     this.onPick = onPick;
     const h = this.handlers;
+    const fd = h.frontDoor ? h.frontDoor(this.lastHero) : null; // FD2: lantern chip, purses, Continue whisper, tree dot, New game
     const t = buildTitle({
       hasProgress: !!(h.hasProgress && h.hasProgress()),
       firstRun: !!(h.isFirstRun && h.isFirstRun()),
       bank: h.getBank ? h.getBank() : null,
       note: h.loadNote ? h.loadNote() : '',
       version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
+      lantern: fd ? fd.lantern : null,
+      purses: fd ? fd.purses : null,
+      whisper: fd ? fd.whisper : '',
+      treeDot: !!(fd && fd.treeDot),
+      treeLine: fd ? fd.treeLine : null,
+      newGame: fd ? fd.newGame : null,
       onBegin: () => this.showHeroSelect(),
       onTree: () => h.openTree(),
       onSettings: () => h.openSettings(),
+      onSwitch: () => this.showLanterns('pick'),
+      onNew: () => this.showLanterns(fd && fd.newGame && fd.newGame.free > 0 ? 'new' : 'replace'),
     });
     const el = this.layer('start');
     el.className = 'overlay layer-start u3';
     el.replaceChildren(t.root);
     this.hide('hero');
+    this.hide('lanterns');
     this.show('start');
     if (this.pwa) {
       mountInstallCard(document, this.pwa, t.side, t.menu);
@@ -148,6 +160,34 @@ export class UI {
     }
     this.screen = { id: 'title', title: t };
     t.begin.focus({ preventScroll: true });
+  }
+
+  // FD3: "Whose lantern?" (mode pick | new | replace). The app supplies the cards and does every store change; this only draws and forwards.
+  showLanterns(mode = 'pick', status = null) {
+    const h = this.handlers;
+    if (!h.lanternScreen) return;
+    const m = h.lanternScreen();
+    const back = () => this.showStart(this.onPick);
+    const after = (r, msg) => { if (r && r.ok) this.showLanterns('pick', msg); return r; };
+    const v = buildLanternScreen({
+      mode, cards: m.cards, canCreate: m.canCreate, locked: m.locked, note: m.note, status, portraits: PORTRAITS,
+      onLight: (id) => { const r = h.lightLantern(id); if (r && r.ok) back(); },
+      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) this.showHeroSelect(); return r; },
+      onRename: (id, name) => after(h.renameLantern(id, name)),
+      onExport: (id) => { const r = h.exportLantern(id); this.showLanterns(mode === 'replace' ? 'replace' : 'pick', { text: r.message }); },
+      onDelete: (id) => { const r = h.deleteLantern(id); return after(r, r && r.ok ? { text: r.message, undo: !!r.undo } : null); },
+      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) this.showHeroSelect(); return r; },
+      onUndo: () => { const r = h.undoDelete(); this.showLanterns('pick', { text: r.message }); },
+      onBack: back,
+    });
+    const el = this.layer('lanterns');
+    el.className = 'overlay layer-lanterns u3 fd';
+    el.replaceChildren(v.root);
+    this.hide('start');
+    this.hide('hero');
+    this.show('lanterns');
+    this.screen = { id: 'lanterns', lanterns: v };
+    v.focusFirst();
   }
 
   showHeroSelect() {
@@ -164,6 +204,7 @@ export class UI {
       onBack: () => this.showStart(this.onPick),
     });
     const el = this.layer('hero');
+    this.hide('lanterns');
     el.className = 'overlay layer-hero u3';
     el.replaceChildren(hs.root);
     this.hide('start');
@@ -172,7 +213,7 @@ export class UI {
     hs.focusSelected();
   }
 
-  hideStart() { this.hide('start'); this.hide('hero'); this.screen = null; }
+  hideStart() { this.hide('start'); this.hide('hero'); this.hide('lanterns'); this.screen = null; }
 
   // ------------------------------------------------------------------ level-up (HUD-2: src/ui/cardsui.js, presentation only)
   showLevelUp(sim) {
@@ -243,7 +284,7 @@ export class UI {
     el.className = 'overlay layer-settings settings u4 u4-settingsscreen';
     if (!this.settingsOpen) this.settingsFrom = this.pauseView && this.layers.pause && this.layers.pause.style.display !== 'none' ? 'pause' : 'title';
     this.settingsOpen = true;
-    for (const n of ['start', 'hero', 'pause']) if (this.layers[n]) this.layers[n].setAttribute('inert', ''); // keep Tab inside settings
+    for (const n of ['start', 'hero', 'pause', 'lanterns']) if (this.layers[n]) this.layers[n].setAttribute('inert', ''); // keep Tab inside settings
     const s = buildSettings({
       settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
       storageNote: h.storageNote ? h.storageNote() : null,
@@ -262,7 +303,7 @@ export class UI {
     this.settingsOpen = false;
     this.settingsView = null;
     this.hide('settings');
-    for (const n of ['start', 'hero', 'pause']) if (this.layers[n]) this.layers[n].removeAttribute('inert');
+    for (const n of ['start', 'hero', 'pause', 'lanterns']) if (this.layers[n]) this.layers[n].removeAttribute('inert');
     if (this.handlers.closeSettings) this.handlers.closeSettings(); // title: rebuilds the menu (Continue state may have changed)
     if (this.settingsFrom === 'pause' && this.pauseView) this.pauseView.focusSettings();
     else if (this.screen && this.screen.id === 'title') this.screen.title.settings.focus({ preventScroll: true });
@@ -280,7 +321,7 @@ export class UI {
   spaceActivate(e) {
     if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
     const a = document.activeElement;
-    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
+    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end, .layer-lanterns') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
     e.preventDefault();
     // only THIS press's keyup: if it never arrives (focus lost), the swallow must not linger and eat a later gameplay keyup (CTL1)
     const t0 = performance.now();
@@ -306,11 +347,12 @@ export class UI {
     if (sc) {
       const vis = (n) => this.layers[n] && this.layers[n].style.display !== 'none';
       if (sc.id === 'hero' && vis('hero')) { sc.hero.onKey(e); return; }
+      if (sc.id === 'lanterns' && vis('lanterns')) { sc.lanterns.onKey(e); return; }
       if (sc.id === 'title' && vis('start') && !e.ctrlKey && !e.altKey && !e.metaKey) {
         const a = document.activeElement;
         const onBtn = a && a.closest && a.closest('.lg-btn');
         const t = sc.title;
-        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); }
+        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); } else if ((e.key === 'n' || e.key === 'N') && t.newGame) { e.preventDefault(); t.newGame.click(); }
         return;
       }
     }

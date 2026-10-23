@@ -2,7 +2,10 @@
 import { Sim } from './sim/Sim.js';
 import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
-import { MAX_SAVE_BYTES, setTreeDef } from './save/schema.js';
+import { MAX_SAVE_BYTES, setTreeDef, parseSave } from './save/schema.js';
+import { MAX_LANTERNS, cleanName } from './save/lanterns.js';
+import { LANTERN, treeWhisperShort, purses, continueWhisper, nextNight, treeAffordable, mostPlayedHero, lanternSummary, exportFileName } from './ui/lanterncopy.js';
+import { splitName } from './ui/titlecopy.js';
 import { newlyLines } from './meta/gatewords.js';
 import { abilityEmblem } from './ui/hudsvg.js';
 import { resolveBrightness } from './gfx/arc.js';
@@ -15,6 +18,11 @@ import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respe
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);
+
+// Nights a run can start on today. FD4 (map + night select) adds the opened harder nights; until then every run is Twilight,
+// so the Continue whisper never promises a night the next run will not be.
+const PLAYABLE_NIGHTS = ['normal'];
+const UNDO_MS = 60000;
 
 export const app = {
   data,
@@ -121,7 +129,130 @@ export const app = {
     this.paused = false;
     this.ui.hideAll();
     this.ui.showStart((id) => this.startRun(id));
+    // FD3: with 2+ lanterns on this device, the first menu of the session asks whose lantern it is (one lantern: never asked).
+    if (!this.lanternAsked && this.lanterns && this.lanterns.list().length > 1) { this.lanternAsked = true; this.ui.showLanterns('pick'); }
     if (this.scene) this.scene.unbindSim();
+  },
+
+  // ------------------------------------------------------------------ FD2/FD3 front door: lanterns (profiles)
+  openTiers(save) { try { return aggregateMods(save.tree || {}, treeDef, data).unlocks.tiers; } catch { return []; } },
+
+  hasProgress() { const d = this.save.data; return (d.stats.runs || 0) > 0 || Object.keys(d.tree).length > 0 || d.gold > 0 || d.shards > 0; },
+
+  frontDoor(lastHero) {
+    const L = this.lanterns;
+    if (!L) return null;
+    const s = this.save.data;
+    const tiers = this.openTiers(s);
+    const entry = L.list().find((x) => x.id === L.active) || { id: 'l1', name: 'Lantern 1' };
+    const heroId = typeof lastHero === 'string' && Object.hasOwn(data.characters, lastHero) ? lastHero : mostPlayedHero(s.stats, data);
+    const heroName = heroId ? splitName(data.characters[heroId].name).name : '';
+    const canNew = this.hasProgress() && !L.locked && !L.legacyMode;
+    return {
+      lantern: { id: entry.id, name: entry.name },
+      purses: purses(s, tiers),
+      whisper: continueWhisper(heroName, nextNight(s, data, tiers, PLAYABLE_NIGHTS)),
+      treeDot: treeAffordable(treeDef, s, data),
+      treeLine: treeWhisperShort(s.gold, s.shards) || (this.hasProgress() ? LANTERN.treeNothing : LANTERN.treeFirst),
+      newGame: canNew ? { free: MAX_LANTERNS - L.list().length } : null,
+    };
+  },
+
+  lanternScreen() {
+    const L = this.lanterns;
+    const cards = L.list().map((e) => {
+      const act = e.id === L.active;
+      const pk = act && !this.save.readOnly ? { status: 'ok', save: this.save.data, text: 'active' } : L.peek(e.id);
+      const sum = lanternSummary(e, pk, data, pk && pk.save ? this.openTiers(pk.save) : []);
+      sum.active = act;
+      return sum;
+    });
+    return { cards, canCreate: L.canCreate(), locked: L.locked || L.legacyMode, note: L.locked || L.legacyMode ? L.note : '' };
+  },
+
+  // Open the active lantern's save. Settings are per device (LOCKED): the ones in use carry over to the lantern being opened.
+  reopenSave() {
+    const prev = { ...this.save.data.settings };
+    this.save.flush();
+    this.save = this.lanterns.openActive();
+    this.save.load();
+    if (!this.save.readOnly && JSON.stringify(this.save.data.settings) !== JSON.stringify(prev)) this.save.setSettings(prev);
+    if (this.ui) this.ui.lastHero = null;
+    this.applySettings();
+  },
+
+  lightLantern(id) {
+    if (id === this.lanterns.active) return { ok: true };
+    const r = this.lanterns.setActive(id);
+    if (r.ok) this.reopenSave();
+    return r;
+  },
+
+  createLantern(name) {
+    const r = this.lanterns.create(typeof name === 'string' ? name.trim() : '');
+    if (!r.ok) return r;
+    return this.lightLantern(r.id);
+  },
+
+  renameLantern(id, name) { return this.lanterns.rename(id, name); },
+
+  lanternText(id) {
+    if (id === this.lanterns.active && !this.save.readOnly) return this.save.exportText();
+    const pk = this.lanterns.peek(id);
+    return pk && pk.text ? pk.text : null;
+  },
+
+  exportLantern(id) {
+    const e = this.lanterns.list().find((x) => x.id === id);
+    const text = e ? this.lanternText(id) : null;
+    if (!text) return { ok: false, message: 'Nothing to export yet: this lantern has not been played.' };
+    try {
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = exportFileName(e.name);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      return { ok: true, message: LANTERN.exported(e.name) };
+    } catch { return { ok: false, message: LANTERN.exportFail }; }
+  },
+
+  // Delete = the card's hold-to-confirm. The deleted save is kept in memory for one minute so Undo can light it again (as a new lantern).
+  deleteLantern(id) {
+    const L = this.lanterns;
+    const e = L.list().find((x) => x.id === id);
+    if (!e) return { ok: false, error: 'No such lantern.' };
+    const text = this.lanternText(id);
+    const undoable = !!(text && parseSave(text).ok);
+    const wasActive = id === L.active;
+    if (wasActive) this.save.flush();
+    const r = L.remove(id);
+    if (!r.ok) return r;
+    if (wasActive) this.reopenSave();
+    this.undoBuf = undoable ? { text, name: e.name, at: Date.now() } : null;
+    return { ok: true, undo: undoable, message: LANTERN.deleted(e.name) };
+  },
+
+  undoDelete() {
+    const u = this.undoBuf;
+    this.undoBuf = null;
+    if (!u || Date.now() - u.at > UNDO_MS) return { ok: false, message: 'Too late to undo: the lantern is gone.' };
+    const r = this.lanterns.importNew(u.text, u.name);
+    return r.ok ? { ok: true, message: LANTERN.undone(u.name) } : { ok: false, message: r.error || 'Could not undo.' };
+  },
+
+  // Replace mode (all 3 lit): put the chosen lantern out and light a fresh one in its place, then pick a hero.
+  replaceLantern(id, name) {
+    const nm = typeof name === 'string' ? name.trim() : '';
+    if (nm) { const n = cleanName(nm); if (!n.ok) return { ok: false, error: n.error }; }
+    if (id === this.lanterns.active) this.save.flush();
+    const r = this.lanterns.remove(id);
+    if (!r.ok) return r;
+    this.undoBuf = null;
+    const c = this.lanterns.create(nm);
+    if (!c.ok) { this.reopenSave(); return c; }
+    this.lanterns.setActive(c.id);
+    this.reopenSave();
+    return { ok: true };
   },
 
   // Called every rendered frame by the scene.
@@ -257,7 +388,16 @@ export const app = {
       loadNote: () => { const n = this.save.loadNote; if (n && !this.save.readOnly) this.save.loadNote = null; return n; }, // recovery message: once on the title screen (the newer-version lock stays)
       storageNote: () => (this.save.readOnly ? this.save.loadNote : this.save.persistent ? null : 'Browser storage is blocked or full: progress will not persist.'),
       isFirstRun: () => (this.save.data.stats.runs || 0) === 0 && Object.keys(this.save.data.tree).length === 0,
-      hasProgress: () => (this.save.data.stats.runs || 0) > 0 || Object.keys(this.save.data.tree).length > 0 || this.save.data.gold > 0 || this.save.data.shards > 0,
+      hasProgress: () => this.hasProgress(),
+      frontDoor: (lastHero) => this.frontDoor(lastHero),
+      lanternScreen: () => this.lanternScreen(),
+      lightLantern: (id) => this.lightLantern(id),
+      createLantern: (name) => this.createLantern(name),
+      renameLantern: (id, name) => this.renameLantern(id, name),
+      exportLantern: (id) => this.exportLantern(id),
+      deleteLantern: (id) => this.deleteLantern(id),
+      undoDelete: () => this.undoDelete(),
+      replaceLantern: (id, name) => this.replaceLantern(id, name),
       getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),
       openSettings: () => this.ui.showSettings(),
       openTree: () => this.openTree(),

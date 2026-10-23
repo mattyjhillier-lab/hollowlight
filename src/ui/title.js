@@ -3,14 +3,19 @@
 import { el, kitRoot, button, divider, pips, wick, icon, wordmark } from './kit.js';
 import { mk, emblem, EMBLEM_OF } from './hudsvg.js';
 import { TITLE, HERO, primaryCopy, treeWhisper } from './titlecopy.js';
+import { buildChip, buildPurses } from './lanternsui.js';
+import { LANTERN } from './lanterncopy.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const cls = (node, c) => { node.classList.add(c); return node; };
 let sid = 0;
 const nid = (p) => `u3-${p}-${++sid}`;
 
-/** Title: wordmark, then Begin / Continue as the big primary, Skill Tree and Settings as secondary, version footer. */
-export function buildTitle({ hasProgress = false, firstRun = false, bank = null, version = '', note = '', onBegin, onTree, onSettings } = {}) {
+/** Title: wordmark, then Begin / Continue as the big primary, Skill Tree and Settings as secondary, version footer.
+ *  FD2 (all optional, so the U3 title still builds without them): lantern {id, name} -> chip top-left (onSwitch); purses {gold, shards, glass|null}
+ *  top-right; whisper = Continue whisper; treeDot = something in the tree is affordable now; newGame {free} -> quiet "New game" (onNew). */
+export function buildTitle({ hasProgress = false, firstRun = false, bank = null, version = '', note = '', lantern = null, purses = null, whisper = '', treeDot = false, newGame = null, treeLine = null,
+  onBegin, onTree, onSettings, onSwitch, onNew } = {}) {
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-title');
   const col = el('main', 'u3-col');
@@ -21,10 +26,19 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
   const side = el('div', 'u3-side');
   const menu = el('nav', 'u3-menu', null, { 'aria-label': 'Main menu' });
   const p = primaryCopy(hasProgress);
-  const begin = button({ label: p.label, whisper: p.whisper, hint: 'Enter', variant: 'primary', onClick: () => { if (onBegin) onBegin(); } });
-  const tree = button({ label: TITLE.tree.label, whisper: treeWhisper(bank, firstRun), hint: 'T', onClick: () => { if (onTree) onTree(); } });
+  const begin = button({ label: p.label, whisper: hasProgress && whisper ? whisper : p.whisper, hint: 'Enter', variant: 'primary', onClick: () => { if (onBegin) onBegin(); } });
+  const tree = button({ label: TITLE.tree.label, whisper: treeLine || treeWhisper(bank, firstRun), hint: 'T', onClick: () => { if (onTree) onTree(); } });
+  if (treeDot) {
+    const lab = tree.children && tree.children[1] && tree.children[1].children ? tree.children[1].children[0] : null;
+    if (lab) add(lab, el('span', 'fd-dot', null, { 'aria-hidden': 'true' }), el('span', 'u3-sr', ' (something can be bought now)'));
+  }
   const settings = button({ label: TITLE.settings.label, whisper: TITLE.settings.whisper, hint: 'S', onClick: () => { if (onSettings) onSettings(); } });
-  add(menu, begin, tree, settings);
+  let ng = null;
+  if (newGame) {
+    ng = button({ label: LANTERN.newGame, whisper: LANTERN.newWhisper(Math.max(0, Math.floor(Number(newGame.free) || 0))), hint: 'N', variant: 'secondary', onClick: () => { if (onNew) onNew(); } });
+    ng.classList.add('fd-newgame');
+  }
+  if (lantern) { menu.classList.add('fd-menu2'); side.classList.add('fd-side'); add(menu, begin, add(el('div', 'fd-row2'), tree, settings), ng); } else add(menu, begin, tree, settings);
   add(side, menu);
   if (typeof note === 'string' && note) add(side, el('p', 'u3-note ty-small', note.slice(0, 400), { role: 'status' })); // textContent only (el)
   if (firstRun) add(side, el('p', 'u3-hint ty-small', TITLE.hint));
@@ -33,8 +47,14 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
   const foot = el('footer', 'u3-foot');
   const ver = el('span', 'u3-ver ty-small', version ? `v${String(version).slice(0, 24)}` : '');
   add(foot, ver);
-  add(root, col, foot);
-  return { root, begin, tree, settings, side, menu, foot, version: ver };
+  let chip = null;
+  if (lantern) { // after the menu in DOM order (Tab reaches Continue first), drawn at the top
+    const top = el('div', 'fd-top');
+    chip = buildChip({ id: lantern.id, name: lantern.name, onClick: () => { if (onSwitch) onSwitch(); } });
+    add(top, chip, purses ? buildPurses(purses) : null);
+    add(root, col, top, foot);
+  } else add(root, col, foot);
+  return { root, begin, tree, settings, newGame: ng, chip, side, menu, foot, version: ver };
 }
 
 const weaponEmblem = (weaponId) => {
