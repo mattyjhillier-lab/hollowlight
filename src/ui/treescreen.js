@@ -87,6 +87,7 @@ export class TreeScreen {
     this.resize();
     this.recompute();
     this.focusStart();
+    if (typeof api.focusId === 'string' && this.def.nodes[api.focusId]) this.select(api.focusId, true); // FD4 'Open in tree': fly to the Night Gate lantern
     this.regrowthNote();
     this.showTip(false);
     this.mapEl.focus({ preventScroll: true });

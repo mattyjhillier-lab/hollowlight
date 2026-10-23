@@ -4,14 +4,15 @@ import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
 import { MAX_SAVE_BYTES, setTreeDef, parseSave } from './save/schema.js';
 import { MAX_LANTERNS, cleanName } from './save/lanterns.js';
-import { LANTERN, treeWhisperShort, purses, continueWhisper, nextNight, treeAffordable, mostPlayedHero, lanternSummary, exportFileName } from './ui/lanterncopy.js';
+import { LANTERN, treeWhisperShort, purses, continueWhisper, treeAffordable, mostPlayedHero, lanternSummary, exportFileName } from './ui/lanterncopy.js';
 import { splitName } from './ui/titlecopy.js';
 import { newlyLines } from './meta/gatewords.js';
 import { abilityEmblem } from './ui/hudsvg.js';
 import { resolveBrightness } from './gfx/arc.js';
 import { touchEnabled } from './input/stick.js';
 import { parseParams } from './params.js';
-import { tierIndex } from './sim/tiers.js';
+import { tierIndex, TIER_IDS, resolveTier } from './sim/tiers.js';
+import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } from './ui/nightcopy.js';
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
 
@@ -19,9 +20,6 @@ import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respe
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);
 
-// Nights a run can start on today. FD4 (map + night select) adds the opened harder nights; until then every run is Twilight,
-// so the Continue whisper never promises a night the next run will not be.
-const PLAYABLE_NIGHTS = ['normal'];
 const UNDO_MS = 60000;
 
 export const app = {
@@ -39,9 +37,18 @@ export const app = {
   banked: false,
   touch: null, // TouchControls, created in main.js
 
-  startRun(characterId) {
+  // FD4: tier = the night picked on the map screen. Only 'normal' or a night this lantern has opened is accepted (anything else -> Twilight),
+  // and banking re-checks the gate (recordTierRun), so no path can play or pay a night that is not open. Twilight runs are unchanged.
+  startRun(characterId, tier = 'normal') {
     const p = this.params;
     this.characterId = characterId;
+    const cid = this.firstChapter();
+    const open = this.openTiers(this.save.data);
+    this.runTier = pickRunTier(tier, open, cid);
+    if (!p.auto && hasNightChoice(this.save.data, data, treeDef, open) && !this.save.readOnly) { // remember the pick; the open nights' NEW flags have now been seen
+      rememberNight(this.save.data, cid, this.runTier, TIER_IDS.filter((t) => t === 'normal' || open.includes(`${cid}:${t}`)));
+      this.save.saveNow();
+    }
     const sim = new Sim({
       data,
       characterId,
@@ -50,7 +57,7 @@ export const app = {
       tree: this.treeEffects(),
       startTime: p.startTime,
       godMode: p.god,
-      tier: p.tier || 'normal', // dev ?tier= (whitelisted in params.js); the map-select UI arrives with DT7
+      tier: p.tier || this.runTier, // dev ?tier= (whitelisted in params.js; a debug run) or the night picked on the map screen (FD4)
       autoRule: this.save.data.settings.autoRule, // used only if 'Chosen Moment' is owned (sanitised whitelist; the Sim whitelists again)
     });
     if (p.grant) this.applyGrants(sim, p.grant);
@@ -69,7 +76,7 @@ export const app = {
   // Effects of the player's owned nodes (or a dev preset). Rebuilt from the sanitised save each run.
   treeEffects() {
     const owned = this.params.meta ? presetTree(treeDef, this.params.meta, true) /* previews include gate nodes */ : this.save.data.tree;
-    return aggregateMods(owned, treeDef, data, { tier: tierIndex(this.params.tier) }); // tier-bought power applies only on the tiers that pay it
+    return aggregateMods(owned, treeDef, data, { tier: tierIndex(this.params.tier || this.runTier || 'normal') }); // tier-bought power applies only on the tiers that pay it
   },
 
   heroUnlocked(id) {
@@ -101,10 +108,14 @@ export const app = {
     };
   },
 
-  openTree() {
+  // focusId: a lantern to select on open (FD4 'Open in tree' on a ready Night Gate); back: where Back returns (the map screen), else the title.
+  openTree(focusId = null, back = null) {
     this.sim = null;
     this.ui.hideAll();
-    this.ui.tree.open(this.treeApi());
+    const api = this.treeApi();
+    if (typeof focusId === 'string' && Object.hasOwn(treeDef.nodes, focusId)) api.focusId = focusId;
+    if (typeof back === 'function') api.onClose = back;
+    this.ui.tree.open(api);
   },
 
   applyBless(sim, spec) {
@@ -128,7 +139,7 @@ export const app = {
     this.sim = null;
     this.paused = false;
     this.ui.hideAll();
-    this.ui.showStart((id) => this.startRun(id));
+    this.ui.showStart((id, tier) => this.startRun(id, tier));
     // FD3: with 2+ lanterns on this device, the first menu of the session asks whose lantern it is (one lantern: never asked).
     if (!this.lanternAsked && this.lanterns && this.lanterns.list().length > 1) { this.lanternAsked = true; this.ui.showLanterns('pick'); }
     if (this.scene) this.scene.unbindSim();
@@ -136,6 +147,19 @@ export const app = {
 
   // ------------------------------------------------------------------ FD2/FD3 front door: lanterns (profiles)
   openTiers(save) { try { return aggregateMods(save.tree || {}, treeDef, data).unlocks.tiers; } catch { return []; } },
+  firstChapter() { return Object.keys(data.chapters)[0]; },
+
+  // ------------------------------------------------------------------ FD4 map + night select
+  nightChoice() { return hasNightChoice(this.save.data, data, treeDef, this.openTiers(this.save.data)); },
+  // The night the next run starts on (the Continue whisper names it): Twilight until there is a choice, then the remembered / recommended night.
+  nextNightId(save = this.save.data) { const open = this.openTiers(save); return hasNightChoice(save, data, treeDef, open) ? defaultNight(save, data, treeDef, open) : 'normal'; },
+  nightView(heroId, tier) {
+    const s = this.save.data;
+    const hid = typeof heroId === 'string' && Object.hasOwn(data.characters, heroId) ? heroId : null;
+    let closest = [];
+    try { closest = closestUnlocks(treeDef, s, data, 1); } catch { closest = []; }
+    return mapView({ save: s, data, def: treeDef, openTiers: this.openTiers(s), heroId: hid, heroName: hid ? splitName(data.characters[hid].name).name : '', tier: TIER_IDS.includes(tier) ? tier : null, closest });
+  },
 
   hasProgress() { const d = this.save.data; return (d.stats.runs || 0) > 0 || Object.keys(d.tree).length > 0 || d.gold > 0 || d.shards > 0; },
 
@@ -151,7 +175,7 @@ export const app = {
     return {
       lantern: { id: entry.id, name: entry.name },
       purses: purses(s, tiers),
-      whisper: continueWhisper(heroName, nextNight(s, data, tiers, PLAYABLE_NIGHTS)),
+      whisper: continueWhisper(heroName, { id: this.nextNightId(s), name: resolveTier(data.tiers, this.firstChapter(), this.nextNightId(s)).name }),
       treeDot: treeAffordable(treeDef, s, data),
       treeLine: treeWhisperShort(s.gold, s.shards) || (this.hasProgress() ? LANTERN.treeNothing : LANTERN.treeFirst),
       newGame: canNew ? { free: MAX_LANTERNS - L.list().length } : null,
@@ -350,11 +374,23 @@ export const app = {
   bankRun(sim) {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
-    const b = this.save.bankRun(sim.result(), { def: treeDef, data, unlockedTiers: aggregateMods(this.save.data.tree, treeDef, data).unlocks.tiers });
+    const b = this.save.bankRun(sim.result(), { def: treeDef, data, unlockedTiers: this.openTiers(this.save.data) });
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
+    b.night = this.nightResult(b.tier, sim.result());
     if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';
     return b;
+  },
+
+  // FD5: what the results card says about the night (badge, Again label, heroes whose first dawn on this night is still waiting).
+  nightResult(tier, r) {
+    const cid = r && typeof r.chapter === 'string' && Object.hasOwn(data.chapters, r.chapter) ? r.chapter : this.firstChapter();
+    const tid = tier && TIER_IDS.includes(tier.tier) ? tier.tier : 'normal';
+    const t = resolveTier(data.tiers, cid, tid);
+    const rec = ((this.save.data.stats.tiers || {})[cid] || {})[tid] || null;
+    const heroes = Object.keys(data.characters).filter((h) => this.heroUnlocked(h));
+    const waiting = t.glass.first > 0 ? heroes.filter((h) => !(rec && rec.heroes && rec.heroes[h] && rec.heroes[h].first === true)).map((h) => splitName(data.characters[h].name).name) : [];
+    return { id: tid, name: t.name, choice: this.nightChoice(), goldMul: t.goldMul, firstGlass: t.glass.first, firstShards: t.firstShards, waiting };
   },
 
   // Phone-sized or touch-first device (drives the Brighter default of the Brightness setting).
@@ -400,7 +436,9 @@ export const app = {
       replaceLantern: (id, name) => this.replaceLantern(id, name),
       getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),
       openSettings: () => this.ui.showSettings(),
-      openTree: () => this.openTree(),
+      openTree: (focusId, back) => this.openTree(focusId, back),
+      nightChoice: () => this.nightChoice(),
+      nightView: (heroId, tier) => this.nightView(heroId, tier),
       heroUnlocked: (id) => this.heroUnlocked(id),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
     };
@@ -422,6 +460,6 @@ export const app = {
   },
 
   again() {
-    this.startRun(this.characterId);
+    this.startRun(this.characterId, this.runTier || 'normal'); // Again = same hero + map + night
   },
 };

@@ -64,7 +64,9 @@ const weaponEmblem = (weaponId) => {
 };
 
 /** Hero select. heroes: [{id,name,epithet,line,gift,weapon,weaponId,ability,pips:{health,speed}}] (from heroView). portraits: {id: url}. */
-export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart, onBack } = {}) {
+/** nextLabel: when set (FD4: a night choice follows), the start button reads this instead of "Walk with <hero>". */
+export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart, onBack, nextLabel = null } = {}) {
+  const startText = (h) => (nextLabel ? String(nextLabel) : HERO.walk(h ? h.name : 'Hero'));
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-hero-screen');
   const head = el('header', 'u3-head');
@@ -101,7 +103,7 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
   });
   const bar = el('div', 'u3-bar');
   const back = button({ label: HERO.back, hint: 'Esc', variant: 'secondary', onClick: () => { if (onBack) onBack(); } });
-  const start = button({ label: HERO.walk(heroes[cur] ? heroes[cur].name : 'Hero'), hint: 'Enter', variant: 'primary', onClick: () => { if (heroes[cur] && onStart) onStart(heroes[cur].id); } });
+  const start = button({ label: startText(heroes[cur]), hint: 'Enter', variant: 'primary', onClick: () => { if (heroes[cur] && onStart) onStart(heroes[cur].id); } });
   add(bar, back, start);
   const help = el('p', 'u3-help ty-small');
   const keys = el('span', 'u3-keys');
@@ -111,7 +113,7 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
   add(root, head, group, bar, help);
 
   const startLabel = () => (start.querySelector ? start.querySelector('.lg-btn__label') : null);
-  const retitle = () => { const l = startLabel(); if (l && heroes[cur]) l.textContent = HERO.walk(heroes[cur].name); };
+  const retitle = () => { const l = startLabel(); if (l && heroes[cur]) l.textContent = startText(heroes[cur]); };
   cards.forEach((_, i) => state(i));
   const choose = (i, focus) => {
     if (!cards.length) return;

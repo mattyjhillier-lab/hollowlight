@@ -2,12 +2,13 @@
 // time survived with a moon arc to dawn, chips, banked gold and shards that count up, the top-3 damage shares, one unlock nudge, and Again / Main menu / Tree.
 // createElement + textContent only; hostile strings stay inert. View data comes from resultscopy.resultsView().
 import { el, kitRoot, panel, button, icon, badge } from './kit.js';
+import { tierGlyph, starIcon } from './lanternsui.js';
 import { mk, emblem, EMBLEM_OF, lantern } from './hudsvg.js';
 import { RES, resultsSummary, countAt, group } from './resultscopy.js';
 
 export const INPUT_LOCK_MS = 250;       // keys right after the screen appears are ignored (a mashed Space or R from the run must not restart it)
 export const COUNT_MS = 900;
-const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'nudge', 'arcl', 'line'];   // short screens drop the lowest-priority rows first instead of scrolling
+const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'nudge', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const nowMs = () => (globalThis.performance && globalThis.performance.now ? globalThis.performance.now() : Date.now());
 
@@ -46,7 +47,9 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
   const hero = el('section', 'u6-hero');
   add(hero, lamp.svg);
   const txt = el('div', 'u6-herotext');
-  add(txt, el('div', 'u6-kicker ty-kicker', v.kicker), el('h2', 'u6-title', v.title), el('p', 'u6-line', v.line, { 'data-drop': 'line' }));
+  const nb = v.night; // FD5: night badge (tier glyph + name, '· first dawn'); shape + word, never colour alone
+  const nbadge = nb ? add(el('p', `u6-night u6-night--${nb.id}`), tierGlyph(nb.id), el('span', null, nb.badge)) : null;
+  add(txt, el('div', 'u6-kicker ty-kicker', v.kicker), nbadge, el('h2', 'u6-title', v.title), el('p', 'u6-line', v.line, { 'data-drop': 'line' }));
   const rc = v.recap || { struck: null, rows: [], note: '' };
   if (rc.struck) { // DR4: who struck you down (names come from game data, text only)
     const s = rc.struck;
@@ -91,10 +94,24 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
   const goldChip = chip(RES.bank.gold, goldVal, 'u6-bank');
   const shardChip = chip(RES.bank.shards, shardVal, 'u6-bank');
   if (b.goldTotal != null) {
-    add(goldChip, el('span', 'u6-chip__sub', `${RES.bank.total} ${group(b.goldTotal)}`));
-    add(shardChip, el('span', 'u6-chip__sub', `${b.bossBonus ? `${RES.bank.bossBonus} · ` : ''}${RES.bank.total} ${group(b.shardsTotal)}`));
+    add(goldChip, el('span', 'u6-chip__sub', `${nb && nb.goldLine ? `${nb.goldLine} · ` : ''}${RES.bank.total} ${group(b.goldTotal)}`));
+    add(shardChip, el('span', 'u6-chip__sub', `${nb && nb.shardsExtra ? `${b.bossBonus ? `${RES.night.boss} ` : ''}${RES.night.firstShard(nb.shardsExtra)} · ` : b.bossBonus ? `${RES.bank.bossBonus} · ` : ''}${RES.bank.total} ${group(b.shardsTotal)}`));
   }
-  put(add(el('div', 'u6-chips u6-chips--bank'), goldChip, shardChip));
+  let glassChip = null;
+  if (nb && nb.glass) { // Dawnglass tile: Deep Dusk / Long Night only
+    const glassN = countNode('+', nb.glass.n, 'u6-glass');
+    counters.push(glassN);
+    glassChip = chip(RES.night.glass, add(el('span', 'u6-chip__val u6-bankval'), el('i', 'u6-gem', null, { 'aria-hidden': 'true' }), glassN.wrap), 'u6-bank u6-bank--glass');
+    if (b.glassTotal != null) add(glassChip, el('span', 'u6-chip__sub', `${nb.glass.sub ? `${nb.glass.sub} · ` : ''}${RES.bank.total} ${group(b.glassTotal)}`));
+  }
+  put(add(el('div', `u6-chips u6-chips--bank${glassChip ? ' u6-chips--3' : ''}`), goldChip, shardChip, glassChip));
+  if (nb && nb.firstLine) put(add(el('p', 'u6-first', null, { 'data-drop': 'firstdawn' }), starIcon(true), el('span', null, nb.firstLine)));
+  if (nb && nb.stars) {
+    const row = el('ul', 'u6-stars', null, { 'aria-label': RES.night.starsLabel, 'data-drop': 'stars' });
+    for (const st of nb.stars) add(row, add(el('li', st.on ? 'is-on' : null), starIcon(st.on), el('span', null, st.label), el('span', 'u6-sr', st.on ? ' (earned)' : ' (not yet)')));
+    put(row);
+  }
+  if (nb && nb.kept) put(el('p', 'u6-kept', nb.kept, { 'data-drop': 'kept' }));
   if (b.note) put(el('p', 'u6-note', b.note));
   else if (v.debug) put(el('p', 'u6-note', RES.debug));
 
@@ -167,7 +184,7 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     used = true;
     if (fn) fn();
   };
-  const again = button({ label: RES.again.label, hint: RES.again.hint, variant: 'primary', onClick: guarded(onAgain) });
+  const again = button({ label: nb && nb.again ? nb.again : RES.again.label, hint: RES.again.hint, variant: 'primary', onClick: guarded(onAgain) });
   const menu = button({ label: RES.menu.label, hint: RES.menu.hint, onClick: guarded(onMenu) });
   const tree = button({ label: RES.tree.label, hint: RES.tree.hint, onClick: guarded(onTree) });
   again.classList.add('u6-btn', 'u6-btn--again');

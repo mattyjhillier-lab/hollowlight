@@ -4,6 +4,7 @@ import { encodeTree, decodeTree, decodeTreeRaw, encodeSeen, decodeSeen, isCompac
 import { OLD_TREE_VERSION, runTreeSteps } from '../meta/migrations/index.js';
 import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 import { tierRecords, MAX_GLASS } from './tiers.js';
+import { TIER_IDS } from '../sim/tiers.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -141,6 +142,14 @@ function recentRuns(a) {
 function notesOf(o) {
   const out = {};
   if (isObj(o) && isObj(o.regrowth)) out.regrowth = { gold: int(o.regrowth.gold, 0), shards: int(o.regrowth.shards, 0), nodes: int(o.regrowth.nodes, 0, 0, 1e4) };
+  // FD4: the map screen's remembered map + night and the nights whose NEW flag was seen. Known chapter / tier ids only; anything else is dropped.
+  if (isObj(o) && isObj(o.night)) {
+    const n = o.night;
+    const chOk = (id) => typeof id === 'string' && ID_KEY.test(id) && !BAD_KEYS.has(id) && !!(TREE_DATA && isObj(TREE_DATA.chapters) && Object.hasOwn(TREE_DATA.chapters, id));
+    const tOk = (id) => typeof id === 'string' && TIER_IDS.includes(id);
+    const seen = Array.isArray(n.seen) ? [...new Set(n.seen.slice(0, 8).filter(tOk))] : [];
+    out.night = { map: chOk(n.map) ? n.map : null, tier: tOk(n.tier) ? n.tier : null, seen };
+  }
   return out;
 }
 

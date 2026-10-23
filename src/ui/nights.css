@@ -1,0 +1,138 @@
+/* FD4 (= DT7) "Choose your night" (docs/design/front-door-v1.md 2A; mock docs/mockups/front-door/fd-map-*.png). Lantern Glass kit, locked fonts and
+   colours; tier colours: Twilight amber, Deep Dusk periwinkle, Long Night pale lilac (shape glyphs carry the meaning). Scoped under .overlay.u3.fdm. */
+.overlay.u3.fdm { --tw: #ffb867; --dd: #9aa8ff; --ln: #d4ccff; --lockc: #8f98b4; }
+.overlay.u3.fdm .fdm-screen { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 14px 22px;
+  align-items: stretch; justify-items: stretch; padding: clamp(12px, 2.4vh, 20px) clamp(14px, 2vw, 26px) clamp(12px, 2.4vh, 18px); overflow: hidden; }
+.overlay.u3.fdm .fdm-hd { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px 18px; min-width: 0; }
+.overlay.u3.fdm .fdm-title { margin: 0; white-space: nowrap; font: var(--fw-display) clamp(28px, 6vh, 44px)/1 var(--font-display); color: var(--lg-text);
+  text-shadow: 0 0 .7em rgba(255, 171, 58, .3), 0 2px 0 rgba(0, 0, 0, .6); }
+.overlay.u3.fdm .fdm-crumb { margin: 0; font: var(--fw-body) 14px/1.2 var(--font-body); color: #c3cadc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.overlay.u3.fdm .fdm-crumb b { color: var(--lg-text); }
+.overlay.u3.fdm .fdm-chs { display: flex; align-items: center; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.overlay.u3.fdm .fdm-ch { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed var(--lockc); color: #c3cadc; font: var(--fw-body-strong) 12px/1 var(--font-body); }
+.overlay.u3.fdm .fdm-ch.is-on { border: 2px solid #d8b26a; background: radial-gradient(#ffd38a, #b9822f); color: #2a1606; }
+.overlay.u3.fdm .fdm-thr { width: 12px; border-top: 1.5px dashed var(--lockc); }
+.overlay.u3.fdm .fdm-hd .fd-purses { margin-left: auto; flex-wrap: nowrap; }
+
+/* map card */
+.overlay.u3.fdm .fdm-map { position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-radius: 18px; background: #0e1422;
+  border: 2px solid #c79a4c; box-shadow: var(--lg-rim), 0 10px 24px rgba(0, 0, 0, .45); }
+.overlay.u3.fdm .fdm-artbox { position: relative; flex: 1 1 auto; min-height: 60px; overflow: hidden; }
+.overlay.u3.fdm .fdm-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.overlay.u3.fdm .fdm-nm { position: absolute; left: 22px; top: 14px; }
+.overlay.u3.fdm .fdm-k { color: var(--lg-brass-text); text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+.overlay.u3.fdm .fdm-chap { margin: 2px 0 0; font: var(--fw-display) clamp(26px, 5.6vh, 40px)/1.05 var(--font-display); color: var(--lg-text); text-shadow: 0 2px 8px #000; }
+.overlay.u3.fdm .fdm-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; background: rgba(10, 14, 24, .88); }
+.overlay.u3.fdm .fdm-tier { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0; min-height: 72px; padding: 8px 12px; cursor: pointer;
+  border-radius: 14px; border: 1.5px solid #8d6c34; background: rgba(24, 30, 46, .92); -webkit-tap-highlight-color: transparent; outline: none; }
+.overlay.u3.fdm .fdm-tier:hover { border-color: #d8b26a; }
+.overlay.u3.fdm .fdm-tier:focus-visible { box-shadow: 0 0 0 3px #fff3dc, 0 0 0 6px rgba(255, 170, 60, .45); }
+.overlay.u3.fdm .fdm-n { display: flex; align-items: center; gap: 7px; min-width: 0; font: var(--fw-display) clamp(17px, 3.1vh, 22px)/1.1 var(--font-display); white-space: nowrap; }
+.overlay.u3.fdm .fdm-n__t { overflow: hidden; text-overflow: ellipsis; }
+.overlay.u3.fdm .fdm-n .fd-gl, .overlay.u3.fdm .fdm-lock { flex: none; width: 18px; height: 18px; margin: 0; }
+.overlay.u3.fdm .fdm-tier--normal .fdm-n { color: var(--tw); } .overlay.u3.fdm .fdm-tier--hard .fdm-n { color: var(--dd); } .overlay.u3.fdm .fdm-tier--expert .fdm-n { color: var(--ln); }
+.overlay.u3.fdm .fdm-tier.is-locked .fdm-n, .overlay.u3.fdm .fdm-tier.is-gate .fdm-n { color: #aab2c8; }
+.overlay.u3.fdm .fdm-tier.is-gate .fdm-lock { color: var(--teal); }
+.overlay.u3.fdm .fdm-line { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 3px; font: var(--fw-body) 13px/1.25 var(--font-body); color: var(--lg-dim); }
+.overlay.u3.fdm .fdm-line .fd-st { width: 14px; height: 14px; }
+.overlay.u3.fdm .fdm-tier.is-locked, .overlay.u3.fdm .fdm-tier.is-gate { border-style: dashed; background: rgba(14, 18, 28, .88); }
+.overlay.u3.fdm .fdm-tier.is-gate { border-color: var(--teal); }
+.overlay.u3.fdm .fdm-tier.is-sel { border: 2.5px solid #fff3dc; box-shadow: 0 0 0 3px rgba(255, 243, 220, .3), 0 0 22px rgba(255, 190, 110, .35); }
+.overlay.u3.fdm .fdm-tier--hard.is-sel { border-color: var(--dd); box-shadow: 0 0 0 3px rgba(154, 168, 255, .3), 0 0 22px rgba(154, 168, 255, .4); }
+.overlay.u3.fdm .fdm-tier--expert.is-sel { border-color: var(--ln); box-shadow: 0 0 0 3px rgba(212, 204, 255, .3), 0 0 22px rgba(212, 204, 255, .35); }
+.overlay.u3.fdm .fdm-tier--normal.is-sel { border-color: var(--tw); box-shadow: 0 0 0 3px rgba(255, 184, 103, .3), 0 0 22px rgba(255, 184, 103, .35); }
+.overlay.u3.fdm .fdm-tier.is-sel.is-locked, .overlay.u3.fdm .fdm-tier.is-sel.is-gate { border-style: dashed; }
+.overlay.u3.fdm .fdm-new { position: absolute; top: -19px; right: 8px; height: 24px; }
+.overlay.u3.fdm .fdm-bar { display: block; height: 6px; margin-top: 3px; border-radius: 9px; background: #0b0f18; border: 1px solid #2c3550; overflow: hidden; }
+.overlay.u3.fdm .fdm-bar i { display: block; height: 100%; background: var(--teal); }
+
+/* side card */
+.overlay.u3.fdm .fdm-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; padding: 16px 20px; border-radius: 18px;
+  border: 2px solid #c79a4c; background: linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); box-shadow: var(--lg-rim), 0 10px 24px rgba(0, 0, 0, .45); }
+.overlay.u3.fdm .fdm-kick { display: flex; align-items: center; gap: 6px; }
+.overlay.u3.fdm .fdm-kick .fd-gl { width: 15px; height: 15px; margin: 0; }
+.overlay.u3.fdm .fdm-head { margin: 0; font: var(--fw-display) clamp(22px, 4.4vh, 32px)/1.05 var(--font-display); color: var(--tw); }
+.overlay.u3.fdm .fdm-side--hard .fdm-head { color: var(--dd); } .overlay.u3.fdm .fdm-side--expert .fdm-head { color: var(--ln); }
+.overlay.u3.fdm .fdm-changes { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 0; list-style: none; font: var(--fw-body) 16px/1.3 var(--font-body); color: var(--lg-text); }
+.overlay.u3.fdm .fdm-changes li { position: relative; padding-left: 16px; }
+.overlay.u3.fdm .fdm-changes li::before { content: ""; position: absolute; left: 0; top: .5em; width: 7px; height: 7px; border-radius: 50%; background: var(--tw); }
+.overlay.u3.fdm .fdm-side--hard .fdm-changes li::before { background: var(--dd); } .overlay.u3.fdm .fdm-side--expert .fdm-changes li::before { background: var(--ln); }
+.overlay.u3.fdm .fdm-earn { display: flex; flex-wrap: wrap; gap: 8px; }
+.overlay.u3.fdm .fdm-pill { font-size: 15px; }
+.overlay.u3.fdm .fdm-pill.is-teal { border-color: var(--teal); color: #9fe9dd; }
+.overlay.u3.fdm .fdm-tools, .overlay.u3.fdm .fdm-rec { margin: 0; font: var(--fw-body) 14px/1.3 var(--font-body); color: var(--lg-dim); }
+.overlay.u3.fdm .fdm-rec { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.overlay.u3.fdm .fdm-stars { display: inline-flex; gap: 4px; }
+.overlay.u3.fdm .fdm-stars .fd-st { width: 16px; height: 16px; }
+.overlay.u3.fdm .fdm-gate { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.overlay.u3.fdm .fdm-gate__t { margin: 0; font: var(--fw-body) 15px/1.3 var(--font-body); color: var(--lg-text); }
+.overlay.u3.fdm .fdm-go { min-height: 48px; }
+.overlay.u3.fdm .fdm-locked { display: flex; align-items: center; gap: 6px; } .overlay.u3.fdm .fdm-locked .fdm-lock { flex: none; width: 16px; height: 16px; color: #aab2c8; }
+.overlay.u3.fdm .fdm-go .lg-btn__flame { display: none; }
+.overlay.u3.fdm .fdm-nudge { margin: auto 0 0; font: var(--fw-body) 15px/1.3 var(--font-body); color: var(--lg-dim); }
+.overlay.u3.fdm .fdm-nudge b { color: #9fe9dd; }
+
+/* actions */
+.overlay.u3.fdm .fdm-acts { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.overlay.u3.fdm .fdm-acts .lg-btn { min-height: 52px; width: auto; flex: 0 0 auto; }
+.overlay.u3.fdm .fdm-acts > .lg-btn:not(.fdm-begin) { min-width: 150px; justify-content: center; gap: .8em; }
+.overlay.u3.fdm .fdm-acts .lg-btn__text { flex: 0 1 auto; }
+.overlay.u3.fdm .fdm-acts .fdm-sp { flex: 1; }
+.overlay.u3.fdm .fdm-begin { min-width: min(300px, 40vw); justify-content: center; }
+.overlay.u3.fdm .fdm-acts > .lg-btn:not(.fdm-begin) .lg-btn__flame { display: none; }
+
+/* landscape phones: hide the crumb, chapter thread, 3rd/4th change lines, night tools and records */
+@media (max-height: 480px) and (orientation: landscape) {
+  .overlay.u3.fdm .fdm-screen { gap: 8px 12px; padding: 8px 14px 8px; grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr); }
+  .overlay.u3.fdm .fdm-title { font-size: 26px; }
+  .overlay.u3.fdm .fdm-crumb, .overlay.u3.fdm .fdm-chs, .overlay.u3.fdm .fdm-tools, .overlay.u3.fdm .fdm-rec { display: none; }
+  .overlay.u3.fdm .fdm-nm { top: 8px; left: 14px; }
+  .overlay.u3.fdm .fdm-chap { font-size: 24px; }
+  .overlay.u3.fdm .fdm-tiers { gap: 6px; padding: 6px; }
+  .overlay.u3.fdm .fdm-tier { min-height: 52px; padding: 4px 6px; }
+  .overlay.u3.fdm .fdm-n { font-size: 15px; gap: 4px; }
+  .overlay.u3.fdm .fdm-n .fd-gl, .overlay.u3.fdm .fdm-lock { width: 13px; height: 13px; }
+  .overlay.u3.fdm .fdm-new { top: -15px; right: 4px; height: 20px; font-size: 12px; }
+  .overlay.u3.fdm .fdm-acts > .lg-btn:not(.fdm-begin) { min-width: 120px; }
+  .overlay.u3.fdm .fdm-line { font-size: 12px; }
+  .overlay.u3.fdm .fdm-side { padding: 8px 14px; gap: 4px; }
+  .overlay.u3.fdm .fdm-head { font-size: 20px; }
+  .overlay.u3.fdm .fdm-changes { font-size: 13px; gap: 2px; }
+  .overlay.u3.fdm .fdm-changes li:nth-child(n+3) { display: none; }
+  .overlay.u3.fdm .fdm-pill { font-size: 12px; min-height: 24px; }
+  .overlay.u3.fdm .fdm-earn { gap: 4px; }
+  .overlay.u3.fdm .fdm-nudge, .overlay.u3.fdm .fdm-gate__t { font-size: 12px; }
+  .overlay.u3.fdm .fdm-side .fdm-k { font-size: 12px; }
+  .overlay.u3.fdm .fdm-acts .lg-btn { min-height: 46px; }
+  .overlay.u3.fdm .fdm-begin { min-width: 220px; }
+  .overlay.u3.fdm .fd-pill { font-size: 13px; }
+}
+/* portrait (menus only): art 120 px + chips 3 across, side card with 2 change lines, Begin full width above Back / Tree */
+@media (max-aspect-ratio: 1/1) {
+  .overlay.u3.fdm .fdm-screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto; gap: 10px; padding: 12px 16px 14px; }
+  .overlay.u3.fdm .fdm-hd { flex-wrap: wrap; gap: 6px 10px; }
+  .overlay.u3.fdm .fdm-title { font-size: 30px; }
+  .overlay.u3.fdm .fdm-hd .fd-purses { margin-left: auto; }
+  .overlay.u3.fdm .fdm-crumb { order: 3; width: 100%; font-size: 13px; }
+  .overlay.u3.fdm .fdm-chs { display: none; }
+  .overlay.u3.fdm .fdm-artbox { flex: none; height: 120px; }
+  .overlay.u3.fdm .fdm-chap { font-size: 28px; }
+  .overlay.u3.fdm .fdm-tiers { gap: 6px; padding: 8px; }
+  .overlay.u3.fdm .fdm-tier { min-height: 64px; padding: 6px 7px; }
+  .overlay.u3.fdm .fdm-n { font-size: 15px; gap: 4px; }
+  .overlay.u3.fdm .fdm-n .fd-gl, .overlay.u3.fdm .fdm-lock { width: 14px; height: 14px; }
+  .overlay.u3.fdm .fdm-line { font-size: 12px; }
+  .overlay.u3.fdm .fdm-bar { display: none; }
+  .overlay.u3.fdm .fdm-side { padding: 12px 14px; gap: 6px; align-self: start; }
+  .overlay.u3.fdm .fdm-head { font-size: 22px; }
+  .overlay.u3.fdm .fdm-changes { font-size: 14px; }
+  .overlay.u3.fdm .fdm-changes li:nth-child(n+3) { display: none; }
+  .overlay.u3.fdm .fdm-pill { font-size: 13px; }
+  .overlay.u3.fdm .fdm-tools, .overlay.u3.fdm .fdm-rec { display: none; }
+  .overlay.u3.fdm .fdm-nudge { margin-top: 2px; font-size: 14px; }
+  .overlay.u3.fdm .fdm-acts { flex-wrap: wrap; align-content: flex-end; }
+  .overlay.u3.fdm .fdm-begin { order: -1; width: 100%; min-width: 0; }
+  .overlay.u3.fdm .fdm-sp { display: none; }
+  .overlay.u3.fdm .fdm-acts > .lg-btn:not(.fdm-begin) { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .overlay.u3.fdm .fdm-tier { transition: none; } }

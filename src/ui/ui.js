@@ -21,6 +21,8 @@ import './title.css';
 import { buildTitle, buildHeroSelect } from './title.js';
 import { buildLanternScreen } from './lanternsui.js';
 import './lanterns.css';
+import { buildNightSelect } from './nightsui.js';
+import './nights.css';
 import { heroView } from './titlecopy.js';
 import { buildPause } from './pause.js';
 import { buildSettings } from './settings.js';
@@ -32,6 +34,7 @@ import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+const HERO_NEXT = 'Next';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 
 export class UI {
@@ -151,6 +154,7 @@ export class UI {
     el.replaceChildren(t.root);
     this.hide('hero');
     this.hide('lanterns');
+    this.hide('nights');
     this.show('start');
     if (this.pwa) {
       mountInstallCard(document, this.pwa, t.side, t.menu);
@@ -198,13 +202,15 @@ export class UI {
       const w = this.data.weapons[c.weapon];
       return { ...heroView(id, c, w ? w.name : ''), weaponId: c.weapon };
     });
+    const choice = !!(h.nightChoice && h.nightChoice()); // FD4 skip rule: the night screen follows only once there is a night choice
     const hs = buildHeroSelect({
-      heroes, portraits: PORTRAITS, selected: this.lastHero,
-      onStart: (id) => { this.lastHero = id; if (this.onPick) this.onPick(id); },
+      heroes, portraits: PORTRAITS, selected: this.lastHero, nextLabel: choice ? HERO_NEXT : null,
+      onStart: (id) => { this.lastHero = id; if (choice) this.showNights(id); else if (this.onPick) this.onPick(id); },
       onBack: () => this.showStart(this.onPick),
     });
     const el = this.layer('hero');
     this.hide('lanterns');
+    this.hide('nights');
     el.className = 'overlay layer-hero u3';
     el.replaceChildren(hs.root);
     this.hide('start');
@@ -213,7 +219,29 @@ export class UI {
     hs.focusSelected();
   }
 
-  hideStart() { this.hide('start'); this.hide('hero'); this.hide('lanterns'); this.screen = null; }
+  // FD4 (= DT7): "Choose your night" after hero select (only once there is a night choice). The app supplies the view model and starts the run.
+  showNights(heroId, tier = null) {
+    const h = this.handlers;
+    if (!h.nightView) { if (this.onPick) this.onPick(heroId); return; }
+    const v = buildNightSelect({
+      view: h.nightView(heroId, tier),
+      viewFor: (tid) => h.nightView(heroId, tid),
+      purses: h.frontDoor ? (h.frontDoor(heroId) || {}).purses : null,
+      onPick: (tid) => { if (h.pickNight) h.pickNight(tid); },
+      onBegin: (tid) => { if (this.onPick) this.onPick(heroId, tid); },
+      onBack: () => this.showHeroSelect(),
+      onTree: (gateId) => { if (h.openTree) h.openTree(gateId, () => this.showNights(heroId, this.screen && this.screen.nights ? this.screen.nights.current() : tier)); },
+    });
+    const el = this.layer('nights');
+    el.className = 'overlay layer-nights u3 fd fdm';
+    el.replaceChildren(v.root);
+    this.hide('start'); this.hide('hero'); this.hide('lanterns');
+    this.show('nights');
+    this.screen = { id: 'nights', nights: v };
+    v.focusSelected();
+  }
+
+  hideStart() { this.hide('start'); this.hide('hero'); this.hide('lanterns'); this.hide('nights'); this.screen = null; }
 
   // ------------------------------------------------------------------ level-up (HUD-2: src/ui/cardsui.js, presentation only)
   showLevelUp(sim) {
@@ -284,7 +312,7 @@ export class UI {
     el.className = 'overlay layer-settings settings u4 u4-settingsscreen';
     if (!this.settingsOpen) this.settingsFrom = this.pauseView && this.layers.pause && this.layers.pause.style.display !== 'none' ? 'pause' : 'title';
     this.settingsOpen = true;
-    for (const n of ['start', 'hero', 'pause', 'lanterns']) if (this.layers[n]) this.layers[n].setAttribute('inert', ''); // keep Tab inside settings
+    for (const n of ['start', 'hero', 'pause', 'lanterns', 'nights']) if (this.layers[n]) this.layers[n].setAttribute('inert', ''); // keep Tab inside settings
     const s = buildSettings({
       settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
       storageNote: h.storageNote ? h.storageNote() : null,
@@ -303,7 +331,7 @@ export class UI {
     this.settingsOpen = false;
     this.settingsView = null;
     this.hide('settings');
-    for (const n of ['start', 'hero', 'pause', 'lanterns']) if (this.layers[n]) this.layers[n].removeAttribute('inert');
+    for (const n of ['start', 'hero', 'pause', 'lanterns', 'nights']) if (this.layers[n]) this.layers[n].removeAttribute('inert');
     if (this.handlers.closeSettings) this.handlers.closeSettings(); // title: rebuilds the menu (Continue state may have changed)
     if (this.settingsFrom === 'pause' && this.pauseView) this.pauseView.focusSettings();
     else if (this.screen && this.screen.id === 'title') this.screen.title.settings.focus({ preventScroll: true });
@@ -321,7 +349,7 @@ export class UI {
   spaceActivate(e) {
     if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
     const a = document.activeElement;
-    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end, .layer-lanterns') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
+    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end, .layer-lanterns, .layer-nights') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
     e.preventDefault();
     // only THIS press's keyup: if it never arrives (focus lost), the swallow must not linger and eat a later gameplay keyup (CTL1)
     const t0 = performance.now();
@@ -348,6 +376,7 @@ export class UI {
       const vis = (n) => this.layers[n] && this.layers[n].style.display !== 'none';
       if (sc.id === 'hero' && vis('hero')) { sc.hero.onKey(e); return; }
       if (sc.id === 'lanterns' && vis('lanterns')) { sc.lanterns.onKey(e); return; }
+      if (sc.id === 'nights' && vis('nights')) { sc.nights.onKey(e); return; }
       if (sc.id === 'title' && vis('start') && !e.ctrlKey && !e.altKey && !e.metaKey) {
         const a = document.activeElement;
         const onBtn = a && a.closest && a.closest('.lg-btn');

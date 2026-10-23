@@ -32,6 +32,7 @@ const GLYPH = {
 };
 export function tierGlyph(tid) { return sv('svg', { viewBox: '0 0 24 24', class: `fd-gl fd-gl--${GLYPH[tid] ? tid : 'normal'}`, 'aria-hidden': 'true', focusable: 'false' }, ...(GLYPH[tid] || GLYPH.normal)()); }
 const STAR = 'M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7z';
+export const starIcon = (on) => star(on);
 const star = (on) => sv('svg', { viewBox: '0 0 24 24', class: `fd-st${on ? ' is-on' : ''}`, 'aria-hidden': 'true', focusable: 'false' }, sv('path', { d: STAR }));
 
 /** Coin / shard / Dawnglass purse pills (top-right of the title). glass null = hidden (Deep Dusk not seen yet). */

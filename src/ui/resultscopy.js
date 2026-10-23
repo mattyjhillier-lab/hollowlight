@@ -48,6 +48,20 @@ export const RES = {
   menu: { label: 'Main menu', hint: 'Esc' },
   tree: { label: 'Tree', hint: 'T', newSr: 'something new to unlock' },
   region: 'Run results',
+  // FD5 (front-door-v1 3A): the night badge, Dawnglass tile, first-dawn line, stars and the kept line
+  night: {
+    firstDawn: 'first dawn',
+    glass: 'Dawnglass',
+    firstLine: (hero, night) => `First dawn with ${hero} on ${night}.`,
+    waiting: (names, n) => `${names} ${names.includes(' and ') ? 'have' : 'has'} not seen it yet (+${n} waiting).`,
+    goldMul: (mul, night) => `x${mul} ${night}`,
+    firstShard: (n) => `+${n} first dawn`,
+    boss: 'boss',
+    stars: ['Cleared', 'Both heroes', 'Bright Dawn'],
+    starsLabel: 'Night stars',
+    kept: 'What you earned before the fall is always kept.',
+    again: (night) => `Again · ${night}`,
+  },
 };
 
 const fin = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -176,13 +190,42 @@ export function resultsView(r, bank, data) {
     arc: { frac: won ? 1 : Math.max(0, Math.min(1, (r.clock != null ? fin(r.clock) : time) / dawnAt)), boss: bossAt > 0 ? Math.min(1, bossAt / dawnAt) : null, bossLabel: `${bossName} ${clock(bossAt)}`, dawnLabel: `${RES.dawn} ${clock(dawnAt)}` },
     chips: { level: whole(r.level) || 1, slain: whole(r.kills), evolved: evoNames.length ? evoNames.length : 0, evolvedNames: evoNames.join(', ') },
     bank: bank ? {
-      gold: bank.runGold != null ? whole(bank.runGold) : whole(r.gold), goldTotal: whole(bank.gold), shards: whole(r.shards), shardsTotal: whole(bank.shards), bossBonus: !!r.bossKilled, // runGold includes the tier gold bonus
+      gold: bank.runGold != null ? whole(bank.runGold) : whole(r.gold), goldTotal: whole(bank.gold), shards: whole(r.shards) + (won && bank.tier && bank.tier.firstDawn ? whole(bank.tier.shards) : 0), shardsTotal: whole(bank.shards), glassTotal: whole(bank.dawnglass), bossBonus: !!r.bossKilled, // runGold includes the tier gold bonus
       note: typeof bank.note === 'string' ? clip(bank.note, 140) : '',
     } : { gold: whole(r.gold), shards: whole(r.shards) },
     weapons: weaponShares(r.weapons, data),
     recap: hurtRecap(r, data, won),
     nudge,
     treeDot: newly.length > 0,
+    night: nightBlock(r, bank, hero, won),
+  };
+}
+
+/** FD5: the night's badge, Dawnglass tile, first-dawn line, stars, kept line and Again label. Only for banked runs (bank.night from the app);
+ *  everything is clamped / whitelisted. Twilight: badge only (layout as before, plus the night name on Again once there is a night choice). */
+export function nightBlock(r, bank, hero, won) {
+  const n = bank && bank.night && typeof bank.night === 'object' ? bank.night : null;
+  if (!n) return null;
+  const id = ['normal', 'hard', 'expert'].includes(n.id) ? n.id : 'normal';
+  const name = clip(n.name || 'Twilight', 24);
+  const t = bank.tier && typeof bank.tier === 'object' ? bank.tier : {};
+  const harder = id !== 'normal';
+  const first = !!(won && t.firstDawn);
+  const glass = whole(t.glass);
+  const waiting = Array.isArray(n.waiting) ? n.waiting.filter((x) => typeof x === 'string' && x && x !== hero).map((x) => clip(x, 24)).slice(0, 3) : [];
+  const names = waiting.length > 1 ? `${waiting.slice(0, -1).join(', ')} and ${waiting[waiting.length - 1]}` : waiting[0] || '';
+  const bits = whole(t.stars) & 7;
+  const mul = Math.round(fin(n.goldMul) * 100) / 100;
+  return {
+    id, name, harder,
+    badge: first ? `${name} · ${RES.night.firstDawn}` : name,
+    goldLine: harder && whole(t.goldBonus) > 0 && mul > 1 ? RES.night.goldMul(mul, name) : '',
+    shardsExtra: first ? whole(t.shards) : 0,
+    glass: harder ? { n: glass, sub: glass > 0 && first ? RES.night.firstDawn : '' } : null,
+    firstLine: first && hero ? `${RES.night.firstLine(clip(hero, 24), name)}${names && whole(n.firstGlass) ? ` ${RES.night.waiting(names, whole(n.firstGlass))}` : ''}` : '',
+    stars: won && harder ? RES.night.stars.map((label, i) => ({ label, on: !!(bits & (1 << i)) })) : null,
+    kept: !won && harder ? RES.night.kept : '',
+    again: harder || n.choice === true ? RES.night.again(name) : '',
   };
 }
 
@@ -192,6 +235,14 @@ export function resultsSummary(v) {
   const st = v.recap && v.recap.struck;
   const parts = [v.title, st ? `${st.lead} ${st.art} ${st.name}${st.tail} ${st.at}` : '', `${v.timeLabel} ${v.time}`, v.near.map((s) => s.t).join('').trim(), `Level ${v.chips.level}`, `${v.chips.slain} slain`];
   parts.push(`${group(b.gold)} gold${b.goldTotal != null ? ` banked, total ${group(b.goldTotal)}` : ''}`, `${group(b.shards)} soul shards${b.shardsTotal != null ? `, total ${group(b.shardsTotal)}` : ''}`);
+  const nb = v.night;
+  if (nb) {
+    parts.splice(1, 0, nb.badge);
+    if (nb.glass) parts.push(`${group(nb.glass.n)} ${RES.night.glass}${b.glassTotal != null ? `, total ${group(b.glassTotal)}` : ''}`);
+    if (nb.firstLine) parts.push(nb.firstLine);
+    if (nb.stars) parts.push(`${RES.night.starsLabel}: ${nb.stars.filter((x) => x.on).map((x) => x.label).join(', ') || 'none'}`);
+    if (nb.kept) parts.push(nb.kept);
+  }
   return parts.filter(Boolean).join('. ') + '.';
 }
 
