@@ -46,6 +46,7 @@ import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprin
 import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
 import { bakeBoltArt, boltReady } from '../gfx/summon/atlas.js'; // S5 Ink Glyph Orb (lazy bake on first Spirit Bolts)
 import { drawGlyph, drawTornPages } from '../gfx/summon/glyphdraw.js';
+import { CrackPool, chainCaps, decalCap, jagStep, pillarTop, HUD_BAND, drawArc, drawPillar, drawDome, drawBraid } from '../gfx/summon/chain.js'; // S6 Storm Thread (render only)
 import { FLAME_BOX, FLAME_WPD, WHEEL_K } from '../gfx/summon/orbit.js';
 import { FLAME_AY, PETAL_AY } from '../gfx/summon/frames.js';
 import { flameFrame, flare, flareK, orbitSkin, flowerAt, reformK, streakK, streakRot, FLARE_K, FLOWER_T, ORBIT_CAPS } from '../gfx/summon/orbitanim.js';
@@ -1684,14 +1685,26 @@ export class RunScene extends Phaser.Scene {
     // transient effects (additive: glow comes for free)
     let fi = 0, pil = 0, skyA = 0, fld = 0;
     const stW = sim.weapons.find((x) => x.id === 'chain_lightning' && x.evo === 'static_storm');
-    if (stW && stW.rt.fieldR) { // W11c Static Storm: a faint cyan field ring (gold hairline inside = evolved effect), static in reduced motion
+    const chArt = !!this.sumAtlas, chCap = chainCaps(this.quality.tier), chCalm = this.reducedMotion(), chStep = jagStep(sim.time, chCalm);
+    const crk = this.crack || (this.crack = new CrackPool(40)), chSeen = this.chainSeen || (this.chainSeen = new WeakMap());
+    if (chArt) crk.setCap(decalCap(this.quality.tier, this.phone));
+    if (chArt && stW && stW.rt.fieldR) drawDome(fx, sim.player.x, sim.player.y, stW.rt.fieldR, chStep, sim.time, chCalm, chCap); // S6 Static Storm dome edge
+    else if (stW && stW.rt.fieldR) { // W11c Static Storm: a faint cyan field ring (gold hairline inside = evolved effect), static in reduced motion
       const pr = sim.player, pulse = this.reducedMotion() ? 0 : 0.04 * Math.sin(sim.time * 2.2);
       fx.lineStyle(1, PAL.ice, 0.13 + pulse).strokeCircle(pr.x, pr.y, stW.rt.fieldR);
       fx.lineStyle(1, PAL.gold, 0.09 + pulse * 0.5).strokeCircle(pr.x, pr.y, stW.rt.fieldR - 3);
     }
     const rmFx = this.reducedMotion(), tierFx = this.quality.tier;
     const tthW = sim.weapons.find((x) => x.id === 'chain_lightning' && x.evo === 'storm_tether');
-    if (tthW && tthW.rt.tethers && tthW.rt.tethers.length) { // W11d Storm Tether: steady arcs hero -> foe (+ one short fork); Low = straight lines, reduced motion = no flicker
+    if (chArt && tthW && tthW.rt.tethers && tthW.rt.tethers.length) { // S6 Storm Tether: braided steady cord + knot beads (never flickers)
+      const pr = sim.player, low = this.quality.tier === 'low';
+      for (const t of tthW.rt.tethers) {
+        if (t.e.dead) continue;
+        drawBraid(fx, pr.x, pr.y - 10, t.e.x, t.e.y - 4, 2, 1, chCap, low);
+        if (t.f && !t.f.dead) drawBraid(fx, t.e.x, t.e.y - 4, t.f.x, t.f.y - 4, 1, 0.6, chCap, low);
+        if (lit) lm.add(t.e.x, t.e.y, 40, ROLE.lightning, 0.7);
+      }
+    } else if (tthW && tthW.rt.tethers && tthW.rt.tethers.length) { // W11d Storm Tether: steady arcs hero -> foe (+ one short fork); Low = straight lines, reduced motion = no flicker
       const pr = sim.player, flick = !rmFx && tierFx !== 'low', seed0 = Math.floor(sim.time * 20) * 7919;
       const arc = (x0, y0, x1, y1, wpx, a, sd) => {
         const n = flick ? Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 14)) : 1;
@@ -1720,6 +1733,29 @@ export class RunScene extends Phaser.Scene {
           fx.lineStyle(1, PAL.ice, 0.18 + 0.3 * k).strokeCircle(f.x, f.y, f.r);
           if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * k);
         } else if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * (f.ttl / f.life));
+      } else if (chArt && f.kind === 'bolt') { // S6 Storm Thread: 3-layer arcs + forks, capped Judgment pillars, tiny Static strikes, crack-star scorches
+        let sd = chSeen.get(f);
+        const pe = f.pts[f.pts.length - 1];
+        if (sd === undefined) { // first sight: one crack-star where each strike lands
+          sd = this.chainSeq = ((this.chainSeq || 0) + 1) & 0xffff; chSeen.set(f, sd);
+          if (f.pillar) crk.add(pe.x, pe.y + 6, sim.time, sd * 7 + 1, 15);
+          else if (f.field) crk.add(pe.x, pe.y + 6, sim.time, sd * 7 + 1, 9);
+          else for (let i = 1; i < f.pts.length; i++) crk.add(f.pts[i].x, f.pts[i].y + 6, sim.time, sd * 7 + i, 13); // at the foe's feet, spokes reach past its body
+        }
+        const jd = sd * 977 + (chCalm ? 0 : chStep * 7919);
+        if (f.pillar) {
+          if (pil++ >= (tierFx === 'low' ? 10 : tierFx === 'med' ? 20 : 30)) continue;
+          const a = Math.min(1, f.ttl / 0.14), y1 = pe.y;
+          drawPillar(fx, Math.round(pe.x), y1, pillarTop(y1, wv.y, wv.height, sd * 31), jd, a, chCap, 1 - a);
+          const lr = Math.min(50, y1 - (wv.y + HUD_BAND * wv.height)); // the strike's light never spills into the HUD band either
+          if (lit && lr > 8) lm.add(pe.x, y1, lr, ROLE.lightning, 0.9 * a);
+          continue;
+        }
+        if (f.field && fld++ >= (tierFx === 'low' ? 6 : tierFx === 'med' ? 12 : 20)) continue;
+        const a = Math.min(1, f.ttl / 0.1);
+        if (lit && f.pts.length) lm.add(pe.x, pe.y, f.field ? 36 : 60, ROLE.lightning, 0.9 * a);
+        if (f.field) { const p0 = f.pts[0]; drawArc(fx, pe.x + (p0.x - pe.x) * 0.35, pe.y - 26, pe.x, pe.y, jd, a, chCap, 2.5, 0.75); continue; } // tiny strike (26 u)
+        for (let i = 1; i < f.pts.length; i++) drawArc(fx, f.pts[i - 1].x, f.pts[i - 1].y, f.pts[i].x, f.pts[i].y, jd + i * 53, a, chCap);
       } else if (f.kind === 'bolt' && f.pillar) { // a sky pillar on one struck foe: pale core, soft cyan column, gold rim (evolved effect only), tier-capped
         if (pil++ >= (tierFx === 'low' ? 10 : tierFx === 'med' ? 20 : 30)) continue;
         const a = Math.min(1, f.ttl / 0.14), x = Math.round(f.pts[1].x), y0 = f.pts[0].y, y1 = f.pts[1].y;
@@ -1768,6 +1804,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
+    if (chArt) crk.draw(g, sim.time, vx0, vy0, vx1, vy1); // S6 crack-star scorches on the ground layer (normal blend, 0.5 s, tier-capped)
     if (skyA > 0) this.skyR.setVisible(true).setAlpha(skyA); else if (this.skyR.visible) this.skyR.setVisible(false);
     // scene-local rings (level-up, evolution, boss)
     const dt = this.game.loop.delta / 1000;
