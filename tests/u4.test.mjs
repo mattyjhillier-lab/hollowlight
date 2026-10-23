@@ -29,7 +29,7 @@ const find = (r, p) => { const o = []; walk(r, (n) => { if (p(n)) o.push(n); });
 const texts = (r) => { const o = []; walk(r, (n) => { if (n._text) o.push(n._text); }); return o.join(' | '); };
 const key = (k) => ({ key: k, preventDefault() {} });
 
-const defaults = { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium' };
+const defaults = { masterVol: 0.8, muted: false, musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium' };
 function api(log) {
   return { setSetting: (p) => log.push(['set', p]), exportSave: () => '{}', maxSaveBytes: 1000, checkImport: (t) => (t === 'good' ? { ok: true, save: { v: 1 } } : { ok: false, error: '<b>bad</b> save' }),
     applyImport: (s) => log.push(['import', s]), resetSave: () => log.push(['reset']) };
@@ -39,12 +39,12 @@ const mkSettings = (over = {}) => { const log = []; const s = buildSettings({ se
 test('settings: every previous setting is present, grouped in four tabs, each with a plain description', () => {
   const { s } = mkSettings();
   const t = texts(s.root);
-  for (const w of ['Settings', 'Sound', 'Picture', 'Controls', 'Saves', 'Music', 'Sound effects', 'Picture quality', 'Brightness', 'Screen shake', 'Calm motion', 'Damage numbers', 'Touch controls', 'Joystick size',
+  for (const w of ['Settings', 'Sound', 'Picture', 'Controls', 'Saves', 'Master', 'Mute all', 'Music', 'Sound effects', 'Picture quality', 'Brightness', 'Screen shake', 'Calm motion', 'Damage numbers', 'Touch controls', 'Joystick size',
     'Export save', 'Import save', 'Reset save', 'Back']) assert.ok(t.includes(w), w);
   assert.deepEqual(find(s.root, (n) => n.attrs.role === 'tab').map((n) => n.attrs['data-id']), ['sound', 'picture', 'controls', 'saves']);
   assert.equal(find(s.root, (n) => n.tag === 'select' || (n.tag === 'input' && n.attrs.type === 'checkbox')).length, 0, 'no native selects/checkboxes');
-  assert.equal(find(s.root, (n) => n.attrs.type === 'range').length, 2);
-  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 3);
+  assert.equal(find(s.root, (n) => n.attrs.type === 'range').length, 3); // AU0: Master + Music + Sound effects
+  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 4); // AU0: + Mute all
   assert.equal(find(s.root, (n) => n.attrs.role === 'radiogroup').length, 4);
   for (const k of ['musicVol', 'sfxVol', 'quality', 'brightness', 'screenShake', 'reducedMotion', 'damageNumbers', 'touchMode', 'stickSize']) assert.ok(k in defaults);
   for (const g of find(s.root, (n) => n.attrs.role === 'radiogroup')) assert.ok(g.attrs['aria-describedby'] && g.attrs['aria-labelledby']);
@@ -70,17 +70,18 @@ test('settings tabs: roving tabindex, arrows switch, only one pane visible, pane
 test('settings: sliders, wick toggles and segmented choices call setSetting with the same keys and value ranges as before', () => {
   const { s, log } = mkSettings();
   const ranges = find(s.root, (n) => n.attrs.type === 'range');
-  ranges[0].value = '35'; ranges[0].fire('input');
-  ranges[1].value = '100'; ranges[1].fire('input');
+  ranges[0].value = '50'; ranges[0].fire('input');
+  ranges[1].value = '35'; ranges[1].fire('input');
+  ranges[2].value = '100'; ranges[2].fire('input');
   const sw = find(s.root, (n) => n.attrs.role === 'switch');
-  sw[0].click(); sw[1].click(); sw[2].click();
+  sw[0].click(); sw[1].click(); sw[2].click(); sw[3].click();
   const groups = find(s.root, (n) => n.attrs.role === 'radiogroup');
   const radios = (g) => g.children;
   radios(groups[0])[2].click(); // quality -> Medium
   radios(groups[1])[1].click(); // brightness -> Brighter (WL6a)
   radios(groups[2])[1].click(); // touch -> On
   radios(groups[3])[2].click(); // stick -> Large
-  assert.deepEqual(log, [['set', { musicVol: 0.35 }], ['set', { sfxVol: 1 }], ['set', { screenShake: false }], ['set', { reducedMotion: true }], ['set', { damageNumbers: false }],
+  assert.deepEqual(log, [['set', { masterVol: 0.5 }], ['set', { musicVol: 0.35 }], ['set', { sfxVol: 1 }], ['set', { muted: true }], ['set', { screenShake: false }], ['set', { reducedMotion: true }], ['set', { damageNumbers: false }],
     ['set', { quality: 'med' }], ['set', { brightness: 'brighter' }], ['set', { touchMode: 'on' }], ['set', { stickSize: 'large' }]]);
 });
 
@@ -96,7 +97,7 @@ test('choice + toggle keyboard: arrows move and choose (wraps), Home/End; Right/
   o[3].fire('keydown', key('Home'));
   assert.equal(o[0].attrs['aria-checked'], 'true');
   assert.deepEqual(log.at(-1), ['set', { quality: 'auto' }]);
-  const sw = find(s.root, (n) => n.attrs.role === 'switch')[1]; // Calm motion, off
+  const sw = find(s.root, (n) => n.attrs.role === 'switch')[2]; // Calm motion, off (after Mute all, Screen shake)
   sw.fire('keydown', key('ArrowLeft'));
   assert.equal(sw.attrs['aria-checked'], 'false');
   sw.fire('keydown', key('ArrowRight'));

@@ -36,6 +36,7 @@ export const app = {
   save: new SaveStore(),
   banked: false,
   touch: null, // TouchControls, created in main.js
+  audio: null, // AudioEngine (src/audio), created in main.js; render/audio only
 
   // FD4: tier = the night picked on the map screen. Only 'normal' or a night this lantern has opened is accepted (anything else -> Twilight),
   // and banking re-checks the gate (recordTierRun), so no path can play or pay a night that is not open. Twilight runs are unchanged.
@@ -328,7 +329,7 @@ export const app = {
       const b = this.sim && this.sim.boss;
       if (!(b && b.fight)) this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion); // the fight has its own banner (bossWake)
       this.scene.bossIntro();
-    } else if (ev.type === 'levelup') this.scene.levelBurst();
+    } else if (ev.type === 'levelup') { this.scene.levelBurst(); if (this.audio) this.audio.play('level_up'); }
     else if (ev.type === 'mini') { this.ui.hudView.bossBanner(`The ${d.enemies[ev.enemy] ? d.enemies[ev.enemy].name : 'old alpha'} howls`, 'the old leader of the rival pack', !this.save.data.settings.reducedMotion); if (this.scene.miniView) this.scene.miniView.onEvent(ev); } // EN7 arrival banner
     else if (ev.type === 'howl' || ev.type === 'miniDead' || ev.type === 'chestDrop' || ev.type === 'miniPhase') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); if (ev.type === 'miniDead') this.ui.toast('The Branch-Mane falls: a Lantern Reliquary'); }
     else if (ev.type === 'chest') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); this.ui.hudView.flareHp(); if (ev.tier === 0) this.ui.toast('Lantern Reliquary: light, warmth and coin'); } // EN8: Medium/Large open the choice screen
@@ -338,8 +339,8 @@ export const app = {
       this.ui.evolvePlate(ev.id, !(ev0 && Object.hasOwn(ev0, ev.id) && ev0[ev.id] > 0), !!this.save.data.settings.reducedMotion);
       this.scene.evolveMoment(ev.id);
     }
-    else if (ev.type === 'heart') { this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
-    else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
+    else if (ev.type === 'heart') { if (this.audio) this.audio.play('heart'); this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
+    else if (ev.type === 'magnet') { if (this.audio) this.audio.play('magnet'); this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
     else if (ev.type === 'rally') { this.ui.toast('Rally the Pack'); this.scene.rallyMoment(); }
     else if (ev.type === 'wheel') this.ui.toast('Candle Wheel');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
@@ -352,6 +353,7 @@ export const app = {
     const sim = this.sim;
     if (!sim || sim.state !== 'levelup') return;
     if (!sim.pickCard(key)) return;
+    if (this.audio) this.audio.play('ui_pick');
     this.lastState = sim.state;
     if (sim.state === 'levelup') this.ui.showLevelUp(sim);
     else this.ui.hideLevelUp();
@@ -404,6 +406,7 @@ export const app = {
   applySettings() {
     const s = this.save.data.settings;
     document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
+    if (this.audio) this.audio.configure(s);
     if (this.touch) {
       const coarse = typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches);
       this.touch.configure(touchEnabled(s.touchMode, this.params.touch, coarse, 'ontouchstart' in window), s.stickSize);
@@ -414,7 +417,7 @@ export const app = {
     return {
       getSettings: () => ({ ...this.save.data.settings }),
       resolvedBrightness: (stored) => resolveBrightness(stored, this.isPhone()),
-      setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); if (this.sim) this.sim.setAutoRule(this.save.data.settings.autoRule); },
+      setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); if (this.audio && patch && 'sfxVol' in patch) this.audio.play('gem'); if (this.sim) this.sim.setAutoRule(this.save.data.settings.autoRule); },
       hasAutoRule: () => !!aggregateMods(this.save.data.tree, treeDef, data).perks.autoRule, // 'Chosen Moment' owned: show the auto-fire choice
       exportSave: () => this.save.exportText(),
       maxSaveBytes: MAX_SAVE_BYTES,

@@ -10,6 +10,7 @@ import { STYLE, parseDpr } from './gfx/style.js';
 import './pwa/pwa.css';
 import { createPwa } from './pwa/index.js';
 import { Lanterns } from './save/lanterns.js';
+import { createAudio } from './audio/index.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
@@ -22,6 +23,9 @@ app.save = app.lanterns.openActive();
 app.save.load();
 if (app.lanterns.note && !app.save.loadNote) app.save.loadNote = app.lanterns.note;
 app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
+app.audio = createAudio(window, document, { onMute: (m) => { app.save.setSettings({ muted: m }); app.applySettings(); if (app.sim && app.ui.toast) app.ui.toast(m ? 'Sound off (M)' : 'Sound on'); } });
+// AU1: a tiny tick when the pointer moves onto a button (one per button, never on touch)
+{ let last = null; document.getElementById('ui').addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') return; const b = e.target && e.target.closest ? e.target.closest('button') : null; if (b && b !== last && !b.disabled) app.audio.play('ui_tick'); last = b; }); }
 app.applySettings();
 app.ui.setHandlers({
   ...app.settingsHandlers(),
@@ -56,6 +60,7 @@ const game = new Phaser.Game({
   fps: { smoothStep: false },
   scale: { mode: Phaser.Scale.NONE, zoom: 1 },
   scene: [RunScene],
+  audio: { noAudio: true }, // AU0: one AudioContext, ours (src/audio), made on the first gesture
 });
 let resizeRaf = 0;
 const onResize = () => {

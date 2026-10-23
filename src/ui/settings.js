@@ -100,8 +100,10 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
 
   // ---- Sound / Picture / Controls ----
   const sound = group(SET.tabs[0].label,
+    volume({ ...SET.masterVol, value: st.masterVol ?? 0.8, onInput: (v) => set({ masterVol: v }) }),
     volume({ ...SET.musicVol, value: st.musicVol, onInput: (v) => set({ musicVol: v }) }),
-    volume({ ...SET.sfxVol, value: st.sfxVol, onInput: (v) => set({ sfxVol: v }) }));
+    volume({ ...SET.sfxVol, value: st.sfxVol, onInput: (v) => set({ sfxVol: v }) }),
+    wickToggle({ ...SET.muted, checked: st.muted, onChange: (v) => set({ muted: v }) }));
   const picture = group(SET.tabs[1].label,
     choice({ ...SET.quality, options: SET.quality.opts, value: st.quality, onChange: (v) => set({ quality: v }) }),
     choice({ ...SET.brightness, options: SET.brightness.opts, value: api.resolvedBrightness ? api.resolvedBrightness(st.brightness) : (st.brightness === 'auto' ? 'normal' : st.brightness), onChange: (v) => set({ brightness: v }) }),

@@ -25,7 +25,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { musicVol: 0.7, sfxVol: 0.8, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30' };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30' };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -216,8 +216,10 @@ export function sanitize(raw, now = Date.now()) {
     seen: TREE ? sanitizeSeen(seenIn, TREE) : {},
     notes: notesOf(raw.notes),
     settings: {
+      masterVol: num(st.masterVol, ds.masterVol, 0, 1),
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),
       sfxVol: num(st.sfxVol, ds.sfxVol, 0, 1),
+      muted: bool(st.muted, ds.muted),
       screenShake: bool(st.screenShake, ds.screenShake),
       reducedMotion: bool(st.reducedMotion, ds.reducedMotion),
       damageNumbers: bool(st.damageNumbers, ds.damageNumbers),

@@ -935,6 +935,7 @@ export class RunScene extends Phaser.Scene {
     }
     if (f.heal > 0) this.nums.spawn(p.x - 24, p.y - 20, f.heal, -2, KIND.HEAL, 0, false);
     if (f.gem) {
+      if (app.audio) app.audio.play('gem'); // AU1: the gem climb (rate-limited by the watcher)
       if (hud) hud.pulseThread();
       if (this.quality.tier !== 'low') this.burst(p.x, p.y - 4, 3, PAL.teal, 40, 0.35, 0.3);
     }
@@ -1213,6 +1214,8 @@ export class RunScene extends Phaser.Scene {
     let nd = 0, top1 = 0, top2 = 0;
     for (let i = 0; i < nh; i++) { const h = sim.hitBuf[i]; if (h.kill) continue; nd++; if (h.a > top1) { top2 = top1; top1 = h.a; } else if (h.a > top2) top2 = h.a; }
     const aoe = nd > 5, aoeMin = top2;
+    const auH = this.auHits || (this.auHits = { ghost_wolves: 0, raven_flock: 0, spirit_bolts: 0, chain_lightning: 0, holy_orbit: 0 }); // AU1: on-screen hits per weapon this frame (audio only)
+    for (const k in auH) auH[k] = 0;
     for (let i = 0; i < nh; i++) {
       const h = sim.hitBuf[i];
       if (h.kill) {
@@ -1231,6 +1234,7 @@ export class RunScene extends Phaser.Scene {
         }
         continue;
       }
+      if (h.src in auH && h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) auH[h.src]++;
       if (vCap > 0 && VERB_OF[h.src] && h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) this.verbs.add(VERB_OF[h.src], sim.time, h.x, h.y, h.id * 31 + i, vCap); // S7 verb hit (wolf claws / raven star + feather / glyph ink)
       const big = h.boss ? h.a >= h.mx * 0.01 : h.a >= 20 && h.a >= h.mx * 0.5;
       this.hitRef.add(h.a);
@@ -1240,6 +1244,7 @@ export class RunScene extends Phaser.Scene {
       this.nums.spawn(h.x, h.y, h.a, h.id, KIND.DMG, big ? 0 : this.hitRef.ref, big);
       if (h.boss ? h.a >= h.mx * 0.03 : big && h.a >= 40) this.stop(0.05);
     }
+    if (app.audio && nh) app.audio.hits(auH);
     if (aoe && sim.time - this.fbPing.aoe > 0.3) { this.fbPing.aoe = sim.time; this.addRing(p.x, p.y, 6, 70, 0.35, PAL.cream, 1); }
     this.feedback(sim, p);
 
