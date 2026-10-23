@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hollowlight Sound Lab</title>
+<!-- Audio design prototype for docs/design/audio-v1.md. Self-contained: plain Web Audio, no files, no network, no dependencies.
+     Every sound here is synthesised in code at runtime (nothing sampled, nothing downloaded). -->
+<style>
+:root{--bg:#1d2230;--panel:#262c3b;--line:#3a4256;--ink:#efe4cc;--dim:#a99f8c;--amber:#f2b45c;--cream:#ffe9b8;--moon:#9fd8ff;--violet:#b79cff;--cyan:#7ff0ff;--candle:#e8e0ff;--warn:#ff7a5c;}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f4ecdc;--panel:#fff8ea;--line:#d9ccb2;--ink:#2f2a22;--dim:#6f6555;--amber:#b06a12;--cream:#8a5a10;--moon:#2c6f99;--violet:#6b4fc2;--cyan:#1d7f8a;--candle:#6a5aa8;--warn:#b33a1e;}}
+:root[data-theme="dark"]{--bg:#1d2230;--panel:#262c3b;--line:#3a4256;--ink:#efe4cc;--dim:#a99f8c;--amber:#f2b45c;--cream:#ffe9b8;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Georgia,"Times New Roman",serif;padding:16px}
+main{max-width:860px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px;color:var(--cream)}
+p{margin:4px 0 10px;color:var(--dim)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0}
+h2{font-size:15px;margin:0 0 8px;color:var(--amber);letter-spacing:.03em}
+button{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;margin:3px;cursor:pointer}
+button:hover,button:focus-visible{border-color:var(--amber);outline:none}
+button.on{background:var(--amber);color:#1d2230;border-color:var(--amber)}
+#start{font-size:17px;padding:10px 22px;border-color:var(--amber);color:var(--cream)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+label{display:flex;align-items:center;gap:6px;color:var(--dim)}
+input[type=range]{accent-color:var(--amber);width:140px}
+#scrub{width:100%}
+#clock{font-size:26px;color:var(--cream);min-width:80px}
+#scene{color:var(--amber)}
+.meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.m{font-size:12px;color:var(--dim)}
+.m i{display:block;height:6px;border-radius:3px;background:var(--line);margin-top:3px;overflow:hidden}
+.m b{display:block;height:100%;width:0;background:var(--amber);transition:width .3s}
+.w-wolf{color:var(--moon)}.w-raven{color:var(--violet)}.w-glyph{color:var(--cyan)}.w-storm{color:var(--moon)}.w-candle{color:var(--candle)}
+#stats{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--dim)}
+.marks{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
+</style>
+</head>
+<body>
+<main>
+<h1>Hollowlight Sound Lab</h1>
+<p>Recommended direction (A + M1): every sound is made in code. The music follows the night from grey dusk to the dawn flood. Run time is sped up so you can hear the whole 15 minutes in about 1.5 minutes.</p>
+<section>
+  <button id="start">Light the lantern (start sound)</button>
+  <div class="row" style="margin-top:8px">
+    <span id="clock">0:00</span><span id="scene">-</span>
+  </div>
+  <input id="scrub" type="range" min="0" max="900" step="1" value="0" aria-label="Run time">
+  <div class="marks"><span>0:00 dusk</span><span>4:00</span><span>8:30 first light</span><span>10:00 boss</span><span>14:00 dawn</span><span>15:00</span></div>
+  <div class="row">
+    <span>Speed</span><button data-speed="1">x1</button><button data-speed="10" class="on">x10</button><button data-speed="30">x30</button>
+    <button id="pause">Pause clock</button><button id="slain">Boss slain</button>
+    <button data-jump="0">Dusk</button><button data-jump="585">The hush</button><button data-jump="600">Boss</button><button data-jump="838">Dawn</button><button data-jump="896">Victory</button>
+  </div>
+</section>
+<section>
+  <h2>Music layers (live)</h2>
+  <div class="meters" id="meters"></div>
+</section>
+<section>
+  <h2>Weapon verbs</h2>
+  <div class="row">
+    <button data-cue="wolf_bite" class="w-wolf">Wolves: snap</button>
+    <button data-cue="raven_peck" class="w-raven">Ravens: flutter-peck</button>
+    <button data-cue="glyph_bolt" class="w-glyph">Glyph bolt: whisper-pop</button>
+    <button data-cue="storm_thread" class="w-storm">Storm thread: crack</button>
+    <button data-cue="candle_flare" class="w-candle">Candle flames: hush-flare</button>
+  </div>
+  <h2 style="margin-top:10px">Moments</h2>
+  <div class="row">
+    <button data-cue="gem">Gem (tap fast: pitch climbs)</button>
+    <button data-cue="heart">Heart</button>
+    <button data-cue="level_up">Level up</button>
+    <button data-cue="evo">Evolution</button>
+    <button data-cue="hurt">Hurt</button>
+    <button data-cue="swarm">Swarm warning</button>
+    <button data-cue="ability">Pack Howl</button>
+    <button data-cue="ui_tick">UI tick</button>
+    <button data-cue="ui_pick">Card pick</button>
+  </div>
+  <div class="row"><button id="horde">Horde test: 3 s of 400 hits a second</button></div>
+  <div id="stats">voices 0 | played 0 | merged 0 | dropped 0</div>
+</section>
+<section>
+  <h2>Settings</h2>
+  <div class="row">
+    <label>Master <input type="range" id="vMaster" min="0" max="100" step="5" value="80"></label>
+    <label>Music <input type="range" id="vMusic" min="0" max="100" step="5" value="70"></label>
+    <label>Sound effects <input type="range" id="vSfx" min="0" max="100" step="5" value="80"></label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="mute"> Mute all</label>
+    <label><input type="checkbox" id="blurMute" checked> Quiet when the tab is hidden</label>
+    <label><input type="checkbox" id="calm"> Calm sound</label>
+  </div>
+</section>
+</main>
+<script>
+'use strict';
+// ---------- core ----------
+const AC = window.AudioContext || window.webkitAudioContext;
+let ctx = null, master, comp, musicBus, musicDuck, sfxBus, sfxDuck, verb, verbSend, noiseBuf;
+const S = { t: 0, speed: 10, running: true, bossDead: false, bossDeadAt: 0, calm: false, victoryDone: false, muted: false, hidden: false };
+const vol = { master: 0.8, music: 0.7, sfx: 0.8 };
+const perceptual = (v) => v * v; // slider 0..1 -> gain (roughly even loudness steps)
+const D3 = 146.83, hz = (n) => D3 * Math.pow(2, n / 12);
+const $ = (id) => document.getElementById(id);
+
+function makeNoise() {
+  const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+function makeImpulse(sec) { // procedural reverb: decaying noise, a soft "forest clearing"
+  const len = ctx.sampleRate * sec, b = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  return b;
+}
+function init() {
+  ctx = new AC();
+  comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2;
+  master = ctx.createGain(); master.connect(comp).connect(ctx.destination);
+  musicBus = ctx.createGain(); musicDuck = ctx.createGain(); musicBus.connect(musicDuck).connect(master);
+  sfxBus = ctx.createGain(); sfxDuck = ctx.createGain(); sfxBus.connect(sfxDuck).connect(master);
+  verb = ctx.createConvolver(); verb.buffer = makeImpulse(2.6); verbSend = ctx.createGain(); verbSend.gain.value = 0.35;
+  verbSend.connect(verb).connect(master);
+  noiseBuf = makeNoise();
+  applyVolumes();
+  buildMusic();
+}
+function applyVolumes() {
+  if (!ctx) return;
+  const now = ctx.currentTime, off = S.muted || (S.hidden && $('blurMute').checked);
+  master.gain.setTargetAtTime(off ? 0 : perceptual(vol.master), now, 0.08);
+  musicBus.gain.setTargetAtTime(perceptual(vol.music), now, 0.08);
+  sfxBus.gain.setTargetAtTime(perceptual(vol.sfx), now, 0.08);
+}
+function duck(music, sfx, hold, release = 0.5) { // T0 moments push the rest of the mix down, then let it back up
+  const now = ctx.currentTime;
+  for (const [g, v] of [[musicDuck, music], [sfxDuck, sfx]]) {
+    g.gain.cancelScheduledValues(now); g.gain.setTargetAtTime(v, now, 0.03); g.gain.setTargetAtTime(1, now + hold, release);
+  }
+}
+function env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
+function noise(t, o) {
+  const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.playbackRate.value = o.rate || 1;
+  const f = ctx.createBiquadFilter(); f.type = o.type || 'bandpass'; f.frequency.setValueAtTime(o.f || 2000, t); f.Q.value = o.q || 1;
+  if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + (o.a || 0.002) + (o.d || 0.1));
+  const g = ctx.createGain(); env(g, t, o.a || 0.002, o.peak || 0.4, o.d || 0.1);
+  s.connect(f).connect(g).connect(o.dest || sfxBus); if (o.verb) g.connect(verbSend);
+  s.start(t, Math.random() * 1.5); s.stop(t + (o.a || 0.002) + (o.d || 0.1) + 0.05);
+}
+function tone(t, o) {
+  const osc = ctx.createOscillator(); osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(o.f, t);
+  if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t + (o.a || 0.005) + (o.d || 0.2));
+  osc.detune.value = o.det || 0;
+  const g = ctx.createGain(); env(g, t, o.a || 0.005, o.peak || 0.2, o.d || 0.2);
+  osc.connect(g).connect(o.dest || sfxBus); if (o.verb) g.connect(verbSend);
+  osc.start(t); osc.stop(t + (o.a || 0.005) + (o.d || 0.2) + 0.05);
+}
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ---------- music: the night from dusk to dawn ----------
+const BPM = 72, STEP = 60 / BPM / 2; // eighth notes
+const PROG = {
+  dusk: [[0, 3, 7, 10, 14], [-4, 0, 3, 7], [3, 7, 10, 14], [-2, 5, 10, 14]],   // Dm9, Bbmaj7, Fmaj7, Cadd9 (D dorian, wistful not grim)
+  boss: [[-2, 1, 5, 10], [-6, -2, 1, 5], [3, 6, 10, 15], [5, 9, 12, 17]],     // Cm, Abmaj7, Fm, G (a tone down: the music sinks)
+  dawn: [[0, 4, 7, 11, 16], [5, 9, 12, 16], [-3, 0, 4, 7], [7, 11, 14, 21]],    // Dmaj9, Gmaj7, Bm7, A add9 (the key opens to major)
+};
+const SCALE = { dusk: [0, 3, 5, 7, 10], boss: [-2, 1, 3, 5, 8], dawn: [0, 2, 4, 7, 9] };
+const L = {}; // layer gain nodes
+let padFilter, droneOscs = [], windFilter, step = 0, nextStep = 0, schedTimer = null;
+const ramp = (t, a, b, v0, v1) => t <= a ? v0 : t >= b ? v1 : v0 + (v1 - v0) * (t - a) / (b - a);
+
+function scene(t) {
+  const bossOn = t >= 600 && !S.bossDead, calm = S.calm;
+  const sc = { name: '', mode: 'dusk', drone: 0.5, pad: 0, pluck: 0, pulse: 0, heart: 0, bell: 0, birds: 0, warmth: 0 };
+  sc.warmth = ramp(t, 0, 540, 450, 1300);                   // colour returns to the Hollow -> the pad filter opens
+  if (t < 240) { sc.name = t < 60 ? 'Twilight: the Hollow is grey' : 'Lanterns lit'; sc.pad = ramp(t, 0, 60, 0.15, 0.8); sc.pluck = ramp(t, 90, 240, 0, 0.35); }
+  else if (t < 585) { sc.name = t >= 510 ? 'First light (faint)' : 'Deepening night'; sc.pad = 0.8; sc.pluck = ramp(t, 240, 480, 0.35, 0.6); sc.pulse = ramp(t, 240, 540, 0.3, 1); sc.bell = t >= 510 ? 0.15 : 0; }
+  else if (t < 600) { sc.name = 'The hush (boss coming)'; sc.pad = 0.2; sc.heart = 1; sc.drone = 0.8; }
+  else if (bossOn) { sc.name = 'Elder Treant'; sc.mode = 'boss'; sc.pad = 0.7; sc.pluck = 0.25; sc.pulse = 1; sc.drone = 1; sc.warmth = 650; }
+  else if (t < 840) { sc.name = 'Last of the night'; sc.pad = 0.8; sc.pluck = 0.6; sc.pulse = 0.6; sc.warmth = 1400; }
+  else { sc.name = t >= 900 ? 'Dawn: the Hollow is lit' : 'Dawn flood'; sc.mode = 'dawn'; sc.pad = 0.9; sc.pluck = 0.5; sc.pulse = ramp(t, 840, 870, 0.6, 0.25); sc.drone = 0.15; sc.bell = ramp(t, 840, 880, 0.3, 1); sc.birds = ramp(t, 840, 870, 0.2, 1); sc.warmth = ramp(t, 840, 880, 1400, 3200); }
+  if (calm) { sc.pulse = Math.min(sc.pulse, 0.4); sc.birds *= 0.4; sc.heart *= 0.5; }
+  return sc;
+}
+function buildMusic() {
+  for (const k of ['drone', 'pad', 'pluck', 'pulse', 'heart', 'bell', 'birds']) { L[k] = ctx.createGain(); L[k].gain.value = 0; L[k].connect(musicBus); }
+  L.pad.connect(verbSend); L.pluck.connect(verbSend); L.bell.connect(verbSend); L.birds.connect(verbSend);
+  padFilter = ctx.createBiquadFilter(); padFilter.type = 'lowpass'; padFilter.frequency.value = 450; padFilter.Q.value = 0.5; padFilter.connect(L.pad);
+  // the Hollow drone: two low sines and a slow wind
+  const dg = ctx.createGain(); dg.gain.value = 0.18; dg.connect(L.drone);
+  for (const n of [-12, -5]) { const o = ctx.createOscillator(); o.frequency.value = hz(n); o.connect(dg); o.start(); droneOscs.push(o); }
+  const w = ctx.createBufferSource(); w.buffer = noiseBuf; w.loop = true;
+  windFilter = ctx.createBiquadFilter(); windFilter.type = 'bandpass'; windFilter.frequency.value = 380; windFilter.Q.value = 0.8;
+  const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.07; lg.gain.value = 180; lfo.connect(lg).connect(windFilter.frequency); lfo.start();
+  const wg = ctx.createGain(); wg.gain.value = 0.12; w.connect(windFilter).connect(wg).connect(L.drone); w.start();
+  nextStep = ctx.currentTime + 0.1; schedTimer = setInterval(scheduler, 25);
+}
+function padChord(notes, t, key) {
+  const dur = STEP * 16 + 1.6;
+  for (const n of notes) for (const det of [-6, 6]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(n + key); o.detune.value = det;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.035, t + 1.6);
+    g.gain.setValueAtTime(0.035, t + dur - 1.8); g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(g).connect(padFilter); o.start(t); o.stop(t + dur + 0.05);
+  }
+}
+function pluck(t, n, peak = 0.12) { // the lantern music box: a soft struck tine with a little echo
+  tone(t, { type: 'triangle', f: hz(n), a: 0.004, d: 0.9, peak, dest: L.pluck });
+  tone(t, { type: 'sine', f: hz(n + 12), a: 0.002, d: 0.35, peak: peak * 0.35, dest: L.pluck });
+  tone(t + STEP * 1.5, { type: 'triangle', f: hz(n), a: 0.004, d: 0.6, peak: peak * 0.3, dest: L.pluck });
+}
+function kick(t, peak) { tone(t, { f: 95, f2: 42, a: 0.003, d: 0.38, peak, dest: L.pulse }); noise(t, { type: 'lowpass', f: 300, a: 0.002, d: 0.06, peak: peak * 0.25, dest: L.pulse }); }
+function bell(t, n) { tone(t, { f: hz(n), a: 0.003, d: 2.2, peak: 0.07, dest: L.bell }); tone(t, { f: hz(n) * 2.76, a: 0.002, d: 0.9, peak: 0.025, dest: L.bell }); }
+function bird(t) { const f = rnd(2600, 4200); for (let i = 0; i < (Math.random() < 0.5 ? 2 : 3); i++) tone(t + i * 0.09, { f, f2: f * rnd(1.2, 1.5), a: 0.005, d: 0.06, peak: 0.05, dest: L.birds }); }
+function scheduler() {
+  while (nextStep < ctx.currentTime + 0.15) { onStep(step, nextStep); nextStep += STEP; step++; }
+}
+function onStep(s, t) {
+  const sc = scene(S.t), prog = PROG[sc.mode], scale = SCALE[sc.mode], key = 0;
+  if (s % 16 === 0) padChord(prog[(s / 16 | 0) % 4], t, key);
+  if (sc.pluck > 0 && Math.random() < sc.pluck * 0.45) { const deg = scale[(Math.random() * scale.length) | 0]; pluck(t, deg + (Math.random() < 0.6 ? 12 : 24)); }
+  if (sc.pulse > 0) { const every = sc.mode === 'boss' ? 2 : sc.pulse > 0.6 ? 4 : 8; if (s % every === 0) kick(t, 0.35); }
+  if (sc.heart > 0 && s % 8 === 0) { tone(t, { f: 60, f2: 40, d: 0.25, peak: 0.4, dest: L.heart }); tone(t + 0.28, { f: 55, f2: 38, d: 0.25, peak: 0.28, dest: L.heart }); }
+  if (sc.bell > 0 && Math.random() < sc.bell * 0.3) bell(t, scale[(Math.random() * scale.length) | 0] + 24);
+  if (sc.birds > 0 && Math.random() < sc.birds * 0.12) bird(t + rnd(0, STEP));
+}
+let lastScene = '';
+function updateLayers() {
+  const sc = scene(S.t), now = ctx.currentTime;
+  for (const k in L) L[k].gain.setTargetAtTime(sc[k] || 0, now, k === 'heart' ? 0.3 : 1.2);
+  padFilter.frequency.setTargetAtTime(sc.warmth, now, 2);
+  const drop = sc.mode === 'boss' ? -2 : 0; droneOscs[0].frequency.setTargetAtTime(hz(-12 + drop), now, 1.5); droneOscs[1].frequency.setTargetAtTime(hz(-5 + drop), now, 1.5);
+  if (sc.name !== lastScene) {
+    if (sc.name === 'Elder Treant') bossIntro();
+    if (lastScene && sc.mode === 'dawn' && !lastScene.startsWith('Dawn')) dawnFlood();
+    lastScene = sc.name;
+  }
+  if (S.t >= 900 && !S.victoryDone) { S.victoryDone = true; victory(); }
+  $('scene').textContent = sc.name;
+  for (const k in L) { const el = document.querySelector('#m-' + k + ' b'); if (el) el.style.width = Math.round(Math.min(1, sc[k] || 0) * 100) + '%'; }
+}
+
+// ---------- sound effects, with a voice budget ----------
+const GLOBAL_CAP = () => (S.calm ? 12 : 24);
+// pri 0 = never dropped (moments), 1 = player actions and pickups, 2 = hits (first to go)
+const CUES = {
+  wolf_bite: { cap: 3, gap: 0.07, pri: 2, fn: (t, v) => { noise(t, { f: rnd(1600, 2100), q: 3, d: 0.035, peak: 0.5 * v }); noise(t + 0.045, { f: rnd(1300, 1700), q: 3, d: 0.04, peak: 0.4 * v }); noise(t, { type: 'lowpass', f: 700, a: 0.01, d: 0.12, peak: 0.12 * v }); return 0.2; } },
+  raven_peck: { cap: 3, gap: 0.07, pri: 2, fn: (t, v) => { for (let i = 0; i < 4; i++) noise(t + i * 0.022, { f: rnd(2500, 3500), q: 1.5, d: 0.018, peak: 0.25 * v * (1 - i * 0.18) }); tone(t + 0.1, { type: 'triangle', f: rnd(1700, 1900), d: 0.03, peak: 0.08 * v }); return 0.18; } },
+  glyph_bolt: { cap: 3, gap: 0.08, pri: 2, fn: (t, v) => { noise(t, { f: 1500, f2: 5000, q: 2, a: 0.04, d: 0.08, peak: 0.12 * v }); tone(t + 0.12, { f: rnd(820, 980), f2: 300, d: 0.09, peak: 0.25 * v, verb: true }); return 0.3; } },
+  storm_thread: { cap: 2, gap: 0.1, pri: 1, fn: (t, v) => { noise(t, { type: 'highpass', f: 2800, d: 0.05, peak: 0.45 * v }); for (let i = 1; i < 5; i++) noise(t + i * rnd(0.015, 0.035), { type: 'highpass', f: 4000, d: 0.008, peak: 0.25 * v }); tone(t, { type: 'square', f: 120, f2: 60, d: 0.06, peak: 0.05 * v }); return 0.25; } },
+  candle_flare: { cap: 3, gap: 0.08, pri: 2, fn: (t, v) => { noise(t, { type: 'lowpass', f: 900, f2: 2200, a: 0.03, d: 0.22, peak: 0.22 * v }); for (let i = 0; i < 3; i++) noise(t + 0.05 + i * rnd(0.03, 0.07), { type: 'highpass', f: 5000, d: 0.006, peak: 0.14 * v }); tone(t, { f: 233, a: 0.02, d: 0.25, peak: 0.05 * v }); return 0.35; } },
+  gem: { cap: 3, gap: 0.03, pri: 1, fn: (t, v) => { const n = gemNote(); tone(t, { f: hz(n), d: 0.18, peak: 0.12 * v, verb: true }); tone(t, { f: hz(n) * 2.76, d: 0.08, peak: 0.03 * v }); return 0.2; } },
+  heart: { cap: 1, gap: 0.2, pri: 1, fn: (t, v) => { [0, 7, 12].forEach((n, i) => tone(t + i * 0.07, { type: 'triangle', f: hz(n + 12), d: 0.4, peak: 0.12 * v, verb: true })); return 0.6; } },
+  level_up: { cap: 1, gap: 0.3, pri: 0, fn: (t, v) => { duck(0.55, 0.5, 0.6); [0, 7, 14].forEach((n, i) => { tone(t + i * 0.11, { type: 'triangle', f: hz(n + 12), d: 0.7, peak: 0.16 * v, verb: true }); }); noise(t, { f: 1200, f2: 4000, q: 0.7, a: 0.15, d: 0.3, peak: 0.05 * v }); return 1.0; } },
+  evo: { cap: 1, gap: 1, pri: 0, fn: (t, v) => { // everything drops to one held note, then the bloom
+    duck(S.calm ? 0.4 : 0.06, S.calm ? 0.4 : 0.1, 1.4, 0.8);
+    tone(t, { type: 'triangle', f: hz(12), a: 0.3, d: 1.1, peak: 0.12 * v, verb: true });
+    const b = t + 1.2; [0, 7, 11, 16, 19, 24].forEach((n, i) => tone(b + i * 0.025, { type: 'triangle', f: hz(n + 12), a: 0.01, d: 1.8, peak: 0.09 * v, verb: true }));
+    noise(b, { f: 3000, q: 0.5, a: 0.01, d: 0.8, peak: 0.07 * v, verb: true }); tone(b, { f: 70, f2: 50, d: 0.6, peak: 0.3 * v }); return 3; } },
+  hurt: { cap: 1, gap: 0.25, pri: 0, fn: (t, v) => { duck(0.75, 0.7, 0.15, 0.3); tone(t, { f: 110, f2: 55, d: 0.2, peak: 0.35 * v }); noise(t, { type: 'lowpass', f: 600, d: 0.12, peak: 0.25 * v }); return 0.3; } },
+  swarm: { cap: 1, gap: 2, pri: 0, fn: (t, v) => { tone(t, { type: 'sawtooth', f: hz(-24), a: 1.2, d: 0.9, peak: 0.08 * v }); for (let i = 0; i < 5; i++) noise(t + 0.6 + i * 0.18, { f: rnd(1100, 1500), q: 4, a: 0.01, d: 0.12, peak: 0.08 * v, verb: true }); return 2.2; } },
+  ability: { cap: 1, gap: 1, pri: 0, fn: (t, v) => { duck(0.6, 0.6, 0.5); for (const d of [-8, 0, 8]) tone(t, { type: 'sawtooth', f: hz(0), f2: hz(7), a: 0.25, d: 0.9, det: d, peak: 0.04 * v, verb: true }); noise(t, { f: 500, f2: 1400, q: 1.2, a: 0.2, d: 0.6, peak: 0.07 * v, verb: true }); tone(t, { f: 80, f2: 45, d: 0.5, peak: 0.3 * v }); return 1.4; } },
+  ui_tick: { cap: 2, gap: 0.04, pri: 1, fn: (t, v) => { tone(t, { type: 'triangle', f: hz(24), d: 0.04, peak: 0.06 * v }); return 0.06; } },
+  ui_pick: { cap: 1, gap: 0.1, pri: 1, fn: (t, v) => { [0, 7].forEach((n, i) => tone(t + i * 0.06, { type: 'triangle', f: hz(n + 24), d: 0.25, peak: 0.09 * v, verb: true })); return 0.35; } },
+};
+const V = { active: [], played: 0, merged: 0, dropped: 0, peak: 0 };
+let gemStep = 0, lastGem = 0;
+function gemNote() { const now = ctx.currentTime; gemStep = now - lastGem < 0.5 ? Math.min(gemStep + 1, 10) : 0; lastGem = now; const sc = SCALE.dawn; return 12 + sc[gemStep % 5] + 12 * Math.floor(gemStep / 5); }
+function play(id) {
+  if (!ctx) return false;
+  const c = CUES[id], now = ctx.currentTime;
+  V.active = V.active.filter((x) => x.end > now);
+  if (c.last && now - c.last < c.gap) { c.pending = (c.pending || 0) + 1; V.merged++; return false; }  // rate limit: fold into the next one
+  if (V.active.filter((x) => x.id === id).length >= c.cap) { V.dropped++; return false; }
+  if (c.pri > 0 && V.active.length >= GLOBAL_CAP()) { V.dropped++; return false; }                    // moments (pri 0) always play
+  const v = Math.min(1.5, Math.sqrt(1 + (c.pending || 0))) * rnd(0.85, 1) * (S.calm && c.pri === 2 ? 0.7 : 1);
+  c.pending = 0; c.last = now;
+  const dur = c.fn(now + 0.005, v);
+  V.active.push({ id, end: now + dur }); V.played++; V.peak = Math.max(V.peak, V.active.length);
+  return true;
+}
+function bossIntro() { duck(0.2, 0.6, 1.2, 1); tone(ctx.currentTime + 0.8, { f: 48, f2: 30, a: 0.02, d: 1.6, peak: 0.5 }); noise(ctx.currentTime + 0.8, { type: 'lowpass', f: 250, a: 0.05, d: 1.2, peak: 0.3 }); }
+function dawnFlood() { // the light comes back: rising shimmer into the first major chord
+  const t = ctx.currentTime; noise(t, { f: 800, f2: 6000, q: 0.6, a: 3, d: 1.5, peak: 0.05, dest: musicBus, verb: true });
+  [0, 4, 7, 11, 14, 19].forEach((n, i) => tone(t + 2.6 + i * 0.12, { type: 'triangle', f: hz(n + 12), a: 0.05, d: 2.5, peak: 0.06, dest: musicBus, verb: true }));
+}
+function victory() {
+  const t = ctx.currentTime; duck(1, 0.3, 4, 1);
+  [0, 7, 12, 16, 19, 24, 28].forEach((n, i) => tone(t + i * 0.09, { type: 'triangle', f: hz(n), a: 0.08, d: 4, peak: 0.07, dest: musicBus, verb: true }));
+  for (let i = 0; i < 12; i++) bird(t + 0.5 + i * rnd(0.12, 0.3));
+}
+
+// ---------- UI glue ----------
+function meters() { $('meters').innerHTML = ''; for (const k of ['drone', 'pad', 'pluck', 'pulse', 'heart', 'bell', 'birds']) { const d = document.createElement('div'); d.className = 'm'; d.id = 'm-' + k; d.textContent = { drone: 'Hollow drone', pad: 'Lantern pad', pluck: 'Music box', pulse: 'Pulse', heart: 'Heartbeat', bell: 'Dawn bells', birds: 'Birds' }[k]; const i = document.createElement('i'); i.appendChild(document.createElement('b')); d.appendChild(i); $('meters').appendChild(d); } }
+meters();
+const fmt = (t) => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+let lastFrame = performance.now(), lastLayer = 0;
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastFrame) / 1000); lastFrame = now;
+  if (ctx && S.running && S.t < 900) { S.t = Math.min(900, S.t + dt * S.speed); if (S.t >= 690 && !S.bossDead) { S.bossDead = true; } }
+  $('clock').textContent = fmt(S.t); $('scrub').value = S.t;
+  if (ctx && now - lastLayer > 200) { lastLayer = now; updateLayers(); }
+  $('stats').textContent = `voices ${V.active.length} (peak ${V.peak}, cap ${GLOBAL_CAP()}) | played ${V.played} | merged ${V.merged} | dropped ${V.dropped}`;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+function start() { if (!ctx) init(); if (ctx.state === 'suspended') ctx.resume(); $('start').textContent = 'Sound is on'; $('start').classList.add('on'); }
+$('start').addEventListener('click', start);
+document.querySelectorAll('[data-speed]').forEach((b) => b.addEventListener('click', () => { S.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach((x) => x.classList.toggle('on', x === b)); }));
+document.querySelectorAll('[data-jump]').forEach((b) => b.addEventListener('click', () => { start(); jump(+b.dataset.jump); }));
+function jump(t) { S.t = t; S.bossDead = t > 690; S.victoryDone = t > 900; lastScene = ''; if (t < 600) S.bossDead = false; }
+$('scrub').addEventListener('input', (e) => jump(+e.target.value));
+$('pause').addEventListener('click', () => { S.running = !S.running; $('pause').textContent = S.running ? 'Pause clock' : 'Resume clock'; });
+$('slain').addEventListener('click', () => { if (S.t >= 600) { S.bossDead = true; if (ctx) { tone(ctx.currentTime, { f: 40, f2: 25, d: 2, peak: 0.5 }); duck(0.1, 0.5, 1.5, 1); } } });
+document.querySelectorAll('[data-cue]').forEach((b) => b.addEventListener('click', () => { start(); play(b.dataset.cue); }));
+$('horde').addEventListener('click', () => { start(); const ids = ['wolf_bite', 'raven_peck', 'glyph_bolt', 'storm_thread', 'candle_flare', 'gem']; let n = 0; const iv = setInterval(() => { for (let i = 0; i < 4; i++) play(ids[(Math.random() * ids.length) | 0]); if (++n >= 300) clearInterval(iv); }, 10); });
+for (const [id, k] of [['vMaster', 'master'], ['vMusic', 'music'], ['vSfx', 'sfx']]) $(id).addEventListener('input', (e) => { vol[k] = +e.target.value / 100; applyVolumes(); });
+$('mute').addEventListener('change', (e) => { S.muted = e.target.checked; applyVolumes(); });
+$('blurMute').addEventListener('change', applyVolumes);
+$('calm').addEventListener('change', (e) => { S.calm = e.target.checked; });
+document.addEventListener('visibilitychange', () => { S.hidden = document.hidden; applyVolumes(); });
+
+// headless self-test: ?selftest=1 (used once by the sheet author; needs Chrome's autoplay flag)
+if (/[?&]selftest=1/.test(location.search)) {
+  init(); S.speed = 300;
+  const ids = Object.keys(CUES); ids.forEach((id) => play(id));
+  let n = 0; const iv = setInterval(() => { for (let i = 0; i < 4; i++) play(['wolf_bite', 'raven_peck', 'glyph_bolt', 'storm_thread', 'candle_flare', 'gem'][(Math.random() * 6) | 0]); if (++n >= 300) clearInterval(iv); }, 10);
+  setTimeout(() => { const pre = document.createElement('pre'); pre.id = 'selftest'; pre.textContent = JSON.stringify({ state: ctx.state, t: Math.round(S.t), scene: lastScene, victory: S.victoryDone, played: V.played, merged: V.merged, dropped: V.dropped, peak: V.peak, cap: GLOBAL_CAP() }); document.body.appendChild(pre); }, 4200);
+}
+</script>
+</body>
+</html>
