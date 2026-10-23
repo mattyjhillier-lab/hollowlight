@@ -34,7 +34,7 @@ export const RES = {
     struck: 'Struck down by',
     at: 'at',
     // possessive tails by hit kind: "a Fell Wolf's lunge". contact has no tail (just the name).
-    kinds: { lunge: "'s lunge", charge: "'s charge", slam: "'s slam", burst: "'s burst", thorn: "'s thorn" },
+    kinds: { lunge: "'s lunge", charge: "'s charge", slam: "'s slam", burst: "'s burst", thorn: "'s thorn", ember: "'s Emberwake ring" },
     // boss moves (Elder Treant, boss-treant-v1 (f)): named moves; the time is fight time ('1:21 into the fight') because the clock holds at 14:00
     bossKinds: { slam: "'s Bark Slam,", roots: "'s Root Eruption,", sweep: "'s Vine Sweep,", thorn: "'s Thorn Volley,", nova: "'s Ring of Thorns,", lanes: "'s Root Lanes,", contact: ',' },
     intoFight: 'into the fight',
@@ -80,7 +80,7 @@ export function defeatLine(time) {
   return RES.defeat.lines[t < 180 ? 0 : t < 600 ? 1 : 2];
 }
 
-const KIND_IDS = ['contact', 'lunge', 'charge', 'slam', 'burst', 'thorn'];
+const KIND_IDS = ['contact', 'lunge', 'charge', 'slam', 'burst', 'thorn', 'ember'];
 const BOSS_KINDS = ['contact', 'slam', 'roots', 'sweep', 'thorn', 'nova', 'lanes'];
 const article = (name) => (/^[aeiou]/i.test(name) ? 'an' : 'a');
 

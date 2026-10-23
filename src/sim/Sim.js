@@ -19,6 +19,7 @@ import {
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
 import { resolveTier } from './tiers.js';
+import { rollMark, applyMark, heartAura, updateEmbers, markSeed, EMBER } from './marks.js';
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
 import { BossFight, validateFight } from './boss.js';
@@ -62,6 +63,7 @@ export class Sim {
     this.characterId = characterId;
     this.seed = seed;
     this.rng = createRng(seed);
+    this.markRng = createRng(markSeed(seed)); // DT2 Hollow marks: own stream, only drawn on a tier that lists marks (Twilight never touches it)
     this.godMode = godMode;
 
     this.time = startTime;
@@ -110,6 +112,7 @@ export class Sim {
       tells: new Set(Array.isArray(T.tells) ? T.tells.filter((id) => typeof id === 'string' && Object.hasOwn(data.enemies, id)) : []),
       peek: Array.isArray(T.info) && T.info.includes('peek'),
       loudStir: Array.isArray(T.info) && T.info.includes('stir'),
+      bars: Array.isArray(T.info) && T.info.includes('bars'), // Hunter's Eye (DT2): render-only health bars + mark names on Hollow-marked foes
     };
     this.hasLore = Object.keys(this.tfx.lore).length > 0;
     this.wolfTell = WOLF_TELL + (this.tfx.tells.has('wolf') ? TELL_EARLY : 0);
@@ -145,6 +148,9 @@ export class Sim {
     // EN3-EN5 telegraph enemies: enemy projectiles (hit the player only), live tells per type (recounted every frame), live count per type
     // (spawn caps), the view the tells must sit inside (half extents in world units; the scene feeds the real camera view each frame).
     this.eshots = [];
+    this.embers = []; // DT2 Emberwake rings (marks.js)
+    this.hearts = []; // DT2 live Hollowhearts (rebuilt each frame while any lives)
+    this.markedKills = 0; this.marksMade = 0; this.markedBy = {}; // counters (results / Dawnglass / Hunter's Eye condition; never read by the sim)
     this.tells = {};
     this.alive = {};
     const tv = this.balance.tellView || { hw: 266, hh: 150 };
@@ -503,9 +509,17 @@ export class Sim {
       e.ai = d.ai; e.grace = d.ai.grace ?? 0.8; e.dmgMul = dmgMul; e.aiCd = this.rng.range(d.ai.firstCd?.[0] ?? 1, d.ai.firstCd?.[1] ?? 2);
       if (d.ai.chargeDmg) e.cdmg = d.ai.chargeDmg * dmgMul;
     }
+    if (!d.mini) this.markFoe(e, d, false);
     this.alive[typeId] = (this.alive[typeId] || 0) + 1;
     this.enemies.push(e);
     return e;
+  }
+
+  // DT2: roll + apply a Hollow mark (separate stream; boss and its adds never; the tier decides kinds, share and start time)
+  markFoe(e, d, mini) {
+    if (this.fight || e.bossAdd) return;
+    const k = rollMark(this.tier, this.markRng, d, this.time, mini);
+    if (k && applyMark(e, k)) { this.marksMade += 1; this.pushEvent('marked', { id: e.id, k }); }
   }
 
   // EN6 Branch-Mane: spawned at the view edge (the normal spawn ring) with its scheduled hp; control immune, leashed, never recycled
@@ -514,6 +528,7 @@ export class Sim {
     const e = this.spawnEnemy(id, pt.x, pt.y);
     e.hp = e.maxHp = m.hp * this.tier.enemyHp;
     e.mini = true; e.odds = m.odds; e.howlCd = e.ai.howl.first; e.phase2 = false; e.rep = false;
+    this.markFoe(e, this.data.enemies[id], true); // after its scheduled hp: Long Night may give it Ironbark (tiers.json marks.mini)
     this.mini = e;
     this.miniLog.push({ t: this.time, k: null });
     this.pushEvent('mini', { id: e.id, enemy: id, n: this.miniNext });
@@ -585,6 +600,12 @@ export class Sim {
     // live tells per telegraph type (the token cap in enemyai.canTell); recounted so a dead/interrupted teller always frees its token
     for (const k in this.tells) this.tells[k] = 0;
     for (const e of this.enemies) if (e.ai && e.state === 'tele' && !e.dead) this.tells[e.type] = (this.tells[e.type] || 0) + 1;
+    if (this.marksMade) { // DT2 Hollowheart aura (no stacking); skipped entirely on Twilight
+      this.hearts.length = 0;
+      for (const e of this.enemies) if (e.hmark === 'hollowheart' && !e.dead) this.hearts.push(e);
+      if (this.hearts.length || this.heartWas) heartAura(this.enemies, this.hearts);
+      this.heartWas = this.hearts.length > 0;
+    }
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.flash = Math.max(0, e.flash - dt);
@@ -1065,6 +1086,10 @@ export class Sim {
       if (e.burst) { this.addGem(e.x, e.y, e.xp); this.logHit(e, 0, true); continue; } // EN4 Puffback Toad burst: spent, XP only (no kill credit/gold/drops)
       if (e.ai && e.ai.kind === 'fuse' && e.state === 'tele' && this.fx.length < 48) this.addFx({ kind: 'fizzle', x: e.x, y: e.y, r: 12, ttl: 0.35, color: '#9aa39a' }); // killed during the fuse: it only fizzles
       this.kills += 1;
+      if (e.hmark) { // DT2: counters + the Emberwake ring (a burst / vanish never reaches here)
+        this.markedKills += 1; this.markedBy[e.hmark] = (this.markedBy[e.hmark] || 0) + 1;
+        if (e.hmark === 'emberwake' && this.embers.length < EMBER.cap && e.dmg > 0) { this.embers.push({ id: this.nextId++, x: e.x, y: e.y, t: 0, next: 0, dmg: e.dmg, src: e.type }); }
+      }
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
       if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
       this.logHit(e, 0, true);
@@ -1227,6 +1252,7 @@ export class Sim {
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
     if (this.eshots.length) { updateEnemyShots(this, dt); if (this.state !== 'running') return; }
+    if (this.embers.length) { updateEmbers(this, dt); if (this.state !== 'running') return; }
     this.updateWeapons(dt);
     this.updateProjectiles(dt);
     this.updateZones(dt);
@@ -1259,6 +1285,7 @@ export class Sim {
       weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks }, damage: this.dmgBy[w.id] || 0, kills: this.killsBy[w.id] || 0 })),
       damageDealt: this.damageDealt,
       tier: this.tier.id,
+      marked: this.markedKills, markedBy: { ...this.markedBy }, // DT2 Hollow marks (Dawnglass is capped at bank time)
       gems: this.gemsTaken,
       abilityUses: this.abilityUses,
       blessings: this.blessingsTaken,

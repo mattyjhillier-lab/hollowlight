@@ -83,13 +83,13 @@ test('remembered pick, fresh unlock, first uncleared; forged / unopened tiers ne
   assert.equal(N.pickRunTier('hard', [], CID), 'normal');
 });
 
-test('side card text is the real tier data and promises nothing that is not built (marks, tier boss shards); per-run Dawnglass (boss + dawn) is live', () => {
+test('side card text is the real tier data and promises nothing that is not built (tier boss shards); Hollow marks (DT2) and per-run Dawnglass (boss + dawn) are live', () => {
   const dd = N.changeLines(data, CID, 'hard');
   assert.ok(dd.length <= 4 && dd[0] === 'Foes are a little tougher and hit harder', dd[0]);
   assert.ok(dd.includes('The Elder Treant is stronger'));
-  assert.ok(!dd.join(' ').includes('mark'), 'Hollow marks are not live (DT2)');
+  assert.equal(dd[1], 'From 4:00 some foes bear a Hollow mark', 'Hollow marks live since DT2');
   const ln = N.changeLines(data, CID, 'expert');
-  assert.ok(ln[0].startsWith('Foes are twice as tough') && ln.includes('The Elder Treant is twice as strong') && ln.includes('Hearts come more slowly'), ln.join(' | '));
+  assert.ok(ln[0].startsWith('Foes are twice as tough') && ln[1] === 'From 2:30 more foes bear a Hollow mark' && ln.includes('Hearts come more slowly') && ln.length === 4, ln.join(' | '));
   assert.deepEqual(N.changeLines(data, CID, 'normal'), [N.NIGHT.same.normal, N.NIGHT.same.glassNone]);
   const s = defaultSave();
   assert.deepEqual(N.earnPills(s, data, CID, 'hard', 'wren').map((p) => p.text), ['gold x1.5', '5 from the boss', 'boss +2 · dawn +2', 'first dawn +6 · +1 shard']);

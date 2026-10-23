@@ -7,7 +7,7 @@ import { STAR_BITS } from '../save/tiers.js';
 import { nodeStatus } from '../meta/tree.js';
 
 export const PLANNED_CHAPTERS = 8;
-export const MARKS_LIVE = false; // Hollow marks (DT2) are data only: the "what changes" list names them once the sim spawns them
+export const MARKS_LIVE = true; // Hollow marks live since DT2: the "what changes" list names them
 
 export const NIGHT = {
   title: 'Choose your night',
@@ -143,9 +143,9 @@ export function changeLines(data, cid, tid) {
   const out = [];
   const hp = t.enemyHp, dm = t.enemyDmg;
   if (hp > 1 || dm > 1) out.push(`Foes are ${hp >= 1.8 ? 'twice as tough' : hp >= 1.3 ? 'much tougher' : hp > 1 ? 'a little tougher' : 'as tough'} and hit ${dm >= 1.25 ? 'much harder' : dm > 1 ? 'harder' : 'as hard'}`);
-  if (t.bossHp > 1 && chap) out.push(`The ${en(chap.bossId) || 'boss'} is ${t.bossHp >= 1.8 ? 'twice as strong' : 'stronger'}`);
-  if (MARKS_LIVE && t.marks && t.marks.share > 0) out.push(`From ${clock(t.marks.from)} some foes bear a Hollow mark`);
+  if (MARKS_LIVE && t.marks && t.marks.share > 0) out.push(`From ${clock(t.marks.from)} ${t.marks.share >= 0.1 ? 'more' : 'some'} foes bear a Hollow mark`); // DT2: the night's one new rule, right after the stat line
   if (t.heartPity > 1) out.push('Hearts come more slowly');
+  if (t.bossHp > 1 && chap) out.push(`The ${en(chap.bossId) || 'boss'} is ${t.bossHp >= 1.8 ? 'twice as strong' : 'stronger'}`);
   const mini = Object.keys(data.enemies || {}).find((k) => data.enemies[k].mini);
   if (t.miniHowl > 0 && mini) out.push(`The ${en(mini)}'s howl calls more wolves${t.miniExtra.length ? `, and it comes again at ${clock(t.miniExtra[0])}` : ''}`);
   if (t.chestLarge > 0) out.push('Large chests are more likely');

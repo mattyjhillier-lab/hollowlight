@@ -77,10 +77,19 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
-    "t": "killMarked",
-    "n": 20
+    "t": "any",
+    "of": [
+     {
+      "t": "killMarked",
+      "n": 20
+     },
+     {
+      "t": "killEnemy",
+      "id": "branch_mane",
+      "n": 3
+     }
+    ]
    },
    "place": {
     "at": [

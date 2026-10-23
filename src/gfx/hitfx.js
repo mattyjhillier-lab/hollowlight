@@ -9,7 +9,7 @@ export const HIT_LIFT = 0.3; // attacker lifted + outlined
 export const HIT_ARC = 0.3; // contact crescent
 export const HIT_RED = 0xff8078; // damage TAKEN (LOCKED colour rule)
 export const LIFT_Z = 8500; // attacker depth above the crowd AND above the must-react band (D_LIT + this); the hero outline stack sits above it (crowdread.js DEPTH_*)
-export const KINDS = ['contact', 'lunge', 'charge', 'slam', 'burst', 'thorn'];
+export const KINDS = ['contact', 'lunge', 'charge', 'slam', 'burst', 'thorn', 'ember']; // ember = DT2 Emberwake ring (id = the ring, not a foe)
 
 const fin = (v, d = 0) => (Number.isFinite(v) ? v : d);
 

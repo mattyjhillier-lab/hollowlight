@@ -19,7 +19,7 @@ const MULS = ['enemyHp', 'enemyDmg', 'density', 'bossHp', 'heartPity'];
 export const IDENTITY = Object.freeze({
   id: 'normal', idx: 0, name: 'Twilight', enemyHp: 1, enemyDmg: 1, density: 1, bossHp: 1, heartPity: 1,
   goldMul: 1, shards: 5, glass: Object.freeze({ boss: 0, dawn: 0, first: 0, marked: 0, markedCap: 0, runCap: 0 }), firstShards: 0,
-  marks: Object.freeze({ share: 0, from: 0, max: 1, kinds: Object.freeze([]) }),
+  marks: Object.freeze({ share: 0, from: 0, max: 1, kinds: Object.freeze([]), mini: Object.freeze([]) }), // mini = kinds the miniboss may carry (Long Night: Ironbark only)
   // EN6-EN8 miniboss / chest tier knobs (difficulty-tiers-economy-v1 tables): +N howl wolves per howl, extra Branch-Mane times (s), Large chest odds +pts
   miniHowl: 0, miniExtra: Object.freeze([]), chestLarge: 0,
 });
@@ -45,7 +45,7 @@ function checkBlock(b, where) {
     if (m.share !== undefined && !fin(m.share, 0, 0.3)) throw new Error(`tiers: ${where}.marks.share must be 0..0.3`);
     if (m.from !== undefined && !fin(m.from, 0, 1200)) throw new Error(`tiers: ${where}.marks.from must be 0..1200 s`);
     if (m.max !== undefined && !(Number.isInteger(m.max) && m.max >= 1 && m.max <= 3)) throw new Error(`tiers: ${where}.marks.max`);
-    if (m.kinds !== undefined && !(Array.isArray(m.kinds) && m.kinds.length <= 8 && m.kinds.every((k) => MARK_IDS.includes(k)))) throw new Error(`tiers: ${where}.marks.kinds must be registered mark ids`);
+    for (const f of ['kinds', 'mini']) if (m[f] !== undefined && !(Array.isArray(m[f]) && m[f].length <= 8 && m[f].every((k) => MARK_IDS.includes(k)))) throw new Error(`tiers: ${where}.marks.${f} must be registered mark ids`);
   }
 }
 
@@ -58,7 +58,7 @@ export function validateTiers(raw) {
   const n = raw.template.normal;
   for (const k of MULS) if (n[k] !== undefined && n[k] !== 1) throw new Error(`tiers: Twilight (normal) ${k} must be exactly 1`);
   if (n.goldMul !== undefined && n.goldMul !== 1) throw new Error('tiers: Twilight goldMul must be 1');
-  if (n.marks && n.marks.share) throw new Error('tiers: Twilight has no marks');
+  if (n.marks && (n.marks.share || (n.marks.kinds && n.marks.kinds.length) || (n.marks.mini && n.marks.mini.length))) throw new Error('tiers: Twilight has no marks');
   if (n.glass && Object.values(n.glass).some((v) => v !== 0)) throw new Error('tiers: Twilight pays no Dawnglass');
   if (n.miniHowl || n.chestLarge || (n.miniExtra && n.miniExtra.length)) throw new Error('tiers: Twilight keeps the locked miniboss and chest');
   // each harder tier is at least as hard as the one below it (a data typo cannot make Long Night easier than Deep Dusk)

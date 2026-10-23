@@ -255,7 +255,7 @@ test('DT0 new condition leaves: clearTier (with hero), stars, killMarked, openCh
 // ------------------------------------------------------------------ tool clusters: data
 const TOOL = { satchel: ['li_reach', 'co_pull', 'li_scav', 'co_call', 'li_hearts', 'li_heal', 'li_magnet', 'co_glean'], cardfan: ['sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'cd_stir', 'cd_peek', 'cd_bars', 'cd_radar', 'cd_favour', 'cd_fourth'], hearthkey: ['sp_auto', 'rs_autoset', 'rs_start', 'rs_bless', 'li_last', 'rs_slot5'], nightgate: ['gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'] };
 // T6: still inert = needs a feature that is not built (Hollow marks, chests / minibosses, a codex, an enemy tell for crows / crawlers, the tier select + Dawnglass)
-const INERT = ['cd_bars', 'cd_radar', 'bs_crow3', 'bs_crawl3', 'bs_page', 'df_ward', 'df_vigil', 'df_star'];
+const INERT = ['cd_radar', 'bs_crow3', 'bs_crawl3', 'bs_page', 'df_ward', 'df_vigil', 'df_star'];
 
 test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and idx, every new node has a permanent (fragment, idx), layout and budget pass', () => {
   assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel']);

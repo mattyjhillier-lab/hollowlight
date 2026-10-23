@@ -57,6 +57,7 @@ import { hash as visHash } from '../gfx/wind.js';
 import { bakeHuskAtlas, HUSK_BAKE } from '../gfx/enemytex.js'; // EN0 Husk chapter atlas (baked at boot)
 import { EnemyArt } from '../gfx/enemyrig.js'; // EN0-EN2 Husk animator + death beat (visual only)
 import { HUSK_TYPES, HUSK_IDS } from '../gfx/husk/frames.js';
+import { MarkLayer } from '../gfx/hollowmarks.js'; // DT2 Hollow marks (render only)
 import { drawEnemyTells, drawThorns, drawBurstFx, drawWolfChevron, TELL_RO } from '../gfx/enemytells.js';
 import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2 shared telegraph rule
 import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTarget, skipSmallNumber, MUST_OUT_CAP, DEPTH_HERO_OUT } from '../gfx/crowdread.js'; // DR3 crowd readability rules
@@ -248,6 +249,7 @@ export class RunScene extends Phaser.Scene {
     this.nl = new NightLayer(this, D_VIG + 1); // WL6b: eyes / rims / boss eyes, above the vignette
     this.nlc = { tier: 'med', calm: false, time: 0, hx: 0, hy: 0, arc: this.arc, vx0: 0, vy0: 0, vx1: 0, vy1: 0, depthBase: D_LIT, art: null, bloom: false };
     this.nlOn = false;
+    this.hmarks = new MarkLayer(this, { ember: D_VIG + 2, thread: D_LIT - 120, bar: D_PART + 5 }); // DT2: Emberwake rings under the tells, threads under the gems, Hunter's Eye bars under the numbers
     this.teleG = this.add.graphics().setDepth(D_VIG + 3); // telegraphs (charge line, boss ring) sit above the vignette so the screen edge never hides a threat
     this.phone = false;
     this.vig = this.add.image(0, 0, 'vig').setScrollFactor(0).setDepth(D_VIG).setDisplaySize(656, 369).setTint(PAL.ink);
@@ -1320,6 +1322,7 @@ export class RunScene extends Phaser.Scene {
     const hitId = this.hitFx.liftA() > 0.02 ? this.hitFx.id : -2;
     const lowT = this.quality.tier === 'low';
     art.update(Math.min(0.1, this.game.loop.delta / 1000));
+    const hm = this.hmarks, hmBars = !!sim.tfx.bars; hm.begin(sim, this.quality.tier, this.reducedMotion());
     for (const e of sim.enemies) {
       ei++;
       if (ei < 512) art.fi[ei] = 255;
@@ -1372,6 +1375,7 @@ export class RunScene extends Phaser.Scene {
         om.setScale(img.js * art.rimInvT[e.type] * 1.12).setPosition(e.x, e.y + art.foot[e.type]).setFlipX(e.faceX < 0).setDepth(img.depth - 0.4).setAlpha(0.85 * img.alpha).setVisible(true);
         mrN++;
       }
+      if (e.hmark) hm.foe(e, img, husk ? art : null, husk, hmBars); // DT2: the mark overlay (+ Hunter's Eye bar / name)
       if (lit && e.boss) lm.add(e.x, e.y - 10, app.params.arc ? bossLightRadius(this.arc.y) : 90, ROLE.bossEye, 0.8);
       // bleed readout (visual only; reads the sim's running bleedTot): ~2 small pale-blue numbers a second per bleeding enemy
       // (batched, never per tick), plus drips of wolf light while it bleeds (not on Low, not with reduced motion)
@@ -1458,6 +1462,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     for (let oi = mrN; oi < this.mrN; oi++) if (this.mrOut[oi]) this.mrOut[oi].setVisible(false);
+    hm.end(sim, p);
     this.mrN = mrN;
     this.dens.update(near120, inView, Math.min(this.game.loop.delta, 100) / 1000);
     wb.plan();

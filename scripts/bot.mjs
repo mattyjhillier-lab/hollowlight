@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { Sim } from '../src/sim/Sim.js';
 import { compileTree, presetTree, aggregateMods } from '../src/meta/tree.js';
 import { TIER_IDS, tierIndex } from '../src/sim/tiers.js';
+import { EMBER } from '../src/sim/marks.js';
 import { loadTree } from '../src/meta/treefs.mjs';
 import { tellHits } from '../src/sim/boss.js';
 
@@ -82,6 +83,11 @@ export function dodgeVec(sim, out = _d) {
   for (const s of sim.eshots || []) {
     const sp = Math.hypot(s.vx, s.vy) || 1, dx = s.vx / sp, dy = s.vy / sp;
     n += laneAway(p, s.x, s.y, dx, dy, p.r + s.r + 4, sp * 0.9, out);
+  }
+  for (const z of sim.embers || []) { // DT2 Emberwake ring: seen REACT s after it appears (inside the 0.6 s tell), step out of it
+    if (z.t < REACT) continue;
+    const dx = p.x - z.x, dy = p.y - z.y, d = Math.hypot(dx, dy) || 1;
+    if (d < EMBER.r + p.r + 4) { out[0] += dx / d; out[1] += dy / d; n++; }
   }
   for (const e of sim.enemies) {
     if (!e.ai || e.dead) continue;

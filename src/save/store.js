@@ -142,7 +142,7 @@ export class SaveStore {
       }
     }
     // tool-cluster unlock counters (the sim counts them per run; sanitize() clamps)
-    s.gems += pos(r.gems); s.abilityUses += pos(r.abilityUses); s.blessingsTaken += pos(r.blessings); s.markedKills += pos(r.marked); s.chests += pos(r.chests);
+    s.gems += pos(r.gems); s.abilityUses += pos(r.abilityUses); s.blessingsTaken += pos(r.blessings); s.markedKills = Math.min(1e9, s.markedKills + Math.min(pos(r.marked), 5000)); // DT2: a forged run count is clamped (a real run marks a few hundred at most) s.chests += pos(r.chests);
     // difficulty tier records + the one-time first-dawn bounty (a tier whose gate the save does not own is recorded as Twilight)
     const tier = ctx && ctx.data ? recordTierRun(this.data, r, { data: ctx.data, unlockedTiers: ctx.unlockedTiers }) : null;
     if (typeof r.chapter === 'string') {

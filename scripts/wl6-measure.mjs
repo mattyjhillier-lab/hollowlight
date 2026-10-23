@@ -147,7 +147,8 @@ const MEASURE = `(async (b64, b64g, pts, dpr, cbm) => {
     if (!body.length) { out.push({ ...p, mask: 0 }); continue; }
     body.sort((a, b) => a - b); grd.sort((a, b) => a - b);
     const ground = grd[grd.length >> 1]; const bm = body[body.length >> 1]; const peak = body[Math.max(0, body.length - 3)];
-    out.push({ ...p, mask: body.length, dark, ground: +ground.toFixed(4), body: +bm.toFixed(4), peak: +peak.toFixed(4), eyeCR: +cr(peak, ground).toFixed(2), bodyCR: +cr(bm, ground).toFixed(2), dL: +(Ls(bm) - Ls(ground)).toFixed(1) });
+    const low = body[Math.min(body.length - 1, 2)];
+    out.push({ ...p, mask: body.length, dark, lowCR: +cr(low, ground).toFixed(2), ground: +ground.toFixed(4), body: +bm.toFixed(4), peak: +peak.toFixed(4), eyeCR: +cr(peak, ground).toFixed(2), bodyCR: +cr(bm, ground).toFixed(2), dL: +(Ls(bm) - Ls(ground)).toFixed(1) });
   }
   return JSON.stringify(out);
 })`;
@@ -346,12 +347,64 @@ async function settingsShots(out) {
   } finally { c.close(); srv.close(); }
 }
 
+// ---- DT2 Hollow marks: screenshots (3 sizes x night 4:00 / day 14:30, corrupted ground) + contrast of every mark against what is under it
+// (the same frame with the marks hidden), none / protan / deutan, + depth checks (marks never above tells, numbers, pickups).
+//   node scripts/wl6-measure.mjs marks <outDir>   (env SIZES, TS default 240,870, GROUNDS default corrupt,hollow, TIERS default high,low)
+const MARK_KS = ['ironbark', 'swiftshade', 'emberwake', 'hollowheart'];
+async function marks(out) {
+  mkdirSync(out, { recursive: true });
+  const srv = await serve(process.env.DIST || 'dist'); let c = await launch();
+  const rows = []; let depthFail = 0;
+  try {
+    for (const view of (process.env.SIZES || 'desk,land,port').split(',')) for (const t of (process.env.TS || '240,690').split(',').map(Number)) for (const tier of (process.env.TIERS || 'high,low').split(',')) for (const ground of (process.env.GROUNDS || 'corrupt,hollow').split(',')) {
+      const [w, h, dpr] = VIEWS[view]; const portrait = h > w;
+      await open(c, q('wren', t) + '&tier=expert', w, h, dpr, tier);
+      const cx = 2600, cy = 2600;
+      await sleep(600); await setup(c, cx, cy, t, 0); await sleep(1000);
+      if (ground === 'corrupt') await c.ev(`(()=>{const l=window.__app.scene.life;for(let k=0;k<4;k++)l.stampCorr(${cx},${cy},460,1);return 1})()`);
+      const STAGE = `(()=>{const a=window.__app,s=a.sim,p=s.player;s.tfx.bars=true;if(!s._mk){s.enemies.length=0;const T=['wolf','root_crawler','crow','wolf'];const K=${JSON.stringify(MARK_KS)};
+        for(let i=0;i<4;i++){const e=s.spawnEnemy(T[i],p.x,p.y);e.hmark=K[i];e._mk=i;}for(let j=0;j<3;j++){const e=s.spawnEnemy('crow',p.x,p.y);e._mk=10+j;}s._mk=1;}
+        for(const e of s.enemies){if(e._mk==null)continue;const i=e._mk;let x,y;
+          if(i<4){${portrait ? 'x=p.x-90+i*60;y=p.y+(i%2?110:70);' : 'x=p.x+70+i*45;y=p.y+(i%2?-40:35);'}}else{const hh=s.enemies.find(o=>o._mk===3);x=hh.x+(i-11)*30;y=hh.y+(i===11?-34:26);}
+          e.x=x;e.y=y;e.faceX=-1;e.speed=0;e.spd0=0;e.tele=0;e.grace=99;e.state='run';e.hp=i<4?e.maxHp*0.6:e.maxHp;e.flash=0;e.markT=0;}
+        s.enemies=s.enemies.filter(e=>e._mk!=null);s.embers=[{id:9e6,x:p.x-48,y:p.y-26,t:0.35,next:9,dmg:0,src:'wolf'},{id:9e6+1,x:p.x-44,y:p.y+40,t:1.0,next:9,dmg:0,src:'wolf'}];
+        for(const o of a.scene.children.list)if(o.aid!==undefined)o.hurtT=-9;s.time=${t};return s.enemies.length})()`;
+      for (let i = 0; i < 10; i++) { await c.ev(STAGE); await autoPick(c); await sleep(50); }
+      await c.ev(STAGE); await sleep(60); await c.ev(STAGE);
+      const name = `dt2-marks-${view}-${t < 600 ? 'night' : 'day'}-${tier}-${ground}`;
+      const b64 = await shot(c, process.env.NOSHOT || (tier !== 'high' || ground !== 'corrupt') ? null : join(out, name + '.png'), false);
+      const info = JSON.parse(await c.ev(`(()=>{const sc=window.__app.scene,hm=sc.hmarks,wv=sc.cameras.main.worldView,R=sc.game.canvas.getBoundingClientRect();const S=(x,y,r)=>({x:R.left+(x-wv.x)/wv.width*R.width,y:R.top+(y-wv.y)/wv.height*R.height,r:r*R.width/wv.width});
+        const pts=[];for(const [id,s0] of hm.pool){const e=window.__app.sim.enemies.find(o=>o.id===id);if(!e)continue;pts.push({type:e.hmark,...S(s0.im.x,s0.im.y,7)});}
+        for(const z of window.__app.sim.embers)pts.push({type:'ring',...S(z.x+28,z.y,4)});
+        const pick=Math.min(...sc.children.list.filter(o=>o.depth!==undefined&&o.depth>=60000-100&&o.depth<60000-80).map(o=>o.depth),1e9);
+        const maxOv=Math.max(...[...hm.pool.values()].map(s0=>s0.im.depth),0);
+        return JSON.stringify({pts,depth:{ov:maxOv,nums:sc.nums&&sc.nums.depth!==undefined?sc.nums.depth:90000+10,tele:sc.teleG.depth,ring:hm.ringG.depth,thread:hm.threadG.depth,bar:hm.barG.depth,gems:60000-100}})})()`));
+      const dp = info.depth;
+      if (!(dp.ov < dp.nums && dp.ov < dp.tele && dp.ring < dp.tele && dp.thread < dp.gems && dp.bar < dp.nums)) { depthFail++; console.log('DEPTH FAIL', JSON.stringify(dp)); }
+      await c.ev('(()=>{window.__app.scene.hmarks.hide=true;window.__app.sim.embers=[];return 1})()'); await sleep(150);
+      const b64g = (await c.send('Page.captureScreenshot', { format: 'png' })).data;
+      for (const cb of (process.env.CBS || 'none,protan,deutan').split(',')) {
+        const res = JSON.parse(await c.ev(`(${MEASURE})(${JSON.stringify(b64)}, ${JSON.stringify(b64g)}, ${JSON.stringify(info.pts)}, ${dpr}, ${JSON.stringify(CB[cb])})`));
+        for (const x of res) rows.push({ view, t, tier, ground, cb, type: x.type, mask: x.mask, peak: x.peak, body: x.body, ground_L: x.ground, eyeCR: x.eyeCR, lowCR: x.lowCR, dL: x.dL });
+      }
+      console.log('marks', name);
+    }
+  } finally { try { c.close(); } catch { /* ignore */ } srv.close(); }
+  writeFileSync(join(out, 'marks-cells.json'), JSON.stringify(rows));
+  const ok = (x) => x.mask > 0 && (x.eyeCR >= 3 || x.lowCR >= 3 || Math.abs(x.dL) >= 6); // every mark = a bright shape on a dark tinted outline (L2): either edge may carry it
+  const L = [`DT2 marks contrast cells: ${rows.length}; pass (peak >= 3:1 OR |dL*| >= 6 vs what is under it; bright fill OR dark outline >= 3:1): ${rows.filter(ok).length}/${rows.length}; depth fails: ${depthFail}`];
+  for (const k of ['type', 'ground', 'cb', 'tier', 'view', 't']) for (const v of new Set(rows.map((x) => x[k]))) L.push(`  ${k}=${v}: ${rows.filter((x) => x[k] === v && ok(x)).length}/${rows.filter((x) => x[k] === v).length}`);
+  L.push('misses: ' + (rows.filter((x) => !ok(x)).map((x) => `${x.view}/${fmt(x.t)}/${x.tier}/${x.ground}/${x.cb}/${x.type}(CR ${x.eyeCR}/${x.lowCR}, dL ${x.dL}${x.mask ? '' : ', NO MASK'})`).join('; ') || 'none'));
+  writeFileSync(join(out, 'marks-summary.txt'), L.join(NL)); console.log(L.join(NL));
+}
+
 const [cmd, out] = process.argv.slice(2);
-if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|summary|strip|vib|settings <outDir>'); process.exit(1); }
+if (!cmd || !out) { console.error('usage: wl6-measure.mjs shots|contrast|summary|strip|vib|settings|marks <outDir>'); process.exit(1); }
 if (cmd === 'shots') await shots(out);
 else if (cmd === 'contrast') await contrast(out);
 else if (cmd === 'vib') await vibrancy(out);
 else if (cmd === 'summary') await summary(out);
 else if (cmd === 'strip') await strip(out);
 else if (cmd === 'settings') await settingsShots(out);
+else if (cmd === 'marks') await marks(out);
 process.exit(0);
