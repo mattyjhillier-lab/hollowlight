@@ -24,6 +24,7 @@ app.save.load();
 if (app.lanterns.note && !app.save.loadNote) app.save.loadNote = app.lanterns.note;
 app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
 app.audio = createAudio(window, document, { onMute: (m) => { app.save.setSettings({ muted: m }); app.applySettings(); if (app.sim && app.ui.toast) app.ui.toast(m ? 'Sound off (M)' : 'Sound on'); } });
+app.ui.audio = app.audio; // AU6: tree / results sounds
 // AU1: a tiny tick when the pointer moves onto a button (one per button, never on touch)
 { let last = null; document.getElementById('ui').addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') return; const b = e.target && e.target.closest ? e.target.closest('button') : null; if (b && b !== last && !b.disabled) app.audio.play('ui_tick'); last = b; }); }
 app.applySettings();

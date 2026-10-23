@@ -2,6 +2,8 @@
 // duck stages, a master compressor and a code-made reverb. AU1 cues are ported from the prototype (docs/mockups/audio/index.html).
 // Render/audio only: reads nothing from the sim except what app.js / RunScene hand it, and never uses the sim RNG (Math.random only).
 import { VoiceBudget, duckTargets, masterGain, perceptual, soundSettings } from './budget.js';
+import { MORE_CUES, EVENT_CUE, SPECIAL, moreCue } from './cues.js';
+import { MusicPlayer } from './music.js';
 
 const D3 = 146.83, hz = (n) => D3 * Math.pow(2, n / 12);
 const DAWN = [0, 2, 4, 7, 9]; // D major pentatonic: the gem climb
@@ -20,6 +22,7 @@ export const CUES = {
   level_up: { cap: 1, gap: 0.3, pri: 0 },
   ui_tick: { cap: 2, gap: 0.04, pri: 1 },
   ui_pick: { cap: 1, gap: 0.1, pri: 1 },
+  ...MORE_CUES,
 };
 // weapon id (the sim hit log's src tag) -> its verb cue
 export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare' };
@@ -32,7 +35,11 @@ export class AudioEngine {
     this.hidden = false;
     this.budget = new VoiceBudget(CUES);
     this.gemStep = 0; this.lastGem = -9;
+    this.music = new MusicPlayer(this);
+    this.watch = { sim: null, kills: 0, tells: {}, maxId: -1, acc: 0 };
   }
+
+  hz(n) { return hz(n); }
 
   get ready() { return !!this.ctx; }
 
@@ -54,13 +61,16 @@ export class AudioEngine {
     this.master = ctx.createGain(); this.master.gain.value = 0;
     this.master.connect(comp).connect(ctx.destination);
     this.musicBus = ctx.createGain(); this.musicDuck = ctx.createGain(); this.musicBus.connect(this.musicDuck).connect(this.master);
-    this.sfxBus = ctx.createGain(); this.sfxDuck = ctx.createGain(); this.sfxBus.connect(this.sfxDuck).connect(this.master);
+    this.sfxBus = ctx.createGain(); this.sfxDuck = ctx.createGain(); this.sfxLow = ctx.createGain(); this.sfxBus.connect(this.sfxLow).connect(this.sfxDuck).connect(this.master);
+    this.heartBus = ctx.createGain(); this.heartBus.connect(this.sfxDuck); // low-HP heartbeat: on the sfx slider, not dipped by the low-HP dip
     const verb = ctx.createConvolver(); verb.buffer = this.impulse(2.6);
     this.verbSend = ctx.createGain(); this.verbSend.gain.value = 0.35; this.verbSend.connect(verb).connect(this.master);
+    this.musicVerb = ctx.createGain(); this.musicVerb.gain.value = 0; this.musicVerb.connect(verb); // music reverb send (follows the music slider; Low tier: off)
     const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = nb.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.noiseBuf = nb;
     this.apply();
+    this.music.build();
   }
 
   impulse(sec) { // procedural reverb: decaying noise, a soft forest clearing
@@ -87,6 +97,9 @@ export class AudioEngine {
     this.master.gain.setTargetAtTime(masterGain(s.master, s.muted, this.hidden), now, 0.08);
     this.musicBus.gain.setTargetAtTime(perceptual(s.music), now, 0.08);
     this.sfxBus.gain.setTargetAtTime(perceptual(s.sfx), now, 0.08);
+    this.verbSend.gain.setTargetAtTime(0.35 * perceptual(s.sfx), now, 0.08);
+    this.heartBus.gain.setTargetAtTime(perceptual(s.sfx), now, 0.08); // reverb tails follow their slider too
+    this.musicVerb.gain.setTargetAtTime(this.lowTier ? 0 : 0.35 * perceptual(s.music), now, 0.08);
   }
 
   duck(kind) {
@@ -99,15 +112,55 @@ export class AudioEngine {
   }
 
   /** Play cue `id` (n = requests folded into this one, e.g. hits this frame). Returns true if a voice started. */
-  play(id, n = 1) {
+  play(id, n = 1, delay = 0) {
     if (!this.ctx || this.silent || this.ctx.state !== 'running') return false;
     const now = this.ctx.currentTime;
     const v = this.budget.request(id, now, this.set.calm, n);
     if (!(v > 0)) return false;
-    const dur = this.cue(id, now + 0.005, v);
-    this.budget.commit(id, now + dur);
+    const dur = this.cue(id, now + 0.005 + delay, v);
+    this.budget.commit(id, now + delay + Math.max(0.05, dur));
     return true;
   }
+
+  /** A sim event (app.js onEvent): its cue, if it has one. The evolution beat is followed by that evolution's own verb. */
+  event(ev) {
+    if (!ev || !this.ctx) return;
+    if (ev.type === 'evolve') { this.play('evo'); if (typeof ev.id === 'string' && Object.hasOwn(CUES, 'evo_' + ev.id)) this.play('evo_' + ev.id, 1, 1.8); return; }
+    const id = Object.hasOwn(EVENT_CUE, ev.type) ? EVENT_CUE[ev.type] : null;
+    if (id) this.play(id);
+  }
+
+  /** Every rendered frame (app.js): the music view (read-only sim snapshot) and the sim itself for the enemy watcher. */
+  frame(view, sim, dt) {
+    if (!this.ctx) return;
+    const low = !!view.low;
+    if (low !== !!this.lowTier) { this.lowTier = low; this.apply(); }
+    this.music.frame(view, dt);
+    this.watchSim(sim, dt);
+  }
+
+  /** Read-only: new special-enemy spawns, new tells (sim.tells counts rising), kills (a dry puff, rate-limited). Never writes the sim. */
+  watchSim(sim, dt) {
+    const w = this.watch;
+    if (sim !== w.sim) { w.sim = sim; w.kills = sim ? sim.kills | 0 : 0; w.maxId = sim ? (sim.nextId | 0) - 1 : -1; for (const k of SPECIAL) w.tells[k] = 0; w.acc = 0; return; }
+    if (!sim || sim.state !== 'running') return;
+    const k = sim.kills | 0;
+    if (k > w.kills) { this.play('husk_fade', k - w.kills); w.kills = k; }
+    const tl = sim.tells || {};
+    for (const t of SPECIAL) { const n = tl[t] | 0; if (n > w.tells[t]) this.play('tell_' + t); w.tells[t] = n; }
+    w.acc += dt;
+    if (w.acc < 0.25) return;
+    w.acc = 0;
+    let top = w.maxId, hit = false;
+    for (const e of sim.enemies) { if (e.id > w.maxId) { if (e.id > top) top = e.id; if (!hit && SPECIAL.includes(e.type)) hit = true; } }
+    w.maxId = top;
+    if (hit) this.play('spawn_special');
+  }
+
+  /** Low HP on/off (music.js): BIBLE beat, the heartbeat is the only sound under the music, so the play sounds dip a little. */
+  lowHp(on) { if (this.sfxLow) this.sfxLow.gain.setTargetAtTime(on ? 0.7 : 1, this.ctx.currentTime, 0.4); }
+
+  bird(t, dest, v = 1) { const f = rnd(2600, 4200), n = Math.random() < 0.5 ? 2 : 3; for (let i = 0; i < n; i++) this.tone(t + i * 0.09, 'sine', f, 0.005, 0.06, 0.05 * v, f * rnd(1.2, 1.5), false, dest); }
 
   /** Hits drained from the sim hit log this frame: counts per weapon id. */
   hits(counts) {
@@ -117,19 +170,19 @@ export class AudioEngine {
 
   // ---------- synth (ported from the prototype) ----------
   env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
-  noise(t, type, f, q, a, d, peak, f2, verb) {
+  noise(t, type, f, q, a, d, peak, f2, verb, dest) {
     const ctx = this.ctx, s = ctx.createBufferSource(); s.buffer = this.noiseBuf;
     const fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t); fl.Q.value = q;
     if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + a + d);
     const g = ctx.createGain(); this.env(g, t, a, peak, d);
-    s.connect(fl).connect(g).connect(this.sfxBus); if (verb) g.connect(this.verbSend);
+    s.connect(fl).connect(g).connect(dest || this.sfxBus); if (verb) g.connect(dest && dest !== this.sfxBus ? this.musicVerb : this.verbSend);
     s.start(t, Math.random() * 1.5); s.stop(t + a + d + 0.05);
   }
-  tone(t, type, f, a, d, peak, f2, verb) {
-    const ctx = this.ctx, o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t);
+  tone(t, type, f, a, d, peak, f2, verb, dest, det) {
+    const ctx = this.ctx, o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t); if (det) o.detune.value = det;
     if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + a + d);
     const g = ctx.createGain(); this.env(g, t, a, peak, d);
-    o.connect(g).connect(this.sfxBus); if (verb) g.connect(this.verbSend);
+    o.connect(g).connect(dest || this.sfxBus); if (verb) g.connect(dest && dest !== this.sfxBus ? this.musicVerb : this.verbSend);
     o.start(t); o.stop(t + a + d + 0.05);
   }
   gemNote(now) {
@@ -176,7 +229,7 @@ export class AudioEngine {
         return 1.0;
       case 'ui_tick': this.tone(t, 'triangle', hz(24), 0.005, 0.04, 0.06 * v); return 0.06;
       case 'ui_pick': for (let i = 0; i < 2; i++) this.tone(t + i * 0.06, 'triangle', hz([0, 7][i] + 24), 0.005, 0.25, 0.09 * v, 0, true); return 0.35;
-      default: return 0.05;
+      default: { const d = moreCue(this, id, t, v); return d >= 0 ? d : 0.05; }
     }
   }
 }

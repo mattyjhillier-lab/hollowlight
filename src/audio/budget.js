@@ -23,6 +23,8 @@ export const DUCKS = {
   ability: { music: 0.6, sfx: 0.6, hold: 0.5, release: 0.5 },
   hurt: { music: 0.75, sfx: 0.7, hold: 0.15, release: 0.3 },
   boss: { music: 0.2, sfx: 0.6, hold: 1.2, release: 1 },
+  phase: { music: 0.08, sfx: 0.45, hold: 0.9, release: 0.8 }, // boss phase change: 1 s near-silence, then the boom
+  bossfall: { music: 0.1, sfx: 0.5, hold: 1.5, release: 1 },
   victory: { music: 1, sfx: 0.3, hold: 4, release: 1 },
 };
 export function duckTargets(kind, calm) {

@@ -284,6 +284,7 @@ export const app = {
   frame(dt) {
     const sim = this.sim;
     if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
+    if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
     if (!sim) return;
     if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
     else if ((this.paused || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
@@ -320,8 +321,22 @@ export const app = {
     if (this.touch) this.touch.render();
   },
 
+  // AU4: what the music reads each frame (read-only from the sim snapshot + the display clock; one reused object, never written back).
+  audioView(sim) {
+    const v = this.auView || (this.auView = { where: 'menu', t: 0, fight: 0, phase: 0, end: '', calm: false, low: false, paused: false, running: false, hp: 1 });
+    v.calm = !!this.save.data.settings.reducedMotion; v.low = !!(this.scene && this.scene.quality && this.scene.quality.tier === 'low');
+    if (!sim) { v.where = 'menu'; v.end = ''; v.fight = 0; v.running = false; v.paused = false; v.hp = 1; return v; }
+    const f = sim.fight, p = sim.player;
+    v.where = 'run'; v.t = this.scene && this.scene.showClock ? this.scene.showClock(sim) : sim.time;
+    v.end = sim.state === 'victory' || sim.state === 'defeat' ? sim.state : '';
+    v.fight = f && (f.stage !== 'over' || sim.state === 'victory') ? 1 : 0; v.phase = f ? f.phase | 0 : 0;
+    v.paused = !!this.paused; v.running = sim.state === 'running' && !this.paused; v.hp = p && p.maxHp > 0 ? p.hp / p.maxHp : 1;
+    return v;
+  },
+
   onEvent(ev) {
     const d = this.data;
+    if (this.audio) this.audio.event(ev); // AU4-AU6: every sim event's cue (render/audio only)
     if (this.scene.bossView && ev.type.startsWith('boss')) this.scene.bossView.onEvent(ev);
     if (ev.type === 'bossWake') { this.ui.hudView.bossBanner('The Elder Treant wakes', 'the oldest mask in the forest', !this.save.data.settings.reducedMotion); return; }
     if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); } // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
@@ -329,7 +344,7 @@ export const app = {
       const b = this.sim && this.sim.boss;
       if (!(b && b.fight)) this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion); // the fight has its own banner (bossWake)
       this.scene.bossIntro();
-    } else if (ev.type === 'levelup') { this.scene.levelBurst(); if (this.audio) this.audio.play('level_up'); }
+    } else if (ev.type === 'levelup') this.scene.levelBurst();
     else if (ev.type === 'mini') { this.ui.hudView.bossBanner(`The ${d.enemies[ev.enemy] ? d.enemies[ev.enemy].name : 'old alpha'} howls`, 'the old leader of the rival pack', !this.save.data.settings.reducedMotion); if (this.scene.miniView) this.scene.miniView.onEvent(ev); } // EN7 arrival banner
     else if (ev.type === 'howl' || ev.type === 'miniDead' || ev.type === 'chestDrop' || ev.type === 'miniPhase') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); if (ev.type === 'miniDead') this.ui.toast('The Branch-Mane falls: a Lantern Reliquary'); }
     else if (ev.type === 'chest') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); this.ui.hudView.flareHp(); if (ev.tier === 0) this.ui.toast('Lantern Reliquary: light, warmth and coin'); } // EN8: Medium/Large open the choice screen
@@ -339,8 +354,8 @@ export const app = {
       this.ui.evolvePlate(ev.id, !(ev0 && Object.hasOwn(ev0, ev.id) && ev0[ev.id] > 0), !!this.save.data.settings.reducedMotion);
       this.scene.evolveMoment(ev.id);
     }
-    else if (ev.type === 'heart') { if (this.audio) this.audio.play('heart'); this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
-    else if (ev.type === 'magnet') { if (this.audio) this.audio.play('magnet'); this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
+    else if (ev.type === 'heart') { this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
+    else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
     else if (ev.type === 'rally') { this.ui.toast('Rally the Pack'); this.scene.rallyMoment(); }
     else if (ev.type === 'wheel') this.ui.toast('Candle Wheel');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');

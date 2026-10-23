@@ -1,6 +1,6 @@
 # Audio v1 design sheet (release gate item 14)
 
-Status: LOCKED 2026-10-23 (all A). AU0 (engine) + AU1 (weapon / pickup / UI sounds) BUILT 2026-10-24 in src/audio/ (the brief's AU0 = section 9 AU1; AU1 = the play sounds of AU2 + AU3). Music, moments, enemies still to build.
+Status: LOCKED 2026-10-23 (all A). AU0 (engine) + AU1 (weapon / pickup / UI sounds) BUILT 2026-10-24 in src/audio/ (the brief's AU0 = section 9 AU1; AU1 = the play sounds of AU2 + AU3). AU4 music + AU5 moments + AU6 enemies/boss/UI BUILT 2026-10-24 (src/audio/music.js, cues.js; music retimed to the real night: hush 13:35, boss 14:00, flood in the victory beat). Left: AU7 verify (phone tier, real phone, mix by ear), critter + trail sounds.
 Prototype (recommended options, playable, self-contained, no network, no files): `docs/mockups/audio/index.html` (click "Light the lantern", scrub the night, press the weapon buttons, run the horde test).
 Builds on `docs/research/09-audio-and-music.md` (2026-10-14; not redone). Labels: OFFICIAL = vendor/standard page; COMMUNITY = forums, interviews, wikis, talks; OPINION = my judgement. No web pages were re-read for this sheet: anything below marked OFFICIAL/COMMUNITY is from prior knowledge and research 09, so treat it as "check before quoting".
 

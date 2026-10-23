@@ -53,6 +53,9 @@ export class UI {
 
   setHandlers(h) { this.handlers = h; }
 
+  /** AU6: a UI / tree sound (no-op until the audio engine is set by main.js). */
+  sound(id) { if (this.audio) this.audio.play(id); }
+
   layer(name) {
     if (!this.layers[name]) {
       const el = document.createElement('div');
@@ -295,6 +298,7 @@ export class UI {
     const h = this.handlers;
     this.endView?.destroy();
     const view = resultsView(sim.result(), bank, this.data);
+    this.sound(sim.state === 'victory' ? 'results_win' : 'results_lose');
     const reduced = document.documentElement.classList.contains('reduced-motion') || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.endView = buildResults({ view, reduced, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
     const el = this.layer('end');

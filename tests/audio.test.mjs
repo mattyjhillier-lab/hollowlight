@@ -73,20 +73,21 @@ test('horde: 400 hits a second for 3 s stays under the cap', () => {
 test('every weapon maps to a cue in the table; every cue has a synth', () => {
   const w = JSON.parse(readFileSync(new URL('../src/data/weapons.json', import.meta.url), 'utf8'));
   for (const id of Object.keys(w.weapons || w)) assert.ok(CUES[HIT_CUE[id]], id);
-  const src = readFileSync(new URL('../src/audio/engine.js', import.meta.url), 'utf8');
-  for (const id of Object.keys(CUES)) assert.ok(src.includes(`case '${id}'`), id);
+  const src = ['engine.js', 'cues.js'].map((f) => readFileSync(new URL('../src/audio/' + f, import.meta.url), 'utf8')).join(' ');
+  for (const id of Object.keys(CUES)) { const k = id.replace(/^(evo|tell)_(?=.)/, ''); assert.ok(src.includes(`case '${k}'`) || (id.startsWith('tell_') && src.includes(`'${k}'`)), id); }
 });
 
 function fakeEnv() {
   const L = {}, on = (o) => (t, f) => { (L[o + t] ||= []).push(f); };
   const fire = (o, t, e = {}) => (L[o + t] || []).forEach((f) => f({ type: t, ...e }));
   let made = 0;
-  class Param { constructor() { this.value = 0; } setTargetAtTime(v) { this.value = v; } cancelScheduledValues() {} setValueAtTime() {} exponentialRampToValueAtTime() {} }
-  const node = () => ({ gain: new Param(), threshold: new Param(), ratio: new Param(), attack: new Param(), release: new Param(), connect(n) { return n; } });
+  class Param { constructor() { this.value = 0; } setTargetAtTime(v) { this.value = v; } cancelScheduledValues() {} setValueAtTime() {} exponentialRampToValueAtTime() {} linearRampToValueAtTime() {} }
+  const node = () => ({ gain: new Param(), threshold: new Param(), ratio: new Param(), attack: new Param(), release: new Param(), frequency: new Param(), Q: new Param(), detune: new Param(), connect(n) { return n; }, disconnect() {}, start() {}, stop() {} });
   class AC { constructor() { made++; this.state = 'running'; this.currentTime = 0; this.sampleRate = 8000; this.destination = {}; }
     createGain() { return node(); } createDynamicsCompressor() { return node(); } createConvolver() { return node(); }
+    createOscillator() { return node(); } createBiquadFilter() { return node(); } createBufferSource() { return node(); }
     createBuffer(c, n) { return { getChannelData: () => new Float32Array(n) }; } resume() { this.state = 'running'; return Promise.resolve(); } suspend() { this.state = 'suspended'; return Promise.resolve(); } }
-  const win = { AudioContext: AC, addEventListener: on('w'), navigator: {} };
+  const win = { AudioContext: AC, addEventListener: on('w'), navigator: {}, setInterval: () => 1, clearInterval() {} };
   const doc = { hidden: false, addEventListener: on('d') };
   return { win, doc, fire, made: () => made };
 }
@@ -120,7 +121,7 @@ test('M key toggles mute (not while typing, not with modifiers or repeats)', () 
 });
 
 test('engine never imports the sim and never uses the sim RNG', () => {
-  for (const f of ['budget.js', 'engine.js', 'index.js']) {
+  for (const f of ['budget.js', 'engine.js', 'index.js', 'music.js', 'cues.js']) {
     const src = readFileSync(new URL('../src/audio/' + f, import.meta.url), 'utf8');
     assert.ok(!/sim\/|rng|innerHTML/.test(src), f);
   }

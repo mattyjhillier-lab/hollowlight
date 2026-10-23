@@ -209,7 +209,7 @@ export class TreeScreen {
     step.setAttribute('role', 'status');
     this.stepText = el('div', 'ts-steptext');
     this.stepBtn = btn('ts-btn', 'Show me');
-    this.stepBtn.addEventListener('click', () => { const s = this.stepNow; if (!s) return; if (s.goals) this.toggleGoals(true); else if (s.id) this.select(s.id, true); });
+    this.stepBtn.addEventListener('click', () => { const s = this.stepNow; if (!s) return; if (this.host.sound) this.host.sound('ui_step'); if (s.goals) this.toggleGoals(true); else if (s.id) this.select(s.id, true); });
     step.append(this.stepText, this.stepBtn);
     this.stepEl = step;
 
@@ -1017,6 +1017,7 @@ export class TreeScreen {
     this.pMsg.textContent = `${n.name} is lit.`;
     let done = null;
     for (const r of this.view.regions) if (r.done && !before.get(r.key)) done = r;
+    if (this.host.sound) this.host.sound(done ? 'tree_whole' : 'tree_light'); // AU6: a lantern catches / a constellation is whole
     if (done) this.toast(`${done.name} is whole again`);
     else if (n.kind === 'heart' || n.kind === 'socket' || n.kind === 'gate' || n.kind === 'key') this.toast(`${this.model.nameOf(id)}: ${why}`);
     this.srEl.textContent = `${n.name} is lit.`;
