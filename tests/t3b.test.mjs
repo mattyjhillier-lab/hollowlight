@@ -153,25 +153,46 @@ const OPEN = ['cursed_forest:hard', 'cursed_forest:expert'];
 test('DT0 the first-dawn bounty is paid once per (map, tier, hero): replays, a second bank of the same run and a re-import never pay again', () => {
   const save = sanitize({ version: 3 });
   const a = recordTierRun(save, WON(), { data, unlockedTiers: OPEN });
-  assert.deepEqual([a.tier, a.glass, a.shards, a.firstDawn], ['hard', 6, 1, true]);
-  assert.equal(save.dawnglass, 6); assert.equal(save.shards, 1);
+  // per-run glass (dawn 2 on Deep Dusk) rides on top of the bounty; this test counts the bounty only
+  assert.deepEqual([a.tier, a.glassFirst, a.glassRun, a.glass, a.shards, a.firstDawn], ['hard', 6, 2, 8, 1, true]);
+  assert.equal(save.dawnglass, 8); assert.equal(save.shards, 1);
   const b = recordTierRun(save, WON(), { data, unlockedTiers: OPEN });
-  assert.deepEqual([b.glass, b.shards, b.firstDawn], [0, 0, false]);
-  assert.equal(save.dawnglass, 6);
+  assert.deepEqual([b.glassFirst, b.shards, b.firstDawn], [0, 0, false]);
+  assert.equal(save.dawnglass, 10);
   // another hero on the same tier is a separate bounty; Long Night pays 10
   const c = recordTierRun(save, WON({ character: 'elias' }), { data, unlockedTiers: OPEN });
-  assert.equal(c.glass, 6); assert.ok(c.stars & 2, 'both heroes cleared = star 2');
+  assert.equal(c.glassFirst, 6); assert.ok(c.stars & 2, 'both heroes cleared = star 2');
   const d = recordTierRun(save, WON({ tier: 'expert' }), { data, unlockedTiers: OPEN });
-  assert.equal(d.glass, 10);
-  assert.equal(save.dawnglass, 22);
+  assert.deepEqual([d.glassFirst, d.glassRun], [10, 4]);
+  assert.equal(save.dawnglass, 10 + 8 + 14);
   // the claim flags live in the save: an export / import round trip keeps them
   const again = sanitize(JSON.parse(JSON.stringify(save)));
   assert.equal(again.stats.tiers.cursed_forest.hard.heroes.wren.first, true);
   const e = recordTierRun(again, WON(), { data, unlockedTiers: OPEN });
-  assert.equal(e.glass, 0); assert.equal(again.dawnglass, 22);
+  assert.deepEqual([e.glassFirst, e.glassRun], [0, 2]); assert.equal(again.dawnglass, 34);
   // a loss pays and claims nothing
   const l = recordTierRun(sanitize({ version: 3 }), WON({ outcome: 'defeat' }), { data, unlockedTiers: OPEN });
-  assert.deepEqual([l.glass, l.firstDawn], [0, false]);
+  assert.deepEqual([l.glass, l.firstDawn], [0, false]); // no boss, no dawn: nothing
+});
+
+test('DT3 per-run Dawnglass: boss 2 / 3 + dawn 2 / 4 + marked (capped) inside runCap 6 / 10; a loss after the boss keeps the boss glass; forged counts clamp', () => {
+  const s1 = sanitize({ version: 3 });
+  const lossBoss = recordTierRun(s1, WON({ outcome: 'defeat', bossKilled: true }), { data, unlockedTiers: OPEN });
+  assert.deepEqual([lossBoss.glassRun, lossBoss.glassFirst, s1.dawnglass], [2, 0, 2]);
+  const s2 = sanitize({ version: 3 });
+  const full = recordTierRun(s2, WON({ bossKilled: true, marked: 1e12 }), { data, unlockedTiers: OPEN }); // 2 + 2 + min(cap 2) = 6 = runCap
+  assert.deepEqual([full.glassRun, full.glassFirst, full.glass], [6, 6, 12]);
+  const s3 = sanitize({ version: 3 });
+  const ln = recordTierRun(s3, WON({ tier: 'expert', bossKilled: true, marked: 50, character: 'elias' }), { data, unlockedTiers: OPEN }); // 3 + 4 + 3 = 10
+  assert.deepEqual([ln.glassRun, ln.glassFirst], [10, 10]);
+  for (const bad of [-5, NaN, '9', Infinity, null, {}]) {
+    const s = sanitize({ version: 3 });
+    assert.equal(recordTierRun(s, WON({ outcome: 'defeat', marked: bad, bossKilled: 'yes' }), { data, unlockedTiers: OPEN }).glass, 0, String(bad)); // forged marked count + non-boolean bossKilled pay nothing
+  }
+  const tw = sanitize({ version: 3 });
+  assert.equal(recordTierRun(tw, WON({ tier: 'normal', bossKilled: true, marked: 3 }), { data, unlockedTiers: OPEN }).glass, 0, 'Twilight pays no Dawnglass');
+  const unopened = sanitize({ version: 3 });
+  assert.equal(recordTierRun(unopened, WON({ bossKilled: true }), { data, unlockedTiers: [] }).glass, 0, 'an unopened night pays nothing');
 });
 
 test('DT0 a tier the save has not opened is recorded as Twilight: a forged or debug tier id can never mint Dawnglass', () => {
@@ -199,10 +220,10 @@ test('DT0 bankRun records the tier (only when the gate is owned), counts the run
   const b1 = st.bankRun({ ...base, tier: 'hard' }, { def, data, unlockedTiers: [] });
   assert.equal(b1.tier.tier, 'normal'); assert.equal(st.data.dawnglass, 0);
   const b2 = st.bankRun({ ...base, tier: 'hard' }, { def, data, unlockedTiers: ['cursed_forest:hard'] });
-  assert.equal(b2.tier.glass, 6); assert.equal(b2.dawnglass, 6); assert.equal(st.data.stats.tiers.cursed_forest.hard.clears, 1);
+  assert.equal(b2.tier.glass, 8); assert.equal(b2.dawnglass, 8); assert.equal(st.data.stats.tiers.cursed_forest.hard.clears, 1); // dawn 2 + first 6
   assert.deepEqual([st.data.stats.gems, st.data.stats.abilityUses, st.data.stats.blessingsTaken], [800, 14, 6]);
   const b3 = st.bankRun({ ...base, tier: 'hard' }, { def, data, unlockedTiers: ['cursed_forest:hard'] });
-  assert.equal(b3.tier.glass, 0); assert.equal(st.data.dawnglass, 6);
+  assert.equal(b3.tier.glass, 2); assert.equal(st.data.dawnglass, 10);
   assert.equal(st.data.stats.tiers.cursed_forest.hard.runs, 2);
   // the existing call shape (no tier context) still works
   assert.doesNotThrow(() => st.bankRun(base, { def, data }));
@@ -234,7 +255,7 @@ test('DT0 new condition leaves: clearTier (with hero), stars, killMarked, openCh
 // ------------------------------------------------------------------ tool clusters: data
 const TOOL = { satchel: ['li_reach', 'co_pull', 'li_scav', 'co_call', 'li_hearts', 'li_heal', 'li_magnet', 'co_glean'], cardfan: ['sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'cd_stir', 'cd_peek', 'cd_bars', 'cd_radar', 'cd_favour', 'cd_fourth'], hearthkey: ['sp_auto', 'rs_autoset', 'rs_start', 'rs_bless', 'li_last', 'rs_slot5'], nightgate: ['gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'] };
 // T6: still inert = needs a feature that is not built (Hollow marks, chests / minibosses, a codex, an enemy tell for crows / crawlers, the tier select + Dawnglass)
-const INERT = ['cd_bars', 'cd_radar', 'cd_fourth', 'rs_slot5', 'bs_crow3', 'bs_crawl3', 'bs_page', 'gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'];
+const INERT = ['cd_bars', 'cd_radar', 'bs_crow3', 'bs_crawl3', 'bs_page', 'df_ward', 'df_vigil', 'df_star'];
 
 test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and idx, every new node has a permanent (fragment, idx), layout and budget pass', () => {
   assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel']);

@@ -10,7 +10,7 @@ import { defaultSave } from '../src/save/schema.js';
 
 const gatedW = Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort();
 const gatedE = Object.keys(data.evolutions).filter((e) => data.evolutions[e].treeGate).sort();
-const gateNodes = def.list.filter((i) => def.nodes[i].permanent);
+const gateNodes = def.list.filter((i) => def.nodes[i].permanent && !def.nodes[i].effects.some((e) => e.unlock === 'tier')); // weapon / evolution gates (the Night Gate's tier gates are tested in dt1.test.mjs)
 const gateOf = (kind, id) => gateNodes.filter((n) => def.nodes[n].effects.some((e) => e.unlock === kind && e.id === id));
 const weaponKeys = (sim) => {
   const s = new Set();

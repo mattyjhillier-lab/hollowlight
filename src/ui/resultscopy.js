@@ -221,12 +221,19 @@ export function nightBlock(r, bank, hero, won) {
     badge: first ? `${name} · ${RES.night.firstDawn}` : name,
     goldLine: harder && whole(t.goldBonus) > 0 && mul > 1 ? RES.night.goldMul(mul, name) : '',
     shardsExtra: first ? whole(t.shards) : 0,
-    glass: harder ? { n: glass, sub: glass > 0 && first ? RES.night.firstDawn : '' } : null,
+    glass: harder ? { n: glass, sub: glassSub(t, glass, first) } : null,
     firstLine: first && hero ? `${RES.night.firstLine(clip(hero, 24), name)}${names && whole(n.firstGlass) ? ` ${RES.night.waiting(names, whole(n.firstGlass))}` : ''}` : '',
     stars: won && harder ? RES.night.stars.map((label, i) => ({ label, on: !!(bits & (1 << i)) })) : null,
     kept: !won && harder ? RES.night.kept : '',
     again: harder || n.choice === true ? RES.night.again(name) : '',
   };
+}
+
+// Dawnglass breakdown under the tile: '2 + 6 first dawn' when both were paid, 'first dawn' when only the bounty was (sheet 7.2).
+function glassSub(t, glass, first) {
+  if (!(glass > 0) || !first) return '';
+  const run = Math.min(glass, whole(t.glassRun));
+  return run > 0 && glass - run > 0 ? `${group(run)} + ${group(glass - run)} ${RES.night.firstDawn}` : RES.night.firstDawn;
 }
 
 /** Screen-reader sentence for the whole summary (the visual count-up never reaches assistive tech). */

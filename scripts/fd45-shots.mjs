@@ -92,7 +92,7 @@ for (const [n, w, h, d, m] of VIEWS) {
   await ev('__app.showMenu()'); await sleep(200);
   // results (real bankRun: Deep Dusk first dawn win, then a Deep Dusk death, then a Twilight win)
   const b1 = await ev(END('hard', {})); console.log('  bank', b1);
-  if (!b1.includes('"firstDawn":true') || !b1.includes('"glass":6')) fail('first dawn not banked ' + b1);
+  if (!b1.includes('"firstDawn":true') || !b1.includes('"glassFirst":6')) fail('first dawn not banked ' + b1);
   await shot(`fd5-results-win-hard-${n}`); await check('results win hard', '.layer-end', '.u6-wrap');
   await ev(END('hard', { outcome: 'defeat', time: 702, clock: 702, bossKilled: false, gold: 750 }));
   await shot(`fd5-results-death-hard-${n}`); await check('results death hard', '.layer-end', '.u6-wrap');

@@ -127,7 +127,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "rs_bless"
    ],

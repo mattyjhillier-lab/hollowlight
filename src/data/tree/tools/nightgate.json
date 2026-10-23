@@ -24,7 +24,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "clearChapter",
     "id": "cursed_forest"
@@ -55,7 +54,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "gt_cursed_forest_hard"
    ],

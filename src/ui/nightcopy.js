@@ -152,12 +152,13 @@ export function changeLines(data, cid, tid) {
   return [...out.slice(0, 3), NIGHT.sameHarder]; // the reassurance line always stays (landscape phones show the first two)
 }
 
-/** "You earn" pills: only rewards the game pays today (gold multiplier at banking, the boss's shards, the first-dawn bounty per hero). */
+/** "You earn" pills: only rewards the game pays today (gold multiplier at banking, the boss's shards, Dawnglass for the boss and the dawn, the first-dawn bounty per hero). */
 export function earnPills(save, data, cid, tid, heroId) {
   const t = tierDef(data, cid, tid);
   const chap = own(data.chapters, cid) ? data.chapters[cid] : null;
   const pills = [{ kind: 'gold', text: `gold ${mulText(t.goldMul || 1)}` }];
   if (chap && num(chap.bossShards)) pills.push({ kind: 'shard', text: `${num(chap.bossShards)} from the boss` });
+  if (t.glass && (t.glass.boss > 0 || t.glass.dawn > 0)) pills.push({ kind: 'glass', text: `boss +${t.glass.boss} · dawn +${t.glass.dawn}` });
   const rec = recOf(save, cid, tid);
   const claimed = !!(rec && heroId && own(rec.heroes, heroId) && rec.heroes[heroId].first === true);
   if (t.glass && t.glass.first > 0 && !claimed) pills.push({ kind: 'glass', text: `first dawn +${t.glass.first}${t.firstShards ? ` · +${t.firstShards} shard` : ''}`, teal: true });

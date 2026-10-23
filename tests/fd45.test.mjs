@@ -57,7 +57,7 @@ test('chip states: open (cleared x, stars), NEW until seen, locked with real pro
   N.rememberNight(s, CID, 'hard', ['normal', 'hard']);
   assert.equal(N.chipState(s, data, treeDef, HARD, CID, 'hard').isNew, false, 'NEW shows once');
   const ln = N.chipState(s, data, treeDef, HARD, CID, 'expert');
-  assert.deepEqual([ln.state, ln.line, ln.progress], ['locked', 'Clear Deep Dusk once', { cur: 0, goal: 1 }]);
+  assert.deepEqual([ln.state, ln.line, ln.progress], ['locked', 'Clear Cursed Forest on Deep Dusk', { cur: 0, goal: 1 }]); // the live Night Gate lantern's own condition
   // a live gate lantern (stub tree + status): condition met -> 'gate'; unmet -> locked with the condition's own progress
   const def = { list: ['g1'], nodes: { g1: { name: 'Long Night: Cursed Forest', effects: [{ unlock: 'tier', chapter: CID, tier: 'expert' }] } } };
   const ready = N.chipState(s, data, def, HARD, CID, 'expert', () => ({ rank: 0, cond: { done: true, lines: [] } }));
@@ -83,7 +83,7 @@ test('remembered pick, fresh unlock, first uncleared; forged / unopened tiers ne
   assert.equal(N.pickRunTier('hard', [], CID), 'normal');
 });
 
-test('side card text is the real tier data and promises nothing that is not built (marks, per-run Dawnglass, tier boss shards)', () => {
+test('side card text is the real tier data and promises nothing that is not built (marks, tier boss shards); per-run Dawnglass (boss + dawn) is live', () => {
   const dd = N.changeLines(data, CID, 'hard');
   assert.ok(dd.length <= 4 && dd[0] === 'Foes are a little tougher and hit harder', dd[0]);
   assert.ok(dd.includes('The Elder Treant is stronger'));
@@ -92,11 +92,12 @@ test('side card text is the real tier data and promises nothing that is not buil
   assert.ok(ln[0].startsWith('Foes are twice as tough') && ln.includes('The Elder Treant is twice as strong') && ln.includes('Hearts come more slowly'), ln.join(' | '));
   assert.deepEqual(N.changeLines(data, CID, 'normal'), [N.NIGHT.same.normal, N.NIGHT.same.glassNone]);
   const s = defaultSave();
-  assert.deepEqual(N.earnPills(s, data, CID, 'hard', 'wren').map((p) => p.text), ['gold x1.5', '5 from the boss', 'first dawn +6 · +1 shard']);
+  assert.deepEqual(N.earnPills(s, data, CID, 'hard', 'wren').map((p) => p.text), ['gold x1.5', '5 from the boss', 'boss +2 · dawn +2', 'first dawn +6 · +1 shard']);
   assert.deepEqual(N.earnPills(s, data, CID, 'normal', 'wren').map((p) => p.text), ['gold x1', '5 from the boss']);
   s.stats.tiers = { [CID]: { hard: rec(2, 1, 1, { wren: { clears: 1, first: true } }) } };
-  assert.equal(N.earnPills(s, data, CID, 'hard', 'wren').length, 2, 'first dawn already claimed by Wren');
-  assert.equal(N.earnPills(s, data, CID, 'hard', 'elias').length, 3, 'Elias still has it waiting');
+  assert.equal(N.earnPills(s, data, CID, 'hard', 'wren').length, 3, 'first dawn already claimed by Wren');
+  assert.equal(N.earnPills(s, data, CID, 'hard', 'elias').length, 4, 'Elias still has it waiting');
+  assert.ok(N.earnPills(s, data, CID, 'expert', 'wren').some((p) => p.text === 'boss +3 · dawn +4'));
   assert.equal(N.toolsLine(s, treeDef, 'hard'), '', 'no tier tool owned -> no line');
 });
 
@@ -151,17 +152,17 @@ test('FD5 results: Twilight = badge only; Deep Dusk first dawn = badge, Dawnglas
     night: { id: 'hard', name: 'Deep Dusk', choice: true, goldMul: 1.5, firstGlass: 6, waiting: ['Wren', 'Elias'] } };
   const v = resultsView(r, bank, data);
   assert.equal(v.night.badge, 'Deep Dusk · first dawn');
-  assert.deepEqual(v.night.glass, { n: 6, sub: 'first dawn' });
+  assert.deepEqual(v.night.glass, { n: 10, sub: '4 + 6 first dawn' }); // boss 2 + dawn 2 + first dawn 6
   assert.equal(v.night.goldLine, 'x1.5 Deep Dusk');
   assert.equal(v.bank.gold, 1680, 'gold incl. the x1.5 bonus');
   assert.equal(v.bank.shards, 6, 'boss 5 + 1 first-dawn shard');
   assert.equal(v.night.firstLine, 'First dawn with Wren on Deep Dusk. Elias has not seen it yet (+6 waiting).');
   assert.deepEqual(v.night.stars.map((x) => x.on), [true, false, false]);
   assert.equal(v.night.again, 'Again · Deep Dusk');
-  assert.ok(resultsSummary(v).includes('6 Dawnglass'));
+  assert.ok(resultsSummary(v).includes('10 Dawnglass'));
   const res = buildResults({ view: v, onAgain() {}, onMenu() {}, onTree() {} });
   const txt = res.root.textContent;
-  for (const s of ['Deep Dusk · first dawn', 'Dawnglass', '+6', 'x1.5 Deep Dusk', 'First dawn with Wren', 'Both heroes', 'Again · Deep Dusk']) assert.ok(txt.includes(s), s);
+  for (const s of ['Deep Dusk · first dawn', 'Dawnglass', '+10', '4 + 6 first dawn', 'x1.5 Deep Dusk', 'First dawn with Wren', 'Both heroes', 'Again · Deep Dusk']) assert.ok(txt.includes(s), s);
   // death on Deep Dusk: kept line, no stars, no first dawn
   const d = resultsView({ ...r, outcome: 'defeat', time: 702 }, { ...bank, tier: { tier: 'hard', glass: 0, shards: 0, firstDawn: false, stars: 0, goldBonus: 300 } }, data);
   assert.deepEqual([d.night.badge, d.night.stars, d.night.firstLine, d.night.kept], ['Deep Dusk', null, '', 'What you earned before the fall is always kept.']);

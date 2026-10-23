@@ -257,7 +257,7 @@ export class Hud {
   }
 
   buildStrip(sim, data) {
-    const d = this.doc, slots = sim.balance.weaponSlots, max = sim.balance.maxRank * 4;
+    const d = this.doc, slots = sim.weaponSlots || sim.balance.weaponSlots, max = sim.balance.maxRank * 4;
     this.strip.replaceChildren();
     this.rings = [];
     for (let i = 0; i < slots; i++) {

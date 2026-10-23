@@ -24,7 +24,7 @@ const pickAll = (s) => { while (s.state === 'levelup' && s.offer && s.offer.star
 // ------------------------------------------------------------------ data + connected rule
 test('T6 the three groups go live: bridges + built lanterns live, each group has one gold-only way in, pending set is the unbuilt features only', () => {
   for (const id of ['br_almanac', 'br_cardfan', 'br_hearthkey', 'cd_stir', 'cd_peek', 'cd_favour', 'rs_autoset', 'rs_start', 'rs_bless', 'bs_wolf1', 'bs_wolf2', 'bs_wolf3', 'bs_crow1', 'bs_crow2', 'bs_crawl1', 'bs_crawl2', 'bs_treant1', 'bs_treant2', 'bs_treant3']) assert.ok(def.nodes[id], `${id} live`);
-  assert.deepEqual(def.pendingList.slice().sort(), ['bs_crawl3', 'bs_crow3', 'bs_page', 'cd_bars', 'cd_fourth', 'cd_radar', 'df_star', 'df_vigil', 'df_ward', 'gt_cursed_forest_expert', 'gt_cursed_forest_hard', 'rs_slot5']);
+  assert.deepEqual(def.pendingList.slice().sort(), ['bs_crawl3', 'bs_crow3', 'bs_page', 'cd_bars', 'cd_radar', 'df_star', 'df_vigil', 'df_ward']);
   for (const id of ['cd_peek', 'bs_wolf1', 'rs_autoset']) { assert.equal(def.nodes[id].unlock, null, `${id} gold-only`); assert.deepEqual(def.nodes[id].requires, [`br_${id.startsWith('cd') ? 'cardfan' : id.startsWith('bs') ? 'almanac' : 'hearthkey'}`]); }
   assert.deepEqual(connectIssues(composed.info, def), []);
   // every other T6 lantern keeps its locked challenge
@@ -32,7 +32,7 @@ test('T6 the three groups go live: bridges + built lanterns live, each group has
   assert.deepEqual(def.nodes.cd_favour.unlock, { t: 'evolveWeapon', id: 'any', n: 8 });
   assert.equal(def.nodes.rs_bless.unlock.t, 'blessings');
   // still-pending lanterns stay unbuyable and are dropped from a forged save (full refund path is tests/t3b)
-  assert.deepEqual(sanitizeTree(own(['cd_fourth', 'rs_slot5', 'bs_page', 'gt_cursed_forest_hard', 'br_almanac']), { killsByEnemy: {} }, def, data), { br_almanac: 1 }, 'links gate buying only (T3c), so an owned bridge is kept; the pending ids always go');
+  assert.deepEqual(sanitizeTree(own(['cd_bars', 'df_vigil', 'bs_page', 'df_ward', 'br_almanac']), { killsByEnemy: {} }, def, data), { br_almanac: 1 }, 'links gate buying only (T3c), so an owned bridge is kept; the pending ids always go');
 });
 
 test('T6 aggregate: lore per type clamped at 2, Tells list the enemies, peek / stir flags; nothing tier-bought on Twilight', () => {

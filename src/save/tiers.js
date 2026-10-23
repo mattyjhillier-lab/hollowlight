@@ -60,12 +60,12 @@ const heroesOf = (data) => Object.keys(data.characters).filter((h) => !data.char
 
 // Fold one finished run into the save's tier records and pay the first-dawn bounty. `r` is the sim's run result (trusted shape, still
 // clamped here). `ctx` = { data, unlockedTiers?: ['chapter:tier'] }. A tier the save has not opened (gate not owned) is recorded as Twilight,
-// so a forged or debug tier id can never mint Dawnglass or bonus gold. Returns { tier, glass, shards, firstDawn, stars, goldBonus }.
+// so a forged or debug tier id can never mint Dawnglass or bonus gold. Returns { tier, glass (run + first), glassRun, glassFirst, shards, firstDawn, stars, goldBonus }.
 // goldBonus: the tier's gold multiplier (tiers.json goldMul: Deep Dusk 1.5, Long Night 2.0) applied to the run's gold here, where it is banked
 // (bankRun has already added r.gold once; the bonus is the extra share). Twilight pays no bonus.
 export function recordTierRun(save, r, ctx) {
   const data = ctx && ctx.data;
-  const none = { tier: 'normal', glass: 0, shards: 0, firstDawn: false, stars: 0, goldBonus: 0 };
+  const none = { tier: 'normal', glass: 0, glassRun: 0, glassFirst: 0, shards: 0, firstDawn: false, stars: 0, goldBonus: 0 };
   if (!data || !isObj(data.chapters) || !isObj(data.characters) || !isObj(save) || !isObj(save.stats) || !isObj(r)) return none;
   const cid = typeof r.chapter === 'string' && own(data.chapters, r.chapter) ? r.chapter : null;
   if (!cid) return none;
@@ -79,8 +79,16 @@ export function recordTierRun(save, r, ctx) {
   const rec = own(ch, tid) && isObj(ch[tid]) ? ch[tid] : (ch[tid] = emptyTier());
   const won = r.outcome === 'victory';
   rec.runs = num(rec.runs, 0, 1e9) + 1;
-  const out = { tier: tid, glass: 0, shards: 0, firstDawn: false, stars: rec.stars | 0, goldBonus: 0 };
+  const out = { tier: tid, glass: 0, glassRun: 0, glassFirst: 0, shards: 0, firstDawn: false, stars: rec.stars | 0, goldBonus: 0 };
   if (tid !== 'normal') {
+    // per-run Dawnglass (sheet 4.2 / 6.2): boss kill + dawn (victory) + marked foes (capped), the whole capped at the tier's runCap; first
+    // dawns come on top. A loss after the boss keeps the boss glass. The run result is clamped here, so a forged count never beats the caps.
+    const g = resolveTier(data.tiers, cid, tid).glass;
+    const marked = Math.min(num(r.marked, 0, 1e9), g.markedCap) * g.marked;
+    const run = Math.min(g.runCap, (r.bossKilled === true ? g.boss : 0) + (won ? g.dawn : 0) + marked);
+    out.glassRun = Math.min(run, Math.max(0, MAX_GLASS - num(save.dawnglass, 0, MAX_GLASS)));
+    save.dawnglass = num(save.dawnglass, 0, MAX_GLASS) + out.glassRun;
+    out.glass = out.glassRun;
     const mul = resolveTier(data.tiers, cid, tid).goldMul; // validated 1..5 by validateTiers
     out.goldBonus = Math.max(0, Math.floor(num(r.gold, 0, 1e9) * (mul - 1)));
     save.gold = Math.min(1e12, num(save.gold, 0, 1e12) + out.goldBonus);
@@ -101,9 +109,10 @@ export function recordTierRun(save, r, ctx) {
         h.first = true; // the bounty is claimed here, exactly once per (chapter, tier, hero)
         out.firstDawn = true;
         const tdef = resolveTier(data.tiers, cid, tid);
-        out.glass = Math.min(tdef.glass.first, Math.max(0, MAX_GLASS - num(save.dawnglass, 0, MAX_GLASS)));
+        out.glassFirst = Math.min(tdef.glass.first, Math.max(0, MAX_GLASS - num(save.dawnglass, 0, MAX_GLASS)));
+        out.glass = out.glassRun + out.glassFirst;
         out.shards = tdef.firstShards;
-        save.dawnglass = num(save.dawnglass, 0, MAX_GLASS) + out.glass;
+        save.dawnglass = num(save.dawnglass, 0, MAX_GLASS) + out.glassFirst;
         save.shards = Math.min(1e12, num(save.shards, 0, 1e12) + out.shards);
       }
     }
