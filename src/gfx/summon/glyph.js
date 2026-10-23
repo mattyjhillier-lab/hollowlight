@@ -50,11 +50,11 @@ export function rimSvg() {
 }
 // curling ink tail behind the orb (heading +x); curl > 0 bends it toward +y (the frame is flipped for the other side)
 export function tailSvg(curl = 0) {
-  const len = 38, p = [[-6, 0], [-len * 0.35, curl * 0.4], [-len * 0.7, curl], [-len, curl * 0.4 - (curl ? 4 : 0)]];
+  const len = 38, p = curl ? [[-6, 0], [-len * 0.35, curl * 0.4], [-len * 0.7, curl], [-len, curl * 0.4 - 4]] : [[-6, 0], [-len * 0.35, 1.8], [-len * 0.7, -1.8], [-len, 1.2]]; // straight = a gentle ink S-wave (a ruler-straight line with an end dot read as a key)
   return `<path d="${line(p)}" stroke="${R.glow}" stroke-width="9" fill="none" opacity=".35" stroke-linecap="round" filter="url(#blur3)"/>`
     + `<path d="${line(p)}" stroke="${R.ink}" stroke-width="3.6" fill="none" opacity=".9" stroke-linecap="round"/>`
     + `<path d="${line(p.slice(0, 3))}" stroke="${R.c}" stroke-width="1.4" fill="none" opacity=".9" stroke-linecap="round"/>`
-    + `<circle cx="${f(-len * 0.88)}" cy="${f(curl * 0.7 - (curl ? 6 : 0) + (curl ? 0 : 3))}" r="1.8" fill="${R.ink}" opacity=".75"/>`;
+    + (curl ? `<circle cx="${f(-len * 0.88)}" cy="${f(curl * 0.7 - 6)}" r="1.8" fill="${R.ink}" opacity=".75"/>` : '');
 }
 // Returning Pages: a folded page (cream out, paler cool cream on the way home) with an ink glyph and gold edges (evolved weapon only)
 export function pageSvg(back = false, i = 2) {
@@ -67,7 +67,7 @@ export function pageSvg(back = false, i = 2) {
 // Soul Lance: a written line of glyphs inside a pale capsule, ink outline, gold edges (replaces the bare laser line)
 export function lanceSvg() {
   const L = LANCE_LEN;
-  let b = `<path d="M2 0 H${L}" stroke="${R.glow}" stroke-width="18" opacity=".3" stroke-linecap="round" filter="url(#blur3)"/>`;
+  let b = `<path d="M6 0 H${L - 4}" stroke="${R.glow}" stroke-width="12" opacity=".3" stroke-linecap="round" filter="url(#blur1)"/>`; // soft glow kept inside the 28 du frame (a wider blur was clipped into a visible box)
   const cap = `M4 -6 H${L - 6} Q${L + 6} 0 ${L - 6} 6 H4 Q-2 0 4 -6Z`;
   b += SP(cap, { col: '#e8fdff', lt: '#ffffff', dk: R.c, sh: 1, rim: 0, lw: 1.6, dir: [0, 0, 0, 1] });
   for (let k = 0; k * 12 + 12 < L - 12; k++) b += glyphPath(k + 1, 12 + k * 12, 0, 0.5, R.dk, 1.7);

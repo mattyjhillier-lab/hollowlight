@@ -44,6 +44,8 @@ import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
 import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
+import { bakeBoltArt, boltReady } from '../gfx/summon/atlas.js'; // S5 Ink Glyph Orb (lazy bake on first Spirit Bolts)
+import { drawGlyph, drawTornPages } from '../gfx/summon/glyphdraw.js';
 import { FLAME_BOX, FLAME_WPD, WHEEL_K } from '../gfx/summon/orbit.js';
 import { FLAME_AY, PETAL_AY } from '../gfx/summon/frames.js';
 import { flameFrame, flare, flareK, orbitSkin, flowerAt, reformK, streakK, streakRot, FLARE_K, FLOWER_T, ORBIT_CAPS } from '../gfx/summon/orbitanim.js';
@@ -94,6 +96,7 @@ const WOLF_SELF = 0.65; // S1: additive self-light copy alpha, only while the Hi
 const ALPHA_HALO = 3.4; // S2: the Alpha's own frame carries a 1.7x baked glow, so its extra halo shrinks (friendly coverage near the hero <= today + 5 pts)
 const RAVEN_SELF = 1, RAVEN_HALO = 0.75, RAVEN_HALO_A = 0.6, RAVEN_GLOW = 0xb79cff; // S3: raven self-light (High bloom only), halo size / alpha / locked violet
 const ORB_SELF = 0.2, ORB_GLOW = 0xd9ccff, ORB_HALO = 0.75, ORB_HALO_A = 0.42; // S4: flame self-light (High bloom only; flare adds to it), halo retinted to the locked orbit glow, size / alpha
+const GLYPH_HALO = 0.8, GLYPH_HALO_A = 0.5, GLYPH_SELF = 0.6; // S5: the glyph frame carries its own baked glow, so its halo is smaller than today's bolt halo
 const SHADE_A = 0.8; // Matt 2026-10-22: the Alpha's 2 ghost shades 0.5 -> 0.65 -> 0.8 (Low L* gap vs the Fell Wolf was 12-18)
 const WOLF_HALO_K = 1.12, WOLF_HALO_A = 0.5; // S1: wolf halo size / alpha (a smaller, dimmer halo measured WORSE: the High bloom pulls a small body down toward its dark surroundings)
 
@@ -270,6 +273,11 @@ export class RunScene extends Phaser.Scene {
       ravFeather: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_feather').setDepth(D_HALO + 1)), // S3 Wall of Wings loose paper feathers
       ravSeal: new SpritePool(this, SUM_KEY, (i) => i.setFrame('decal_waxseal').setDepth(D_PART - 1)), // S3 Talon Mark wax-seal disc under the chevron
       uOrb: new SpritePool(this, 'orb'),
+      uGlyph: new SpritePool(this, SUM_KEY), // S5 glyph orbs / pages / lance capsules (sum_atlas frames)
+      uGlyphT: new SpritePool(this, SUM_KEY), // S5 ink tails
+      uGlyphR: new SpritePool(this, SUM_KEY), // S5 gold rim overlay (Spirit Tempest glyphs)
+      uGlyphL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S5 self-light copy while the High bloom is on (as wolves / ravens)
+      uTorn: new SpritePool(this, SUM_KEY), // S5 Spirit Tempest torn page at the burst
       uOrbA: new SpritePool(this, SUM_KEY), // S4 Candle Flames (sum_atlas frames)
       uOrbL: new SpritePool(this, SUM_KEY, (i) => i.setBlendMode(ADD)), // S4 self-light copy while the High bloom is on (and the flare on hit)
       orbPetal: new SpritePool(this, SUM_KEY, (i) => i.setFrame('flame_petal').setOrigin(0.5, PETAL_AY)), // S4 Judgement Wheel flower of flame (6 petals per burst)
@@ -1602,8 +1610,25 @@ export class RunScene extends Phaser.Scene {
         }
       }
     }
+    if (lw && this.sumAtlas) bakeBoltArt(this.sumAtlas, lw.evo || null); // S5: lazy, idempotent (fast path once baked)
+    const glyphArt = !!this.sumAtlas && boltReady();
+    const gst = this.glyphSt || (this.glyphSt = new Map()), gdt = Math.max(0, Math.min(0.1, sim.time - (this.glyphT ?? sim.time))); this.glyphT = sim.time;
+    const gO = glyphArt ? { pools: { glyph: pl.uGlyph, tail: pl.uGlyphT, rim: pl.uGlyphR, self: this.bloom ? pl.uGlyphL : null }, selfA: GLYPH_SELF, low: this.quality.tier === 'low', tier: this.quality.tier, phone: this.phone, calm: still, k: this.glyphK, dt: gdt, depth: 0, counts: { tails: 0, rims: 0 }, st: gst, tick: this.fxTick, fxg: fx } : null;
+    if (glyphArt && lw && lw.evo === 'spirit_tempest') drawTornPages(sim.fx, pl.uTorn, D_LIT + p.y + 41, this.glyphK);
     for (const b of sim.projectiles) {
       if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
+      if (gO) { // S5 Ink Glyph Orb (render only)
+        gO.depth = D_LIT + b.y + 40;
+        const kind = drawGlyph(b, gO), ok = kind !== 'lance';
+        if (ok && halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale(GLYPH_HALO * pl.haloU.inv).setAlpha(GLYPH_HALO_A);
+        if (lit) lm.add(b.x, b.y, 24, ROLE.bolt, 0.8);
+        // (S5: no wide butt-capped body line under the capsule: it drew a grey box; the capsule is stretched up to 1.6x across for wide lances)
+        if (b.evo === 'spirit_tempest' && !(b.seek > 0) && b.target && !b.target.dead && !still && thrN++ < thrCap) { // short thread (<= 34 px) pointing at its prey
+          const tx = b.target.x - b.x, ty = b.target.y - b.y, tk = Math.min(1, 34 / (Math.hypot(tx, ty) || 1));
+          fx.lineStyle(1, ROLE.bolt, 0.4).lineBetween(b.x, b.y, b.x + tx * tk, b.y + ty * tk);
+        }
+        continue;
+      }
       const rv = b.lance ? 3.5 : b.pages ? 3.2 : b.r; // a lance is drawn as a long pale capsule below, its sprite stays small
       pl.bolt.get(b.id).setPosition(b.x, b.y).setDepth(D_LIT + b.y + 40).setScale((rv / 3) * pl.bolt.inv).setTint(b.back ? 0xe2f1ff : 0xffffff); // Returning Pages: the way home is a paler glyph
       if (halos++ < caps.halos) pl.haloU.get(b.id).setPosition(b.x, b.y).setTint(ROLE.bolt).setScale((rv / 3) * 0.9 * pl.haloU.inv).setAlpha(0.6);
@@ -1632,6 +1657,8 @@ export class RunScene extends Phaser.Scene {
         }
       }
     }
+
+    if ((this.fxTick & 127) === 32 && gst.size > 64) for (const [id, v] of gst) if (this.fxTick - v.seen > 60) gst.delete(id); // S5 glyph render state
 
     // Rally the Pack: thin amber thread from each rallying wolf to the rallied enemy
     const ry = sim.rally;

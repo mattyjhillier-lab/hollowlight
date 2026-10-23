@@ -17,7 +17,7 @@ test('summon frames: counts match the section 5 budget', () => {
   assert.equal(count('echo'), 6);
   assert.equal(count('raven'), 7);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('raven_flat')).length, 2);
-  assert.equal(FRAMES.filter((f) => f.name.startsWith('glyph_')).length, 5);
+  assert.equal(FRAMES.filter((f) => /^glyph_\d/.test(f.name)).length, 5);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('page_')).length, 2);
   assert.equal(FRAMES.filter((f) => f.name.startsWith('flameg_')).length, 3); assert.ok(FRAME_BY_NAME.flame_petal && !FRAME_BY_NAME.flame_big0 && !FRAME_BY_NAME.wax_bead);
   assert.equal(FRAMES.filter((f) => /^flame_\d/.test(f.name)).length, 3);
