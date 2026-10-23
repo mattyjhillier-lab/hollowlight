@@ -1597,7 +1597,15 @@ export class RunScene extends Phaser.Scene {
     const thrCap = Math.round(caps.halos / 5), still = this.reducedMotion();
     // Soul Lance script lines: a thin glowing line along each lance's path that fades over 1.2 s (cores + faint ink ticks on Med/High; the core only on Low)
     const lw = sim.weapons.find((w2) => w2.id === 'spirit_bolts');
-    if (lw && lw.evo === 'soul_lance' && lw.rt.lines) {
+    if (lw && this.sumAtlas) bakeBoltArt(this.sumAtlas, lw.evo || null); // S5: lazy, idempotent (fast path once baked)
+    const glyphArt = !!this.sumAtlas && boltReady();
+    if (lw && lw.evo === 'soul_lance' && lw.rt.lines && glyphArt) { // S5 fix: with glyph art the capsule carries the lance; the path is only a faint ink-cyan wash (no white laser core, no ticks)
+      for (const ln of lw.rt.lines) {
+        const fade = ln.len < ln.max ? 1 : Math.max(0, 1 - ln.age / ln.ttl), ex = ln.x + Math.cos(ln.ang) * ln.len, ey = ln.y + Math.sin(ln.ang) * ln.len;
+        if (Math.max(ln.x, ex) < vx0 || Math.min(ln.x, ex) > vx1 || Math.max(ln.y, ey) < vy0 || Math.min(ln.y, ey) > vy1) continue;
+        fx.lineStyle(Math.max(3, ln.w), ROLE.bolt, 0.06 * fade).lineBetween(ln.x, ln.y, ex, ey);
+      }
+    } else if (lw && lw.evo === 'soul_lance' && lw.rt.lines) {
       for (const ln of lw.rt.lines) {
         const fade = ln.len < ln.max ? 1 : Math.max(0, 1 - ln.age / ln.ttl), cx = Math.cos(ln.ang), cy = Math.sin(ln.ang);
         const ex = ln.x + cx * ln.len, ey = ln.y + cy * ln.len;
@@ -1610,8 +1618,6 @@ export class RunScene extends Phaser.Scene {
         }
       }
     }
-    if (lw && this.sumAtlas) bakeBoltArt(this.sumAtlas, lw.evo || null); // S5: lazy, idempotent (fast path once baked)
-    const glyphArt = !!this.sumAtlas && boltReady();
     const gst = this.glyphSt || (this.glyphSt = new Map()), gdt = Math.max(0, Math.min(0.1, sim.time - (this.glyphT ?? sim.time))); this.glyphT = sim.time;
     const gO = glyphArt ? { pools: { glyph: pl.uGlyph, tail: pl.uGlyphT, rim: pl.uGlyphR, self: this.bloom ? pl.uGlyphL : null }, selfA: GLYPH_SELF, low: this.quality.tier === 'low', tier: this.quality.tier, phone: this.phone, calm: still, k: this.glyphK, dt: gdt, depth: 0, counts: { tails: 0, rims: 0 }, st: gst, tick: this.fxTick, fxg: fx } : null;
     if (glyphArt && lw && lw.evo === 'spirit_tempest') drawTornPages(sim.fx, pl.uTorn, D_LIT + p.y + 41, this.glyphK);
