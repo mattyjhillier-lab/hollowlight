@@ -3,6 +3,7 @@ import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS
 import { metConditions } from '../meta/tree.js';
 import { recordTierRun } from './tiers.js';
 import { cleanHints } from '../ui/whispers.js';
+import { cleanCodex, cleanTitles } from '../meta/codex.js';
 
 export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
@@ -113,6 +114,23 @@ export class SaveStore {
     this.data.hints = b;
     this.saveSoon();
     return b;
+  }
+
+  // CX1: the Almanac bitsets / CX6 titles (validated; debounced like the whisper bits).
+  setCodex(codex) {
+    const c = cleanCodex(codex);
+    if (c.v === this.data.codex.v && c.read === this.data.codex.read && c.told === this.data.codex.told) return c;
+    this.data.codex = c;
+    this.saveSoon();
+    return c;
+  }
+
+  setTitles(titles) {
+    const t = cleanTitles(titles);
+    if (JSON.stringify(t) === JSON.stringify(this.data.titles)) return t;
+    this.data.titles = t;
+    this.saveSoon();
+    return t;
   }
 
   setSettings(patch) {

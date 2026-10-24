@@ -39,6 +39,10 @@ import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.
 import { WhisperPlate } from './whisperplate.js';
 import './whispers.css';
 import { cardModel } from './cardview.js';
+import { buildAlmanac } from './codexui.js';
+import './codex.css';
+import { buildCelebration } from './celebrateui.js';
+import './celebrate.css';
 
 export class UI {
   constructor(root, data) {
@@ -168,6 +172,9 @@ export class UI {
       treeDot: !!(fd && fd.treeDot),
       treeLine: fd ? fd.treeLine : null,
       newGame: fd ? fd.newGame : null,
+      almanac: fd ? fd.almanac : null,
+      bands: fd ? fd.bands : 0,
+      onAlmanac: () => this.showAlmanac('title'),
       onBegin: () => this.showHeroSelect(),
       onTree: () => h.openTree(),
       onSettings: () => h.openSettings(),
@@ -189,6 +196,7 @@ export class UI {
     }
     this.screen = { id: 'title', title: t };
     t.begin.focus({ preventScroll: true });
+    if (h.titleCelebrations) { const q = h.titleCelebrations(); if (q && q.length) this.celebrate(q, { away: true, after: () => { if (this.screen && this.screen.id === 'title') this.screen.title.begin.focus({ preventScroll: true }); } }); } // CX5: big moments held back by a defeat
   }
 
   // FD3: "Whose lantern?" (mode pick | new | replace). The app supplies the cards and does every store change; this only draws and forwards.
@@ -318,6 +326,7 @@ export class UI {
       onResume: () => h.togglePause(),
       onSettings: () => h.openSettings(),
       onQuit: () => h.menu(),
+      onAlmanac: h.almanacView ? () => this.showAlmanac('pause') : null,
       extras,
     });
     const el = this.layer('pause');
@@ -336,12 +345,14 @@ export class UI {
     const view = resultsView(sim.result(), bank, this.data);
     this.sound(sim.state === 'victory' ? 'results_win' : 'results_lose');
     const reduced = document.documentElement.classList.contains('reduced-motion') || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    this.endView = buildResults({ view, reduced, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
+    const cel = bank && bank.cel ? bank.cel : null; // CX4: what this run wrote in the Almanac
+    this.endView = buildResults({ view, reduced, ledger: cel ? cel.ledger : null, onAlmanac: cel && cel.any && h.almanacView ? () => this.showAlmanac('results') : null, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
     const el = this.layer('end');
     el.className = `overlay layer-end u6 ${view.won ? 'u6-won' : 'u6-lost'}`;
     el.replaceChildren(this.endView.root);
     this.show('end');
     this.endView.mounted();
+    if (cel && cel.cards && cel.cards.length) { const ev = this.endView; this.celebrate(cel.cards, { after: () => { if (this.endView === ev) { ev.setShownAt(performance.now()); const f = ev.again; if (f && f.focus) f.focus({ preventScroll: true }); } } }); }
   }
 
   // ------------------------------------------------------------------ settings
@@ -389,7 +400,7 @@ export class UI {
   spaceActivate(e) {
     if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
     const a = document.activeElement;
-    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end, .layer-lanterns, .layer-nights') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
+    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end, .layer-lanterns, .layer-nights, .layer-codex') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
     e.preventDefault();
     // only THIS press's keyup: if it never arrives (focus lost), the swallow must not linger and eat a later gameplay keyup (CTL1)
     const t0 = performance.now();
@@ -401,7 +412,60 @@ export class UI {
     return true;
   }
 
+  // ------------------------------------------------------------------ CX2/CX3 the Almanac (title J, pause read-only, results link, tree heart link)
+  // Opens over the current screen; Esc / Back returns to it (front-door rule). The app supplies the view model and stores read marks / titles.
+  showAlmanac(from = 'title', tab = null) {
+    const h = this.handlers;
+    if (!h.almanacView || this.codexView) return;
+    const v = h.almanacView();
+    if (!v) return;
+    const prev = document.activeElement;
+    const calm = !!(v.calm || document.documentElement.classList.contains('reduced-motion'));
+    this.codexView = buildAlmanac({ book: v.book, from, tab, heroPortraits: PORTRAITS, calm, titles: v.titles,
+      onRead: (keys) => { if (h.almanacRead) h.almanacRead(keys); },
+      onPickTitle: (id) => { if (h.pickTitle) h.pickTitle(id); },
+      onBack: () => this.hideAlmanac() });
+    this.codexFrom = { from, prev };
+    const el = this.layer('codex');
+    el.className = 'overlay layer-codex';
+    el.replaceChildren(this.codexView.root);
+    for (const n of Object.keys(this.layers)) if (n !== 'codex' && n !== 'cel' && this.layers[n]) this.layers[n].setAttribute('inert', '');
+    this.show('codex');
+    this.sound('ui_step');
+    this.codexView.focusFirst();
+  }
+
+  hideAlmanac() {
+    if (!this.codexView) return;
+    this.codexView = null;
+    this.escAt = performance.now();
+    this.hide('codex');
+    if (this.layers.codex) this.layers.codex.replaceChildren();
+    for (const n of Object.keys(this.layers)) if (this.layers[n] && !(n === 'start' && this.settingsOpen)) this.layers[n].removeAttribute('inert');
+    const f = this.codexFrom;
+    this.codexFrom = null;
+    if (f && f.from === 'title' && this.handlers.closeAlmanac) this.handlers.closeAlmanac(); // title: the NEW dot / bands may have changed
+    else if (f && f.prev && f.prev.isConnected && f.prev.focus) f.prev.focus({ preventScroll: true });
+  }
+
+  // ------------------------------------------------------------------ CX4/CX5 celebrations: big -> medium cards, any key / tap continues, Esc skips all
+  celebrate(items, { away = false, after = null } = {}) {
+    if (!items || !items.length) return;
+    if (this.celView && !this.celView.isDone()) this.celView.finish();
+    const calm = document.documentElement.classList.contains('reduced-motion');
+    const el = this.layer('cel');
+    el.className = 'overlay layer-cel';
+    const v = buildCelebration(items, { calm, away, sound: (id) => this.sound(id), onDone: () => { if (this.celView === v) { this.celView = null; this.hide('cel'); el.replaceChildren(); } if (after) after(); } });
+    this.celView = v;
+    el.replaceChildren(v.root);
+    this.show('cel');
+    v.start();
+  }
+  celActive() { return !!(this.celView && !this.celView.isDone()); }
+
   onKey(e) {
+    if (this.celActive()) { this.celView.onKey(e); return; }
+    if (this.codexView) { if (!this.spaceActivate(e)) this.codexView.onKey(e); return; }
     if (this.tree.isOpen) return; // the tree screen handles its own keys
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !this.settingsOpen && this.whisperOn()) { e.preventDefault(); if (this.handlers.hideWhisper) this.handlers.hideWhisper(); return; } // FM1: Tab hides the whisper (only while one is up mid-run)
     if (this.spaceActivate(e)) return;
@@ -412,6 +476,7 @@ export class UI {
     if (this.endView && this.layers.end && this.layers.end.style.display !== 'none') { this.endView.onKey(e); return; }
     const pv = this.pauseView;
     if (pv && e.key === 'Escape' && this.layers.pause && this.layers.pause.style.display !== 'none' && pv.cancelConfirm()) { this.escAt = performance.now(); return; } // Esc backs out of "Leave this run?"
+    if (pv && (e.key === 'j' || e.key === 'J') && pv.almanac && !pv.isConfirming() && this.layers.pause && this.layers.pause.style.display !== 'none' && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); pv.almanac.click(); return; } // CX3
     const sc = this.screen;
     if (sc) {
       const vis = (n) => this.layers[n] && this.layers[n].style.display !== 'none';
@@ -422,7 +487,7 @@ export class UI {
         const a = document.activeElement;
         const onBtn = a && a.closest && a.closest('.lg-btn');
         const t = sc.title;
-        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); } else if ((e.key === 'n' || e.key === 'N') && t.newGame) { e.preventDefault(); t.newGame.click(); }
+        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if ((e.key === 'j' || e.key === 'J') && t.almanac) { e.preventDefault(); t.almanac.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); } else if ((e.key === 'n' || e.key === 'N') && t.newGame) { e.preventDefault(); t.newGame.click(); }
         return;
       }
     }

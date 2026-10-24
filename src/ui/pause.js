@@ -3,6 +3,7 @@
 import { el, kitRoot, panel, button, pips } from './kit.js';
 import { mk, emblem, EMBLEM_OF } from './hudsvg.js';
 import { PAUSE } from './u4copy.js';
+import { CX } from './codexcopy.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 
@@ -12,7 +13,7 @@ const weaponEmblem = (id) => {
 };
 
 /** view: from pauseView(). extras: optional nodes (full screen button, update notice). */
-export function buildPause({ view, onResume, onSettings, onQuit, extras = [] } = {}) {
+export function buildPause({ view, onResume, onSettings, onQuit, onAlmanac = null, extras = [] } = {}) {
   const root = kitRoot();
   root.classList.add('u4-wrap');
   const v = view || { time: '0:00', level: 1, hero: '', weapons: [], whisper: PAUSE.whispers[0] };
@@ -31,7 +32,9 @@ export function buildPause({ view, onResume, onSettings, onQuit, extras = [] } =
   const resume = button({ label: PAUSE.resume.label, hint: PAUSE.resume.hint, variant: 'primary', onClick: () => { if (onResume) onResume(); } });
   const settings = button({ label: PAUSE.settings.label, whisper: PAUSE.settings.whisper, onClick: () => { if (onSettings) onSettings(); } });
   const quit = button({ label: PAUSE.quit.label, whisper: PAUSE.quit.whisper, variant: 'danger', onClick: () => openConfirm() });
-  add(menu, resume, settings, quit);
+  // CX3: the Almanac, read only while the night waits (J)
+  const alm = onAlmanac ? button({ label: CX.open, whisper: CX.readOnly, hint: CX.openHint, onClick: () => onAlmanac() }) : null;
+  add(menu, resume, settings, alm, quit);
   const confirmBox = el('div', 'u4-confirm', null, { role: 'alertdialog', 'aria-label': PAUSE.confirm.title });
   confirmBox.hidden = true;
   const stay = button({ label: PAUSE.confirm.stay, hint: 'Esc', variant: 'primary', onClick: () => closeConfirm() });
@@ -44,7 +47,7 @@ export function buildPause({ view, onResume, onSettings, onQuit, extras = [] } =
   for (const x of extras) add(foot, x);
   add(root, panel({ title: PAUSE.title, whisper: v.whisper, body: [sum, add(el('div', 'u4-act'), menu, confirmBox, foot)] }));
   // Up/Down walk the menu like a list; Tab still works.
-  const order = [resume, settings, quit];
+  const order = [resume, settings, alm, quit].filter(Boolean);
   menu.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     const a = globalThis.document && globalThis.document.activeElement;
@@ -54,7 +57,7 @@ export function buildPause({ view, onResume, onSettings, onQuit, extras = [] } =
     order[(i + (e.key === 'ArrowDown' ? 1 : order.length - 1)) % order.length].focus();
   });
   return {
-    root, resume, settings, quit, stay, leave, menu, confirmBox,
+    root, resume, settings, quit, almanac: alm, stay, leave, menu, confirmBox,
     isConfirming: () => confirming, cancelConfirm: () => { if (!confirming) return false; closeConfirm(); return true; },
     focusResume: () => resume.focus(), focusSettings: () => settings.focus(),
   };
