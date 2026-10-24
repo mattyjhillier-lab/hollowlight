@@ -1,0 +1,56 @@
+/* CX4 / CX5 celebrations (mock-ups docs/mockups/codex/cx-ledger, cx-remember). Calm (.lg-calm): 120 ms fades only, no sweep / zoom / glow pulse. */
+.layer-cel { position: absolute; inset: 0; z-index: 70; }
+.cel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff3dc;
+  font-family: var(--font-body, "Alegreya Sans"), "Segoe UI", sans-serif; background: rgba(6, 9, 16, .62); animation: cel-in .25s ease-out both; cursor: pointer; }
+.cel.is-big { background: rgba(6, 9, 16, .8); }
+.cel.is-out { opacity: 0; transition: opacity .2s; pointer-events: none; }
+.cel-stage { position: relative; width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; min-height: 0; }
+.cel-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.cel-seal { width: 76px; height: 76px; flex: 0 0 auto; }
+.cel-kick { font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #e6bf72; }
+/* medium */
+.cel-card--med { display: flex; align-items: center; gap: 18px; max-width: min(460px, 92vw); padding: 16px 20px; border-radius: 14px; border: 2px solid #d8b26a;
+  background: linear-gradient(180deg, #2e3a56, #18203a); box-shadow: 0 10px 40px rgba(0, 0, 0, .6); animation: cel-pop .35s cubic-bezier(.2, .7, .2, 1.2) both; }
+.cel-card--med.is-gold { border-color: #ffd36b; box-shadow: 0 10px 40px rgba(0, 0, 0, .6), 0 0 24px rgba(255, 211, 107, .25); }
+.cel-name { font-family: var(--font-display, "Hollowlight Chancery"), Georgia, serif; font-weight: 400; font-size: 30px; margin: 0; line-height: 1.05; }
+.cel-line { font-family: var(--font-whisper, "Hollowlight Chancery"), Georgia, serif; font-style: italic; font-size: 18px; margin: 4px 0 0; color: rgba(255, 243, 220, .9); line-height: 1.25; }
+.cel-sub { font-size: 14px; color: #ffd36b; margin: 6px 0 0; }
+/* big */
+.cel-band { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 30%, rgba(96, 140, 220, .22) 42%, rgba(120, 190, 140, .2) 52%, rgba(255, 196, 110, .18) 60%, transparent 70%);
+  background-size: 260% 100%; animation: cel-sweep 2.2s cubic-bezier(.3, .6, .3, 1) both; }
+.cel-card--big { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; max-width: min(640px, 94vw); padding: 18px 26px; border-radius: 18px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(44, 58, 90, .9), rgba(18, 24, 40, .6) 70%, transparent); animation: cel-rise .6s .15s cubic-bezier(.2, .7, .2, 1) both; }
+.cel-card--big .cel-seal { width: 96px; height: 96px; filter: drop-shadow(0 0 18px rgba(159, 216, 255, .45)); animation: cel-glow 2.2s ease-in-out both; }
+.cel-title { font-family: var(--font-display, "Hollowlight Chancery"), Georgia, serif; font-weight: 400; font-size: 48px; line-height: 1.05; margin: 4px 0 0; }
+.cel-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
+.cel-pill { padding: 6px 12px; border-radius: 999px; border: 1.5px solid #d8b26a; background: rgba(20, 15, 12, .45); font-weight: 700; font-size: 14px; }
+/* footer */
+.cel-foot { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 12px 18px; font-size: 14px; color: rgba(255, 243, 220, .85); text-align: center; }
+.cel-dots { display: inline-flex; gap: 8px; margin-right: 6px; }
+.cel-dots i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #e6bf72; }
+.cel-dots i.is-on { background: #ffd36b; }
+.cel-kb { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #efe4cc; color: #140f0c; font-weight: 700; font-size: 13px; box-shadow: 0 2px 0 #8d6c34; }
+@keyframes cel-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cel-pop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes cel-rise { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes cel-sweep { from { background-position: 100% 0; opacity: 0; } 20% { opacity: 1; } to { background-position: 0 0; opacity: .8; } }
+@keyframes cel-glow { from { filter: grayscale(1) drop-shadow(0 0 0 rgba(159, 216, 255, 0)); } to { filter: none drop-shadow(0 0 18px rgba(159, 216, 255, .45)); } }
+.cel.lg-calm, .cel.lg-calm * { animation: none !important; }
+.cel.lg-calm { animation: cel-in .12s linear both !important; }
+.cel.lg-calm.is-out { transition: opacity .12s; }
+.cel.lg-calm .cel-band { display: none; }
+@media (max-width: 899px), (max-height: 480px) {
+  .cel-title { font-size: 32px; }
+  .cel-name { font-size: 24px; }
+  .cel-line { font-size: 15px; }
+  .cel-card--med { gap: 12px; padding: 12px 14px; }
+  .cel-seal { width: 56px; height: 56px; }
+  .cel-card--big .cel-seal { width: 72px; height: 72px; }
+  .cel-foot { padding-bottom: 10px; font-size: 13px; }
+}
+@media (orientation: portrait) and (max-width: 899px) {
+  .cel-card--med { flex-direction: column; text-align: center; }
+}
+.cel-footbox { flex: 0 0 auto; width: 100%; }
+.cel-txt { text-align: left; min-width: 0; }
+@media (orientation: portrait) and (max-width: 899px) { .cel-txt { text-align: center; } }

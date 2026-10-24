@@ -7,6 +7,7 @@
 // every string from data goes through textContent / setAttribute, never innerHTML.
 import { TreeModel, SAY, KIND_R, KIND_LABEL, sanitizePins, fmtN, MAX_PINS } from './treemodel.js';
 import { RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
+import { CEL } from './codexcopy.js';
 
 const PIN_KEY = 'hollowlight:tree:pins';
 const TIP_KEY = 'hollowlight:tree:tip';
@@ -68,6 +69,7 @@ export class TreeScreen {
     this.lastRB = [];
     this.camSig = '';
     this.open_ = true;
+    this.celN = 0;
     this.paths = new Map();
     for (const r of this.view.regions) if (r.silhouette) { try { this.paths.set(r.key, new Path2D(r.silhouette)); } catch { /* bad path: no emblem */ } }
     const root = this.host.layer('tree');
@@ -192,7 +194,10 @@ export class TreeScreen {
     this.buyBtn.addEventListener('click', () => this.doBuy());
     this.pinBtn = btn('ts-btn', 'Pin goal');
     this.pinBtn.addEventListener('click', () => this.togglePin());
-    actions.append(this.buyBtn, this.pinBtn);
+    this.almBtn = btn('ts-btn ts-almbtn', 'Open the Almanac'); // CX3: the Almanac cluster's lanterns link to the book (same kill counts)
+    this.almBtn.hidden = true;
+    this.almBtn.addEventListener('click', () => { if (this.host.showAlmanac) this.host.showAlmanac('tree', 'foes'); });
+    actions.append(this.buyBtn, this.pinBtn, this.almBtn);
     this.pMsg = el('div', 'ts-msg');
     this.pMsg.setAttribute('role', 'status');
     detail.append(this.pKick, this.pName, this.pState, this.pWhy, this.pDesc, this.pFlav, this.pSteps, this.pMeta, this.pCost, this.pMsg, actions);
@@ -440,7 +445,7 @@ export class TreeScreen {
     const { W, H, cam } = this;
     const m = this.model;
     c.setTransform(this.DPR, 0, 0, this.DPR, 0, 0);
-    const p = m.progress;
+    const p = Math.min(1, m.progress + (1 - m.progress) * 0.25 * Math.max(0, Math.min(1, Number(this.api.bookFrac) || 0))); // CX6: the Almanac's book total adds a little light (never dims)
     const z = cam.z;
     const lod = this.lodNow = this.lod();
     // the plain dusk sky is the map element's CSS background (skyFor), so a frame only clears the canvas
@@ -991,6 +996,7 @@ export class TreeScreen {
     b.classList.remove('confirm');
     b.textContent = s === 'lit' ? 'Lit' : s === 'ready' ? `${verb} · ${m.costText(id)}` : s === 'open' ? 'Not enough gold yet' : 'Not yet';
     this.pinBtn.textContent = this.pins.includes(id) ? 'Unpin' : 'Pin goal';
+    if (this.almBtn) this.almBtn.hidden = !(this.host.handlers && this.host.handlers.almanacView && (id === 'br_almanac' || /^bs_/.test(id)));
     this.pinBtn.disabled = s === 'lit' || s === 'fog';
   }
 
@@ -1018,8 +1024,13 @@ export class TreeScreen {
     let done = null;
     for (const r of this.view.regions) if (r.done && !before.get(r.key)) done = r;
     if (this.host.sound) this.host.sound(done ? 'tree_whole' : 'tree_light'); // AU6: a lantern catches / a constellation is whole
-    if (done) this.toast(`${done.name} is whole again`);
-    else if (n.kind === 'heart' || n.kind === 'socket' || n.kind === 'gate' || n.kind === 'key') this.toast(`${this.model.nameOf(id)}: ${why}`);
+    // CX5 tree:wake: the full celebration on the same event (max 3 per visit; the sound above already played, so the cards carry no cue)
+    const canCel = this.host.celebrate && (this.celN || 0) < 3;
+    if (done) { if (canCel) { this.celN = (this.celN || 0) + 1; const wid = this.data.weapons && Object.hasOwn(this.data.weapons, done.key) ? done.key : null; this.host.celebrate([{ size: 'big', kind: 'whole', title: CEL.constWhole(done.name), line: wid ? CEL.wholeLine[wid] : '', pills: [], weapon: wid, color: done.color || '#ffd27a', cue: '', sr: CEL.constWhole(done.name) }], { after: () => this.mapEl && this.mapEl.focus({ preventScroll: true }) }); } else this.toast(`${done.name} is whole again`); }
+    else if (n.kind === 'heart' || n.kind === 'socket' || n.kind === 'gate' || n.kind === 'key') {
+      if (canCel && n.kind !== 'key') { this.celN = (this.celN || 0) + 1; this.host.celebrate([{ size: 'medium', kind: n.kind, title: this.model.nameOf(id), line: '', sub: why, weapon: null, cue: '', sr: `${this.model.nameOf(id)}: ${why}` }], { after: () => this.mapEl && this.mapEl.focus({ preventScroll: true }) }); }
+      else this.toast(`${this.model.nameOf(id)}: ${why}`);
+    }
     this.srEl.textContent = `${n.name} is lit.`;
   }
 
@@ -1286,6 +1297,7 @@ export class TreeScreen {
 
   onKey(e) {
     if (!this.open_) return;
+    if (this.host.codexView || (this.host.celActive && this.host.celActive())) return; // CX3/CX5: the Almanac / a celebration is over the web
     const k = e.key;
     if (k === 'Escape') {
       e.preventDefault();

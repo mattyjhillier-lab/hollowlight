@@ -16,6 +16,9 @@ import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } fro
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
 import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from './ui/whispers.js';
+import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js';
+import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
+import { TITLES } from './ui/codexcopy.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);
@@ -199,6 +202,7 @@ export const app = {
         this.save.saveNow();
         return r;
       },
+      bookFrac: (() => { try { const b = this.book(); return b.pages.total ? b.pages.found / b.pages.total : 0; } catch { return 0; } })(),
       clearRegrowth: () => {
         if (this.save.data.notes && this.save.data.notes.regrowth) { delete this.save.data.notes.regrowth; this.save.saveNow(); }
       },
@@ -271,7 +275,9 @@ export const app = {
     const heroName = heroId ? splitName(data.characters[heroId].name).name : '';
     const canNew = this.hasProgress() && !L.locked && !L.legacyMode;
     return {
-      lantern: { id: entry.id, name: entry.name },
+      lantern: { id: entry.id, name: entry.name, title: s.titles && s.titles.pick && TITLES[s.titles.pick] ? TITLES[s.titles.pick].name : '' },
+      almanac: this.almanacEntry(),
+      bands: (s.titles && s.titles.got ? s.titles.got.length : 0),
       purses: purses(s, tiers),
       whisper: continueWhisper(heroName, { id: this.nextNightId(s), name: resolveTier(data.tiers, this.firstChapter(), this.nextNightId(s)).name }),
       treeDot: treeAffordable(treeDef, s, data),
@@ -482,6 +488,65 @@ export const app = {
     if (this.sim && this.sim.banish(key)) this.ui.showLevelUp(this.sim);
   },
 
+  // ------------------------------------------------------------------ CX1-CX6 the Almanac + celebrations (derived from the save; two small fields)
+  // Reads / tells / titles persist only for a writable lantern outside debug runs (screenshots and ?auto= runs never touch the save).
+  canKeepCodex() { return !this.isDebugRun() && !this.save.readOnly; },
+  book(save = this.save.data) { return almanac(save, data, treeDef, { openTiers: this.openTiers(save) }); },
+  // An old save (codex v 0): what it already holds is read + told, so the first visit is calm. Run before any banking.
+  adoptCodex() {
+    const s = this.save.data;
+    if (s.codex && s.codex.v === 1) return;
+    const c = adopt(s.codex, this.book(s));
+    if (this.canKeepCodex()) this.save.setCodex(c); else s.codex = c;
+  },
+  almanacEntry() {
+    this.adoptCodex();
+    const b = this.book();
+    if (!b.unlocked.size && !this.hasProgress()) return null; // a brand-new lantern: nothing written yet
+    const fresh = [...b.unlocked].some((k) => b.isNew(k));
+    return { fresh, line: `${b.pages.found} / ${b.pages.total} pages` };
+  },
+  almanacView() {
+    this.adoptCodex();
+    const s = this.save.data;
+    return { book: this.book(s), titles: s.titles, calm: !!s.settings.reducedMotion };
+  },
+  almanacRead(keys) {
+    const c = markRead(this.save.data.codex, Array.isArray(keys) ? keys : []);
+    if (this.canKeepCodex()) this.save.setCodex(c); else this.save.data.codex = c;
+  },
+  pickTitle(id) {
+    const t = this.save.data.titles;
+    if (!t || !t.got.includes(id)) return;
+    const n = { got: t.got, pick: id };
+    if (this.canKeepCodex()) this.save.setTitles(n); else this.save.data.titles = n;
+  },
+  // After banking: what this run wrote (CX4). Bigs on a win (max 1), mediums (max 3), smalls fold into the ledger line; told once, saved.
+  runCelebrations(won) {
+    try {
+      const s = this.save.data;
+      const b = this.book(s);
+      const q = celQueue(b, s.codex, data, { won });
+      const titles = withTitles(s.titles, b.earned);
+      if (this.canKeepCodex()) { this.save.setCodex(markTold(s.codex, q.tell)); this.save.setTitles(titles); this.save.saveNow(); }
+      return { cards: [...q.big, ...q.medium], ledger: ledgerLine(q), any: q.tell.length > 0 || [...b.unlocked].some((k) => b.isNew(k)) };
+    } catch { return null; } // a bad entry never breaks the results card
+  },
+  // CX5: big moments a defeat held back play on the next title visit ("While you were away"), one per visit.
+  titleCelebrations() {
+    if (!this.canKeepCodex()) return [];
+    try {
+      this.adoptCodex();
+      const s = this.save.data;
+      const b = this.book(s);
+      const q = celQueue(b, s.codex, data, { place: 'title' });
+      if (!q.big.length) return [];
+      this.save.setCodex(markTold(s.codex, q.tell));
+      this.save.setTitles(withTitles(s.titles, b.earned));
+      return q.big;
+    } catch { return []; }
+  },
+
   // Debug URL params never touch the real save.
   isDebugRun() {
     const p = this.params;
@@ -491,11 +556,13 @@ export const app = {
   bankRun(sim) {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
+    this.adoptCodex(); // CX1: an old save's progress counts as told BEFORE this run is banked
     const b = this.save.bankRun(sim.result(), { def: treeDef, data, unlockedTiers: this.openTiers(this.save.data) });
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
     b.night = this.nightResult(b.tier, sim.result());
     { const s = this.save.data; let ch = null; try { ch = sim.state === 'victory' ? null : this.cheapestLantern(); } catch { ch = null; } b.teach = resultTeach({ won: sim.state === 'victory', stats: s.stats, treeOwned: Object.keys(s.tree || {}).length > 0, cheapest: ch, gold: s.gold }); }
+    b.cel = this.runCelebrations(sim.state === 'victory');
     if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';
     return b;
   },
@@ -563,11 +630,16 @@ export const app = {
       resetTips: () => this.resetTips(),
       hideWhisper: () => this.hideWhisper(),
       offerTeach: (o) => this.offerTeach(o),
+      almanacView: () => this.almanacView(),
+      almanacRead: (keys) => this.almanacRead(keys),
+      pickTitle: (id) => this.pickTitle(id),
+      titleCelebrations: () => this.titleCelebrations(),
+      closeAlmanac: () => { if (!this.sim && !this.ui.tree.isOpen) { this.ui.showStart(this.ui.onPick); const t = this.ui.screen && this.ui.screen.title; if (t && t.almanac) t.almanac.focus({ preventScroll: true }); } },
     };
   },
 
   togglePause() {
-    if (this.ui.settingsOpen || performance.now() - (this.ui.escAt || -1e9) < 250) return;
+    if (this.ui.settingsOpen || this.ui.codexView || (this.ui.celActive && this.ui.celActive()) || performance.now() - (this.ui.escAt || -1e9) < 250) return;
     const sim = this.sim;
     if (!sim || sim.state !== 'running') return;
     this.paused = !this.paused;

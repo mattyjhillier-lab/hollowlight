@@ -5,10 +5,11 @@ import { el, kitRoot, panel, button, icon, badge } from './kit.js';
 import { tierGlyph, starIcon } from './lanternsui.js';
 import { mk, emblem, EMBLEM_OF, lantern } from './hudsvg.js';
 import { RES, resultsSummary, countAt, group } from './resultscopy.js';
+import { CX } from './codexcopy.js';
 
 export const INPUT_LOCK_MS = 250;       // keys right after the screen appears are ignored (a mashed Space or R from the run must not restart it)
 export const COUNT_MS = 900;
-const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'nudge', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
+const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const nowMs = () => (globalThis.performance && globalThis.performance.now ? globalThis.performance.now() : Date.now());
 
@@ -30,7 +31,7 @@ function countNode(prefix, target, cls) {
  * opts: { view, reduced, onAgain, onMenu, onTree, raf?, now? }.
  * Returns { root, again, menu, tree, mounted(), onKey(e), destroy(), fit(), counters }.
  */
-export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, raf, now = nowMs } = {}) {
+export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, onAlmanac = null, ledger = null, raf, now = nowMs } = {}) {
   const v = view;
   const root = kitRoot({ calm: !!reduced });
   root.classList.add('u6-wrap', v.won ? 'is-won' : 'is-lost');
@@ -172,6 +173,14 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     }
     put(row);
   }
+  // CX4: "The Hollow remembers" ledger (one line + "+N more") and the Almanac link (J) when something new was written
+  let almBtn = null;
+  if (ledger || onAlmanac) {
+    const row = el('div', 'u6-ledger', null, { 'data-drop': 'ledger' });
+    if (ledger) add(row, add(el('p', 'u6-ledger__t'), el('span', 'u6-ledger__lead', ledger.lead), el('b', null, ledger.names), ledger.more ? el('span', 'u6-ledger__more', ` ${ledger.more}`) : null));
+    if (onAlmanac) { almBtn = el('button', 'u6-almlink', null, { type: 'button' }); add(almBtn, el('span', null, CX.open), el('span', 'cx-kb', CX.openHint)); almBtn.addEventListener('click', () => { if (!used) onAlmanac(); }); add(row, almBtn); }
+    put(row);
+  }
   if (v.learn) put(add(el('div', 'u6-nudge is-learn', null, { 'data-drop': 'nudge' }), el('p', 'u6-learn__t', v.learn.title), el('p', 'u6-learn__w', v.learn.text))); // FM3 first win
 
   const sum = panel({ label: resultsSummary(v), body, variant: v.won ? 'dawn' : undefined, cap: false });
@@ -204,6 +213,12 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
   }
   const acts = el('nav', 'u6-acts', null, { 'aria-label': 'Next' });
   add(acts, menu, again, tree);
+  if (almBtn) { // a short screen that drops the ledger row keeps the link in the bar (CSS shows it only when 'ledger' is dropped)
+    const alt = el('button', 'u6-almlink u6-almlink--bar', null, { type: 'button', 'aria-label': CX.open });
+    add(alt, el('span', null, CX.open));
+    alt.addEventListener('click', () => { if (!used && onAlmanac) onAlmanac(); });
+    add(acts, alt);
+  }
 
   const main = el('div', 'u6-main');
   add(main, hero, sum);
@@ -279,6 +294,7 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     if (k === 'Enter' && !onBtn) { e.preventDefault(); again.click(); return true; }
     if (k === 'Escape') { e.preventDefault(); menu.click(); return true; }
     if (k === 't' || k === 'T') { e.preventDefault(); tree.click(); return true; }
+    if ((k === 'j' || k === 'J') && almBtn) { e.preventDefault(); almBtn.click(); return true; }
     return false;
   }
 
@@ -289,5 +305,5 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     if (ids.onResize && globalThis.removeEventListener) globalThis.removeEventListener('resize', ids.onResize);
   }
 
-  return { root, again, menu, tree, main, panel: sum, hero, mounted, onKey, destroy, fit, counters, isUsed: () => used, setShownAt: (t) => { shownAt = t; } };
+  return { root, again, menu, tree, almanac: almBtn, main, panel: sum, hero, mounted, onKey, destroy, fit, counters, isUsed: () => used, setShownAt: (t) => { shownAt = t; } };
 }
