@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Results Bond beat</title><link rel="stylesheet" href="ch.css"><style>
+.res{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 32px));border-radius:16px;border:1.5px solid var(--brass);background:linear-gradient(180deg,rgba(48,60,86,.95),rgba(22,28,42,.96));padding:14px 18px;display:flex;flex-direction:column;gap:8px;opacity:.5;filter:blur(1px)}
+.res h2{font-size:30px}.res .row{display:flex;gap:16px;font-size:16px;color:var(--dim)}
+.mc{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(470px,calc(100vw - 32px));border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;
+ background:linear-gradient(180deg,rgba(48,60,86,.98),rgba(22,28,42,.98));border:2px solid var(--gold);box-shadow:0 0 28px rgba(255,211,107,.3),0 8px 30px rgba(0,0,0,.6)}
+.mc .port{width:92px;height:104px;flex:none}
+.mc .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.mc h3{font-size:28px;line-height:1.05}
+.mc .w{font-size:15px;color:var(--dim)}
+.gain{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;color:var(--mute)}.gain b{color:var(--cream)}
+.rew{font-size:15px;color:var(--gold)}
+.skip{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:14px;color:var(--mute);white-space:nowrap}
+.calm{position:fixed;right:14px;top:14px;font-size:13px;color:var(--mute);border:1px dashed rgba(168,176,196,.5);border-radius:10px;padding:4px 8px;max-width:260px}
+@media (max-height:450px){.mc{padding:10px 14px;gap:10px}.mc .port{width:70px;height:80px}.mc h3{font-size:22px}.calm{display:none}.res{display:none}}
+@media (max-width:600px){.mc{flex-direction:column;text-align:center}.gain{justify-content:center}.calm{left:14px;right:14px;max-width:none}}
+</style></head><body><div class="bg"></div>
+<div class="res" aria-hidden="true"><div class="tag">Night 1 · Cursed Forest · Wren</div><h2 class="disp">Dawn</h2><div class="row"><span>15:00</span><span>1,512 foes</span><span>+612 gold</span></div></div>
+<div class="mc" role="dialog" aria-label="Bond level up">
+ <div class="port"><img src="../../../src/assets/heroes/wren.webp" alt="Wren"></div>
+ <div class="t">
+  <div class="tag">Bond with Wren</div>
+  <h3 class="disp">Bond 5</h3>
+  <div class="bar"><i style="width:18%"></i></div>
+  <div class="gain"><span>Foes <b>+60</b></span><span>Chests <b>+45</b></span><span>Boss <b>+40</b></span><span>Night <b>+45</b></span><span>Dawn <b>+30</b></span></div>
+  <div class="w">Ward +1% (less damage taken) from your next night on.</div>
+  <div class="rew">New: amber trail tint</div>
+ </div>
+</div>
+<div class="calm">Calm: no glow sweep, card fades in, bar fills in one step.</div>
+<div class="skip">Any key or tap: skip · banked after the night, never during it</div>
+</body></html>
