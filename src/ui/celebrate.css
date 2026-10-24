@@ -54,3 +54,5 @@
 .cel-footbox { flex: 0 0 auto; width: 100%; }
 .cel-txt { text-align: left; min-width: 0; }
 @media (orientation: portrait) and (max-width: 899px) { .cel-txt { text-align: center; } }
+.overlay .cel .cel-sub { color: #ffd36b; }
+.overlay .cel .cel-line { color: rgba(255, 243, 220, .9); }

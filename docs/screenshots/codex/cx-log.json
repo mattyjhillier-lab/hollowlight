@@ -1,1 +1,17 @@
-{}
+{
+ "pause": {
+  "open": true,
+  "paused": true,
+  "tot": "Read only while the night waits"
+ },
+ "pause2": {
+  "open": false,
+  "paused": true
+ },
+ "results": {
+  "ledger": "The Hollow remembers: Lightfoot Pack, Howling Legion +20 more in the AlmanacAlmanacJ",
+  "dropped": "",
+  "told": "fdd409108db1",
+  "cel": false
+ }
+}
