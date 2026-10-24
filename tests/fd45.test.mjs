@@ -92,7 +92,7 @@ test('side card text is the real tier data and promises nothing that is not buil
   assert.ok(ln[0].startsWith('Foes are twice as tough') && ln[1] === 'From 2:30 more foes bear a Hollow mark' && ln.includes('Hearts come more slowly') && ln.length === 4, ln.join(' | '));
   assert.deepEqual(N.changeLines(data, CID, 'normal'), [N.NIGHT.same.normal, N.NIGHT.same.glassNone]);
   const s = defaultSave();
-  assert.deepEqual(N.earnPills(s, data, CID, 'hard', 'wren').map((p) => p.text), ['gold x1.5', '5 from the boss', 'boss +2 · dawn +2', 'first dawn +6 · +1 shard']);
+  assert.deepEqual(N.earnPills(s, data, CID, 'hard', 'wren').map((p) => p.text), ['gold x1.5', '7 from the boss', 'boss +2 · dawn +2', 'first dawn +6 · +1 shard']);
   assert.deepEqual(N.earnPills(s, data, CID, 'normal', 'wren').map((p) => p.text), ['gold x1', '5 from the boss']);
   s.stats.tiers = { [CID]: { hard: rec(2, 1, 1, { wren: { clears: 1, first: true } }) } };
   assert.equal(N.earnPills(s, data, CID, 'hard', 'wren').length, 3, 'first dawn already claimed by Wren');

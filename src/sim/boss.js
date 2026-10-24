@@ -7,6 +7,8 @@
 // hero's position at that moment). Fixed damage (light/mid/heavy x tier enemyDmg), >= hitGap s between two boss hits landing, at most one move
 // at a time (so <= 2 live tells: the move and its flying pods), phase changes stagger (immune) and shed one heart; never heals.
 
+import { applyMark, MARKS } from './marks.js';
+
 const TAU = Math.PI * 2;
 const MOVE_IDS = ['slam', 'eruption', 'seeds', 'sweep', 'fan', 'nova', 'lanes'];
 export const BOSS_MOVES = Object.freeze(MOVE_IDS.slice());
@@ -66,6 +68,7 @@ export function validateFight(F, enemies) {
         else if (k === 'novaGaps') { if (!(Number.isInteger(v) && v >= 1 && v <= M.nova.gaps)) bad('tier novaGaps'); }
         else if (k === 'fanN') { if (!(Number.isInteger(v) && v >= M.fan.n && v <= 9)) bad('tier fanN'); }
         else if (k === 'cross') { if (typeof v !== 'boolean') bad('tier cross'); }
+        else if (k === 'saplingMark') { if (typeof v !== 'string' || !Object.hasOwn(MARKS, v)) bad('tier saplingMark'); }
         else bad(`tier key ${k}`);
       }
     }
@@ -126,7 +129,7 @@ export class BossFight {
     this.tells = []; // live tells (objects from the pool; rebuilt when a move starts / ends)
     this.boss = null;
     const rules = (def.tiers && Object.hasOwn(def.tiers, sim.tier.id) && def.tiers[sim.tier.id]) || {};
-    this.rules = { fanFrom: rules.fanFrom ?? 1, novaGaps: rules.novaGaps ?? def.moves.nova.gaps, fanN: rules.fanN ?? def.moves.fan.n, cross: !!rules.cross };
+    this.rules = { fanFrom: rules.fanFrom ?? 1, novaGaps: rules.novaGaps ?? def.moves.nova.gaps, fanN: rules.fanN ?? def.moves.fan.n, cross: !!rules.cross, saplingMark: rules.saplingMark || null };
     this.arena = { cx: 0, cy: 0, r: def.arena.r, bx: 0, by: 0 };
   }
 
@@ -234,13 +237,13 @@ export class BossFight {
     if (this.stage !== 'fight') return;
     // phase change (the hit that crosses the threshold is floored there by Sim.hurt, so a phase is never skipped)
     if (e.floorHp > 0 && e.hp <= e.floorHp + 1e-6 && this.phase < this.def.phases.length - 1) { this.nextPhase(e); return; }
-    if (e.staggerT > 0) { e.staggerT -= dt; return; }
+    if (e.staggerT > 0) { e.staggerT = Math.max(0, e.staggerT - dt); return; } // clamp: a tiny negative left over used to block every later move (B7 bug)
     const dx = p.x - e.x, dy = p.y - e.y, dist = Math.hypot(dx, dy) || 0.001;
     if (this.move) { this.stepMove(e, dt, dist); return; }
     e.pose = '';
     if (dist > 40) { out[0] = (dx / dist) * e.speed; out[1] = (dy / dist) * e.speed; }
     this.gapT -= dt;
-    if (this.gapT <= 0 && !e.staggerT) this.startMove(e, dist);
+    if (this.gapT <= 0 && !(e.staggerT > 0)) this.startMove(e, dist);
   }
 
   nextPhase(e) {
@@ -415,7 +418,11 @@ export class BossFight {
     if (e.hatchT > 0) return;
     const S = this.def.moves.seeds, sim = this.sim;
     e.dead = true; e.vanish = true; // the pod itself leaves no kill, gem or gold
-    if ((sim.alive[S.sapling] || 0) < this.saplingCap) this.addFoe(S.sapling, e.x, e.y);
+    if ((sim.alive[S.sapling] || 0) >= this.saplingCap) return;
+    const sp = this.addFoe(S.sapling, e.x, e.y);
+    // Long Night 'Old Growth' (boss sheet (g) A): every sapling carries the tier's fixed mark (Ironbark). A boss RULE, not a roll: no RNG is
+    // drawn (the DT2 random marks still never touch boss adds), and it never counts as a marked kill (no Dawnglass / Hunter's Eye farm: no timer).
+    if (this.rules.saplingMark && applyMark(sp, this.rules.saplingMark)) sim.pushEvent('marked', { id: sp.id, k: this.rules.saplingMark });
   }
 
   // slowing brush under the hero? (lane roots, slam spikes)

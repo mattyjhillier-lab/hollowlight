@@ -18,7 +18,7 @@ import {
   BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
-import { resolveTier } from './tiers.js';
+import { resolveTier, bossShardsFor } from './tiers.js';
 import { rollMark, applyMark, heartAura, updateEmbers, markSeed, EMBER } from './marks.js';
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
@@ -1086,8 +1086,8 @@ export class Sim {
       if (e.burst) { this.addGem(e.x, e.y, e.xp); this.logHit(e, 0, true); continue; } // EN4 Puffback Toad burst: spent, XP only (no kill credit/gold/drops)
       if (e.ai && e.ai.kind === 'fuse' && e.state === 'tele' && this.fx.length < 48) this.addFx({ kind: 'fizzle', x: e.x, y: e.y, r: 12, ttl: 0.35, color: '#9aa39a' }); // killed during the fuse: it only fizzles
       this.kills += 1;
-      if (e.hmark) { // DT2: counters + the Emberwake ring (a burst / vanish never reaches here)
-        this.markedKills += 1; this.markedBy[e.hmark] = (this.markedBy[e.hmark] || 0) + 1;
+      if (e.hmark) { // DT2: counters + the Emberwake ring (a burst / vanish never reaches here); boss adds (Long Night Ironbark saplings) never count
+        if (!e.bossAdd) { this.markedKills += 1; this.markedBy[e.hmark] = (this.markedBy[e.hmark] || 0) + 1; }
         if (e.hmark === 'emberwake' && this.embers.length < EMBER.cap && e.dmg > 0) { this.embers.push({ id: this.nextId++, x: e.x, y: e.y, t: 0, next: 0, dmg: e.dmg, src: e.type }); }
       }
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
@@ -1104,7 +1104,7 @@ export class Sim {
       if (e.mini) { this.miniKills += 1; for (const L of this.miniLog) if (L.k === null) { L.k = this.time; break; } if (this.mini === e) this.mini = null; this.pushEvent('miniDead', { id: e.id, x: e.x, y: e.y }); }
       if (e.boss) {
         this.bossKilled = true;
-        this.shards += this.chapter.bossShards;
+        this.shards += bossShardsFor(this.chapter.bossShards, this.tier.id, this.tier); // 5 / 7 / 10 by night
         if (this.fight) { this.fight.over(); this.state = 'victory'; } // victory = the boss dies; the sim stops at the killing blow
         this.pushEvent('bossDead', { x: e.x, y: e.y });
       }

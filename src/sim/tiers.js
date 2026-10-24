@@ -95,3 +95,11 @@ export function resolveTier(tiers, chapterId, tierId) {
 
 // Tier index (0 = Twilight) for aggregateMods' tier scope.
 export const tierIndex = (tierId) => { const i = TIER_IDS.indexOf(tierId); return i < 0 ? 0 : i; };
+
+// Boss soul shards for a tier (LOCKED boss sheet (e) + tiers row: 5 / 7 / 10). Twilight keeps the chapter's own number (byte-identical);
+// a harder night pays its tier's `shards` (falls back to the chapter's number when the tier has none).
+export function bossShardsFor(chapterShards, tierId, tierDef) {
+  const c = Number.isInteger(chapterShards) && chapterShards >= 0 ? chapterShards : 0;
+  if (tierId === 'normal' || !tierDef || !(Number.isInteger(tierDef.shards) && tierDef.shards >= 0)) return c;
+  return tierDef.shards;
+}
