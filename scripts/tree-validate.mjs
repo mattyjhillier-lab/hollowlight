@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { compileTree } from '../src/meta/tree.js';
-import { readTreeFiles } from '../src/meta/treefs.mjs';
+import { readTreeFiles, addExtra } from '../src/meta/treefs.mjs';
 import { composeTree } from '../src/meta/treedata.js';
 import { budgetOf, formatBudget } from '../src/meta/treebudget.js';
 import { layoutIssues, connectIssues } from '../src/meta/treelayout.js';
@@ -21,9 +21,11 @@ let failed = false;
 const bad = (m) => { failed = true; console.log(`FAIL ${m}`); };
 const ok = (m) => console.log(`ok   ${m}`);
 
-const data = loadRealData();
+// --extra <dir>: also load test-only fragments + <dir>-data.json (TREE-GEN1 synthetic third hero / weapon proof)
+const EXTRA = val('--extra');
+const { files: FILES, data } = addExtra(readTreeFiles(), loadRealData(), EXTRA);
 let composed;
-try { composed = composeTree(readTreeFiles(), data); ok(`fragments compose (${composed.info.nodes.length} nodes in ${new Set(composed.info.nodes.map((n) => n.frag)).size} fragments)`); } catch (e) { bad(e.message); process.exit(1); }
+try { composed = composeTree(FILES, data); ok(`fragments compose (${composed.info.nodes.length} nodes in ${new Set(composed.info.nodes.map((n) => n.frag)).size} fragments)`); } catch (e) { bad(e.message); process.exit(1); }
 let live, v2;
 try { live = compileTree(composed.live, data); ok(`live tree compiles (${live.list.length} live nodes, ${live.pendingList.length} inert)`); } catch (e) { bad(`live: ${e.message}`); }
 try { v2 = compileTree(composed.v2, data); ok(`v2 tree compiles (${v2.list.length} nodes)`); } catch (e) { bad(`v2: ${e.message}`); }
@@ -57,7 +59,9 @@ try {
   const retired = new Set(composed.info.core.retired.map((t) => t.id));
   let n = 0;
   for (const [id, v] of Object.entries(snap)) if (!retired.has(id) && JSON.stringify(now[id]) !== JSON.stringify(v)) { bad(`id ${id} moved or vanished`); n++; }
-  for (const id of Object.keys(now)) if (!snap[id]) { bad(`id ${id} is not in tests/fixtures/tree-ids.json (add it deliberately)`); n++; }
+  for (const id of Object.keys(now)) if (!snap[id]) {
+    if (EXTRA) { console.log(`extra ${id} (test-only --extra fixture, not in the snapshot)`); continue; }
+    bad(`id ${id} is not in tests/fixtures/tree-ids.json (add it deliberately)`); n++; }
   if (!n) ok('ids and idx match the append-only snapshot');
 } catch (e) { bad(`id snapshot: ${e.message}`); }
 if (val('--synthetic')) {

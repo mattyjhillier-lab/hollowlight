@@ -6,6 +6,7 @@ import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 import { tierRecords, MAX_GLASS } from './tiers.js';
 import { TIER_IDS } from '../sim/tiers.js';
 import { cleanHints } from '../ui/whispers.js';
+import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -22,7 +23,7 @@ const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 // The compiled skill tree (src/meta/tree.js). Registered once at boot; until then tree data fails closed to {}.
 let TREE = null;
 let TREE_DATA = null;
-export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
+export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHeroBits(data && data.characters); } // heroes past the frozen codex list: their codexBit (TREE-GEN1)
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
@@ -44,6 +45,8 @@ export function defaultSave(now = Date.now()) {
     seen: {},
     notes: {},
     hints: 0, // FM1: lantern whisper bits (src/ui/whispers.js HINT); unknown bits are dropped
+    codex: defaultCodex(), // CX1: Almanac read (NEW dots) + told (celebrated once) bitsets over ENTRY_KEYS (src/meta/codex.js); v 0 = not adopted yet
+    titles: defaultTitles(), // CX6: earned title ids (fixed list) + the picked one
     settings: defaultSettings(),
   };
 }
@@ -218,6 +221,8 @@ export function sanitize(raw, now = Date.now()) {
     seen: TREE ? sanitizeSeen(seenIn, TREE) : {},
     notes: notesOf(raw.notes),
     hints: cleanHints(raw.hints),
+    codex: cleanCodex(raw.codex), // CX1: hex bitsets only, unknown bits dropped, bad types -> empty (added inside v3: older saves read as v 0)
+    titles: cleanTitles(raw.titles), // CX6: ids from the fixed TITLES list only; pick must be an earned id
     settings: {
       masterVol: num(st.masterVol, ds.masterVol, 0, 1),
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),

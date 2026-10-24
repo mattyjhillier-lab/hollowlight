@@ -407,7 +407,7 @@ test('DR4 recap renders as text only, keeps the one-screen drop order and the we
   assert.ok(find(r.root, (n) => n.attrs && n.attrs['data-drop'] === 'hurt').length === 1);
   assert.match(C.resultsSummary(view), /Struck down by a Fell Wolf's lunge at 6:31/);
   const css = R('src/ui/results.js');
-  assert.match(css, /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'nudge', 'arcl', 'line', 'firstdawn']/);
+  assert.match(css, /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn']/);
   assert.ok(!/innerHTML/.test(css.replace(/\/\/.*$/gm, '')));
 });
 
@@ -450,7 +450,7 @@ test('DR4 fit(): weapons drop first, then the lunge note, then the recap bars; r
   cap = total - 7; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt'], 'only then the recap bars');
   cap = total - 8; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt', 'nudge']);
   cap = total; r.fit(); assert.deepEqual(dropped(), [], 'everything returns');
-  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'nudge', 'arcl', 'line', 'firstdawn'\]/); // FD5 rows (kept, stars, first dawn) slot in by priority
+  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn'\]/); // FD5 rows (kept, stars, first dawn) slot in by priority
 });
 
 // ---------------------------------------------------------------- Elder Treant fight (boss-treant-v1 (f)): fight-time recap + boss HP line + held clock

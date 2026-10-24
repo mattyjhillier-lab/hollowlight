@@ -45,10 +45,11 @@ export function buildPurses({ gold = 0, shards = 0, glass = null } = {}) {
 }
 
 /** Lantern chip (top-left of the title): tinted lantern, current lantern name, "Switch lantern". A real button. */
-export function buildChip({ id = 'l1', name = 'Lantern 1', onClick } = {}) {
-  const b = el('button', 'fd-chip', null, { type: 'button', 'aria-label': `${name}. ${LANTERN.switch}` });
+export function buildChip({ id = 'l1', name = 'Lantern 1', onClick, title = '' } = {}) {
+  const tt = typeof title === 'string' ? title.slice(0, 24) : ''; // CX6: the picked title (fixed list, validated) under the name, with its ornament
+  const b = el('button', 'fd-chip', null, { type: 'button', 'aria-label': `${name}${tt ? `, ${tt}` : ''}. ${LANTERN.switch}` });
   const t = el('span', 'fd-chip__t', null, { 'aria-hidden': 'true' });
-  add(t, el('b', 'fd-chip__name', name), el('small', 'fd-chip__sub', LANTERN.switch));
+  add(t, el('b', 'fd-chip__name', name), tt ? add(el('small', 'fd-chip__title'), el('i', 'fd-orn'), el('span', null, tt)) : null, el('small', 'fd-chip__sub', LANTERN.switch));
   add(b, lanternIcon(TINT[id] || TINT.l1, 'fd-lan fd-chip__lan'), t);
   b.addEventListener('click', () => { if (onClick) onClick(); });
   return b;

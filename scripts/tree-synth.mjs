@@ -51,7 +51,7 @@ export function synthTree(realData, n, baseFiles = readTreeFiles()) {
     const outline = TEMPLATE.map((kind, j) => {
       const spec = { id: `${pre}_n${j}`, idx: j + 4, kind, inert: true, name: `Node ${j}`, desc: `Synthetic ${kind}`, cost: { gold: 300 + 40 * j, ...(kind === 'mastery' ? { shards: 1 } : {}) }, effects: [{ weapon: wid, stat: stat[j % 3], pct: kind === 'mastery' ? 1 : 2 }] };
       if (kind === 'mastery') spec.effects.push({ weapon: wid, stat: 'power', pct: 1 });
-      if (kind === 'mastery' || kind === 'kin') spec.unlock = { t: 'useCharacter', id: 'wren', n: 5 };
+      if (kind === 'mastery' || kind === 'kin') spec.unlock = { t: 'useCharacter', id: Object.keys(data.characters)[0], n: 5 }; // any hero: the first in the data
       if (kind === 'verb') spec.effects = [{ weapon: wid, stat: 'radius', add: 1 }];
       return spec;
     });

@@ -1,0 +1,18 @@
+{
+ "_note": "TEST-ONLY synthetic third hero (TREE-GEN1): different weapon (Spirit Bolts, tree-gated), ability (still_hour, unknown to the sim), HP and damage profile. Merged over src/data/characters.json by tests/treegen.test.mjs and the --extra flag of scripts/tree-validate.mjs / tree-timeline.mjs. Never shipped.",
+ "characters": {
+  "sable": {
+   "name": "Sable, the Test Warden",
+   "blurb": "Synthetic test hero.",
+   "color": "#9fc4ff",
+   "hp": 110,
+   "speed": 84,
+   "traits": { "holyDamage": 1.15, "moveSpeed": 0.95 },
+   "traitText": "+15% holy damage",
+   "weapon": "spirit_bolts",
+   "codexBit": 200,
+   "treeVisuals": ["sableMotes"],
+   "ability": { "id": "still_hour", "name": "Still Hour", "cooldown": 45, "desc": "Test-only ability.", "tree": { "hourSecs": { "unit": "secs", "min": 0.1, "max": 3, "cap": 3 } } }
+  }
+ }
+}

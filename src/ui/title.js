@@ -5,6 +5,7 @@ import { mk, emblem, EMBLEM_OF } from './hudsvg.js';
 import { TITLE, HERO, primaryCopy, treeWhisper } from './titlecopy.js';
 import { buildChip, buildPurses } from './lanternsui.js';
 import { LANTERN } from './lanterncopy.js';
+import { CX } from './codexcopy.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const cls = (node, c) => { node.classList.add(c); return node; };
@@ -15,7 +16,7 @@ const nid = (p) => `u3-${p}-${++sid}`;
  *  FD2 (all optional, so the U3 title still builds without them): lantern {id, name} -> chip top-left (onSwitch); purses {gold, shards, glass|null}
  *  top-right; whisper = Continue whisper; treeDot = something in the tree is affordable now; newGame {free} -> quiet "New game" (onNew). */
 export function buildTitle({ hasProgress = false, firstRun = false, bank = null, version = '', note = '', lantern = null, purses = null, whisper = '', treeDot = false, newGame = null, treeLine = null,
-  onBegin, onTree, onSettings, onSwitch, onNew } = {}) {
+  almanac = null, bands = 0, onBegin, onTree, onSettings, onSwitch, onNew, onAlmanac } = {}) {
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-title');
   const col = el('main', 'u3-col');
@@ -33,12 +34,19 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
     if (lab) add(lab, el('span', 'fd-dot', null, { 'aria-hidden': 'true' }), el('span', 'u3-sr', ' (something can be bought now)'));
   }
   const settings = button({ label: TITLE.settings.label, whisper: TITLE.settings.whisper, hint: 'S', onClick: () => { if (onSettings) onSettings(); } });
+  // CX3: the Almanac (J), shown once there is something written in it; a NEW dot when an entry is unread (text for screen readers)
+  let alm = null;
+  if (almanac) {
+    alm = button({ label: CX.open, whisper: almanac.line || '', hint: CX.openHint, onClick: () => { if (onAlmanac) onAlmanac(); } });
+    alm.classList.add('cx-almbtn');
+    if (almanac.fresh) { const lab = alm.children && alm.children[1] && alm.children[1].children ? alm.children[1].children[0] : null; if (lab) add(lab, el('span', 'fd-dot', null, { 'aria-hidden': 'true' }), el('span', 'u3-sr', ' (new pages)')); }
+  }
   let ng = null;
   if (newGame) {
     ng = button({ label: LANTERN.newGame, whisper: LANTERN.newWhisper(Math.max(0, Math.floor(Number(newGame.free) || 0))), hint: 'N', variant: 'secondary', onClick: () => { if (onNew) onNew(); } });
     ng.classList.add('fd-newgame');
   }
-  if (lantern) { menu.classList.add('fd-menu2'); side.classList.add('fd-side'); add(menu, begin, add(el('div', 'fd-row2'), tree, settings), ng); } else add(menu, begin, tree, settings);
+  if (lantern) { menu.classList.add('fd-menu2'); side.classList.add('fd-side'); add(menu, begin, add(el('div', alm ? 'fd-row2 fd-row3' : 'fd-row2'), tree, alm, settings), ng); } else add(menu, begin, tree, alm, settings);
   add(side, menu);
   if (typeof note === 'string' && note) add(side, el('p', 'u3-note ty-small', note.slice(0, 400), { role: 'status' })); // textContent only (el)
   if (firstRun) add(side, el('p', 'u3-hint ty-small', TITLE.hint));
@@ -50,11 +58,13 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
   let chip = null;
   if (lantern) { // after the menu in DOM order (Tab reaches Continue first), drawn at the top
     const top = el('div', 'fd-top');
-    chip = buildChip({ id: lantern.id, name: lantern.name, onClick: () => { if (onSwitch) onSwitch(); } });
+    chip = buildChip({ id: lantern.id, name: lantern.name, title: lantern.title || '', onClick: () => { if (onSwitch) onSwitch(); } });
     add(top, chip, purses ? buildPurses(purses) : null);
     add(root, col, top, foot);
   } else add(root, col, foot);
-  return { root, begin, tree, settings, newGame: ng, chip, side, menu, foot, version: ver };
+  const nb = Math.max(0, Math.min(9, Math.floor(Number(bands) || 0))); // CX6: colour bands return to the backdrop as the Almanac fills (visual only)
+  if (nb) { root.setAttribute('data-bands', String(nb)); const bandEl = el('div', 'cx-bands', null, { 'aria-hidden': 'true' }); bandEl.style.setProperty('--cx-bands', String(nb)); root.insertBefore(bandEl, root.firstChild); }
+  return { root, begin, tree, settings, almanac: alm, newGame: ng, chip, side, menu, foot, version: ver };
 }
 
 const weaponEmblem = (weaponId) => {

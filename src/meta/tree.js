@@ -449,6 +449,23 @@ export function compileTree(raw, data) {
 }
 const CREEP_FLAT = ['heart', 'socket', 'gate', 'mastery', 'key'];
 
+// TREE-GEN1 (LOCKED 'TREE IS CHARACTER-AGNOSTIC'): hero-specific effect kinds come from the character data, so a new hero needs no code here.
+// characters.json <hero>.ability.tree = { <param>: { unit: 'secs'|'pct', min, max, cap, out? } }; <hero>.treeVisuals = [visual ids].
+const PARAM_RE = /^[a-z][a-zA-Z0-9]{0,23}$/;
+const RESERVED_PARAMS = new Set(['dur', 'autoHp']);
+const okParam = (p) => isObj(p) && (p.unit === 'secs' || p.unit === 'pct') && fin(p.min) && fin(p.max) && p.min <= p.max && fin(p.cap) && p.cap > 0
+  && (p.out === undefined || (typeof p.out === 'string' && PARAM_RE.test(p.out) && !RESERVED_PARAMS.has(p.out)));
+export function abilityParam(data, key) {
+  if (typeof key !== 'string' || !PARAM_RE.test(key) || RESERVED_PARAMS.has(key) || !data || !isObj(data.characters)) return null;
+  for (const c of Object.values(data.characters)) {
+    const t = isObj(c) && isObj(c.ability) ? c.ability.tree : null;
+    if (isObj(t) && own(t, key) && okParam(t[key])) return t[key];
+  }
+  return null;
+}
+const heroVisual = (data, v) => typeof v === 'string' && PARAM_RE.test(v) && !!data && isObj(data.characters)
+  && Object.values(data.characters).some((c) => isObj(c) && Array.isArray(c.treeVisuals) && c.treeVisuals.includes(v));
+
 function checkEffect(e, data, where) {
   if (!isObj(e)) fail(`${where}: bad effect`);
   const keys = Object.keys(e);
@@ -469,16 +486,20 @@ function checkEffect(e, data, where) {
     else if (['heart', 'magnet', 'heartHeal'].includes(e.drop)) num('pct', -90, 500);
     else fail(`${where}: unknown drop effect`);
   } else if (e.ability !== undefined) {
-    if (e.ability === 'dur' || e.ability === 'wheelRadius') num('pct', 0, 300);
-    else if (e.ability === 'rallySecs') num('secs', 0.1, 5);
-    else fail(`${where}: unknown ability effect`);
+    if (e.ability === 'dur') num('pct', 0, 300);
+    else {
+      // hero ability parameters are DATA: declared by the character (characters.json ability.tree), never named here (TREE-GEN1)
+      const p = abilityParam(data, e.ability);
+      if (!p) fail(`${where}: unknown ability effect`);
+      num(p.unit, p.min, p.max);
+    }
   } else if (e.status !== undefined) {
     // status power: T3 wires these into the sim; until then only inert nodes carry them
     if (e.status === 'bleed' || e.status === 'burn') num('pct', 0.1, 3);
     else if (e.status === 'mark' || e.status === 'pin') num('secs', 0.1, 1);
     else fail(`${where}: unknown status effect`);
   } else if (e.visual !== undefined) {
-    if (!['kinSparks', 'graveLamp', 'threeDawns'].includes(e.visual)) fail(`${where}: unknown visual effect`);
+    if (!(e.visual === 'threeDawns' || heroVisual(data, e.visual))) fail(`${where}: unknown visual effect`); // hero visuals: characters.json treeVisuals
   } else if (e.perk !== undefined) {
     if (e.perk === 'evoLuck') num('pct', 0, 300);
     else if (e.perk === 'rush') { num('pct', 0, 300); num('secs', 1, 30); }
@@ -745,7 +766,7 @@ export function emptyEffects() {
     meta: { rerolls: 0, banishes: 0 },
     player: { maxHp: 1, regen: 0, revive: 0, levelHeal: 0 },
     drops: { heart: 1, magnet: 1, heartHeal: 1, heartPity: 0, magnetPity: 0 },
-    ability: { dur: 1, autoHp: 0, rallySecs: 0, wheel: 0 },
+    ability: { dur: 1, autoHp: 0 }, // + hero ability parameters (characters.json ability.tree), added only when a node gives them
     perks: { gemPull: 0, gemCall: false, offerSize: 0, weaponSlot: 0, favour: false, startWeapon: false, startBlessing: false, autoRule: false, blessChoice: false }, // tool-cluster perks (hooks for the simple ones; the rest is read by later chunks)
     lore: {}, // Almanac: enemy id -> damage % (cap 2 per type)
     info: [], // Almanac / Card Fan information perks (read by the UI chunks)
@@ -797,6 +818,7 @@ export function aggregateMods(tree, def, data, opts = null) {
   const fac = softFactors(tree, def, ctx);
   if (fac) out.softcap = fac.info;
   const pct = { };
+  const heroCaps = Object.create(null); // hero ability parameter -> its declared cap
   const add = (k, v) => { pct[k] = (pct[k] || 0) + v; };
   const bonus = (wid, stat, kind, v) => {
     if (!out.weaponBonus[wid]) out.weaponBonus[wid] = {};
@@ -823,8 +845,7 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.drop === 'heartPity' || e.drop === 'magnetPity') out.drops[e.drop] += e.secs * r;
       else if (e.drop) add(`drop:${e.drop}`, e.pct * r);
       else if (e.ability === 'dur') add('abilityDur', e.pct * r);
-      else if (e.ability === 'rallySecs') out.ability.rallySecs += e.secs * r;
-      else if (e.ability === 'wheelRadius') out.ability.wheel += e.pct * r;
+      else if (e.ability) { const p = abilityParam(data, e.ability); if (p) { const k = p.out || e.ability; out.ability[k] = (out.ability[k] || 0) + e[p.unit] * r; heroCaps[k] = p.cap; } }
       else if (e.status) out.status[e.status] += (e.status === 'bleed' || e.status === 'burn' ? e.pct : e.secs) * r * m;
       else if (e.visual) { if (!out.visuals.includes(e.visual)) out.visuals.push(e.visual); }
       else if (e.perk === 'evoLuck') add('evoLuck', e.pct * r);
@@ -860,8 +881,7 @@ export function aggregateMods(tree, def, data, opts = null) {
   out.drops.heartPity = Math.max(-15, out.drops.heartPity); out.drops.magnetPity = Math.max(-15, out.drops.magnetPity); // seconds off the pity timers (never below 15 s of the 30)
   out.perks.gemPull = Math.min(100, out.perks.gemPull); out.perks.offerSize = Math.min(2, out.perks.offerSize); out.perks.weaponSlot = Math.min(2, out.perks.weaponSlot);
   out.ability.dur = Math.min(4, 1 + (pct.abilityDur || 0) / 100);
-  out.ability.rallySecs = Math.min(5, out.ability.rallySecs);
-  out.ability.wheel = Math.min(100, out.ability.wheel);
+  for (const [k, cap] of Object.entries(heroCaps)) out.ability[k] = Math.min(cap, out.ability[k]);
   out.status.bleed = Math.min(100, out.status.bleed); out.status.burn = Math.min(100, out.status.burn);
   out.status.mark = Math.min(5, out.status.mark); out.status.pin = Math.min(5, out.status.pin);
   out.evoLuck = Math.min(4, 1 + (pct.evoLuck || 0) / 100);

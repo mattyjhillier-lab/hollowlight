@@ -151,20 +151,7 @@
   "ch": {
    "kind": "hero",
    "owners": [
-    "wren",
-    "elias"
-   ]
-  },
-  "wr": {
-   "kind": "hero",
-   "owners": [
-    "wren"
-   ]
-  },
-  "el": {
-   "kind": "hero",
-   "owners": [
-    "elias"
+    "*"
    ]
   },
   "c1": {
