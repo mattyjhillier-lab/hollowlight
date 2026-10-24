@@ -36,6 +36,9 @@ import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
 const HERO_NEXT = 'Next';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
+import { WhisperPlate } from './whisperplate.js';
+import './whispers.css';
+import { cardModel } from './cardview.js';
 
 export class UI {
   constructor(root, data) {
@@ -97,13 +100,32 @@ export class UI {
   // Touch: a tap that lands on the weapon strip wakes it (the touch layer covers it).
   hudTapAt(x, y) { this.hudView.tapAt(x, y); }
 
-  toast(text) {
+  // whisper: FM1 pickup line (once per lantern), drawn under the toast text in the whisper voice (textContent only)
+  toast(text, whisper = '') {
     const t = this.hud.toast;
     t.textContent = text;
+    t.classList.toggle('has-w', !!whisper);
+    if (whisper) { const w = document.createElement('span'); w.className = 'fm-tw'; w.textContent = whisper; t.appendChild(w); }
     t.classList.add('show');
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    this.toastTimer = setTimeout(() => t.classList.remove('show'), whisper ? 4000 : 2600);
   }
+
+  // FM1: is something already speaking at the top of the screen (toast, boss banner, evolution plate)? The next whisper waits.
+  busy() {
+    const on = (n, c) => !!(n && n.classList && n.classList.contains(c));
+    return on(this.hud.toast, 'show') || on(this.hud.bossIntro, 'on') || !!(this.evoPlate && this.evoPlate.root && on(this.evoPlate.root, 'on'));
+  }
+
+  // FM1: draw (or hide) the whisper plate. rings: the ability button(s) that get one gold ring while the ability plate is up.
+  whisper(plate, frac, calm, rings) {
+    if (!this.wPlate) {
+      if (!plate) return;
+      this.wPlate = new WhisperPlate(document, { onHide: () => { if (this.handlers.hideWhisper) this.handlers.hideWhisper(); } });
+    }
+    this.wPlate.show(plate, frac, calm, rings);
+  }
+  whisperOn() { return !!(this.wPlate && this.wPlate.cur); }
 
   // E9: name + codex line (+ the recipe on the first ever take). Replaces the old 'Evolved: X' toast.
   evolvePlate(evoId, first, calm) {
@@ -257,15 +279,29 @@ export class UI {
       });
     }
     // The 'Unlocked in the Skill Tree' hint is a whisper line inside this screen (a HUD toast sat hidden under the veil and collided with the title on phones).
-    const fresh = toastWeapons(sim.offer ? orderOffer(sim.offer).all : [], this.data, this.toastedWeapons);
-    this.offerView.render(sim, this.data, fresh.length ? NEW_CARD_TOAST : '');
+    const all = sim.offer ? orderOffer(sim.offer).all : [];
+    const fresh = toastWeapons(all, this.data, this.toastedWeapons);
+    // FM2: one teaching line per level-up screen (kept across reroll / banish re-renders until the screen closes)
+    if (this.luTeach === undefined) {
+      let teach = null;
+      if (this.handlers.offerTeach && sim.offer) {
+        const mr = sim.balance.maxRank;
+        const classes = all.map((c) => { try { return cardModel(c, this.data, mr).cls; } catch { return ''; } });
+        teach = this.handlers.offerTeach({
+          start: !!sim.offer.start, classes, weaponCard: all.some((c) => c && c.kind === 'weapon'),
+          full: Array.isArray(sim.weapons) && sim.weapons.length >= (sim.weaponSlots | 0), rerolls: sim.rerollsLeft | 0, banishes: sim.banishesLeft | 0,
+        });
+      }
+      this.luTeach = teach;
+    }
+    this.offerView.render(sim, this.data, fresh.length ? NEW_CARD_TOAST : '', this.luTeach);
     this.show('levelup');
     this.currentCards = this.offerView.cards;
     fresh.forEach((w) => this.toastedWeapons.add(w));
     if (this.layers.hud) this.layers.hud.inert = true; // Tab must not reach the HUD buttons under the offer
   }
 
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; if (this.layers.hud) this.layers.hud.inert = false; }
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; this.luTeach = undefined; if (this.layers.hud) this.layers.hud.inert = false; }
 
   // ------------------------------------------------------------------ pause / end
   // U4: lantern-glass pause panel over the frozen game (src/ui/pause.js; DOM built with the kit, textContent only).
@@ -320,7 +356,7 @@ export class UI {
     const s = buildSettings({
       settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
       storageNote: h.storageNote ? h.storageNote() : null,
-      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave, hasAutoRule: h.hasAutoRule },
+      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave, hasAutoRule: h.hasAutoRule, resetTips: h.resetTips },
       onBack: () => this.hideSettings(),
       onRebuild: (m, t) => this.showSettings(m, t),
     });
@@ -367,6 +403,7 @@ export class UI {
 
   onKey(e) {
     if (this.tree.isOpen) return; // the tree screen handles its own keys
+    if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !this.settingsOpen && this.whisperOn()) { e.preventDefault(); if (this.handlers.hideWhisper) this.handlers.hideWhisper(); return; } // FM1: Tab hides the whisper (only while one is up mid-run)
     if (this.spaceActivate(e)) return;
     if (this.settingsOpen) {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }

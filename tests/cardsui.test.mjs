@@ -239,3 +239,19 @@ test('HUD-2 source: no innerHTML / outerHTML / insertAdjacentHTML / document.wri
   assert.ok(!/innerHTML|show\('levelup', `/.test(lu), 'level-up block builds no HTML strings');
   void cardIcon; void isQuiet;
 });
+
+test('FM2 OfferView teach: one line under the title in the whisper voice; the card it is about gets an outline and the line in its label', () => {
+  const doc = fakeDoc(), host = doc.createElement('div');
+  const v = new OfferView(doc, host, { pick() {}, reroll() {}, banish() {} });
+  v.render(mkSim(), data, '', { id: 'evolve', title: 'Evolution', whisper: 'Your spirit changes its nature. One per weapon.', card: 'evolve' });
+  const t = all(host, 'lu-teach');
+  assert.equal(t.length, 1); assert.match(textOf(t[0]), /Evolution/);
+  const taught = all(host, 'is-taught');
+  assert.equal(taught.length, 1); assert.ok(taught[0]._cls.has('lg-card--evolve'));
+  assert.match(taught[0].attrs['aria-label'], /changes its nature/);
+  assert.match(host.attrs['aria-description'], /Evolution/);
+  v.render(mkSim(), data, '', null);
+  assert.equal(all(host, 'lu-teach').length, 0, 'no teach: nothing extra');
+  v.render(mkSim(), data, '', { title: '<img src=x>'.repeat(9), whisper: 'w', note: 'Dots = rank, 5 is the most', card: null });
+  assert.ok(textOf(all(host, 'lu-teach__t')[0]).length <= 48, 'clamped plain text');
+});

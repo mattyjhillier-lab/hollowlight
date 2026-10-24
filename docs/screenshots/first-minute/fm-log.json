@@ -1,0 +1,10 @@
+{
+ "death": {
+  "learn": "Your gold is safeSpend it in the Lantern Web: every lantern you light makes the next night easier.",
+  "treePrimary": true,
+  "focus": "Lantern WebT"
+ },
+ "win": {
+  "learn": "DawnThe Hollow remembers. Harder nights wait in the Lantern Web."
+ }
+}

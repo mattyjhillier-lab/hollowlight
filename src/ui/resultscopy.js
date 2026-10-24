@@ -46,7 +46,7 @@ export const RES = {
   debug: 'Debug run: not saved.',
   again: { label: 'Again', hint: 'R' },
   menu: { label: 'Main menu', hint: 'Esc' },
-  tree: { label: 'Tree', hint: 'T', newSr: 'something new to unlock' },
+  tree: { label: 'Tree', web: 'Lantern Web', hint: 'T', newSr: 'something new to unlock' },
   region: 'Run results',
   // FD5 (front-door-v1 3A): the night badge, Dawnglass tile, first-dawn line, stars and the kept line
   night: {
@@ -177,6 +177,13 @@ export function resultsView(r, bank, data) {
     const c = closest[0];
     nudge = { kind: 'closest', gate: !!c.gate, name: clip(c.name, 40), text: clip(c.text, 80), frac: Math.max(0, Math.min(1, fin(c.frac))) };
   }
+  // FM3 teaching (src/ui/whispers.js resultTeach): first / second death take the nudge slot (U6 one-screen rule); the first win adds one line.
+  const tc = bank && bank.teach && typeof bank.teach === 'object' && ['firstDeath', 'secondDeath', 'firstWin'].includes(bank.teach.kind) ? bank.teach : null;
+  let learn = null, treePrimary = false;
+  if (tc) {
+    const L = { kind: 'learn', teach: tc.kind, title: clip(tc.title, 40), text: clip(tc.whisper, 120) };
+    if (tc.kind === 'firstWin') learn = L; else { nudge = L; treePrimary = tc.primaryTree === true; }
+  }
 
   return {
     won, debug: !bank,
@@ -195,7 +202,7 @@ export function resultsView(r, bank, data) {
     } : { gold: whole(r.gold), shards: whole(r.shards) },
     weapons: weaponShares(r.weapons, data),
     recap: hurtRecap(r, data, won),
-    nudge,
+    nudge, learn, treePrimary,
     treeDot: newly.length > 0,
     night: nightBlock(r, bank, hero, won),
   };

@@ -111,10 +111,15 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     wickToggle({ ...SET.reducedMotion, checked: st.reducedMotion, onChange: (v) => set({ reducedMotion: v }) }),
     wickToggle({ ...SET.damageNumbers, checked: st.damageNumbers, onChange: (v) => set({ damageNumbers: v }) }));
   const keys = add(el('div', 'u4-row u4-row--keys'), el('span', 'u4-row__label', SET.keysLabel), el('p', 'u4-note', SET.keys));
+  // FM1: Tips toggle + 'Show tips again' (resets this lantern's whispers); FM5: Vibration (device setting)
+  const tipsMsg = el('span', 'u4-row__help', '', { role: 'status', 'aria-live': 'polite' });
+  const tipsAgain = api.resetTips ? add(el('div', 'u4-row u4-row--tipsagain'), button({ label: SET.tips.again, variant: 'secondary', inline: true, onClick: () => { api.resetTips(); tipsMsg.textContent = SET.tips.againDone; } }), tipsMsg) : null;
   const controls = group(SET.tabs[2].label,
     choice({ ...SET.touchMode, options: SET.touchMode.opts, value: st.touchMode, onChange: (v) => set({ touchMode: v }) }),
     choice({ ...SET.stickSize, options: SET.stickSize.opts, value: st.stickSize, onChange: (v) => set({ stickSize: v }) }),
     api.hasAutoRule && api.hasAutoRule() ? choice({ ...SET.autoRule, options: SET.autoRule.opts, value: st.autoRule, onChange: (v) => set({ autoRule: v }) }) : null,
+    wickToggle({ ...SET.tips, checked: st.tips !== false, onChange: (v) => set({ tips: v }) }), tipsAgain,
+    wickToggle({ ...SET.vibration, checked: st.vibration !== false, onChange: (v) => set({ vibration: v }) }),
     fullscreenRow(pwa), keys);
 
   // ---- Saves: export / import / reset, each with its old confirmation ----

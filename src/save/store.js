@@ -2,6 +2,7 @@
 import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS } from './schema.js';
 import { metConditions } from '../meta/tree.js';
 import { recordTierRun } from './tiers.js';
+import { cleanHints } from '../ui/whispers.js';
 
 export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
@@ -103,6 +104,15 @@ export class SaveStore {
     if (this.data.seen[id]) return;
     this.data.seen = sanitize({ ...this.data, seen: { ...this.data.seen, [id]: true } }).seen;
     this.saveSoon();
+  }
+
+  // FM1: this lantern's whisper bits (validated; a debounced write so a plate never costs a frame).
+  setHints(bits) {
+    const b = cleanHints(bits);
+    if (b === this.data.hints) return b;
+    this.data.hints = b;
+    this.saveSoon();
+    return b;
   }
 
   setSettings(patch) {

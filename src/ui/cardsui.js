@@ -43,7 +43,8 @@ export class OfferView {
   }
 
   // note: optional plain whisper line under the title (the 'Unlocked in the Skill Tree' hint for a NEW card; it used to be a HUD toast hidden under this screen).
-  render(sim, data, note = '') {
+  // teach (FM2, optional): { title, whisper, note, card: 'evolve' | 'stirs' | null } from the Whispers director: one line, in the whisper voice.
+  render(sim, data, note = '', teach = null) {
     const d = this.doc;
     const { main, quiet, all } = orderOffer(sim.offer);
     this.sim = sim;
@@ -72,11 +73,29 @@ export class OfferView {
     const quietRow = this.el('div', 'lu-quiet');
     quietRow.style.setProperty('--n', String(Math.max(1, quiet.length)));
     this.els = [];
+    this.clsList = [];
     all.forEach((c, i) => {
       const node = this.card(c, i, data, maxRank);
       this.els.push(node);
       (i < nm ? mainRow : quietRow).appendChild(node);
     });
+    if (teach && typeof teach === 'object') {
+      // the line sits under the title (cards have fixed heights: a line inside one crowds its text); the card it is about gets a soft gold outline
+      const at = teach.card ? this.clsList.indexOf(teach.card) : -1;
+      if (at >= 0 && this.els[at].classList) {
+        this.els[at].classList.add('is-taught');
+        const lab = this.els[at].getAttribute ? this.els[at].getAttribute('aria-label') : '';
+        if (this.els[at].setAttribute) this.els[at].setAttribute('aria-label', `${lab}. ${clampText(teach.whisper, 80)}`);
+      }
+      {
+        const t = this.el('div', 'lu-teach');
+        if (teach.title) t.append(this.el('span', 'lu-teach__t', clampText(teach.title, 48)));
+        if (teach.whisper) t.append(this.el('span', 'lu-teach__w', clampText(teach.whisper, 80)));
+        if (teach.note) t.append(this.el('span', 'lu-teach__note', clampText(teach.note, 40)));
+        head.append(t);
+        if (this.host.setAttribute) this.host.setAttribute('aria-description', [teach.title, teach.whisper].filter(Boolean).join('. '));
+      }
+    } else if (this.host.removeAttribute) this.host.removeAttribute('aria-description');
 
     const foot = this.el('div', 'lu-foot');
     if (quiet.length) {
@@ -135,6 +154,7 @@ export class OfferView {
 
   card(c, i, data, maxRank) {
     const m = cardModel(c, data, maxRank);
+    if (this.clsList) this.clsList.push(m.cls);
     const quiet = m.cls === 'blessing';
     const evolve = m.cls === 'evolve';
     // Blessings are quiet cream chips (no arch, no gold). Every other card is an arched lantern window; ONLY the evolution card gets the leadlight border (lg-lead).

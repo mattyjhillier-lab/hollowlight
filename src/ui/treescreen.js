@@ -1094,10 +1094,10 @@ export class TreeScreen {
   showTip(force) {
     if (!force && store.get(TIP_KEY)) return;
     const isNew = this.model.isNew();
-    this.tipH.textContent = isNew ? 'Welcome to the Lantern Web' : 'Your Lantern Web';
+    this.tipH.textContent = isNew ? 'Welcome to the Lantern Web' : 'The Lantern Web'; // FM3: copy aligned with the first-death lesson
     this.tipP.textContent = isNew
       ? 'Lanterns are lit with gold you bring back from runs. Finish your first run, then come back to light one.'
-      : 'Lanterns with rays can be lit now. The pin marks the best one. Tap it, then Light it. The ? button explains every look.';
+      : 'Light a lantern with gold. Bright ones are ready now; the pin shows the best next. The ? button explains every look.';
     this.tipEl.classList.remove('fade');
     this.tipEl.classList.add('open');
     clearTimeout(this.tipT);

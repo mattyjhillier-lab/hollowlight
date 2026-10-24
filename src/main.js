@@ -11,6 +11,7 @@ import './pwa/pwa.css';
 import { createPwa } from './pwa/index.js';
 import { Lanterns } from './save/lanterns.js';
 import { createAudio } from './audio/index.js';
+import { Vibe } from './gfx/feel.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
@@ -28,6 +29,8 @@ app.ui.audio = app.audio; // AU6: tree / results sounds
 // AU1: a tiny tick when the pointer moves onto a button (one per button, never on touch)
 { let last = null; document.getElementById('ui').addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') return; const b = e.target && e.target.closest ? e.target.closest('button') : null; if (b && b !== last && !b.disabled) app.audio.play('ui_tick'); last = b; }); }
 app.applySettings();
+app.vibe = new Vibe(navigator, () => app.save.data.settings, () => document.hidden); // FM5 phone buzz (guarded; Android only in practice)
+app.trackInput(window); // FM1: whispers speak in the input you used last
 app.ui.setHandlers({
   ...app.settingsHandlers(),
   pick: (k) => app.pick(k),

@@ -44,7 +44,7 @@ test('settings: every previous setting is present, grouped in four tabs, each wi
   assert.deepEqual(find(s.root, (n) => n.attrs.role === 'tab').map((n) => n.attrs['data-id']), ['sound', 'picture', 'controls', 'saves']);
   assert.equal(find(s.root, (n) => n.tag === 'select' || (n.tag === 'input' && n.attrs.type === 'checkbox')).length, 0, 'no native selects/checkboxes');
   assert.equal(find(s.root, (n) => n.attrs.type === 'range').length, 3); // AU0: Master + Music + Sound effects
-  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 4); // AU0: + Mute all
+  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 6); // AU0: + Mute all; FM1 Tips + FM5 Vibration
   assert.equal(find(s.root, (n) => n.attrs.role === 'radiogroup').length, 4);
   for (const k of ['musicVol', 'sfxVol', 'quality', 'brightness', 'screenShake', 'reducedMotion', 'damageNumbers', 'touchMode', 'stickSize']) assert.ok(k in defaults);
   for (const g of find(s.root, (n) => n.attrs.role === 'radiogroup')) assert.ok(g.attrs['aria-describedby'] && g.attrs['aria-labelledby']);
@@ -224,4 +224,22 @@ test('touch target and text-size floors are declared (min 44 px controls, no sub
   assert.ok(/\.u4-seg__opt \{[^}]*min-height: var\(--lg-tap\)/.test(css));
   assert.ok(/\.lg-range \{ height: var\(--lg-tap\)/.test(css));
   for (const m of css.matchAll(/font-size:\s*(\d+)px/g)) assert.ok(Number(m[1]) >= 12, m[0]);
+});
+
+test('FM1/FM5 settings: Tips and Vibration switches (on by default) set their keys; Show tips again calls the reset once and says so', () => {
+  const log = [];
+  const a = { ...api(log), resetTips: () => log.push(['tips-again']) };
+  const s = buildSettings({ settings: defaults, api: a, onBack() {}, onRebuild() {} });
+  const sw = (label) => find(s.root, (n) => n.attrs.role === 'switch' && texts(n).includes(label))[0];
+  for (const [label, k] of [['Tips', 'tips'], ['Vibration', 'vibration']]) {
+    const t = sw(label);
+    assert.ok(t, label); assert.equal(t.attrs['aria-checked'], 'true');
+    t.click(); assert.deepEqual(log.pop(), ['set', { [k]: false }]);
+  }
+  const b = find(s.root, (n) => n.tag === 'button' && texts(n).includes('Show tips again'))[0];
+  b.click();
+  assert.deepEqual(log.pop(), ['tips-again']);
+  assert.ok(texts(s.root).includes('Tips will show again on your next run.'));
+  const none = buildSettings({ settings: defaults, api: api([]), onBack() {}, onRebuild() {} });
+  assert.equal(find(none.root, (n) => n.tag === 'button' && texts(n).includes('Show tips again')).length, 0, 'no handler: no button');
 });

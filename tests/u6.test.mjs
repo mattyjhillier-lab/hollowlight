@@ -476,3 +476,28 @@ test('boss fight victory: the arc reaches dawn; the boss bonus line', () => {
   const v = mkView(res({ outcome: 'victory', time: 935, clock: 840, bossKilled: true, fight: { at: 840, start: 843, time: 92, hpFrac: 0, phase: 2, phaseId: 'wrath' } }));
   assert.equal(v.arc.frac, 1); assert.equal(v.recap.struck, null); assert.equal(v.recap.boss, '');
 });
+
+// ---- FM3 first-minute lessons on the results card (src/ui/whispers.js resultTeach -> bank.teach)
+test('FM3 first death: the lesson takes the nudge slot, the Lantern Web is the primary button (Again stays, R still plays again)', () => {
+  const teach = { kind: 'firstDeath', title: 'Your gold is safe', whisper: 'Spend it in the Lantern Web: every lantern you light makes the next night easier.', primaryTree: true };
+  const v = mkView(res(), bank({ closest: [{ name: 'Warm Hands', text: 'x', frac: 0.5 }], teach }));
+  assert.equal(v.nudge.kind, 'learn'); assert.equal(v.treePrimary, true); assert.equal(v.learn, null);
+  const { r, log, at } = build(v);
+  const learn = byCls(r.root, 'is-learn');
+  assert.equal(learn.length, 1); assert.match(learn[0].textContent, /Your gold is safe/);
+  assert.ok(r.tree.textContent.includes('Lantern Web'));
+  assert.ok(r.again.textContent.length > 0);
+  r.mounted(); assert.equal(globalThis.document.activeElement, r.tree, 'focus on the primary button');
+  at(400); r.onKey(key('r')); assert.deepEqual(log, ['again']);
+});
+
+test('FM3 first win adds one lesson line beside the nudge; forged / unknown teach kinds are ignored; text stays inert', () => {
+  const v = mkView(res({ outcome: 'victory', time: 900 }), bank({ newly: ['NEW: Raven Flock'], teach: { kind: 'firstWin', title: 'Dawn', whisper: 'The Hollow remembers. Harder nights wait in the Lantern Web.' } }));
+  assert.equal(v.nudge.kind, 'new'); assert.equal(v.learn.title, 'Dawn'); assert.equal(v.treePrimary, false);
+  assert.equal(byCls(build(v).r.root, 'is-learn').length, 1);
+  const f = mkView(res(), bank({ teach: { kind: '<img src=x onerror=alert(1)>', title: 'x', whisper: 'y', primaryTree: true } }));
+  assert.equal(f.learn, null); assert.equal(f.treePrimary, false); assert.notEqual(f.nudge && f.nudge.kind, 'learn');
+  const h = mkView(res(), bank({ teach: { kind: 'secondDeath', title: '<b>x</b>', whisper: '<script>alert(1)</script>'.repeat(20) } }));
+  assert.ok(h.nudge.text.length <= 120);
+  assert.match(byCls(build(h).r.root, 'u6-learn__t')[0].textContent, /^<b>x<\/b>$/, 'plain text, never markup');
+});

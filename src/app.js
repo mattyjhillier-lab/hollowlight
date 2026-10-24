@@ -14,8 +14,8 @@ import { parseParams } from './params.js';
 import { tierIndex, TIER_IDS, resolveTier } from './sim/tiers.js';
 import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } from './ui/nightcopy.js';
 import { buildTreeView } from './meta/treeview.js';
-import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks } from './meta/tree.js';
-
+import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
+import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from './ui/whispers.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);
@@ -72,6 +72,103 @@ export const app = {
     this.ui.showHud();
     this.ui.updateHud(sim);
     if (this.scene) this.scene.bindSim(sim);
+    this.startWhispers(sim);
+  },
+
+  // ------------------------------------------------------------------ FM1-FM5 first minute: whispers + feel (read sim state only; never the RNG)
+  // Bits persist only for real runs of a writable lantern (debug / ?seed= runs keep them in memory, so screenshots never touch the save).
+  tipsOn() { return this.save.data.settings.tips !== false && (!this.params.auto || this.params.tips === true); }, // bot / screenshot ?auto= runs stay clean unless ?tips=1
+  canKeepHints() { return !this.isDebugRun() && !this.save.readOnly; },
+  startWhispers(sim) {
+    const s = this.save.data;
+    const bits = startBits(s.hints, s.stats.runs);
+    if (bits !== s.hints && this.canKeepHints()) this.save.setHints(bits);
+    this.whispers = new Whispers({ bits, tips: this.tipsOn(), input: this.inputKind(), hero: { id: sim.characterId, ability: sim.ability ? sim.ability.name : '' } });
+    this.wv = { live: false, t: 0, moving: false, gemNear: false, gems: 0, ready: false, uses: 0, hp: 1, busy: false };
+    this.wPos = { x: sim.player.x, y: sim.player.y };
+    this.feelPrev = { uses: sim.abilityUses | 0, mini: '' };
+    if (this.ui.whisper) this.ui.whisper(null);
+  },
+  inputKind() {
+    if (this.lastInput) return this.lastInput;
+    return this.touch && this.touch.enabled ? 'touch' : 'kb';
+  },
+  // Copy follows the CURRENT input (last used), not the screen size.
+  trackInput(win) {
+    win.addEventListener('keydown', () => this.setInput('kb'), true);
+    win.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch' || e.pointerType === 'pen') this.setInput('touch'); }, true);
+  },
+  setInput(kind) {
+    if (this.lastInput === kind) return;
+    this.lastInput = kind;
+    if (this.whispers) this.whispers.setInput(kind);
+  },
+  hideWhisper() { if (this.whispers && this.whispers.hide()) this.ui.whisper(null); },
+  resetTips() {
+    if (this.save.readOnly) return;
+    this.save.setHints(TIPS_AGAIN);
+    if (this.whispers) this.whispers.bits = TIPS_AGAIN;
+  },
+  tickWhispers(sim, dt) {
+    const w = this.whispers;
+    if (!w) return;
+    const st = this.save.data.settings;
+    w.tips = this.tipsOn();
+    const v = this.wv, p = sim.player;
+    v.live = sim.state === 'running' && !this.paused && !this.ui.settingsOpen;
+    v.t = sim.time;
+    const dx = p.x - this.wPos.x, dy = p.y - this.wPos.y;
+    v.moving = dx * dx + dy * dy > 1e-4; this.wPos.x = p.x; this.wPos.y = p.y;
+    v.gems = sim.gemsTaken | 0; v.uses = sim.abilityUses | 0;
+    v.ready = !!(sim.ability && sim.ability.cdLeft <= 0);
+    v.hp = p.maxHp > 0 ? p.hp / p.maxHp : 1;
+    v.busy = this.ui.busy ? this.ui.busy() : false;
+    v.gemNear = false;
+    if (w.want('gems')) { const hw = sim.view.hw, hh = sim.view.hh; for (const g of sim.gems) if (Math.abs(g.x - p.x) < hw && Math.abs(g.y - p.y) < hh) { v.gemNear = true; break; } }
+    const plate = w.update(dt, v);
+    const frac = plate && w.cur ? 1 - w.cur.age / (WHISPER_DUR[w.cur.id] || 6) : 0;
+    this.ui.whisper(v.live ? plate : null, frac, !!st.reducedMotion, [this.ui.hudView && this.ui.hudView.ability, this.touch && this.touch.ab]);
+    if (w.dirty) { w.dirty = false; if (this.canKeepHints()) this.save.setHints(w.bits); }
+  },
+  offerTeach(o) {
+    const w = this.whispers;
+    if (!w) return null;
+    w.tips = this.tipsOn();
+    const t = w.offer(o);
+    if (w.dirty) { w.dirty = false; if (this.canKeepHints()) this.save.setHints(w.bits); }
+    return t;
+  },
+  pickupWhisper(kind) {
+    const w = this.whispers;
+    if (!w) return '';
+    const line = w.pickup(kind);
+    if (w.dirty) { w.dirty = false; if (this.canKeepHints()) this.save.setHints(w.bits); }
+    return line;
+  },
+  // FM5: ability camera kick + Branch-Mane lunge landing (read from the sim's counters / the live miniboss state; never written)
+  tickFeel(sim) {
+    const f = this.feelPrev;
+    if (!f || !this.scene) return;
+    const u = sim.abilityUses | 0;
+    if (u > f.uses) this.scene.abilityKick();
+    f.uses = u;
+    const m = sim.mini;
+    const ms = m && !m.dead ? m.state : '';
+    if (f.mini === 'charge' && ms !== 'charge' && m) { const p = sim.player; if (Math.abs(m.x - p.x) < sim.view.hw && Math.abs(m.y - p.y) < sim.view.hh) this.scene.shake(80, 0.003); }
+    f.mini = ms;
+  },
+  buzz(kind) { if (this.vibe) this.vibe.buzz(kind, performance.now() / 1000); },
+  // FM3: the cheapest lantern this save can light right now (results teaching after the second death); null when none.
+  cheapestLantern() {
+    let best = null;
+    for (const id of Object.keys(treeDef.nodes)) {
+      try {
+        const s = nodeStatus(treeDef, this.save.data, id, data);
+        const g = s.next && Number.isFinite(s.next.gold) ? s.next.gold : null;
+        if (s.buyable && s.affordable && g !== null && (!best || g < best.gold)) best = { id, gold: g, name: String(treeDef.nodes[id].name || '') };
+      } catch { /* a bad node never breaks the results card */ }
+    }
+    return best && best.name ? best : null;
   },
 
   // Effects of the player's owned nodes (or a dev preset). Rebuilt from the sanitised save each run.
@@ -285,7 +382,7 @@ export const app = {
     const sim = this.sim;
     if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
-    if (!sim) return;
+    if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
     if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
     else if ((this.paused || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
@@ -293,6 +390,8 @@ export const app = {
       for (const ev of sim.events) this.onEvent(ev);
       sim.events.length = 0;
     }
+    this.tickFeel(sim);
+    this.tickWhispers(sim, dt);
 
     if (sim.state !== this.lastState) {
       const prev = this.lastState;
@@ -339,27 +438,28 @@ export const app = {
     if (this.audio) this.audio.event(ev); // AU4-AU6: every sim event's cue (render/audio only)
     if (this.scene.bossView && ev.type.startsWith('boss')) this.scene.bossView.onEvent(ev);
     if (ev.type === 'bossWake') { this.ui.hudView.bossBanner('The Elder Treant wakes', 'the oldest mask in the forest', !this.save.data.settings.reducedMotion); return; }
-    if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); } // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
+    if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); this.buzz('hurt'); const p = this.sim && this.sim.player; if (p && p.maxHp > 0 && p.hp > 0 && p.hp / p.maxHp < 0.3) this.scene.stop(0.03); } // FM5: a hit under 30% HP gets the existing hit-stop (cap, cooldown, Calm off) // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
     else if (ev.type === 'boss') {
       const b = this.sim && this.sim.boss;
       if (!(b && b.fight)) this.ui.bossIntro(b ? d.enemies[b.type].name : 'Boss', !this.save.data.settings.reducedMotion); // the fight has its own banner (bossWake)
       this.scene.bossIntro();
-    } else if (ev.type === 'levelup') this.scene.levelBurst();
+    } else if (ev.type === 'levelup') { this.scene.levelBurst(); this.buzz('level'); }
     else if (ev.type === 'mini') { this.ui.hudView.bossBanner(`The ${d.enemies[ev.enemy] ? d.enemies[ev.enemy].name : 'old alpha'} howls`, 'the old leader of the rival pack', !this.save.data.settings.reducedMotion); if (this.scene.miniView) this.scene.miniView.onEvent(ev); } // EN7 arrival banner
-    else if (ev.type === 'howl' || ev.type === 'miniDead' || ev.type === 'chestDrop' || ev.type === 'miniPhase') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); if (ev.type === 'miniDead') this.ui.toast('The Branch-Mane falls: a Lantern Reliquary'); }
-    else if (ev.type === 'chest') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); this.ui.hudView.flareHp(); if (ev.tier === 0) this.ui.toast('Lantern Reliquary: light, warmth and coin'); } // EN8: Medium/Large open the choice screen
+    else if (ev.type === 'howl' || ev.type === 'miniDead' || ev.type === 'chestDrop' || ev.type === 'miniPhase') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); if (ev.type === 'miniDead') { this.ui.toast('The Branch-Mane falls: a Lantern Reliquary'); this.scene.stop(0.05); } }
+    else if (ev.type === 'chest') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); this.ui.hudView.flareHp(); this.scene.chestFx(); if (ev.tier === 0) this.ui.toast('Lantern Reliquary: light, warmth and coin', this.pickupWhisper('chest')); } // EN8: Medium/Large open the choice screen
     else if (ev.type === 'swarm') this.ui.toast(ev.enemy === 'wolf' ? 'A wolf pack closes in' : 'A murder of crows descends');
     else if (ev.type === 'evolve') {
       const ev0 = this.save.data.stats.evolved; // E9: recipe shown only the first time this evolution is ever taken (recorded in stats.evolved at run end)
       this.ui.evolvePlate(ev.id, !(ev0 && Object.hasOwn(ev0, ev.id) && ev0[ev.id] > 0), !!this.save.data.settings.reducedMotion);
       this.scene.evolveMoment(ev.id);
+      this.buzz('evolve');
     }
-    else if (ev.type === 'heart') { this.ui.toast('Health restored'); this.scene.heartFx(); this.ui.hudView.flareHp(); }
-    else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet'); this.scene.magnetFx(); }
+    else if (ev.type === 'heart') { this.ui.toast('Health restored', this.pickupWhisper('heart')); this.scene.heartFx(); this.ui.hudView.flareHp(); }
+    else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet', this.pickupWhisper('magnet')); this.scene.magnetFx(); }
     else if (ev.type === 'rally') { this.ui.toast('Rally the Pack'); this.scene.rallyMoment(); }
     else if (ev.type === 'wheel') this.ui.toast('Candle Wheel');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
-    else if (ev.type === 'bossDead') { if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
+    else if (ev.type === 'bossDead') { this.buzz('boss'); if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
     else if (ev.type === 'bossPhase') this.ui.toast(ev.phase === 1 ? 'The Elder Treant blights: Husks answer its call' : 'The Elder Treant rages: its heart glows');
     else if (ev.type === 'slam') this.scene.shake(160, 0.008);
   },
@@ -395,6 +495,7 @@ export const app = {
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
     b.night = this.nightResult(b.tier, sim.result());
+    { const s = this.save.data; let ch = null; try { ch = sim.state === 'victory' ? null : this.cheapestLantern(); } catch { ch = null; } b.teach = resultTeach({ won: sim.state === 'victory', stats: s.stats, treeOwned: Object.keys(s.tree || {}).length > 0, cheapest: ch, gold: s.gold }); }
     if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';
     return b;
   },
@@ -459,6 +560,9 @@ export const app = {
       nightView: (heroId, tier) => this.nightView(heroId, tier),
       heroUnlocked: (id) => this.heroUnlocked(id),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
+      resetTips: () => this.resetTips(),
+      hideWhisper: () => this.hideWhisper(),
+      offerTeach: (o) => this.offerTeach(o),
     };
   },
 

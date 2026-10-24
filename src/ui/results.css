@@ -85,6 +85,9 @@ html.touch .overlay.u6.u6-won, .overlay.u6.u6-won {
 .overlay.u6 .u6-nudge__lab { color: var(--lg-brass-text); }
 .overlay.u6 .u6-nudge__text { color: var(--lg-text); }
 .overlay.u6 .u6-nudge__more { color: var(--lg-dim); }
+.overlay.u6 .u6-nudge.is-learn { gap: 2px; border-left: 3px solid #ffd36b; padding: 6px 12px; background: rgba(255, 211, 107, .08); border-radius: 0 10px 10px 0; } /* FM3 lesson (fm-results mock-up) */
+.overlay.u6 .u6-learn__t { margin: 0; color: #ffd36b; font-weight: var(--fw-body-strong); }
+.overlay.u6 .u6-learn__w { margin: 0; color: var(--lg-dim); font-family: "Hollowlight Chancery", Georgia, serif; font-style: italic; }
 .overlay.u6 .u6-nudge .u6-bar > i { background: linear-gradient(90deg, #ffb55a, #ffe0a0); }
 
 /* action bar: always visible, fixed under the body */

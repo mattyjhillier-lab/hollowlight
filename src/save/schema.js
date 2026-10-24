@@ -5,6 +5,7 @@ import { OLD_TREE_VERSION, runTreeSteps } from '../meta/migrations/index.js';
 import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 import { tierRecords, MAX_GLASS } from './tiers.js';
 import { TIER_IDS } from '../sim/tiers.js';
+import { cleanHints } from '../ui/whispers.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -25,7 +26,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30' };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -42,6 +43,7 @@ export function defaultSave(now = Date.now()) {
     creep: {}, // rising-price steps per owned lantern ({id: steps}; src/meta/tree.js creepSteps): refunds pay back exactly what was paid
     seen: {},
     notes: {},
+    hints: 0, // FM1: lantern whisper bits (src/ui/whispers.js HINT); unknown bits are dropped
     settings: defaultSettings(),
   };
 }
@@ -215,6 +217,7 @@ export function sanitize(raw, now = Date.now()) {
     creep: TREE ? sanitizeCreep(raw.creep, tree, TREE) : {},
     seen: TREE ? sanitizeSeen(seenIn, TREE) : {},
     notes: notesOf(raw.notes),
+    hints: cleanHints(raw.hints),
     settings: {
       masterVol: num(st.masterVol, ds.masterVol, 0, 1),
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),
@@ -228,6 +231,8 @@ export function sanitize(raw, now = Date.now()) {
       touchMode: TOUCH_MODES.includes(st.touchMode) ? st.touchMode : ds.touchMode,
       stickSize: STICK_NAMES.includes(st.stickSize) ? st.stickSize : ds.stickSize,
       autoRule: AUTO_RULE_NAMES.includes(st.autoRule) ? st.autoRule : ds.autoRule,
+      tips: bool(st.tips, ds.tips), // FM1 Settings > Controls 'Tips'
+      vibration: bool(st.vibration, ds.vibration), // FM5 phone buzz (device setting; never used under Calm or a hidden tab)
     },
   };
 }

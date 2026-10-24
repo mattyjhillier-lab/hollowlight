@@ -23,6 +23,7 @@ import { zoneB } from '../world/zones.js';
 import { Particles } from '../gfx/particles.js';
 import { DamageNumbers, makeDigitFont } from '../gfx/dmgnums.js';
 import { KIND, HitRef, FbWatch } from '../gfx/numpool.js';
+import { Gate, RateCap, SHAKE_GAP, KILL_POPS_PER_SEC, gemPopScale, GEM_POP_LIFE } from '../gfx/feel.js';
 import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
@@ -328,6 +329,11 @@ export class RunScene extends Phaser.Scene {
     this.rings = Array.from({ length: 10 }, () => ({ on: false, x: 0, y: 0, t: 0, life: 1, r0: 0, r1: 1, col: 0, w: 2 }));
     this.zoomT = 9; this.zoomAmp = 0; this.zoomDur = 1;
     this.hitStop = 0; this.hitCool = 0;
+    // FM4/FM5 feel budgets (display only): shake gate, kill-puff cap, gem pickup pops (pooled images of the gem texture)
+    this.shakeGate = new Gate(SHAKE_GAP);
+    this.killCap = new RateCap(KILL_POPS_PER_SEC);
+    this.gemNear = new Map(); this.gemStamp = 0;
+    this.gemPops = Array.from({ length: 8 }, () => ({ img: this.add.image(0, 0, 'gem').setDepth(D_LIT - 99).setVisible(false), on: false, age: 0, s: 1 }));
     this.evoBeat = null;
     this.trailAcc = 0; this.trailTick = 0; this.fxTick = 0;
     this.bloom = null;
@@ -553,6 +559,7 @@ export class RunScene extends Phaser.Scene {
     this.watch.reset(sim);
     this.fbPing.gem = this.fbPing.magnet = this.fbPing.aoe = -9;
     for (const r of this.rings) r.on = false;
+    this.clearFeel();
     this.evoBeat = null;
     this.beats.clear(); this.verbs.clear(); this.spirits.clear(); // S7
     this.gradeTint = -1;
@@ -572,6 +579,7 @@ export class RunScene extends Phaser.Scene {
     this.flashR.setVisible(false);
     this.skyR.setVisible(false);
     for (const r of this.rings) r.on = false;
+    this.clearFeel();
     this.evoBeat = null;
     this.cameras.main.setZoom(this.baseZoom);
     app.freeze = false;
@@ -596,10 +604,22 @@ export class RunScene extends Phaser.Scene {
     this.decor = [];
   }
 
+  clearFeel() {
+    for (const q of this.gemPops) { q.on = false; q.img.setVisible(false); }
+    this.gemNear.clear();
+    this.shakeGate.reset();
+  }
+
+  // FM5 camera kick on ability use (zoomPunch helper + a 60 ms shake; both off under Calm, shake also obeys the Screen shake setting)
+  abilityKick() { this.zoomPunch(0.02, 0.25); this.shake(60, 0.002); }
+
   shake(ms = 90, intensity = 0.004) {
     const st = app.save.data.settings;
-    if (!st.screenShake || st.reducedMotion) return;
-    this.cameras.main.shake(Math.min(ms, 320), Math.min(intensity, 0.01));
+    if (!st.screenShake || st.reducedMotion) return false;
+    const k = Math.min(intensity, 0.01);
+    if (!this.shakeGate.ok(performance.now() / 1000, k, true)) return false; // FM5: at most one per 0.4 s (a stronger one may cut in)
+    this.cameras.main.shake(Math.min(ms, 320), k, true);
+    return true;
   }
 
   readInput() {
@@ -907,7 +927,9 @@ export class RunScene extends Phaser.Scene {
   // ---- event hooks (called from app.onEvent) ----
   levelBurst() {
     const p = this.sim.player;
+    if (this.reducedMotion()) { this.addRing(p.x, p.y, 40, 40, 0.3, PAL.thread, 2); return; } // FM4 Calm: opacity-only ring, no sparks, no zoom
     this.addRing(p.x, p.y, 8, 110, 0.55, PAL.thread, 2); // soft warm ring (thread cream, not evolution gold)
+    this.addRing(p.x, p.y, 6, 46, 0.3, ROLE.lantern, 2); // FM4 flourish: a quick warm ring from the lantern
     this.burst(p.x, p.y, 16, PAL.thread, 110, 0.7, 0.5);
     this.zoomPunch(0.025, 0.4);
   }
@@ -918,6 +940,8 @@ export class RunScene extends Phaser.Scene {
     this.addRing(p.x, p.y, 6, 34, 0.5, ROLE.heart, 2);
     if (this.quality.tier !== 'low') this.burst(p.x, p.y - 6, 8, ROLE.heart, 60, 0.55, 0.45);
   }
+
+  chestFx() { const p = this.sim.player; this.addRing(p.x, p.y, 6, 30, 0.2, ROLE.lantern, 2); } // FM5 pickup pop: a quick warm ring as the Reliquary opens
 
   magnetFx() {
     const p = this.sim.player;
@@ -1083,6 +1107,12 @@ export class RunScene extends Phaser.Scene {
     this.parts.update(dt);
     this.nums.update(dt);
     this.hitFx.update(dt);
+    for (const q of this.gemPops) { // FM4 gem pickup pops (pooled, 8 max)
+      if (!q.on) continue;
+      q.age += dt;
+      if (q.age >= GEM_POP_LIFE) { q.on = false; q.img.setVisible(false); continue; }
+      q.img.setScale(q.s * gemPopScale(q.age) * inv('gem'));
+    }
     // zoom punch: quick rise, smooth fall
     if (this.zoomT < this.zoomDur) {
       this.zoomT += dt;
@@ -1226,6 +1256,7 @@ export class RunScene extends Phaser.Scene {
           this.stop(0.06);
         } else if (h.x > vx0 && h.x < vx1 && h.y > vy0 && h.y < vy1) {
           this.deathPuff(h.x, h.y);
+          if (!this.reducedMotion() && this.killCap.take(sim.time)) this.burst(h.x, h.y - 4, 3, PAL.cream, 46, 0.35, 0.35); // FM4 kill pop: a 3-mote cream puff, max 24/s (above that the wisps carry it)
           if (art.on) { // EN1/EN2 death beat: mask pops off, the freed body sinks, a warm mote rises (the enemy's image is still in its pool this frame)
             let ty = null, ent = null;
             for (let hi = 0; hi < HUSK_IDS.length && !ent; hi++) { ty = HUSK_IDS[hi]; ent = pl[ty].map.get(h.id); }
@@ -1294,9 +1325,12 @@ export class RunScene extends Phaser.Scene {
 
     // gems: culled to the view, gently pulsing with a soft halo (Med/High)
     let gemGlow = 0;
+    const gemSt = ++this.gemStamp, gN = this.gemNear;
     for (const gem of sim.gems) {
       if (gem.x < vx0 || gem.x > vx1 || gem.y < vy0 || gem.y > vy1) continue;
       const big = gem.v >= 10 ? 1.7 : gem.v >= 3 ? 1.25 : 1;
+      const gdx = gem.x - p.x, gdy = gem.y - p.y;
+      if (gdx * gdx + gdy * gdy < 26 * 26) { let r = gN.get(gem.id); if (!r) { r = { x: 0, y: 0, st: 0, b: 1 }; gN.set(gem.id, r); } r.x = gem.x; r.y = gem.y; r.st = gemSt; r.b = big; } // FM4: about to be taken
       const pulse = 1 + 0.1 * Math.sin(sim.time * 5 + gem.id);
       pl.gem.get(gem.id).setPosition(gem.x, gem.y).setDepth(D_LIT - 100).setScale(big * pulse * pl.gem.inv);
       if (gemGlow < caps.gemGlow) {
@@ -1305,6 +1339,13 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
+    for (const [id, r] of gN) { // a near gem that vanished was taken: a 0.15 s pop (1 -> 1.25 -> 0) where it was; Calm: none (the thread pulse carries it)
+      if (r.st === gemSt) continue;
+      gN.delete(id);
+      if (this.reducedMotion()) continue;
+      const pop = this.gemPops.find((q) => !q.on);
+      if (pop) { pop.on = true; pop.age = 0; pop.s = r.b; pop.img.setPosition(r.x, r.y).setVisible(true); }
+    }
     for (const k of sim.pickups) {
       if (k.type === 'chest') continue; // EN8: the Lantern Reliquary is drawn by this.miniView
       const bob = Math.sin(sim.time * 5 + k.id) * 1.5;

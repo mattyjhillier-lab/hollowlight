@@ -2,6 +2,7 @@
 // Display-only: fed from sim hit records and HUD-side deltas, never writes to the sim. Fixed slot array, no allocation per call.
 // Rules (docs/research/28 s3, hud-proof-4): cream by default, bigger + warmer for big hits (never gold), sum rapid hits per
 // target per 120ms, hard cap on live numbers (drop the SMALLEST first), heal soft teal '+30', damage taken light red '-9'.
+import { numPop } from './feel.js';
 export const KIND = { DMG: 0, BIG: 1, HEAL: 2, HURT: 3, BLEED: 4, BURN: 5 }; // BLEED: batched damage-over-time tick, small, pale blue, first to be dropped
 export const MERGE_WINDOW = 0.12; // s
 export const MAX_SLOTS = 40;
@@ -154,7 +155,7 @@ export class NumPool {
     const o = this.pose;
     const fade = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
     if (this.reduced) { o.dy = 0; o.scale = s.mul; o.alpha = fade; return o; }
-    const pop = k < 0.12 ? 1 + (s.kind === KIND.BIG ? 0.5 : 0.35) * (1 - k / 0.12) : 1;
+    const pop = numPop(s.age, s.kind === KIND.BIG); // FM4: 1.3 -> 1.0 over 90 ms (big hits 1.45)
     o.dy = -RISE[s.kind] * (1 - (1 - k) * (1 - k));
     o.scale = s.mul * pop;
     o.alpha = fade;

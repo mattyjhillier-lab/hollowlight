@@ -158,7 +158,9 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
   if (v.nudge) {
     const n = v.nudge;
     const row = el('div', `u6-nudge is-${n.kind}`, null, { 'data-drop': 'nudge' });
-    if (n.kind === 'new') {
+    if (n.kind === 'learn') { // FM3: the first-death / second-death lesson in the nudge slot (bold line + the whisper)
+      add(row, el('p', 'u6-learn__t', n.title), el('p', 'u6-learn__w', n.text));
+    } else if (n.kind === 'new') {
       add(row, add(el('p', 'u6-nudge__line'), badge({ kind: 'new', text: 'NEW' }), el('span', 'u6-nudge__text', n.text), n.more > 0 ? el('span', 'u6-nudge__more', `+${n.more}`) : null));
     } else {
       const bar = el('span', 'u6-bar', null, { role: 'img', 'aria-label': `${Math.floor(n.frac * 100)}%` });
@@ -170,6 +172,7 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     }
     put(row);
   }
+  if (v.learn) put(add(el('div', 'u6-nudge is-learn', null, { 'data-drop': 'nudge' }), el('p', 'u6-learn__t', v.learn.title), el('p', 'u6-learn__w', v.learn.text))); // FM3 first win
 
   const sum = panel({ label: resultsSummary(v), body, variant: v.won ? 'dawn' : undefined, cap: false });
   sum.classList.add('u6-panel');
@@ -184,9 +187,11 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     used = true;
     if (fn) fn();
   };
-  const again = button({ label: nb && nb.again ? nb.again : RES.again.label, hint: RES.again.hint, variant: 'primary', onClick: guarded(onAgain) });
+  // FM3 first death: the Lantern Web is the primary button for this one card (Again stays, R still plays again)
+  const tp = !!v.treePrimary;
+  const again = button({ label: nb && nb.again ? nb.again : RES.again.label, hint: RES.again.hint, variant: tp ? undefined : 'primary', onClick: guarded(onAgain) });
   const menu = button({ label: RES.menu.label, hint: RES.menu.hint, onClick: guarded(onMenu) });
-  const tree = button({ label: RES.tree.label, hint: RES.tree.hint, onClick: guarded(onTree) });
+  const tree = button({ label: tp ? RES.tree.web : RES.tree.label, hint: RES.tree.hint, variant: tp ? 'primary' : undefined, onClick: guarded(onTree) });
   again.classList.add('u6-btn', 'u6-btn--again');
   menu.classList.add('u6-btn', 'u6-btn--menu');
   tree.classList.add('u6-btn', 'u6-btn--tree');
@@ -259,7 +264,8 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, r
     fit();
     if (globalThis.addEventListener) { ids.onResize = () => fit(); globalThis.addEventListener('resize', ids.onResize); }
     if (globalThis.ResizeObserver) { ids.ro = new globalThis.ResizeObserver(() => fit()); ids.ro.observe(main); }
-    if (again.focus) again.focus({ preventScroll: true });
+    const first = v.treePrimary ? tree : again;
+    if (first.focus) first.focus({ preventScroll: true });
   }
 
   /** Returns true when the key was used. Native button activation (Enter / Space on a focused button) is left alone. */
