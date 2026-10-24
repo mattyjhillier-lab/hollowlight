@@ -34,7 +34,7 @@
       },
       "thornGap": 0.5,
       "pressure": { "every": 30, "gapMul": 0.94, "floor": 0.7, "capAdd": 2, "capMax": 14, "lingerAdd": 1, "lingerMax": 6 },
-      "tiers": { "hard": { "fanFrom": 0, "novaGaps": 3 }, "expert": { "fanFrom": 0, "novaGaps": 3, "fanN": 7, "cross": true } }
+      "tiers": { "hard": { "fanFrom": 0, "novaGaps": 3 }, "expert": { "fanFrom": 0, "novaGaps": 3, "fanN": 7, "cross": true, "saplingMark": "ironbark" } }
     } },
   "treant_pod":     { "name": "Seed Pod",     "hp": 14,   "speed": 0,   "dmg": 0,  "r": 6,  "xp": 1, "gold": 0,   "color": "#6b5a3a", "shape": "pod",     "mass": 6, "fixed": true },
   "treant_sapling": { "name": "Sapling Husk", "hp": 30,   "speed": 40,  "dmg": 6,  "r": 7,  "xp": 1, "gold": 1,   "color": "#5c5a52", "shape": "sapling", "mass": 1.5, "fixed": true }

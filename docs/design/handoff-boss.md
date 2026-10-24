@@ -1,3 +1,5 @@
+> STATUS 2026-10-24: B5, B6, B7 done (see LOCKED 'B5-B7 ELDER TREANT FINISH BUILT'); B8 real-phone check is Matt's. This handoff is closed.
+
 # Handoff: Elder Treant boss build (safe-stop 2026-10-21)
 
 ## Done (committed + pushed on dev)

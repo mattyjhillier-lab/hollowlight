@@ -9,7 +9,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 export const MORE_CUES = {
   evo: { cap: 1, gap: 1, pri: 0 }, hurt: { cap: 1, gap: 0.25, pri: 0 }, swarm: { cap: 1, gap: 2, pri: 0 },
   ability: { cap: 1, gap: 1, pri: 0 }, sanctuary: { cap: 1, gap: 1, pri: 0 }, revive: { cap: 1, gap: 1, pri: 0 },
-  boss_intro: { cap: 1, gap: 2, pri: 0 }, boss_phase: { cap: 1, gap: 1.5, pri: 0 }, boss_fall: { cap: 1, gap: 2, pri: 0 },
+  boss_tremor: { cap: 1, gap: 4, pri: 0 }, boss_intro: { cap: 1, gap: 2, pri: 0 }, boss_phase: { cap: 1, gap: 1.5, pri: 0 }, boss_fall: { cap: 1, gap: 2, pri: 0 },
   treant_creak: { cap: 1, gap: 0.6, pri: 1 }, treant_slam: { cap: 1, gap: 0.3, pri: 1 },
   mane_call: { cap: 1, gap: 2, pri: 0 }, mane_howl: { cap: 1, gap: 1, pri: 1 }, mane_growl: { cap: 1, gap: 1, pri: 0 }, mane_fall: { cap: 1, gap: 2, pri: 0 },
   thorn_spit: { cap: 2, gap: 0.12, pri: 1 }, toad_puff: { cap: 2, gap: 0.12, pri: 1 }, hart_charge: { cap: 1, gap: 0.3, pri: 1 },
@@ -27,7 +27,7 @@ for (const id of EVO_IDS) MORE_CUES['evo_' + id] = { cap: 1, gap: 1, pri: 0 };
 // sim event type -> cue (app.js hands every sim event to AudioEngine.event; render/audio only)
 export const EVENT_CUE = {
   levelup: 'level_up', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', revive: 'revive',
-  bossTell: 'treant_creak', bossHit: 'treant_slam', slam: 'treant_slam', bossPhase: 'boss_phase', bossDead: 'boss_fall',
+  bossTell: 'treant_creak', bossHit: 'treant_slam', slam: 'treant_slam', bossPhase: 'boss_phase', bossDead: 'boss_fall', bossSoon: 'boss_tremor',
   thorn: 'thorn_spit', burst: 'toad_puff', charge: 'hart_charge', mini: 'mane_call', howl: 'mane_howl', miniPhase: 'mane_growl', miniDead: 'mane_fall',
   chestDrop: 'chest_drop', chest: 'chest_open',
 };
@@ -86,6 +86,7 @@ export function moreCue(e, id, t, v) {
       e.tone(t, 'sine', e.hz(0), 0.003, 2.4, 0.16 * v, 0, true); e.tone(t, 'sine', e.hz(0) * 2.76, 0.002, 1.0, 0.05 * v, 0, true);
       for (const n of [12, 19, 24]) e.tone(t + 0.15, 'triangle', e.hz(n), 0.5, 1.2, 0.035 * v, 0, true, null, rnd(-6, 6)); return 2.5;
     case 'revive': motif(e, t, v, 0, 0.12); motif(e, t + 0.4, v, 12, 0.1); return 1.4; // Last Light: the motif twice, rising
+    case 'boss_tremor': e.noise(t, 'lowpass', 140, 1, 0.6, 1.4, 0.22 * v, 70); e.tone(t + 0.2, 'sine', 38, 0.4, 1.2, 0.18 * v, 32); return 2.0; // 13:55 soft ground tremor (boss sheet arrival warning)
     case 'boss_intro': e.duck('boss'); e.tone(t + 0.8, 'sine', 48, 0.02, 1.6, 0.5 * v, 30); e.noise(t + 0.8, 'lowpass', 250, 1, 0.05, 1.2, 0.3 * v); return 2.5;
     case 'boss_phase': e.duck('phase'); e.tone(t + 1, 'sine', 45, 0.02, 1.4, 0.5 * v, 28); e.noise(t + 1, 'lowpass', 220, 1, 0.05, 1.0, 0.3 * v); return 2.5; // 1 s near-silence + low boom
     case 'boss_fall': e.duck('bossfall'); e.tone(t, 'sine', 40, 0.005, 2, 0.5 * v, 25); e.noise(t, 'lowpass', 300, 1, 0.05, 1.8, 0.2 * v, 90); return 2.2;

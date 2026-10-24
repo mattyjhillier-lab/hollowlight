@@ -14,6 +14,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const [dist, out, sizesArg, tierArg] = process.argv.slice(2);
 if (!dist || !out) { console.error('usage: node scripts/boss-shots.mjs <distDir> <outDir> [sizes] [tier]'); process.exit(2); }
 const TIER = ['high', 'med', 'low'].includes(tierArg) ? tierArg : 'high';
+const NIGHT = ['normal', 'hard', 'expert'].includes(process.env.NIGHT) ? process.env.NIGHT : 'normal'; // B6: difficulty tier (?tier=), file prefix <size>-<night>-
 mkdirSync(out, { recursive: true });
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.css': 'text/css' };
 const root = resolve(dist);
@@ -73,20 +74,21 @@ try {
   await send('Page.enable'); await send('Runtime.enable');
   for (const sz of (sizesArg || 'desk,land,port').split(',')) {
     const [W, H, dpr, mobile] = SIZES[sz];
+    const P = NIGHT === 'normal' ? sz : `${sz}-${NIGHT}`, Q = NIGHT === 'normal' ? '' : `&tier=${NIGHT}`;
     await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: dpr, mobile, screenWidth: W, screenHeight: H });
     // ---- defeat in the fight
     console.log('defeat: load');
-    await send('Page.navigate', { url: `http://127.0.0.1:${HTTP}/?auto=wren&seed=4&t=838&god=1` });
+    await send('Page.navigate', { url: `http://127.0.0.1:${HTTP}/?auto=wren&seed=4&t=838&god=1${Q}` });
     await until('!!(window.__app && window.__app.sim && window.__app.scene && window.__app.scene.bossView)', 90000);
     await ev(`window.__app.save.setSettings({quality:'${TIER}',reducedMotion:false}),1`);
     await ev("(()=>{clearInterval(window.__bp);window.__bp=setInterval(()=>{const a=window.__app,s=a&&a.sim;if(!s)return;s.xp=Math.min(s.xp,0);if(s.state==='levelup')a.pick((s.offer.gold[0]||s.offer.cards[0]).key)},50);return 1})()");
     await until(`${F} && ${F}.stage === 'fight'`, 20000);
     await ev(`(()=>{const s=${S},b=s.boss;s.time+=81;b.hp=b.maxHp*0.5;b.floorHp=b.maxHp*0.33;s.fight.phase=1;s.fight.fightT=81;s.godMode=false;s.player.hp=5;s.player.iframes=0;s.fight.lastHitT=-9;s.fight.cancelMove();s.player.x=b.x+70;s.player.y=b.y;s.fight.startMove(b,70,'sweep');return 1})()`);
     console.log('defeat: forced'); await until(`${S}.state==='defeat'`, 8000); console.log('defeat: dead');
-    await until(`!!document.querySelector('.u6-wrap')`, 15000); await sleep(1600); await shot(`${sz}-50-defeat-results`);
+    await until(`!!document.querySelector('.u6-wrap')`, 15000); await sleep(1600); await shot(`${P}-50-defeat-results`);
     // ---- arrival + fight + victory (god mode, Elias with a small kit)
     if (process.env.ONLY !== 'defeat') {
-    await send('Page.navigate', { url: `http://127.0.0.1:${HTTP}/?auto=elias&seed=3&t=836&god=1&grant=holy_orbit:power=3` });
+    await send('Page.navigate', { url: `http://127.0.0.1:${HTTP}/?auto=elias&seed=3&t=834&god=1&grant=holy_orbit:power=3${Q}` });
     await until('!!(window.__app && window.__app.sim && window.__app.scene && window.__app.scene.bossView)', 90000);
     await ev(`window.__app.save.setSettings({quality:'${TIER}',reducedMotion:false}),1`);
     await ev("(()=>{clearInterval(window.__bp);window.__bp=setInterval(()=>{const a=window.__app,s=a&&a.sim;if(!s)return;s.xp=Math.min(s.xp,0);if(s.state==='levelup')a.pick((s.offer.gold[0]||s.offer.cards[0]).key)},50);return 1})()");
@@ -95,34 +97,36 @@ try {
     const info = await ev(`(()=>{const i=${BV}.baked.info;return {ms:Math.round(i.ms),mb:+(i.bytes/1048576).toFixed(2),w:i.layout.w,h:i.layout.h}})()`);
     console.log(sz, 'bake', JSON.stringify(info));
     await ev('window.__app.paused=false,1');
-    await until(`${F} && ${F}.introT > 0.85`); await shot(`${sz}-01-arrival-ring`);
-    await until(`${F}.introT > 2.35`); await shot(`${sz}-02-arrival-wake`);
+    await until(`${S}.time > 835.7`, 8000); await shot(`${P}-00-tremor`); // B5: 'Something old wakes' + soft tremor 5 s before the boss
+    await until(`${F} && ${F}.introT > 0.85`); await shot(`${P}-01-arrival-ring`);
+    await until(`${F}.introT > 2.35`); await shot(`${P}-02-arrival-wake`);
     await until(`${F}.stage === 'fight'`);
     await ev(`${S}.weapons.length=0,1`); // no damage while we pose the tells
-    for (const [mv, dx, dy] of [['slam', 50, 20], ['eruption', 110, 30], ['seeds', 120, 40]]) { await poseTell(mv, dx, dy, 0.6); await shot(`${sz}-1${mv === 'slam' ? 0 : mv === 'eruption' ? 1 : 2}-tell-${mv}`); await until(`!${F}.move`, 6000); }
+    for (const [mv, dx, dy] of [['slam', 50, 20], ['eruption', 110, 30], ['seeds', 120, 40]]) { await poseTell(mv, dx, dy, 0.6); await shot(`${P}-1${mv === 'slam' ? 0 : mv === 'eruption' ? 1 : 2}-tell-${mv}`); await until(`!${F}.move`, 6000); }
+    await until(`${S}.enemies.some((e)=>e.type==='treant_sapling'&&!e.dead)`, 8000); await sleep(300); await shot(`${P}-13-saplings`); // Long Night: Ironbark saplings
     // phase 2 + its tells
-    await ev(`(()=>{const b=${S}.boss;b.hp=b.floorHp;return 1})()`); await sleep(250); await shot(`${sz}-20-phase2-call`);
+    await ev(`(()=>{const b=${S}.boss;b.hp=b.floorHp;return 1})()`); await sleep(250); await shot(`${P}-20-phase2-call`);
     await until(`!(${S}.boss.staggerT>0)`, 5000);
-    for (const [mv, dx, dy] of [['sweep', 80, 10], ['fan', 140, -20]]) { await poseTell(mv, dx, dy, 0.7); await shot(`${sz}-2${mv === 'sweep' ? 1 : 2}-tell-${mv}`); await until(`!${F}.move`, 6000); }
+    for (const [mv, dx, dy] of [['sweep', 80, 10], ['fan', 140, -20]]) { await poseTell(mv, dx, dy, 0.7); await shot(`${P}-2${mv === 'sweep' ? 1 : 2}-tell-${mv}`); await until(`!${F}.move`, 6000); }
     await ev(`(()=>{const s=${S};for(const e of s.enemies) if(!e.boss){e.hp=0;e.dead=true;} return 1})()`);
     // phase 3 + its tells
-    await ev(`(()=>{const b=${S}.boss;b.hp=b.floorHp;return 1})()`); await sleep(250); await shot(`${sz}-30-phase3-call`);
+    await ev(`(()=>{const b=${S}.boss;b.hp=b.floorHp;return 1})()`); await sleep(250); await shot(`${P}-30-phase3-call`);
     await until(`!(${S}.boss.staggerT>0)`, 5000);
     await ev(`(()=>{const s=${S};for(const e of s.enemies) if(!e.boss){e.hp=0;e.dead=true;} return 1})()`);
-    for (const [mv, dx, dy] of [['lanes', 90, 30], ['nova', 70, 40]]) { await poseTell(mv, dx, dy, 0.7); if (process.env.DEBUG) console.log(mv, await ev(`JSON.stringify({a:${F}.arena,t:${F}.tells.map(t=>[t.x|0,t.y|0,+t.ax.toFixed(2),+t.ay.toFixed(2),t.len|0]),b:[${S}.boss.x|0,${S}.boss.y|0],p:[${S}.player.x|0,${S}.player.y|0],wv:(({x,y,width,height})=>[x|0,y|0,width|0,height|0])(window.__app.scene.cameras.main.worldView)})`)); await shot(`${sz}-3${mv === 'lanes' ? 1 : 2}-tell-${mv}`); await until(`!${F}.move`, 6000); }
+    for (const [mv, dx, dy] of [['lanes', 90, 30], ['nova', 70, 40]]) { await poseTell(mv, dx, dy, 0.7); if (process.env.DEBUG) console.log(mv, await ev(`JSON.stringify({a:${F}.arena,t:${F}.tells.map(t=>[t.x|0,t.y|0,+t.ax.toFixed(2),+t.ay.toFixed(2),t.len|0]),b:[${S}.boss.x|0,${S}.boss.y|0],p:[${S}.player.x|0,${S}.player.y|0],wv:(({x,y,width,height})=>[x|0,y|0,width|0,height|0])(window.__app.scene.cameras.main.worldView)})`)); await shot(`${P}-3${mv === 'lanes' ? 1 : 2}-tell-${mv}`); await until(`!${F}.move`, 6000); }
     // victory beat
     await place(110, 40);
     await ev(`(()=>{const s=${S};s.hurt(s.boss,1e9);return 1})()`);
-    await until(`${S}.state==='victory' && ${BV}.vicT>0.8`); await shot(`${sz}-40-victory-kneel`);
-    await until(`${BV}.vicT>2.1`); await shot(`${sz}-41-victory-mask`);
-    await until(`${BV}.vicT>3.0`); await shot(`${sz}-42-victory-flood`);
-    await until(`${BV}.vicT>4.3`); await shot(`${sz}-43-victory-flood-full`);
-    await until(`${BV}.vicT>5.4`); await shot(`${sz}-44-victory-line`);
-    await until(`!!document.querySelector('.u6-wrap')`, 15000); await sleep(1400); await shot(`${sz}-45-victory-results`);
+    await until(`${S}.state==='victory' && ${BV}.vicT>0.8`); await shot(`${P}-40-victory-kneel`);
+    await until(`${BV}.vicT>2.1`); await shot(`${P}-41-victory-mask`);
+    await until(`${BV}.vicT>3.0`); await shot(`${P}-42-victory-flood`);
+    await until(`${BV}.vicT>4.3`); await shot(`${P}-43-victory-flood-full`);
+    await until(`${BV}.vicT>5.4`); await shot(`${P}-44-victory-line`);
+    await until(`!!document.querySelector('.u6-wrap')`, 15000); await sleep(1400); await shot(`${P}-45-victory-results`);
     }
   }
   console.log('page exceptions', exc);
-  writeFileSync(join(out, `metrics-${TIER}.json`), JSON.stringify(metrics, null, 1));
+  writeFileSync(join(out, `metrics-${TIER}${NIGHT === 'normal' ? '' : '-' + NIGHT}.json`), JSON.stringify(metrics, null, 1));
 } finally {
   try { ws.close(); } catch { /* */ } try { proc.kill(); } catch { /* */ } srv.close();
   setTimeout(() => { try { rmSync(dir, { recursive: true, force: true }); } catch { /* */ } }, 1500);

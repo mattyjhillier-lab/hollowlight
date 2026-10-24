@@ -2,7 +2,7 @@
 // No DOM here (Node-tested). Everything shown is REAL: tier data from tiers.json (resolveTier), records from save.stats.tiers, gates from the
 // compiled tree, the nudge from closestUnlocks. Rewards that are not live yet (per-run Dawnglass drops, tier boss shards, Hollow marks: DT2/DT3)
 // are NOT promised. Every string is set with textContent later.
-import { TIER_IDS, resolveTier } from '../sim/tiers.js';
+import { TIER_IDS, resolveTier, bossShardsFor } from '../sim/tiers.js';
 import { STAR_BITS } from '../save/tiers.js';
 import { nodeStatus } from '../meta/tree.js';
 
@@ -157,7 +157,8 @@ export function earnPills(save, data, cid, tid, heroId) {
   const t = tierDef(data, cid, tid);
   const chap = own(data.chapters, cid) ? data.chapters[cid] : null;
   const pills = [{ kind: 'gold', text: `gold ${mulText(t.goldMul || 1)}` }];
-  if (chap && num(chap.bossShards)) pills.push({ kind: 'shard', text: `${num(chap.bossShards)} from the boss` });
+  const bs = chap ? bossShardsFor(num(chap.bossShards), tid, t) : 0;
+  if (bs) pills.push({ kind: 'shard', text: `${bs} from the boss` });
   if (t.glass && (t.glass.boss > 0 || t.glass.dawn > 0)) pills.push({ kind: 'glass', text: `boss +${t.glass.boss} · dawn +${t.glass.dawn}` });
   const rec = recOf(save, cid, tid);
   const claimed = !!(rec && heroId && own(rec.heroes, heroId) && rec.heroes[heroId].first === true);

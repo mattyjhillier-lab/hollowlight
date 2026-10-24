@@ -418,6 +418,7 @@ export const app = {
     if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
     else if ((this.paused || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
+    this.bossSoonCheck(sim);
     if (sim.events.length) {
       for (const ev of sim.events) this.onEvent(ev);
       sim.events.length = 0;
@@ -450,6 +451,14 @@ export const app = {
       }
     }
     if (this.touch) this.touch.render();
+  },
+
+  // Boss sheet arrival warning (render/audio only, the sim is untouched): 5 s before the Elder Treant a soft ground tremor + 'Something old wakes'.
+  bossSoonCheck(sim) {
+    const at = sim.chapter && sim.chapter.bossAt, bd = sim.chapter && this.data.enemies[sim.chapter.bossId];
+    const was = this.soonT, now = sim.time; this.soonT = now;
+    if (!(at > 5) || !bd || !bd.fight || sim.fight || sim.state !== 'running' || this.soonSim !== sim) { this.soonSim = sim; return; }
+    if (was < at - 5 && now >= at - 5) this.onEvent({ type: 'bossSoon' });
   },
 
   // AU4: what the music reads each frame (read-only from the sim snapshot + the display clock; one reused object, never written back).
@@ -492,6 +501,7 @@ export const app = {
     else if (ev.type === 'sanctuary') this.ui.toast('Sanctuary Ring');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
     else if (ev.type === 'bossDead') { this.buzz('boss'); if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
+    else if (ev.type === 'bossSoon') { this.ui.toast('Something old wakes'); this.scene.shake(400, 0.003); }
     else if (ev.type === 'bossPhase') this.ui.toast(ev.phase === 1 ? 'The Elder Treant blights: Husks answer its call' : 'The Elder Treant rages: its heart glows');
     else if (ev.type === 'slam') this.scene.shake(160, 0.008);
   },
