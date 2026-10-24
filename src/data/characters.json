@@ -8,7 +8,8 @@
     "traits": { "moveSpeed": 1.1 },
     "traitText": "+10% move speed",
     "weapon": "ghost_wolves",
-    "ability": { "id": "rally_pack", "name": "Rally the Pack", "cooldown": 60, "bonus": 0.5, "desc": "6s: the wolves rush the toughest enemy near you and pin it, biting 50% harder." }
+    "ability": { "id": "rally_pack", "name": "Rally the Pack", "cooldown": 60, "bonus": 0.5, "desc": "6s: the wolves rush the toughest enemy near you and pin it, biting 50% harder.", "tree": { "rallySecs": { "unit": "secs", "min": 0.1, "max": 5, "cap": 5 } } },
+    "treeVisuals": ["kinSparks"]
   },
   "elias": {
     "name": "Elias, the Priest",
@@ -19,6 +20,7 @@
     "traits": { "holyDamage": 1.30 },
     "traitText": "+30% holy damage",
     "weapon": "holy_orbit",
-    "ability": { "id": "candle_wheel", "name": "Candle Wheel", "cooldown": 60, "radius": 80, "heal": 1.5, "dps": 0, "desc": "6s: plant a ring of light. You heal while you stand inside, and your Holy Orbit lights lock into the ring and burn what crosses it." }
+    "ability": { "id": "candle_wheel", "name": "Candle Wheel", "cooldown": 60, "radius": 80, "heal": 1.5, "dps": 0, "desc": "6s: plant a ring of light. You heal while you stand inside, and your Holy Orbit lights lock into the ring and burn what crosses it.", "tree": { "wheelRadius": { "unit": "pct", "min": 0, "max": 300, "cap": 100, "out": "wheel" } } },
+    "treeVisuals": ["graveLamp"]
   }
 }

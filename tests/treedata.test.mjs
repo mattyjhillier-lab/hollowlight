@@ -65,7 +65,7 @@ test('T3a a tree-less run is untouched: no nodes owned = the same effects as the
   const none = aggregateMods({}, liveDef, data);
   const old = aggregateMods({}, g, data);
   for (const k of ['mods', 'meta', 'player', 'drops', 'evoLuck', 'rush', 'weaponBonus', 'unlocks']) assert.deepEqual(none[k], old[k], k);
-  assert.deepEqual(none.ability, { ...old.ability, rallySecs: 0, wheel: 0 });
+  assert.deepEqual(none.ability, old.ability); // hero ability parameters (rallySecs, wheel, ...) appear only when a node gives them (TREE-GEN1)
   assert.deepEqual(totalCost(liveDef).shards > 0, true);
 });
 
@@ -241,7 +241,7 @@ test('T1 validator: ids, namespaces, retired, idx, fields', () => {
   bad((fs) => { get(fs, 'core.json').nodes[1].place = get(fs, 'core.json').nodes[0].place; }, /ring slot hearth:0 already used/);
   bad((fs) => { get(fs, 'core.json').nodes[0].place = { ring: 'sky', i: 0 }; }, /needs place/);
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').outline[0].id = 'rv_hijack'; }, /prefix "rv" is not owned by ghost_wolves/);
-  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').outline[0].id = 'ch_hijack'; }, /prefix "ch" is not owned by ghost_wolves/);
+  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').outline[0].id = 'ch_hijack'; }, /prefix "ch" (is not owned by ghost_wolves|\(hero\) cannot be used inside a cluster)/); // ch_ is shared by every hero (TREE-GEN1), never by a weapon
   bad((fs) => { get(fs, 'heroes/wren.json').lanterns[1].id = 'wf_hijack'; }, /prefix "wf" is not owned by wren/);
   bad((fs) => { get(fs, 'heroes/wren.json').lanterns.pop(); }, /exactly 3 lanterns/);
   bad((fs) => { get(fs, 'heroes/wren.json').signature = 'nope'; }, /unknown signature cluster/);

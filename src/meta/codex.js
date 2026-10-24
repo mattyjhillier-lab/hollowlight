@@ -25,6 +25,23 @@ export const ENTRY_KEYS = Object.freeze([
 ]);
 export const MAX_BITS_HEX = 64; // 256 entries before the field must grow (a save test checks the list fits)
 const KEY_INDEX = new Map(ENTRY_KEYS.map((k, i) => [k, i]));
+// TREE-GEN1: the list above is FROZEN for heroes (h:wren / h:elias keep bits 38 / 39 forever). Every later hero declares its own stable bit in
+// characters.json (`codexBit`, ENTRY_KEYS.length .. 255, unique), registered here from the game data (setTreeDef at boot, almanac()).
+const HERO_BIT = new Map(); // 'h:<id>' -> bit
+const BIT_HERO = new Map(); // bit -> 'h:<id>'
+const HERO_ID_RE = /^[a-z][a-z0-9_]{0,31}$/;
+export function registerHeroBits(characters) {
+  if (!isObj(characters)) return;
+  for (const [hid, c] of Object.entries(characters)) {
+    const key = `h:${hid}`;
+    if (!HERO_ID_RE.test(hid) || KEY_INDEX.has(key) || HERO_BIT.has(key) || !isObj(c)) continue;
+    const b = c.codexBit;
+    if (!Number.isInteger(b) || b < ENTRY_KEYS.length || b >= MAX_BITS_HEX * 4 || BIT_HERO.has(b)) continue; // fail closed: an unregistered hero is never NEW or celebrated
+    HERO_BIT.set(key, b); BIT_HERO.set(b, key);
+  }
+}
+const keyIndex = (k) => (KEY_INDEX.has(k) ? KEY_INDEX.get(k) : HERO_BIT.get(k));
+const keyAt = (i) => (i < ENTRY_KEYS.length ? ENTRY_KEYS[i] : BIT_HERO.get(i));
 export const TITLE_IDS = Object.freeze(Object.keys(TITLES));
 
 // ---------------------------------------------------------------- bitsets (lower-case hex, nibble j holds bits 4j..4j+3)
@@ -39,14 +56,14 @@ export function bitsToSet(hex, raw = false) {
   for (let j = 0; j < hex.length && j < MAX_BITS_HEX; j++) {
     const d = parseInt(hex[j], 16);
     if (!(d >= 0)) return new Set();
-    for (let b = 0; b < 4; b++) if (d & (1 << b)) { const i = j * 4 + b; if (i < ENTRY_KEYS.length) out.add(ENTRY_KEYS[i]); }
+    for (let b = 0; b < 4; b++) if (d & (1 << b)) { const k = keyAt(j * 4 + b); if (k) out.add(k); }
   }
   return out;
 }
 export function setToBits(keys) {
   const nib = [];
   for (const k of keys) {
-    const i = KEY_INDEX.get(k);
+    const i = keyIndex(k);
     if (i === undefined) continue;
     const j = i >> 2;
     while (nib.length <= j) nib.push(0);
@@ -110,6 +127,7 @@ const condText = (lines) => lines.filter((l) => !l.done).slice(0, 2).map((l) => 
 // ---------------------------------------------------------------- the whole book
 // opts.riddles: force riddles on (preview / tests); otherwise they follow the Full Almanac lantern.
 export function almanac(save, data, def, opts = {}) {
+  registerHeroBits(data && data.characters);
   const s = isObj(save) ? save : {};
   const st = isObj(s.stats) ? s.stats : {};
   const kills = isObj(st.killsByEnemy) ? st.killsByEnemy : {};
@@ -279,14 +297,14 @@ export function markRead(codex, keys) {
   const c = cleanCodex(codex);
   const set = bitsToSet(c.read);
   let changed = false;
-  for (const k of keys) if (KEY_INDEX.has(k) && !set.has(k)) { set.add(k); changed = true; }
+  for (const k of keys) if (keyIndex(k) !== undefined && !set.has(k)) { set.add(k); changed = true; }
   return changed ? { ...c, read: setToBits(set) } : c;
 }
 export function markTold(codex, keys) {
   const c = cleanCodex(codex);
   const set = bitsToSet(c.told);
   let changed = false;
-  for (const k of keys) if (KEY_INDEX.has(k) && !set.has(k)) { set.add(k); changed = true; }
+  for (const k of keys) if (keyIndex(k) !== undefined && !set.has(k)) { set.add(k); changed = true; }
   return changed ? { ...c, told: setToBits(set) } : c;
 }
 // Titles: earned ids join `got` (never removed); the picked one defaults to the newest earned until the player picks.

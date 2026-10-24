@@ -18,7 +18,7 @@
 //     --links both|directed    both (default, BUILT in T3c: tree.js isLinked) = any linked neighbour opens it; directed = the old one-way
 //                              requires, modelled on top of the engine for comparison only
 import { writeFileSync } from 'node:fs';
-import { readTreeFiles } from '../src/meta/treefs.mjs';
+import { readTreeFiles, addExtra } from '../src/meta/treefs.mjs';
 import { composeTree } from '../src/meta/treedata.js';
 import { compileTree, nodeStatus, buy, conditionProgress, softFactors, presetTree, aggregateMods } from '../src/meta/tree.js';
 import { loadRealData, synthTree } from './tree-synth.mjs';
@@ -91,8 +91,10 @@ function winP0(tier, f, opts, skill, day) {
 }
 
 // ------------------------------------------------------------------ tree
-const data = loadRealData();
-let files = readTreeFiles();
+// --extra <dir>: test-only fragments + <dir>-data.json (TREE-GEN1: a synthetic third hero needs no code here)
+const X = addExtra(readTreeFiles(), loadRealData(), val('--extra', null));
+const data = X.data;
+let files = X.files;
 const chapterOf = new Map(); // growth mode: synthetic node id -> chapter
 if (NODES) {
   const s = synthTree(data, NODES, files);
@@ -182,7 +184,9 @@ const STARTER_W = Object.keys(data.weapons).filter((w) => !data.weapons[w].treeG
 const STARTER_E = Object.keys(data.evolutions).filter((e) => !data.evolutions[e].treeGate);
 const GATED_W = Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate && !w.startsWith('zw'));
 const GATED_E = Object.keys(data.evolutions).filter((e) => data.evolutions[e].treeGate && !e.startsWith('zw'));
-const SIG = { wren: 'ghost_wolves', elias: 'holy_orbit' };
+// heroes from the data (TREE-GEN1): the first is the model players' favourite, each hero's signature = its starting weapon
+const HEROES = Object.keys(data.characters).filter((h) => !data.characters[h].treeGate);
+const SIG = Object.fromEntries(HEROES.map((h) => [h, data.characters[h].weapon]));
 const regionOf = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : n.region || 'rings'); };
 const REGIONS = {};
 for (const id of IDS) (REGIONS[regionOf(id)] ||= []).push(id);
@@ -225,7 +229,7 @@ function statusAll(s) {
 function simulatePlayer(p) {
   resetPrices();
   const R = rng(SEED * 1000 + p);
-  const trait = { saver: R() < 0.4, favWren: 0.55 + R() * 0.15, skillRate: 10 + R() * 8 };
+  const trait = { saver: R() < 0.4, favMain: 0.55 + R() * 0.15, skillRate: 10 + R() * 8 };
   const s = newSave();
   const rows = [];
   const ms = {};
@@ -248,8 +252,11 @@ function simulatePlayer(p) {
     const day = { hard: (owned(s, 'cd_fourth') ? 0.5 : 0) + (owned(s, 'rs_slot5') ? 0.5 : 0), expert: 0 };
     day.expert = 0.5 * day.hard + (owned(s, 'df_ward') || owned(s, 'df_vigil') ? 0.5 : 0);
     // ---- choose hero and tier
-    const wantElias = IDS.some((id) => !owned(s, id) && def.nodes[id].unlock && JSON.stringify(def.nodes[id].unlock).includes('"elias"') && nodeStatus(def, s, id, data).state === 'condition');
-    const hero = R() < (wantElias ? 0.5 : 1 - trait.favWren) ? 'elias' : 'wren';
+    // the favourite (first hero) most runs; another hero when its own lanterns wait on its play count (2 heroes: the same draws as before)
+    const others = HEROES.slice(1);
+    const wants = others.filter((h) => IDS.some((id) => !owned(s, id) && def.nodes[id].unlock && JSON.stringify(def.nodes[id].unlock).includes(`"${h}"`) && nodeStatus(def, s, id, data).state === 'condition'));
+    const pickOther = () => { const l = wants.length ? wants : others; return l.length === 1 ? l[0] : l[Math.floor(R() * l.length)]; };
+    const hero = others.length && R() < (wants.length ? 0.5 : 1 - trait.favMain) ? pickOther() : HEROES[0];
     const tiers = s.stats.tiers.cursed_forest;
     const clears = (t) => (tiers[t] ? tiers[t].clears : 0);
     let tier = 'normal';
@@ -288,7 +295,7 @@ function simulatePlayer(p) {
       H.clears++;
       if (!H.first) { H.first = true; glass += gFirst; shards += tierData.firstShards; }
       T.stars |= 1;
-      if (T.heroes.wren && T.heroes.elias) T.stars |= 2;
+      if (HEROES.length > 1 && HEROES.every((h) => T.heroes[h])) T.stars |= 2; // every hero cleared (save/tiers.js bothHeroes)
       if (R() < 0.3) T.stars |= 4;
     }
     glass = Math.min(glass, gCap + (win && T.heroes[hero].clears === 1 ? gFirst : 0));
@@ -397,6 +404,7 @@ const log = (s = '') => { out.push(s); console.log(s); };
 log(`Skill tree timeline: ${mode}`);
 log(`Links: ${LINKS}. Rule: ${RULE}${patched ? ` (dry-run patch: ${patched.edits.length} edits, ${patched.bridges.length} bridges; unlinked ${patched.report.unreachable.length}, far links ${patched.report.far.length})` : ''}. Price: ${PRICE}${PRICE === 'depth' || PRICE === 'both' ? ` k=${K}` : ''}${PRICE === 'creep' || PRICE === 'both' ? ` creep=${CREEP}` : ''}. Econ: ${ECON} (win gold ${CAL.goldWin}, calib ${CALIB}). Tier rewards: ${TIERS}.`);
 log(`${PLAYERS} human-model players x ${RUNS} runs, seed ${SEED}. Full-tree combat PE ${PE_FULL.toFixed(2)}. Tiers modelled: ${hasTiers ? 'yes' : 'no (tier gates inert)'}. ${Math.round(performance.now() - t0)} ms`);
+log(`heroes: ${HEROES.join(', ')}`);
 log('MODEL, not the Sim: income/kills/win odds calibrated to economy 9.3 and the locked win bands (header of this script).');
 log('');
 const CK = NODES ? [1, 2, 3, 5, 10, 20, 40, 60, 80, 100, 140, 180, 220, 260, 300].filter((r) => r <= RUNS) : [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100].filter((r) => r <= RUNS);

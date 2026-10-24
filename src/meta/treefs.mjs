@@ -20,6 +20,20 @@ export function readTreeFiles(dir = TREE_DIR) {
   return out;
 }
 
+// TREE-GEN1 checker hook: `--extra <dir>` adds test-only fragments (a synthetic hero / weapon) and merges `<dir>-data.json` (characters,
+// weapons, evolutions) over the game data, so tree-validate / tree-timeline can prove a new hero needs no code. Plain repo-relative paths only.
+export function addExtra(files, data, dir) {
+  if (!dir) return { files, data };
+  if (typeof dir !== 'string' || !/^[\w/-]{1,120}$/.test(dir) || dir.includes('..') || dir.startsWith('/')) throw new Error('--extra must be a plain repo-relative directory');
+  const root = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
+  const extra = readTreeFiles(join(root, dir));
+  const d = { ...data };
+  let over = {};
+  try { over = JSON.parse(readFileSync(join(root, `${dir}-data.json`), 'utf8')); } catch { over = {}; }
+  for (const k of ['characters', 'weapons', 'evolutions']) if (over && typeof over[k] === 'object' && over[k]) d[k] = { ...data[k], ...over[k] };
+  return { files: [...files, ...extra], data: d };
+}
+
 // -> { live, v2, info } (see treedata.js). `data` = { weapons, evolutions, characters, chapters, ... } enables the data-aware checks.
 export function loadTree(data = null, dir = TREE_DIR) {
   return composeTree(readTreeFiles(dir), data);

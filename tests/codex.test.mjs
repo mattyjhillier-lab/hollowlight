@@ -16,7 +16,7 @@ test('CX1 ENTRY_KEYS: unique, fits the hex field, covers every enemy / evolution
   assert.ok(ENTRY_KEYS.length <= MAX_BITS_HEX * 4);
   for (const id of Object.keys(data.enemies)) assert.ok(ENTRY_KEYS.includes(`f:${id}`), id);
   for (const id of Object.keys(data.evolutions)) assert.ok(ENTRY_KEYS.includes(`e:${id}`), id);
-  for (const id of Object.keys(data.characters)) assert.ok(ENTRY_KEYS.includes(`h:${id}`), id);
+  for (const id of Object.keys(data.characters)) assert.ok(ENTRY_KEYS.includes(`h:${id}`) || Number.isInteger(data.characters[id].codexBit), id); // new heroes declare codexBit in characters.json (TREE-GEN1)
   for (const t of TIER_IDS) assert.ok(ENTRY_KEYS.includes(`n:cursed_forest:${t}`), t);
   for (const w of Object.keys(data.weapons)) assert.ok(ENTRY_KEYS.includes(`c:${w}`), w);
   // pinned head of the list: bit positions never move

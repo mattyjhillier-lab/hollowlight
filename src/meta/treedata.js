@@ -167,7 +167,12 @@ export function composeTree(files, data = null) {
   }
   ensure(core, 'core.json missing');
   for (const [id, e] of Object.entries(emblems)) checkEmblem(e, `emblems/${id}`);
-  const ns = core.namespaces;
+  // namespaces: core.json registers the core / ring / tool / chapter prefixes; a weapon or hero fragment's own prefix registers itself (TREE-GEN1:
+  // a new hero or weapon is its fragment + its game data, no core.json edit). A prefix already registered keeps its kind and owners.
+  const ns = Object.assign(Object.create(null), core.namespaces);
+  const selfNs = (prefix, kind, owner) => { if (typeof prefix === 'string' && PREFIX_RE.test(prefix) && !BAD_KEYS.has(prefix) && !own(ns, prefix)) ns[prefix] = { kind, owners: [owner] }; };
+  for (const [wid, c] of Object.entries(clusters)) if (isObj(c)) selfNs(c.prefix, 'cluster', wid); // all first, so any fragment's ids see every prefix
+  for (const [hid, h] of Object.entries(heroes)) if (isObj(h)) selfNs(h.prefix, 'hero', hid);
   const legacy = new Set(core.legacyIds);
   const retired = new Set(core.retired.map((t) => t.id));
   const tombIdx = new Set(core.retired.map((t) => `${t.frag}:${t.idx}`));
@@ -204,6 +209,8 @@ export function composeTree(files, data = null) {
       ensure(own(ns, p), `${w}: prefix "${p}" is not registered in core.namespaces`);
       const n = ns[p];
       ensure(n.owners.includes('*') || n.owners.includes(ctx.owner), `${w}: prefix "${p}" is not owned by ${ctx.owner}`);
+      // a shared hero prefix (owners '*', e.g. ch_ for each hero's first lantern) names only its own hero: ch_<heroId>
+      if (n.kind === 'hero' && n.owners.includes('*') && ctx.ownerKind === 'hero') ensure(spec.id === `${p}_${ctx.owner}`, `${w}: the shared hero prefix "${p}" is only for ${p}_${ctx.owner}`);
       const okKind = n.kind === 'gate' ? ['cluster', 'hero', 'tool'].includes(ctx.ownerKind) : n.kind === ctx.ownerKind || (n.kind === 'ring' && ctx.ownerKind === 'core') || (n.kind === 'teaser' && ctx.ownerKind === 'core');
       ensure(okKind, `${w}: prefix "${p}" (${n.kind}) cannot be used inside a ${ctx.ownerKind} fragment`);
     }
@@ -260,7 +267,8 @@ export function composeTree(files, data = null) {
     slotUse.set(c.slot, wid);
     ensure(typeof c.chapter === 'string' && ID_RE.test(c.chapter) && typeof c.region === 'string' && ID_RE.test(c.region), `cluster ${wid}: chapter/region`);
     if (weapons) ensure(own(weapons, wid), `cluster ${wid}: unknown weapon`);
-    ensure(c.hero === null || (typeof c.hero === 'string' && ID_RE.test(c.hero)), `cluster ${wid}: hero`);
+    // `hero` is optional and informational only (a weapon fragment never needs to name a hero: hero fragments name their signature weapon)
+    ensure(c.hero === undefined || c.hero === null || (typeof c.hero === 'string' && ID_RE.test(c.hero)), `cluster ${wid}: hero`);
     if (c.hero && data && data.characters) ensure(own(data.characters, c.hero), `cluster ${wid}: unknown hero ${c.hero}`);
     ensure(isObj(c.sockets) && ['a', 'b', 'c'].every((k) => isObj(c.sockets[k])) && Object.keys(c.sockets).length === 3, `cluster ${wid}: exactly 3 sockets`);
     ensure(Array.isArray(c.gates) && c.gates.length <= 8 && Array.isArray(c.outline) && c.outline.length === CLUSTER_OUTLINE, `cluster ${wid}: ${CLUSTER_OUTLINE} outline nodes`);
@@ -383,6 +391,8 @@ export function composeTree(files, data = null) {
     const [cx, cy] = centreOf[wid];
     return (Math.atan2(cy, cx) * 180) / Math.PI;
   };
+  const sigRank = Object.create(null); // heroes sharing a signature weapon, in fragment order: 0, 1, 2 ...
+  { const n = Object.create(null); for (const [hid, h] of Object.entries(heroInfo)) { sigRank[hid] = n[h.signature] || 0; n[h.signature] = sigRank[hid] + 1; } }
   for (const a of allNodes) {
     const s = a.spec;
     let p;
@@ -399,7 +409,7 @@ export function composeTree(files, data = null) {
       else if (a.role === 'heart') local = em.heart;
       else { const k = Object.keys(c.sockets).find((x) => c.sockets[x].gate === s.id); local = em.sockets[k]; }
       p = [r1(cx + local[0]), r1(cy + local[1])];
-    } else if (a.ownerKind === 'hero') p = polar(core.rings.heroes.r, slotAngle(a.cluster) + (a.slotIndex - 1) * 8);
+    } else if (a.ownerKind === 'hero') p = polar(core.rings.heroes.r, slotAngle(a.cluster) + (a.slotIndex - 1) * 8 + (sigRank[a.owner] || 0) * 26); // a 2nd hero on the same signature weapon sits beside the 1st
     else {
       const b = core.rings.bands;
       p = polar(b.r0 + b.width * (a.chapterOrder - 2) + 40, ((s.place.band + 0.5) * 360) / b.slots);

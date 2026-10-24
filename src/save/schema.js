@@ -6,7 +6,7 @@ import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 import { tierRecords, MAX_GLASS } from './tiers.js';
 import { TIER_IDS } from '../sim/tiers.js';
 import { cleanHints } from '../ui/whispers.js';
-import { cleanCodex, cleanTitles, defaultCodex, defaultTitles } from '../meta/codex.js';
+import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -23,7 +23,7 @@ const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 // The compiled skill tree (src/meta/tree.js). Registered once at boot; until then tree data fails closed to {}.
 let TREE = null;
 let TREE_DATA = null;
-export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; }
+export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHeroBits(data && data.characters); } // heroes past the frozen codex list: their codexBit (TREE-GEN1)
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
