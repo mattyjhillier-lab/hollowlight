@@ -46,6 +46,7 @@ const BPREF = { defence: { maxHp: 1.2, pickup: 0.6, gold: 0.3, damage: 0.3, spee
 //   preset  = the META preset also buys the 12 gate nodes (half = cheapest-first, so the cheap gates open first).
 export const GATES = ['all', 'preset', 'launch'].includes(process.env.GATES) ? process.env.GATES : 'starter';
 export const WEAPON = /^[a-z_]{1,32}$/.test(process.env.WEAPON || '') && Object.hasOwn(data.weapons, process.env.WEAPON) ? process.env.WEAPON : null;
+export const ASSIST = process.env.ASSIST === '1'; // EXTRAS v1 Gentle Light (Twilight only; the Sim ignores it elsewhere)
 export const BOND = Math.max(0, Math.min(25, Math.floor(Number(process.env.BOND) || 0)));
 export const startOf = (charId) => WEAPON || data.characters[charId].kindred;
 const treeDef = compileTree(data.tree, data);
@@ -234,7 +235,7 @@ function pick(sim, rng) {
 
 export function playRun(charId, seed, opts = {}) {
   const sw = opts.weapon || startOf(charId);
-  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree(undefined, sw)), tier: TIER, startWeapon: sw, bond: opts.bond ?? BOND });
+  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree(undefined, sw)), tier: TIER, startWeapon: sw, bond: opts.bond ?? BOND, assist: opts.assist ?? ASSIST });
   let s = seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;

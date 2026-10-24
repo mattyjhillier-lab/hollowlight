@@ -24,6 +24,9 @@ import './charsui.css';
 import { buildLanternScreen } from './lanternsui.js';
 import './lanterns.css';
 import { buildNightSelect } from './nightsui.js';
+import { buildWear } from './wearui.js';
+import { WEAR } from './wearcopy.js';
+import './wear.css';
 import './nights.css';
 import { heroView, LOADOUT, SPIRIT_LINES } from './titlecopy.js';
 import { buildPause } from './pause.js';
@@ -279,8 +282,22 @@ export class UI {
       copy: { title: LOADOUT.heroTitle, whisper: LOADOUT.heroWhisper },
       onStart: (id) => { this.lastHero = id; this.showSpiritSelect(id); },
       onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.showStart(this.onPick); },
+      onWear: h.wearView ? (id) => { this.lastHero = id; this.showWear(id); } : null, wearLabel: WEAR.open,
     });
     this.mountLoadout(hs, 'ld-step-hero');
+  }
+
+  // EXTRAS v1: the Lantern Wardrobe drawer (flame / trail / hero look). Back returns to the hero step with the same hero chosen.
+  showWear(heroId) {
+    const h = this.handlers;
+    if (!h.wearView) return;
+    const v = buildWear({
+      view: h.wearView(heroId), viewFor: (sel) => h.wearView(heroId, sel),
+      onWear: (sel) => { if (h.setWear) h.setWear(heroId, sel); },
+      onBack: () => this.showHeroSelect(),
+    });
+    v.focusSelected = v.focusFirst;
+    this.mountLoadout(v, 'ld-step-wear');
   }
 
   // Step 3: the starting spirit (any weapon awake in the Lantern Web; sleeping ones shown dim). Starts the run.
@@ -332,6 +349,7 @@ export class UI {
       viewFor: (tid) => h.nightView(heroId, tid),
       purses: h.frontDoor ? (h.frontDoor(heroId) || {}).purses : null,
       onPick: (tid) => { if (h.pickNight) h.pickNight(tid); },
+      gentle: h.getSettings && h.setSetting ? { get: () => h.getSettings().gentleLight === true, set: (on) => h.setSetting({ gentleLight: on === true }) } : null, // EXTRAS v1 Gentle Light
       onBegin: (tid) => { this.pickTier = tid; this.showHeroSelect(); },
       onBack: () => this.showStart(this.onPick),
       onTree: (gateId) => { if (h.openTree) h.openTree(gateId, () => this.showNights(heroId, this.screen && this.screen.nights ? this.screen.nights.current() : tier)); },

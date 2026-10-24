@@ -81,7 +81,7 @@ const weaponEmblem = (weaponId) => {
 /** nextLabel: when set (FD4: a night choice follows), the start button reads this instead of "Walk with <hero>". */
 /** CHARACTER SYSTEM v2: copy = {kicker, title, whisper} overrides the header (loadout / starter pick); a hero with `badge` (e.g. 'Bond 3') shows it beside
  *  the name; `pips: null` hides the Health / Speed rows (every hero has the same body). */
-export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart, onBack, nextLabel = null, copy = null } = {}) {
+export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart, onBack, nextLabel = null, copy = null, onWear = null, wearLabel = 'Wear' } = {}) {
   const startText = (h) => (nextLabel ? String(nextLabel) : HERO.walk(h ? h.name : 'Hero'));
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-hero-screen');
@@ -122,7 +122,10 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
   const bar = el('div', 'u3-bar');
   const back = button({ label: HERO.back, hint: 'Esc', variant: 'secondary', onClick: () => { if (onBack) onBack(); } });
   const start = button({ label: startText(heroes[cur]), hint: 'Enter', variant: 'primary', onClick: () => { if (heroes[cur] && onStart) onStart(heroes[cur].id); } });
-  add(bar, back, start);
+  // EXTRAS v1: 'Wear' opens the Lantern Wardrobe drawer for the chosen hero (looks only)
+  const wearBtn = onWear ? button({ label: String(wearLabel), variant: 'secondary', onClick: () => { if (heroes[cur]) onWear(heroes[cur].id); } }) : null;
+  if (wearBtn) wearBtn.classList.add('u3-wear');
+  add(bar, back, wearBtn, start);
   const help = el('p', 'u3-help ty-small');
   const keys = el('span', 'u3-keys');
   for (const k of ['W', 'A', 'S', 'D']) add(keys, el('kbd', 'u3-kbd', k));
@@ -158,7 +161,7 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
     if (!onBtn && k === 'Enter') { e.preventDefault(); if (heroes[cur] && onStart) onStart(heroes[cur].id); return true; }
     return false;
   };
-  return { root, group, cards, back, start, onKey, choose, current: () => (heroes[cur] ? heroes[cur].id : null), focusSelected: () => { if (cards[cur]) cards[cur].el.focus(); } };
+  return { root, group, cards, back, start, wear: wearBtn, onKey, choose, current: () => (heroes[cur] ? heroes[cur].id : null), focusSelected: () => { if (cards[cur]) cards[cur].el.focus(); } };
 }
 
 /** CHARACTER SYSTEM v2 loadout step 3 (and the starter pick's second step): the starting spirit. spirits: [{id, name, line, open, kindred, note}]

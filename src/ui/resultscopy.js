@@ -61,6 +61,7 @@ export const RES = {
     starsLabel: 'Night stars',
     kept: 'What you earned before the fall is always kept.',
     again: (night) => `Again · ${night}`,
+    gentle: 'Gentle Light: stars rest tonight.', // EXTRAS v1
   },
 };
 
@@ -161,12 +162,12 @@ export function resultsView(r, bank, data) {
   if (won) {
     if (bank && bank.newBest) { seg(RES.newBest, true); seg(' · '); } 
     if (r.bossKilled) { seg(bossName, true); seg(` ${RES.slain}`); } else seg(RES.timeWon);
-    if (bank && !bank.newBest) { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); }
+    if (bank && !bank.newBest && whole(bank.bestTime) > 0) { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); } // a Gentle Light lantern may have no best yet
   } else if (r.fight && typeof r.fight === 'object') {
     seg(RES.fellInFight, true); // the clock held at 14:00: 'short of dawn' would always read 1:00
   } else {
     seg(clock(dawnAt - Math.min(time, fin(r.clock) || time)), true); seg(` ${RES.shortOfDawn}`);
-    if (bank) { if (bank.newBest) { seg(' · '); seg(RES.newBest.toLowerCase(), true); } else { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); } }
+    if (bank) { if (bank.newBest) { seg(' · '); seg(RES.newBest.toLowerCase(), true); } else if (whole(bank.bestTime) > 0) { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); } }
   }
 
   const newly = bank && Array.isArray(bank.newly) ? bank.newly.filter((s) => typeof s === 'string' && s) : [];
@@ -233,6 +234,7 @@ export function nightBlock(r, bank, hero, won) {
     stars: won && harder ? RES.night.stars.map((label, i) => ({ label, on: !!(bits & (1 << i)) })) : null,
     kept: !won && harder ? RES.night.kept : '',
     again: harder || n.choice === true ? RES.night.again(name) : '',
+    gentle: !harder && t.assist === true ? RES.night.gentle : '', // EXTRAS v1 Gentle Light (the bank says so; Twilight only)
   };
 }
 
@@ -256,6 +258,7 @@ export function resultsSummary(v) {
     if (nb.firstLine) parts.push(nb.firstLine);
     if (nb.stars) parts.push(`${RES.night.starsLabel}: ${nb.stars.filter((x) => x.on).map((x) => x.label).join(', ') || 'none'}`);
     if (nb.kept) parts.push(nb.kept);
+    if (nb.gentle) parts.push(nb.gentle);
   }
   return parts.filter(Boolean).join('. ') + '.';
 }

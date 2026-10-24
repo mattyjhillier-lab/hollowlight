@@ -33,10 +33,11 @@ const UNLOCK = () => sv('svg', { viewBox: '0 0 24 24', class: 'fdm-lock is-open'
   sv('rect', { x: 5.5, y: 11, width: 13, height: 10, rx: 2, fill: 'currentColor' }), sv('path', { d: 'M8.5 11V8a3.5 3.5 0 0 1 6.8-1.2', fill: 'none', stroke: 'currentColor', 'stroke-width': 2.4 }));
 
 /**
- * opts: { view (mapView), viewFor(tid) -> view, purses, onBegin(tid), onBack(), onTree(gateId|null), onPick(tid) }.
+ * opts: { view (mapView), viewFor(tid) -> view, purses, onBegin(tid), onBack(), onTree(gateId|null), onPick(tid), gentle: { get() -> bool, set(bool) } }.
+ * gentle (EXTRAS v1 Gentle Light): a real checkbox on the Twilight side card only (state shown by tick + On/Off word, never colour alone).
  * Returns { root, chips, begin, back, tree, onKey(e), pick(tid), current(), focusSelected() }.
  */
-export function buildNightSelect({ view, viewFor, purses = null, onBegin, onBack, onTree, onPick } = {}) {
+export function buildNightSelect({ view, viewFor, purses = null, onBegin, onBack, onTree, onPick, gentle = null } = {}) {
   let v = view;
   const root = kitRoot();
   root.classList.add('u3-wrap', 'fdm-screen');
@@ -127,6 +128,7 @@ export function buildNightSelect({ view, viewFor, purses = null, onBegin, onBack
       const st = el('span', 'fdm-stars', null, { role: 'img', 'aria-label': `${s.stars} of 3 stars` });
       for (let k = 0; k < 3; k++) add(st, starIcon(k < s.stars));
       add(side, add(rec, st));
+      if (s.id === 'normal' && gentle) add(side, gentleBox());
     } else if (s.gate) {
       const box = el('div', 'fdm-gate');
       const go = button({ label: NIGHT.openInTree, hint: 'T', variant: 'secondary', onClick: () => { if (onTree) onTree(s.gate.id); } });
@@ -137,6 +139,25 @@ export function buildNightSelect({ view, viewFor, purses = null, onBegin, onBack
       add(side, add(el('p', 'fdm-gate__t fdm-locked'), LOCK(), el('span', null, `${NIGHT.lockedSide} ${s.locked}`)));
     }
     if (v.nudge) add(side, add(el('p', 'fdm-nudge'), el('b', null, `${NIGHT.next} `), el('span', null, v.nudge)));
+  }
+
+  // EXTRAS v1 Gentle Light: one checkbox, Twilight only. The setting is the same one as Settings > Controls.
+  function gentleBox() {
+    const on = !!gentle.get();
+    const G = NIGHT.gentle;
+    const lid = nid('gl'), did = nid('gd');
+    const box = el('div', `fdm-gentle${on ? ' is-on' : ''}`, null, { role: 'checkbox', tabindex: '0', 'aria-checked': on ? 'true' : 'false', 'aria-labelledby': lid, 'aria-describedby': did });
+    const tick = el('span', 'fdm-gentle__box', on ? '✓' : '', { 'aria-hidden': 'true' });
+    const ul = el('ul', 'fdm-gentle__list');
+    for (const b of G.bullets) add(ul, el('li', null, b));
+    add(box, tick, add(el('div', 'fdm-gentle__txt'), add(el('p', 'fdm-gentle__name', null, { id: lid }), el('span', null, G.name), el('span', 'fdm-gentle__state', on ? G.on : G.off)), el('p', 'fdm-gentle__line', G.line, { id: did }), ul));
+    const flip = () => { gentle.set(!gentle.get()); drawSide(); const n = side.querySelector ? side.querySelector('.fdm-gentle') : null; if (n) n.focus(); };
+    box.addEventListener('click', flip);
+    box.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); flip(); } });
+    const wrap = el('div', 'fdm-gentle-wrap');
+    add(wrap, box);
+    if (on) add(wrap, add(el('p', 'fdm-gentle__rest'), el('span', 'fdm-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, G.rest)));
+    return wrap;
   }
 
   function drawCrumb() {
@@ -168,7 +189,7 @@ export function buildNightSelect({ view, viewFor, purses = null, onBegin, onBack
   const onKey = (e) => {
     if (e.ctrlKey || e.altKey || e.metaKey) return false;
     const a = globalThis.document && globalThis.document.activeElement;
-    const onBtn = !!(a && a.closest && a.closest('.lg-btn'));
+    const onBtn = !!(a && a.closest && (a.closest('.lg-btn') || a.closest('.fdm-gentle')));
     const k = e.key;
     const i = ids.indexOf(v.sel);
     if (k === 'Escape') { e.preventDefault(); if (onBack) onBack(); return true; }

@@ -28,7 +28,8 @@ export class Hud {
     const d = doc;
     const el = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
     this.el = el;
-    host.appendChild(defs(d));
+    this.defsSvg = defs(d);
+    host.appendChild(this.defsSvg);
 
     this.frost = el('div', 'h-frost');
     // --- lantern plate: flame = HP, thread = XP, knot = level
@@ -111,6 +112,13 @@ export class Hud {
   ping(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
   pulseThread() { this.ping(this.thread, 'pulse'); } // a gem landed
   flareHp() { this.ping(this.lamp.svg.parentNode, 'flare'); } // a heart landed
+  // EXTRAS v1: the worn lantern flame tints the HP flame (validated #rrggbb from cosmetics.json; null = the default amber). The ember (low HP) stays.
+  setFlame(glow = null, core = null) {
+    const g = this.defsSvg && this.defsSvg.querySelector ? this.defsSvg.querySelector('#hlFlame') : null;
+    const st = g ? g.querySelectorAll('stop') : [];
+    const hex = (v, d) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : d);
+    if (st.length === 3) { st[1].setAttribute('stop-color', hex(glow, '#ffab3a')); st[2].setAttribute('stop-color', hex(core, '#fff0a0')); }
+  }
   hurtDip() { this.ping(this.lamp.svg.parentNode, 'hurt'); } // DR1: the lantern flame dips and rims light red for 0.3 s when the hero is hit
   tickCoin() { this.ping(this.coin, 'tick'); } // gold came in
 

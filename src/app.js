@@ -26,8 +26,11 @@ function charsLine(s, d) { try { const v = charsView(s, d, treeDef).find((x) => 
 const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
 import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
+import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
+import { wearView } from './ui/wearcopy.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
+validateCosmTree(treeDef, data.cosmetics); // EXTRAS v1: every Wardrobe lantern names a real cosmetic and nothing else (throws at boot)
 setTreeDef(treeDef, data);
 
 const UNDO_MS = 60000;
@@ -82,6 +85,7 @@ export const app = {
       startWeapon,
       bond: this.isDebugRun() ? 0 : bondLevel(s0, data, characterId), // Bond is banked between runs and read once here
       keepsakes: this.isDebugRun() ? [] : keepsakeEligible(s0, data, treeDef),
+      assist: p.assist === true || (!p.tier && this.save.data.settings.gentleLight === true), // EXTRAS v1 Gentle Light (the Sim keeps it on Twilight only; ?assist=1 is a debug run)
     });
     if (p.grant) this.applyGrants(sim, p.grant);
     if (p.bless) this.applyBless(sim, p.bless);
@@ -94,7 +98,28 @@ export const app = {
     this.ui.showHud();
     this.ui.updateHud(sim);
     if (this.scene) this.scene.bindSim(sim);
+    this.applyCosm(sim);
     this.startWhispers(sim);
+  },
+
+  // EXTRAS v1 Wear drawer: only owned, known ids are kept (wearView re-checks ownership; cleanCosm drops unknown ids); one save write.
+  setWear(heroId, sel) {
+    if (!(typeof heroId === 'string' && Object.hasOwn(data.characters, heroId)) || !sel || typeof sel !== 'object') return false;
+    const v = wearView(this.save.data, data, treeDef, heroId, { flame: sel.flame, trail: sel.trail, look: sel.look });
+    const s = this.save.data;
+    const cur = cleanCosm(s.cosm, data).worn;
+    s.cosm = cleanCosm({ worn: { flame: v.sel.flame, trail: v.sel.trail, look: { ...cur.look, ...(v.sel.look ? { [heroId]: v.sel.look } : {}) } } }, data);
+    if (!this.save.readOnly && !this.isDebugRun()) this.save.saveNow();
+    return true;
+  },
+
+  // EXTRAS v1: what this run wears (render only). Defaults -> null (the scene keeps its old paths); a bad save can only fall back to defaults.
+  applyCosm(sim) {
+    let v = null;
+    try { v = resolveCosm(this.save.data, data, treeDef, sim.characterId); } catch { v = null; }
+    const plain = !v || (v.flame.isDefault && v.trail.isDefault && (!v.look || v.look.isDefault));
+    if (this.scene && this.scene.setCosm) this.scene.setCosm(plain ? null : v);
+    if (this.ui.hudView && this.ui.hudView.setFlame) this.ui.hudView.setFlame(v && !v.flame.isDefault ? v.flame.css : null, v && !v.flame.isDefault ? v.flame.cssCore : null);
   },
 
   // ------------------------------------------------------------------ FM1-FM5 first minute: whispers + feel (read sim state only; never the RNG)
@@ -621,7 +646,7 @@ export const app = {
   // Debug URL params never touch the real save.
   isDebugRun() {
     const p = this.params;
-    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.tier !== null || p.seed !== null);
+    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.tier !== null || p.seed !== null || p.assist);
   },
 
   bankRun(sim) {
@@ -706,6 +731,8 @@ export const app = {
       lastLoadout: (h) => this.lastLoadout(h),
       bondLevel: (h) => bondLevel(this.save.data, data, h),
       charsView: () => charsView(this.save.data, data, treeDef),
+      wearView: (h, sel) => wearView(this.save.data, data, treeDef, h, sel), // EXTRAS v1 Wear drawer
+      setWear: (h, sel) => this.setWear(h, sel),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
       resetTips: () => this.resetTips(),
       hideWhisper: () => this.hideWhisper(),

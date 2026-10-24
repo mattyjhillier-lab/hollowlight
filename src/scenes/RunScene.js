@@ -321,6 +321,9 @@ export class RunScene extends Phaser.Scene {
     this.liftD = null; this.liftR = null; this.liftId = -2; // attacker rim images (dark + light red), made on first use
     // A1b hero readability: warm ground pool (additive, lantern colour, off on Low) + soft dark backing so the pale hood separates from pale wolves/ground
     this.heroHalo = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO + 0.5).setTint(ROLE.lantern).setScale(2.6 * inv('glow'), 1.05 * inv('glow')).setVisible(false);
+    // EXTRAS v1 cosmetics (render only; src/meta/cosmetics.js): a small charm light (hero look) and the worn colours. null = defaults (old paths).
+    this.charmImg = this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(D_HALO + 0.6).setScale(0.55 * inv('glow')).setVisible(false);
+    this.cosm = null; this.cGlow = ROLE.lantern; this.cLm = ROLE.lantern; this.cRib = ROLE.lantern; this.cWisp = null; this.cStyle = 'thread'; this.cStyleCol = 0; this.cAcc = 0;
     this.heroBack = this.add.image(0, 0, 'glow').setDepth(D_LIT).setTint(0x0a1022).setScale(1.15 * inv('glow'), 1.5 * inv('glow')).setAlpha(0.34).setVisible(false);
     this.ring = this.add.image(0, 0, 'ring').setBlendMode(ADD).setDepth(D_HALO + 1).setScale(inv('ring')).setVisible(false);
     this.flashR = this.add.rectangle(0, 0, 760, 440, 0xffffff).setScrollFactor(0).setDepth(D_VIG - 1).setBlendMode(ADD).setVisible(false);
@@ -713,6 +716,46 @@ export class RunScene extends Phaser.Scene {
   }
 
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
+
+  // EXTRAS v1: what this run wears (resolveCosm view or null). Light colours only: silhouettes, sizes, the pool's brightness and every hit
+  // radius are untouched; the pool keeps half the default lantern colour so a tint never reads as a dimmer or brighter light.
+  setCosm(v) {
+    const mixI = (a, b, t) => { let o = 0; for (const sh of [16, 8, 0]) { const x = (a >> sh) & 255, y = (b >> sh) & 255; o |= Math.round(x + (y - x) * t) << sh; } return o; };
+    this.cosm = v || null;
+    const plain = !v;
+    this.cGlow = plain || v.flame.isDefault ? ROLE.lantern : v.flame.glow;
+    this.cLm = this.cGlow === ROLE.lantern ? ROLE.lantern : mixI(ROLE.lantern, this.cGlow, 0.5);
+    this.cRib = plain ? ROLE.lantern : v.trail.color !== null && !v.trail.isDefault ? v.trail.color : this.cGlow;
+    this.cWisp = plain || !v.look || v.look.isDefault ? null : v.look.wisp;
+    this.cStyle = plain ? 'thread' : v.trail.style; this.cStyleCol = plain || v.trail.color === null ? 0 : v.trail.color;
+    this.cCharm = plain || !v.look ? null : v.look.charm;
+    this.playerGlow.setTint(this.cGlow); this.heroHalo.setTint(this.cGlow);
+    this.charmImg.setVisible(false); if (this.cCharm !== null) this.charmImg.setTint(this.cCharm);
+  }
+
+  // EXTRAS v1 trail styles: Petal Drift / Firefly Dots / Ember Motes = small glow motes from the lantern (shared particle pool, its cap and
+  // the trail budget; Calm halves them and drops the twinkle). Thread = the ribbon only.
+  tickCosm(sim, lx, ly, dt) {
+    const rig = this.rig && this.rig.active;
+    if (this.cCharm !== null && this.sim && sim.state !== 'dead') {
+      const wren = rig && this.rig.hasPup;
+      const cx = wren ? this.rig.pupX : lx, cy = wren ? this.rig.pupY - 4 : ly - 7;
+      const a = this.reducedMotion() ? 0.55 : 0.5 + 0.1 * Math.sin(sim.time * 3.1);
+      this.charmImg.setVisible(true).setPosition(cx, cy).setAlpha(a);
+    } else if (this.charmImg.visible) this.charmImg.setVisible(false);
+    if (this.cStyle === 'thread' || !app.params.trails || sim.state !== 'running') return;
+    const calm = this.reducedMotion();
+    const rate = (this.quality.tier === 'low' ? 5 : 9) * (calm ? 0.5 : 1);
+    this.cAcc += dt * rate;
+    while (this.cAcc >= 1) {
+      this.cAcc -= 1;
+      if (this.parts.count >= this.parts.cap * 0.75) { this.cAcc = 0; break; }
+      const j = (Math.sin(sim.time * 97.3 + this.cAcc * 13) + 1) * 0.5; // render-side jitter (never the sim RNG)
+      if (this.cStyle === 'petal') this.parts.emit(lx + (j - 0.5) * 6, ly + 2, (j - 0.5) * 18, 10 + j * 6, 1.1, 0.34, 0.2, this.cStyleCol, 0.55);
+      else if (this.cStyle === 'dots') this.parts.emit(lx + (j - 0.5) * 10, ly + (j - 0.3) * 6, (j - 0.5) * 6, -3, calm ? 0.9 : 1.3, 0.22, 0.05, this.cStyleCol, 0.7);
+      else this.parts.emit(lx + (j - 0.5) * 5, ly - 2, (j - 0.5) * 8, -16 - j * 6, 0.8, 0.2, 0.04, this.cStyleCol, 0.65);
+    }
+  }
 
   // S1 Ghost Wolf A (Lantern-Heart Pack): one image + an optional variety overlay per wolf, pose from the sim state (render only, reads the unit).
   // S2: the evolution skin (wolfSkin: gold-rimmed pack, Light Trails streamers, 1.7x Alpha, hollow Echo) picks the frame and size. Feet sit
@@ -1213,7 +1256,7 @@ export class RunScene extends Phaser.Scene {
     }
     if (this.ring.visible) {
       const pulse = 0.5 + 0.5 * Math.sin(sim.time * (lowHp ? 18.85 : 6.283));
-      this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : ROLE.lantern).setAlpha(0.45 + 0.2 * pulse);
+      this.ring.setPosition(p.x, p.y + 10).setTint(lowHp ? PAL.danger : this.cGlow).setAlpha(0.45 + 0.2 * pulse);
     }
     {
       const target = app.params.arc ? lanternTarget(this.arc.lan, lowHp, this.arc.y) : (lowHp ? 90 : 130);
@@ -1221,7 +1264,7 @@ export class RunScene extends Phaser.Scene {
     }
     if (lit) {
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
-      lm.add(lx, ly, this.lanR * fl, ROLE.lantern, 0.9);
+      lm.add(lx, ly, this.lanR * fl, this.cLm, 0.9);
       if (rig && this.rig.hasPup) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
     }
 
@@ -1676,6 +1719,7 @@ export class RunScene extends Phaser.Scene {
     if (orbArt) this.drawFlowers(sim.time, p); else this.orbFlowers = null;
     this.drawLightInOut(sim, lx, ly, vx0, vy0, vx1, vy1); // S7
     this.sec0(5); this.tickRibbons(sim, p, lx, ly, nSrc); this.sec1(5);
+    if (this.cosm) this.tickCosm(sim, lx, ly, Math.min(this.game.loop.delta, 100) / 1000);
 
     // projectiles. W10 Spirit Bolts evolutions (visual only, reads the sim): a thin gold rim on the EVOLVED glyph only (never on enemies, nearest caps.halos);
     // Spirit Tempest draws a short thread from each seeking glyph to its own prey (cap halos/5, none under reduced motion).
@@ -1950,7 +1994,7 @@ export class RunScene extends Phaser.Scene {
     if (this.rig && this.rig.active) { h.sx = this.rig.scarfX; h.sy = this.rig.scarfY; } else { h.sx = p.x - (p.faceX < 0 ? -1 : 1) * 5; h.sy = p.y - 13; }
     const elias = this.rig.id === 'elias';
     this.ribSet.update(sim.time, caps, h, this.ribSrc, nSrc);
-    let n = this.ribSet.emit(sim.time, caps, ROLE.lantern, elias ? ROLE.eliasTrim : 0xbff3e6);
+    let n = this.ribSet.emit(sim.time, caps, this.cRib, this.cWisp !== null ? this.cWisp : elias ? ROLE.eliasTrim : 0xbff3e6); // EXTRAS v1: worn trail / look colours (defaults = the old colours)
     // W7b Lightfoot Pack: the evolved wolves' trail, pale wolf blue with a warm lantern core; tier-capped (Low draws dots instead), under every creature
     const ww = sim.weapons.find((w) => w.evo === 'phantom_stampede');
     if (ww && ww.rt.trail && ww.rt.trail.length) {

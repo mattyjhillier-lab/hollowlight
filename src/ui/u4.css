@@ -138,3 +138,10 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 }
 @media (prefers-reduced-motion: reduce) { .overlay.u4 .lg-panel { animation: none; } }
 .reduced-motion .overlay.u4 .lg-panel { animation: none; }
+/* Settings fits any screen: the panel never grows past the overlay; the tab panes scroll inside it, so Back always stays on screen
+   (the Controls tab outgrew 720p / phones once Tips, Vibration and Gentle Light joined it). */
+.overlay.u4.u4-settingsscreen .u4-wrap { height: 100%; align-items: center; }
+.overlay.u4.u4-settingsscreen .lg-panel { display: flex; flex-direction: column; max-height: 100%; }
+.overlay.u4.u4-settingsscreen .lg-panel__body, .overlay.u4.u4-settingsscreen .u4-body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.overlay.u4.u4-settingsscreen .u4-panes { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c79a4c transparent; padding-right: 4px; }
+.overlay.u4.u4-settingsscreen .u4-foot { flex: none; }

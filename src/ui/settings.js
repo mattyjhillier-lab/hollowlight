@@ -120,6 +120,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     api.hasAutoRule && api.hasAutoRule() ? choice({ ...SET.autoRule, options: SET.autoRule.opts, value: st.autoRule, onChange: (v) => set({ autoRule: v }) }) : null,
     wickToggle({ ...SET.tips, checked: st.tips !== false, onChange: (v) => set({ tips: v }) }), tipsAgain,
     wickToggle({ ...SET.vibration, checked: st.vibration !== false, onChange: (v) => set({ vibration: v }) }),
+    wickToggle({ ...SET.gentleLight, checked: st.gentleLight === true, onChange: (v) => set({ gentleLight: v === true }) }), // EXTRAS v1 (same switch as the Twilight side card)
     fullscreenRow(pwa), keys);
 
   // ---- Saves: export / import / reset, each with its old confirmation ----

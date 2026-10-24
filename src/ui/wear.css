@@ -1,0 +1,58 @@
+/* EXTRAS v1 Lantern Wardrobe ('Wear' drawer on character select). Lantern Glass kit tokens; looks follow docs/mockups/extras/ex-wardrobe. */
+.overlay.u3 .u3-bar > .u3-wear { flex: 0 1 150px; }
+.overlay.u3.ld-step-wear { padding: 0; }
+.overlay.u3 .wr-screen { box-sizing: border-box; width: 100%; height: 100%; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px 22px; padding: clamp(14px, 3vh, 28px) clamp(16px, 2.5vw, 28px); text-align: left; align-items: stretch; justify-items: stretch; justify-content: stretch; align-content: stretch; overflow: hidden; }
+.overlay.u3 .wr-grid { flex: 1 1 auto; }
+.overlay.u3 .wr-hd { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 6px 18px; flex-wrap: wrap; }
+.overlay.u3 .wr-title { margin: 0; font-size: clamp(26px, 5vh, 38px); color: var(--lg-text); }
+.overlay.u3 .wr-sub { margin: 0; font-size: 15px; color: var(--thread); }
+.overlay.u3 .wr-stage { position: relative; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 18px; padding: 12px; overflow: hidden;
+  border: 2px solid #c79a4c; background: linear-gradient(180deg, #2b3550, #161c2a); box-shadow: var(--lg-rim), 0 10px 24px rgba(0, 0, 0, .45); }
+.overlay.u3 .wr-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.overlay.u3 .wr-wearing { position: relative; display: flex; gap: 10px; justify-content: center; align-items: baseline; flex-wrap: wrap; margin: 0; font: var(--fw-body) 14px/1.3 var(--font-body); color: var(--lg-text); }
+.overlay.u3 .wr-k { font-size: 12px; color: var(--lg-dim); }
+.overlay.u3 .wr-side { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.overlay.u3 .wr-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.overlay.u3 .wr-tab { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #5a5f78; background: rgba(255, 255, 255, .03); color: var(--lg-text);
+  font: 700 15px/1 var(--font-body); cursor: pointer; }
+.overlay.u3 .wr-tab.is-on { border-color: #e8b860; background: rgba(255, 210, 140, .14); }
+.overlay.u3 .wr-tab:focus-visible, .overlay.u3 .wr-item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 243, 220, .6); }
+.overlay.u3 .wr-grid { min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; align-content: start; padding: 3px; }
+.overlay.u3 .wr-item { display: flex; gap: 12px; align-items: center; min-height: 58px; padding: 8px 12px; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid #3c4462; background: linear-gradient(180deg, rgba(48, 60, 86, .7), rgba(22, 28, 42, .7)); }
+.overlay.u3 .wr-item.is-sel { border-color: #e8b860; background: linear-gradient(180deg, rgba(90, 80, 60, .55), rgba(40, 36, 32, .6)); }
+.overlay.u3 .wr-item.is-locked { cursor: default; opacity: .62; border-style: dashed; }
+.overlay.u3 .wr-sw { flex: none; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 50% 55%, var(--sw2) 0, var(--sw) 45%, transparent 72%); box-shadow: 0 0 12px var(--sw); }
+.overlay.u3 .wr-sw--thread { border-radius: 4px; height: 6px; background: var(--sw); box-shadow: none; }
+.overlay.u3 .wr-sw--petal { border-radius: 70% 0 70% 0; width: 24px; height: 24px; background: var(--sw); box-shadow: none; margin: 0 5px; }
+.overlay.u3 .wr-sw--dots { background: radial-gradient(circle, var(--sw) 0 3px, transparent 4px) 0 0 / 12px 12px; box-shadow: none; border-radius: 6px; }
+.overlay.u3 .wr-sw--motes { background: radial-gradient(circle, var(--sw) 0 2px, transparent 3px) 0 0 / 9px 11px; box-shadow: none; border-radius: 6px; }
+.overlay.u3 .wr-sw--look { background: radial-gradient(circle at 70% 30%, var(--sw2) 0 4px, transparent 5px), linear-gradient(135deg, transparent 38%, var(--sw) 40% 60%, transparent 62%); box-shadow: none; border-radius: 8px; }
+.overlay.u3 .wr-item.is-locked .wr-sw { filter: grayscale(.85) brightness(.7); }
+.overlay.u3 .wr-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.overlay.u3 .wr-name { font: 700 15px/1.2 var(--font-body); color: var(--lg-text); }
+.overlay.u3 .wr-line { font: var(--fw-body) 13px/1.25 var(--font-body); color: var(--lg-dim); }
+.overlay.u3 .wr-item.is-worn .wr-line { color: #ffd38a; }
+.overlay.u3 .wr-bar { display: block; height: 5px; margin-top: 3px; border-radius: 9px; background: #0b0f18; border: 1px solid #2c3550; overflow: hidden; }
+.overlay.u3 .wr-bar i { display: block; height: 100%; background: var(--teal, #6fd6c4); }
+.overlay.u3 .wr-msg { min-height: 1.2em; margin: 0; font: var(--fw-body) 14px/1.2 var(--font-body); color: #9fe9dd; }
+.overlay.u3 .wr-acts { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+.overlay.u3 .wr-acts .lg-btn { min-height: 52px; width: auto; flex: 0 0 auto; min-width: 150px; justify-content: center; }
+.overlay.u3 .wr-note { margin: 0 auto 0 0; font: var(--fw-body) 13px/1.3 var(--font-body); color: var(--lg-dim); }
+html.touch .overlay.u3 .wr-acts .lg-btn__key { display: none; }
+@media (max-height: 480px) and (orientation: landscape) {
+  .overlay.u3 .wr-screen { gap: 8px 14px; padding: 8px 14px; }
+  .overlay.u3 .wr-title { font-size: 24px; }
+  .overlay.u3 .wr-sub, .overlay.u3 .wr-note { display: none; }
+  .overlay.u3 .wr-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+  .overlay.u3 .wr-item { min-height: 48px; padding: 4px 10px; }
+  .overlay.u3 .wr-msg { display: none; }
+  .overlay.u3 .wr-acts .lg-btn { min-height: 46px; min-width: 120px; }
+}
+@media (max-aspect-ratio: 1/1) {
+  .overlay.u3 .wr-screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 170px minmax(0, 1fr); padding: 12px 16px 14px; }
+  .overlay.u3 .wr-grid { grid-template-columns: minmax(0, 1fr); }
+  .overlay.u3 .wr-note { width: 100%; }
+  .overlay.u3 .wr-acts .lg-btn { flex: 1 1 0; min-width: 0; }
+}

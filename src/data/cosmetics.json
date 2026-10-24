@@ -1,0 +1,35 @@
+{
+ "note": "EXTRAS v1 cosmetics (docs/design/extras-v1.md A1). Render-only, zero power. Colours are #rrggbb; validateCosmetics() keeps flames inside the lantern brightness band and off the reserved gold / danger / role colours.",
+ "flames": {
+  "hearth": { "name": "Hearth", "glow": "#ffcf7a", "core": "#fff1c8", "default": true },
+  "moon_teal": { "name": "Moon Teal", "glow": "#8fe6d8", "core": "#e8fff9" },
+  "dawn_rose": { "name": "Dawn Rose", "glow": "#ffb3a8", "core": "#fff0ec" },
+  "candle_white": { "name": "Candle White", "glow": "#f2ecdf", "core": "#ffffff" },
+  "ember": { "name": "Ember", "glow": "#e8956a", "core": "#ffe2c8" },
+  "lilac_hush": { "name": "Lilac Hush", "glow": "#cdb8f2", "core": "#f6f0ff" }
+ },
+ "trails": {
+  "thread": { "name": "Thread", "style": "thread", "default": true },
+  "petal": { "name": "Petal Drift", "style": "petal", "color": "#ffc9d6" },
+  "firefly": { "name": "Firefly Dots", "style": "dots", "color": "#e6f59a" },
+  "motes": { "name": "Ember Motes", "style": "motes", "color": "#ffb47a" }
+ },
+ "looks": {
+  "wren": [
+   { "id": "wren_frost", "name": "Frost wisp", "wisp": "#bff3e6", "default": true },
+   { "id": "wren_fox", "name": "Fox-red wisp", "bond": 5, "wisp": "#ffb08a" },
+   { "id": "wren_moss", "name": "Moss wisp", "bond": 10, "wisp": "#b8e6a0" },
+   { "id": "wren_dusk", "name": "Dusk-blue wisp", "bond": 15, "wisp": "#a8c4ff" },
+   { "id": "wren_charm", "name": "Pup's collar charm", "bond": 20, "wisp": "#bff3e6", "charm": "#ffb84a" },
+   { "id": "wren_star", "name": "Starlit wisp", "bond": 25, "wisp": "#fff6e0", "charm": "#fff6e0" }
+  ],
+  "elias": [
+   { "id": "elias_lilac", "name": "Lilac ribbon", "wisp": "#d8d0ff", "default": true },
+   { "id": "elias_honey", "name": "Honey wax", "bond": 5, "wisp": "#d8d0ff", "charm": "#ffd9a0" },
+   { "id": "elias_sky", "name": "Sky ribbon", "bond": 10, "wisp": "#b8d0ff" },
+   { "id": "elias_rose", "name": "Rose wax", "bond": 15, "wisp": "#d8d0ff", "charm": "#ffb8c4" },
+   { "id": "elias_sage", "name": "Sage ribbon", "bond": 20, "wisp": "#c2e8c0" },
+   { "id": "elias_dawn", "name": "Dawn ribbon", "bond": 25, "wisp": "#ffd8c0", "charm": "#fff6e0" }
+  ]
+ }
+}

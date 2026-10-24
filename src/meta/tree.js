@@ -40,6 +40,7 @@ const LEAF = {
   gems: { need: ['n'] },
   abilityUses: { need: ['n'] },
   blessings: { need: ['n'] },
+  webLit: { need: [] }, // EXTRAS v1 Wardrobe: every lantern of the web lit (cosmetic lanterns and teasers excluded; needs the save's tree)
 };
 
 function checkCond(c, data, teaser, depth, budget, where) {
@@ -70,10 +71,17 @@ export function validCondition(c, data) {
   try { checkCond(c, data, false, 0, { n: 0 }, 'condition'); return true; } catch { return false; }
 }
 
-const target = (c) => (c.t === 'surviveTime' ? c.seconds : c.n ?? 1);
+const target = (c, def) => (c.t === 'surviveTime' ? c.seconds : c.t === 'webLit' ? webLitTotal(def) : c.n ?? 1);
+
+// EXTRAS v1: the lanterns that count for 'every lantern lit' (live, not a teaser, not a zero-power Wardrobe lantern). Cached per compiled tree.
+const cosmOnly = (n) => n.effects.length > 0 && n.effects.every((e) => isObj(e) && e.cosm !== undefined);
+function litList(def) { if (!def) return []; if (!def._lit) Object.defineProperty(def, '_lit', { value: def.list.filter((id) => !def.nodes[id].teaser && !cosmOnly(def.nodes[id])), enumerable: false }); return def._lit; }
+const webLitTotal = (def) => Math.max(1, litList(def).length);
+// a lantern counts when owned at full rank, or when an owned rival has closed it (an exclusive pair can never both be lit)
+function webLitCount(def, tree) { if (!def || !isObj(tree)) return 0; let k = 0; for (const id of litList(def)) { const n = def.nodes[id]; if (rankOf(tree, id) >= n.maxRank || n.excludes.some((x) => rankOf(tree, x) > 0)) k++; } return k; }
 
 // Current stat value a leaf condition measures.
-function leafValue(c, stats, def) {
+function leafValue(c, stats, def, tree = null) {
   const m = (o, k) => (isObj(o) && own(o, k) ? o[k] : 0);
   switch (c.t) {
     case 'killEnemy': return m(stats.killsByEnemy, c.id);
@@ -116,6 +124,7 @@ function leafValue(c, stats, def) {
     case 'gems': return stats.gems || 0;
     case 'abilityUses': return stats.abilityUses || 0;
     case 'blessings': return stats.blessingsTaken || 0;
+    case 'webLit': return webLitCount(def, tree);
     default: return 0;
   }
 }
@@ -146,12 +155,13 @@ function leafText(c, data) {
     case 'gems': return `Gather ${n} gems`;
     case 'abilityUses': return `Use your ability ${n} times`;
     case 'blessings': return `Take ${n} Blessings`;
+    case 'webLit': return 'Light every lantern in the Web';
     default: return '?';
   }
 }
 
 // -> { done, frac (0..1), lines: [{ text, cur, goal, done }] }  (all = both needed, any = one of)
-export function conditionProgress(c, stats, def, data) {
+export function conditionProgress(c, stats, def, data, tree = null) {
   if (!c) return { done: true, frac: 1, lines: [] };
   const st = isObj(stats) ? stats : {};
   const walk = (k) => {
@@ -162,8 +172,8 @@ export function conditionProgress(c, stats, def, data) {
       const frac = k.t === 'all' ? fracs.reduce((a, b) => a + b, 0) / fracs.length : Math.max(...fracs);
       return { done, frac: done ? 1 : Math.min(0.999, frac), lines: subs.flatMap((s) => s.lines), mode: k.t };
     }
-    const goal = target(k);
-    const cur = Math.min(leafValue(k, st, def), goal);
+    const goal = target(k, def);
+    const cur = Math.min(leafValue(k, st, def, tree), goal);
     return { done: cur >= goal, frac: goal > 0 ? cur / goal : 1, lines: [{ text: leafText(k, data), cur: Math.floor(cur), goal, done: cur >= goal }] };
   };
   return walk(c);
@@ -458,7 +468,7 @@ export function compileTree(raw, data) {
   for (const id of list) {
     const n = nodes[id];
     if (n.permanent || n.teaser || n.keystone || CREEP_FLAT.includes(n.kind)) continue;
-    const g = n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`);
+    const g = cosmOnly(n) ? 'cosm' : n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); // EXTRAS v1: Wardrobe lanterns rise only among themselves (never price a power lantern)
     cgroup[id] = g;
     (cmembers[g] || (cmembers[g] = [])).push(id);
   }
@@ -515,6 +525,10 @@ function checkEffect(e, data, where) {
     if (e.status === 'bleed' || e.status === 'burn') num('pct', 0.1, 3);
     else if (e.status === 'mark' || e.status === 'pin') num('secs', 0.1, 1);
     else fail(`${where}: unknown status effect`);
+  } else if (e.cosm !== undefined) {
+    // EXTRAS v1 Wardrobe: a zero-power cosmetic (flame tint / trail style); the id is checked against cosmetics.json at boot (validateCosmTree)
+    if (!['flame', 'trail'].includes(e.cosm) || typeof e.id !== 'string' || !ID_RE.test(e.id) || keys.some((k) => k !== 'cosm' && k !== 'id')) fail(`${where}: bad cosmetic effect`);
+    if (data && isObj(data.cosmetics) && !own(e.cosm === 'flame' ? data.cosmetics.flames : data.cosmetics.trails, e.id)) fail(`${where}: unknown cosmetic ${e.id}`);
   } else if (e.visual !== undefined) {
     if (!(e.visual === 'threeDawns' || heroVisual(data, e.visual))) fail(`${where}: unknown visual effect`); // hero visuals: characters.json treeVisuals
   } else if (e.perk !== undefined) {
@@ -659,7 +673,7 @@ export function nodeStatus(def, save, id, data) {
   const tree = save.tree || {};
   const rank = rankOf(tree, id);
   const out = { id, rank, max: n.maxRank, state: 'available', reason: null, cond: null, affordable: false, cost: null, next: null, buyable: false };
-  if (n.unlock) out.cond = conditionProgress(n.unlock, save.stats, def, data);
+  if (n.unlock) out.cond = conditionProgress(n.unlock, save.stats, def, data, save.tree);
   if (rank >= n.maxRank) { out.state = 'owned'; return out; }
   out.next = costFor(n, rank + 1, creepSteps(def, save, id), def.creep); // the price shown is the price paid (rising price included)
   out.affordable = (save.gold || 0) >= out.next.gold && (save.shards || 0) >= out.next.shards && (save.dawnglass || 0) >= out.next.glass;
@@ -949,7 +963,7 @@ export function closestUnlocks(def, save, data, count = 3) {
   for (const id of def.list) {
     const n = def.nodes[id];
     if (!n.unlock || n.teaser || rankOf(save.tree, id) > 0) continue;
-    const p = conditionProgress(n.unlock, save.stats, def, data);
+    const p = conditionProgress(n.unlock, save.stats, def, data, save.tree);
     if (p.done || p.frac <= 0) continue;
     // progress has begun (frac > 0): same reveal rule as describeNode
     const open = p.lines.filter((l) => !l.done).slice(0, 2);
@@ -969,7 +983,7 @@ export function describeNode(def, save, id, data) {
     for (const g of n.gateAnc || []) {
       const ge = def.nodes[g].effects.find((x) => x && x.unlock === 'evolution');
       if (!ge || rankOf(save.tree || {}, g) >= 1) continue;
-      const gc = def.nodes[g].unlock ? conditionProgress(def.nodes[g].unlock, save.stats, def, data) : null;
+      const gc = def.nodes[g].unlock ? conditionProgress(def.nodes[g].unlock, save.stats, def, data, save.tree) : null;
       if (!gc || gc.frac <= 0) masked = true;
     }
   }

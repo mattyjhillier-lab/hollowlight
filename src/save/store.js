@@ -146,7 +146,9 @@ export class SaveStore {
     const pos = (v) => Math.max(0, Math.floor(Number(v) || 0));
     const time = Math.max(0, Number(r.time) || 0);
     const prevBest = s.bestTime;
-    const newBest = time > prevBest;
+    // EXTRAS v1 Gentle Light: Twilight only; stars and best times rest (gold, shards, Bond, clears and the Night Gate count as normal)
+    const assisted = r.assist === true && (r.tier === undefined || r.tier === 'normal');
+    const newBest = !assisted && time > prevBest;
     const before = ctx && ctx.def ? metConditions(ctx.def, s, ctx.data) : new Set();
     this.data.gold += pos(r.gold);
     this.data.shards += pos(r.shards);
@@ -182,12 +184,12 @@ export class SaveStore {
       const c = Object.hasOwn(s.chapters, r.chapter) ? s.chapters[r.chapter] : (s.chapters[r.chapter] = { runs: 0, clears: 0, bestTime: 0 });
       c.runs += 1;
       if (won) c.clears += 1;
-      c.bestTime = Math.max(c.bestTime, time);
+      if (!assisted) c.bestTime = Math.max(c.bestTime, time);
     }
     // Last RECENT_RUNS runs (per-run pace for the tree's "about N more runs" hint); sanitize() re-clamps every field.
     const kills = r.killsByEnemy && typeof r.killsByEnemy === 'object' ? Object.entries(r.killsByEnemy).sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0)).slice(0, 12) : [];
     const evos = Array.isArray(r.weapons) ? r.weapons.filter((w) => w && typeof w.evo === 'string').map((w) => w.evo) : [];
-    s.recentRuns = [...(Array.isArray(s.recentRuns) ? s.recentRuns : []), { t: time, k: Object.fromEntries(kills.map(([id, n]) => [id, pos(n)])), e: evos, b: !!(r.bossKilled && r.bossId), c: won }].slice(-RECENT_RUNS);
+    s.recentRuns = [...(Array.isArray(s.recentRuns) ? s.recentRuns : []), { t: time, k: Object.fromEntries(kills.map(([id, n]) => [id, pos(n)])), e: evos, b: !!(r.bossKilled && r.bossId), c: won, ...(assisted ? { a: true } : {}) }].slice(-RECENT_RUNS);
     this.data = sanitize(this.data);
     const after = ctx && ctx.def ? metConditions(ctx.def, this.data.stats, ctx.data) : new Set();
     const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);

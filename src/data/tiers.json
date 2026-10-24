@@ -6,7 +6,8 @@
    "enemyHp": 1, "enemyDmg": 1, "density": 1, "bossHp": 1, "heartPity": 1,
    "goldMul": 1, "shards": 5, "firstShards": 0,
    "glass": { "boss": 0, "dawn": 0, "first": 0, "marked": 0, "markedCap": 0, "runCap": 0 },
-   "marks": { "share": 0, "from": 0, "max": 1, "kinds": [] }
+   "marks": { "share": 0, "from": 0, "max": 1, "kinds": [] },
+   "assist": { "enemyDmg": 0.7, "enemySpeed": 0.9, "heartSooner": 1.5 }
   },
   "hard": {
    "name": "Deep Dusk",

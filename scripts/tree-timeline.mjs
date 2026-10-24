@@ -133,7 +133,8 @@ const linked = (s, id) => {
 // back lanterns not linked from their parent side (statusAll), for comparison only
 const statusOf = (s, id) => nodeStatus(def, s, id, data);
 const buyNode = (s, id) => buy(s, id, def, data);
-const IDS = def.list.filter((id) => !def.nodes[id].teaser);
+const cosmOnly = (n) => n.effects.length > 0 && n.effects.every((e) => e && e.cosm !== undefined); // EXTRAS v1 Wardrobe: zero-power looks
+const IDS = def.list.filter((id) => !def.nodes[id].teaser && !cosmOnly(def.nodes[id])); // the power timeline leaves the Wardrobe out (an optional gold sink, its own price group)
 const W = Object.keys(composed.info.clusters).length;
 // depth = lanterns from the hub along the links (requires: deepest parent; requiresAny: nearest parent); a hub-linked lantern inside a
 // gated constellation counts from its heart (E2/E1)

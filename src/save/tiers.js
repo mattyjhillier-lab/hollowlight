@@ -95,12 +95,16 @@ export function recordTierRun(save, r, ctx) {
     save.stats.totalGold = Math.min(1e12, num(save.stats.totalGold, 0, 1e12) + out.goldBonus);
   }
   rec.best = isObj(rec.best) ? rec.best : { t: 0, kills: 0, level: 0 };
+  const assisted = r.assist === true && tid === 'normal'; // EXTRAS v1 Gentle Light: records and stars rest (the clear itself still counts)
+  out.assist = assisted;
+  if (!assisted) {
   rec.best.t = Math.max(num(rec.best.t, 0, 1e7), num(r.time, 0, 1e7));
   rec.best.kills = Math.max(num(rec.best.kills, 0, 1e9), num(r.kills, 0, 1e9));
   rec.best.level = Math.max(num(rec.best.level, 0, 1e6), num(r.level, 0, 1e6));
+  }
   if (won) {
     rec.clears = num(rec.clears, 0, 1e9) + 1;
-    rec.stars = (rec.stars | 0) | STAR_BITS.cleared;
+    if (!assisted) rec.stars = (rec.stars | 0) | STAR_BITS.cleared;
     if (!isObj(rec.heroes)) rec.heroes = {};
     if (hid) {
       const h = own(rec.heroes, hid) && isObj(rec.heroes[hid]) ? rec.heroes[hid] : (rec.heroes[hid] = { clears: 0, first: false });
@@ -117,8 +121,8 @@ export function recordTierRun(save, r, ctx) {
       }
     }
     const hs = heroesOf(data);
-    if (hs.length > 1 && hs.every((h) => own(rec.heroes, h) && rec.heroes[h].clears > 0)) rec.stars |= STAR_BITS.bothHeroes;
-    if (r.bright === true) rec.stars |= STAR_BITS.brightDawn; // Bright Dawn needs the Grey Alphas (EN7); until then the sim never sets it
+    if (!assisted && hs.length > 1 && hs.every((h) => own(rec.heroes, h) && rec.heroes[h].clears > 0)) rec.stars |= STAR_BITS.bothHeroes;
+    if (!assisted && r.bright === true) rec.stars |= STAR_BITS.brightDawn; // Bright Dawn needs the Grey Alphas (EN7); until then the sim never sets it
     out.stars = rec.stars;
   }
   return out;

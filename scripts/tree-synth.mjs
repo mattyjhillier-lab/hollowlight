@@ -19,7 +19,7 @@ export function loadRealData() {
 }
 
 // Slot for the k-th synthetic constellation: the far slots the five tool clusters leave free (far1, far3, far5, far7, far9), then two per chapter band starting at band 2.
-const FREE_FAR = ['far1', 'far3', 'far5', 'far7', 'far9'];
+const FREE_FAR = ['far1', 'far5', 'far7', 'far9']; // far3 = the Wardrobe (EXTRAS v1)
 export function synthSlot(k) {
   if (k < FREE_FAR.length) return FREE_FAR[k];
   const j = k - FREE_FAR.length;

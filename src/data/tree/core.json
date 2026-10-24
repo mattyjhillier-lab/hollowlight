@@ -195,6 +195,12 @@
    "owners": [
     "core"
    ]
+  },
+  "wd": {
+   "kind": "tool",
+   "owners": [
+    "wardrobe"
+   ]
   }
  },
  "legacyIds": [
@@ -1767,6 +1773,31 @@
    "place": {
     "ring": "dusk",
     "i": 5
+   }
+  },
+  {
+   "id": "br_wardrobe",
+   "idx": 52,
+   "kind": "ring",
+   "name": "Wardrobe Path",
+   "desc": "Lights the path to the Wardrobe and opens the Moon Teal flame. Looks only: no power.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "li_coin",
+    "li_magnet"
+   ],
+   "effects": [
+    {
+     "cosm": "flame",
+     "id": "moon_teal"
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 6
    }
   }
  ]

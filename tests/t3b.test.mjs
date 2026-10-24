@@ -258,8 +258,8 @@ const TOOL = { satchel: ['li_reach', 'co_pull', 'li_scav', 'co_call', 'li_hearts
 const INERT = ['cd_radar', 'bs_crow3', 'bs_crawl3', 'bs_page', 'df_ward', 'df_vigil', 'df_star'];
 
 test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and idx, every new node has a permanent (fragment, idx), layout and budget pass', () => {
-  assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel']);
-  assert.deepEqual(Object.values(composed.info.tools).map((t) => t.slot).sort(), ['far10', 'far2', 'far4', 'far6', 'far8'], 'the five far slots of layout L-A');
+  assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel', 'wardrobe']); // + the Wardrobe (EXTRAS v1)
+  assert.deepEqual(Object.values(composed.info.tools).map((t) => t.slot).sort(), ['far10', 'far2', 'far3', 'far4', 'far6', 'far8'], 'the five far slots of layout L-A + far3 for the Wardrobe');
   for (const [t, ids] of Object.entries(TOOL)) for (const id of ids) assert.ok(v2.nodes[id], `${t}/${id}`);
   const moved = ['li_reach', 'li_scav', 'li_hearts', 'li_heal', 'li_magnet', 'sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'sp_auto', 'li_last'];
   const besideParent = ['li_hearts', 'li_heal', 'li_magnet', 'sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'sp_auto', 'li_last']; // T3c: next ranks moved back beside their parent

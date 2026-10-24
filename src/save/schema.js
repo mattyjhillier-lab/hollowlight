@@ -8,6 +8,7 @@ import { TIER_IDS } from '../sim/tiers.js';
 import { cleanHints } from '../ui/whispers.js';
 import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
 import { cleanChars, cleanPick, legacySeed } from './chars.js';
+import { cleanCosm } from '../meta/cosmetics.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -28,7 +29,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHe
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -49,6 +50,7 @@ export function defaultSave(now = Date.now()) {
     hints: 0, // FM1: lantern whisper bits (src/ui/whispers.js HINT); unknown bits are dropped
     codex: defaultCodex(), // CX1: Almanac read (NEW dots) + told (celebrated once) bitsets over ENTRY_KEYS (src/meta/codex.js); v 0 = not adopted yet
     titles: defaultTitles(), // CX6: earned title ids (fixed list) + the picked one
+    cosm: { worn: { flame: null, trail: null, look: {} } }, // EXTRAS v1: what is WORN only (owned is derived from the tree + Bond)
     settings: defaultSettings(),
   };
 }
@@ -140,7 +142,7 @@ function recentRuns(a) {
   if (!Array.isArray(a)) return out;
   for (const r of a.slice(-RECENT_RUNS)) {
     if (!isObj(r)) continue;
-    out.push({ t: num(r.t, 0, 0, 1e7), k: countMap(r.k, 12, 1e6), e: idList(r.e, 8), b: r.b === true, c: r.c === true });
+    out.push({ t: num(r.t, 0, 0, 1e7), k: countMap(r.k, 12, 1e6), e: idList(r.e, 8), b: r.b === true, c: r.c === true, ...(r.a === true ? { a: true } : {}) }); // a: Gentle Light run (EXTRAS v1)
   }
   return out;
 }
@@ -248,6 +250,7 @@ export function sanitize(raw, now = Date.now()) {
     hints: cleanHints(raw.hints),
     codex: cleanCodex(raw.codex), // CX1: hex bitsets only, unknown bits dropped, bad types -> empty (added inside v3: older saves read as v 0)
     titles: cleanTitles(raw.titles), // CX6: ids from the fixed TITLES list only; pick must be an earned id
+    cosm: cleanCosm(raw.cosm, TREE_DATA), // EXTRAS v1: known cosmetic / hero / look ids only; anything else dropped
     settings: {
       masterVol: num(st.masterVol, ds.masterVol, 0, 1),
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),
@@ -262,7 +265,8 @@ export function sanitize(raw, now = Date.now()) {
       stickSize: STICK_NAMES.includes(st.stickSize) ? st.stickSize : ds.stickSize,
       autoRule: AUTO_RULE_NAMES.includes(st.autoRule) ? st.autoRule : ds.autoRule,
       tips: bool(st.tips, ds.tips), // FM1 Settings > Controls 'Tips'
-      vibration: bool(st.vibration, ds.vibration), // FM5 phone buzz (device setting; never used under Calm or a hidden tab)
+      vibration: bool(st.vibration, ds.vibration),
+      gentleLight: bool(st.gentleLight, ds.gentleLight), // EXTRAS v1 Gentle Light (Twilight assist; read only when a Twilight run starts) // FM5 phone buzz (device setting; never used under Calm or a hidden tab)
     },
   };
 }

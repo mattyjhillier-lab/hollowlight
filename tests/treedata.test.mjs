@@ -32,7 +32,7 @@ const GOLD = fx('tree-v2-rescale.json'); // Appendix A of skill-tree-v2.md (T3a)
 const MOVED = fx('tree-t3b-moved.json'); // the four existing ids the tool-cluster build changed afterwards (Satchel steps, Kinder Hearts, Lodestar)
 const T3C = fx('tree-t3c-connected.json'); // T3c connected-unlock patch: li_reach hangs from its bridge, sp_cd1 needs-all -> any-one, + the live bridge br_satchel
 const CH2 = fx('tree-ch2-characters.json'); // CHARACTER SYSTEM v2 overlay (null = retired hero lantern, now a tombstone)
-const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df'];
+const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df', 'wd']; // wd = the Wardrobe (EXTRAS v1, zero power)
 const RETIRED = new Set(Object.keys(CH2).filter((k) => CH2[k] === null));
 // the v1 tree has no Wolves / Orbit hearts: compile it with those two ungated, as they were
 const v1data = { ...data, weapons: Object.fromEntries(Object.entries(data.weapons).map(([k, w]) => [k, ['ghost_wolves', 'holy_orbit'].includes(k) ? (({ treeGate, ...r }) => r)(w) : w])) };
@@ -44,7 +44,9 @@ test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ran
   for (const id of Object.keys(CH2)) if (id !== '_comment' && CH2[id]) assert.deepEqual(snap(liveDef.nodes[id]), CH2[id], `CH2 ${id}`);
   for (const id of Object.keys(MOVED)) assert.ok(Object.hasOwn(GOLD, id), `${id} is a pre-existing id`);
   // every other live node is a tool-cluster lantern (its own fragment): covered by tests/t3b.test.mjs
-  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id) && !Object.hasOwn(CH2, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
+  // EXTRAS v1: the Wardrobe bridge (zero power: one cosmetic, gold only, hangs from Coin Sense / Magnet like the other bridges)
+  assert.deepEqual(snap(liveDef.nodes.br_wardrobe), { effects: [{ cosm: 'flame', id: 'moon_teal' }], cost: { gold: 250, shards: 0 }, rankCost: 1, maxRank: 1, requires: [], requiresAny: ['li_coin', 'li_magnet'], excludes: [], unlock: null });
+  for (const n of real.info.nodes) if (!n.inert && n.id !== 'br_wardrobe' && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id) && !Object.hasOwn(CH2, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
 });
 
 test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids; the live tree IS the v2 view', () => {
@@ -113,7 +115,7 @@ test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbe
 
 test('T1 fragment save keys are short, unique and idx are stable small integers', () => {
   const keys = new Set(real.info.nodes.map((n) => n.frag));
-  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'or', 'rs', 'rv', 'wf']); // v2: no hero fragments
+  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'or', 'rs', 'rv', 'wd', 'wf']); // v2: no hero fragments; wd = Wardrobe (EXTRAS v1)
   for (const k of Object.keys(liveDef.frags)) {
     const f = liveDef.frags[k];
     assert.ok(f.max < 64, k);
@@ -124,7 +126,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 156, '156 + the four T3c bridge lanterns - the six retired hero lanterns + the two new Wolves / Orbit hearts (CHARACTER SYSTEM v2)');
+  assert.equal(real.info.nodes.length, 164, '156 + the four T3c bridge lanterns - the six retired hero lanterns + the two new Wolves / Orbit hearts (CHARACTER SYSTEM v2) + the Wardrobe bridge and its 7 lanterns (EXTRAS v1)');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);

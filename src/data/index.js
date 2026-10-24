@@ -6,6 +6,8 @@ import enemies from './enemies.json';
 import chapters from './chapters.json';
 import blessings from './blessings.json';
 import tiers from './tiers.json';
+import cosmetics from './cosmetics.json';
+import { validateCosmetics } from '../meta/cosmetics.js';
 import { validateTiers } from '../sim/tiers.js';
 import { treeFiles } from './tree/index.js';
 import { composeTree } from '../meta/treedata.js';
@@ -17,6 +19,7 @@ const tree = composed.live;
 export const treeInfo = composed.info;
 
 validateTiers(tiers); // throws at boot on bad tier data (multipliers 1..4, Twilight exactly 1, registered marks)
+validateCosmetics(cosmetics, characters); // EXTRAS v1: colours inside the lantern band, no reserved colours, one default each
 
-export const data = { balance, weapons, evolutions, characters, enemies, chapters, tree, blessings, tiers };
+export const data = { balance, weapons, evolutions, characters, enemies, chapters, tree, blessings, tiers, cosmetics };
 export default data;

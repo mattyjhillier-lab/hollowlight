@@ -18,7 +18,7 @@ import {
   BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
-import { resolveTier, bossShardsFor } from './tiers.js';
+import { resolveTier, bossShardsFor, resolveAssist } from './tiers.js';
 import { rollMark, applyMark, heartAura, updateEmbers, markSeed, EMBER } from './marks.js';
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
@@ -52,14 +52,24 @@ export const MARK_AMP = 0.15;
 export const MARK_TIME = 3;
 export const AMP_CAP = 1.75;
 
+// EXTRAS v1 Endless Dusk knobs (balance.endless), bounded; missing or bad data -> null (the option is simply not offered).
+export function endlessDef(b) {
+  const E = b && b.endless;
+  const ok = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  if (!E || !ok(E.density, 0, 0.5) || !ok(E.goldMul, 0, 1) || !ok(E.goldCap, 0, 2) || !ok(E.swarmEvery, 20, 600) || !ok(E.swarmBase, 0, 80) || !ok(E.swarmGrow, 0, 20)) return null;
+  return Object.freeze({ density: E.density, goldMul: E.goldMul, goldCap: E.goldCap, swarmEvery: E.swarmEvery, swarmBase: E.swarmBase, swarmGrow: E.swarmGrow });
+}
+
 export class Sim {
-  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null, startWeapon = null, bond = 0, keepsakes = null }) {
+  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null, startWeapon = null, bond = 0, keepsakes = null, assist = false }) {
     this.data = data;
     this.balance = data.balance;
     this.chapterId = chapterId;
     this.chapter = data.chapters[chapterId];
     // Difficulty tier (src/sim/tiers.js): an unknown or forged id resolves to Twilight (every multiplier 1), so the param can never reach another path.
     this.tier = resolveTier(data.tiers, chapterId, tier);
+    // EXTRAS v1 Gentle Light: Twilight only (strict true); null = off, and every assist read below is guarded, so off runs are byte-identical
+    this.assist = resolveAssist(data.tiers, this.tier.id, assist);
     this.character = data.characters[characterId];
     this.characterId = characterId;
     // CHARACTER SYSTEM v2: one shared body (balance.body); the starting spirit is any weapon id (the app only offers tree-unlocked ones; a bad id
@@ -218,6 +228,10 @@ export class Sim {
     this.fightDef = fdef || null;
     this.fight = null;
     this.spawnHalt = false;
+    // EXTRAS v1 Endless Dusk ('Stay in the dark', C1-A): null until stayInDark() continues a WON run; nothing below reads it before that,
+    // so every run that never chooses it is byte-identical. { t0: dawn time, gold0: gold at dawn, goldMax, swarmAt, swarmN }
+    this.endless = null;
+    this.endlessDef = endlessDef(data.balance);
     this.bossDmgBy = {}; // damage dealt to the boss by source weapon (counter only)
     this._dt = 0;
 
@@ -468,6 +482,7 @@ export class Sim {
   damagePlayer(amount, src = 'contact', meta = null) {
     const p = this.player;
     if (p.iframes > 0 || this.state !== 'running') return;
+    if (this.assist) amount *= this.assist.enemyDmg; // Gentle Light: every foe hit (contact, shots, bursts, embers, the boss) lands softer
     if (this.bondFx.ward > 0) amount *= 1 - this.bondFx.ward; // Bond ward (banked between runs; 0 at Bond 0, so untouched runs are byte-identical)
     this.hurtBy[src] = (this.hurtBy[src] || 0) + amount;
     this.hitsBy[src] = (this.hitsBy[src] || 0) + 1;
@@ -568,6 +583,7 @@ export class Sim {
   }
 
   updateSpawns(dt) {
+    if (this.endless) { this.endlessSpawns(dt); return; }
     if (this.spawnHalt) return;
     const t = this.time;
     if (this.fightDef && t >= this.chapter.bossAt) { // 14:00: the Elder Treant wakes (boss.js); nothing else spawns again
@@ -610,6 +626,49 @@ export class Sim {
       this.boss = this.spawnEnemy(this.chapter.bossId, pt.x, pt.y);
       this.pushEvent('boss');
     }
+  }
+
+  // EXTRAS v1 Endless Dusk: every chapter wave at its last (dawn) rate x (1 + density per minute in the dark), same per-type live caps;
+  // a swarm every swarmEvery s (wolves / crows by turns, growing). Foe HP keeps the run's own curve (spawnEnemy reads the run minute).
+  endlessSpawns(dt) {
+    const E = this.endless, D = this.endlessDef, t = this.time;
+    const mul = 1 + D.density * ((t - E.t0) / 60);
+    const cap = this.balance.maxEnemies;
+    this.chapter.waves.forEach((wave, i) => {
+      this.spawnAcc[i] = Math.min(4, this.spawnAcc[i] + wave.rate1 * mul * dt);
+      const maxA = wave.maxAlive === undefined ? Infinity : (wave.maxAliveAfter ? wave.maxAliveAfter.n : wave.maxAlive);
+      while (this.spawnAcc[i] >= 1) {
+        this.spawnAcc[i] -= 1;
+        if (this.enemies.length >= cap || (this.alive[wave.enemy] || 0) >= maxA) continue;
+        const pt = this.ringPoint(this.rng.range(0, 6.2832), this.rng.range(0, 40));
+        this.spawnEnemy(wave.enemy, pt.x, pt.y);
+      }
+    });
+    if (t >= E.swarmAt) {
+      const enemy = E.swarmN % 2 === 0 ? 'wolf' : 'crow';
+      const count = Math.min(80, D.swarmBase + D.swarmGrow * E.swarmN);
+      E.swarmN += 1; E.swarmAt += D.swarmEvery;
+      if (Object.hasOwn(this.data.enemies, enemy)) {
+        const base = this.rng.range(0, 6.2832);
+        for (let n = 0; n < count && this.enemies.length < cap; n++) { const pt = this.ringPoint(base + this.rng.range(-0.6, 0.6), this.rng.range(0, 50)); this.spawnEnemy(enemy, pt.x, pt.y); }
+        this.pushEvent('swarm', { enemy, count });
+      }
+    }
+  }
+
+  // EXTRAS v1 'Stay in the dark': only after a dawn won by the boss kill; once per run. The dawn is already earned (result() keeps the
+  // victory), the boss fight is over, waves return. Returns true when the run continues.
+  stayInDark() {
+    if (this.state !== 'victory' || !this.bossKilled || this.endless || !this.fightDef || !this.endlessDef) return false;
+    const D = this.endlessDef;
+    this.endless = { t0: this.time, gold0: this.gold, goldMax: this.gold * (1 + D.goldCap), swarmAt: this.time + D.swarmEvery, swarmN: 0 };
+    this.fight = null; // the ring is gone: recycling, separation and spawns run as before the boss
+    this.spawnHalt = false;
+    this.eshots.length = 0;
+    for (let i = 0; i < this.spawnAcc.length; i++) this.spawnAcc[i] = 0;
+    this.state = 'running';
+    this.pushEvent('endless', { t: this.time });
+    return true;
   }
 
   updateEnemies(dt) {
@@ -722,6 +781,7 @@ export class Sim {
       }
 
       if (sz && !e.boss && !e.fight) { const qx = e.x - sz.x, qy = e.y - sz.y, rr = sz.r + e.r; if (qx * qx + qy * qy < rr * rr) { vx *= 1 - sz.slow; vy *= 1 - sz.slow; } }
+      if (this.assist) { vx *= this.assist.enemySpeed; vy *= this.assist.enemySpeed; } // Gentle Light: foes move a little slower
       e.x = clamp(e.x + vx * dt, 5, size - 5);
       e.y = clamp(e.y + vy * dt, 5, size - 5);
       if (Math.abs(vx) > 1) e.faceX = vx > 0 ? 1 : -1;
@@ -952,10 +1012,13 @@ export class Sim {
       this.addPickup('magnet', e.x + 12, e.y);
       return;
     }
-    const pityH = Math.max(10, b.pityHeart + this.tfx.heartPity) * this.tier.heartPity, pityM = Math.max(10, b.pityMagnet + this.tfx.magnetPity); // Kinder Hearts / Lodestar shorten the timers; Long Night stretches the heart timer
+    let pityH = Math.max(10, b.pityHeart + this.tfx.heartPity) * this.tier.heartPity;
+    const forceAt = this.assist ? (b.pityHeartForce || Infinity) / this.assist.heartSooner : (b.pityHeartForce || Infinity);
+    if (this.assist) pityH /= this.assist.heartSooner; // Gentle Light: hearts come sooner
+    const pityM = Math.max(10, b.pityMagnet + this.tfx.magnetPity); // Kinder Hearts / Lodestar shorten the timers; Long Night stretches the heart timer
     const heartP = b.heart * this.tfx.heart * low * (1 + this.sinceHeart / pityH);
     const magnetP = b.magnet * this.tfx.magnet * (1 + this.sinceMagnet / pityM);
-    const forced = this.sinceHeart >= (b.pityHeartForce || Infinity) && p.hp < p.maxHp * 0.8; // guaranteed heart after a long dry spell
+    const forced = this.sinceHeart >= forceAt && p.hp < p.maxHp * 0.8; // guaranteed heart after a long dry spell
     if (p.hp < p.maxHp && (forced || this.rng.chance(heartP))) { this.addPickup('heart', e.x, e.y); this.sinceHeart = 0; }
     else if (this.gems.length > (b.magnetGems ?? 12) && this.rng.chance(magnetP)) { this.addPickup('magnet', e.x, e.y); this.sinceMagnet = 0; }
   }
@@ -1099,7 +1162,8 @@ export class Sim {
       if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
       this.logHit(e, 0, true);
       if (e.killer === 'ghost_wolves' && !e.boss && !e.mini && !e.echoKill && this.fallen.length < 16 && this.weapons.some((w) => w.evo === 'howling_legion')) this.fallen.push({ x: e.x, y: e.y });
-      this.gold += e.gold * this.mods.gold * this.bless.gold;
+      if (this.endless) this.gold = Math.min(this.endless.goldMax, this.gold + e.gold * this.mods.gold * this.bless.gold * this.endlessDef.goldMul); // Endless Dusk: a quarter of the gold, capped at +50% of the dawn's
+      else this.gold += e.gold * this.mods.gold * this.bless.gold;
       if (e.bossAdd) { // boss-made adds: gems only (no hearts / magnets), at most addGems gems per fight (no farming without a timer)
         if (this.fight.addGems < this.fightDef.addGems) { this.fight.addGems += 1; this.addGem(e.x, e.y, e.xp); }
         continue;
@@ -1286,7 +1350,8 @@ export class Sim {
   result() {
     return {
       startWeapon: this.startWeapon, bond: this.bondLevel, keepsake: this.keepsake, // CHARACTER SYSTEM v2 (banked at results only)
-      outcome: this.state === 'victory' ? 'victory' : 'defeat',
+      outcome: this.state === 'victory' || this.endless ? 'victory' : 'defeat', // Endless Dusk: a death in the dark is never a defeat (the dawn stays)
+      endless: this.endless ? { dark: Math.max(0, this.time - this.endless.t0), dawn: this.endless.t0, gold0: Math.floor(this.endless.gold0) } : null, // EXTRAS v1
       time: this.time,
       level: this.level,
       kills: this.kills,
@@ -1300,6 +1365,7 @@ export class Sim {
       weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks }, damage: this.dmgBy[w.id] || 0, kills: this.killsBy[w.id] || 0 })),
       damageDealt: this.damageDealt,
       tier: this.tier.id,
+      assist: !!this.assist, // EXTRAS v1 Gentle Light (stars and best times rest at bank time)
       marked: this.markedKills, markedBy: { ...this.markedBy }, // DT2 Hollow marks (Dawnglass is capped at bank time)
       gems: this.gemsTaken,
       abilityUses: this.abilityUses,

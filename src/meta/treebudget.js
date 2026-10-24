@@ -61,7 +61,7 @@ export function effectTerms(e, rule, ctx = {}) {
     if (e.unlock === 'autoAbility') return [T('autoAbility', 0, 'util')];
     return [T(`unlock.${e.unlock}`, 0, 'none')];
   }
-  if (e.visual !== undefined) return [T('visual', 0, 'none')];
+  if (e.visual !== undefined || e.cosm !== undefined) return [T('visual', 0, 'none')]; // EXTRAS v1 Wardrobe cosmetics: zero power
   return [T('unknown', 0, 'none')];
 }
 

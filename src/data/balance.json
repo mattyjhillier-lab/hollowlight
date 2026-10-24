@@ -1,5 +1,6 @@
 {
   "runSeconds": 900,
+  "endless": { "density": 0.06, "goldMul": 0.25, "goldCap": 0.5, "swarmEvery": 90, "swarmBase": 24, "swarmGrow": 4, "note": "EXTRAS v1 Endless Dusk (C1-A Stay in the dark): after a dawn the run may continue; waves at their last rate x (1 + density x minutes in the dark), foe HP keeps the run curve (~8%/min past 15:00), alternating wolf / crow swarms; gold x goldMul capped at +goldCap of the dawn gold; no shards, Dawnglass or keepsakes" },
   "worldSize": 4000,
   "view": {
     "w": 640,

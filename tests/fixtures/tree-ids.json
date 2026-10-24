@@ -646,5 +646,37 @@
  "gt_holy_orbit": [
   "or",
   13
+ ],
+ "br_wardrobe": [
+  "core",
+  52
+ ],
+ "wd_rose": [
+  "wd",
+  0
+ ],
+ "wd_white": [
+  "wd",
+  1
+ ],
+ "wd_ember": [
+  "wd",
+  2
+ ],
+ "wd_petal": [
+  "wd",
+  3
+ ],
+ "wd_lilac": [
+  "wd",
+  4
+ ],
+ "wd_firefly": [
+  "wd",
+  5
+ ],
+ "wd_motes": [
+  "wd",
+  6
  ]
 }

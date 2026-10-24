@@ -49,6 +49,24 @@ function checkBlock(b, where) {
   }
 }
 
+// EXTRAS v1 'Gentle Light' (Twilight assist): foe damage x enemyDmg, foe speed x enemySpeed, heart pity timers / heartSooner.
+const ASSIST_RANGE = { enemyDmg: [0.5, 1], enemySpeed: [0.5, 1], heartSooner: [1, 3] };
+function checkAssist(a) {
+  if (!isObj(a)) throw new Error('tiers: assist must be an object');
+  for (const k of Object.keys(a)) if (!own(ASSIST_RANGE, k)) throw new Error(`tiers: assist.${k} is not a known field`);
+  for (const [k, [lo, hi]] of Object.entries(ASSIST_RANGE)) if (!fin(a[k], lo, hi)) throw new Error(`tiers: assist.${k} must be ${lo}..${hi}`);
+}
+
+// -> the frozen Gentle Light bundle for a run, or null. Only a strict `true` on Twilight turns it on; any other tier, a forged value or missing
+// data -> null (so harder nights and every assist-off run are byte-identical to before).
+export function resolveAssist(tiers, tierId, on) {
+  if (on !== true || tierId !== 'normal' || !isObj(tiers) || !isObj(tiers.template) || !isObj(tiers.template.normal)) return null;
+  const a = tiers.template.normal.assist;
+  if (!isObj(a)) return null;
+  for (const [k, [lo, hi]] of Object.entries(ASSIST_RANGE)) if (!fin(a[k], lo, hi)) return null;
+  return Object.freeze({ enemyDmg: a.enemyDmg, enemySpeed: a.enemySpeed, heartSooner: a.heartSooner });
+}
+
 // Validates tiers.json and returns { order, template, chapters } (throws a readable error on bad data; the game then refuses to boot the data).
 export function validateTiers(raw) {
   if (!isObj(raw) || !isObj(raw.template)) throw new Error('tiers: missing template');
@@ -62,6 +80,9 @@ export function validateTiers(raw) {
   if (n.glass && Object.values(n.glass).some((v) => v !== 0)) throw new Error('tiers: Twilight pays no Dawnglass');
   if (n.miniHowl || n.chestLarge || (n.miniExtra && n.miniExtra.length)) throw new Error('tiers: Twilight keeps the locked miniboss and chest');
   // each harder tier is at least as hard as the one below it (a data typo cannot make Long Night easier than Deep Dusk)
+  // EXTRAS v1 Gentle Light (assist): Twilight only, and it may only make the night gentler (every knob bounded)
+  if (n.assist !== undefined) checkAssist(n.assist);
+  for (const id of TIER_IDS.slice(1)) if (raw.template[id].assist !== undefined) throw new Error(`tiers: ${id} has no assist (Twilight only)`);
   for (let i = 1; i < TIER_IDS.length; i++) for (const k of MULS) if ((raw.template[TIER_IDS[i]][k] ?? 1) < (raw.template[TIER_IDS[i - 1]][k] ?? 1)) throw new Error(`tiers: ${TIER_IDS[i]}.${k} is below the tier under it`);
   const chapters = isObj(raw.chapters) ? raw.chapters : {};
   if (Object.keys(chapters).length > 32) throw new Error('tiers: too many chapters');
@@ -70,6 +91,7 @@ export function validateTiers(raw) {
     for (const [tid, b] of Object.entries(c)) {
       if (!TIER_IDS.includes(tid)) throw new Error(`tiers: chapter ${cid} has unknown tier ${tid}`);
       checkBlock(b, `chapters.${cid}.${tid}`);
+      if (b.assist !== undefined) throw new Error(`tiers: chapter ${cid} ${tid} cannot override the assist`);
       if (tid === 'normal') for (const k of MULS) if (b[k] !== undefined && b[k] !== 1) throw new Error(`tiers: chapter ${cid} Twilight ${k} must be 1`);
     }
   }

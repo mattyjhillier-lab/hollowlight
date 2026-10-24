@@ -81,7 +81,7 @@ test('costs: rank scaling, totals recomputed from nodes', () => {
   assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2, glass: 0 });
   assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3, glass: 0 }); // junk ids ignored, rank clamped to the node max
   const t = totalCost(def);
-  assert.ok(t.gold > 40000 && t.gold < 120000, `total gold ${t.gold}`);
+  assert.ok(t.gold > 40000 && t.gold < 125000, `total gold ${t.gold}`); // includes the Wardrobe's 24,250 zero-power gold sink (EXTRAS v1)
   assert.ok(t.shards >= 20 && t.shards <= 60, `total shards ${t.shards}`);
 });
 
