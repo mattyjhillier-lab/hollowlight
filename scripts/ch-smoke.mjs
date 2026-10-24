@@ -68,6 +68,15 @@ try {
   console.log('  legacy', JSON.stringify(lg), legacy);
   if (lg.awake.join() !== 'elias,wren' || lg.hearts.join() !== '1,1' || lg.cards !== 2) fail('legacy ' + JSON.stringify(lg));
   await shot('ch-legacy-hero-1280x720');
+  // 4. results screen at three sizes: every action button's label fits (no clipped 'Main menu'), a staged run banked through the real bankRun
+  const R = JSON.stringify({ outcome: 'defeat', time: 640, clock: 640, level: 22, kills: 1200, gold: 300, shards: 0, bossKilled: false, chapter: 'cursed_forest', character: 'wren', startWeapon: 'ghost_wolves', keepsake: null, chests: 1, weapons: [{ id: 'ghost_wolves', evo: null, ranks: {}, damage: 9000, kills: 900 }] });
+  for (const [n, w, h, d, m] of VIEWS) {
+    await open(`${base}/${m ? '?touch=1' : ''}`, w, h, d, m);
+    const fit = JSON.parse(await ev(`(()=>{const A=__app;A.banked=false;const r=${R};const sim={result:()=>r,state:r.outcome};const b=A.bankRun(sim);A.ui.hideAll();A.ui.showEnd(sim,b);return new Promise((res)=>setTimeout(()=>res(JSON.stringify([...document.querySelectorAll('.u6-acts .lg-btn')].filter(e=>e.offsetParent).map(e=>{const l=e.querySelector('.lg-btn__label')||e;const r=e.getBoundingClientRect();return {t:l.textContent.trim().slice(0,20),clip:l.scrollWidth>l.clientWidth+1||l.getBoundingClientRect().right>r.right+1||l.getBoundingClientRect().left<r.left-1,w:Math.round(r.width),h:Math.round(r.height)}}))),1500))})()`));
+    console.log('  results', n, JSON.stringify(fit));
+    for (const b of fit) { if (b.clip) fail(`results ${n}: '${b.t}' is cut off`); if (b.w < 44 || b.h < 44) fail(`results ${n}: '${b.t}' tap ${b.w}x${b.h}`); }
+    await shot(`ch-results-${n}`);
+  }
   if (errors.length) fail('console errors: ' + errors.slice(0, 5).join(' | '));
 } finally {
   try { proc.kill(); } catch { /* gone */ }

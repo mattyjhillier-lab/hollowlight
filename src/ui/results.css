@@ -95,6 +95,8 @@ html.touch .overlay.u6.u6-won, .overlay.u6.u6-won {
 .overlay.u6 .u6-btn { width: auto; min-width: 0; flex: 1 1 0; max-width: 250px; min-height: max(52px, var(--lg-tap)); }
 .overlay.u6 .u6-btn--again { flex: 1.7 1 0; max-width: 440px; min-height: max(60px, var(--lg-tap)); }
 .overlay.u6 .u6-btn .lg-btn__label { white-space: nowrap; display: inline-flex; align-items: center; gap: .5em; }
+/* 'Main menu' is the longest label: on phone sizes the key hints go (no keyboard there) and Main menu gets a little more room than Tree, so nothing is cut off */
+@media (max-width: 899px), (max-height: 480px) { .overlay.u6 .u6-btn .lg-btn__key { display: none; } .overlay.u6 .u6-btn--menu { flex-grow: 1.35; } }
 .overlay.u6 .u6-dot { flex: none; width: 11px; height: 11px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 2px var(--lg-ink), 0 0 9px var(--teal); }
 
 /* landscape phones and any short screen */
@@ -134,6 +136,7 @@ html.touch .overlay.u6.u6-won, .overlay.u6.u6-won {
   .overlay.u6 .u6-acts { flex-wrap: wrap; }
   .overlay.u6 .u6-btn--again { order: -1; flex: 1 1 100%; max-width: none; }
   .overlay.u6 .u6-btn--menu, .overlay.u6 .u6-btn--tree { flex: 1 1 0; max-width: none; }
+  .overlay.u6 .u6-btn--menu { flex-grow: 1.35; }
   .overlay.u6 .u6-btn .lg-btn__flame { width: 28px; height: 28px; }
   .overlay.u6 .u6-wep { grid-template-columns: 26px minmax(0, 1.4fr) minmax(32px, .8fr) 3em; column-gap: 8px; }
   .overlay.u6 .u6-chip__val { font-size: clamp(20px, 3.4vh, 30px); }
