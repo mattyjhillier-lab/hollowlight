@@ -6,7 +6,7 @@
  "slot": "sky1",
  "chapter": "cursed_forest",
  "region": "launch",
- "heart": null,
+ "heart": "gt_ghost_wolves",
  "starterEvo": "howling_legion",
  "sockets": {
   "a": {
@@ -23,6 +23,27 @@
   }
  },
  "gates": [
+  {
+   "id": "gt_ghost_wolves",
+   "idx": 13,
+   "kind": "heart",
+   "name": "Ghost Wolves",
+   "desc": "Unlocks Ghost Wolves: you can start a run with it, and it can appear in your level-up cards.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 150
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "ghost_wolves"
+    }
+   ],
+   "unlock": {
+    "t": "runs",
+    "n": 2
+   }
+  },
   {
    "id": "gt_phantom_stampede",
    "idx": 0,
@@ -233,7 +254,7 @@
    "idx": 9,
    "kind": "knot",
    "name": "Iron Jaw",
-   "desc": "Bite power +2%",
+   "desc": "Bite power +4%",
    "cost": {
     "gold": 450
    },
@@ -241,7 +262,7 @@
     {
      "weapon": "ghost_wolves",
      "stat": "power",
-     "pct": 2
+     "pct": 4
     }
    ]
   },
@@ -250,7 +271,7 @@
    "idx": 10,
    "kind": "bead",
    "name": "Moonlit Coat",
-   "desc": "Bite power +2%",
+   "desc": "Bite power +4%",
    "cost": {
     "gold": 390
    },
@@ -258,12 +279,12 @@
     {
      "weapon": "ghost_wolves",
      "stat": "power",
-     "pct": 2
+     "pct": 4
     }
    ],
    "unlock": {
-    "t": "useCharacter",
-    "id": "wren",
+    "t": "startWeapon",
+    "id": "ghost_wolves",
     "n": 5
    }
   },

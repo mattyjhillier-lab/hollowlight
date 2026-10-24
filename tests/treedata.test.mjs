@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { data, ungated } from './helpers.mjs';
 import { compileTree, presetTree, aggregateMods, totalCost, sanitizeTree, nodeStatus, pathToHub } from '../src/meta/tree.js';
 import { composeTree } from '../src/meta/treedata.js';
@@ -18,6 +19,8 @@ const get = (fs, p) => fs.find((f) => f.path === p).json;
 const compose = (fs, d = data) => composeTree(fs, d);
 const bad = (mut, re, d = data) => { const fs = files(); mut(fs); assert.throws(() => compose(fs, d), re); };
 const V1 = fx('tree-v1.json');
+const HERO3 = fileURLToPath(new URL('./fixtures/hero3', import.meta.url));
+const D3 = { ...data, characters: { ...data.characters, ...fx('hero3-data.json').characters } };
 const real = compose(files());
 const liveDef = compileTree(real.live, data);
 const v2Def = compileTree(real.v2, data);
@@ -28,23 +31,29 @@ const W = Object.keys(real.info.clusters).length;
 const GOLD = fx('tree-v2-rescale.json'); // Appendix A of skill-tree-v2.md (T3a)
 const MOVED = fx('tree-t3b-moved.json'); // the four existing ids the tool-cluster build changed afterwards (Satchel steps, Kinder Hearts, Lodestar)
 const T3C = fx('tree-t3c-connected.json'); // T3c connected-unlock patch: li_reach hangs from its bridge, sp_cd1 needs-all -> any-one, + the live bridge br_satchel
+const CH2 = fx('tree-ch2-characters.json'); // CHARACTER SYSTEM v2 overlay (null = retired hero lantern, now a tombstone)
 const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df'];
+const RETIRED = new Set(Object.keys(CH2).filter((k) => CH2[k] === null));
+// the v1 tree has no Wolves / Orbit hearts: compile it with those two ungated, as they were
+const v1data = { ...data, weapons: Object.fromEntries(Object.entries(data.weapons).map(([k, w]) => [k, ['ghost_wolves', 'holy_orbit'].includes(k) ? (({ treeGate, ...r }) => r)(w) : w])) };
 const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
 
 test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ranks / requires / condition skill-tree-v2 Appendix A specifies', () => {
-  for (const id of Object.keys(GOLD)) assert.deepEqual(snap(liveDef.nodes[id]), T3C[id] || MOVED[id] || GOLD[id], id);
-  for (const id of Object.keys(T3C)) if (id !== '_comment') assert.deepEqual(snap(liveDef.nodes[id]), T3C[id], `T3c ${id}`);
+  for (const id of Object.keys(GOLD)) { if (RETIRED.has(id)) { assert.equal(liveDef.nodes[id], undefined, `${id} retired`); continue; } assert.deepEqual(snap(liveDef.nodes[id]), CH2[id] || T3C[id] || MOVED[id] || GOLD[id], id); }
+  for (const id of Object.keys(T3C)) if (id !== '_comment') assert.deepEqual(snap(liveDef.nodes[id]), CH2[id] || T3C[id], `T3c ${id}`);
+  for (const id of Object.keys(CH2)) if (id !== '_comment' && CH2[id]) assert.deepEqual(snap(liveDef.nodes[id]), CH2[id], `CH2 ${id}`);
   for (const id of Object.keys(MOVED)) assert.ok(Object.hasOwn(GOLD, id), `${id} is a pre-existing id`);
   // every other live node is a tool-cluster lantern (its own fragment): covered by tests/t3b.test.mjs
-  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
+  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id) && !Object.hasOwn(CH2, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
 });
 
 test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids; the live tree IS the v2 view', () => {
-  const g = compileTree(V1, data);
+  const g = compileTree(V1, v1data);
   assert.equal(g.list.length, 82);
   const J = JSON.stringify;
   const n = { effects: 0, cost: 0, requires: 0, maxRank: 0 };
   for (const id of g.list) {
+    if (RETIRED.has(id)) { assert.ok(liveDef.retiredIds[id], `${id} is a tombstone`); continue; } // CHARACTER SYSTEM v2: ch_wren / ch_elias
     const a = g.nodes[id], b = { ...liveDef.nodes[id], ...GOLD[id] };
     assert.ok(liveDef.nodes[id], `v1 id ${id} must stay live (ids are permanent; a removal needs a tombstone)`);
     if (J(a.effects) !== J(b.effects)) n.effects++;
@@ -52,16 +61,16 @@ test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 req
     if (J([...a.requires].sort()) !== J([...b.requires].sort()) || J(a.requiresAny || null) !== J(b.requiresAny || null)) n.requires++;
     if (a.maxRank !== b.maxRank) { n.maxRank++; assert.ok(b.maxRank < a.maxRank, 'a cut'); }
   }
-  assert.deepEqual(n, { effects: 47, cost: 26, requires: 14, maxRank: 2 });
+  assert.deepEqual(n, { effects: 45, cost: 26, requires: 14, maxRank: 2 }); // 47 at T3a; ch_wren + ch_elias (2 of them) are tombstones since CHARACTER SYSTEM v2
   assert.deepEqual(['rv_wide', 'or_wide'].map((i) => liveDef.nodes[i].maxRank), [1, 1]);
   // the live tree IS the v2 view: same nodes, same graph, same positions
   assert.deepEqual(liveDef.list, v2Def.list.filter((id) => liveDef.nodes[id]), 'live = v2 minus the inert (pending) tool nodes, same order');
   for (const id of liveDef.list) { assert.deepEqual(snap(liveDef.nodes[id]), snap(v2Def.nodes[id]), id); assert.deepEqual([liveDef.nodes[id].x, liveDef.nodes[id].y], [v2Def.nodes[id].x, v2Def.nodes[id].y], id); }
-  assert.equal(liveDef.retiredIds && Object.keys(liveDef.retiredIds).length, 0, 'no v1 id is retired by the rescale');
+  assert.deepEqual(Object.keys(liveDef.retiredIds).sort(), [...RETIRED].sort(), 'only the six hero lanterns are retired (CHARACTER SYSTEM v2; none by the rescale)');
 });
 
 test('T3a a tree-less run is untouched: no nodes owned = the same effects as the v1 tree gave', () => {
-  const g = compileTree(V1, data);
+  const g = compileTree(V1, v1data);
   const none = aggregateMods({}, liveDef, data);
   const old = aggregateMods({}, g, data);
   for (const k of ['mods', 'meta', 'player', 'drops', 'evoLuck', 'rush', 'weaponBonus', 'unlocks']) assert.deepEqual(none[k], old[k], k);
@@ -73,12 +82,12 @@ test('T3a the 43 new v2 nodes are LIVE: listed, costed, buyable behind their thr
   const v1ids = new Set(V1.nodes.map((n) => n.id));
   const newIds = Object.keys(GOLD).filter((id) => !v1ids.has(id));
   assert.equal(newIds.length, 43);
-  for (const id of newIds) { assert.ok(liveDef.nodes[id], id); assert.ok(liveDef.list.includes(id) && liveDef.order.includes(id)); assert.equal(liveDef.pending[id], undefined); }
-  assert.ok([...v1ids].every((id) => liveDef.nodes[id]));
+  for (const id of newIds) { if (RETIRED.has(id)) continue; assert.ok(liveDef.nodes[id], id); assert.ok(liveDef.list.includes(id) && liveDef.order.includes(id)); assert.equal(liveDef.pending[id], undefined); }
+  assert.ok([...v1ids].every((id) => liveDef.nodes[id] || RETIRED.has(id)));
   assert.equal(new Set(real.info.nodes.map((n) => n.id)).size, real.info.nodes.length);
   // the status, ability and visual effect kinds are now live in the game tree
   const kinds = new Set(liveDef.list.flatMap((id) => liveDef.nodes[id].effects.map((e) => Object.keys(e)[0])));
-  for (const k of ['status', 'visual', 'ability']) assert.ok(kinds.has(k), k);
+  for (const k of ['status', 'ability']) assert.ok(kinds.has(k), k); // 'visual' left with the hero lanterns (CHARACTER SYSTEM v2)
 });
 
 test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbered', () => {
@@ -104,7 +113,7 @@ test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbe
 
 test('T1 fragment save keys are short, unique and idx are stable small integers', () => {
   const keys = new Set(real.info.nodes.map((n) => n.frag));
-  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'el', 'or', 'rs', 'rv', 'wf', 'wr']);
+  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'or', 'rs', 'rv', 'wf']); // v2: no hero fragments
   for (const k of Object.keys(liveDef.frags)) {
     const f = liveDef.frags[k];
     assert.ok(f.max < 64, k);
@@ -115,7 +124,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 160, '156 + the four T3c bridge lanterns (one live, three inert with their groups)');
+  assert.equal(real.info.nodes.length, 156, '156 + the four T3c bridge lanterns - the six retired hero lanterns + the two new Wolves / Orbit hearts (CHARACTER SYSTEM v2)');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);
@@ -123,7 +132,7 @@ test('T1 v2 view compiles: every node (125 + the tool clusters), template requir
   assert.deepEqual(v2Def.nodes[rv.outline[10].id].requires, ['gt_raven_flock']);
   assert.ok(v2Def.nodes[apex].gateAnc.includes('gt_raven_flock'), 'the apex still sits behind the Raven gate on every route');
   const wf = real.info.clusters.ghost_wolves;
-  assert.deepEqual(v2Def.nodes[wf.outline[0].id].requires, [], 'a starter weapon hangs off the hub');
+  assert.deepEqual(v2Def.nodes[wf.outline[0].id].requires, ['gt_ghost_wolves'], 'v2: Wolves hangs from its own heart like every weapon');
   for (const id of v2Def.list) if (v2Def.nodes[id].permanent) assert.ok(v2Def.nodes[id].requires.every((r) => v2Def.nodes[r].permanent), `${id}: a gate requires only other gates (the Night Gate chain: Long Night after Deep Dusk)`);
   for (const id of v2Def.list) if (v2Def.nodes[id].permanent && !id.startsWith('gt_cursed_forest')) assert.deepEqual(v2Def.nodes[id].requires, [], `${id}: weapon / evolution gates keep requires []`);
   assert.deepEqual(layoutIssues(real.info, v2Def), []);
@@ -242,10 +251,12 @@ test('T1 validator: ids, namespaces, retired, idx, fields', () => {
   bad((fs) => { get(fs, 'core.json').nodes[0].place = { ring: 'sky', i: 0 }; }, /needs place/);
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').outline[0].id = 'rv_hijack'; }, /prefix "rv" is not owned by ghost_wolves/);
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').outline[0].id = 'ch_hijack'; }, /prefix "ch" (is not owned by ghost_wolves|\(hero\) cannot be used inside a cluster)/); // ch_ is shared by every hero (TREE-GEN1), never by a weapon
-  bad((fs) => { get(fs, 'heroes/wren.json').lanterns[1].id = 'wf_hijack'; }, /prefix "wf" is not owned by wren/);
-  bad((fs) => { get(fs, 'heroes/wren.json').lanterns.pop(); }, /exactly 3 lanterns/);
-  bad((fs) => { get(fs, 'heroes/wren.json').signature = 'nope'; }, /unknown signature cluster/);
-  bad((fs) => { fs.find((f) => f.path === 'heroes/wren.json').path = 'heroes/bob.json'; }, /id must match the file name/);
+  // hero fragments: none ship since CHARACTER SYSTEM v2; the composer still validates one (the test-only third hero, tests/fixtures/hero3)
+  const badH = (mut, re) => { const fs = [...files(), ...clone(readTreeFiles(HERO3))]; mut(fs, get(fs, 'heroes/sable.json')); assert.throws(() => compose(fs, D3), re); };
+  badH((fs, h) => { h.lanterns[1].id = 'wf_hijack'; }, /prefix "wf" is not owned by sable/);
+  badH((fs, h) => { h.lanterns.pop(); }, /exactly 3 lanterns/);
+  badH((fs, h) => { h.signature = 'nope'; }, /unknown signature cluster/);
+  badH((fs) => { fs.find((f) => f.path === 'heroes/sable.json').path = 'heroes/bob.json'; }, /id must match the file name/);
   bad((fs) => { fs.push({ path: 'weird/x.json', json: { kind: 'cluster' } }); }, /unknown fragment directory/);
   bad((fs) => { fs.push({ path: '../evil.json', json: {} }); }, /bad fragment path/);
   bad((fs) => { fs.push({ path: 'clusters/a/b.json', json: { kind: 'cluster' } }); }, /unexpected location/);
@@ -336,7 +347,7 @@ function wispsFiles() {
       o('lw_tallow', 11, 'Tallow Store', 'knot', st('duration', 2), 300),
     ] } });
   fs.push({ path: 'heroes/thomas.json', json: { kind: 'hero', hero: 'thomas', prefix: 'th', signature: W, gate: null, lanterns: [
-    o('th_a', 0, 'Thomas A', 'hero', st('power', 2), 600, { t: 'useCharacter', id: 'thomas', n: 3 }), o('th_b', 1, 'Thomas B', 'hero', [{ ability: 'wheelRadius', pct: 8 }], 900, { t: 'useCharacter', id: 'thomas', n: 6 }), o('th_c', 2, 'Thomas C', 'hero', [{ visual: 'graveLamp' }], 400, { t: 'useCharacter', id: 'thomas', n: 10 })] } });
+    o('th_a', 0, 'Thomas A', 'hero', st('power', 2), 600, { t: 'useCharacter', id: 'thomas', n: 3 }), o('th_b', 1, 'Thomas B', 'hero', st('radius', 2), 900, { t: 'useCharacter', id: 'thomas', n: 6 }), o('th_c', 2, 'Thomas C', 'hero', [{ visual: 'graveLamp' }], 400, { t: 'useCharacter', id: 'thomas', n: 10 })] } });
   fs.push({ path: 'chapters/drowned_marsh.json', json: { kind: 'chapter', chapter: 'drowned_marsh', order: 2, prefix: 'c2', future: true, nodes: [] } });
   const d = clone(data);
   d.weapons[W] = { id: W, name: 'Lantern Wisps', type: 'summon', treeGate: true, stats: { count: {}, power: {}, radius: {}, duration: {} } };

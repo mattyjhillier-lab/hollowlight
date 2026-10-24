@@ -25,6 +25,7 @@ const LEAF = {
   surviveTime: { need: ['chapter', 'seconds'], ref: 'chapters', refKey: 'chapter' },
   evolveWeapon: { need: ['id'], ref: 'weapons', anyOk: true },
   useCharacter: { need: ['id'], ref: 'characters' },
+  startWeapon: { need: ['id'], ref: 'weapons' }, // CHARACTER SYSTEM v2: runs STARTED with that spirit (stats.startWeapon)
   bossKill: { need: ['id'], ref: 'enemies' },
   totalKills: { need: ['n'] },
   totalGold: { need: ['n'] },
@@ -63,6 +64,11 @@ function checkCond(c, data, teaser, depth, budget, where) {
   }
 }
 
+// A condition outside the tree (e.g. a character's keepsake hint) is checked with the same rules. -> true when valid.
+export function validCondition(c, data) {
+  try { checkCond(c, data, false, 0, { n: 0 }, 'condition'); return true; } catch { return false; }
+}
+
 const target = (c) => (c.t === 'surviveTime' ? c.seconds : c.n ?? 1);
 
 // Current stat value a leaf condition measures.
@@ -80,6 +86,7 @@ function leafValue(c, stats, def) {
       return sum;
     }
     case 'useCharacter': return m(stats.charsUsed, c.id);
+    case 'startWeapon': return m(stats.startWeapon, c.id);
     case 'bossKill': return m(stats.bossKills, c.id);
     case 'totalKills': return stats.kills || 0;
     case 'totalGold': return stats.totalGold || 0;
@@ -117,6 +124,7 @@ function leafText(c, data) {
     case 'surviveTime': return `Survive ${Math.floor(c.seconds / 60)}:${String(c.seconds % 60).padStart(2, '0')} in ${nm('chapters', c.chapter)}`;
     case 'evolveWeapon': return c.id === 'any' ? `Evolve weapons ${n} time${n > 1 ? 's' : ''}` : `Evolve ${nm('weapons', c.id)}${n > 1 ? ` ${n} times` : ''}`;
     case 'useCharacter': return `Play ${n} run${n > 1 ? 's' : ''} as ${nm('characters', c.id).split(',')[0]}`;
+    case 'startWeapon': return `Start ${n} run${n > 1 ? 's' : ''} with ${nm('weapons', c.id)}`;
     case 'bossKill': return `Defeat ${nm('enemies', c.id)}${n > 1 ? ` ${n} times` : ''}`;
     case 'totalKills': return `Slay ${n} enemies in total`;
     case 'totalGold': return `Earn ${n} gold in total`;

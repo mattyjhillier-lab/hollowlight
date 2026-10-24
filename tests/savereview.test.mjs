@@ -16,6 +16,10 @@ import { TREE_STEPS } from '../src/meta/migrations/index.js';
 import { budgetOf } from '../src/meta/treebudget.js';
 import { rng, v1RandomBuys, BIG_STATS, isGateV1, memStorage, ROOT } from '../scripts/review/lib.mjs';
 
+// CHARACTER SYSTEM v2: a played pre-v2 save (no chars block) keeps the old run-1 pool, so its tree gains these two hearts on load
+const LEGACY_HEARTS = ['gt_ghost_wolves', 'gt_holy_orbit'];
+const HEARTS = { gt_ghost_wolves: 1, gt_holy_orbit: 1 };
+
 // ---- open findings (see docs/design/save-v3-review.md); remove a name here when its fix lands
 export const KNOWN_FAILING = [];
 const T = (name, fn) => test(name, KNOWN_FAILING.includes(name) ? { todo: 'open review finding (KNOWN_FAILING)' } : {}, fn);
@@ -82,7 +86,7 @@ T('R04 Regrowth refunds EXACTLY what v1 charged (independent v1 buy simulator, 3
     assert.ok(r.ok);
     assert.equal(r.save.gold, 200000 - gateSpent.gold, `seed ${seed} gold`);
     assert.equal(r.save.shards, 100 - gateSpent.shards, `seed ${seed} shards`);
-    assert.deepEqual(Object.keys(r.save.tree).sort(), Object.keys(tree).filter((id) => isGateV1(byId[id])).sort(), `seed ${seed} gates`);
+    assert.deepEqual(Object.keys(r.save.tree).filter((id) => !LEGACY_HEARTS.includes(id)).sort(), Object.keys(tree).filter((id) => isGateV1(byId[id])).sort(), `seed ${seed} gates`); // + the v2 legacy hearts (a played pre-v2 save)
   }
 });
 
@@ -229,12 +233,12 @@ T('R11 a migration step can see a node that was retired (so it can refund it)', 
   c.nodes = c.nodes.filter((n) => n.id !== 'sp_cd4');
   const bridge = c.nodes.find((n) => n.id === 'br_cardfan'); delete bridge.requiresAny; bridge.requires = ['sp_cd3']; // T6: the live Card Fan bridge also hangs from sp_cd4
   c.retired.push({ id: 'sp_cd4', frag: 'core', idx: gone.idx });
-  c.version = 4;
+  c.version = 5; // (step 4 is the real CHARACTER SYSTEM v2 hero-lantern retirement)
   const def = liveOf(fs);
   let seenByStep = null;
-  TREE_STEPS[4] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
-  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[4]; }
-  assert.ok(seenByStep, 'step 4 ran');
+  TREE_STEPS[5] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
+  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[5]; }
+  assert.ok(seenByStep, 'step 5 ran');
   assert.equal(seenByStep.sp_cd4, 1, 'the retired node (2100 gold + 2 shards) must reach the step that refunds it');
 });
 
@@ -242,11 +246,11 @@ T('R12 a migration step can see the full owned rank of a node whose maxRank was 
   const disk = serializeSave(fullSave());
   disk.tree.r = { ...disk.tree.r, rv_wide: 2 }; // an older build allowed two ranks; the rescale cut Watch to one (T3a)
   const fs = files();
-  core(fs).version = 4;
+  core(fs).version = 5;
   const def = liveOf(fs);
   let seenByStep = null;
-  TREE_STEPS[4] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
-  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[4]; }
+  TREE_STEPS[5] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
+  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[5]; }
   assert.equal(seenByStep && seenByStep.rv_wide, 2, 'rank 2 (960 gold) must reach the step');
 });
 
@@ -384,6 +388,6 @@ test('L3 stat-map caps: a valid key beyond the cap is counted (never silent); th
 
 test('L9 the regrowth notice exists only when something was refunded', () => {
   assert.deepEqual(parseSave(JSON.stringify({ version: 2, gold: 5, tree: {} })).save.notes, {});
-  assert.deepEqual(parseSave(JSON.stringify({ version: 2, gold: 5, tree: { gt_raven_flock: 1 } })).save.notes, {}, 'only permanent gates: nothing refunded');
+  assert.deepEqual(parseSave(JSON.stringify({ version: 2, gold: 5, tree: { gt_raven_flock: 1 } })).save.notes, { starter: { hero: 'wren', weapon: 'ghost_wolves' } }, 'only permanent gates: nothing refunded (the starter note is the v2 legacy seed)');
   assert.equal(parseSave(JSON.stringify({ version: 2, gold: 5, tree: { sp_reroll1: 1 } })).save.notes.regrowth.nodes, 1);
 });

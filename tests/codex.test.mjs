@@ -76,7 +76,7 @@ test('CX1 pages: same counts as the Almanac tree nodes; pending nodes stay out o
 });
 
 test('CX1 almanac: fresh save = all unknown, no names leak, no recipes', () => {
-  const b = almanac(save(), data, treeDef);
+  const b = almanac(save({}, { tree: { gt_ghost_wolves: 1 } }), data, treeDef); // the v2 starter grant (Wren + Ghost Wolves)
   assert.equal(b.unlocked.size, 0);
   for (const f of b.foes) { assert.equal(f.known, false); assert.equal(f.name || '', ''); assert.equal(f.line || '', ''); }
   for (const w of b.spirits) for (const e of w.evos) { assert.equal(e.recipe, undefined); assert.equal(e.name, undefined); assert.equal(e.riddle, undefined); }

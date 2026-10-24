@@ -69,19 +69,19 @@ test('T3a negatives pass through the cap unscaled; flat adds are never scaled; t
   assert.equal(g.player.maxHp, 1 - 0.04, 'the Glass keystone cost is unscaled');
 });
 
-test('T3a the new effect kinds reach aggregateMods: status potency / seconds, Firm Grip, Wide Wheel, visuals', () => {
-  const a = aggregateMods(own(['wf_bleed', 'wf_rend', 'or_kindle', 'or_ember', 'rv_eye', 'wr_grip', 'el_wheel', 'wr_spark', 'el_lamp']), def, data);
+test('T3a the new effect kinds reach aggregateMods: status potency / seconds (hero lanterns retired: CHARACTER SYSTEM v2)', () => {
+  const a = aggregateMods(own(['wf_bleed', 'wf_rend', 'or_kindle', 'or_ember', 'rv_eye', 'wr_grip', 'el_wheel', 'wr_spark', 'el_lamp']), def, data); // retired ids give nothing
   const S = 3 + 3 + 3 + 3 + 0.5 * RULE.markFace; // bleed 6, burn 6, mark 0.5 s -> 2 points
   const fac = soft(S, 16) / S;
   assert.ok(Math.abs(a.status.bleed - 6 * fac) < 1e-9 && Math.abs(a.status.burn - 6 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
-  assert.equal(a.ability.rallySecs, 0.5);
-  assert.equal(a.ability.wheel, 8);
-  assert.deepEqual(a.visuals.sort(), ['graveLamp', 'kinSparks']);
+  assert.equal(a.ability.rallySecs, undefined);
+  assert.equal(a.ability.wheel, undefined);
+  assert.deepEqual(a.visuals, []);
 });
 
-test('T3a status hooks in the sim: Bleed and Burn potency, Mark seconds (the amp itself never grows), Rally and Candle Wheel', () => {
+test('T3a status hooks in the sim: Bleed and Burn potency, Mark seconds (the amp itself never grows)', () => {
   const base = new Sim({ data, seed: 3 });
-  const tree = { ...emptyEffects(), status: { bleed: 10, burn: 20, mark: 0.5, pin: 0 }, ability: { dur: 1, autoHp: 0, rallySecs: 0.5, wheel: 8 } };
+  const tree = { ...emptyEffects(), status: { bleed: 10, burn: 20, mark: 0.5, pin: 0 }, ability: { dur: 1, autoHp: 0 } };
   const s = new Sim({ data, seed: 3, tree });
   const mk = (sim) => sim.spawnEnemy('wolf', sim.player.x + 200, sim.player.y);
   const e0 = mk(base), e1 = mk(s);
@@ -92,18 +92,8 @@ test('T3a status hooks in the sim: Bleed and Burn potency, Mark seconds (the amp
   base.mark(e0); s.mark(e1);
   assert.equal(e1.markT - e0.markT, 0.5, 'Mark lasts 0.5 s longer');
   assert.equal(s.damageAmp(e1), base.damageAmp(e0), 'the amp is the same size; only the uptime changes (Rally x Mark stays under x1.75)');
-  // Rally the Pack lasts +0.5 s
-  base.ability.cdLeft = 0; s.ability.cdLeft = 0;
-  assert.equal(base.character.ability.id, 'rally_pack');
-  base.useAbility(); s.useAbility();
-  assert.ok(Math.abs(s.rally.dur - base.rally.dur - 0.5) < 1e-9, `${s.rally.dur} vs ${base.rally.dur}`);
-  // Candle Wheel ring 8% wider
-  const eb = new Sim({ data, seed: 3, characterId: 'elias' }), es = new Sim({ data, seed: 3, characterId: 'elias', tree });
-  eb.ability.cdLeft = 0; es.ability.cdLeft = 0; eb.useAbility(); es.useAbility();
-  const zb = eb.zones.find((z) => z.wheel), zs = es.zones.find((z) => z.wheel);
-  assert.ok(Math.abs(zs.r / zb.r - 1.08) < 1e-9);
   // absent tree = the exact old numbers (byte-identical starter runs)
-  assert.deepEqual([base.tfx.bleedMul, base.tfx.burnMul, base.tfx.markAdd, base.tfx.rallyAdd, base.tfx.wheelMul], [1, 1, 0, 0, 1]);
+  assert.deepEqual([base.tfx.bleedMul, base.tfx.burnMul, base.tfx.markAdd], [1, 1, 0]);
 });
 
 test('T3a Blessings: tree x Blessing is held under the combined cap, a tree-less run is never trimmed', () => {

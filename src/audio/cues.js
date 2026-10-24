@@ -77,7 +77,7 @@ export function moreCue(e, id, t, v) {
     }
     case 'hurt': e.duck('hurt'); e.tone(t, 'sine', 110, 0.005, 0.2, 0.35 * v, 55); e.noise(t, 'lowpass', 600, 1, 0.002, 0.12, 0.25 * v); return 0.3;
     case 'swarm': e.tone(t, 'sawtooth', e.hz(-24), 1.2, 0.9, 0.08 * v); for (let i = 0; i < 5; i++) e.noise(t + 0.6 + i * 0.18, 'bandpass', rnd(1100, 1500), 4, 0.01, 0.12, 0.08 * v, 0, true); return 2.2;
-    case 'ability': // Pack Howl (Rally the Pack): rising detuned howl-chord + low thump
+    case 'ability': // the hero's action skill (Pelt Dash / Sanctuary Ring): rising detuned chord + low thump (own per-ability cues: CH6)
       e.duck('ability');
       for (const d of [-8, 0, 8]) e.tone(t, 'sawtooth', e.hz(0), 0.25, 0.9, 0.04 * v, e.hz(7), true, null, d);
       e.noise(t, 'bandpass', 500, 1.2, 0.2, 0.6, 0.07 * v, 1400, true); e.tone(t, 'sine', 80, 0.005, 0.5, 0.3 * v, 45); return 1.4;

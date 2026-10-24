@@ -7,6 +7,7 @@ import { tierRecords, MAX_GLASS } from './tiers.js';
 import { TIER_IDS } from '../sim/tiers.js';
 import { cleanHints } from '../ui/whispers.js';
 import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
+import { cleanChars, cleanPick, legacySeed } from './chars.js';
 
 export const SAVE_VERSION = 3;
 export const MAX_SAVE_BYTES = 200 * 1024;
@@ -41,6 +42,7 @@ export function defaultSave(now = Date.now()) {
     stats: defaultStats(),
     unlocks: {},
     tree: {},
+    chars: {}, // CHARACTER SYSTEM v2: { heroId: { xp, keep, woke } } (src/save/chars.js); a new profile picks its starter set first
     creep: {}, // rising-price steps per owned lantern ({id: steps}; src/meta/tree.js creepSteps): refunds pay back exactly what was paid
     seen: {},
     notes: {},
@@ -55,7 +57,7 @@ export function defaultStats() {
   return {
     runs: 0, wins: 0, kills: 0, bestTime: 0, totalPlayTime: 0,
     bestLevel: 0, totalGold: 0,
-    killsByEnemy: {}, bossKills: {}, chapters: {}, evolved: {}, weaponsUsed: {}, charsUsed: {},
+    killsByEnemy: {}, bossKills: {}, chapters: {}, evolved: {}, weaponsUsed: {}, charsUsed: {}, startWeapon: {},
     recentRuns: [],
     // tool-cluster counters + difficulty-tier records (DT0; docs/design/difficulty-tiers-economy-v1.md section 10)
     markedKills: 0, chests: 0, gems: 0, abilityUses: 0, blessingsTaken: 0,
@@ -76,7 +78,7 @@ export const MIGRATIONS = {
   1: (o) => ({ ...o, version: 2, tree: {}, seen: {} }),
   2: (o) => {
     const to = TREE ? TREE.treeVersion : 3;
-    const r = runTreeSteps(isObj(o.tree) && !isCompact(o.tree) ? o.tree : {}, OLD_TREE_VERSION, to);
+    const r = runTreeSteps(isObj(o.tree) && !isCompact(o.tree) ? o.tree : {}, OLD_TREE_VERSION, to, undefined, { creep: o.creep, def: TREE });
     return {
       ...o,
       version: 3,
@@ -94,7 +96,7 @@ const ID_KEY = /^[a-z0-9_]{1,40}$/;
 // recentRuns.k 12. A VALID key that does not fit is dropped and counted in SANITIZE_WARNINGS.capped (visible to tests/diagnostics) so the
 // cap is never hit silently: raise the cap when the roster grows (tests/savev3.test.mjs checks the roster fits).
 export const SANITIZE_WARNINGS = { capped: 0, unknown: 0 };
-export const STAT_KEY_CAPS = { killsByEnemy: 128, bossKills: 32, weaponsUsed: 32, charsUsed: 32, chapters: 32 };
+export const STAT_KEY_CAPS = { killsByEnemy: 128, bossKills: 32, weaponsUsed: 32, charsUsed: 32, startWeapon: 32, chapters: 32 };
 function countMap(o, maxKeys = 64, max = 1e9) {
   const out = {};
   if (!isObj(o)) return out;
@@ -143,6 +145,13 @@ function recentRuns(a) {
   return out;
 }
 
+// Migration notices from a tree step join any not-yet-shown 'web has regrown' notice (amounts add up).
+function mergeNotes(old, add) {
+  const o = { ...(isObj(old) ? old : {}) };
+  for (const [k, v] of Object.entries(add || {})) o[k] = k === 'regrowth' && isObj(o.regrowth) ? { gold: int(o.regrowth.gold, 0) + v.gold, shards: int(o.regrowth.shards, 0) + v.shards, nodes: int(o.regrowth.nodes, 0, 0, 1e4) + v.nodes } : v;
+  return o;
+}
+
 // One-time migration notices (the tree screen shows "The web has regrown" once): known keys only, clamped.
 function notesOf(o) {
   const out = {};
@@ -155,6 +164,8 @@ function notesOf(o) {
     const seen = Array.isArray(n.seen) ? [...new Set(n.seen.slice(0, 8).filter(tOk))] : [];
     out.night = { map: chOk(n.map) ? n.map : null, tier: tOk(n.tier) ? n.tier : null, seen };
   }
+  // CHARACTER SYSTEM v2: the starter pick and the last loadout (known hero + weapon ids only; anything else is dropped)
+  if (isObj(o) && TREE_DATA) { const st = cleanPick(o.starter, TREE_DATA); if (st) out.starter = st; const lo = cleanPick(o.loadout, TREE_DATA); if (lo) out.loadout = lo; }
   return out;
 }
 
@@ -198,13 +209,26 @@ export function sanitize(raw, now = Date.now()) {
     evolved: countMap(s.evolved),
     weaponsUsed: countMap(s.weaponsUsed, 32),
     charsUsed: countMap(s.charsUsed, 32),
+    startWeapon: countMap(s.startWeapon, 32), // CHARACTER SYSTEM v2: runs started with each spirit (tree 'startWeapon' condition)
     recentRuns: recentRuns(s.recentRuns),
     markedKills: int(s.markedKills, 0, 0, 1e9), chests: int(s.chests, 0, 0, 1e9), gems: int(s.gems, 0, 0, 1e9), abilityUses: int(s.abilityUses, 0, 0, 1e9), blessingsTaken: int(s.blessingsTaken, 0, 0, 1e9),
     tiers: TREE_DATA ? tierRecords(s.tiers, TREE_DATA, SANITIZE_WARNINGS) : {}, // unknown chapter / tier / hero ids are dropped (and counted)
   };
   // Owned stat nodes whose weapon gate is not owned (pre-G1e saves) are dropped WITH a full refund.
   const refund = { gold: 0, shards: 0 };
-  const treeIn = isCompact(raw.tree) ? decodeTree(raw.tree, TREE).tree : raw.tree;
+  let treeIn = isCompact(raw.tree) ? decodeTree(raw.tree, TREE).tree : raw.tree;
+  // CHARACTER SYSTEM v2: a played save from before the chars block keeps what it had (both launch heroes, the old run-1 pool's hearts owned,
+  // Bond seeded from history). Hearts are added BEFORE the tree is sanitised, so lanterns behind them are never dropped.
+  let chars = TREE_DATA ? cleanChars(raw.chars, TREE_DATA) : cleanChars(raw.chars, null);
+  let legacy = null;
+  if (raw.chars === undefined && TREE_DATA && (stats.runs > 0 || (isObj(treeIn) && Object.keys(treeIn).length > 0))) {
+    legacy = legacySeed(stats, TREE_DATA);
+    chars = cleanChars(legacy.chars, TREE_DATA);
+    treeIn = { ...(isObj(treeIn) ? treeIn : {}) };
+    for (const w of legacy.weapons) { const h = TREE && TREE.hearts && TREE.hearts[w]; if (h && Object.hasOwn(TREE.nodes, h)) treeIn[h] = 1; }
+    // runs before v2 always started with the hero's own spirit: Wren -> Ghost Wolves, Elias -> Holy Orbit (sheet section 7)
+    if (!Object.keys(stats.startWeapon).length) for (const [h, n] of Object.entries(stats.charsUsed)) { const k = TREE_DATA.characters[h] && TREE_DATA.characters[h].kindred; if (k) stats.startWeapon[k] = (stats.startWeapon[k] || 0) + n; }
+  }
   const seenIn = isCompact(raw.seen) ? decodeSeen(raw.seen, TREE) : raw.seen;
   const tree = TREE ? sanitizeTree(treeIn, stats, TREE, TREE_DATA, refund, raw.creep) : {};
   return {
@@ -219,7 +243,8 @@ export function sanitize(raw, now = Date.now()) {
     tree,
     creep: TREE ? sanitizeCreep(raw.creep, tree, TREE) : {},
     seen: TREE ? sanitizeSeen(seenIn, TREE) : {},
-    notes: notesOf(raw.notes),
+    notes: legacy && legacy.starter && !(isObj(raw.notes) && isObj(raw.notes.starter)) ? notesOf({ ...(isObj(raw.notes) ? raw.notes : {}), starter: legacy.starter }) : notesOf(raw.notes),
+    chars,
     hints: cleanHints(raw.hints),
     codex: cleanCodex(raw.codex), // CX1: hex bitsets only, unknown bits dropped, bad types -> empty (added inside v3: older saves read as v 0)
     titles: cleanTitles(raw.titles), // CX6: ids from the fixed TITLES list only; pick must be an earned id
@@ -275,8 +300,8 @@ export function parseSave(text) {
       if (dec.v !== null && dec.v > TREE.treeVersion) return { ok: false, code: 'future', error: 'This save is from a newer version of the game. Update the game to use it.' };
       const from = dec.v === null ? TREE.treeVersion : Math.max(3, dec.v); // a forged low version can never replay the Regrowth refund
       if (from < TREE.treeVersion) {
-        const r = runTreeSteps(dec.tree, from, TREE.treeVersion);
-        cur = { ...cur, tree: r.tree, gold: Math.min(MAX_NUM, int(cur.gold, 0) + r.gold), shards: Math.min(MAX_NUM, int(cur.shards, 0) + r.shards), notes: { ...(isObj(cur.notes) ? cur.notes : {}), ...r.notes } };
+        const r = runTreeSteps(dec.tree, from, TREE.treeVersion, undefined, { creep: cur.creep, def: TREE });
+        cur = { ...cur, tree: r.tree, creep: r.creep, gold: Math.min(MAX_NUM, int(cur.gold, 0) + r.gold), shards: Math.min(MAX_NUM, int(cur.shards, 0) + r.shards), notes: mergeNotes(cur.notes, r.notes) };
       }
     }
   } catch { return { ok: false, code: 'migrate', error: 'Save could not be upgraded.' }; }

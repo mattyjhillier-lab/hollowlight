@@ -2,6 +2,7 @@
 import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS } from './schema.js';
 import { metConditions } from '../meta/tree.js';
 import { recordTierRun } from './tiers.js';
+import { bankChars } from './chars.js';
 import { cleanHints } from '../ui/whispers.js';
 import { cleanCodex, cleanTitles } from '../meta/codex.js';
 
@@ -162,6 +163,7 @@ export class SaveStore {
     if (r.killsByEnemy && typeof r.killsByEnemy === 'object') for (const [id, n] of Object.entries(r.killsByEnemy)) bump(s.killsByEnemy, id, pos(n));
     if (r.bossKilled && r.bossId) bump(s.bossKills, r.bossId);
     if (typeof r.character === 'string') bump(s.charsUsed, r.character);
+    if (typeof r.startWeapon === 'string') bump(s.startWeapon, r.startWeapon);
     if (Array.isArray(r.weapons)) {
       for (const w of r.weapons) {
         if (!w || typeof w.id !== 'string') continue;
@@ -170,7 +172,10 @@ export class SaveStore {
       }
     }
     // tool-cluster unlock counters (the sim counts them per run; sanitize() clamps)
-    s.gems += pos(r.gems); s.abilityUses += pos(r.abilityUses); s.blessingsTaken += pos(r.blessings); s.markedKills = Math.min(1e9, s.markedKills + Math.min(pos(r.marked), 5000)); // DT2: a forged run count is clamped (a real run marks a few hundred at most) s.chests += pos(r.chests);
+    s.gems += pos(r.gems); s.abilityUses += pos(r.abilityUses); s.blessingsTaken += pos(r.blessings); s.markedKills = Math.min(1e9, s.markedKills + Math.min(pos(r.marked), 5000)); // DT2: a forged run count is clamped (a real run marks a few hundred at most)
+    s.chests += Math.min(pos(r.chests), 50); // (was inside the comment above, so chests were never banked: fixed with CHARACTER SYSTEM v2)
+    // CHARACTER SYSTEM v2: Bond XP + keepsake, banked here only (one write per run, with the gold)
+    const bond = ctx && ctx.data ? bankChars(this.data, r, ctx.data) : null;
     // difficulty tier records + the one-time first-dawn bounty (a tier whose gate the save does not own is recorded as Twilight)
     const tier = ctx && ctx.data ? recordTierRun(this.data, r, { data: ctx.data, unlockedTiers: ctx.unlockedTiers }) : null;
     if (typeof r.chapter === 'string') {
@@ -188,7 +193,7 @@ export class SaveStore {
     const newlyMet = [...after].filter((id) => !before.has(id) && !this.data.tree[id]);
     this.keptRaw = this.readOnly ? this.keptRaw : null;
     this.saveNow();
-    return { gold: this.data.gold, shards: this.data.shards, dawnglass: this.data.dawnglass, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet, tier, runGold: pos(r.gold) + (tier ? tier.goldBonus : 0) };
+    return { gold: this.data.gold, shards: this.data.shards, dawnglass: this.data.dawnglass, bestTime: this.data.stats.bestTime, newBest, prevBest, newlyMet, tier, runGold: pos(r.gold) + (tier ? tier.goldBonus : 0), bond };
   }
 
   exportText() { if (this.keptRaw !== null) return this.keptRaw; return JSON.stringify(serializeSave(this.data), null, 2); }

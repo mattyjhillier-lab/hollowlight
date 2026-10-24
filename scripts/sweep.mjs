@@ -1,5 +1,5 @@
 // Balance sweep: many seeded bot runs, summary table.
-// Usage: node scripts/sweep.mjs [characterId] [seeds]   (FOCUS=1 for focused-pick bot)
+// Usage: node scripts/sweep.mjs [characterId] [seeds] [startWeapon]   (FOCUS=1 for focused-pick bot; startWeapon default = the hero's kindred spirit; BOND=<level>)
 import { playRun, GATES } from './bot.mjs';
 console.error(`sweep: GATES=${GATES} META=${process.env.META || 'none'}`);
 
@@ -10,7 +10,8 @@ const fmt = (s) => (s == null ? '-' : `${Math.floor(s / 60)}:${String(Math.round
 
 const runs = [];
 const s0 = Number(process.env.SEED_FROM || 1);
-for (let sd = s0; sd < s0 + seeds; sd++) runs.push(playRun(char, sd));
+const weapon = process.argv[4] || null;
+for (let sd = s0; sd < s0 + seeds; sd++) runs.push(playRun(char, sd, weapon ? { weapon } : {}));
 
 const wins = runs.filter((r) => r.outcome === 'victory').length;
 const deaths = runs.filter((r) => r.outcome !== 'victory').map((r) => r.time);
@@ -19,7 +20,7 @@ const evoCount = runs.map((r) => r.evolved.length);
 const levels = runs.map((r) => r.level);
 const bossDeaths = runs.filter((r) => r.outcome !== 'victory' && r.time >= 600).length;
 
-console.log(`${char} ${process.env.FOCUS === '1' ? 'FOCUS' : 'random'} x${seeds}`);
+console.log(`${char}${weapon ? ' + ' + weapon : ''} ${process.env.FOCUS === '1' ? 'FOCUS' : 'random'} x${seeds}`);
 console.log(`  win rate        ${Math.round((wins / seeds) * 100)}% (${wins}/${seeds})`);
 console.log(`  level median    ${med(levels)} (min ${Math.min(...levels)}, max ${Math.max(...levels)})`);
 console.log(`  first evo       median ${fmt(med(evoFirst))} (p10 ${fmt([...evoFirst].sort((a, b) => a - b)[Math.floor(evoFirst.length * 0.1)])}, p90 ${fmt([...evoFirst].sort((a, b) => a - b)[Math.floor(evoFirst.length * 0.9)])}), ${evoFirst.length}/${seeds} runs evolved at all`);

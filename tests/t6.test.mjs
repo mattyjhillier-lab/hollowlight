@@ -98,10 +98,11 @@ test('T6 Louder Stirring: a recipe stat stirs once its partner is rank 2; never 
 });
 
 test('T6 Favoured Spirit: a start offer of every unlocked weapon (hero first); the mark weighs its stat cards x1.5', () => {
-  const s = sim(['cd_favour']);
+  const s = sim(['cd_favour', 'gt_ghost_wolves', 'gt_holy_orbit']); // the old run-1 pool (v2: both hearts owned)
+  assert.deepEqual(sim(['cd_favour']).offer.cards.map((c) => c.weaponId), ['ghost_wolves'], 'v2 starter set: the held starting spirit can always be favoured');
   assert.equal(s.state, 'levelup');
   assert.equal(s.offer.start, 'favour');
-  assert.deepEqual(s.offer.cards.map((c) => c.weaponId), ['ghost_wolves', 'holy_orbit'], 'run 1: only the starter weapons are unlocked');
+  assert.deepEqual(s.offer.cards.map((c) => c.weaponId), ['ghost_wolves', 'holy_orbit'], 'only the unlocked weapons');
   assert.equal(s.canReroll(), false); assert.equal(s.canBanish(), false);
   s.pickCard('v:holy_orbit');
   assert.deepEqual([s.favour, s.state, s.pending, s.level], ['holy_orbit', 'running', 0, 1]);
@@ -136,7 +137,7 @@ test('T6 Second Sight: the next offer is drawn now and kept, except cards a pick
 
 // ------------------------------------------------------------------ Hearth-key
 test('T6 Kindred Start: three unlocked weapons not owned (a free weapon card); Lantern Blessing: one Blessing inside the caps; order Kindred > Favour > Blessing', () => {
-  const s = new Sim({ data, characterId: 'wren', seed: 3, tree: { ...fx(['rs_start', 'cd_favour', 'rs_bless']), unlocks: { weapons: ['raven_flock', 'spirit_bolts', 'chain_lightning'], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [], tiers: [] } } });
+  const s = new Sim({ data, characterId: 'wren', seed: 3, tree: { ...fx(['rs_start', 'cd_favour', 'rs_bless']), unlocks: { weapons: ['ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts', 'chain_lightning'], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [], tiers: [] } } });
   assert.equal(s.offer.start, 'kindred');
   assert.equal(s.offer.cards.length, 3);
   assert.ok(s.offer.cards.every((c) => c.kind === 'weapon' && c.weaponId !== 'ghost_wolves'));
@@ -151,9 +152,10 @@ test('T6 Kindred Start: three unlocked weapons not owned (a free weapon card); L
   const b = s.offer.cards[0];
   s.pickCard(b.key);
   assert.deepEqual([s.blessRanks[b.blessId], s.blessingsTaken, s.state, s.level, s.pending, s.time], [1, 1, 'running', 1, 0, 0]);
-  // run 1 (nothing unlocked): Kindred offers the one other starter weapon
-  const r1 = sim(['rs_start']);
+  // the old run-1 pool (both launch hearts): Kindred offers the one other launch weapon; v2 starter set alone: nothing to offer (skipped)
+  const r1 = sim(['rs_start', 'gt_ghost_wolves', 'gt_holy_orbit']);
   assert.deepEqual(r1.offer.cards.map((c) => c.weaponId), ['holy_orbit']);
+  assert.equal(sim(['rs_start']).state, 'running');
   // a pending level-up waits behind the start offers and opens after them
   const t = sim(['rs_bless']);
   t.pending = 1; pickAll(t);
@@ -218,7 +220,7 @@ const textOf = (n) => { let t = n._text; n.children.forEach((c) => { t += ' ' + 
 test('T6 UI: start offers carry their own title; favour cards read FAVOUR x1.5; Second Sight prints one dimmed text line', () => {
   const doc = fakeDoc(), host = doc.createElement('div');
   const v = new OfferView(doc, host, { pick() {}, reroll() {}, banish() {} });
-  const s = sim(['cd_favour']);
+  const s = sim(['cd_favour', 'gt_ghost_wolves', 'gt_holy_orbit']);
   v.render(s, data);
   assert.ok(textOf(host).includes(START_COPY.favour[0]) && textOf(host).includes('MARK ONE SPIRIT'));
   assert.equal(host.attrs['aria-label'], 'Favoured Spirit: choose one');

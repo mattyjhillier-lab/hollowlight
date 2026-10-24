@@ -64,15 +64,6 @@ test('Halo: the contracted ring still burns the foe pressing against Elias (not 
   assert.ok(e.maxHp - e.hp > 0, 'took damage');
 });
 
-test('Halo: the Candle Wheel suppresses the ground burn (the ability never applies Burn)', () => {
-  const sim = mk(R());
-  sim.ability.cdLeft = 0; sim.useAbility();
-  const e = dummy(sim, 20, 0);
-  run(sim, 1.5);
-  assert.equal(e.burnT, 0);
-  assert.equal(sim.burnBy.holy_orbit || 0, 0);
-});
-
 test('Halo D1: every Holy Orbit stat still changes the evolved Halo (no no-ops)', () => {
   const dps = (ranks, secs = 6) => { const sim = mk(ranks); const e = dummy(sim, 0, 0); const r = sim.weapons[0].s.radius * 1.5 * sim.mods.area; e.x = sim.player.x + r; e.y = sim.player.y; const h = e.hp; run(sim, secs); return (h - e.hp) / secs; };
   assert.ok(dps(R({ power: 4 })) > dps(R({ power: 1 })) * 1.4, 'power');

@@ -185,14 +185,14 @@ test('surviving to 15:00 no longer wins (the boss must die); zero HP ends in def
   assert.equal(lose.state, 'defeat');
 });
 
-test('Rally the Pack: starts on cooldown, opens the window, no fear, then recharges', () => {
+test('action skill (Pelt Dash): fires off cooldown, no fear, then recharges', () => {
   const sim = mk({ characterId: 'wren', godMode: true });
   sim.chapter = { ...sim.chapter, waves: [], events: [], bossAt: 1e9 };
   sim.spawnAcc = [];
   sim.ability.cdLeft = 0;
   const e = sim.spawnEnemy('wolf', sim.player.x + 40, sim.player.y);
   sim.step(DT, { ability: true });
-  assert.ok(sim.buffs.rally > 5);
+  assert.ok(sim.dash && sim.events.some((v) => v.type === 'dash'));
   assert.ok(!(e.fearT > 0));
   assert.ok(sim.ability.cdLeft > 55);
   const left = sim.ability.cdLeft;

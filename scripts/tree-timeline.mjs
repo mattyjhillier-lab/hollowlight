@@ -186,7 +186,7 @@ const GATED_W = Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate
 const GATED_E = Object.keys(data.evolutions).filter((e) => data.evolutions[e].treeGate && !e.startsWith('zw'));
 // heroes from the data (TREE-GEN1): the first is the model players' favourite, each hero's signature = its starting weapon
 const HEROES = Object.keys(data.characters).filter((h) => !data.characters[h].treeGate);
-const SIG = Object.fromEntries(HEROES.map((h) => [h, data.characters[h].weapon]));
+const SIG = Object.fromEntries(HEROES.map((h) => [h, data.characters[h].kindred || data.characters[h].weapon])); // CHARACTER SYSTEM v2: the kindred spirit = the model's starting weapon
 const regionOf = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : n.region || 'rings'); };
 const REGIONS = {};
 for (const id of IDS) (REGIONS[regionOf(id)] ||= []).push(id);
@@ -203,8 +203,9 @@ function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>>
 const TRY = CALIB === 'measured' ? 0.05 : 0.12; // a player tries a tier when it looks winnable at all
 function newSave() {
   return {
-    gold: 0, shards: 0, dawnglass: 0, tree: {},
-    stats: { kills: 0, runs: 0, bestLevel: 0, totalGold: 0, killsByEnemy: {}, bossKills: {}, chapters: { cursed_forest: { runs: 0, clears: 0, bestTime: 0 } }, evolved: {}, charsUsed: {}, tiers: { cursed_forest: {} }, markedKills: 0, chests: 0, gems: 0, abilityUses: 0, blessingsTaken: 0 },
+    // CHARACTER SYSTEM v2: every weapon is a tree gate; the model player owns the hearts of the heroes' kindred spirits from run 1 (starter grant + one cheap heart)
+    gold: 0, shards: 0, dawnglass: 0, tree: Object.fromEntries([...new Set(Object.values(SIG))].map((w) => def.hearts[w]).filter(Boolean).map((h) => [h, 1])),
+    stats: { kills: 0, runs: 0, bestLevel: 0, totalGold: 0, killsByEnemy: {}, bossKills: {}, chapters: { cursed_forest: { runs: 0, clears: 0, bestTime: 0 } }, evolved: {}, charsUsed: {}, startWeapon: {}, tiers: { cursed_forest: {} }, markedKills: 0, chests: 0, gems: 0, abilityUses: 0, blessingsTaken: 0 },
   };
 }
 const owned = (s, id) => (s.tree[id] || 0) >= 1;
@@ -317,6 +318,7 @@ function simulatePlayer(p) {
     st.bestLevel = Math.max(st.bestLevel, level);
     st.kills += kills; st.gems += Math.round(kills * 1.05); st.chests += Math.floor(t / 300); st.abilityUses += Math.floor(t / 60); st.blessingsTaken += Math.max(0, Math.floor((level - 15) / 6));
     st.charsUsed[hero] = (st.charsUsed[hero] || 0) + 1;
+    st.startWeapon[SIG[hero]] = (st.startWeapon[SIG[hero]] || 0) + 1;
     st.runs++; st.totalGold += gold;
     s.gold += gold; s.shards += shards; s.dawnglass += glass;
     income.push(gold); shardsIn.push(shards);

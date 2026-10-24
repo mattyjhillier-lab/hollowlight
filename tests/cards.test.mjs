@@ -28,10 +28,10 @@ test('data sanity: every evolution points at a real weapon and real stats', () =
   assert.equal(Object.keys(data.evolutions).length, 15);
 });
 
-test('open slots: starter run offers only the two starter weapons; unlocked weapons join the pool (rewritten G1b)', () => {
+test('open slots: a tree-less run offers no weapon card (v2: every weapon is a tree gate); unlocked weapons join the pool', () => {
   const pool = buildPool(mk('ghost_wolves'));
   const keys = (p) => new Set(p.filter((x) => x.card.kind === 'weapon').map((x) => x.card.weaponId));
-  assert.deepEqual(keys(pool), new Set(['holy_orbit']), 'starter pool: Orbit only (Raven/Bolts/Chain are tree gates)');
+  assert.deepEqual(keys(pool), new Set(), 'no tree: only the starting spirit (CHARACTER SYSTEM v2 starter set)');
   const open = buildPool(mkOpen('ghost_wolves'));
   assert.deepEqual(keys(open), new Set(ids.filter((i) => i !== 'ghost_wolves')));
   assert.equal(open.filter((p) => p.card.kind === 'stat').length, 4);
@@ -142,7 +142,7 @@ test('D1: evolved weapon offers only its non-recipe stat cards, with no nudge, n
 });
 
 test('weapon cards are weighted up so new weapons show up reasonably often', () => {
-  const ctx = mk('ghost_wolves', 'raven_flock', 'spirit_bolts');
+  const ctx = mkOpen('ghost_wolves', 'raven_flock', 'spirit_bolts');
   const rng = createRng(99);
   let withWeapon = 0;
   const N = 2000;

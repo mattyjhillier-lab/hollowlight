@@ -1021,12 +1021,14 @@ export class RunScene extends Phaser.Scene {
     } else if (this.liftD && this.liftD.visible) { this.liftD.setVisible(false); this.liftR.setVisible(false); }
   }
 
-  // Rally the Pack: warm amber ring from the lantern, a small flare where the pup sits, an ember puff (no gold: gold is for evolutions).
-  rallyMoment() {
+  // Pelt Dash (render-only): a warm amber puff where Wren leaves, a small flare where the pup sits, an ember streak along the dart (no gold: gold is
+  // for evolutions). Calm motion: the puff ring only.
+  dashMoment(ev) {
     const p = this.sim.player;
-    this.addRing(p.x, p.y, 8, 100, 0.5, ROLE.lantern, 2);
-    this.addRing(p.x - 8 * p.faceX, p.y + 4, 3, 22, 0.4, ROLE.lanternCore, 2, 0.1); // pup howl
-    if (!this.reducedMotion()) this.burst(p.x, p.y - 4, 10, ROLE.lantern, 80, 0.6, 0.45);
+    const x = Number.isFinite(ev && ev.x) ? ev.x : p.x, y = Number.isFinite(ev && ev.y) ? ev.y : p.y;
+    this.addRing(x, y, 6, 34, 0.35, ROLE.lantern, 2);
+    this.addRing(x - 8 * p.faceX, y + 4, 3, 16, 0.3, ROLE.lanternCore, 2, 0.05); // the pup springs with her
+    if (!this.reducedMotion()) this.burst(x, y - 4, 8, ROLE.lantern, 70, 0.5, 0.35);
   }
 
   // E9 evolution pick beat (render-only, ~0.55 s): a soft pulse ring from the hero in the weapon's role colour, a faint gold flash, and a thin gold
@@ -1750,20 +1752,6 @@ export class RunScene extends Phaser.Scene {
 
     if ((this.fxTick & 127) === 32 && gst.size > 64) for (const [id, v] of gst) if (this.fxTick - v.seen > 60) gst.delete(id); // S5 glyph render state
 
-    // Rally the Pack: thin amber thread from each rallying wolf to the rallied enemy
-    const ry = sim.rally;
-    if (ry && ry.target && !ry.target.dead && sim.buffs.rally > 0) {
-      const rt = ry.target;
-      const calm = this.reducedMotion();
-      const pulse = calm ? 0.7 : 0.55 + 0.25 * Math.sin(sim.time * 9);
-      let nl = 0;
-      for (const u of sim.units) {
-        if (u.kind !== 'wolf' || u.hidden) continue;
-        if (this.quality.tier === 'low' && nl++ >= 6) break;
-        fx.lineStyle(1, ROLE.lantern, pulse).lineBetween(u.x, u.y, rt.x, rt.y);
-      }
-      fx.lineStyle(1, ROLE.lantern, pulse).strokeCircle(rt.x, rt.y, rt.r + 5);
-    }
 
     // transient effects (additive: glow comes for free)
     let fi = 0, pil = 0, skyA = 0, fld = 0;

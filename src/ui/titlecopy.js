@@ -27,8 +27,9 @@ export const HERO = {
 
 // One whisper line per launch hero (what they are like to play). Unknown future heroes fall back to the data blurb.
 export const HERO_LINES = {
-  wren: { line: 'Quick on her feet, with a pack at her heels.', gift: 'Light-footed' },
-  elias: { line: 'Slow to move, and very hard to put out.', gift: 'Blessed flame' },
+  // CHARACTER SYSTEM v2: same body for all; the line + gift speak of the ability (the one thing that differs) and the look
+  wren: { line: 'Quick and forward, a ghost pup at her heels.', gift: 'Darts out of trouble' },
+  elias: { line: 'Still and tall, a lamplighter who stands his ground.', gift: 'Shelters in candlelight' },
 };
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -55,7 +56,9 @@ export function splitName(full) {
 const clampPips = (v) => Math.max(1, Math.min(5, Math.round(v)));
 /** Health 60..130+ -> 2..5 pips (150 clamps to 5); speed 76..96 -> 2..5 pips (fixed scales so a future hero lands on the same ruler). */
 export function heroPips(c) {
-  return { health: clampPips((Number(c && c.hp) || 0) / 26), speed: clampPips(((Number(c && c.speed) || 0) - 60) / 7.5) };
+  // CHARACTER SYSTEM v2: every hero has the same body (balance.body 100 HP / 92 speed), so a row without hp/speed reads as that body
+  const hp = Number(c && c.hp) || 100, sp = Number(c && c.speed) || 92;
+  return { health: clampPips(hp / 26), speed: clampPips((sp - 60) / 7.5) };
 }
 
 /** Everything a hero card shows, from the data row; strings only. */
@@ -67,7 +70,7 @@ export function heroView(id, c, weaponName) {
   return {
     id, name: n.name, epithet: n.epithet,
     line: copy ? copy.line : (c && typeof c.blurb === 'string' ? c.blurb : ''),
-    gift: trait ? (copy ? `${copy.gift}: ${trait}` : trait) : '',
+    gift: trait ? (copy ? `${copy.gift}: ${trait}` : trait) : copy ? copy.gift : '',
     weapon: typeof weaponName === 'string' ? weaponName : '',
     ability: c && c.ability && typeof c.ability.name === 'string' ? `${c.ability.name}${cd}` : '',
     pips: heroPips(c),

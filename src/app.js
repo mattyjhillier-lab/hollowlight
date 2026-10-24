@@ -19,6 +19,8 @@ import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from
 import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js';
 import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
 import { TITLES } from './ui/codexcopy.js';
+import { startableWeapons, grantStarter } from './meta/starter.js';
+import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 setTreeDef(treeDef, data);
@@ -43,9 +45,18 @@ export const app = {
 
   // FD4: tier = the night picked on the map screen. Only 'normal' or a night this lantern has opened is accepted (anything else -> Twilight),
   // and banking re-checks the gate (recordTierRun), so no path can play or pay a night that is not open. Twilight runs are unchanged.
-  startRun(characterId, tier = 'normal') {
+  startRun(characterId, tier = 'normal', weaponId = null) {
     const p = this.params;
+    this.ensureStarter();
+    const s0 = this.save.data;
+    // CHARACTER SYSTEM v2: only an awake hero and a tree-unlocked starting spirit can be played (anything else falls back); the pick is remembered
+    if (!(typeof characterId === 'string' && Object.hasOwn(data.characters, characterId) && (p.auto || isAwake(s0, characterId)))) characterId = (s0.notes.loadout || s0.notes.starter || { hero: 'wren' }).hero;
+    const startable = startableWeapons(data, treeDef, s0.tree);
+    const want = [weaponId, s0.notes.loadout && s0.notes.loadout.hero === characterId ? s0.notes.loadout.weapon : null, data.characters[characterId].kindred, s0.notes.loadout && s0.notes.loadout.weapon];
+    const startWeapon = want.find((w) => typeof w === 'string' && startable.includes(w)) || startable[0] || data.characters[characterId].kindred;
+    if (!p.auto && !this.save.readOnly && !this.isDebugRun()) { s0.notes.loadout = { hero: characterId, weapon: startWeapon }; }
     this.characterId = characterId;
+    this.startWeaponId = startWeapon;
     const cid = this.firstChapter();
     const open = this.openTiers(this.save.data);
     this.runTier = pickRunTier(tier, open, cid);
@@ -63,6 +74,9 @@ export const app = {
       godMode: p.god,
       tier: p.tier || this.runTier, // dev ?tier= (whitelisted in params.js; a debug run) or the night picked on the map screen (FD4)
       autoRule: this.save.data.settings.autoRule, // used only if 'Chosen Moment' is owned (sanitised whitelist; the Sim whitelists again)
+      startWeapon,
+      bond: this.isDebugRun() ? 0 : bondLevel(s0, data, characterId), // Bond is banked between runs and read once here
+      keepsakes: this.isDebugRun() ? [] : keepsakeEligible(s0, data, treeDef),
     });
     if (p.grant) this.applyGrants(sim, p.grant);
     if (p.bless) this.applyBless(sim, p.bless);
@@ -180,9 +194,21 @@ export const app = {
     return aggregateMods(owned, treeDef, data, { tier: tierIndex(this.params.tier || this.runTier || 'normal') }); // tier-bought power applies only on the tiers that pay it
   },
 
+  // CHARACTER SYSTEM v2: a hero is playable once awake (starter pick, keepsakes, or a pre-v2 save). Unknown ids are not playable.
   heroUnlocked(id) {
-    const c = data.characters[id];
-    return !c || !c.treeGate || aggregateMods(this.save.data.tree, treeDef, data).unlocks.heroes.includes(id);
+    if (!Object.hasOwn(data.characters, id)) return false;
+    if (this.isDebugRun()) return true; // debug / screenshot runs: every hero (they never touch the save)
+    this.ensureStarter();
+    return isAwake(this.save.data, id);
+  },
+
+  // A new profile picks one hero + one weapon as its starter set (LOCKED 2026-10-24). INTERIM until the starter-pick screen (CH4) lands:
+  // the first visit grants Wren + Ghost Wolves, the kindred defaults. Read-only saves are never written.
+  ensureStarter() {
+    const s = this.save.data;
+    if (s.notes && s.notes.starter) return;
+    if (this.save.readOnly || this.isDebugRun()) return;
+    if (grantStarter(s, data, treeInfo, treeDef, 'wren', data.characters.wren.kindred)) this.save.saveNow();
   },
 
   treeApi() {
@@ -462,8 +488,8 @@ export const app = {
     }
     else if (ev.type === 'heart') { this.ui.toast('Health restored', this.pickupWhisper('heart')); this.scene.heartFx(); this.ui.hudView.flareHp(); }
     else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet', this.pickupWhisper('magnet')); this.scene.magnetFx(); }
-    else if (ev.type === 'rally') { this.ui.toast('Rally the Pack'); this.scene.rallyMoment(); }
-    else if (ev.type === 'wheel') this.ui.toast('Candle Wheel');
+    else if (ev.type === 'dash') { this.ui.toast('Pelt Dash'); this.scene.dashMoment(ev); }
+    else if (ev.type === 'sanctuary') this.ui.toast('Sanctuary Ring');
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
     else if (ev.type === 'bossDead') { this.buzz('boss'); if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
     else if (ev.type === 'bossPhase') this.ui.toast(ev.phase === 1 ? 'The Elder Treant blights: Husks answer its call' : 'The Elder Treant rages: its heart glows');
@@ -654,6 +680,6 @@ export const app = {
   },
 
   again() {
-    this.startRun(this.characterId, this.runTier || 'normal'); // Again = same hero + map + night
+    this.startRun(this.characterId, this.runTier || 'normal', this.startWeaponId); // Again = same hero + spirit + map + night
   },
 };

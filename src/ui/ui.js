@@ -232,8 +232,8 @@ export class UI {
     const ids = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id));
     const heroes = ids.map((id) => {
       const c = this.data.characters[id];
-      const w = this.data.weapons[c.weapon];
-      return { ...heroView(id, c, w ? w.name : ''), weaponId: c.weapon };
+      const w = this.data.weapons[c.kindred]; // CHARACTER SYSTEM v2: the kindred spirit is only the suggested default (no stat link)
+      return { ...heroView(id, c, w ? w.name : ''), weaponId: c.kindred };
     });
     const choice = !!(h.nightChoice && h.nightChoice()); // FD4 skip rule: the night screen follows only once there is a night choice
     const hs = buildHeroSelect({

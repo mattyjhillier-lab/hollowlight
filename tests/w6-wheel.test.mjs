@@ -58,18 +58,11 @@ test('Wheel: each light rests 1.3 s after a burst and the ring never plants anyt
   assert.ok(Math.abs(rest - 1.3) < 0.03, `rest ${rest}`);
 });
 
-test('Wheel: the guard contraction is inherited (ring closes on a hugging foe), the Candle Wheel never applies Burn', () => {
+test('Wheel: the guard contraction is inherited (ring closes on a hugging foe)', () => {
   const sim = mk(R({ radius: 4 }));
   dummy(sim, sim.player.r + 8 + 2, 0);
   run(sim, 2.5);
   assert.ok(sim.weapons[0].rt.gK > 0.9, 'ring closed');
-  const s2 = mk(R());
-  s2.ability.cdLeft = 0; s2.useAbility();
-  run(s2, 0.8);
-  const u = s2.units.find((x) => x.kind === 'orb');
-  dummy(s2, u.x - s2.player.x, u.y - s2.player.y);
-  run(s2, 1);
-  assert.equal(s2.burnBy.holy_orbit || 0, 0, 'locked lights burst but never burn');
 });
 
 test('Wheel: spin x1.8 over the base ring', () => {

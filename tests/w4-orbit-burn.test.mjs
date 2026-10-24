@@ -65,17 +65,6 @@ test('guard-hysteresis: closes in 0.25 s, holds >= 0.8 s after the foe leaves, o
   assert.ok(orbDist(sim) > 37, `opened again ${orbDist(sim)}`);
 });
 
-test('guard-yields-to-wheel: no contraction while the Candle Wheel stands', () => {
-  const sim = fresh();
-  sim.ability.cdLeft = 0;
-  sim.step(DT, { ability: true });
-  assert.ok(sim.zones.some((z) => z.wheel));
-  put(sim, 'dummy', 3);
-  step(sim, 1.5);
-  assert.equal(orbW(sim).rt.gK, 0);
-  assert.equal(orbW(sim).rt.gHold || 0, 0);
-});
-
 test('guard-hug acceptance: a foe touching Elias takes >= 25% of the ring DPS (base Orbit rank 2)', () => {
   const dps = (edge, atRing) => {
     const sim = fresh();
@@ -139,18 +128,6 @@ test('burn: credited to the source weapon (burnBy is part of dotBy)', () => {
   assert.ok(e.burnTot > 0, 'plain Orbit burns');
   assert.ok(Math.abs(sim.burnBy.holy_orbit - e.burnTot) < 1e-6);
   assert.ok(sim.dotBy.holy_orbit >= sim.burnBy.holy_orbit - 1e-6);
-});
-
-test('burn: the Candle Wheel never applies it (locked lights still hit, no Burn)', () => {
-  const sim = fresh();
-  sim.ability.cdLeft = 0;
-  sim.step(DT, { ability: true });
-  const w = sim.zones.find((z) => z.wheel);
-  const f = sim.spawnEnemy('dummy', w.x, w.y - w.r); f.hp = f.maxHp = 1e9; f.speed = 0;
-  const h0 = f.hp;
-  step(sim, 4);
-  assert.ok(h0 - f.hp > 0, 'locked lights still hit what crosses the ring');
-  assert.equal(f.burnTot, 0); assert.equal(f.burnT, 0, 'no Burn from the Candle Wheel');
 });
 
 test('burn: deterministic (same seed, same result) and share of Orbit damage <= 35%', () => {

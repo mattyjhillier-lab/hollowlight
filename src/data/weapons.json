@@ -1,6 +1,7 @@
 {
   "ghost_wolves": {
     "name": "Ghost Wolves",
+    "treeGate": true,
     "type": "summon",
     "tags": [],
     "color": "#9fd8ff",
@@ -56,6 +57,7 @@
   },
   "holy_orbit": {
     "name": "Holy Orbit",
+    "treeGate": true,
     "type": "magic",
     "tags": ["holy"],
     "color": "#e8e0ff",

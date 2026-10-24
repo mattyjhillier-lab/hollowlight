@@ -25,7 +25,7 @@ const C = await import('../src/ui/titlecopy.js');
 const walk = (n, f) => { f(n); n.children.forEach((c) => walk(c, f)); };
 const find = (r, p) => { const o = []; walk(r, (n) => { if (p(n)) o.push(n); }); return o; };
 const texts = (r) => { const o = []; walk(r, (n) => { if (n._text) o.push(n._text); }); return o.join(' | '); };
-const heroes = () => Object.entries(data.characters).map(([id, c]) => ({ ...C.heroView(id, c, data.weapons[c.weapon].name), weaponId: c.weapon }));
+const heroes = () => Object.entries(data.characters).map(([id, c]) => ({ ...C.heroView(id, c, data.weapons[c.kindred].name), weaponId: c.kindred }));
 
 test('title copy: wordmark name, Begin/Continue + whispers, Skill Tree, Settings, version', () => {
   const t = buildTitle({ version: '9.9.9' });
@@ -63,21 +63,21 @@ test('hostile hero names, lines, version and bank are inert text (no innerHTML a
   assert.ok(hs.cards[0].el.attrs['aria-label'].includes('<img'));
   const v = C.heroView('x', { name: evil + ', ' + evil, hp: 'x', speed: {}, ability: 5 }, 7);
   assert.equal(typeof v.name, 'string');
-  assert.deepEqual(v.pips, { health: 1, speed: 1 });
+  assert.deepEqual(v.pips, { health: 4, speed: 4 }, 'junk hp/speed read as the shared body');
   assert.equal(C.splitName(42).name, 'Hero');
 });
 
 test('hero select: Wren and Elias cards, stats as pips with names, ability line, radio semantics', () => {
   const hs = buildHeroSelect({ heroes: heroes(), selected: 'wren' });
   const s = texts(hs.root);
-  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Ghost Wolves', 'Holy Orbit', 'Rally the Pack', 'Candle Wheel', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Light-footed']) assert.ok(s.includes(w), w);
+  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Ghost Wolves', 'Holy Orbit', 'Pelt Dash', 'Sanctuary Ring', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Darts out of trouble']) assert.ok(s.includes(w), w);
   assert.equal(hs.group.attrs.role, 'radiogroup');
   assert.deepEqual(hs.cards.map((c) => c.el.attrs['aria-checked']), ['true', 'false']);
   assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['0', '-1']);
   assert.equal(hs.cards[0].el.attrs['aria-label'], 'Wren, the Orphan');
   assert.equal(find(hs.root, (n) => /^Health \d of 5$/.test(n.attrs['aria-label'] || '')).length, 2);
-  assert.deepEqual(C.heroPips(data.characters.wren), { health: 2, speed: 5 });
-  assert.deepEqual(C.heroPips(data.characters.elias), { health: 5, speed: 2 });
+  assert.deepEqual(C.heroPips(data.characters.wren), { health: 4, speed: 4 }, 'v2: one shared body');
+  assert.deepEqual(C.heroPips(data.characters.elias), C.heroPips(data.characters.wren));
 });
 
 test('hero select keyboard: arrows/digits move the choice, Enter starts, Esc goes back, buttons keep native Enter', () => {

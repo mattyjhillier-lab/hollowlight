@@ -1,26 +1,20 @@
 {
   "wren": {
     "name": "Wren, the Orphan",
-    "blurb": "Fast and fragile. Fights through her wolf pack.",
+    "blurb": "Quick on her feet. Darts out of trouble with her ghost pup.",
     "color": "#e8b86d",
-    "hp": 60,
-    "speed": 96,
-    "traits": { "moveSpeed": 1.1 },
-    "traitText": "+10% move speed",
-    "weapon": "ghost_wolves",
-    "ability": { "id": "rally_pack", "name": "Rally the Pack", "cooldown": 60, "bonus": 0.5, "desc": "6s: the wolves rush the toughest enemy near you and pin it, biting 50% harder.", "tree": { "rallySecs": { "unit": "secs", "min": 0.1, "max": 5, "cap": 5 } } },
+    "kindred": "ghost_wolves",
+    "keepsake": { "id": "scarf_thread", "name": "Scarf Thread", "desc": "A warm amber thread from a child's scarf. The Hollow remembers who wore it.", "hint": { "t": "killEnemy", "id": "wolf", "n": 300 } },
+    "ability": { "id": "pelt_dash", "name": "Pelt Dash", "cooldown": 60, "dist": 130, "dashT": 0.2, "secs": 0.5, "shove": 26, "desc": "Dart 130 px the way you are heading with your pup. Untouchable for 0.5 s; foes in the way are knocked aside." },
     "treeVisuals": ["kinSparks"]
   },
   "elias": {
     "name": "Elias, the Priest",
-    "blurb": "Sturdy and steady. Holy light keeps him alive.",
+    "blurb": "Still and steady. Plants a ring of candles that shelters him.",
     "color": "#f2f2f2",
-    "hp": 150,
-    "speed": 76,
-    "traits": { "holyDamage": 1.30 },
-    "traitText": "+30% holy damage",
-    "weapon": "holy_orbit",
-    "ability": { "id": "candle_wheel", "name": "Candle Wheel", "cooldown": 60, "radius": 80, "heal": 1.5, "dps": 0, "desc": "6s: plant a ring of light. You heal while you stand inside, and your Holy Orbit lights lock into the ring and burn what crosses it.", "tree": { "wheelRadius": { "unit": "pct", "min": 0, "max": 300, "cap": 100, "out": "wheel" } } },
+    "kindred": "holy_orbit",
+    "keepsake": { "id": "candle_stub", "name": "Candle Stub", "desc": "A burnt-down votive candle that still smells of wax and warm light.", "hint": { "t": "killEnemy", "id": "root_crawler", "n": 400 } },
+    "ability": { "id": "sanctuary_ring", "name": "Sanctuary Ring", "cooldown": 60, "radius": 80, "secs": 6, "heal": 1.5, "slow": 0.4, "desc": "Plant a ring of candles for 6 s. You heal while you stand inside; foes inside the ring are slowed 40%." },
     "treeVisuals": ["graveLamp"]
   }
 }

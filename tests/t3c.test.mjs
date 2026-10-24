@@ -108,12 +108,13 @@ test('T3c links open from EITHER side: an owned child opens its parent; any one 
   assert.equal(t.creep, 0, 'a made-up tree without core.price has flat prices');
 });
 
-test('T3c exceptions: E1 hearts are hub challenges; E2 seals and every lantern of a gated constellation wait for the heart; E3 starter seals are lit; the gate stays on every route', () => {
+test('T3c exceptions: E1 hearts are hub challenges; E2 seals and every lantern of a gated constellation wait for the heart; E3 (v2) a lit heart links its seals; the gate stays on every route', () => {
   const s = rich();
   assert.equal(st(s, 'gt_dive_bombers').state, 'locked', 'E2: Raven seal sleeps until the Raven heart is lit');
   assert.match(st(s, 'gt_dive_bombers').reason, /Requires/);
-  assert.notEqual(st(s, 'gt_phantom_stampede').state, 'locked', 'E3: a starter (Wolves) seal is linked from run 1');
-  assert.equal(isLinked(def, {}, 'gt_phantom_stampede'), true);
+  // E3 (CHARACTER SYSTEM v2): no constellation is a starter any more; the starter grant lights its heart, then its seals are linked
+  assert.equal(st(s, 'gt_phantom_stampede').state, 'locked', 'v2: the Wolves seal waits for the Wolves heart like any other');
+  assert.equal(isLinked(def, { gt_ghost_wolves: 1 }, 'gt_phantom_stampede'), true);
   buy(s, 'gt_raven_flock', def, data);
   assert.notEqual(st(s, 'gt_dive_bombers').state, 'locked', 'E2: the seal opens once its spirit is woken (then only its own condition remains)');
   assert.equal(isLinked(def, s.tree, 'gt_dive_bombers'), true);

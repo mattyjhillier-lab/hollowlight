@@ -1,0 +1,238 @@
+{
+ "_comment": "CHARACTER SYSTEM v2 (LOCKED 2026-10-24): hero lanterns retired (null = tombstone), Wolves + Orbit get hearts (every weapon is a tree gate), their hero-lantern weapon buffs moved into the weapon branches (+2% on two power lanterns each), useCharacter conditions became startWeapon, the first outline lantern now hangs from the heart.",
+ "su_call": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "speed",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_ghost_wolves"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_maul": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 450,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_coat"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_coat": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 390,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "wf_bite"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "startWeapon",
+   "id": "ghost_wolves",
+   "n": 5
+  }
+ },
+ "wf_fang": {
+  "effects": [
+   {
+    "weapon": "ghost_wolves",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_ghost_wolves"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "gt_vesper_tide": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "vesper_tide"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "holy_orbit",
+     "n": 3
+    },
+    {
+     "t": "startWeapon",
+     "id": "holy_orbit",
+     "n": 8
+    }
+   ]
+  }
+ },
+ "or_power": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 180,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_holy_orbit"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_wick": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "or_power"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "or_vigil": {
+  "effects": [
+   {
+    "weapon": "holy_orbit",
+    "stat": "power",
+    "pct": 4
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_holy_orbit"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "surviveTime",
+   "chapter": "cursed_forest",
+   "seconds": 600
+  }
+ },
+ "ch_elias": null,
+ "el_wheel": null,
+ "el_lamp": null,
+ "ch_wren": null,
+ "wr_grip": null,
+ "wr_spark": null,
+ "gt_ghost_wolves": {
+  "effects": [
+   {
+    "unlock": "weapon",
+    "id": "ghost_wolves"
+   }
+  ],
+  "cost": {
+   "gold": 150,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "runs",
+   "n": 2
+  }
+ },
+ "gt_holy_orbit": {
+  "effects": [
+   {
+    "unlock": "weapon",
+    "id": "holy_orbit"
+   }
+  ],
+  "cost": {
+   "gold": 150,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "runs",
+   "n": 2
+  }
+ }
+}

@@ -131,7 +131,7 @@ export function playGated(cfg) {
   const allowed = new Set([...(cfg.kit || KITS[cfg.hero]), ...cfg.weapons]);
   const tree = cfg.tree ? JSON.parse(JSON.stringify(cfg.tree)) : {};
   tree.unlocks = { weapons: [...allowed], heroes: [], abilityUpgrades: [], modifiers: [] };
-  const sim = new Sim({ data, characterId: cfg.hero, seed: cfg.seed, meta: {}, tree });
+  const sim = new Sim({ data, characterId: cfg.hero, seed: cfg.seed, meta: {}, tree, startWeapon: cfg.startWeapon || null });
   let s = cfg.seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;

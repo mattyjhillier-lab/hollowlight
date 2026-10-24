@@ -1,7 +1,7 @@
 {
  "kind": "core",
  "schema": 2,
- "version": 3,
+ "version": 4,
  "layout": {
   "ringStep": 110,
   "minGap": 50,
@@ -200,7 +200,38 @@
  "legacyIds": [
   "su_call"
  ],
- "retired": [],
+ "retired": [
+  {
+   "id": "ch_wren",
+   "frag": "wr",
+   "idx": 0
+  },
+  {
+   "id": "wr_grip",
+   "frag": "wr",
+   "idx": 1
+  },
+  {
+   "id": "wr_spark",
+   "frag": "wr",
+   "idx": 2
+  },
+  {
+   "id": "ch_elias",
+   "frag": "el",
+   "idx": 0
+  },
+  {
+   "id": "el_wheel",
+   "frag": "el",
+   "idx": 1
+  },
+  {
+   "id": "el_lamp",
+   "frag": "el",
+   "idx": 2
+  }
+ ],
  "budget": {
   "base": {
    "combat": 31,

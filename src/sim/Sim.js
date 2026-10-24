@@ -23,6 +23,7 @@ import { rollMark, applyMark, heartAura, updateEmbers, markSeed, EMBER } from '.
 import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
 import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
 import { BossFight, validateFight } from './boss.js';
+import { bondDef, bondBonus, keepsakeDef } from '../meta/bond.js';
 
 const FIGHT_OK = new WeakSet(); // boss fight blocks already validated (shipped data: validated once per object, not per run)
 
@@ -52,7 +53,7 @@ export const MARK_TIME = 3;
 export const AMP_CAP = 1.75;
 
 export class Sim {
-  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null }) {
+  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null, startWeapon = null, bond = 0, keepsakes = null }) {
     this.data = data;
     this.balance = data.balance;
     this.chapterId = chapterId;
@@ -61,6 +62,17 @@ export class Sim {
     this.tier = resolveTier(data.tiers, chapterId, tier);
     this.character = data.characters[characterId];
     this.characterId = characterId;
+    // CHARACTER SYSTEM v2: one shared body (balance.body); the starting spirit is any weapon id (the app only offers tree-unlocked ones; a bad id
+    // falls back to the character's kindred spirit); Bond level is read ONCE here (banked between runs, never changes mid-run).
+    this.startWeapon = typeof startWeapon === 'string' && Object.hasOwn(data.weapons, startWeapon) ? startWeapon : this.character.kindred;
+    this.bondLevel = Number.isInteger(bond) && bond > 0 ? bond : 0;
+    this.bondFx = bondBonus(bondDef(data.balance), this.bondLevel);
+    this.keepDef = keepsakeDef(data.balance);
+    // keepsakes: sleeping characters whose hint is met (the app decides; known ids only). Own RNG stream, so runs without one stay byte-identical.
+    this.keepFor = Array.isArray(keepsakes) ? keepsakes.filter((id) => typeof id === 'string' && Object.hasOwn(data.characters, id) && id !== characterId && data.characters[id].keepsake).slice(0, 16) : [];
+    this.keepRng = createRng((seed ^ 0x6b33) >>> 0);
+    this.keepsake = null; // character id whose keepsake this run found (max one per run)
+    const body = data.balance.body || { hp: 100, speed: 92 };
     this.seed = seed;
     this.rng = createRng(seed);
     this.markRng = createRng(markSeed(seed)); // DT2 Hollow marks: own stream, only drawn on a tier that lists marks (Twilight never touches it)
@@ -77,8 +89,8 @@ export class Sim {
     const size = this.balance.worldSize;
     this.player = {
       x: size / 2, y: size / 2, r: 6,
-      hp: this.character.hp, maxHp: this.character.hp,
-      speed: this.character.speed, iframes: 0, faceX: 1,
+      hp: Math.round(body.hp * this.bondFx.hpMul), maxHp: Math.round(body.hp * this.bondFx.hpMul),
+      speed: body.speed * this.bondFx.speedMul, iframes: 0, faceX: 1, hx: 1, hy: 0, // hx/hy: last heading (Pelt Dash)
     };
 
     // Skill-tree effects (src/meta/tree.js aggregate). Absent = a fresh, tree-less run.
@@ -96,12 +108,10 @@ export class Sim {
       autoHp: T.ability?.autoHp || 0,
       evoLuck: T.evoLuck ?? 1,
       rush: T.rush || null, // { pct, secs }: summons surge on level-up
-      // Status power nodes (T3): potency multipliers on the existing Rend / Burn paths, extra Mark seconds, Rally and Candle Wheel tuning. 1 / 0 when absent.
+      // Status power nodes (T3): potency multipliers on the existing Rend / Burn paths, extra Mark seconds. 1 / 0 when absent.
       bleedMul: 1 + (T.status?.bleed || 0) / 100,
       burnMul: 1 + (T.status?.burn || 0) / 100,
       markAdd: T.status?.mark || 0,
-      rallyAdd: T.ability?.rallySecs || 0,
-      wheelMul: 1 + (T.ability?.wheel || 0) / 100,
       // Satchel (DT5a): gems fly to you faster / on level-up; seconds taken off the heart and magnet pity timers
       gemPull: 1 + (T.perks?.gemPull || 0) / 100,
       gemCall: !!T.perks?.gemCall,
@@ -127,7 +137,7 @@ export class Sim {
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
     this.unlockedEvolutions = new Set(T.unlocks?.evolutions || []); // tree-derived only, never from save.unlocks
-    this.buffs = { rally: 0, speedBoost: 0, speedMult: 1, rush: 0 };
+    this.buffs = { speedBoost: 0, speedMult: 1, rush: 0 };
     if (T.player?.maxHp && T.player.maxHp !== 1) {
       this.player.maxHp = Math.round(this.player.maxHp * T.player.maxHp);
       this.player.hp = this.player.maxHp;
@@ -184,7 +194,7 @@ export class Sim {
     this.dmgBy = {};
     this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
     this.burnBy = {}; // the Burn part of dotBy (counter only)
-    this.srcAmps = {}; // temporary damage amps by SOURCE weapon id (Rally the Pack sets srcAmps.ghost_wolves = 1.5 while active); joins Mark in the capped product
+    this.srcAmps = {}; // temporary damage amps by SOURCE weapon id (none set since the v2 abilities; kept as the hook); joins Mark in the capped product
     this.ampBonus = 0; // extra damage dealt because of temporary amps (counter only)
     this.markBy = {}; // the Mark part of ampBonus by the weapon that applied it (counter only)
     this.killsBy = {};
@@ -229,8 +239,8 @@ export class Sim {
     this.chapter.events.forEach((ev, i) => { if (ev.t < startTime) this.eventsDone.add(i); });
 
     const ab = this.character.ability;
-    this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10, bonus: ab.bonus ?? 0 };
-    this.rally = null; // Rally the Pack window: { target, t, dur } (target may be null until an enemy is in reach)
+    this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10 };
+    this.dash = null; // Pelt Dash in flight: { t, vx, vy } (px/s along the heading)
     this.ability.cdLeft = Math.min(this.ability.cdLeft, this.abilityCooldown);
 
     this.patches = [];
@@ -242,7 +252,7 @@ export class Sim {
       });
     }
 
-    this.addWeapon(this.character.weapon);
+    this.addWeapon(this.startWeapon);
     // run-start offers (T6): Kindred Start, Favoured Spirit, Lantern Blessing, in that order; the world waits (state 'levelup', offer.start)
     this.startQueue = [];
     if (T.perks?.startWeapon) this.startQueue.push('kindred');
@@ -305,10 +315,6 @@ export class Sim {
     let m = this.mods.damage;
     if (this.data.weapons[w.id].type === 'summon') m *= this.bless.damage;
     if (this.buffs.rush > 0 && this.data.weapons[w.id].type === 'summon') m *= 1 + this.tfx.rush.pct / 100;
-    for (const tag of this.data.weapons[w.id].tags) {
-      const t = this.character.traits[`${tag}Damage`];
-      if (t) m *= t;
-    }
     return m;
   }
 
@@ -451,6 +457,7 @@ export class Sim {
   damagePlayer(amount, src = 'contact', meta = null) {
     const p = this.player;
     if (p.iframes > 0 || this.state !== 'running') return;
+    if (this.bondFx.ward > 0) amount *= 1 - this.bondFx.ward; // Bond ward (banked between runs; 0 at Bond 0, so untouched runs are byte-identical)
     this.hurtBy[src] = (this.hurtBy[src] || 0) + amount;
     this.hitsBy[src] = (this.hitsBy[src] || 0) + 1;
     const kind = meta && meta.kind ? meta.kind : 'contact';
@@ -606,6 +613,7 @@ export class Sim {
       if (this.hearts.length || this.heartWas) heartAura(this.enemies, this.hearts);
       this.heartWas = this.hearts.length > 0;
     }
+    const sz = this.zones.length ? this.zones.find((z) => z.sanctuary && z.slow > 0) : null; // Sanctuary Ring: non-boss foes inside move slower
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.flash = Math.max(0, e.flash - dt);
@@ -702,6 +710,7 @@ export class Sim {
         vy = ny * e.speed;
       }
 
+      if (sz && !e.boss && !e.fight) { const qx = e.x - sz.x, qy = e.y - sz.y, rr = sz.r + e.r; if (qx * qx + qy * qy < rr * rr) { vx *= 1 - sz.slow; vy *= 1 - sz.slow; } }
       e.x = clamp(e.x + vx * dt, 5, size - 5);
       e.y = clamp(e.y + vy * dt, 5, size - 5);
       if (Math.abs(vx) > 1) e.faceX = vx > 0 ? 1 : -1;
@@ -771,7 +780,8 @@ export class Sim {
     let my = input.y || 0;
     const len = Math.hypot(mx, my);
     if (len > 1) { mx /= len; my /= len; }
-    let spd = p.speed * (this.character.traits.moveSpeed || 1) * this.mods.speed * this.bless.speed;
+    if (len > 0.1) { const l = Math.hypot(mx, my); p.hx = mx / l; p.hy = my / l; } // heading = the last real move direction (Pelt Dash)
+    let spd = p.speed * this.mods.speed * this.bless.speed;
     if (this.buffs.speedBoost > 0) spd *= this.buffs.speedMult;
     let slow = 1;
     for (const pt of this.patches) {
@@ -783,8 +793,10 @@ export class Sim {
     if (this.fight && slow === 1 && this.fight.brush.length) slow = this.fight.slowAt(p.x, p.y, p.r); // lane roots / slam spikes: slowing brush, never solid
     spd *= slow;
     const size = this.balance.worldSize;
-    p.x = clamp(p.x + mx * spd * dt, p.r, size - p.r);
-    p.y = clamp(p.y + my * spd * dt, p.r, size - p.r);
+    let ox = mx * spd * dt, oy = my * spd * dt;
+    if (this.dash) { const D = this.dash, s = Math.min(dt, D.t); ox += D.vx * s; oy += D.vy * s; D.t -= dt; this.dashShove(); if (D.t <= 0) this.dash = null; } // Pelt Dash: slows and roots do not drag the dart itself
+    p.x = clamp(p.x + ox, p.r, size - p.r);
+    p.y = clamp(p.y + oy, p.r, size - p.r);
     if (this.fight) {
       const F = this.fight, A = F.arena, ddx = p.x - A.cx, ddy = p.y - A.cy, d = Math.hypot(ddx, ddy), lim = A.r - p.r;
       if (d > lim) { // the wall: during the arrival beat a hero left outside (world-edge clamp) is walked in; afterwards it is a hard stop
@@ -970,6 +982,7 @@ export class Sim {
   openChest(k) {
     const C = this.balance.chest, p = this.player;
     this.chests += 1;
+    this.rollKeepsake('chest', k.x, k.y);
     this.healPlayer(p.maxHp * C.heal);
     // the XP burst pours out as six gems that fly to the hero (the opening beat shows before any level-up screen)
     const xp = Math.ceil(this.xpNeeded * C.xpLevel), n = 6;
@@ -1023,57 +1036,38 @@ export class Sim {
     const p = this.player;
     a.cdLeft = this.abilityCooldown;
     this.abilityUses += 1;
-    const dur = 6 * this.tfx.abilityDur;
-    if (a.id === 'rally_pack') {
-      const dur = 6 * this.tfx.abilityDur + this.tfx.rallyAdd; // Firm Grip: a longer window, never a stronger one (pins still never hold bosses)
-      // Rally the Pack: the wolves converge on (and pin) the toughest non-boss enemy; wolf damage +bonus while it lasts.
-      // The window is its own state (this.rally), never a speed boost. Ravens stay independent.
-      this.buffs.rally = dur;
-      this.rally = { target: this.pickRallyTarget(), t: dur, dur };
-      this.srcAmps.ghost_wolves = 1 + (a.bonus ?? 0.5); // +50% bite via the shared amp product (Rally x Mark = 1.725, under the x1.75 cap)
-      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 90, ttl: 0.35, color: '#ffcf7a' });
-      this.pushEvent('rally');
-    } else if (a.id === 'candle_wheel') {
-      // Candle Wheel: a planted ring of light. Heals Elias only while he stands inside; his Holy Orbit lights lock
-      // into the ring (weapons.js) and burn what crosses it. The zone itself deals no damage.
-      const d = this.character.ability;
+    const d = this.character.ability;
+    if (a.id === 'pelt_dash') {
+      // Pelt Dash (Wren, LOCKED 2026-10-24): dart `dist` px along the heading over `dashT` s with the pup; untouchable for `secs` (x tree ability
+      // duration); non-boss foes in the way are knocked aside (no damage). Weapon-agnostic: it moves the hero, never a spirit.
+      const T = d.dashT ?? 0.2, v = (d.dist ?? 130) / T;
+      this.dash = { t: T, vx: p.hx * v, vy: p.hy * v, hit: new Set() };
+      p.iframes = Math.max(p.iframes, (d.secs ?? 0.5) * this.tfx.abilityDur);
+      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 22, ttl: 0.3, color: '#ffcf7a' });
+      this.pushEvent('dash', { x: p.x, y: p.y, dx: p.hx, dy: p.hy });
+    } else if (a.id === 'sanctuary_ring') {
+      // Sanctuary Ring (Elias, LOCKED 2026-10-24): a planted ring of candles. He heals while he stands inside; non-boss foes inside are slowed
+      // (no damage). The zone keeps the `wheel` flag only for the renderer, Elias's pose and the boss's ground-move pick (no weapon reads it).
+      const dur = (d.secs ?? 6) * this.tfx.abilityDur;
       this.zones = this.zones.filter((z) => !z.wheel);
-      this.spawnZone({ wheel: true, x: p.x, y: p.y, r: (d.radius ?? 80) * this.tfx.wheelMul, ttl: dur, dur, age: 0, dps: d.dps ?? 0, heal: d.heal ?? 1.5, color: '#fff3b0' });
-      this.pushEvent('wheel');
+      this.spawnZone({ wheel: true, sanctuary: true, x: p.x, y: p.y, r: d.radius ?? 80, ttl: dur, dur, age: 0, dps: 0, heal: d.heal ?? 1.5, slow: Math.max(0, Math.min(0.8, d.slow ?? 0.4)), color: '#fff3b0' });
+      this.pushEvent('sanctuary');
     }
     return true;
   }
 
-  // Toughest (highest current HP) non-boss enemy near the hero; a boss only if nothing else is in reach (wolves bite it, never pin it).
-  pickRallyTarget() {
-    const p = this.player;
-    let best = null;
-    let boss = null;
+  // Pelt Dash: each non-boss foe touched during the dart is shoved once to the side it is already on (no damage; control-immune states ignore it).
+  dashShove() {
+    const D = this.dash, p = this.player, sh = this.character.ability.shove ?? 26;
     for (const e of this.enemies) {
-      if (e.dead) continue;
-      const d = Math.hypot(e.x - p.x, e.y - p.y);
-      if (e.boss) { if (d < 300 && !boss) boss = e; continue; }
-      if (d < 240 && (!best || e.hp > best.hp || (e.hp === best.hp && e.id < best.id))) best = e;
+      if (e.dead || e.boss || e.fight || D.hit.has(e.id) || (e.ai && (e.ai.immune === e.state || e.ai.immune === 'all'))) continue;
+      const dx = e.x - p.x, dy = e.y - p.y, rr = p.r + e.r + 10;
+      if (dx * dx + dy * dy > rr * rr) continue;
+      D.hit.add(e.id);
+      const sv = Math.hypot(D.vx, D.vy) || 1, ux = D.vx / sv, uy = D.vy / sv;
+      const side = dx * -uy + dy * ux >= 0 ? 1 : -1; // which side of the dash line the foe is on
+      e.x += -uy * side * sh; e.y += ux * side * sh;
     }
-    return best || boss;
-  }
-
-  updateRally(dt) {
-    const r = this.rally;
-    if (!r) return;
-    r.t -= dt;
-    this.buffs.rally = Math.max(0, r.t);
-    if (r.t <= 0) {
-      const t = r.target;
-      if (t && !t.dead) this.addFx({ kind: 'ring', x: t.x, y: t.y, r: 26, ttl: 0.3, color: '#ffcf7a' });
-      this.pushEvent('rallyEnd');
-      this.rally = null;
-      delete this.srcAmps.ghost_wolves;
-      return;
-    }
-    if (!r.target || r.target.dead) r.target = this.pickRallyTarget();
-    const t = r.target;
-    if (t && !t.boss) t.heldT = Math.max(t.heldT || 0, 0.25); // pin; a boss is never pinned
   }
 
   cleanupDead() {
@@ -1105,6 +1099,7 @@ export class Sim {
       if (e.boss) {
         this.bossKilled = true;
         this.shards += this.chapter.bossShards;
+        this.rollKeepsake('boss', e.x, e.y);
         if (this.fight) { this.fight.over(); this.state = 'victory'; } // victory = the boss dies; the sim stops at the killing blow
         this.pushEvent('bossDead', { x: e.x, y: e.y });
       }
@@ -1248,7 +1243,6 @@ export class Sim {
     if (this.fight && this.fight.pre(dt)) { this.updateGems(dt); this.updateFx(dt); this.checkLevelUp(); return; } // the 1.2 s arrival freeze ('bossIntro'): the world holds, gems still fly in
     this.updatePlayer(dt, input);
     this.updateSpawns(dt);
-    this.updateRally(dt);
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
     if (this.eshots.length) { updateEnemyShots(this, dt); if (this.state !== 'running') return; }
@@ -1269,8 +1263,18 @@ export class Sim {
   }
 
   // ------------------------------------------------------------------ results & debug helpers
+  // Keepsakes (CHARACTER SYSTEM v2): a chest or the boss may hold the keepsake of a sleeping character whose hint is met (keepFor, from the app).
+  // At most one per run; own RNG stream (keepRng), never drawn when keepFor is empty, so ordinary runs and sweeps stay byte-identical.
+  rollKeepsake(src, x, y) {
+    if (this.keepsake || !this.keepFor.length || !this.keepDef) return;
+    if (!this.keepRng.chance(src === 'boss' ? this.keepDef.boss : this.keepDef.chest)) return;
+    this.keepsake = this.keepFor[Math.floor(this.keepRng.next() * this.keepFor.length) % this.keepFor.length];
+    this.pushEvent('keepsake', { id: this.keepsake, x, y });
+  }
+
   result() {
     return {
+      startWeapon: this.startWeapon, bond: this.bondLevel, keepsake: this.keepsake, // CHARACTER SYSTEM v2 (banked at results only)
       outcome: this.state === 'victory' ? 'victory' : 'defeat',
       time: this.time,
       level: this.level,

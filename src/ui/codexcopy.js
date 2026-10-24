@@ -38,7 +38,7 @@ export const CX = Object.freeze({
   heroWalked: (runs, clears) => `${runs} night${runs === 1 ? '' : 's'} walked · ${clears} dawn${clears === 1 ? '' : 's'}`,
   heroNot: 'Not yet walked',
   heroPick: (name) => `Choose ${name} when you begin a night.`,
-  heroLocked: 'Wakes in the Lantern Web.',
+  heroLocked: 'Wakes when you gather their keepsakes.', // CHARACTER SYSTEM v2: heroes wake by keepsakes, not the tree
   ability: 'Ability',
   // nights
   nightRuns: (runs, clears) => `${runs} walked · ${clears} cleared`,

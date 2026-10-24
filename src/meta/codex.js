@@ -231,7 +231,8 @@ export function almanac(save, data, def, opts = {}) {
     const gid = c.treeGate ? gateFor(def, 'hero', hid) : null;
     if (runs > 0) unlocked.add(key);
     const nm = split(c.name);
-    heroes.push({ key, id: hid, walked: runs > 0, open: !c.treeGate || gateOwned(gid), name: nm.name, epithet: nm.epithet, blurb: c.blurb || '', ability: c.ability ? c.ability.name : '', abilityText: c.ability ? c.ability.desc : '', runs, clears, weapon: data.weapons[c.weapon] ? data.weapons[c.weapon].name : '' });
+    const awake = isObj(s.chars) && isObj(s.chars[hid]) && s.chars[hid].woke === true; // CHARACTER SYSTEM v2: heroes wake by the starter pick / keepsakes
+    heroes.push({ key, id: hid, walked: runs > 0, open: awake || (!!c.treeGate && gateOwned(gid)), name: nm.name, epithet: nm.epithet, blurb: c.blurb || '', ability: c.ability ? c.ability.name : '', abilityText: c.ability ? c.ability.desc : '', runs, clears, weapon: data.weapons[c.kindred] ? data.weapons[c.kindred].name : '' }); // kindred spirit (suggested start, no stat link)
   }
 
   // ---- nights + lore

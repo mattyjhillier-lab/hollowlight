@@ -11,6 +11,45 @@
   },
   "maxRank": 5,
   "abilityCdFloor": 30,
+  "body": {
+    "hp": 100,
+    "speed": 92,
+    "_note": "CHARACTER SYSTEM v2: every character has this body (LOCKED 2026-10-24); the sheet start point, confirmed by sweep"
+  },
+  "bond": {
+    "cap": 25,
+    "cost": {
+      "base": 100,
+      "step": 60
+    },
+    "earn": {
+      "kills": 25,
+      "chest": 15,
+      "boss": 40,
+      "minute": 3,
+      "dawn": 30
+    },
+    "runCap": 260,
+    "cycle": [
+      "hp",
+      "ward",
+      "speed"
+    ],
+    "total": {
+      "hp": 4,
+      "ward": 3,
+      "speed": 3
+    },
+    "seedPerRun": 100,
+    "seedCap": 5,
+    "_note": "Bond: banked at results only. total = % at cap (the sheet cap-10 figure spread over 25 levels)"
+  },
+  "keepsake": {
+    "need": 5,
+    "chest": 0.35,
+    "boss": 0.5,
+    "_note": "per run at most one keepsake; only for a sleeping character whose hint is met"
+  },
   "weaponSlots": 4,
   "xp": {
     "base": 6,
@@ -19,7 +58,7 @@
   },
   "hpScale": {
     "linear": 0.53,
-    "quad": 0.020
+    "quad": 0.02
   },
   "dmgScale": {
     "linear": 0.07
@@ -44,7 +83,12 @@
     "ttl": 45,
     "pityHeartForce": 75
   },
-  "chest": { "heal": 0.3, "xpLevel": 0.5, "gold": 25, "reach": 12 },
+  "chest": {
+    "heal": 0.3,
+    "xpLevel": 0.5,
+    "gold": 25,
+    "reach": 12
+  },
   "magnetSpeed": 260,
   "despawnDistance": 510,
   "spawnDistance": 340,

@@ -6,7 +6,7 @@
  "slot": "sky5",
  "chapter": "cursed_forest",
  "region": "launch",
- "heart": null,
+ "heart": "gt_holy_orbit",
  "starterEvo": "sanctum_halo",
  "sockets": {
   "a": {
@@ -23,6 +23,27 @@
   }
  },
  "gates": [
+  {
+   "id": "gt_holy_orbit",
+   "idx": 13,
+   "kind": "heart",
+   "name": "Holy Orbit",
+   "desc": "Unlocks Holy Orbit: you can start a run with it, and it can appear in your level-up cards.",
+   "branch": "magic",
+   "cost": {
+    "gold": 150
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "holy_orbit"
+    }
+   ],
+   "unlock": {
+    "t": "runs",
+    "n": 2
+   }
+  },
   {
    "id": "gt_judgement_wheel",
    "idx": 0,
@@ -71,8 +92,8 @@
       "n": 3
      },
      {
-      "t": "useCharacter",
-      "id": "elias",
+      "t": "startWeapon",
+      "id": "holy_orbit",
       "n": 8
      }
     ]
@@ -107,7 +128,7 @@
    "idx": 3,
    "kind": "knot",
    "name": "Long Wick",
-   "desc": "Orb power +2%",
+   "desc": "Orb power +4%",
    "cost": {
     "gold": 290
    },
@@ -115,7 +136,7 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 2
+     "pct": 4
     }
    ]
   },
@@ -285,7 +306,7 @@
    "idx": 12,
    "kind": "bead",
    "name": "Long Vigil",
-   "desc": "Orb power +2%",
+   "desc": "Orb power +4%",
    "cost": {
     "gold": 490
    },
@@ -293,7 +314,7 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 2
+     "pct": 4
     }
    ],
    "unlock": {

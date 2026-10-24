@@ -43,7 +43,7 @@ test('GEN1 the third hero is data only: composes with no core.json edit (own pre
   // ch_ is a shared hero prefix but only as ch_<own hero id>; a hero cannot take another prefix's ids
   const bad = (mut, re) => { const fs = files(); mut(fs.find((f) => f.path === 'heroes/sable.json').json); assert.throws(() => composeTree(fs, D), re); };
   bad((h) => { h.lanterns[0].id = 'ch_wren2'; }, /ch_sable|prefix "ch"/);
-  bad((h) => { h.lanterns[1].id = 'wr_hour'; }, /not owned by sable/);
+  bad((h) => { h.lanterns[1].id = 'wf_hour'; }, /not owned by sable/);
   bad((h) => { h.prefix = 'wf'; }, /prefix "wf"/);
   // an unknown character still fails loudly
   assert.throws(() => composeTree(files(), data), /hero sable: unknown character/);
@@ -75,10 +75,9 @@ test('GEN1 mods: weapon bonus, a NEW ability parameter declared in characters da
   assert.ok(m.weaponBonus.spirit_bolts.power.pct > 3.5 && m.weaponBonus.spirit_bolts.power.pct <= 4);
   assert.equal(m.ability.hourSecs, 0.5);
   assert.ok(m.visuals.includes('sableMotes'));
-  // existing heroes' parameters are untouched (same keys, same values) and no-node trees carry no hero keys at all
+  // no-node trees carry no hero keys at all; the retired hero lanterns (CHARACTER SYSTEM v2 tombstones) give nothing
   assert.deepEqual(aggregateMods({}, def, D).ability, { dur: 1, autoHp: 0 });
-  const r = aggregateMods({ wr_grip: 1, el_wheel: 1 }, def, D);
-  assert.equal(r.ability.rallySecs, 0.5); assert.equal(r.ability.wheel, 8);
+  assert.deepEqual(aggregateMods({ wr_grip: 1, el_wheel: 1 }, def, D).ability, { dur: 1, autoHp: 0 });
   const badTree = (eff) => { const fs = files(); fs.find((f) => f.path === 'heroes/sable.json').json.lanterns[1].effects = [eff]; return () => compileTree(composeTree(fs, D).live, D); };
   assert.throws(badTree({ ability: 'hourSecs', secs: 9 }), /secs/);
   assert.throws(badTree({ ability: 'hourSecs', pct: 5 }), /secs/);
@@ -90,12 +89,12 @@ test('GEN1 mods: weapon bonus, a NEW ability parameter declared in characters da
   assert.throws(() => compileTree(composeTree(files(), noDecl).live, noDecl), /unknown ability effect/);
 });
 
-test('GEN1 a Sim run as the third hero applies the tree (HP, weapon, damage profile) and its unknown ability is harmless', () => {
+test('GEN1 a Sim run as the third hero applies the tree (shared body HP, kindred weapon, damage) and its unknown ability is harmless', () => {
   const tree = aggregateMods({ gt_spirit_bolts: 1, ch_sable: 1, zs_hour: 1, li_vigor: 1 }, def, D);
   const s = new Sim({ data: D, characterId: 'sable', seed: 5, tree });
   const b = new Sim({ data: D, characterId: 'sable', seed: 5 });
-  assert.equal(b.player.maxHp, 110);
-  assert.ok(s.player.maxHp > b.player.maxHp, 'HP node scales the hero\'s own 110 HP');
+  assert.equal(b.player.maxHp, data.balance.body.hp, 'v2: every hero has the shared body');
+  assert.ok(s.player.maxHp > b.player.maxHp, 'HP node scales the shared body');
   assert.equal(s.weapons[0].id, 'spirit_bolts');
   const pick = (x) => { while (x.state === 'levelup') x.pickCard((x.offer.gold[0] || x.offer.cards[0]).key); };
   for (let i = 0; i < 60 * 40; i++) { pick(s); pick(b); s.step(1 / 60, { x: i % 240 < 120 ? 1 : -1, y: 0, ability: i === 600 }); b.step(1 / 60, { x: i % 240 < 120 ? 1 : -1, y: 0 }); }
@@ -183,5 +182,7 @@ test('GEN1 source rule: no hero id in the tree, codex, budget, validator or scre
   // codex.js keeps the frozen append-only bit list (save format: h:wren / h:elias hold bits 38 / 39 forever) and nothing else
   const cx = readFileSync(new URL('../src/meta/codex.js', import.meta.url), 'utf8').replace(/\/\/.*$/gm, '');
   for (const h of heroes) assert.equal(cx.split(`'${h}'`).length - 1, 0, `codex.js names ${h} outside the bit list`);
-  assert.ok(readdirSync(new URL('../src/data/tree/heroes', import.meta.url)).length === heroes.length, 'one hero fragment per character');
+  // CHARACTER SYSTEM v2: the shipped tree has no hero fragments (hero content lives on the Characters page); the composer still accepts one as data
+  let shipped = []; try { shipped = readdirSync(new URL('../src/data/tree/heroes', import.meta.url)); } catch { shipped = []; }
+  assert.equal(shipped.length, 0, 'no shipped hero fragment');
 });

@@ -8,8 +8,8 @@ import { defaultSave } from '../src/save/schema.js';
 
 const gates = def.list.filter((i) => def.nodes[i].permanent);
 
-test('G1c gateOf/gateTag: exactly the 18 permanent nodes are gates (16 weapon / evolution + 2 Night Gate tier gates)', () => {
-  assert.equal(gates.length, 18);
+test('G1c gateOf/gateTag: exactly the 20 permanent nodes are gates (18 weapon / evolution + 2 Night Gate tier gates)', () => {
+  assert.equal(gates.length, 20);
   assert.deepEqual(gates.filter((id) => gateOf(def, id).kind === 'tier').sort(), ['gt_cursed_forest_expert', 'gt_cursed_forest_hard']);
   assert.deepEqual(gateOf(def, 'gt_cursed_forest_hard'), { kind: 'tier', id: 'cursed_forest:hard' });
   for (const id of gates) assert.ok(gateOf(def, id) && gateTag(def, id) === 'GATE');
@@ -58,11 +58,11 @@ test('G1c closest unlocks flag gates and show cur/goal', () => {
   assert.ok(r && r.gate === true && r.name === 'Raven Flock' && /900\/4500/.test(r.text));
 });
 
-test('G1c toast fires once per gated weapon, never for starter weapons', () => {
+test('G1c toast fires once per gated weapon (v2: every weapon is gated)', () => {
   const seen = new Set();
   const cards = [{ kind: 'weapon', weaponId: 'spirit_bolts' }, { kind: 'weapon', weaponId: 'holy_orbit' }, { kind: 'stat' }];
-  assert.deepEqual(toastWeapons(cards, data, seen), ['spirit_bolts']);
-  seen.add('spirit_bolts');
+  assert.deepEqual(toastWeapons(cards, data, seen), ['spirit_bolts', 'holy_orbit']);
+  seen.add('spirit_bolts'); seen.add('holy_orbit');
   assert.deepEqual(toastWeapons(cards, data, seen), []);
   assert.deepEqual(toastWeapons([{ kind: 'weapon', weaponId: '__proto__' }], data, seen), []);
 });

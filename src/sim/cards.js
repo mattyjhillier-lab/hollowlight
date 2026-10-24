@@ -276,7 +276,8 @@ export function offerFromPreview(ctx, rng, preview) {
 export const START_KINDS = ['kindred', 'favour', 'blessing', 'chestBless', 'chestStat'];
 export function startOffer(ctx, rng, kind) {
   const { data, weapons } = ctx;
-  const open = Object.keys(data.weapons).filter((id) => !data.weapons[id].treeGate || (ctx.unlockedWeapons && ctx.unlockedWeapons.has(id)));
+  // open = tree-unlocked (or ungated) weapons, plus any weapon already held (the starting spirit is always yours to favour)
+  const open = Object.keys(data.weapons).filter((id) => !data.weapons[id].treeGate || (ctx.unlockedWeapons && ctx.unlockedWeapons.has(id)) || weapons.some((w) => w.id === id));
   let cards = [];
   if (kind === 'kindred') {
     if (weapons.length >= (ctx.weaponSlots || data.balance.weaponSlots)) return [];

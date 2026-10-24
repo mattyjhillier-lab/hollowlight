@@ -638,5 +638,13 @@
  "br_hearthkey": [
   "core",
   51
+ ],
+ "gt_ghost_wolves": [
+  "wf",
+  13
+ ],
+ "gt_holy_orbit": [
+  "or",
+  13
  ]
 }

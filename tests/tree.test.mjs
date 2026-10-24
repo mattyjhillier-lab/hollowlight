@@ -35,7 +35,8 @@ test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes
   const condTypes = new Set();
   const walk = (c) => { if (c.of) c.of.forEach(walk); else condTypes.add(c.t); };
   for (const i of locked) walk(def.nodes[i].unlock);
-  for (const t of ['killEnemy', 'clearChapter', 'surviveTime', 'evolveWeapon', 'useCharacter', 'bossKill', 'totalGold', 'bestLevel']) assert.ok(condTypes.has(t), t);
+  for (const t of ['killEnemy', 'clearChapter', 'surviveTime', 'evolveWeapon', 'startWeapon', 'bossKill', 'totalGold', 'bestLevel']) assert.ok(condTypes.has(t), t);
+  assert.ok(!condTypes.has('useCharacter'), 'v2: hero-in-condition became weapon-in-condition (the tree is character-agnostic)');
 });
 
 test('validation rejects duplicate ids, unknown/self prerequisites, cycles, bad costs, overlaps', () => {
@@ -116,6 +117,7 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
 
 test('unlock conditions gate buying; teasers never buyable', () => {
   const s = richSave();
+  s.stats.runs = 2; // the Wolves heart (v2) asks for 2 runs
   s.stats.killsByEnemy.wolf = 3000; // enough for the path (Red Thread needs 2500) but not for the chin lantern (4000)
   ownedPath(s, chain('wf_third'));
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'condition');
@@ -166,7 +168,8 @@ test('sanitizeTree: unknown ids, junk, huge/negative ranks, prerequisite and con
   // connected-unlock rule (2026-10-21): links and conditions gate BUYING only; an owned lantern is never dropped for them
   assert.equal(t.sp_cd1, 1, 'kept: links gate buying, not owning');
   assert.equal(t.sp_cd3, 1, 'kept although sp_cd2 is not owned');
-  assert.equal(t.wf_third, 1, 'kept: starter constellation, no gate missing');
+  assert.equal(t.wf_third, undefined, 'v2: dropped (refunded) without the Wolves heart, its gate');
+  assert.equal(sanitizeTree({ ...evil, gt_ghost_wolves: 1 }, stats, def, data).wf_third, 1, 'kept once the heart is owned');
   assert.equal(t.li_last, 1, 'kept: conditions gate buying only');
   assert.equal(t.tz_marsh, undefined, 'teaser');
   assert.equal(t.ma_focus, 1, 'huge rank clamped to max');
@@ -205,16 +208,16 @@ test('migration v1 -> v2: carries gold/stats/settings, resets placeholder tree, 
   assert.equal(r.save.shards, 4);
   assert.equal(r.save.stats.kills, 99);
   assert.equal(r.save.settings.quality, 'low');
-  assert.deepEqual(r.save.tree, {}, 'v1 tree was a placeholder');
+  assert.deepEqual(r.save.tree, { gt_ghost_wolves: 1, gt_holy_orbit: 1 }, 'v1 tree was a placeholder; a played pre-v2 save keeps the old run-1 pool (both launch hearts)');
   assert.deepEqual(r.save.stats.killsByEnemy, {});
   assert.deepEqual(r.save.seen, {});
   // an older save that never had these fields at all
   assert.ok(parseSave('{"version":1}').ok);
   // a v2 save goes through the v3 Regrowth: non-permanent nodes are refunded at their old price (150 + 150), unknown ids vanish
   const v2 = parseSave(JSON.stringify({ ...v1, version: 2, tree: { sp_reroll1: 1, sp_ban1: 1, junk: 7 } }));
-  assert.deepEqual(v2.save.tree, {});
+  assert.deepEqual(v2.save.tree, { gt_ghost_wolves: 1, gt_holy_orbit: 1 }, 'v2 legacy profile: the old run-1 pool hearts');
   assert.equal(v2.save.gold, 321 + 300);
-  assert.deepEqual(v2.save.notes, { regrowth: { gold: 300, shards: 0, nodes: 2 } });
+  assert.deepEqual(v2.save.notes, { regrowth: { gold: 300, shards: 0, nodes: 2 }, starter: { hero: 'wren', weapon: 'ghost_wolves' } });
 });
 
 test('seen flags are sanitised', () => {
@@ -477,12 +480,12 @@ test('effects: ability duration, auto-activate at low health', () => {
   sim.player.hp = sim.player.maxHp * 0.2;
   sim.step(DT, {});
   assert.ok(sim.ability.cdLeft > 0, 'auto-activated');
-  assert.ok(Math.abs(sim.buffs.rally - 6.9) < 0.1, `rally ${sim.buffs.rally} (6 s x 1.15)`);
+  assert.ok(Math.abs(sim.player.iframes - 0.5 * 1.15) < 0.02, `Pelt Dash untouchable ${sim.player.iframes} (0.5 s x 1.15)`);
 });
 
 test('effects: max health, regeneration, hearts', () => {
   const sim = new Sim({ data, seed: 1, godMode: true, tree: fx({ li_vigor: 1, li_regen: 1 }) });
-  assert.equal(sim.player.maxHp, Math.round(60 * (1 + soft(E('li_vigor').pct, 12) / 100)));
+  assert.equal(sim.player.maxHp, Math.round(data.balance.body.hp * (1 + soft(E('li_vigor').pct, 12) / 100)));
   sim.player.hp = 10;
   sim.xp = sim.xpNeeded + 1;
   sim.checkLevelUp();
@@ -496,7 +499,7 @@ test('effects: max health, regeneration, hearts', () => {
   heal.player.hp = 1;
   heal.pickups.push({ id: 99, type: 'heart', x: heal.player.x, y: heal.player.y, ttl: 5 });
   heal.step(DT, {});
-  assert.ok(heal.player.hp > 1 + 60 * 0.3 * 1.9, `hp ${heal.player.hp}`);
+  assert.ok(heal.player.hp > 1 + data.balance.body.hp * 0.3 * 1.9, `hp ${heal.player.hp}`);
 });
 
 test('effects: Last Light revives once; level-up rush buffs summons; attunement raises pair-card weight', () => {
@@ -504,7 +507,7 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
   sim.player.hp = 1;
   sim.damagePlayer(999);
   assert.equal(sim.state, 'running');
-  assert.equal(Math.round(sim.player.hp), 24);
+  assert.equal(Math.round(sim.player.hp), Math.round(data.balance.body.hp * 0.4));
   assert.ok(sim.player.iframes > 1);
   sim.player.iframes = 0;
   sim.damagePlayer(999);
@@ -523,10 +526,10 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
   assert.equal(luck.cardCtx.evoLuck, 1.5);
 });
 
-test('unlock schema: weapon gate and hero gate work with data that opts in (G1b: shipped gates are exactly 3 weapons; heroes stay open)', () => {
-  // Rewritten in G1b: the old line pinned 'no weapon is gated'. Progression design now gates exactly these three.
-  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'raven_flock', 'spirit_bolts']);
-  assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no existing hero is gated');
+test('unlock schema: weapon gate and hero gate work with data that opts in (v2: every shipped weapon is gated; heroes wake by keepsakes)', () => {
+  // G1b gated three weapons; CHARACTER SYSTEM v2 (2026-10-24) gates all five (the starter set grants one heart).
+  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
+  assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no hero is a tree gate');
   const gated = { ...udata, weapons: { ...udata.weapons, ghost_wolves: { ...udata.weapons.ghost_wolves, treeGate: true } } };
   const d = compileTree(raw([node('uw', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }, { unlock: 'abilityUpgrade', id: 'long_howl' }, { unlock: 'modifier', id: 'hard_dusk' }] })]), gated);
   const off = new Sim({ data: gated, characterId: 'elias', seed: 4 });
@@ -597,7 +600,7 @@ test('G1e: no non-gate node text names a locked weapon or evolution (data-driven
   const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate);
   const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
   const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
-  assert.ok(lockedW.length === 3 && lockedE.length === 13);
+  assert.ok(lockedW.length === 5 && lockedE.length === 13);
   for (const id of def.list) {
     const n = def.nodes[id];
     if (n.permanent || n.gateAnc.some((g) => def.nodes[g].effects.some((e) => e.unlock === 'weapon'))) continue; // gate nodes and locked-weapon nodes may name their weapon

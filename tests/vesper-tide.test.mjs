@@ -96,17 +96,6 @@ test('Burn: ring hits apply it (strongest wins, one instance), share of Orbit da
   assert.ok(a.burn / (a.dmg + a.burn) <= 0.35 && a.burn / Math.max(1, a.dmg) <= 0.35, `burn share ${(a.burn / a.dmg * 100).toFixed(0)}%`);
 });
 
-test('Candle Wheel (Elias ability): no breathing, no crest, no Burn while the wheel stands', () => {
-  const sim = fresh();
-  sim.ability.cdLeft = 0; sim.step(DT, { ability: true });
-  const w = sim.zones.find((z) => z.wheel);
-  const f = sim.spawnEnemy('dummy', w.x, w.y - w.r); f.hp = f.maxHp = 1e9; f.speed = 0;
-  const seen = new Set();
-  for (let i = 0; i < 3 / DT; i++) { sim.step(DT, {}); seen.add(ow(sim).rt.crest); assert.equal(ow(sim).rt.tide, null); }
-  assert.deepEqual([...seen], [1]);
-  assert.equal(f.burnTot, 0); assert.equal(f.burnT, 0);
-});
-
 test('D1: Orbit count, size, speed and power all matter after evolving', () => {
   const dps = (ranks) => { const sim = fresh(ranks); const e = put(sim, 30); const h0 = e.hp; step(sim, 20); return h0 - e.hp; };
   const base = { count: 2, power: 2, radius: 3, speed: 3 };

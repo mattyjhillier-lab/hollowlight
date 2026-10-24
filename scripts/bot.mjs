@@ -1,5 +1,6 @@
 // Rough balance probe: a simple bot plays whole runs headlessly.
-// Usage: node scripts/bot.mjs [characterId] [seeds]   (ABILITY=off never triggers the active ability; GATES=starter|all|preset, default starter; META=none|half|full; FOCUS=1; PREFER_W=<weapon id> takes that weapon first)
+// Usage: node scripts/bot.mjs [characterId] [seeds] [startWeapon]   (ABILITY=off never triggers the active ability; GATES=starter|launch|all|preset, default starter;
+//   META=none|half|full; FOCUS=1; PREFER_W=<weapon id> takes that weapon first; WEAPON=<weapon id> starting spirit (default: the hero's kindred); BOND=<level 0-25>)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -9,6 +10,7 @@ import { TIER_IDS, tierIndex } from '../src/sim/tiers.js';
 import { EMBER } from '../src/sim/marks.js';
 import { loadTree } from '../src/meta/treefs.mjs';
 import { tellHits } from '../src/sim/boss.js';
+import { starterNodes } from '../src/meta/starter.js';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
@@ -24,7 +26,8 @@ if (process.env.NO_ENEMY) { const drop = process.env.NO_ENEMY.split(','); for (c
 if (process.env.MINI_PATCH) { const P = JSON.parse(process.env.MINI_PATCH); for (const ch of Object.values(data.chapters)) if (ch.minis) for (const k of ['at', 'hp', 'chest']) if (Array.isArray(P[k])) ch.minis[k] = P[k]; } // EN6 probe: MINI_PATCH='{"hp":[450,1600,3200]}'
 if (process.env.NO_MINI === '1') for (const ch of Object.values(data.chapters)) delete ch.minis; // EN6-EN8 ablation: no Branch-Mane, no chests
 if (process.env.NO_CHEST === '1') data.balance = { ...data.balance, chest: { ...data.balance.chest, reach: -1e9 } }; // EN8 ablation: the Branch-Mane comes but its chest is never opened
-data.tree = loadTree(data).live; // fragments in src/data/tree/ (src/meta/treedata.js)
+const composed = loadTree(data);
+data.tree = composed.live; // fragments in src/data/tree/ (src/meta/treedata.js)
 data.tiers = load('tiers'); // difficulty tiers (src/data/tiers.json)
 // TIER=normal|hard|expert (Twilight / Deep Dusk / Long Night; default normal = byte-identical to before tiers existed)
 export const TIER = TIER_IDS.includes(process.env.TIER) ? process.env.TIER : 'normal';
@@ -37,13 +40,24 @@ const BPREF = { defence: { maxHp: 1.2, pickup: 0.6, gold: 0.3, damage: 0.3, spee
 
 // META=none|half|full buys a preset of the skill tree (ignores unlock conditions) for balance probes.
 // GATES decides the gated content (3 weapons + 9 evolutions, tree gates since G1b):
-//   starter (default) = a brand-new save: only Wolves + Orbit + the 2 starter evolutions;
+//   starter (default) = a brand-new save (CHARACTER SYSTEM v2): only the STARTING weapon + its first evolution (starter grant, src/meta/starter.js);
+//   launch  = the old run-1 pool: Wolves + Orbit + their 2 starter evolutions (both hearts owned), for before/after comparisons;
 //   all     = every gated weapon/evolution open (the pre-G1b base game; META presets then buy non-gate nodes only);
 //   preset  = the META preset also buys the 12 gate nodes (half = cheapest-first, so the cheap gates open first).
-export const GATES = process.env.GATES === 'all' ? 'all' : process.env.GATES === 'preset' ? 'preset' : 'starter';
+export const GATES = ['all', 'preset', 'launch'].includes(process.env.GATES) ? process.env.GATES : 'starter';
+export const WEAPON = /^[a-z_]{1,32}$/.test(process.env.WEAPON || '') && Object.hasOwn(data.weapons, process.env.WEAPON) ? process.env.WEAPON : null;
+export const BOND = Math.max(0, Math.min(25, Math.floor(Number(process.env.BOND) || 0)));
+export const startOf = (charId) => WEAPON || data.characters[charId].kindred;
 const treeDef = compileTree(data.tree, data);
-export function metaTree(name = process.env.META || 'none') {
-  return name === 'none' ? null : aggregateMods(presetTree(treeDef, name, GATES === 'preset'), treeDef, data, { tier: tierIndex(TIER) });
+// The starter grant of a weapon (or, for GATES=launch, of Wolves + Orbit) as owned tree nodes; GATES=all/preset add nothing here.
+export function starterOwned(weaponId) {
+  const ws = GATES === 'launch' ? ['ghost_wolves', 'holy_orbit'] : GATES === 'starter' ? [weaponId] : [];
+  return Object.fromEntries(ws.flatMap((w) => starterNodes(composed.info, w)).map((id) => [id, 1]));
+}
+export function metaTree(name = process.env.META || 'none', weaponId = null) {
+  const own = starterOwned(weaponId);
+  if (name === 'none') return Object.keys(own).length ? aggregateMods(own, treeDef, data, { tier: tierIndex(TIER) }) : null;
+  return aggregateMods({ ...presetTree(treeDef, name, GATES === 'preset'), ...own }, treeDef, data, { tier: tierIndex(TIER) });
 }
 
 export function withGates(t) {
@@ -219,7 +233,8 @@ function pick(sim, rng) {
 }
 
 export function playRun(charId, seed, opts = {}) {
-  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree()), tier: TIER });
+  const sw = opts.weapon || startOf(charId);
+  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree(undefined, sw)), tier: TIER, startWeapon: sw, bond: opts.bond ?? BOND });
   let s = seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;
@@ -258,6 +273,7 @@ export function playRun(charId, seed, opts = {}) {
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
   const char = process.argv[2] || 'wren';
   const seeds = Number(process.argv[3] || 3);
+  if (process.argv[4]) process.env.WEAPON = process.argv[4]; // note: WEAPON is read at import; pass it as an env var for scripts
   console.error(`bot: GATES=${GATES} META=${process.env.META || 'none'}`);
   for (let sd = 1; sd <= seeds; sd++) {
     const r = playRun(char, sd);

@@ -15,6 +15,10 @@ import { regrow, oldCost } from '../src/meta/migrations/tree-v3.js';
 import { TREE_STEPS, runTreeSteps } from '../src/meta/migrations/index.js';
 import { buildSynthetic, loadRealData } from '../scripts/tree-synth.mjs';
 
+// CHARACTER SYSTEM v2: a played pre-v2 save (no chars block) keeps the old run-1 pool, so its tree gains these two hearts on load
+const LEGACY_HEARTS = ['gt_ghost_wolves', 'gt_holy_orbit'];
+const HEARTS = { gt_ghost_wolves: 1, gt_holy_orbit: 1 };
+
 const fx = (n) => JSON.parse(readFileSync(new URL(`./fixtures/${n}`, import.meta.url), 'utf8'));
 const V1 = fx('tree-v1.json');
 const V2SAVE = fx('save-v2.json');
@@ -64,8 +68,8 @@ test('T2 Regrowth: a real v2 save is refunded at frozen v1 prices (ranks, rank c
   assert.equal(s.version, 3);
   assert.equal(s.gold, V2SAVE.gold + want.gold);
   assert.equal(s.shards, V2SAVE.shards + want.shards);
-  assert.deepEqual(s.notes, { regrowth: want });
-  assert.deepEqual(Object.keys(s.tree).sort(), ['gt_dive_bombers', 'gt_judgement_wheel', 'gt_phantom_stampede', 'gt_raven_flock', 'gt_spirit_bolts']);
+  assert.deepEqual(s.notes, { regrowth: want, starter: { hero: 'wren', weapon: 'ghost_wolves' } }); // + the v2 legacy starter note
+  assert.deepEqual(Object.keys(s.tree).sort(), ['gt_dive_bombers', 'gt_judgement_wheel', 'gt_phantom_stampede', 'gt_raven_flock', 'gt_spirit_bolts', ...LEGACY_HEARTS].sort());
   assert.ok(Object.values(s.tree).every((v) => v === 1));
   assert.deepEqual(s.seen, { sp_reroll1: true, gt_raven_flock: true }, 'seen keeps only ids that still exist');
   assert.equal(s.stats.runs, 61);
@@ -79,10 +83,10 @@ test('T2 Regrowth keeps EVERY permanent gate (weapon, evolution) even when its w
   const r = parseSave(JSON.stringify({ ...V2SAVE, stats: { ...V2SAVE.stats, killsByEnemy: { wolf: 1e6, crow: 1e6, root_crawler: 1e6 }, bossKills: { elder_treant: 9 }, chapters: { cursed_forest: { runs: 9, clears: 9, bestTime: 900 } }, charsUsed: { elias: 99, wren: 99 }, evolved: { ...stats.evolved, spirit_tempest: 9, soul_lance: 9, returning_pages: 9, static_storm: 9, thunder_judgment: 9, storm_tether: 9, murder_storm: 9, spearhead: 9, vesper_tide: 9, judgement_wheel: 9, dire_alpha: 9, chain_lightning: 9, raven_flock: 9, spirit_bolts: 9 } }, tree }));
   assert.ok(r.ok);
   assert.equal(r.save.gold, V2SAVE.gold, 'gates refund nothing');
-  assert.deepEqual(Object.keys(r.save.tree).sort(), gates.sort());
+  assert.deepEqual(Object.keys(r.save.tree).sort(), [...gates, ...LEGACY_HEARTS].sort());
   // Talon Mark owned without the Raven heart stays owned
   const lone = parseSave(JSON.stringify({ ...V2SAVE, tree: { gt_dive_bombers: 1 } }));
-  assert.deepEqual(lone.save.tree, { gt_dive_bombers: 1 });
+  assert.deepEqual(lone.save.tree, { gt_dive_bombers: 1, ...HEARTS });
   assert.equal(lone.save.gold, V2SAVE.gold);
 });
 
@@ -98,7 +102,7 @@ test('T2 Regrowth is idempotent and one-time: a regrown save never refunds again
   // a v3 envelope that still carries an old-style object tree is NOT regrown (only version < 3 saves are)
   const v3obj = parseSave(JSON.stringify({ ...V2SAVE, version: 3, tree: { sp_reroll1: 1 } })).save;
   assert.equal(v3obj.gold, V2SAVE.gold);
-  assert.deepEqual(v3obj.tree, { sp_reroll1: 1 });
+  assert.deepEqual(v3obj.tree, { sp_reroll1: 1, ...HEARTS });
   // regrow() itself: a second pass over its own output refunds nothing
   const r1 = regrow(V2SAVE.tree);
   const r2 = regrow(r1.tree);
@@ -112,8 +116,8 @@ test('T2 v1 saves migrate through v2 and v3 (placeholder tree reset, nothing to 
   assert.ok(r.ok);
   assert.equal(r.save.version, 3);
   assert.equal(r.save.gold, 321);
-  assert.deepEqual(r.save.tree, {});
-  assert.deepEqual(r.save.notes, {}, 'nothing refunded: no regrowth notice');
+  assert.deepEqual(r.save.tree, HEARTS, 'placeholder tree reset (+ the v2 legacy hearts: it was played)');
+  assert.deepEqual(r.save.notes, { starter: { hero: 'wren', weapon: 'ghost_wolves' } }, 'nothing refunded: no regrowth notice (the starter note is the v2 legacy seed)');
   assert.equal(SAVE_VERSION, 3);
   assert.equal(defaultSave().version, 3);
   assert.equal(typeof MIGRATIONS[1], 'function'); assert.equal(typeof MIGRATIONS[2], 'function');
@@ -126,7 +130,7 @@ test('T2 Regrowth hostile inputs: clamped ranks, prototype keys, NaN, giant numb
   assert.ok(r.save.gold <= 1e12 && Number.isFinite(r.save.gold));
   assert.equal(r.save.shards, 1e12, 'huge numbers clamp to the bank ceiling');
   assert.equal(({}).sp_reroll1, undefined, 'no prototype pollution');
-  assert.deepEqual(Object.keys(r.save.tree).filter((k) => k !== 'gt_raven_flock'), []);
+  assert.deepEqual(Object.keys(r.save.tree).filter((k) => k !== 'gt_raven_flock' && !LEGACY_HEARTS.includes(k)), []);
   // exact refund: sp_reroll1 150 + rv_wide rank 2 (600 + 960) + sp_cd4 (true = rank 1: 2100 gold, 2 shards)
   const f = regrow(hostile.tree);
   assert.equal(f.refund.gold, 150 + 600 + 960 + 2100);
@@ -150,7 +154,7 @@ test('T2 compact form: save.tree is { v, o: {fragment: bitset}, r: ranks>1 }, no
   const save = sanitize({ ...defaultSave(), stats: STATS_OK, tree: owned, seen: Object.fromEntries(Object.keys(owned).slice(0, 9).map((k) => [k, true])), gold: 77, shards: 2 });
   assert.deepEqual(save.tree, owned, 'the preset survives sanitize with generous stats');
   const disk = serializeSave(save);
-  assert.equal(disk.tree.v, 3);
+  assert.equal(disk.tree.v, 4); // tree content version 4 since CHARACTER SYSTEM v2 (hero lanterns retired)
   assert.ok(Object.keys(disk.tree.o).every((k) => /^[a-z]{2,4}$/.test(k)));
   assert.ok(Object.values(disk.tree.o).every((s) => /^[A-Za-z0-9_-]+$/.test(s)));
   const text = JSON.stringify(disk);
@@ -172,7 +176,7 @@ test('T2 SaveStore writes the compact form, reloads it, exports it and imports i
   a.saveNow();
   const raw = JSON.parse(st.m.get('hollowlight:save'));
   assert.equal(raw.version, 3);
-  assert.equal(raw.tree.v, 3);
+  assert.equal(raw.tree.v, 4);
   assert.ok(isCompact(raw.tree));
   const b = new SaveStore(st);
   assert.deepEqual(b.load().tree, a.data.tree);
@@ -357,27 +361,27 @@ test('T2 migration registry: ordered steps, missing steps skipped, forged low ve
   assert.deepEqual(log, [4, 6]);
   assert.equal(r.gold, 15); assert.equal(r.shards, 1); assert.deepEqual(r.notes, { four: 1 }); assert.deepEqual(r.tree, { a: 1, four: 1 });
   assert.deepEqual(runTreeSteps({ a: 1 }, 6, 6, steps).tree, { a: 1 });
-  assert.deepEqual(Object.keys(TREE_STEPS), ['3']);
+  assert.deepEqual(Object.keys(TREE_STEPS), ['3', '4']);
   // parseSave runs a registered newer step once for a compact save written at the older tree version
   const raw = JSON.parse(JSON.stringify(readTreeFiles().find((f) => f.path === 'core.json').json));
   assert.ok(raw.version >= 3);
-  const bumped = compileTree({ ...composeTree(readTreeFiles(), data).live, treeVersion: 4 }, data);
-  assert.equal(bumped.treeVersion, 4);
-  TREE_STEPS[4] = (t) => ({ tree: { ...t, sp_ban1: 1 }, gold: 25, shards: 0, note: { regrowth: { gold: 25, shards: 0, nodes: 1 } } });
+  const bumped = compileTree({ ...composeTree(readTreeFiles(), data).live, treeVersion: 5 }, data); // 4 = the real CHARACTER SYSTEM v2 step
+  assert.equal(bumped.treeVersion, 5);
+  TREE_STEPS[5] = (t) => ({ tree: { ...t, sp_ban1: 1 }, gold: 25, shards: 0, note: { regrowth: { gold: 25, shards: 0, nodes: 1 } } });
   try {
     withDef(bumped, data, () => {
-      const old = JSON.stringify({ version: 3, gold: 1, tree: encodeTree({ sp_reroll1: 1 }, bumped, 3) });
+      const old = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: encodeTree({ sp_reroll1: 1 }, bumped, 4) });
       const a = parseSave(old).save;
       assert.deepEqual(a.tree, { sp_reroll1: 1, sp_ban1: 1 }); assert.equal(a.gold, 26);
-      const cur = JSON.stringify({ version: 3, gold: 1, tree: encodeTree({ sp_reroll1: 1 }, bumped, 4) });
+      const cur = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: encodeTree({ sp_reroll1: 1 }, bumped, 5) });
       const b = parseSave(cur).save;
       assert.deepEqual(b.tree, { sp_reroll1: 1 }); assert.equal(b.gold, 1, 'already current: no step');
-      const forged = JSON.stringify({ version: 3, gold: 1, tree: { ...encodeTree({ sp_reroll1: 1 }, bumped, 4), v: 0 } });
+      const forged = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: { ...encodeTree({ sp_reroll1: 1 }, bumped, 5), v: 0 } });
       const c = parseSave(forged).save;
-      assert.equal(c.gold, 26, 'v=0 is clamped to 3: only the step above 3 runs, never the Regrowth');
-      assert.equal(parseSave(JSON.stringify({ version: 3, tree: { ...encodeTree({}, bumped, 5), v: 5 } })).code, 'future');
+      assert.equal(c.gold, 26, 'v=0 is clamped to 3: only the steps above 3 run (4 refunds nothing here), never the Regrowth');
+      assert.equal(parseSave(JSON.stringify({ version: 3, tree: { ...encodeTree({}, bumped, 6), v: 6 } })).code, 'future');
     });
-  } finally { delete TREE_STEPS[4]; }
+  } finally { delete TREE_STEPS[5]; }
 });
 
 test('T2 oldCost matches the old cost rule for ranks and rank multipliers', () => {

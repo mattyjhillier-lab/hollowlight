@@ -1,5 +1,5 @@
 // Parallel balance sweep: both characters x both bots, merged table.
-// Usage: node scripts/sweep-all.mjs [seeds=24] [chars=wren,elias]
+// Usage: node scripts/sweep-all.mjs [seeds=24] [chars=wren,elias] [startWeapons=kindred]   (startWeapons: comma list of weapon ids, or 'kindred')
 import { Worker, isMainThread, workerData, parentPort } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 
@@ -7,7 +7,7 @@ if (!isMainThread) {
   const { playRun } = await import('./bot.mjs');
   const out = [];
   for (const sd of workerData.seeds) {
-    const r = playRun(workerData.char, sd);
+    const r = playRun(workerData.char, sd, workerData.weapon ? { weapon: workerData.weapon } : {});
     out.push({ outcome: r.outcome, time: r.time, level: r.level, evo: r.marks.evo ?? null, bossKill: r.marks.bossKill ?? null, evos: r.evolved.length, levelups: r.levelups, filler: r.filler, fillerFirst: r.marks.filler ?? null, hearts: r.hearts, magnets: r.magnets, hurts: r.hurts, hurtBy: r.hurtBy || {}, lvl: Object.fromEntries([1, 3, 5, 10].map((k) => [k, r.marks[k]?.lvl ?? null])) });
   }
   parentPort.postMessage(out);
@@ -16,14 +16,15 @@ if (!isMainThread) {
   console.log(`sweep-all: GATES=${GATES} META=${process.env.META || 'none'}`);
   const N = Number(process.argv[2] || 24);
   const chars = (process.argv[3] || 'wren,elias').split(',');
+  const weapons = (process.argv[4] || 'kindred').split(',').map((w) => (w === 'kindred' ? null : w));
   const CH = 4;
   const S0 = Number(process.env.SEED_FROM || 1);
   const jobs = [];
-  for (const char of chars) for (const focus of [false, true]) for (let c = 0; c < CH; c++) {
+  for (const char of chars) for (const weapon of weapons) for (const focus of [false, true]) for (let c = 0; c < CH; c++) {
     const seeds = []; for (let s = S0 + c; s < S0 + N; s += CH) seeds.push(s);
     jobs.push(new Promise((res, rej) => {
-      const w = new Worker(fileURLToPath(import.meta.url), { workerData: { char, seeds }, env: { ...process.env, FOCUS: focus ? '1' : '0' } });
-      w.on('message', (m) => res({ key: `${char}/${focus ? 'focus' : 'random'}`, runs: m }));
+      const w = new Worker(fileURLToPath(import.meta.url), { workerData: { char, seeds, weapon }, env: { ...process.env, FOCUS: focus ? '1' : '0' } });
+      w.on('message', (m) => res({ key: `${char}${weapon ? '+' + weapon : ''}/${focus ? 'focus' : 'random'}`, runs: m }));
       w.on('error', rej);
     }));
   }

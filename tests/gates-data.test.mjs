@@ -1,5 +1,5 @@
-// G1b: the shipped data flip. Run 1 = Ghost Wolves + Holy Orbit + 2 starter evolutions; the rest is behind
-// 16 permanent gate nodes (docs/design/progression-gates-v1.md, g1-review.md T11-T16).
+// G1b: the shipped data flip (updated for CHARACTER SYSTEM v2: run 1 = the starter weapon + its first evolution; every weapon is behind
+// its heart: 18 permanent gate nodes) (docs/design/progression-gates-v1.md, g1-review.md T11-T16).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { data, treeDef as def } from './helpers.mjs';
@@ -19,21 +19,25 @@ const weaponKeys = (sim) => {
 };
 const withNodes = (ids) => aggregateMods(Object.fromEntries(ids.map((i) => [i, 1])), def, data);
 
-test('T11 starter pool: Wren sees only holy_orbit as a weapon card, Elias only ghost_wolves', () => {
-  assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'wren', seed: 3 }))], ['holy_orbit']);
-  assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'elias', seed: 3 }))], ['ghost_wolves']);
+// CHARACTER SYSTEM v2 (LOCKED 2026-10-24): EVERY weapon is a tree gate; a new profile owns only its starter weapon's heart (src/meta/starter.js).
+test('T11 starter pool (v2): no tree = no weapon card (the starting spirit is in slot 1); the old launch hearts give Wren Orbit and Elias Wolves', () => {
+  assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'wren', seed: 3 }))], []);
+  assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'elias', seed: 3 }))], []);
+  const launch = withNodes(['gt_ghost_wolves', 'gt_holy_orbit']);
+  assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'wren', seed: 3, tree: launch }))], ['holy_orbit']);
+  assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'elias', seed: 3, tree: launch }))], ['ghost_wolves']);
 });
 
-test('T12 starter evolutions are exactly howling_legion + sanctum_halo; 3 weapons + 13 evolutions are gated; heroes open', () => {
+test('T12 ungated evolutions are exactly howling_legion + sanctum_halo; all 5 weapons + 13 evolutions are gated; no hero tree gate', () => {
   const open = Object.keys(data.evolutions).filter((e) => !data.evolutions[e].treeGate).sort();
   assert.deepEqual(open, ['howling_legion', 'sanctum_halo']);
-  assert.deepEqual(gatedW, ['chain_lightning', 'raven_flock', 'spirit_bolts']);
+  assert.deepEqual(gatedW, ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
   assert.equal(gatedE.length, 13);
-  assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'Wren + Elias are both open at launch');
+  assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'heroes wake by keepsakes, never by the tree');
 });
 
 test('T13 every gated weapon/evolution has exactly one gate node; gate nodes are permanent, hub-attached, cheap, no shards', () => {
-  assert.equal(gateNodes.length, 16);
+  assert.equal(gateNodes.length, 18);
   for (const w of gatedW) assert.equal(gateOf('weapon', w).length, 1, w);
   for (const e of gatedE) assert.equal(gateOf('evolution', e).length, 1, e);
   for (const id of gateNodes) {
@@ -96,7 +100,7 @@ test('locked evolution: its stat gets no pair nudge or hint in the real pool', (
 
 test('owning a weapon gate node adds that weapon card to the pool; its evolution stays locked without its own node', () => {
   const s = new Sim({ data, characterId: 'wren', seed: 3, tree: withNodes(['gt_raven_flock']) });
-  assert.deepEqual([...weaponKeys(s)].sort(), ['holy_orbit', 'raven_flock']);
+  assert.deepEqual([...weaponKeys(s)].sort(), ['raven_flock']);
   const w = newWeapon('raven_flock', data.weapons.raven_flock);
   w.ranks.count = 5; w.ranks.range = 5;
   const sim = new Sim({ data, seed: 2, tree: withNodes(['gt_raven_flock']) });
@@ -112,10 +116,10 @@ test('T15 owned gate nodes are kept whatever the stats say (M1: conditions gate 
 });
 
 test('respec keeps gate nodes in the real tree and refunds the rest', () => {
-  const save = { ...defaultSave(), gold: 1e6, shards: 0, stats: { ...defaultSave().stats, evolved: { howling_legion: 1 } } };
+  const save = { ...defaultSave(), gold: 1e6, shards: 0, tree: { gt_ghost_wolves: 1 }, stats: { ...defaultSave().stats, evolved: { howling_legion: 1 } } };
   assert.ok(buy(save, 'su_bond', def, data).ok && buy(save, 'gt_phantom_stampede', def, data).ok);
   respec(save, def);
-  assert.deepEqual(save.tree, { gt_phantom_stampede: 1 });
+  assert.deepEqual(save.tree, { gt_ghost_wolves: 1, gt_phantom_stampede: 1 });
 });
 
 test('removing a gate node makes compileTree fail (unreachable content)', () => {
