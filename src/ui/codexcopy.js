@@ -135,7 +135,7 @@ export const CEL = Object.freeze({
   tap: '/ tap to continue',
   skip: 'skip all',
   away: 'While you were away',
-  kinds: Object.freeze({ evo: 'Evolution found', title: 'Title earned', weapon: 'Spirit wakes', socket: 'Socket wakes', heart: 'Heart wakes', gate: 'A way opens', key: 'Lantern lit', hero: 'Hollowlighter awakes', night: 'A new night' }),
+  kinds: Object.freeze({ evo: 'Evolution found', title: 'Title earned', weapon: 'Spirit wakes', socket: 'Socket wakes', heart: 'Heart wakes', gate: 'A way opens', key: 'Lantern lit', hero: 'Hollowlighter awakes', night: 'A new night', bond: 'Bond deepens', keepsake: 'Keepsake found', wake: 'Hollowlighter awakes' }),
   whole: (name) => `${name} ${/s$/.test(name) ? 'are' : 'is'} whole`,
   wholeLine: Object.freeze({
     ghost_wolves: 'Every hunger in the pack has a name again.',

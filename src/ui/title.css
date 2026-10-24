@@ -153,8 +153,10 @@ html.touch .overlay.u3 .u3-keys { display: none; }
 .overlay.u3 .u3-name--badge { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .overlay.u3 .u3-badge { padding: 2px 10px; border: 2px solid #d9ab5c; border-radius: 999px; color: #ffe0a0; font-size: var(--fs-small); text-shadow: none; background: rgba(40, 26, 12, .7); }
 .overlay.u3 .ld-spirits { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; width: min(100%, 1120px); }
-.overlay.u3 .ld-spirit { position: relative; display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 12px 16px; cursor: pointer; text-align: left; }
-.overlay.u3 .ld-spirit.is-chosen { box-shadow: var(--lg-rim), 0 0 0 3px rgba(255, 214, 140, .5), 0 0 34px rgba(255, 170, 60, .35), 0 10px 20px rgba(0, 0, 0, .45); }
+.overlay.u3 .ld-spirit { position: relative; display: flex; flex-direction: row; align-items: center; gap: 14px; min-height: 76px; padding: 12px 16px; cursor: pointer; text-align: left;
+  border: 2px solid #c99a4e; border-radius: 18px; background: linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); box-shadow: 0 0 0 2px #2a1a0c, 0 8px 16px rgba(0, 0, 0, .4); -webkit-tap-highlight-color: transparent; }
+.overlay.u3 .ld-spirit:focus-visible { outline: 2px solid var(--thread); outline-offset: 3px; }
+.overlay.u3 .ld-spirit.is-chosen { border-color: #ffe0a0; box-shadow: 0 0 0 3px rgba(255, 214, 140, .5), 0 0 34px rgba(255, 170, 60, .35), 0 10px 20px rgba(0, 0, 0, .45); }
 .overlay.u3 .ld-spirit.is-sleeping { cursor: default; opacity: .62; filter: saturate(.5); border-style: dashed; }
 .overlay.u3 .ld-spirit__emb { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #1a2030; box-shadow: 0 0 0 2px #d9ab5c; }
 .overlay.u3 .ld-spirit__emb .u3-emb { width: 34px; height: 34px; }
@@ -170,4 +172,10 @@ html.touch .overlay.u3 .u3-keys { display: none; }
   .overlay.u3 .ld-spirits { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .overlay.u3 .ld-spirit { min-height: 56px; padding: 6px 12px; gap: 10px; }
   .overlay.u3 .ld-spirit__emb { width: 38px; height: 38px; }
+}
+/* touch has no keyboard: no key hints in the hero / spirit bars (they clipped 'Back' on a portrait phone); portrait stacks the start above Back */
+html.touch .overlay.u3 .u3-bar .lg-btn__key { display: none; }
+@media (orientation: portrait) {
+  .overlay.u3 .u3-hero-screen .u3-bar { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
+  .overlay.u3 .u3-hero-screen .u3-bar > * { flex: none; }
 }

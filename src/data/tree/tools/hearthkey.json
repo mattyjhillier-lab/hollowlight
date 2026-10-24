@@ -135,21 +135,10 @@
     "minTier": 1
    },
    "unlock": {
-    "t": "all",
-    "of": [
-     {
-      "t": "clearTier",
-      "chapter": "cursed_forest",
-      "tier": "hard",
-      "hero": "wren"
-     },
-     {
-      "t": "clearTier",
-      "chapter": "cursed_forest",
-      "tier": "hard",
-      "hero": "elias"
-     }
-    ]
+    "t": "clearTierHeroes",
+    "chapter": "cursed_forest",
+    "tier": "hard",
+    "n": 2
    },
    "place": {
     "at": [

@@ -145,6 +145,17 @@ export class Sim {
     this.baseMaxHp = this.player.maxHp;
     // The tree's own multiplier for each Blessing effect: Blessings are clamped so tree x Blessing stays under the combined cap (blessings.js).
     this.treeMul = { damage: this.mods.damage, maxHp: T.player?.maxHp ?? 1, speed: this.mods.speed, pickup: this.mods.pickup, gold: this.mods.gold };
+    // Bond (BOND SIZE LOCKED 2026-10-24): damage + milestone perks, applied once AFTER the tree's Blessing-cap reference (Bond is its own row,
+    // outside the tree PE budget). Bond 0 = nothing touched, so ordinary runs stay byte-identical.
+    if (this.bondFx.level > 0) {
+      const B = this.bondFx, pm = (k) => 1 + (B.mods[k] || 0) / 100;
+      this.mods.damage *= B.damageMul;
+      if (B.mods.pickup) this.mods.pickup *= pm('pickup');
+      if (B.mods.xp) this.mods.xp *= pm('xp');
+      if (B.mods.gold) this.mods.gold *= pm('gold');
+      if (B.mods.abilityCd) this.mods.abilityCd *= 1 - B.mods.abilityCd / 100; // the 30 s floor still holds (abilityCooldown)
+      if (B.mods.heartHeal) this.tfx.heartHeal *= pm('heartHeal');
+    }
     // Blessings (run-only). Validated here so absent/tampered data fails closed to "none".
     const bdef = validateBlessings(data.blessings);
     this.blessDef = blessingCount(bdef) ? bdef : null;

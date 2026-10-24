@@ -19,6 +19,8 @@ import { EvoPlate, plateModel } from './evoplate.js';
 import './evoplate.css';
 import './title.css';
 import { buildTitle, buildHeroSelect, buildSpiritSelect } from './title.js';
+import { buildCharacters } from './charsui.js';
+import './charsui.css';
 import { buildLanternScreen } from './lanternsui.js';
 import './lanterns.css';
 import { buildNightSelect } from './nightsui.js';
@@ -176,6 +178,8 @@ export class UI {
       almanac: fd ? fd.almanac : null,
       bands: fd ? fd.bands : 0,
       onAlmanac: () => this.showAlmanac('title'),
+      chars: fd && fd.chars ? fd.chars : null,
+      onChars: () => this.showCharacters(),
       onBegin: () => this.beginLoadout(),
       onTree: () => h.openTree(),
       onSettings: () => h.openSettings(),
@@ -257,6 +261,14 @@ export class UI {
     view.focusSelected();
   }
 
+  // CH5: the Characters page ("Kindred"): Bond, skill, gifts of the awake heroes; keepsakes of the sleeping ones. Read-only. Esc back to the title.
+  showCharacters(sel = null) {
+    const h = this.handlers;
+    if (!h.charsView) return;
+    const v = buildCharacters({ view: h.charsView(), portraits: PORTRAITS, selected: sel || this.lastHero, onBack: () => this.showStart(this.onPick) });
+    this.mountLoadout(v, 'ld-step-chars');
+  }
+
   // Step 2: the character (awake heroes only; Bond badge; same body so no Health / Speed pips).
   showHeroSelect() {
     const h = this.handlers;
@@ -268,7 +280,7 @@ export class UI {
       onStart: (id) => { this.lastHero = id; this.showSpiritSelect(id); },
       onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.showStart(this.onPick); },
     });
-    this.mountLoadout(hs, 'ld-hero');
+    this.mountLoadout(hs, 'ld-step-hero');
   }
 
   // Step 3: the starting spirit (any weapon awake in the Lantern Web; sleeping ones shown dim). Starts the run.
@@ -281,7 +293,7 @@ export class UI {
       onStart: (wid) => { if (this.onPick) this.onPick(heroId, this.pickTier || undefined, wid); },
       onBack: () => this.showHeroSelect(),
     });
-    this.mountLoadout(vs, 'ld-spirit');
+    this.mountLoadout(vs, 'ld-step-spirit');
   }
 
   // New profile: the starter set (LOCKED: one hero + one weapon; everything else starts locked). The offer comes from balance.starter.
@@ -294,7 +306,7 @@ export class UI {
       onStart: (id) => { this.starterHero = id; this.showStarterSpirit(id); },
       onBack: () => this.showStart(this.onPick),
     });
-    this.mountLoadout(hs, 'ld-hero ld-starter');
+    this.mountLoadout(hs, 'ld-step-hero ld-starter');
   }
 
   showStarterSpirit(heroId) {
@@ -308,7 +320,7 @@ export class UI {
       onStart: (wid) => { if (h.chooseStarter && h.chooseStarter(heroId, wid) && this.onPick) this.onPick(heroId, undefined, wid); },
       onBack: () => this.showStarterHero(),
     });
-    this.mountLoadout(vs, 'ld-spirit ld-starter');
+    this.mountLoadout(vs, 'ld-step-spirit ld-starter');
   }
 
   // Step 1 (FD4 = DT7): "Choose your night" (only once there is a night choice). Next goes on to the character step.
@@ -546,7 +558,7 @@ export class UI {
         const a = document.activeElement;
         const onBtn = a && a.closest && a.closest('.lg-btn');
         const t = sc.title;
-        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if ((e.key === 'j' || e.key === 'J') && t.almanac) { e.preventDefault(); t.almanac.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); } else if ((e.key === 'n' || e.key === 'N') && t.newGame) { e.preventDefault(); t.newGame.click(); }
+        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if ((e.key === 'j' || e.key === 'J') && t.almanac) { e.preventDefault(); t.almanac.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); } else if ((e.key === 'n' || e.key === 'N') && t.newGame) { e.preventDefault(); t.newGame.click(); } else if ((e.key === 'c' || e.key === 'C') && t.chars) { e.preventDefault(); t.chars.click(); }
         return;
       }
     }

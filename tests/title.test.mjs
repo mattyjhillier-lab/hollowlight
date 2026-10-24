@@ -20,7 +20,7 @@ function mkNode(tag) {
   return n;
 }
 globalThis.document = { createElement: mkNode, createElementNS: (ns, t) => Object.assign(mkNode(t), { ns }), activeElement: null };
-const { buildTitle, buildHeroSelect } = await import('../src/ui/title.js');
+const { buildTitle, buildHeroSelect, buildSpiritSelect } = await import('../src/ui/title.js');
 const C = await import('../src/ui/titlecopy.js');
 const walk = (n, f) => { f(n); n.children.forEach((c) => walk(c, f)); };
 const find = (r, p) => { const o = []; walk(r, (n) => { if (p(n)) o.push(n); }); return o; };
@@ -142,4 +142,67 @@ test('title load note: shown as plain text in a status paragraph, hostile text i
   assert.equal(n.length, 1); assert.equal(n[0].attrs.role, 'status');
   assert.ok(n[0].textContent.startsWith('<img'), 'kept as text');
   assert.equal(find(buildTitle({}).root, (x) => x._cls.has('u3-note')).length, 0);
+});
+
+// ---- CHARACTER SYSTEM v2 loadout: starting-spirit step + starter pick (CH4)
+const spirits = () => [
+  { id: 'ghost_wolves', name: 'Ghost Wolves', line: 'pack', open: false, kindred: true, note: 'Wake it in the Lantern Web · Complete 2 runs 0/2' },
+  { id: 'raven_flock', name: 'Raven Flock', line: 'scouts', open: true },
+  { id: 'spirit_bolts', name: '<img src=x onerror=alert(1)>', line: '<b>x</b>', open: false },
+  { id: 'chain_lightning', name: 'Chain Lightning', line: 'storm', open: true },
+];
+test('spirit step: sleeping spirits are aria-disabled and never chosen (click, keys, digits); the label names hero + spirit; text only', () => {
+  const out = [];
+  const v = buildSpiritSelect({ spirits: spirits(), heroName: 'Elias', selected: 'ghost_wolves', onStart: (id) => out.push(id), onBack: () => out.push('back') });
+  assert.equal(v.current(), 'raven_flock', 'a sleeping preselect falls to the first awake spirit');
+  assert.ok(texts(v.root).includes('Walk with Elias · Raven Flock'));
+  assert.deepEqual(v.cards.map((c) => c.el.attrs['aria-disabled'] || null), ['true', null, 'true', null]);
+  assert.equal(v.group.attrs.role, 'radiogroup');
+  v.cards[0].el.click(); assert.equal(v.current(), 'raven_flock');
+  const key = (k) => ({ key: k, preventDefault() {} });
+  globalThis.document.activeElement = v.cards[1].el;
+  v.onKey(key('ArrowRight')); assert.equal(v.current(), 'chain_lightning');
+  v.onKey(key('ArrowRight')); assert.equal(v.current(), 'raven_flock', 'wraps over the sleeping ones');
+  assert.equal(v.onKey(key('3')), false, 'digit of a sleeping spirit does nothing');
+  v.onKey(key('4')); v.onKey(key('Enter'));
+  v.onKey(key('Escape'));
+  assert.deepEqual(out, ['chain_lightning', 'back']);
+  assert.ok(texts(v.root).includes('<img src=x'), 'hostile name stays text');
+  assert.equal(find(v.root, (n) => n.tag === 'script' || n.tag === 'img').length, 0);
+  const none = buildSpiritSelect({ spirits: spirits().map((s) => ({ ...s, open: false })), heroName: 'Wren' });
+  assert.equal(none.current(), null); assert.equal(none.start.disabled, true);
+});
+
+test('starter copy and hero badge: copy override, Bond badge beside the name, no pips row when pips is null', () => {
+  const h = { ...C.heroView('wren', data.characters.wren, 'Ghost Wolves'), weaponId: 'ghost_wolves', pips: null, badge: 'Bond 3' };
+  const hs = buildHeroSelect({ heroes: [h], copy: { kicker: C.LOADOUT.starterKicker, title: C.LOADOUT.starterHeroTitle, whisper: C.LOADOUT.starterHeroWhisper }, nextLabel: 'Next' });
+  const s = texts(hs.root);
+  assert.ok(s.includes('Who will you walk with first?') && s.includes('Bond 3') && s.includes('Next'));
+  assert.equal(find(hs.root, (n) => /^Health/.test(n.attrs['aria-label'] || '')).length, 0);
+});
+
+// ---- CH5 Characters page
+const { buildCharacters } = await import('../src/ui/charsui.js');
+const { charsView } = await import('../src/ui/charcopy.js');
+const { treeDef } = await import('./helpers.mjs');
+test('Characters page: awake hero shows Bond, skill, stats, the 5 named gifts; a sleeping hero shows its keepsake + hint progress; hostile text inert', () => {
+  const save = { chars: { wren: { xp: 2000, keep: 0, woke: true }, elias: { xp: 0, keep: 2, woke: false } }, stats: { killsByEnemy: { root_crawler: 120 } } };
+  const v = charsView(save, data, treeDef);
+  const w = v.find((x) => x.id === 'wren'), e = v.find((x) => x.id === 'elias');
+  assert.equal(w.bond.lvl, 7);
+  assert.deepEqual(w.perks.map((p) => [p.lvl, p.lit]), [[5, true], [10, false], [15, false], [20, false], [25, false]]);
+  assert.equal(w.perks[0].name, "Pup's Nose");
+  assert.equal(e.awake, false);
+  assert.equal(e.keep.line, 'Candle Stub 2/5');
+  assert.ok(/Root Crawler: 120\/400/.test(e.keep.hint), e.keep.hint);
+  const evil = '<img src=x onerror=alert(1)>';
+  const page = buildCharacters({ view: [{ ...w, name: evil }, e], onBack: () => {} });
+  assert.ok(texts(page.root).includes(evil));
+  assert.equal(find(page.root, (n) => n.tag === 'script').length, 0);
+  assert.ok(texts(page.root).includes('Pelt Dash'));
+  page.choose(1, false);
+  assert.ok(texts(page.page).includes('Candle Stub 2/5') && !texts(page.page).includes('Elias'), 'a sleeping hero stays a mystery');
+  const out = []; const p2 = buildCharacters({ view: v, onBack: () => out.push('back') });
+  p2.onKey({ key: 'Escape', preventDefault() {} }); assert.deepEqual(out, ['back']);
+  assert.deepEqual(charsView({ chars: JSON.parse('{"__proto__":{"woke":true},"wren":{"xp":"x","woke":"yes"}}'), stats: {} }, data, treeDef).map((x) => x.awake), [false, false]);
 });

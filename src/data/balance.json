@@ -33,16 +33,50 @@
     "cycle": [
       "hp",
       "ward",
-      "speed"
+      "speed",
+      "damage"
     ],
     "total": {
-      "hp": 4,
-      "ward": 3,
-      "speed": 3
+      "hp": 10,
+      "ward": 8,
+      "speed": 6,
+      "damage": 5
     },
     "seedPerRun": 100,
     "seedCap": 5,
-    "_note": "Bond: banked at results only. total = % at cap (the sheet cap-10 figure spread over 25 levels)"
+    "_note": "Bond (BOND SIZE LOCKED 2026-10-24: medium + milestone perks): banked at results only, read once at run start. total = % at cap 25 (HP +10, ward 8% less damage, speed +6, damage +5); perks at 5/10/15/20/25 = pickup +15%, ability cooldown -8%, XP +6%, heart heal +15%, gold +10% (same ladder for every hero; names per hero in characters.json bondPerks)",
+    "perks": [
+      {
+        "lvl": 5,
+        "id": "keen",
+        "effect": "pickup",
+        "pct": 15
+      },
+      {
+        "lvl": 10,
+        "id": "quick",
+        "effect": "abilityCd",
+        "pct": 8
+      },
+      {
+        "lvl": 15,
+        "id": "wise",
+        "effect": "xp",
+        "pct": 6
+      },
+      {
+        "lvl": 20,
+        "id": "warm",
+        "effect": "heartHeal",
+        "pct": 15
+      },
+      {
+        "lvl": 25,
+        "id": "bright",
+        "effect": "gold",
+        "pct": 10
+      }
+    ]
   },
   "keepsake": {
     "need": 5,

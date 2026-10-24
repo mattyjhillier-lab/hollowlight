@@ -20,6 +20,9 @@ import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js'
 import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
 import { TITLES } from './ui/codexcopy.js';
 import { SPIRIT_LINES } from './ui/titlecopy.js';
+import { charsView, CHARS, bondCelebration, mergeBond } from './ui/charcopy.js';
+// the title whisper under Characters: the nearest keepsake, else the default line
+function charsLine(s, d) { try { const v = charsView(s, d, treeDef).find((x) => !x.awake && x.keep && x.keep.n > 0); return v ? v.keep.line : CHARS.openWhisper; } catch { return CHARS.openWhisper; } }
 const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
 import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
@@ -224,7 +227,7 @@ export const app = {
     return Object.keys(data.weapons).map((id) => {
       const heart = treeDef.hearts && treeDef.hearts[id];
       let note = '';
-      if (!open.includes(id) && heart) { try { const st = nodeStatus(treeDef, s, heart, data); note = st && st.reason ? `Wake it in the Lantern Web · ${String(st.reason).slice(0, 60)}` : ''; } catch { note = ''; } }
+      if (!open.includes(id) && heart) { try { const st = nodeStatus(treeDef, s, heart, data); const L = st && st.cond && st.cond.lines && st.cond.lines[0]; note = L ? `Wake it in the Lantern Web · ${String(L.text).slice(0, 48)} ${L.cur}/${L.goal}` : 'Wake it in the Lantern Web'; } catch { note = ''; } }
       return { id, name: data.weapons[id].name, line: '', open: open.includes(id), kindred: id === kin, note };
     }).map((x) => ({ ...x, line: x.open ? SPIRIT_LINE_OF(x.id) : '' }));
   },
@@ -334,6 +337,7 @@ export const app = {
     return {
       lantern: { id: entry.id, name: entry.name, title: s.titles && s.titles.pick && TITLES[s.titles.pick] ? TITLES[s.titles.pick].name : '' },
       almanac: this.almanacEntry(),
+      chars: s.chars && Object.values(s.chars).some((c) => c && c.woke) ? { line: charsLine(s, data) } : null, // CH5: the Characters page, once a hero is awake
       bands: (s.titles && s.titles.got ? s.titles.got.length : 0),
       purses: purses(s, tiers),
       whisper: continueWhisper(heroName, { id: this.nextNightId(s), name: resolveTier(data.tiers, this.firstChapter(), this.nextNightId(s)).name }),
@@ -630,6 +634,8 @@ export const app = {
     b.night = this.nightResult(b.tier, sim.result());
     { const s = this.save.data; let ch = null; try { ch = sim.state === 'victory' ? null : this.cheapestLantern(); } catch { ch = null; } b.teach = resultTeach({ won: sim.state === 'victory', stats: s.stats, treeOwned: Object.keys(s.tree || {}).length > 0, cheapest: ch, gold: s.gold }); }
     b.cel = this.runCelebrations(sim.state === 'victory');
+    // CH6: the Bond beat (Bond level, keepsake, a hero waking) joins the celebration queue at results
+    { const bc = b.bond ? bondCelebration(b.bond, data) : []; if (bc.length) { const c = b.cel || { cards: [], ledger: null, any: false }; b.cel = { ...c, cards: mergeBond(c.cards, bc) }; } }
     if (!this.save.persistent) b.note = 'Browser storage unavailable: progress is kept only until you close this tab. Use Settings > Export save.';
     return b;
   },
@@ -699,6 +705,7 @@ export const app = {
       spiritChoices: (h) => this.spiritChoices(h),
       lastLoadout: (h) => this.lastLoadout(h),
       bondLevel: (h) => bondLevel(this.save.data, data, h),
+      charsView: () => charsView(this.save.data, data, treeDef),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
       resetTips: () => this.resetTips(),
       hideWhisper: () => this.hideWhisper(),

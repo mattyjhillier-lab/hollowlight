@@ -4,7 +4,9 @@
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => isObj(o) && Object.hasOwn(o, k);
-export const BOND_STATS = ['hp', 'ward', 'speed'];
+export const BOND_STATS = ['hp', 'ward', 'speed', 'damage'];
+// BOND SIZE (LOCKED 2026-10-24): small named perks at milestone levels; generic effects only (same ladder for every character).
+export const PERK_KEYS = { pickup: [1, 30], abilityCd: [1, 20], xp: [1, 15], heartHeal: [1, 30], gold: [1, 20] }; // effect -> [min, max] % per perk
 const HARD_CAP = 99;
 
 // balance.bond -> a clean definition (or null = Bond off).
@@ -21,7 +23,15 @@ export function bondDef(balance) {
   const runCap = fin(b.runCap) ? Math.max(0, Math.min(10000, b.runCap)) : 0;
   const seedPerRun = fin(b.seedPerRun) ? Math.max(0, Math.min(1000, b.seedPerRun)) : 0;
   const seedCap = Number.isInteger(b.seedCap) ? Math.max(0, Math.min(cap, b.seedCap)) : 0;
-  return { cap, cycle, cost: { base: b.cost.base, step: b.cost.step }, total, earn, runCap, seedPerRun, seedCap };
+  const perks = [];
+  if (Array.isArray(b.perks)) for (const p of b.perks.slice(0, 10)) {
+    if (!isObj(p) || !Number.isInteger(p.lvl) || p.lvl < 1 || p.lvl > cap || !own(PERK_KEYS, p.effect) || !fin(p.pct)) continue;
+    const [lo, hi] = PERK_KEYS[p.effect];
+    if (p.pct < lo || p.pct > hi || perks.some((q) => q.lvl === p.lvl)) continue;
+    perks.push({ lvl: p.lvl, effect: p.effect, pct: p.pct, id: typeof p.id === 'string' && /^[a-z_]{1,24}$/.test(p.id) ? p.id : `b${p.lvl}` });
+  }
+  perks.sort((a, b2) => a.lvl - b2.lvl);
+  return { cap, cycle, cost: { base: b.cost.base, step: b.cost.step }, total, earn, runCap, seedPerRun, seedCap, perks };
 }
 
 // XP needed to go from level L-1 to L (L >= 1).
@@ -38,6 +48,7 @@ export function levelOf(D, xp) {
 
 // The stat step a level gives (cycle order), and the full bonus at a level: { hpMul, ward (fraction of damage taken removed), speedMul }.
 export const levelStat = (D, L) => D.cycle[(L - 1) % D.cycle.length];
+export const perkAt = (D, L) => (D ? D.perks.find((p) => p.lvl === L) || null : null);
 function stepsAt(D, L) {
   const n = {};
   for (const s of BOND_STATS) n[s] = 0;
@@ -49,7 +60,7 @@ export function stepPct(D, stat) {
   return atCap ? D.total[stat] / atCap : 0;
 }
 export function bondBonus(D, level) {
-  const out = { hpMul: 1, ward: 0, speedMul: 1, level: 0 };
+  const out = { hpMul: 1, ward: 0, speedMul: 1, damageMul: 1, level: 0, perks: [], mods: {} };
   if (!D || !Number.isInteger(level) || level <= 0) return out;
   const L = Math.min(D.cap, level);
   const n = stepsAt(D, L);
@@ -57,6 +68,8 @@ export function bondBonus(D, level) {
   out.hpMul = 1 + (n.hp * stepPct(D, 'hp')) / 100;
   out.ward = (n.ward * stepPct(D, 'ward')) / 100;
   out.speedMul = 1 + (n.speed * stepPct(D, 'speed')) / 100;
+  out.damageMul = 1 + (n.damage * stepPct(D, 'damage')) / 100;
+  for (const p of D.perks) if (p.lvl <= L) { out.perks.push(p); out.mods[p.effect] = (out.mods[p.effect] || 0) + p.pct; }
   return out;
 }
 

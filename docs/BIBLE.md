@@ -62,6 +62,8 @@ Builds on: CLAUDE.md (locked design), docs/IDENTITY.md (The Hollow, life map), s
 
 ## 3. Heroes
 
+**Character rules (CHARACTER SYSTEM v2, LOCKED 2026-10-24; overrides the hero/weapon pairings and stat lines below):** every hero has the SAME body (HP, speed, ward); heroes differ only by their action skill and their look. No hero owns a weapon: the run starts with any spirit already awake in the Lantern Web, and the weapon named in each heading below is only the hero's *kindred spirit* (the suggested start, no bonus). Heroes grow by Bond (levels 1-25, earned by playing them, banked only after a night) and wake by their own keepsakes, not by the tree. Launch skills: Wren = Pelt Dash (a quick dart with her pup), Elias = Sanctuary Ring (a planted ring of candles); the older Pack Howl / Sanctuary wheel lines below describe the look, not the rules.
+
 **Role-colour scheme for hero accents** (each hero owns exactly ONE accent, used on one prop or cloth piece; the rest of the hero is warm-neutral cloth, leather, skin):
 | Role family | Heroes | Accent family |
 |---|---|---|

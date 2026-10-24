@@ -19,14 +19,14 @@ export const MORE_CUES = {
   dawn_chorus_1: { cap: 1, gap: 5, pri: 0 }, dawn_chorus_2: { cap: 1, gap: 5, pri: 0 }, dawn_chorus_3: { cap: 1, gap: 5, pri: 0 },
   defeat_sting: { cap: 1, gap: 3, pri: 0 }, title_motif: { cap: 1, gap: 3, pri: 0 },
   results_win: { cap: 1, gap: 1, pri: 0 }, results_lose: { cap: 1, gap: 1, pri: 0 },
-  tree_light: { cap: 1, gap: 0.2, pri: 0 }, tree_whole: { cap: 1, gap: 1, pri: 0 }, ui_step: { cap: 1, gap: 0.15, pri: 1 },
+  tree_light: { cap: 1, gap: 0.2, pri: 0 }, bond_level: { cap: 1, gap: 1, pri: 0 }, keepsake: { cap: 1, gap: 1, pri: 0 }, tree_whole: { cap: 1, gap: 1, pri: 0 }, ui_step: { cap: 1, gap: 0.15, pri: 1 },
 };
 export const EVO_IDS = ['phantom_stampede', 'howling_legion', 'dire_alpha', 'murder_storm', 'dive_bombers', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages', 'thunder_judgment', 'static_storm', 'storm_tether', 'vesper_tide', 'sanctum_halo', 'judgement_wheel'];
 for (const id of EVO_IDS) MORE_CUES['evo_' + id] = { cap: 1, gap: 1, pri: 0 };
 
 // sim event type -> cue (app.js hands every sim event to AudioEngine.event; render/audio only)
 export const EVENT_CUE = {
-  levelup: 'level_up', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', revive: 'revive',
+  levelup: 'level_up', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', dash: 'ability', sanctuary: 'sanctuary', keepsake: 'keepsake', revive: 'revive',
   bossTell: 'treant_creak', bossHit: 'treant_slam', slam: 'treant_slam', bossPhase: 'boss_phase', bossDead: 'boss_fall', bossSoon: 'boss_tremor',
   thorn: 'thorn_spit', burst: 'toad_puff', charge: 'hart_charge', mini: 'mane_call', howl: 'mane_howl', miniPhase: 'mane_growl', miniDead: 'mane_fall',
   chestDrop: 'chest_drop', chest: 'chest_open',
@@ -120,6 +120,9 @@ export function moreCue(e, id, t, v) {
     case 'results_lose': e.tone(t, 'triangle', e.hz(19), 0.01, 0.8, 0.07 * v, 0, true); e.tone(t + 0.22, 'triangle', e.hz(12), 0.01, 1.2, 0.07 * v, 0, true); return 1.4; // a warm falling fifth
     case 'tree_light': e.noise(t, 'bandpass', 900, 0.8, 0.08, 0.25, 0.05 * v, 2600); for (let i = 0; i < 2; i++) e.tone(t + 0.08 + i * 0.07, 'triangle', e.hz([12, 19][i] + 12), 0.005, 0.5, 0.1 * v, 0, true); e.tone(t + 0.22, 'sine', e.hz(36), 0.003, 0.4, 0.03 * v); return 0.8;
     case 'tree_whole': motif(e, t, v, 12, 0.12); chord(e, t + 0.4, [24, 28, 31, 36], 0.08, 0.003, 1.6, 0.05 * v, null, 'sine'); return 2.2;
+    // CHARACTER SYSTEM v2: Bond level-up at results (the level-up motif, lower and softer, with a warm fifth) and a keepsake found in a run (glass chime)
+    case 'bond_level': motif(e, t, v, -5, 0.09); chord(e, t + 0.36, [7, 14, 19], 0.06, 0.004, 1.1, 0.035 * v, null, 'sine'); return 1.6;
+    case 'keepsake': for (let i = 0; i < 3; i++) e.tone(t + i * 0.09, 'sine', e.hz([24, 31, 36][i]), 0.003, 0.6, 0.06 * v, 0, true); return 0.9;
     case 'ui_step': e.tone(t, 'triangle', e.hz(26), 0.005, 0.15, 0.06 * v); e.tone(t + 0.07, 'triangle', e.hz(31), 0.005, 0.25, 0.06 * v, 0, true); return 0.35;
     default: return -1;
   }

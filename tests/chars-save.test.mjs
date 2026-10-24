@@ -187,3 +187,42 @@ test('the live tree compiles with the retired hero lanterns and a third hero nee
   assert.equal(def.treeVersion, 4);
   assert.doesNotThrow(() => compileTree(composeTree(readTreeFiles(), data).live, data));
 });
+
+test('starter pool is data-driven (balance.starter; all by default; junk = all; never empty)', async () => {
+  const { starterPool } = await import('../src/meta/starter.js');
+  const all = starterPool(data);
+  assert.deepEqual(all.heroes, Object.keys(data.characters)); assert.deepEqual(all.weapons, Object.keys(data.weapons));
+  const D2 = (st) => ({ ...data, balance: { ...data.balance, starter: st } });
+  assert.deepEqual(starterPool(D2({ heroes: ['elias', 'nope'], weapons: ['holy_orbit', 'ghost_wolves', '__proto__'] })), { heroes: ['elias'], weapons: ['ghost_wolves', 'holy_orbit'] });
+  assert.deepEqual(starterPool(D2({ heroes: ['nope'], weapons: 'x' })), all);
+  assert.deepEqual(starterPool(D2(null)), all);
+});
+
+test('results Bond beat: level-up card (gift named at a milestone), keepsake card, a woken hero as the big moment; queue cap 1 big + 3 medium', async () => {
+  const { bondCelebration, mergeBond } = await import('../src/ui/charcopy.js');
+  const lv = bondCelebration({ hero: 'wren', gain: 120, from: 4, to: 5, xp: 1100, keepsake: null }, data);
+  assert.equal(lv.length, 1);
+  assert.equal(lv[0].title, 'Bond 5 with Wren');
+  assert.ok(/New gift: Pup's Nose \(\+15% pickup range\)/.test(lv[0].sub), lv[0].sub);
+  assert.equal(lv[0].cue, 'bond_level');
+  assert.deepEqual(bondCelebration({ hero: 'wren', gain: 40, from: 3, to: 3, keepsake: null }, data), [], 'no level, no card');
+  const k = bondCelebration({ hero: 'wren', gain: 40, from: 3, to: 3, keepsake: { id: 'elias', count: 2, need: 5, woke: false } }, data);
+  assert.equal(k[0].title, 'Candle Stub 2/5'); assert.equal(k[0].size, 'medium');
+  const wk = bondCelebration({ hero: 'wren', gain: 40, from: 3, to: 3, keepsake: { id: 'elias', count: 5, need: 5, woke: true } }, data);
+  assert.equal(wk[0].size, 'big'); assert.equal(wk[0].title, 'Elias wakes');
+  const codex = [{ size: 'big', title: 'B' }, { size: 'medium', title: 'm1' }, { size: 'medium', title: 'm2' }, { size: 'medium', title: 'm3' }];
+  const merged = mergeBond(codex, [...wk, ...lv]);
+  assert.deepEqual(merged.map((i) => [i.size, i.title]), [['big', 'B'], ['medium', 'Bond 5 with Wren'], ['medium', 'Elias wakes'], ['medium', 'm1']]);
+  assert.deepEqual(mergeBond(null, wk).map((i) => i.size), ['big']);
+  for (const junk of [null, 'x', { hero: '__proto__', from: 0, to: 9 }, { keepsake: { id: 'nope' } }]) assert.doesNotThrow(() => bondCelebration(junk, data));
+});
+
+test('Fifth Hook asks for Deep Dusk clears with 2 DIFFERENT heroes (hero-agnostic condition, no hero id in the tree)', () => {
+  const c = def.nodes.rs_slot5.unlock;
+  assert.deepEqual(c, { t: 'clearTierHeroes', chapter: 'cursed_forest', tier: 'hard', n: 2 });
+  const st = (heroes) => ({ tiers: { cursed_forest: { hard: { clears: 3, heroes } } } });
+  assert.equal(conditionProgress(c, st({ wren: { clears: 3 } }), def, data).done, false);
+  assert.equal(conditionProgress(c, st({ wren: { clears: 1 }, sable: { clears: 1 } }), def, data).done, true, 'any two heroes, not named ones');
+  assert.equal(conditionProgress(c, st({ wren: { clears: 1 }, elias: { clears: 0 } }), def, data).lines[0].text, 'Clear Cursed Forest on Deep Dusk with 2 different heroes');
+  assert.ok(!/"hero":/.test(JSON.stringify(data.tree.nodes || data.tree)), 'no tree condition names a hero');
+});

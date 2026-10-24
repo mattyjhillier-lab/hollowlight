@@ -123,15 +123,20 @@ test('Bond: read once at Sim start (HP, ward, speed); level 0 is the plain body;
   const D = bondDef(data.balance);
   assert.equal(D.cap, 25);
   const b25 = bondBonus(D, 25);
-  assert.ok(Math.abs(b25.hpMul - 1.04) < 1e-9 && Math.abs(b25.ward - 0.03) < 1e-9 && Math.abs(b25.speedMul - 1.03) < 1e-9, 'cap 25 = the sheet cap-10 total');
+  assert.ok(Math.abs(b25.hpMul - 1.10) < 1e-9 && Math.abs(b25.ward - 0.08) < 1e-9 && Math.abs(b25.speedMul - 1.06) < 1e-9 && Math.abs(b25.damageMul - 1.05) < 1e-9, 'BOND SIZE: medium at cap 25');
+  assert.deepEqual(b25.perks.map((p) => p.lvl), [5, 10, 15, 20, 25]);
+  assert.deepEqual(bondBonus(D, 9).perks.map((p) => p.effect), ['pickup']);
+  for (const id of Object.keys(data.characters)) for (const p of D.perks) assert.ok(typeof data.characters[id].bondPerks[p.id] === 'string', `${id} names perk ${p.id}`);
   assert.deepEqual(bondBonus(D, 99), b25);
   for (const bad of [-1, 1.5, '7', NaN, null]) assert.equal(bondBonus(D, bad).hpMul, 1);
   const s0 = new Sim({ data, seed: 3, characterId: 'wren' });
   const s = new Sim({ data, seed: 3, characterId: 'wren', bond: 25 });
-  assert.equal(s.player.maxHp, Math.round(s0.player.maxHp * 1.04));
-  assert.ok(Math.abs(s.player.speed / s0.player.speed - 1.03) < 1e-9);
+  assert.equal(s.player.maxHp, Math.round(s0.player.maxHp * 1.10));
+  assert.ok(Math.abs(s.mods.damage / s0.mods.damage - 1.05) < 1e-9 && Math.abs(s.mods.pickup / s0.mods.pickup - 1.15) < 1e-9 && Math.abs(s.mods.xp / s0.mods.xp - 1.06) < 1e-9 && Math.abs(s.mods.gold / s0.mods.gold - 1.1) < 1e-9);
+  assert.equal(s.abilityCooldown, 60 * 0.92);
+  assert.ok(Math.abs(s.player.speed / s0.player.speed - 1.06) < 1e-9);
   s.player.iframes = 0; const h = s.player.hp; s.damagePlayer(10, 'test');
-  assert.ok(Math.abs(h - s.player.hp - 9.7) < 1e-9, 'ward 3%');
+  assert.ok(Math.abs(h - s.player.hp - 9.2) < 1e-9, 'ward 8%');
   assert.equal(s.result().bond, 25);
   for (const bad of ['5', -3, 2.5, {}]) assert.equal(new Sim({ data, seed: 3, characterId: 'wren', bond: bad }).bondLevel, 0);
 });
@@ -147,4 +152,12 @@ test('keepsakes: drop only for listed sleeping heroes, at most one per run, own 
   assert.equal(s.keepsake, 'elias');
   assert.equal(s.events.filter((e) => e.type === 'keepsake').length, 1, 'max one per run');
   assert.equal(new Sim({ data, seed: 2, characterId: 'wren' }).result().keepsake, null);
+});
+
+test('Bond perks: hostile data fails closed (unknown effect, out-of-range pct, duplicate level, beyond cap)', () => {
+  const bad = { ...data.balance, bond: { ...data.balance.bond, perks: [{ lvl: 5, effect: 'damage', pct: 50 }, { lvl: 6, effect: 'pickup', pct: 999 }, { lvl: 7, effect: '__proto__', pct: 5 }, { lvl: 99, effect: 'xp', pct: 5 }, { lvl: 8, effect: 'xp', pct: 5 }, { lvl: 8, effect: 'gold', pct: 5 }, 'x', null] } };
+  const D2 = bondDef(bad);
+  assert.deepEqual(D2.perks.map((p) => [p.lvl, p.effect]), [[8, 'xp']]);
+  const noPerks = bondDef({ ...data.balance, bond: { ...data.balance.bond, perks: 'junk' } });
+  assert.deepEqual(noPerks.perks, []);
 });

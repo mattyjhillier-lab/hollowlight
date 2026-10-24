@@ -33,6 +33,7 @@ const LEAF = {
   runs: { need: ['n'] },
   // difficulty tiers + tool-cluster counters (docs/design/difficulty-tiers-economy-v1.md 5.2)
   clearTier: { need: ['chapter', 'tier'], ref: 'chapters', refKey: 'chapter', tier: true },
+  clearTierHeroes: { need: ['chapter', 'tier', 'n'], ref: 'chapters', refKey: 'chapter', tier: true }, // n DIFFERENT heroes cleared it (hero-agnostic)
   stars: { need: ['chapter', 'n'], ref: 'chapters', refKey: 'chapter' },
   killMarked: { need: ['n'] },
   openChest: { need: ['n'] },
@@ -97,6 +98,13 @@ function leafValue(c, stats, def) {
       if (!isObj(t)) return 0;
       return c.hero ? (m(t.heroes, c.hero)?.clears || 0) : t.clears || 0;
     }
+    case 'clearTierHeroes': {
+      const t = m(m(stats.tiers, c.chapter), c.tier);
+      if (!isObj(t) || !isObj(t.heroes)) return 0;
+      let k = 0;
+      for (const h of Object.values(t.heroes)) if (isObj(h) && (h.clears || 0) > 0) k++;
+      return k;
+    }
     case 'stars': {
       const ch = m(stats.tiers, c.chapter);
       let n = 0;
@@ -131,6 +139,7 @@ function leafText(c, data) {
     case 'bestLevel': return `Reach level ${n} in one run`;
     case 'runs': return `Complete ${n} runs`;
     case 'clearTier': return `Clear ${nm('chapters', c.chapter)} on ${tierName(c.tier)}${c.hero ? ` as ${nm('characters', c.hero).split(',')[0]}` : ''}${n > 1 ? ` ${n} times` : ''}`;
+    case 'clearTierHeroes': return `Clear ${nm('chapters', c.chapter)} on ${tierName(c.tier)} with ${n} different heroes`;
     case 'stars': return `Earn ${n} star${n > 1 ? 's' : ''} in ${nm('chapters', c.chapter)}`;
     case 'killMarked': return `Slay ${n} Hollow-marked foes`;
     case 'openChest': return `Open ${n} chest${n > 1 ? 's' : ''}`;
