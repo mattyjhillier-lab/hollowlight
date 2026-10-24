@@ -1,0 +1,13 @@
+/* EXTRAS v1 Endless Dusk: the dawn choice (over the dawn flood) */
+.overlay.layer-dark { display: flex; align-items: center; justify-content: center; z-index: 4; background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255, 190, 120, .1), rgba(8, 11, 20, .55)); }
+.overlay.layer-dark .dk-wrap { display: flex; justify-content: center; width: 100%; padding: 16px; box-sizing: border-box; }
+.overlay.layer-dark .dk-card { width: min(100%, 560px); display: flex; flex-direction: column; gap: 10px; padding: clamp(16px, 3vh, 26px) clamp(16px, 3vw, 28px); border-radius: 22px; text-align: left;
+  border: 2px solid #c79a4c; background: linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); box-shadow: var(--lg-rim), 0 16px 30px rgba(0, 0, 0, .5); }
+.overlay.layer-dark .dk-k { color: var(--lg-brass-text); }
+.overlay.layer-dark .dk-title { margin: 0; font: var(--fw-display) clamp(26px, 5vh, 38px)/1.05 var(--font-display); color: #ffe2b0; }
+.overlay.layer-dark .dk-line { margin: 0; font: var(--fw-body) 16px/1.35 var(--font-body); color: var(--lg-text); }
+.overlay.layer-dark .dk-rules { margin: 0; font: var(--fw-body) 14px/1.35 var(--font-body); color: var(--lg-dim); }
+.overlay.layer-dark .dk-acts { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.overlay.layer-dark .dk-acts .lg-btn { min-height: 52px; width: auto; flex: 1 1 200px; justify-content: center; }
+html.touch .overlay.layer-dark .lg-btn__key { display: none; }
+@media (max-height: 480px) { .overlay.layer-dark .dk-rules { font-size: 13px; } .overlay.layer-dark .dk-acts .lg-btn { min-height: 46px; } .overlay.layer-dark .dk-line { font-size: 14px; } }

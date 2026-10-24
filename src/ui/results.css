@@ -176,3 +176,5 @@ html.reduced-motion .overlay.u6 * { transition: none !important; animation: none
   .overlay.u6 .u6-chips--3 .u6-bank--glass { grid-column: 1 / -1; display: grid; grid-template-columns: auto auto 1fr; align-items: center; column-gap: 12px; }
   .overlay.u6 .u6-chips--3 .u6-bank--glass .u6-chip__sub { text-align: right; }
 }
+/* EXTRAS v1 Endless Dusk: the results 'held the dark' line */
+.overlay.u6 .u6-dark { display: flex; gap: 8px; align-items: baseline; margin: 0; font: var(--fw-body) clamp(13px, 2vh, 16px)/1.3 var(--font-body); color: #d4ccff; }

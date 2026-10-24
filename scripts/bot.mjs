@@ -46,6 +46,7 @@ const BPREF = { defence: { maxHp: 1.2, pickup: 0.6, gold: 0.3, damage: 0.3, spee
 //   preset  = the META preset also buys the 12 gate nodes (half = cheapest-first, so the cheap gates open first).
 export const GATES = ['all', 'preset', 'launch'].includes(process.env.GATES) ? process.env.GATES : 'starter';
 export const WEAPON = /^[a-z_]{1,32}$/.test(process.env.WEAPON || '') && Object.hasOwn(data.weapons, process.env.WEAPON) ? process.env.WEAPON : null;
+export const ENDLESS = process.env.ENDLESS === '1'; // EXTRAS v1 Endless Dusk: after a dawn the bot stays in the dark until it falls (cap 60 min in the dark)
 export const ASSIST = process.env.ASSIST === '1'; // EXTRAS v1 Gentle Light (Twilight only; the Sim ignores it elsewhere)
 export const BOND = Math.max(0, Math.min(25, Math.floor(Number(process.env.BOND) || 0)));
 export const startOf = (charId) => WEAPON || data.characters[charId].kindred;
@@ -242,7 +243,8 @@ export function playRun(charId, seed, opts = {}) {
   const marks = {};
   let levelups = 0, filler = 0, dead = 0, short = 0, blessPicks = 0, healSwaps = 0, hpLost = 0; // filler = level-ups whose first-shown offer was only fallback cards (heal/gold/xp)
   const t0 = Date.now();
-  while (sim.state === 'running' || sim.state === 'levelup') {
+  const darkMore = () => (opts.endless ?? ENDLESS) && sim.state === 'victory' && !sim.endless && sim.stayInDark();
+  while ((sim.state === 'running' || sim.state === 'levelup' || darkMore()) && !(sim.endless && sim.time - sim.endless.t0 > 3600)) {
     if (sim.state === 'levelup') {
       if (sim.offer.start && sim.offer.start.startsWith('chest')) { const key = pick(sim, rng); if (key.startsWith('b:')) blessPicks++; sim.pickCard(key); continue; } // EN8 chest choices are not level-ups
       levelups++;

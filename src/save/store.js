@@ -144,7 +144,15 @@ export class SaveStore {
   bankRun(r, ctx = null) {
     const s = this.data.stats;
     const pos = (v) => Math.max(0, Math.floor(Number(v) || 0));
-    const time = Math.max(0, Number(r.time) || 0);
+    // EXTRAS v1 Endless Dusk: records use the DAWN time; the dark adds play time only. Endless gold is capped here too (a forged result
+    // can never bank more than the dawn gold + the locked share), whatever the sim said.
+    const E = r.endless && typeof r.endless === 'object' && Number.isFinite(r.endless.dawn) && r.endless.dawn > 0 ? r.endless : null;
+    if (E) {
+      const capK = ctx && ctx.data && ctx.data.balance && ctx.data.balance.endless && Number.isFinite(ctx.data.balance.endless.goldCap) ? Math.min(2, Math.max(0, ctx.data.balance.endless.goldCap)) : 0.5;
+      r = { ...r, gold: Math.min(pos(r.gold), Math.floor(pos(E.gold0) * (1 + capK))), outcome: 'victory' };
+    }
+    const full = Math.max(0, Number(r.time) || 0);
+    const time = E ? Math.min(full, Math.max(0, Number(E.dawn) || 0)) : full;
     const prevBest = s.bestTime;
     // EXTRAS v1 Gentle Light: Twilight only; stars and best times rest (gold, shards, Bond, clears and the Night Gate count as normal)
     const assisted = r.assist === true && (r.tier === undefined || r.tier === 'normal');
@@ -157,7 +165,7 @@ export class SaveStore {
     if (won) s.wins += 1;
     s.kills += pos(r.kills);
     s.totalGold += pos(r.gold);
-    s.totalPlayTime += time;
+    s.totalPlayTime += full;
     s.bestLevel = Math.max(s.bestLevel, pos(r.level));
     if (newBest) s.bestTime = time;
     // Per-enemy / per-chapter / per-build records (ids come from the sim; sanitize() re-clamps everything).

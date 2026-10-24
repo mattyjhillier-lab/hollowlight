@@ -25,6 +25,8 @@ import { buildLanternScreen } from './lanternsui.js';
 import './lanterns.css';
 import { buildNightSelect } from './nightsui.js';
 import { buildWear } from './wearui.js';
+import { buildDarkChoice } from './darkui.js';
+import './darkui.css';
 import { WEAR } from './wearcopy.js';
 import './wear.css';
 import './nights.css';
@@ -427,6 +429,18 @@ export class UI {
 
   hidePause() { this.hide('pause'); this.pauseView = null; }
 
+  // EXTRAS v1 Endless Dusk: the dawn choice (Enter = see the dawn, S = stay in the dark)
+  showDarkChoice({ onDawn, onStay }) {
+    const v = buildDarkChoice({ onDawn, onStay });
+    const el = this.layer('dark');
+    el.className = 'overlay layer-dark';
+    el.replaceChildren(v.root);
+    this.show('dark');
+    this.darkView = v;
+    v.focus();
+  }
+  hideDarkChoice() { this.hide('dark'); this.darkView = null; }
+
   // U6: results in Lantern Glass, Lit (src/ui/results.js). One screen, no scrolling; Again R/Enter, Main menu Esc, Tree T. Keys are handled in onKey below.
   showEnd(sim, bank) {
     const h = this.handlers;
@@ -562,6 +576,7 @@ export class UI {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
     }
+    if (this.darkView && this.layers.dark && this.layers.dark.style.display !== 'none') { this.darkView.onKey(e); return; } // EXTRAS v1 dawn choice
     if (this.endView && this.layers.end && this.layers.end.style.display !== 'none') { this.endView.onKey(e); return; }
     const pv = this.pauseView;
     if (pv && e.key === 'Escape' && this.layers.pause && this.layers.pause.style.display !== 'none' && pv.cancelConfirm()) { this.escAt = performance.now(); return; } // Esc backs out of "Leave this run?"

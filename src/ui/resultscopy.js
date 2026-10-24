@@ -154,7 +154,10 @@ export function resultsView(r, bank, data) {
   const bossAt = fin(chap && chap.bossAt);
   const bossId = chap && chap.bossId;
   const bossName = clip((bossId && data.enemies && Object.hasOwn(data.enemies, bossId) && data.enemies[bossId].name) || 'the boss', 40);
-  const time = Math.max(0, fin(r.time));
+  // EXTRAS v1 Endless Dusk: the big time is the DAWN; the dark gets its own line (and the near-line tail)
+  const E = r.endless && typeof r.endless === 'object' && fin(r.endless.dawn) > 0 ? r.endless : null;
+  const time = E ? Math.min(Math.max(0, fin(r.time)), fin(E.dawn)) : Math.max(0, fin(r.time));
+  const dark = E ? Math.max(0, fin(E.dark)) : -1;
   const evoNames = (Array.isArray(r.weapons) ? r.weapons : []).filter((w) => w && w.evo && data.evolutions && Object.hasOwn(data.evolutions, w.evo)).map((w) => clip(data.evolutions[w.evo].name, 40));
 
   const near = [];
@@ -163,6 +166,7 @@ export function resultsView(r, bank, data) {
     if (bank && bank.newBest) { seg(RES.newBest, true); seg(' · '); } 
     if (r.bossKilled) { seg(bossName, true); seg(` ${RES.slain}`); } else seg(RES.timeWon);
     if (bank && !bank.newBest && whole(bank.bestTime) > 0) { seg(` · ${RES.best} `); seg(clock(bank.bestTime), true); } // a Gentle Light lantern may have no best yet
+    if (dark >= 0) { seg(' · '); seg(`${RES.dawn} + ${clock(dark)}`, true); seg(' in the dark'); }
   } else if (r.fight && typeof r.fight === 'object') {
     seg(RES.fellInFight, true); // the clock held at 14:00: 'short of dawn' would always read 1:00
   } else {
@@ -206,6 +210,7 @@ export function resultsView(r, bank, data) {
     nudge, learn, treePrimary,
     treeDot: newly.length > 0,
     night: nightBlock(r, bank, hero, won),
+    dark: dark >= 0 ? `You held the dark ${clock(dark)} past dawn.${bank && bank.tier && bank.tier.darkBest ? ' A new longest night.' : ''}` : '', // EXTRAS v1
   };
 }
 
@@ -249,7 +254,7 @@ function glassSub(t, glass, first) {
 export function resultsSummary(v) {
   const b = v.bank;
   const st = v.recap && v.recap.struck;
-  const parts = [v.title, st ? `${st.lead} ${st.art} ${st.name}${st.tail} ${st.at}` : '', `${v.timeLabel} ${v.time}`, v.near.map((s) => s.t).join('').trim(), `Level ${v.chips.level}`, `${v.chips.slain} slain`];
+  const parts = [v.title, st ? `${st.lead} ${st.art} ${st.name}${st.tail} ${st.at}` : '', `${v.timeLabel} ${v.time}`, v.near.map((s) => s.t).join('').trim(), v.dark || '', `Level ${v.chips.level}`, `${v.chips.slain} slain`];
   parts.push(`${group(b.gold)} gold${b.goldTotal != null ? ` banked, total ${group(b.goldTotal)}` : ''}`, `${group(b.shards)} soul shards${b.shardsTotal != null ? `, total ${group(b.shardsTotal)}` : ''}`);
   const nb = v.night;
   if (nb) {

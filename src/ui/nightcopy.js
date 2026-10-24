@@ -16,6 +16,7 @@ export const NIGHT = {
   first: 'first night',
   // EXTRAS v1 Gentle Light (Twilight assist, B1)
   gentle: { name: 'Gentle Light', line: 'The Hollow bites softer tonight. Your dawn still counts; the stars wait for another night.', bullets: ['Foes hit 30% softer', 'Foes move a little slower', 'Hearts come sooner'], rest: 'Stars and best times rest while Gentle Light is on. Gold, shards and Bond are earned as normal.', on: 'On', off: 'Off' },
+  longest: 'Longest night',
   headline: { normal: 'The Hollow as you first met it', hard: 'The Hollow presses closer', expert: 'The longest dark' },
   same: { normal: 'Foes, the Elder Treant and hearts as you know them', glassNone: 'No Dawnglass on Twilight' },
   sameHarder: 'Blessings and your tree work as on Twilight',
@@ -200,7 +201,7 @@ export function mapView(o) {
     changes: changeLines(data, cid, sel),
     earn: earnPills(save, data, cid, sel, heroId),
     tools: toolsLine(save, def, sel),
-    records: rec && num(rec.runs) ? `${NIGHT.best} ${clock(rec.best && rec.best.t)} · ${NIGHT.clears} ${fmt(rec.clears)}` : NIGHT.noRuns,
+    records: rec && num(rec.runs) ? `${NIGHT.best} ${clock(rec.best && rec.best.t)} · ${NIGHT.clears} ${fmt(rec.clears)}${num(rec.dark) > 0 ? ` · ${NIGHT.longest} +${clock(rec.dark)}` : ''}` : NIGHT.noRuns, // EXTRAS v1: Endless Dusk record
     stars: c.stars,
     gate: c.state === 'gate' && def.nodes[c.gateId] ? { id: c.gateId, name: clip(def.nodes[c.gateId].name, 40), line: NIGHT.gateSide(clip(def.nodes[c.gateId].name, 40)) } : null,
     locked: c.state === 'locked' ? `${c.line}${c.progress ? ` · ${c.progress.cur}/${c.progress.goal}` : ''}` : '',

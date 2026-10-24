@@ -28,6 +28,7 @@ import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
 import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
+import { DARK } from './ui/darkui.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 validateCosmTree(treeDef, data.cosmetics); // EXTRAS v1: every Wardrobe lantern names a real cosmetic and nothing else (throws at boot)
@@ -323,6 +324,8 @@ export const app = {
   },
 
   showMenu() {
+    if (this.sim && this.sim.endless && !this.banked) this.bankRun(this.sim); // EXTRAS v1: leaving the dark keeps the dawn (and the dark so far)
+    if (this.ui.hideDarkChoice) this.ui.hideDarkChoice();
     this.sim = null;
     this.paused = false;
     this.ui.hideAll();
@@ -495,10 +498,10 @@ export const app = {
         this.ui.hidePause();
         // the Elder Treant victory beat plays in the world first (bossview.js: ~6 s, any key / tap after 1.5 s skips)
         if (this.scene.bossView && this.scene.bossView.endWait(sim) > 0) this.endPending = true;
-        else this.ui.showEnd(sim, this.bankRun(sim));
+        else this.finishRun(sim);
       }
     }
-    if (this.endPending && this.scene.bossView.endWait(sim) <= 0) { this.endPending = false; this.ui.showEnd(sim, this.bankRun(sim)); }
+    if (this.endPending && this.scene.bossView.endWait(sim) <= 0) { this.endPending = false; this.finishRun(sim); }
 
     this.hudAcc += dt;
     if (this.hudAcc > 0.08) {
@@ -511,6 +514,24 @@ export const app = {
       }
     }
     if (this.touch) this.touch.render();
+  },
+
+  // EXTRAS v1 Endless Dusk (C1-A): after a dawn won at the boss, offer 'Stay in the dark' (not in ?auto= bot / screenshot runs);
+  // otherwise (and on 'See the dawn') the results come exactly as before.
+  finishRun(sim) {
+    if (sim.state === 'victory' && sim.endlessDef && !sim.endless && sim.bossKilled && sim.fightDef && !this.params.auto && this.ui.showDarkChoice) {
+      this.ui.showDarkChoice({ onDawn: () => { this.ui.hideDarkChoice(); this.ui.showEnd(sim, this.bankRun(sim)); }, onStay: () => this.stayInDark(sim) });
+      return;
+    }
+    this.ui.showEnd(sim, this.bankRun(sim));
+  },
+  stayInDark(sim) {
+    if (this.sim !== sim || !sim.stayInDark()) return false;
+    this.ui.hideDarkChoice();
+    this.lastState = 'running';
+    if (this.scene && this.scene.enterDark) this.scene.enterDark(sim);
+    this.ui.toast(DARK.toast);
+    return true;
   },
 
   // Boss sheet arrival warning (render/audio only, the sim is untouched): 5 s before the Elder Treant a soft ground tremor + 'Something old wakes'.

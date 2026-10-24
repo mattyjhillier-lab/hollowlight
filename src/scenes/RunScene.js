@@ -526,6 +526,7 @@ export class RunScene extends Phaser.Scene {
     this.life.clearFloor();
     this.starterGlade(sim);
     this.life.reset();
+    this.life.decay = 25; // EXTRAS v1: a previous run's Endless Dusk doubled it
     this.ribSet.reset(); this.ribLayer.clear(); if (this.pawLayer) this.pawLayer.clear(); if (this.wolfSt) this.wolfSt.clear();
     this.sway.reset(((sim.seed | 0) ^ 0xa11ce) | 0); // visual seed derived from the run seed; the sim RNG is never touched
     this.air.reset(((sim.seed | 0) ^ 0xa1f10) | 0); // W5 fog / fireflies / motes (own hash stream)
@@ -1091,7 +1092,22 @@ export class RunScene extends Phaser.Scene {
   }
 
   // display clock for the arc light + AL-6: holds at 14:00 in the boss fight, runs to dawn across the victory flood (bossview.js)
-  showClock(sim) { return this.bossView ? this.bossView.clock(sim) : sim.time; }
+  showClock(sim) {
+    if (sim && sim.endless) { // EXTRAS v1 Endless Dusk: the sky slips back to night over 45 s after the choice (arc light, music), then holds deep night
+      const k = Math.min(1, Math.max(0, (sim.time - sim.endless.t0) / 45)), e = k * k * (3 - 2 * k);
+      const from = Math.min(sim.chapter.bossAt || 840, 840);
+      return from - (from - 180) * e;
+    }
+    return this.bossView ? this.bossView.clock(sim) : sim.time;
+  }
+
+  // EXTRAS v1 Endless Dusk: the run stays in the dark. The boss arena and the dawn flood go (the display clock parks back at the night
+  // of the boss hour), and the restored ground greys twice as fast. Visual only.
+  enterDark(sim) {
+    this.bossView.reset(sim);
+    this.life.decay = 12.5; // 2x the run's 25 s (lifemap decay)
+    this.flash(PAL.lavender, 0.18, 0.6);
+  }
 
   bossIntro() {
     const b = this.sim.boss;

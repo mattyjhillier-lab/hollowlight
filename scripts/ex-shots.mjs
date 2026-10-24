@@ -57,6 +57,7 @@ const has = (p) => PHASE === 'all' || PHASE === p;
 const toMap = async () => { await ev("__app.ui.showNights('wren')"); await sleep(300); };
 try {
 for (const [n, w, h, d, m] of VIEWS) {
+  if (process.env.VIEW && process.env.VIEW !== n) continue; // VIEW=844x390 runs one size
   console.log(n);
   const url = `${base}/${m ? '?touch=1' : ''}`;
   await open(url, w, h, d, m);
@@ -149,6 +150,37 @@ for (const [n, w, h, d, m] of VIEWS) {
       await ev("(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.textContent||'').trim()==='Got it');if(b)b.click();return 1})()"); await sleep(500);
       await shot(`ex2-tree-wardrobe-${n}`);
     }
+  }
+  if (has('endless')) {
+    // map side card: a Twilight 'Longest night' record
+    await ev(`(()=>{const d=__app.save.data;d.stats.tiers.cursed_forest.normal.dark=372;__app.save.saveNow(true);return 1})()`);
+    await open(url, w, h, d, m); await ev(OPEN);
+    await toMap(); await key('1', 'Digit1', 49); await sleep(200);
+    const rec = await ev("(document.querySelector('.fdm-rec')||{}).textContent||''");
+    if (n === '1280x720' && !rec.includes('Longest night +6:12')) fail('longest night record ' + rec);
+    if (n === '1280x720') await shot(`ex3-map-longest-${n}`);
+    // a real boss win (debug run: t + god), then the dawn choice
+    await open(`${base}/?t=836&god=1&seed=3${m ? '&touch=1' : ''}`, w, h, d, m);
+    await ev("(()=>{const ok=__app.ui.screen&&__app.ui.screen.id;return 1})()");
+    await ev("(()=>{__app.startRun('wren','normal');return 1})()"); await sleep(400);
+    for (let k = 0; k < 60; k++) {
+      const st = await ev("(()=>{const s=__app.sim;if(!s)return 'none';if(s.state==='levelup'&&s.offer){const c=s.offer.cards[0]||s.offer.gold[0];if(c)s.pickCard(c.key)}if(s.fight&&s.fight.stage==='fight'&&s.boss&&!s.boss.dead){s.hurt(s.boss,s.boss.hp+1)}return s.state+':'+(!!__app.ui.darkView)})()");
+      if (st.endsWith('true')) break; await sleep(500);
+    }
+    if (!(await ev('!!__app.ui.darkView'))) fail('dawn choice did not appear');
+    await shot(`ex3-dawn-choice-${n}`); await check('dawn choice', '.layer-dark', '.dk-wrap');
+    await key('s', 'KeyS', 83); await sleep(300);
+    const dk = await ev("JSON.stringify([__app.sim.state,!!__app.sim.endless,!!__app.ui.darkView,__app.sim.fight])");
+    if (dk !== '["running",true,false,null]') fail('stay in the dark ' + dk);
+    for (let k = 0; k < 110; k++) { await ev("(()=>{const s=__app.sim;if(s&&s.state==='levelup'&&s.offer){const c=s.offer.cards[0]||s.offer.gold[0];if(c)s.pickCard(c.key)}return 1})()"); await sleep(500); } // ~50 s: the sky is back to night
+    const hud = await ev("(document.querySelector('.hud [class*=time]')||{}).textContent||''");
+    console.log('  hud', hud, await ev('Math.round(__app.sim.time-__app.sim.endless.t0)'));
+    await shot(`ex3-dark-ingame-${n}`);
+    await ev("(()=>{const s=__app.sim;s.godMode=false;s.player.iframes=0;s.player.hp=1;s.damagePlayer(999,'wolf');return s.state})()"); await sleep(900);
+    for (let k = 0; k < 4 && (await ev('__app.ui.celActive()')); k++) { await key('Escape', 'Escape', 27); await sleep(400); }
+    const dl = await ev("(document.querySelector('.u6-dark')||{}).textContent||''");
+    if (!dl.includes('You held the dark')) fail('results dark line ' + dl);
+    await shot(`ex3-results-dark-${n}`); await check('results dark', '.layer-end', '.u6-wrap');
   }
   if (errors.length) fail('console ' + errors.splice(0).join(';'));
 }

@@ -186,12 +186,13 @@ export class Hud {
     const ck = Number.isFinite(sim.clock) ? sim.clock : t; // boss fight: the display clock holds at 14:00 (sim.clock), the run time keeps counting
     const held = !!(sim.fight && sim.fight.live);
     const dawn = !!(sim.fight && sim.state === 'victory'); // the Treant fell: the moon reaches the dawn line
-    const tf = dawn ? 1 : moonT(ck, run);
+    const dark = sim.endless ? Math.max(0, sim.time - sim.endless.t0) : -1; // EXTRAS v1 Endless Dusk: '+m:ss' past dawn, the moon stays on the line
+    const tf = dawn || dark >= 0 ? 1 : moonT(ck, run);
     const mp = moonPoint(tf, ARC);
     this.attr('moon', this.moonSvg.moon, 'transform', `translate(${mp.x.toFixed(1)},${mp.y.toFixed(1)})`);
     this.attr('lit', this.moonSvg.lit, 'stroke-dasharray', `${(tf * 100).toFixed(1)} 100`);
     this.sty('trackdot', this.trackDot, 'left', `${(tf * 100).toFixed(1)}%`);
-    this.set('time', this.time, held ? 'HELD' : dawn ? 'DAWN' : fmtTime(Math.max(0, run - ck))); // no timer in the fight: the moon parks on the dawn line
+    this.set('time', this.time, dark >= 0 ? `+${fmtTime(dark)}` : held ? 'HELD' : dawn ? 'DAWN' : fmtTime(Math.max(0, run - ck))); // no timer in the fight: the moon parks on the dawn line
     if (this.prev.held !== held) { this.prev.held = held; this.moon.classList.toggle('is-held', held); }
 
     // boss bar

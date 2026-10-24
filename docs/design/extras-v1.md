@@ -1,5 +1,6 @@
 # Extras v1: cosmetics, Twilight Assist, Daily seed + Endless Dusk, risk vows (design only, NOT locked)
 
+Status 2026-10-25: v1 = A1 + B1 + C1-A BUILT (docs/LOCKED.md 'EXTRAS v1 (1)/(2)/(3) ... BUILT'); C2 Daily seed and D Risk vows wait for the first update after launch.
 Status 2026-10-24: design sheet for the four ideas Matt put in v1 on 2026-10-18 (LOCKED 'EXTRA IDEAS INCLUDED IN V1'). Nothing built. Mock-ups: docs/mockups/extras/ (1280x720, 844x390@2x, 390x844@2x; `node docs/mockups/extras/shoot.mjs`).
 
 Read against: LOCKED rows 'EXTRA IDEAS INCLUDED IN V1' (balance rules), 'Tree screen design' (endgame gold = cosmetic sink once the tree is bought out; Three Dawns excluded from complete), 'Tree economy + Deep Dusk' (rising price +8%, cosmetic shop opens ~run 87, ceilings 30.36/31 and 5.00/5), DIFFICULTY TIERS + DT1/DT2 (Dawnglass per-run caps 6/10, first dawns 6/10, marks on markRng), CHARACTER SYSTEM v2 (Bond cap 25, keepsakes wake heroes, starter pick, heroes differ only by ability + look), FRONT DOOR (night chips, side card, results badge, star row), CODEX CX1-CX7 (1 big + 3 medium celebrations, Calm), RELEASE GATE (nothing to main until done), save v3 (forward-tolerant store, untrusted import).
