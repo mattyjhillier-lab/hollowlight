@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Extras A wardrobe</title><link rel="stylesheet" href="ex.css"><style>
+.prev{flex:0 0 38%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden}
+.prev svg{width:100%;max-height:100%;flex:1;min-height:0}
+.list{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0}
+.tabs{display:flex;gap:8px}
+.tabs span{padding:7px 16px;border-radius:999px;border:1px solid rgba(216,178,106,.5);font-weight:700;font-size:15px;min-height:36px;display:inline-flex;align-items:center}
+.tabs .on{background:rgba(216,178,106,.22);border-color:var(--brass)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start}
+.sw{border:1px solid rgba(255,243,220,.18);border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center;background:rgba(10,14,24,.35);min-height:58px}
+.sw>i{flex:none;width:30px;height:38px;border-radius:50% 50% 45% 45%/60% 60% 40% 40%;box-shadow:0 0 14px var(--c);background:radial-gradient(circle at 50% 65%,#fff 0 18%,var(--c) 45%,transparent 72%)}
+.sw b{display:block;font-size:15px}.sw small{font-size:13px;color:var(--dim)}
+.sw.worn{border-color:var(--brass);background:rgba(216,178,106,.14)}
+.sw.lock{opacity:.6}.sw.lock>i{filter:grayscale(1) brightness(.6)}
+.bar{height:5px;border-radius:3px;background:rgba(255,255,255,.12);margin-top:4px;overflow:hidden}.bar u{display:block;height:100%;background:var(--teal)}
+.note{font-size:14px}
+@media (max-height:420px){.grid{gap:6px}.sw{padding:6px;min-height:44px}.sw>i{width:22px;height:28px}.sw b{font-size:13.5px}.sw small{font-size:12px}.tabs span{padding:4px 12px;font-size:13px;min-height:30px}.note{display:none}}
+@media (max-width:500px){.prev{flex:0 0 220px}.grid{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<header><h1>Lantern Wardrobe</h1><span class="crumb">Wren · what you carry into the dark</span><div class="purse"><span><i class="coin"></i>41,280</span><span><i class="shard"></i>12</span><span><i class="glass"></i>9</span></div></header>
+<div class="main">
+ <section class="panel prev" aria-label="Preview">
+  <svg viewBox="0 0 300 260" role="img" aria-label="Lantern with Moon Teal flame and Firefly trail">
+   <defs><radialGradient id="pool" cx="50%" cy="60%" r="50%"><stop offset="0" stop-color="#9fe8dc" stop-opacity=".42"/><stop offset="1" stop-color="#9fe8dc" stop-opacity="0"/></radialGradient>
+   <radialGradient id="fl" cx="50%" cy="70%" r="60%"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#bff3ea"/><stop offset="1" stop-color="#4fb8aa" stop-opacity="0"/></radialGradient></defs>
+   <ellipse cx="190" cy="200" rx="120" ry="52" fill="url(#pool)"/>
+   <g fill="#c8f4ec">
+    <circle cx="30" cy="150" r="2.2" opacity=".35"/><circle cx="52" cy="168" r="2.6" opacity=".45"/><circle cx="74" cy="160" r="2.4" opacity=".5"/><circle cx="96" cy="176" r="3" opacity=".6"/><circle cx="118" cy="168" r="3" opacity=".7"/><circle cx="140" cy="182" r="3.4" opacity=".8"/><circle cx="160" cy="176" r="3.6" opacity=".9"/>
+   </g>
+   <line x1="190" y1="70" x2="190" y2="96" stroke="#8d6c34" stroke-width="4"/>
+   <path d="M168 96h44l-6 10h-32z" fill="#b48a45" stroke="#6b4f22" stroke-width="2"/>
+   <rect x="170" y="106" width="40" height="58" rx="10" fill="rgba(191,243,234,.18)" stroke="#8d6c34" stroke-width="4"/>
+   <ellipse cx="190" cy="138" rx="13" ry="20" fill="url(#fl)"/>
+   <path d="M170 164h40l-4 10h-32z" fill="#b48a45" stroke="#6b4f22" stroke-width="2"/>
+  </svg>
+  <div class="row"><span class="tag">Wearing</span><span class="small">Moon Teal · Firefly Dots · Fox-red scarf</span></div>
+ </section>
+ <section class="list">
+  <div class="tabs" role="tablist"><span class="on" role="tab" aria-selected="true">Flame</span><span role="tab">Trail</span><span role="tab">Wren's look</span></div>
+  <div class="grid">
+   <div class="sw" style="--c:#ffb867"><i></i><div><b>Hearth</b><small>Owned</small></div></div>
+   <div class="sw worn" style="--c:#7fd8c8"><i></i><div><b>Moon Teal</b><small>Worn ✓</small></div></div>
+   <div class="sw" style="--c:#ffb9b0"><i></i><div><b>Dawn Rose</b><small><i class="glass"></i>5 Dawnglass</small></div></div>
+   <div class="sw" style="--c:#f2ecff"><i></i><div><b>Candle White</b><small><i class="glass"></i>5 Dawnglass</small></div></div>
+   <div class="sw lock" style="--c:#c98a6a"><i></i><div><b>Ember</b><small>Bond 10 with Wren · 7/10</small><div class="bar"><u style="width:70%"></u></div></div></div>
+   <div class="sw lock" style="--c:#cdb8f0"><i></i><div><b>Lilac Hush</b><small>Light every lantern in the Web</small><div class="bar"><u style="width:62%"></u></div></div></div>
+  </div>
+  <p class="wh note">Dress your lantern. The Hollow will not care, but the light will.</p>
+  <footer><span class="small">Flames never change how bright your light is.</span><button class="btn ghost">Back</button><button class="btn">Wear</button></footer>
+ </section>
+</div>
+</body></html>
