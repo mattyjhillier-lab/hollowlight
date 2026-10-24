@@ -19,7 +19,9 @@ import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from
 import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js';
 import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
 import { TITLES } from './ui/codexcopy.js';
-import { startableWeapons, grantStarter } from './meta/starter.js';
+import { SPIRIT_LINES } from './ui/titlecopy.js';
+const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
+import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
@@ -198,12 +200,41 @@ export const app = {
   heroUnlocked(id) {
     if (!Object.hasOwn(data.characters, id)) return false;
     if (this.isDebugRun()) return true; // debug / screenshot runs: every hero (they never touch the save)
-    this.ensureStarter();
     return isAwake(this.save.data, id);
   },
 
-  // A new profile picks one hero + one weapon as its starter set (LOCKED 2026-10-24). INTERIM until the starter-pick screen (CH4) lands:
-  // the first visit grants Wren + Ghost Wolves, the kindred defaults. Read-only saves are never written.
+  // A new profile picks one hero + one weapon as its starter set (LOCKED 2026-10-24) on the starter-pick screen (ui.showStarterHero).
+  // needsStarter: no pick yet (a writable, non-debug lantern). chooseStarter validates against the data-driven offer, grants and saves.
+  needsStarter() {
+    const s = this.save.data;
+    return !this.isDebugRun() && !this.save.readOnly && !(s.notes && s.notes.starter);
+  },
+  chooseStarter(heroId, weaponId) {
+    const pool = starterPool(data);
+    if (!this.needsStarter() || !pool.heroes.includes(heroId) || !pool.weapons.includes(weaponId)) return false;
+    if (!grantStarter(this.save.data, data, treeInfo, treeDef, heroId, weaponId)) return false;
+    this.save.saveNow();
+    return true;
+  },
+  // The starting-spirit step: every weapon, awake (heart owned) or asleep (dim, with its heart's unlock line).
+  spiritChoices(heroId) {
+    const s = this.save.data;
+    const open = startableWeapons(data, treeDef, s.tree);
+    const kin = Object.hasOwn(data.characters, heroId) ? data.characters[heroId].kindred : null;
+    return Object.keys(data.weapons).map((id) => {
+      const heart = treeDef.hearts && treeDef.hearts[id];
+      let note = '';
+      if (!open.includes(id) && heart) { try { const st = nodeStatus(treeDef, s, heart, data); note = st && st.reason ? `Wake it in the Lantern Web · ${String(st.reason).slice(0, 60)}` : ''; } catch { note = ''; } }
+      return { id, name: data.weapons[id].name, line: '', open: open.includes(id), kindred: id === kin, note };
+    }).map((x) => ({ ...x, line: x.open ? SPIRIT_LINE_OF(x.id) : '' }));
+  },
+  lastLoadout(heroId = null) {
+    const n = this.save.data.notes || {};
+    const lo = n.loadout || n.starter || {};
+    if (heroId && lo.hero !== heroId) return { hero: heroId, weapon: Object.hasOwn(data.characters, heroId) ? data.characters[heroId].kindred : null };
+    return { hero: lo.hero || null, weapon: lo.weapon || null };
+  },
+  // Safety net only (a run started with no starter pick, e.g. an old flow): grant the kindred default. Never on read-only or debug lanterns.
   ensureStarter() {
     const s = this.save.data;
     if (s.notes && s.notes.starter) return;
@@ -267,7 +298,7 @@ export const app = {
     this.sim = null;
     this.paused = false;
     this.ui.hideAll();
-    this.ui.showStart((id, tier) => this.startRun(id, tier));
+    this.ui.showStart((id, tier, weapon) => this.startRun(id, tier, weapon));
     // FD3: with 2+ lanterns on this device, the first menu of the session asks whose lantern it is (one lantern: never asked).
     if (!this.lanternAsked && this.lanterns && this.lanterns.list().length > 1) { this.lanternAsked = true; this.ui.showLanterns('pick'); }
     if (this.scene) this.scene.unbindSim();
@@ -662,6 +693,12 @@ export const app = {
       nightChoice: () => this.nightChoice(),
       nightView: (heroId, tier) => this.nightView(heroId, tier),
       heroUnlocked: (id) => this.heroUnlocked(id),
+      needsStarter: () => this.needsStarter(),
+      chooseStarter: (h, w) => this.chooseStarter(h, w),
+      starterPool: () => starterPool(data),
+      spiritChoices: (h) => this.spiritChoices(h),
+      lastLoadout: (h) => this.lastLoadout(h),
+      bondLevel: (h) => bondLevel(this.save.data, data, h),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
       resetTips: () => this.resetTips(),
       hideWhisper: () => this.hideWhisper(),

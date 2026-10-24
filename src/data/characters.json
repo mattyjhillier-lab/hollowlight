@@ -14,7 +14,7 @@
     "color": "#f2f2f2",
     "kindred": "holy_orbit",
     "keepsake": { "id": "candle_stub", "name": "Candle Stub", "desc": "A burnt-down votive candle that still smells of wax and warm light.", "hint": { "t": "killEnemy", "id": "root_crawler", "n": 400 } },
-    "ability": { "id": "sanctuary_ring", "name": "Sanctuary Ring", "cooldown": 60, "radius": 80, "secs": 6, "heal": 1.5, "slow": 0.4, "desc": "Plant a ring of candles for 6 s. You heal while you stand inside; foes inside the ring are slowed 40%." },
+    "ability": { "id": "sanctuary_ring", "name": "Sanctuary Ring", "cooldown": 60, "radius": 80, "secs": 6, "heal": 1.5, "slow": 0.2, "desc": "Plant a ring of candles for 6 s. You heal while you stand inside; foes inside the ring are slowed 20%." },
     "treeVisuals": ["graveLamp"]
   }
 }

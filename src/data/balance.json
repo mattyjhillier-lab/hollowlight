@@ -50,6 +50,15 @@
     "boss": 0.5,
     "_note": "per run at most one keepsake; only for a sleeping character whose hint is met"
   },
+  "starter": {
+    "heroes": [
+      "*"
+    ],
+    "weapons": [
+      "*"
+    ],
+    "_note": "CHARACTER SYSTEM v2: what a NEW profile may pick as its starter set ('*' = all; Matt decides which starting weapons to offer)"
+  },
   "weaponSlots": 4,
   "xp": {
     "base": 6,

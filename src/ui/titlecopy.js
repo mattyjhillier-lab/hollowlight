@@ -25,6 +25,34 @@ export const HERO = {
   touch: 'Left thumb: move · weapons fire on their own · right button: ability · II: pause · tap cards to pick',
 };
 
+// CHARACTER SYSTEM v2 loadout copy: map -> character -> starting spirit; a new profile first picks its starter hero + spirit.
+export const LOADOUT = {
+  heroTitle: 'Who walks tonight?',
+  heroWhisper: 'Every lantern-bearer has the same body. Each has their own action skill.',
+  spiritKicker: 'Starting spirit',
+  spiritTitle: 'With which spirit?',
+  spiritWhisper: 'Any spirit awake in the Lantern Web. More join from level-up cards.',
+  walk: (hero, spirit) => `Walk with ${hero} · ${spirit}`,
+  next: 'Next',
+  kindred: 'kindred',
+  locked: 'Wake it in the Lantern Web',
+  bond: (n) => `Bond ${n}`,
+  starterKicker: 'A new lantern',
+  starterHeroTitle: 'Who will you walk with first?',
+  starterHeroWhisper: 'The others sleep for now. Their keepsakes wake them later.',
+  starterSpiritTitle: 'Which spirit wakes with you?',
+  starterSpiritWhisper: 'The other spirits wake in the Lantern Web as you play.',
+  starterBegin: (hero, spirit) => `Begin with ${hero} · ${spirit}`,
+};
+// One line per launch weapon for the spirit cards (verb + look); unknown weapons fall back to the data desc.
+export const SPIRIT_LINES = {
+  ghost_wolves: 'The pack hunts the crowd',
+  holy_orbit: 'Lights circle you',
+  raven_flock: 'Scouts swoop and peck',
+  spirit_bolts: 'Glyphs seek the nearest foe',
+  chain_lightning: 'Storm leaps foe to foe',
+};
+
 // One whisper line per launch hero (what they are like to play). Unknown future heroes fall back to the data blurb.
 export const HERO_LINES = {
   // CHARACTER SYSTEM v2: same body for all; the line + gift speak of the ability (the one thing that differs) and the look

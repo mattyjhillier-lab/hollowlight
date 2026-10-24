@@ -36,3 +36,15 @@ export function grantStarter(save, data, info, def, heroId, weaponId) {
   save.notes = { ...(save.notes || {}), starter: { hero: heroId, weapon: weaponId }, loadout: { hero: heroId, weapon: weaponId } };
   return true;
 }
+
+// The starter pick's offer (balance.starter = { heroes: ['*'] | [ids], weapons: ['*'] | [ids] }): DATA-driven, known ids only, data order.
+// A missing / empty / junk list means "all" (never an empty pick).
+export function starterPool(data) {
+  const S = data && data.balance && data.balance.starter;
+  const pick = (list, all) => {
+    if (!Array.isArray(list) || !list.length || list.includes('*')) return all;
+    const ok = all.filter((id) => list.includes(id));
+    return ok.length ? ok : all;
+  };
+  return { heroes: pick(S && S.heroes, Object.keys(data.characters)), weapons: pick(S && S.weapons, Object.keys(data.weapons)) };
+}

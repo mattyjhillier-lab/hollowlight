@@ -23,7 +23,7 @@ export const NIGHT = {
   next: 'Next light:',
   back: 'Back',
   tree: 'Skill Tree',
-  begin: (hero) => `Begin with ${hero}`,
+  begin: () => 'Next', // CHARACTER SYSTEM v2: the map is step 1 of 3 (map -> character -> spirit)
   isNew: 'NEW',
   recommended: 'Recommended next',
   cleared: (n) => `cleared ${n}x`,

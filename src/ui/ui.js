@@ -18,12 +18,12 @@ import './kit.css';
 import { EvoPlate, plateModel } from './evoplate.js';
 import './evoplate.css';
 import './title.css';
-import { buildTitle, buildHeroSelect } from './title.js';
+import { buildTitle, buildHeroSelect, buildSpiritSelect } from './title.js';
 import { buildLanternScreen } from './lanternsui.js';
 import './lanterns.css';
 import { buildNightSelect } from './nightsui.js';
 import './nights.css';
-import { heroView } from './titlecopy.js';
+import { heroView, LOADOUT, SPIRIT_LINES } from './titlecopy.js';
 import { buildPause } from './pause.js';
 import { buildSettings } from './settings.js';
 import { pauseView } from './u4copy.js';
@@ -34,6 +34,7 @@ import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+const SPIRIT_LINE = (id, data) => (SPIRIT_LINES[id] || (data.weapons[id] && typeof data.weapons[id].desc === 'string' ? data.weapons[id].desc.split('.')[0] : ''));
 const HERO_NEXT = 'Next';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
 import { WhisperPlate } from './whisperplate.js';
@@ -175,7 +176,7 @@ export class UI {
       almanac: fd ? fd.almanac : null,
       bands: fd ? fd.bands : 0,
       onAlmanac: () => this.showAlmanac('title'),
-      onBegin: () => this.showHeroSelect(),
+      onBegin: () => this.beginLoadout(),
       onTree: () => h.openTree(),
       onSettings: () => h.openSettings(),
       onSwitch: () => this.showLanterns('pick'),
@@ -209,11 +210,11 @@ export class UI {
     const v = buildLanternScreen({
       mode, cards: m.cards, canCreate: m.canCreate, locked: m.locked, note: m.note, status, portraits: PORTRAITS,
       onLight: (id) => { const r = h.lightLantern(id); if (r && r.ok) back(); },
-      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) this.showHeroSelect(); return r; },
+      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) this.beginLoadout(); return r; },
       onRename: (id, name) => after(h.renameLantern(id, name)),
       onExport: (id) => { const r = h.exportLantern(id); this.showLanterns(mode === 'replace' ? 'replace' : 'pick', { text: r.message }); },
       onDelete: (id) => { const r = h.deleteLantern(id); return after(r, r && r.ok ? { text: r.message, undo: !!r.undo } : null); },
-      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) this.showHeroSelect(); return r; },
+      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) this.beginLoadout(); return r; },
       onUndo: () => { const r = h.undoDelete(); this.showLanterns('pick', { text: r.message }); },
       onBack: back,
     });
@@ -227,42 +228,100 @@ export class UI {
     v.focusFirst();
   }
 
+  // CHARACTER SYSTEM v2 loadout (LOCKED 2026-10-24): THREE separate steps, map -> character -> starting spirit (the map step only once there is a
+  // night choice, FD4 skip rule). A NEW profile first picks its starter set (one hero + one spirit from the data-driven offer), then walks straight in.
+  beginLoadout() {
+    const h = this.handlers;
+    this.pickTier = null;
+    if (h.needsStarter && h.needsStarter()) { this.showStarterHero(); return; }
+    if (h.nightChoice && h.nightChoice()) this.showNights(this.lastHero); else this.showHeroSelect();
+  }
+
+  heroCards(ids) {
+    const h = this.handlers;
+    return ids.map((id) => {
+      const c = this.data.characters[id];
+      const w = this.data.weapons[c.kindred]; // the kindred spirit is only the suggested default (no stat link)
+      const lvl = h.bondLevel ? h.bondLevel(id) : 0;
+      return { ...heroView(id, c, w ? w.name : ''), weaponId: c.kindred, pips: null, badge: lvl > 0 ? LOADOUT.bond(lvl) : null };
+    });
+  }
+
+  mountLoadout(view, name) {
+    const el = this.layer('hero');
+    this.hide('lanterns'); this.hide('nights'); this.hide('start');
+    el.className = `overlay layer-hero u3${name ? ` ${name}` : ''}`;
+    el.replaceChildren(view.root);
+    this.show('hero');
+    this.screen = { id: 'hero', hero: view };
+    view.focusSelected();
+  }
+
+  // Step 2: the character (awake heroes only; Bond badge; same body so no Health / Speed pips).
   showHeroSelect() {
     const h = this.handlers;
     const ids = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id));
-    const heroes = ids.map((id) => {
-      const c = this.data.characters[id];
-      const w = this.data.weapons[c.kindred]; // CHARACTER SYSTEM v2: the kindred spirit is only the suggested default (no stat link)
-      return { ...heroView(id, c, w ? w.name : ''), weaponId: c.kindred };
-    });
-    const choice = !!(h.nightChoice && h.nightChoice()); // FD4 skip rule: the night screen follows only once there is a night choice
+    const choice = !!(h.nightChoice && h.nightChoice());
     const hs = buildHeroSelect({
-      heroes, portraits: PORTRAITS, selected: this.lastHero, nextLabel: choice ? HERO_NEXT : null,
-      onStart: (id) => { this.lastHero = id; if (choice) this.showNights(id); else if (this.onPick) this.onPick(id); },
-      onBack: () => this.showStart(this.onPick),
+      heroes: this.heroCards(ids), portraits: PORTRAITS, selected: this.lastHero || (h.lastLoadout && h.lastLoadout().hero), nextLabel: HERO_NEXT,
+      copy: { title: LOADOUT.heroTitle, whisper: LOADOUT.heroWhisper },
+      onStart: (id) => { this.lastHero = id; this.showSpiritSelect(id); },
+      onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.showStart(this.onPick); },
     });
-    const el = this.layer('hero');
-    this.hide('lanterns');
-    this.hide('nights');
-    el.className = 'overlay layer-hero u3';
-    el.replaceChildren(hs.root);
-    this.hide('start');
-    this.show('hero');
-    this.screen = { id: 'hero', hero: hs };
-    hs.focusSelected();
+    this.mountLoadout(hs, 'ld-hero');
   }
 
-  // FD4 (= DT7): "Choose your night" after hero select (only once there is a night choice). The app supplies the view model and starts the run.
+  // Step 3: the starting spirit (any weapon awake in the Lantern Web; sleeping ones shown dim). Starts the run.
+  showSpiritSelect(heroId) {
+    const h = this.handlers;
+    const c = this.data.characters[heroId];
+    const spirits = h.spiritChoices ? h.spiritChoices(heroId) : [];
+    const vs = buildSpiritSelect({
+      spirits, heroName: heroView(heroId, c, '').name, selected: h.lastLoadout ? h.lastLoadout(heroId).weapon : c.kindred,
+      onStart: (wid) => { if (this.onPick) this.onPick(heroId, this.pickTier || undefined, wid); },
+      onBack: () => this.showHeroSelect(),
+    });
+    this.mountLoadout(vs, 'ld-spirit');
+  }
+
+  // New profile: the starter set (LOCKED: one hero + one weapon; everything else starts locked). The offer comes from balance.starter.
+  showStarterHero() {
+    const h = this.handlers;
+    const pool = h.starterPool ? h.starterPool() : { heroes: Object.keys(this.data.characters), weapons: [] };
+    const hs = buildHeroSelect({
+      heroes: this.heroCards(pool.heroes), portraits: PORTRAITS, selected: this.starterHero, nextLabel: HERO_NEXT,
+      copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterHeroTitle, whisper: LOADOUT.starterHeroWhisper },
+      onStart: (id) => { this.starterHero = id; this.showStarterSpirit(id); },
+      onBack: () => this.showStart(this.onPick),
+    });
+    this.mountLoadout(hs, 'ld-hero ld-starter');
+  }
+
+  showStarterSpirit(heroId) {
+    const h = this.handlers;
+    const pool = h.starterPool ? h.starterPool() : { weapons: [] };
+    const c = this.data.characters[heroId];
+    const spirits = pool.weapons.map((id) => ({ id, name: this.data.weapons[id].name, line: SPIRIT_LINE(id, this.data), open: true, kindred: id === c.kindred }));
+    const vs = buildSpiritSelect({
+      spirits, heroName: heroView(heroId, c, '').name, selected: c.kindred,
+      copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterSpiritTitle, whisper: LOADOUT.starterSpiritWhisper, walk: LOADOUT.starterBegin },
+      onStart: (wid) => { if (h.chooseStarter && h.chooseStarter(heroId, wid) && this.onPick) this.onPick(heroId, undefined, wid); },
+      onBack: () => this.showStarterHero(),
+    });
+    this.mountLoadout(vs, 'ld-spirit ld-starter');
+  }
+
+  // Step 1 (FD4 = DT7): "Choose your night" (only once there is a night choice). Next goes on to the character step.
   showNights(heroId, tier = null) {
     const h = this.handlers;
-    if (!h.nightView) { if (this.onPick) this.onPick(heroId); return; }
+    if (!h.nightView) { this.showHeroSelect(); return; }
     const v = buildNightSelect({
       view: h.nightView(heroId, tier),
       viewFor: (tid) => h.nightView(heroId, tid),
       purses: h.frontDoor ? (h.frontDoor(heroId) || {}).purses : null,
       onPick: (tid) => { if (h.pickNight) h.pickNight(tid); },
-      onBegin: (tid) => { if (this.onPick) this.onPick(heroId, tid); },
-      onBack: () => this.showHeroSelect(),
+      onBegin: (tid) => { this.pickTier = tid; this.showHeroSelect(); },
+      onBack: () => this.showStart(this.onPick),
       onTree: (gateId) => { if (h.openTree) h.openTree(gateId, () => this.showNights(heroId, this.screen && this.screen.nights ? this.screen.nights.current() : tier)); },
     });
     const el = this.layer('nights');

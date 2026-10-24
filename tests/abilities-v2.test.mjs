@@ -82,7 +82,7 @@ test('Pelt Dash: hits during the window do nothing; foes in the way are shoved a
   assert.ok(Math.abs(boss.y - by) < 3, 'the boss is not shoved');
 });
 
-test('Sanctuary Ring: r80 for 6 s, heals 1.5 HP/s inside, slows non-boss foes inside 40%, no damage, then 60 s cooldown', () => {
+test('Sanctuary Ring: r80 for 6 s, heals 1.5 HP/s inside, slows non-boss foes inside 20% (decision 1, 2026-10-24), no damage, then 60 s cooldown', () => {
   const sim = quiet({ characterId: 'elias', godMode: false });
   sim.weapons.length = 0;
   sim.player.hp = 50;
@@ -98,7 +98,7 @@ test('Sanctuary Ring: r80 for 6 s, heals 1.5 HP/s inside, slows non-boss foes in
   const xa = a.x; sim.step(DT, {}); const inside = Math.abs(a.x - xa);
   sim.zones.length = 0;
   const xb = a.x; sim.step(DT, {}); const outside = Math.abs(a.x - xb);
-  assert.ok(Math.abs(inside / outside - 0.6) < 0.05, `inside/outside ${inside / outside}`);
+  assert.ok(Math.abs(inside / outside - (1 - data.characters.elias.ability.slow)) < 0.05, `inside/outside ${inside / outside}`);
   assert.equal(a.hp, hpA, 'the ring deals no damage');
   assert.ok(sim.ability.cdLeft > 50);
 });

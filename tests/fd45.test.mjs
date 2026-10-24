@@ -126,7 +126,7 @@ test('night screen DOM: radiogroup with roving tabindex, locked aria-disabled + 
   assert.deepEqual(radios.map((r) => r.attrs.tabindex), ['-1', '0', '-1']);
   assert.equal(radios[2].attrs['aria-disabled'], 'true');
   assert.ok(v.root.textContent.includes(hostile), 'hostile name stays literal text');
-  assert.ok(v.root.textContent.includes('Begin with <img'), 'begin label is text');
+  assert.ok(v.root.textContent.includes('Next'), 'v2: the map is step 1 of 3, its button reads Next (the hero name stays literal text in the crumb)');
   v.onKey(key('3'));
   assert.equal(v.current(), 'expert');
   assert.equal(v.begin.disabled, true, 'locked night cannot begin');
