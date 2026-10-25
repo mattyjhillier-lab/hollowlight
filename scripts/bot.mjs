@@ -168,7 +168,9 @@ function bossInput(sim, F) {
   // kite: hold KITE_MIN..KITE_MAX from the boss, circling; stay off the wall; shy from adds; take gems near the path
   if (b && !b.dead) {
     const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1;
-    const rad = d < KITE_MIN ? 1 : d > KITE_MAX ? -0.8 : 0;
+    const reach = orbitReach(sim); // RT0: an Orbit-only kit grazes the boss with its ring (between tells) instead of kiting out of reach
+    const kMin = reach ? (b.r || 0) + reach - 14 : KITE_MIN, kMax = reach ? (b.r || 0) + reach - 2 : KITE_MAX;
+    const rad = d < kMin ? 1 : d > kMax ? -0.8 : 0;
     const side = F.kiteSide || (F.kiteSide = 1);
     ax += (dx / d) * rad + (-dy / d) * side * 0.8; ay += (dy / d) * rad + (dx / d) * side * 0.8;
   }
@@ -186,19 +188,41 @@ function bossInput(sim, F) {
   return { x: ax, y: ay };
 }
 
+// RT0 bot-kit fix (2026-10-25): with CHARACTER v2 a run can start with Holy Orbit as its ONLY spirit (no-tree save). The bot's flee radius (90 u)
+// is wider than the candle ring (38-62 u), so it kited every foe outside its own ring and never hit anything (Elias/Wren + Orbit: ~70 kills,
+// level 18, 0% wins, same on the CH1-CH3 commit 63f1b17). A human Orbit player grazes: steps toward the nearest foe until it touches the ring,
+// then the normal flee pushes back out. While every owned spirit is an orbit ring and HP is above ORBIT_HP, the bot adds a pull toward the
+// nearest foe that sits outside ring reach. Other kits are untouched (byte-identical). BOT_ORBIT=0 restores the old behaviour.
+const ORBIT_GRAZE = process.env.BOT_ORBIT !== '0';
+const ORBIT_PULL = Number(process.env.BOT_ORBIT_PULL || 0.8), ORBIT_HP = Number(process.env.BOT_ORBIT_HP || 0.4);
+function orbitReach(sim) {
+  if (!ORBIT_GRAZE || !sim.weapons.length) return 0;
+  let reach = 0;
+  const p = sim.player;
+  for (const w of sim.weapons) {
+    if (w.id !== 'holy_orbit') return 0;
+    for (const u of w.rt?.units || []) if (!u.dead) reach = Math.max(reach, Math.hypot(u.x - p.x, u.y - p.y) + (u.r || 0));
+  }
+  return reach;
+}
+
 function botInput(sim) {
   const p = sim.player;
   if (sim.fight && sim.fight.stage === 'fight') { const v = bossInput(sim, sim.fight); return { x: v.x, y: v.y, ability: process.env.ABILITY !== 'off' && sim.ability.cdLeft <= 0 }; }
   let ax = 0, ay = 0;
+  const FR = 90, reach = orbitReach(sim);
+  let near = null, nd = 1e9;
   for (const e of sim.enemies) {
+    if (reach && !e.boss && !e.dead) { const d = Math.hypot(e.x - p.x, e.y - p.y); if (d < nd) { nd = d; near = e; } }
     const dx = p.x - e.x, dy = p.y - e.y;
     const d2 = dx * dx + dy * dy;
-    if (d2 < 90 * 90) {
+    if (d2 < FR * FR) {
       const d = Math.sqrt(d2) || 1;
-      const w = (90 - d) / 90 * (e.boss ? 2.5 : 1);
+      const w = (FR - d) / FR * (e.boss ? 2.5 : 1);
       ax += (dx / d) * w; ay += (dy / d) * w;
     }
   }
+  if (near && nd > reach + 2 && p.hp > ORBIT_HP * p.maxHp) { ax += ((near.x - p.x) / nd) * ORBIT_PULL; ay += ((near.y - p.y) / nd) * ORBIT_PULL; }
   let best = null, bd = 200 * 200;
   for (const g of sim.gems) {
     const dx = g.x - p.x, dy = g.y - p.y, d2 = dx * dx + dy * dy;
