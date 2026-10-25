@@ -31,9 +31,9 @@ const run = (sim, secs, f) => { for (let i = 0; i < Math.round(secs / DT); i++) 
 const dps = (sim, secs) => { let tot = 0; const o = sim.hurt.bind(sim); sim.hurt = (e, a, x) => { const r = o(e, a, x); tot += r; return r; }; run(sim, secs); return tot / secs; };
 
 // ---------------------------------------------------------------- W10a base
-test('W10a data: Bolt power 10 -> 27.5 (+3.5), Swiftness 150 -> 260 with turn 5 -> 8 and a gap rate', () => {
+test('W10a data: Bolt power 6.5 -> 18 (+2.3, RT1 2026-10-25), Swiftness 150 -> 260 with turn 5 -> 8 and a gap rate', () => {
   const st = data.weapons.spirit_bolts.stats;
-  assert.equal(st.power.base, 10); assert.equal(st.power.perRank, 3.5);
+  assert.equal(st.power.base, 6.5); assert.equal(st.power.perRank, 2.3);
   assert.equal(st.speed.name, 'Swiftness'); assert.equal(st.speed.base, 150); assert.equal(st.speed.perRank, 22);
   assert.equal(st.speed.turn0, 5); assert.ok(Math.abs(st.speed.turn0 + 5 * st.speed.turnPer - 8) < 1e-9);
   assert.ok(Math.abs(1.1 / (1 + 5 * st.speed.rate) - 1.0) < 1e-9, 'volley gap 1.1 -> 1.0 at rank 5');
@@ -68,10 +68,10 @@ test('W10a no dead stat: every Spirit Bolts stat moves DPS (Swiftness >= +12% in
   assert.ok(/faster/.test(h) && /curve|turn/.test(h) && /sooner/.test(h) && !/barely/.test(h), h);
 });
 
-test('W10a maxed DPS stays near today in crowds: nominal power x gap = 27.5/1.0 vs 30/1.1 (1.008x)', () => {
+test('W10a maxed DPS stays near today in crowds: RT1 cut: nominal power x gap = 18/1.0 vs the old 27.5/1.0 (about 0.65x)', () => {
   const st = data.weapons.spirit_bolts.stats;
-  const nominal = ((st.power.base + 5 * st.power.perRank) / (1.1 / (1 + 5 * st.speed.rate))) / (30 / 1.1);
-  assert.ok(Math.abs(nominal - 1) <= 0.05, `nominal ${nominal}`);
+  const nominal = ((st.power.base + 5 * st.power.perRank) / (1.1 / (1 + 5 * st.speed.rate))) / (27.5 / 1.0);
+  assert.ok(Math.abs(nominal - 0.655) <= 0.02, `nominal ${nominal}`);
 });
 
 test('W10a Spirit Bolts base is deterministic', () => {

@@ -22,9 +22,9 @@ const run = (sim, secs, f) => { for (let i = 0; i < Math.round(secs / DT); i++) 
 const spy = (sim) => { const log = []; const o = sim.hurt.bind(sim); sim.hurt = (e, a, x) => { log.push({ e, a, t: sim.time }); return o(e, a, x); }; return log; };
 
 // ---------------------------------------------------------------- W11a base
-test('W11a data: Power 12 -> 42 (+6), Arc 60 -> 110 (+10) with first strike 1.5x and decay 5% -> 0% (-1%/rank)', () => {
+test('W11a data: Power 13.2 -> 46.2 (+6.6, RT1 2026-10-25), Arc 60 -> 110 (+10) with first strike 1.5x and decay 5% -> 0% (-1%/rank)', () => {
   const st = data.weapons.chain_lightning.stats;
-  assert.equal(st.power.base, 12); assert.equal(st.power.perRank, 6);
+  assert.equal(st.power.base, 13.2); assert.equal(st.power.perRank, 6.6);
   assert.equal(st.area.name, 'Arc'); assert.equal(st.area.base, 60); assert.equal(st.area.perRank, 10);
   assert.equal(st.area.first, 1.5);
   assert.ok(Math.abs(st.area.decay0 - 5 * st.area.decayPer) < 1e-9, 'decay reaches 0 at rank 5');
@@ -40,7 +40,7 @@ test('W11a first strike 1.5x, then each jump loses (5% - 1% per Arc rank) per ho
     assert.equal(hits.length, 5, 'chains 3 -> 5 foes');
     const base = hits[0] / 1.5;
     const dec = 0.05 - 0.01 * arc;
-    assert.ok(Math.abs(base - 12) < 1e-6 && Math.abs(hits[0] - 18) < 1e-6, `first ${hits[0]}`);
+    assert.ok(Math.abs(base - 13.2) < 1e-6 && Math.abs(hits[0] - 19.8) < 1e-6, `first ${hits[0]}`);
     for (let i = 1; i < 5; i++) assert.ok(Math.abs(hits[i] - base * Math.max(0.5, 1 - dec * i)) < 1e-6, `hop ${i} at Arc ${arc}: ${hits[i]}`);
   }
 });
