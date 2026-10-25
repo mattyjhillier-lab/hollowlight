@@ -1,4 +1,5 @@
-# Handoff: final retune PLAN (paused 2026-10-25 by Matt)
-Status: plan phase only, no balance changes applied to dev. The plan agent was stopped by the user mid-run.
-Saved: scripts/rt-matrix.mjs and scripts/rt-summary.mjs (baseline matrix runner and summariser). Sweep outputs were written to the session scratchpad and are lost/incomplete; the matrix must be re-run.
-Resume: new opus agent, worktree from wip/rt (merge origin/dev), run rt-matrix.mjs in the background with a time limit (>= 96 seeds per headline cell: starting weapon x hero x {no tree, mid, full} x {Twilight, Deep Dusk, Long Night} x Bond {0, max}), then write docs/design/final-retune-plan.md: baseline matrix, ranked out-of-band cells, lever table, tuning order RT1..RTn with targets and stop rules, max 3 one-tap decisions for Matt on target bands (max-Bond/full-tree win allowed above 50%?). Known inputs: see docs/LOCKED.md rows mentioning FINAL RETUNE (Wren damage wall, Elias overshoot/baseline bot 0%, Husk pressure, Branch-Mane/chest value, boss threat, Ravens 83%/Bolts 79%/Orbit 6% starts, Bond 25 lifts Wren+Wolves 25->67%, Gentle Light Wren 71%, Endless times, tier bands DT8, evolution cells, su_swift cap, atlas size).
+# Handoff: final retune PLAN
+Status 2026-10-25: PLAN DONE (no balance changes applied). Result: docs/design/final-retune-plan.md (baseline matrix 6,240 runs, ranked out-of-band list,
+lever table, tuning order RT1..RT7 with stop rules, 2 decisions for Matt). RT0 bot fix in scripts/bot.mjs (Orbit-only kit grazes; Elias 0% was a bot bug).
+Next: Matt answers decisions 1-2, then RT1 (starting weapon parity, weapons.json) as its own chunk.
+Tools: scripts/rt-matrix.mjs (CELLS=<regex> to limit cells; resumes from its jsonl), scripts/rt-summary.mjs.
