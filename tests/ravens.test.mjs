@@ -127,7 +127,7 @@ test('card hints are honest: Watch, Wingbeat, Peck and Flock size', () => {
   assert.equal(RF.stats.speed.name, 'Wingbeat');
   assert.match(hintText(RF, 'range', 0), /90 → 102/);
   assert.match(hintText(RF, 'speed', 0), /15% more often/);
-  assert.equal(RF.stats.power.base + 5 * RF.stats.power.perRank, 22);
+  assert.ok(Math.abs(RF.stats.power.base + 5 * RF.stats.power.perRank - 12.3) < 1e-9); // RT1 2026-10-25: 3.8 + 1.7/rank (was 7 + 3)
   assert.equal(RF.stats.count.base + 5 * RF.stats.count.perRank, 7);
 });
 

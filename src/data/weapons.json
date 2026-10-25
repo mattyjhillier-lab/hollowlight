@@ -22,7 +22,7 @@
     "desc": "Ravens perch by you, then swoop on foes they spot, peck, and fly back.",
     "stats": {
       "count": { "name": "Flock size",   "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more raven joins the flock" },
-      "power": { "name": "Peck power",   "base": 7,   "perRank": 3,    "fmt": "int", "hint": "Each peck hits harder" },
+      "power": { "name": "Peck power",   "base": 3.8, "perRank": 1.7,   "fmt": "int", "hint": "Each peck hits harder" },
       "range": { "name": "Watch",        "base": 90,  "perRank": 12,   "fmt": "int", "hint": "Ravens spot foes {old} → {new} out from you" },
       "speed": { "name": "Wingbeat",     "base": 1.0, "perRank": 0.15, "fmt": "dec", "hint": "Ravens swoop {upct} more often and fly faster" }
     }
@@ -36,7 +36,7 @@
     "desc": "Homing spirit orbs seek out the nearest enemies.",
     "stats": {
       "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "One more bolt in every volley" },
-      "power":  { "name": "Bolt power",  "base": 10,  "perRank": 3.5, "fmt": "int", "hint": "Each bolt hits harder" },
+      "power":  { "name": "Bolt power",  "base": 6.5, "perRank": 2.3, "fmt": "int", "hint": "Each bolt hits harder" },
       "speed":  { "name": "Swiftness",   "base": 150, "perRank": 22,  "fmt": "int", "rate": 0.02, "turn0": 5, "turnPer": 0.6, "hint": "Bolts fly {upct} faster, curve tighter and fire {rate} sooner" },
       "pierce": { "name": "Pierce",      "base": 0,   "perRank": 1,   "fmt": "int", "hint": "Each bolt passes through one more foe" }
     }
@@ -50,7 +50,7 @@
     "desc": "Lightning strikes the nearest enemy and jumps between foes.",
     "stats": {
       "chains":   { "name": "Chains",   "base": 2,   "perRank": 1,     "fmt": "int", "hint": "Lightning jumps to one more foe" },
-      "power":    { "name": "Power",    "base": 12,  "perRank": 6,     "fmt": "int", "hint": "Each strike hits harder (the first foe takes 1.5x)" },
+      "power":    { "name": "Power",    "base": 13.2, "perRank": 6.6,    "fmt": "int", "hint": "Each strike hits harder (the first foe takes 1.5x)" },
       "cooldown": { "name": "Cooldown", "base": 1.6, "perRank": -0.15, "fmt": "sec", "hint": "Strikes more often (every {new})" },
       "area":     { "name": "Arc",       "base": 60, "perRank": 10,    "fmt": "int", "first": 1.5, "decay0": 0.05, "decayPer": 0.01, "hint": "Each jump reaches {old} → {new} away and loses less power (5% → 0% per jump at full Arc)" }
     }
@@ -64,7 +64,7 @@
     "desc": "Holy orbs circle you and burn anything they touch.",
     "stats": {
       "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more candle light circles you" },
-      "power":  { "name": "Orb power",  "base": 10,   "perRank": 4,    "fmt": "int", "hint": "Each light hits harder" },
+      "power":  { "name": "Orb power",  "base": 12,   "perRank": 4.8,   "fmt": "int", "hint": "Each light hits harder" },
       "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
       "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
     }
