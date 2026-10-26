@@ -28,7 +28,7 @@ export function effectPE(e) {
   if (e.player === 'regen') return e.add * W.regen;
   if (e.player === 'levelHeal') return e.pct * 0.4;
   if (e.player === 'revive') return W.revive;
-  if (e.drop) return e.pct * W[e.drop];
+  if (e.drop) return (e.pct ?? 0) * (W[e.drop] ?? 0); // pity timers (heartPity/magnetPity: secs, no weight) count 0, not NaN
   if (e.ability) return e.pct * W.dur;
   if (e.perk === 'evoLuck') return e.pct * W.evoLuck;
   if (e.perk === 'rush') return e.pct * (e.secs / 6) * W.rush;

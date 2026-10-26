@@ -171,7 +171,8 @@ export function buildPool(ctx) {
     for (const statKey of Object.keys(data.weapons[w.id].stats)) {
       if (w.ranks[statKey] >= data.balance.maxRank) continue;
       const pairs = w.evo ? [] : Object.entries(data.evolutions).filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, ctx.unlockedEvolutions)).map(([, e]) => e);
-      const nudge = data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
+      // RT3: a weapon may carry its own evoNudge (weapons.json <id>.evoNudge, e.g. Spirit Bolts' late first evolution); else the global one
+      const nudge = data.weapons[w.id].evoNudge || data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
       let wt = pairs.length ? nudge.pair * (ctx.evoLuck || 1) : 1;
       // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
       if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= nudge.partnerRank)) wt *= nudge.partnerMult;

@@ -387,6 +387,7 @@ export class Sim {
   hurt(e, amount, opts = {}) {
     if (e.dead || amount <= 0) return 0;
     if (e.immuneT > 0) return 0; // the boss while rising / staggering at a phase change
+    if (e.boss && this._src) { const bx = this.data.weapons[this._src]?.boss; if (bx) amount *= bx; } // RT3 (Matt 2026-10-26): a weapon's boss rule (weapons.json <id>.boss; Spirit Bolts 2x), every form incl. its burns
     if (this.hasLore) { const l = this.tfx.lore[e.type]; if (l) amount *= 1 + l / 100; } // Almanac Habits / Weakness: +1-2% against that type
     const amp = this.damageAmp(e);
     if (amp !== 1) {
