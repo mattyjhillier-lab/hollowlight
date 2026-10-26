@@ -771,7 +771,9 @@ const chainLightning = {
 
     rt.cd = (rt.cd ?? 0.4) - dt;
     if (rt.cd > 0) return;
-    const first = sim.nearestEnemy(p.x, p.y, 220);
+    // RT2 (Matt, RETUNE PLAN DECISIONS 2026-10-25): the first strike prefers a live boss inside the same 220 u reach; the jumps still go to adds.
+    const boss = sim.boss && !sim.boss.dead && !(sim.boss.immuneT > 0) && Math.hypot(sim.boss.x - p.x, sim.boss.y - p.y) <= 220 ? sim.boss : null;
+    const first = boss || sim.nearestEnemy(p.x, p.y, 220);
     if (!first) { rt.cd = 0.15; return; }
     const chains = evo === 'thunder_judgment' ? tune(sim, w, 'chains', 9) : s.chains;
     strikeChain(sim, w, first, chains, dmg, area);
@@ -849,6 +851,7 @@ const holyOrbit = {
       rt.tide = { r: radius, out: swelling };
     }
     const gap = ORBIT_GAP / rateMult(sim.data.weapons.holy_orbit, 'speed', w.ranks.speed || 0);
+    const bossReach = sim.data.weapons.holy_orbit.stats.radius.bossReach ?? 0;
     units.forEach((u, i) => {
       const a = rt.ang + (i * TAU) / count;
       u.x = p.x + Math.cos(a) * radius;
@@ -865,7 +868,7 @@ const holyOrbit = {
         if (e.dead) continue;
         const dx = e.x - u.x;
         const dy = e.y - u.y;
-        const rr = e.r + u.r + 1;
+        const rr = e.r + u.r + 1 + (e.boss ? bossReach : 0); // RT2: lights touch a boss's wide crown a little sooner (weapons.json radius.bossReach)
         if (dx * dx + dy * dy >= rr * rr) continue;
         if (evo === 'judgement_wheel') {
           // W6 Bursting Lights: blast 34 px + 3 px per Orbit size rank, one blast per foe per 0.1 s, applies Burn (never from the Candle Wheel lock)
