@@ -1,6 +1,6 @@
 # RT2 boss-threat pass: handoff (safe-stop 2026-10-26, WIP on wip/rt2b)
 
-State (2026-10-26 later): try 3 sweep running. Try 1/2 complete (96/cell). Fresh Bolts reachers lose (40-45 wgr, fight 198 s) at every try: RT1 power, not a boss lever. Evo boss ratios unchanged (evo-home).
+State: DONE, try 3 merged to dev (see LOCKED 'RT2 boss threat'). Try 1/2 complete (96/cell). Fresh Bolts reachers lose (40-45 wgr, fight 198 s) at every try: RT1 power, not a boss lever. Evo boss ratios unchanged (evo-home).
 
 ## Changes on this branch (try 1)
 - src/sim/weapons.js: Chain first strike prefers a live, non-immune boss within the same 220 u (jumps still go to adds) (locked RETUNE PLAN DECISIONS 2).
@@ -14,7 +14,7 @@ State (2026-10-26 later): try 3 sweep running. Try 1/2 complete (96/cell). Fresh
 | base (dev 4ba5a16) | none | 1920 (96/cell) | 88 (84-91) / 96 (94-98) | 6 / 4 | 93, 157, 193 (fresh Chain 408, fresh Orbit 245, fresh Bolts 198) |
 | 1 | Chain boss-first + Orbit bossReach 16 + dmg x2 | 1920 | 61 (56-66) / 83 (79-86) | 17 / 14 | 90, 121, 146 (fresh Chain 394: wgr 4-7%, fresh win 1-2%!) |
 | 2 | try 1 + Chain `area.boss` 3 (every Chain strike on a boss, all forms) + Orbit `radius.bossX` 2 (contact/ground/blast on a boss) | 1920 | 83 (79-87) / 92 (89-94) | 8 / 7 | 87, 100, 115 (fresh Chain 135, Orbit 119) |
-| 3 | try 2 + dmg x2.5 {15,25,38} | running | | | |
+| 3 (SHIPPED) | try 2 + dmg x2.5 {15,25,38} | 1920 | 75 (70-79) / 86 (83-89) | 12 / 11 | 86, 97, 109 (fresh Bolts 199, win 4/7) |
 Partial read: direction right; fresh near band, mid still above 75; Chain/Orbit reachers now lose more (45 / 52 wgr) while W/R/B 90.
 Per-cell baseline table: `node docs/design/rt2-data/sum.cjs docs/design/rt2-data/base.jsonl`.
 
