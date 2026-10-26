@@ -52,7 +52,7 @@
       "chains":   { "name": "Chains",   "base": 2,   "perRank": 1,     "fmt": "int", "hint": "Lightning jumps to one more foe" },
       "power":    { "name": "Power",    "base": 13.2, "perRank": 6.6,    "fmt": "int", "hint": "Each strike hits harder (the first foe takes 1.5x)" },
       "cooldown": { "name": "Cooldown", "base": 1.6, "perRank": -0.15, "fmt": "sec", "hint": "Strikes more often (every {new})" },
-      "area":     { "name": "Arc",       "base": 60, "perRank": 10,    "fmt": "int", "first": 1.5, "decay0": 0.05, "decayPer": 0.01, "hint": "Each jump reaches {old} → {new} away and loses less power (5% → 0% per jump at full Arc)" }
+      "area":     { "name": "Arc",       "base": 60, "perRank": 10,    "fmt": "int", "first": 1.5, "boss": 3, "decay0": 0.05, "decayPer": 0.01, "hint": "Each jump reaches {old} → {new} away and loses less power (5% → 0% per jump at full Arc)" }
     }
   },
   "holy_orbit": {
@@ -65,7 +65,7 @@
     "stats": {
       "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more candle light circles you" },
       "power":  { "name": "Orb power",  "base": 12,   "perRank": 4.8,   "fmt": "int", "hint": "Each light hits harder" },
-      "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "bossReach": 16, "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
+      "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "bossReach": 16, "bossX": 2, "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
       "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
     }
   }

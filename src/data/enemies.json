@@ -16,7 +16,7 @@
     "fight": {
       "arena": { "r": 230, "edge": 260, "ahead": 60, "rise": 120, "pull": 160 },
       "intro": { "beat": 3.0, "freezeAt": 1.0, "freeze": 1.2, "grace": 2.0 },
-      "dmg": { "light": 12, "mid": 20, "heavy": 30 },
+      "dmg": { "light": 15, "mid": 25, "heavy": 38 },
       "hitGap": 0.6, "stagger": 1.0, "pushOut": 30, "scaleMin": 14, "addGems": 40, "levelHold": 3,
       "phases": [
         { "id": "awakening", "hpAt": 1.0,  "gap": 3.2, "speed": 18, "moves": { "slam": 3, "eruption": 3, "seeds": 2 } },
