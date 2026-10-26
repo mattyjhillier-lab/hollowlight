@@ -660,6 +660,8 @@ export function chainDecay(sim, w) {
   const a = sim.data.weapons.chain_lightning.stats.area;
   return Math.max(0, (a.decay0 ?? 0.05) - (a.decayPer ?? 0.01) * (w.ranks.area || 0));
 }
+// RT2 (boss threat pass): lightning grounds through a boss's trunk: every Chain strike on a boss (any form) deals area.boss x (trash clear unchanged).
+const chainBoss = (sim, e) => (e.boss ? sim.data.weapons.chain_lightning.stats.area.boss ?? 1 : 1);
 function strikeChain(sim, w, first, chains, dmg, area) {
   const p = sim.player;
   const decay = chainDecay(sim, w), firstMult = sim.data.weapons.chain_lightning.stats.area.first ?? 1.5;
@@ -669,7 +671,7 @@ function strikeChain(sim, w, first, chains, dmg, area) {
   for (let i = 0; i < chains && cur; i++) {
     hit.add(cur.id);
     pts.push({ x: cur.x, y: cur.y });
-    sim.hurt(cur, dmg * (i === 0 ? firstMult : Math.max(0.5, 1 - decay * i)));
+    sim.hurt(cur, dmg * (i === 0 ? firstMult : Math.max(0.5, 1 - decay * i)) * chainBoss(sim, cur));
     cur = sim.nearestEnemy(cur.x, cur.y, area, (e) => !hit.has(e.id));
   }
   sim.addFx({ kind: 'bolt', pts, ttl: 0.16, color: '#b8f2ff' });
@@ -702,7 +704,7 @@ const chainLightning = {
         const list = fresh.length ? fresh : stale;
         const e = list.splice(sim.rng.int(list.length), 1)[0];
         e.stormAt = sim.time;
-        sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.47));
+        sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.47) * chainBoss(sim, e));
         sim.addFx({ kind: 'bolt', field: true, pts: [{ x: e.x + sim.rng.range(-8, 8), y: e.y - 70 }, { x: e.x, y: e.y }], ttl: 0.12, color: '#b8f2ff' });
       }
       return;
@@ -732,10 +734,10 @@ const chainLightning = {
       const k = tune(sim, w, 'k', 0.45), fk = tune(sim, w, 'fork', 0.2);
       for (const t of T) {
         if (t.e.dead) continue;
-        sim.hurt(t.e, dmg * k);
+        sim.hurt(t.e, dmg * k * chainBoss(sim, t.e));
         t.f = null;
         const f = sim.nearestEnemy(t.e.x, t.e.y, area, (q) => q !== t.e && !T.some((o) => o.e === q));
-        if (f) { t.f = f; sim.hurt(f, dmg * k * fk); }
+        if (f) { t.f = f; sim.hurt(f, dmg * k * fk * chainBoss(sim, f)); }
       }
       return;
     }
@@ -762,7 +764,7 @@ const chainLightning = {
           if (n >= cap) break;
           n++;
           rt.jLast.push(e.id);
-          sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.72));
+          sim.hurt(e, dmg * tune(sim, w, 'dmg', 0.72) * chainBoss(sim, e));
           sim.addFx({ kind: 'bolt', pillar: 'judgment', pts: [{ x: e.x, y: e.y - 260 }, { x: e.x, y: e.y }], ttl: 0.22, color: '#b8f2ff' });
         }
         if (n) sim.addFx({ kind: 'judgeflash', ttl: 0.14, life: 0.14, x: p.x, y: p.y, r: JUDGE_R });
@@ -771,7 +773,9 @@ const chainLightning = {
 
     rt.cd = (rt.cd ?? 0.4) - dt;
     if (rt.cd > 0) return;
-    const first = sim.nearestEnemy(p.x, p.y, 220);
+    // RT2 (Matt, RETUNE PLAN DECISIONS 2026-10-25): the first strike prefers a live boss inside the same 220 u reach; the jumps still go to adds.
+    const boss = sim.boss && !sim.boss.dead && !(sim.boss.immuneT > 0) && Math.hypot(sim.boss.x - p.x, sim.boss.y - p.y) <= 220 ? sim.boss : null;
+    const first = boss || sim.nearestEnemy(p.x, p.y, 220);
     if (!first) { rt.cd = 0.15; return; }
     const chains = evo === 'thunder_judgment' ? tune(sim, w, 'chains', 9) : s.chains;
     strikeChain(sim, w, first, chains, dmg, area);
@@ -849,6 +853,7 @@ const holyOrbit = {
       rt.tide = { r: radius, out: swelling };
     }
     const gap = ORBIT_GAP / rateMult(sim.data.weapons.holy_orbit, 'speed', w.ranks.speed || 0);
+    const bossReach = sim.data.weapons.holy_orbit.stats.radius.bossReach ?? 0, bossHit = sim.data.weapons.holy_orbit.stats.radius.bossX ?? 1;
     units.forEach((u, i) => {
       const a = rt.ang + (i * TAU) / count;
       u.x = p.x + Math.cos(a) * radius;
@@ -865,7 +870,7 @@ const holyOrbit = {
         if (e.dead) continue;
         const dx = e.x - u.x;
         const dy = e.y - u.y;
-        const rr = e.r + u.r + 1;
+        const rr = e.r + u.r + 1 + (e.boss ? bossReach : 0); // RT2: lights touch a boss's wide crown a little sooner (weapons.json radius.bossReach)
         if (dx * dx + dy * dy >= rr * rr) continue;
         if (evo === 'judgement_wheel') {
           // W6 Bursting Lights: blast 34 px + 3 px per Orbit size rank, one blast per foe per 0.1 s, applies Burn (never from the Candle Wheel lock)
@@ -876,7 +881,7 @@ const holyOrbit = {
           if (maxHits > 0 && hit.length > maxHits) hit = hit.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y)).slice(0, maxHits);
           for (const o of hit) {
             if (!sim.canHit(o, 'wheelblast', 0.1)) continue;
-            const dealt = sim.hurt(o, dmg * tune(sim, w, 'dmg', 0.85) * (o.boss ? bossX : 1));
+            const dealt = sim.hurt(o, dmg * tune(sim, w, 'dmg', 0.85) * (o.boss ? bossX * bossHit : 1)); // x bossHit: RT2 boss-contact rule, so the Wheel keeps its ratio over the base ring
             sim.burn(o, dealt);
           }
           sim.addFx({ kind: 'ring', x: u.x, y: u.y, r: br, ttl: 0.2, color: '#c79bff' });
@@ -885,7 +890,8 @@ const holyOrbit = {
           break;
         }
         if (sim.canHit(e, `orb${i}`, gap)) {
-          const dealt = sim.hurt(e, dmg * contact * rt.crest * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
+          // RT2 boss-contact rule: a candle light pressed to a boss's trunk burns it radius.bossX harder (the burn follows the hit)
+          const dealt = sim.hurt(e, dmg * contact * rt.crest * (e.boss ? bossHit : 1) * (1 - (1 - GUARD.dmg) * (rt.gK || 0))); // contracted ring is a guard, not a grinder
           sim.burn(e, dealt);
           if (rt.gK > 0) { u.guardCd = gap; break; } // contracted: one foe per light per gap (a guard, not a crowd grinder)
         }
@@ -906,7 +912,7 @@ const holyOrbit = {
           if (e.dead) continue;
           const dx = e.x - p.x, dy = e.y - p.y, rr = radius + e.r;
           if (dx * dx + dy * dy >= rr * rr) continue;
-          sim.burn(e, hit);
+          sim.burn(e, hit * (e.boss ? bossHit : 1)); // RT2 boss-contact rule holds for every Orbit form
           if (++n >= cap) break;
         }
       }
