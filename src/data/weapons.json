@@ -23,7 +23,7 @@
     "stats": {
       "count": { "name": "Flock size",   "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more raven joins the flock" },
       "power": { "name": "Peck power",   "base": 3.8, "perRank": 1.7,   "fmt": "int", "hint": "Each peck hits harder" },
-      "range": { "name": "Watch",        "base": 90,  "perRank": 12,   "fmt": "int", "hint": "Ravens spot foes {old} → {new} out from you" },
+      "range": { "name": "Watch",        "base": 80,  "perRank": 12,   "fmt": "int", "hint": "Ravens spot foes {old} → {new} out from you" },
       "speed": { "name": "Wingbeat",     "base": 1.0, "perRank": 0.15, "fmt": "dec", "hint": "Ravens swoop {upct} more often and fly faster" }
     }
   },
@@ -34,6 +34,7 @@
     "tags": ["holy"],
     "color": "#7ff0ff",
     "desc": "Homing spirit orbs seek out the nearest enemies.",
+    "boss": 2,
     "stats": {
       "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "One more bolt in every volley" },
       "power":  { "name": "Bolt power",  "base": 6.5, "perRank": 2.3, "fmt": "int", "hint": "Each bolt hits harder" },
