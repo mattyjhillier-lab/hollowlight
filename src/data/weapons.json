@@ -37,7 +37,7 @@
     "boss": 2,
     "stats": {
       "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "One more bolt in every volley" },
-      "power":  { "name": "Bolt power",  "base": 6.5, "perRank": 2.3, "fmt": "int", "hint": "Each bolt hits harder" },
+      "power":  { "name": "Bolt power",  "base": 7.2, "perRank": 2.3, "fmt": "int", "hint": "Each bolt hits harder" },
       "speed":  { "name": "Swiftness",   "base": 150, "perRank": 22,  "fmt": "int", "rate": 0.02, "turn0": 5, "turnPer": 0.6, "hint": "Bolts fly {upct} faster, curve tighter and fire {rate} sooner" },
       "pierce": { "name": "Pierce",      "base": 0,   "perRank": 1,   "fmt": "int", "hint": "Each bolt passes through one more foe" }
     }
