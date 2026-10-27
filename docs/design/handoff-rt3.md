@@ -1,4 +1,4 @@
-# RT3 + RT2 follow-ups: handoff (safe-stop 2026-10-26, WIP on wip/rt3, NOT merged)
+# RT3 + RT2 follow-ups: handoff (DONE 2026-10-27: nudge reverted, merged to dev)
 
 ## Built on this branch (tests 1161/1161 green after each step)
 - scripts/tree-budget.mjs: the 'COMBAT TOTAL NaN' bug is fixed. Pity-timer drop effects (heartPity/magnetPity have no weight) now count 0. The total now reads 24.1 (cap 40); light 7.7.

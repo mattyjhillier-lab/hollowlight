@@ -35,7 +35,6 @@
     "color": "#7ff0ff",
     "desc": "Homing spirit orbs seek out the nearest enemies.",
     "boss": 2,
-    "evoNudge": { "pair": 6, "partnerRank": 2, "partnerMult": 4 },
     "stats": {
       "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "One more bolt in every volley" },
       "power":  { "name": "Bolt power",  "base": 6.5, "perRank": 2.3, "fmt": "int", "hint": "Each bolt hits harder" },
