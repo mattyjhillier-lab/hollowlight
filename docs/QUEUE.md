@@ -237,6 +237,7 @@ Standing rules always apply: security first, token conservation, everything must
 - Process: research (how genre games structure per-weapon trees and flow) -> design doc + layout mock-up -> independent review -> build in small chunks. Replaces/absorbs G2 (old tree rescale). Starts AFTER G1e (tree fix) lands, to avoid collisions in tree.json.
 
 ## Parked idea (Matt, 2026-10-15): MAP CHALLENGES / POINTS OF INTEREST
+- [?] MAP EVENTS v1 DESIGN WRITTEN 2026-10-28 (docs/design/map-events-v1.md, branch wip/events; LOCKED "MAP EVENTS IN v1"): 3 slots x 3 options. Recommended set = Grey Well (rest) + Lantern Road (route) + Hollow Knot (risk), 7 sites per run, seeded own RNG stream, SITES=0 byte-identical. Awaiting Matt picks (3 one-tap questions), then build E0-E6.
 - Problem: no reason to move far across the map; maps look boring/empty. Idea: challenges on the map (hold a zone, timed wave, marked elite, light all lanterns/restore a grey well or shrine) that give bonus XP, gold, a Blessing, chest or temporary power-up; ties to The Hollow (restore places, push the Hollow back, colour returns). Research when needed: how survivors-likes/roguelikes do map events, shrines, chests, elites; risk vs reward; phone-friendliness; bounded rewards; possible life-map gameplay link (needs Matt's OK). Belongs with design sheet #2 (world) and chapter power-ups; do AFTER weapons/enemies are designed.
 
 ## Parked idea (Matt, 2026-10-15): MINIBOSSES AT SET TIMES + CHEST REWARDS
