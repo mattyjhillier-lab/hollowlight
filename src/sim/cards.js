@@ -274,7 +274,7 @@ export function offerFromPreview(ctx, rng, preview) {
 // Run-start offers (Hearth-key 'Kindred Start', Card Fan 'Favoured Spirit', Hearth-key 'Lantern Blessing'; T6). Not level-ups: no reroll,
 // banish, heal swap or fallback cards. kindred = 3 unlocked weapons not yet owned (a free weapon card); favour = every unlocked weapon
 // (mark one); blessing = 3 Blessings (inside the caps, as any Blessing card).
-export const START_KINDS = ['kindred', 'favour', 'blessing', 'chestBless', 'chestStat'];
+export const START_KINDS = ['kindred', 'favour', 'blessing', 'chestBless', 'chestStat', 'siteBless'];
 export function startOffer(ctx, rng, kind) {
   const { data, weapons } = ctx;
   // open = tree-unlocked (or ungated) weapons, plus any weapon already held (the starting spirit is always yours to favour)
@@ -287,7 +287,7 @@ export function startOffer(ctx, rng, kind) {
   } else if (kind === 'favour') {
     const first = weapons.length ? weapons[0].id : null;
     cards = open.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0)).map((id) => favourCard(id, data));
-  } else if (kind === 'blessing' || kind === 'chestBless') { // EN8: a Medium/Large Lantern Reliquary's Blessing choice (same pool, same caps)
+  } else if (kind === 'blessing' || kind === 'chestBless' || kind === 'siteBless') { // siteBless: a Lantern Road / Hollow Knot prize (map events v1) // EN8: a Medium/Large Lantern Reliquary's Blessing choice (same pool, same caps)
     cards = drawWeighted(blessingPool(ctx), 3, rng);
   } else if (kind === 'chestStat') { // EN8: a Large Lantern Reliquary's free stat rank: 3 owned-weapon stats not yet maxed (a plain stat card: never names an evolution)
     const pool = [];

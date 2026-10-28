@@ -1,5 +1,6 @@
 // Results screen copy + the pure view model behind it (U6). No DOM here, so it is unit-tested in Node. Every string is later set with textContent, never as markup.
 // Voice: docs/design/ui-identity-v1.md (plain label + a quiet line). Defeat is a dimmed-but-lit lantern, never "out" (LOCKED 2026-10-16).
+import { sitesLine } from './sitecopy.js';
 import { splitName } from './titlecopy.js';
 
 export const RES = {
@@ -210,6 +211,7 @@ export function resultsView(r, bank, data) {
     nudge, learn, treePrimary,
     treeDot: newly.length > 0,
     night: nightBlock(r, bank, hero, won),
+    sites: sitesLine(r.sites), // map events v1 'Hollow Places' (null without sites)
     dark: dark >= 0 ? `You held the dark ${clock(dark)} past dawn.${bank && bank.tier && bank.tier.darkBest ? ' A new longest night.' : ''}` : '', // EXTRAS v1
   };
 }

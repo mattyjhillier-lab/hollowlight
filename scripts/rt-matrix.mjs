@@ -7,7 +7,7 @@
 //   0 Twilight random: fresh (none, Bond 0), mid (half, Bond 0), maxed (full, Bond 25)  (headSeeds)
 //   1 fresh Twilight FOCUS (focusSeeds) | 2 Long Night maxed (full, Bond 25) random (headSeeds)
 //   3 context (otherSeeds): Twilight full Bond 0 and none Bond 25; Deep Dusk none/half/full Bond 0 + full Bond 25; Long Night half/full Bond 0.
-//   CELLS=<regex> limits the cells (matched against the cell key).
+//   CELLS=<regex> limits the cells (matched against the cell key). SITES=1 (+ SITES_BOT) runs with the map events on (lines add st = sites done/paid).
 //   RT_ASSIST=1 (Gentle Light) / RT_ENDLESS=1 (stay in the dark after a dawn): bot field becomes random-assist / random-endless; endless lines add dark (s past dawn).
 import { Worker, isMainThread, workerData, parentPort } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
@@ -37,7 +37,7 @@ if (!isMainThread) {
   };
   for (const j of workerData.jobs) {
     const r = playRun(j.hero, j.seed, { weapon: j.weapon, tree: treeFor(j.tree, j.weapon, j.tier), bond: j.bond, endless: !!workerData.endless, assist: !!workerData.assist });
-    parentPort.postMessage({ key: j.key, seed: j.seed, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, bossKill: r.marks.bossKill ?? null, minis: r.minis, w: r.weaponIds.length, kills: r.kills, gold: r.gold, ...(workerData.endless ? { win: !!r.endless || r.outcome === 'victory', dark: r.endless ? Math.round(r.endless.dark) : null } : {}) });
+    parentPort.postMessage({ key: j.key, seed: j.seed, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, bossKill: r.marks.bossKill ?? null, minis: r.minis, w: r.weaponIds.length, kills: r.kills, gold: r.gold, ...(r.sitesSum ? { st: { l: r.sitesSum.lamp[0], r: r.sitesSum.road[0], k: r.sitesSum.knot[0], xp: +r.sitesSum.paid.xpL.toFixed(2), g: r.sitesSum.paid.gold, b: r.sitesSum.paid.bless, sh: r.sitesSum.paid.shard }, kd: Math.round(r.hurtBy.knot || 0) } : {}), ...(workerData.endless ? { win: !!r.endless || r.outcome === 'victory', dark: r.endless ? Math.round(r.endless.dark) : null } : {}) });
   }
 } else {
   const out = process.argv[2] || 'rt-matrix.jsonl';

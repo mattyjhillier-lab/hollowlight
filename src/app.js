@@ -29,6 +29,7 @@ import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
 import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
 import { DARK } from './ui/darkui.js';
+import { SITE_EVENTS, SITE_TOAST } from './ui/sitecopy.js'; // map events v1
 import { createPad } from './ui/padmap.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
@@ -88,6 +89,7 @@ export const app = {
       bond: this.isDebugRun() ? 0 : bondLevel(s0, data, characterId), // Bond is banked between runs and read once here
       keepsakes: this.isDebugRun() ? [] : keepsakeEligible(s0, data, treeDef),
       assist: p.assist === true || (!p.tier && this.save.data.settings.gentleLight === true), // EXTRAS v1 Gentle Light (the Sim keeps it on Twilight only; ?assist=1 is a debug run)
+      sites: p.sites !== false, // map events v1 'Hollow Places': on in every real run (every night); ?sites=0 turns them off (a debug run)
     });
     if (p.grant) this.applyGrants(sim, p.grant);
     if (p.bless) this.applyBless(sim, p.bless);
@@ -596,6 +598,7 @@ export const app = {
     else if (ev.type === 'mini') { this.ui.hudView.bossBanner(`The ${d.enemies[ev.enemy] ? d.enemies[ev.enemy].name : 'old alpha'} howls`, 'the old leader of the rival pack', !this.save.data.settings.reducedMotion); if (this.scene.miniView) this.scene.miniView.onEvent(ev); } // EN7 arrival banner
     else if (ev.type === 'howl' || ev.type === 'miniDead' || ev.type === 'chestDrop' || ev.type === 'miniPhase') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); if (ev.type === 'miniDead') { this.ui.toast('The Branch-Mane falls: a Lantern Reliquary'); this.scene.stop(0.05); } }
     else if (ev.type === 'chest') { if (this.scene.miniView) this.scene.miniView.onEvent(ev); this.ui.hudView.flareHp(); this.scene.chestFx(); if (ev.tier === 0) this.ui.toast('Lantern Reliquary: light, warmth and coin', this.pickupWhisper('chest')); } // EN8: Medium/Large open the choice screen
+    else if (SITE_EVENTS.has(ev.type)) this.siteEvent(ev);
     else if (ev.type === 'swarm') this.ui.toast(ev.enemy === 'wolf' ? 'A wolf pack closes in' : 'A murder of crows descends');
     else if (ev.type === 'evolve') {
       const ev0 = this.save.data.stats.evolved; // E9: recipe shown only the first time this evolution is ever taken (recorded in stats.evolved at run end)
@@ -692,9 +695,18 @@ export const app = {
   },
 
   // Debug URL params never touch the real save.
+  // map events v1: the scene's site layer + one short toast (textContent only, via ui.toast)
+  siteEvent(ev) {
+    if (this.scene && this.scene.siteView) this.scene.siteView.onEvent(ev);
+    const t = SITE_TOAST[ev.type];
+    const line = typeof t === 'function' ? t(ev) : t;
+    if (line) this.ui.toast(line);
+    if (ev.type === 'siteDone' || ev.type === 'lampLit') { if (ev.kind === 'knot' || ev.reward === 'heart') this.ui.hudView.flareHp(); }
+  },
+
   isDebugRun() {
     const p = this.params;
-    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.tier !== null || p.seed !== null || p.assist);
+    return !!(p.auto || p.meta || p.god || p.startTime || p.rerolls || p.banishes || p.grant || p.bless || p.debug || p.tier !== null || p.seed !== null || p.assist || p.sites === false);
   },
 
   bankRun(sim) {

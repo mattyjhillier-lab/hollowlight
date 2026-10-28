@@ -200,16 +200,21 @@ export class Hud {
     // 'The Branch-Mane stirs 0:12' (no bar). Text only (textContent via set()).
     const b = (sim.boss && !sim.boss.dead ? sim.boss : null) || (sim.mini && !sim.mini.dead ? sim.mini : null);
     const soon = !b && Number.isFinite(sim.miniSoon) && sim.miniSoon > 0 ? sim.miniSoon : -1;
-    const mode = b ? (b.mini ? 'mini' : 'boss') : soon > 0 ? 'chip' : '';
+    // map events v1: with no boss / miniboss / stir chip, the same bar shows the active Hollow Place (road = chip with lanterns + time, knot = HP bar)
+    const act = !b && soon <= 0 && sim.sites ? sim.sites.active : null;
+    const mode = b ? (b.mini ? 'mini' : 'boss') : soon > 0 ? 'chip' : act ? (act.kind === 'knot' ? 'mini' : 'chip') : '';
     if (this.prev.bmode !== mode) {
       this.prev.bmode = mode;
       this.boss.classList.toggle('is-mini', mode === 'mini');
       this.boss.classList.toggle('is-chip', mode === 'chip');
     }
-    if (b || soon > 0) {
+    if (b || soon > 0 || act) {
       if (!this.prev.boss) { this.prev.boss = true; this.boss.classList.add('on'); this.ping(this.boss, 'enter'); }
       const nm = (type) => (this.opts.bossName ? this.opts.bossName(type) : 'Boss');
-      if (b) {
+      if (act) {
+        if (act.kind === 'knot') { this.set('bossname', this.bossName, 'Hollow Knot'); this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(act.hp, act.maxHp) * 100).toFixed(1)}%`); }
+        else this.set('bossname', this.bossName, `Lantern Road ${act.lit | 0} of ${act.lanterns.length}  ${fmtTime(Math.ceil(act.left))}`);
+      } else if (b) {
         this.set('bossname', this.bossName, nm(b.type));
         this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(b.hp, b.maxHp) * 100).toFixed(1)}%`);
       } else {

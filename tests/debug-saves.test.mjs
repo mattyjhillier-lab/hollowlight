@@ -12,7 +12,7 @@ const isDebugRun = new Function('return {' + m[0] + '}.isDebugRun')();
 const dbg = (q) => isDebugRun.call({ params: parseParams(q) });
 
 // One URL per param that can change a run.
-const DEBUG_QUERIES = ['?auto=wren', '?god=1', '?seed=5', '?seed=0', '?t=540', '?rr=3', '?ban=2', '?grant=ghost_wolves:speed=5,power=5:phantom_stampede', '?bless=wider_glow:2', '?meta=full', '?meta=half', '?debug=1', '?tier=hard', '?tier=expert', '?assist=1'];
+const DEBUG_QUERIES = ['?auto=wren', '?god=1', '?seed=5', '?seed=0', '?t=540', '?rr=3', '?ban=2', '?grant=ghost_wolves:speed=5,power=5:phantom_stampede', '?bless=wider_glow:2', '?meta=full', '?meta=half', '?debug=1', '?tier=hard', '?tier=expert', '?assist=1', '?sites=0'];
 
 test('every run-changing param makes the run a debug run', () => {
   for (const q of DEBUG_QUERIES) assert.equal(dbg(q), true, q);
@@ -36,7 +36,7 @@ test('params.js has no storage access at all (parsing a URL can never touch a sa
 
 test('every known param key is a debug trigger or a pure render/UI flag (new params must be classified)', () => {
   const RENDER_UI = new Set(['ground', 'bright', 'touch', 'style', 'specimen', 'kit', 'mem', 'tips', 'life', 'trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums', 'husks', 'summons']);
-  const DEBUG = new Set(['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'meta', 'tier', 'god', 'debug', 'assist']);
+  const DEBUG = new Set(['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'meta', 'tier', 'god', 'debug', 'assist', 'sites']); // sites: ?sites=0 plays without map events (a run-changing switch)
   for (const k of KNOWN_KEYS) assert.ok(RENDER_UI.has(k) || DEBUG.has(k), `param ${k} is unclassified: decide if it can touch a save`);
   for (const k of DEBUG) assert.ok(KNOWN_KEYS.includes(k), k);
 });

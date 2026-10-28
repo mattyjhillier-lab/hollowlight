@@ -19,6 +19,7 @@ export const MORE_CUES = {
   dawn_chorus_1: { cap: 1, gap: 5, pri: 0 }, dawn_chorus_2: { cap: 1, gap: 5, pri: 0 }, dawn_chorus_3: { cap: 1, gap: 5, pri: 0 },
   defeat_sting: { cap: 1, gap: 3, pri: 0 }, title_motif: { cap: 1, gap: 3, pri: 0 },
   results_win: { cap: 1, gap: 1, pri: 0 }, results_lose: { cap: 1, gap: 1, pri: 0 },
+  site_lamp: { cap: 1, gap: 0.2, pri: 1 }, road_note: { cap: 1, gap: 0.2, pri: 0 }, site_done: { cap: 1, gap: 1, pri: 0 }, knot_wake: { cap: 1, gap: 1, pri: 0 }, knot_pulse: { cap: 1, gap: 0.5, pri: 1 }, // map events v1
   tree_light: { cap: 1, gap: 0.2, pri: 0 }, bond_level: { cap: 1, gap: 1, pri: 0 }, keepsake: { cap: 1, gap: 1, pri: 0 }, tree_whole: { cap: 1, gap: 1, pri: 0 }, ui_step: { cap: 1, gap: 0.15, pri: 1 },
 };
 export const EVO_IDS = ['phantom_stampede', 'howling_legion', 'dire_alpha', 'murder_storm', 'dive_bombers', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages', 'thunder_judgment', 'static_storm', 'storm_tether', 'vesper_tide', 'sanctum_halo', 'judgement_wheel'];
@@ -30,6 +31,7 @@ export const EVENT_CUE = {
   bossTell: 'treant_creak', bossHit: 'treant_slam', slam: 'treant_slam', bossPhase: 'boss_phase', bossDead: 'boss_fall', bossSoon: 'boss_tremor',
   thorn: 'thorn_spit', burst: 'toad_puff', charge: 'hart_charge', mini: 'mane_call', howl: 'mane_howl', miniPhase: 'mane_growl', miniDead: 'mane_fall',
   chestDrop: 'chest_drop', chest: 'chest_open',
+  lampLit: 'site_lamp', roadLit: 'road_note', siteDone: 'site_done', knotWake: 'knot_wake', knotPulse: 'knot_pulse', // map events v1
 };
 export const SPECIAL = ['stoat_piper', 'puffback_toad', 'bramble_hart']; // spawns + tells that get a sound (the tells are visual first)
 
@@ -124,6 +126,13 @@ export function moreCue(e, id, t, v) {
     case 'bond_level': motif(e, t, v, -5, 0.09); chord(e, t + 0.36, [7, 14, 19], 0.06, 0.004, 1.1, 0.035 * v, null, 'sine'); return 1.6;
     case 'keepsake': for (let i = 0; i < 3; i++) e.tone(t + i * 0.09, 'sine', e.hz([24, 31, 36][i]), 0.003, 0.6, 0.06 * v, 0, true); return 0.9;
     case 'ui_step': e.tone(t, 'triangle', e.hz(26), 0.005, 0.15, 0.06 * v); e.tone(t + 0.07, 'triangle', e.hz(31), 0.005, 0.25, 0.06 * v, 0, true); return 0.35;
+    // map events v1 'Hollow Places': lamp = one small warm bell; road = a bell pair each lantern; done = three bells together;
+    // knot wake = a low root creak; pulse = a soft low thump (the 0.8 s tell is visual first)
+    case 'site_lamp': e.tone(t, 'triangle', e.hz(31), 0.004, 0.5, 0.07 * v, 0, true); e.tone(t + 0.06, 'sine', e.hz(38), 0.003, 0.4, 0.03 * v, 0, true); return 0.6;
+    case 'road_note': chord(e, t, [24, 28], 0.05, 0.004, 0.8, 0.07 * v); return 0.9;
+    case 'site_done': chord(e, t, [24, 28, 31], 0.08, 0.004, 1.2, 0.07 * v); e.noise(t + 0.1, 'bandpass', 1400, 0.8, 0.1, 0.8, 0.03 * v, 3200, true); return 1.4;
+    case 'knot_wake': e.tone(t, 'sawtooth', 62, 0.1, 0.9, 0.05 * v, 48); e.noise(t, 'lowpass', 260, 1, 0.1, 0.8, 0.16 * v); return 1.0;
+    case 'knot_pulse': e.tone(t, 'sine', 90, 0.004, 0.3, 0.22 * v, 50); e.noise(t, 'lowpass', 220, 1, 0.004, 0.25, 0.15 * v); return 0.35;
     default: return -1;
   }
 }

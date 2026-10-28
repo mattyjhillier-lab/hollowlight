@@ -113,6 +113,7 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
     put(row);
   }
   if (nb && nb.kept) put(el('p', 'u6-kept', nb.kept, { 'data-drop': 'kept' }));
+  if (v.sites) put(el('p', 'u6-kept u6-sites', v.sites, { 'data-drop': 'sites' })); // map events v1
   if (v.dark) put(add(el('p', 'u6-dark', null, { 'data-drop': 'dark' }), el('span', 'u6-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, v.dark))); // EXTRAS v1 Endless Dusk
   if (nb && nb.gentle) put(add(el('p', 'u6-gentle', null, { 'data-drop': 'gentle' }), el('span', 'u6-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, nb.gentle))); // EXTRAS v1
   if (b.note) put(el('p', 'u6-note', b.note));

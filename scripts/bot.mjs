@@ -11,6 +11,7 @@ import { EMBER } from '../src/sim/marks.js';
 import { loadTree } from '../src/meta/treefs.mjs';
 import { tellHits } from '../src/sim/boss.js';
 import { starterNodes } from '../src/meta/starter.js';
+import { siteGoal, SITES_BOT } from './sitebot.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
@@ -48,6 +49,10 @@ export const GATES = ['all', 'preset', 'launch'].includes(process.env.GATES) ? p
 export const WEAPON = /^[a-z_]{1,32}$/.test(process.env.WEAPON || '') && Object.hasOwn(data.weapons, process.env.WEAPON) ? process.env.WEAPON : null;
 export const ENDLESS = process.env.ENDLESS === '1'; // EXTRAS v1 Endless Dusk: after a dawn the bot stays in the dark until it falls (cap 60 min in the dark)
 export const ASSIST = process.env.ASSIST === '1'; // EXTRAS v1 Gentle Light (Twilight only; the Sim ignores it elsewhere)
+// Map events v1: SITES=1 turns the Hollow Places on (default off = byte-identical to before); SITES_BOT=calm|greedy|never (scripts/sitebot.mjs)
+export const SITES = process.env.SITES === '1';
+const SB_GEMDAMP = Number.isFinite(Number(process.env.SB_GEMDAMP)) && process.env.SB_GEMDAMP ? Number(process.env.SB_GEMDAMP) : 1; // probe knob: site pull while a gem is in reach
+export { SITES_BOT };
 export const BOND = Math.max(0, Math.min(25, Math.floor(Number(process.env.BOND) || 0)));
 export const startOf = (charId) => WEAPON || data.characters[charId].kindred;
 const treeDef = compileTree(data.tree, data);
@@ -234,6 +239,10 @@ function botInput(sim) {
   }
   // EN8: a dropped Lantern Reliquary within 300 u is walked to (a player goes for it once the area is calm; the bot just heads over)
   if (process.env.NO_CHEST !== '1') for (const k of sim.pickups) if (k.type === 'chest') { const dx = k.x - p.x, dy = k.y - p.y, d = Math.hypot(dx, dy) || 1; if (d < 300) { ax += (dx / d) * 0.8; ay += (dy / d) * 0.8; } break; }
+  if (sim.sites) { // map events v1: walk to an awake site (scripts/sitebot.mjs); weight comparable to gems / chests
+    const g = siteGoal(sim, reach);
+    if (g) { const w = best && !g.urgent ? g.w * SB_GEMDAMP : g.w; const dx = g.x - p.x, dy = g.y - p.y, d = Math.hypot(dx, dy) || 1; if (d > 3) { ax += (dx / d) * w; ay += (dy / d) * w; } } // gems close by come first (a player sweeps up, then goes)
+  }
   if (DODGE && dodgeVec(sim)) { const m = Math.hypot(ax, ay) || 1; ax = (ax / m) * DODGE_KEEP + _d[0]; ay = (ay / m) * DODGE_KEEP + _d[1]; }
   // drift back toward world centre when near the edge
   const c = sim.balance.worldSize / 2;
@@ -260,7 +269,7 @@ function pick(sim, rng) {
 
 export function playRun(charId, seed, opts = {}) {
   const sw = opts.weapon || startOf(charId);
-  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree(undefined, sw)), tier: TIER, startWeapon: sw, bond: opts.bond ?? BOND, assist: opts.assist ?? ASSIST });
+  const sim = new Sim({ data, characterId: charId, seed, meta: opts.meta || {}, tree: withGates(opts.tree !== undefined ? opts.tree : metaTree(undefined, sw)), tier: TIER, startWeapon: sw, bond: opts.bond ?? BOND, assist: opts.assist ?? ASSIST, sites: opts.sites ?? SITES });
   let s = seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;
@@ -268,9 +277,9 @@ export function playRun(charId, seed, opts = {}) {
   let levelups = 0, filler = 0, dead = 0, short = 0, blessPicks = 0, healSwaps = 0, hpLost = 0; // filler = level-ups whose first-shown offer was only fallback cards (heal/gold/xp)
   const t0 = Date.now();
   const darkMore = () => (opts.endless ?? ENDLESS) && sim.state === 'victory' && !sim.endless && sim.stayInDark();
-  while ((sim.state === 'running' || sim.state === 'levelup' || darkMore()) && !(sim.endless && sim.time - sim.endless.t0 > 3600)) {
+  while ((sim.state === 'running' || sim.state === 'levelup' || darkMore()) && !(sim.endless && sim.time - sim.endless.t0 > 3600) && !(opts.until && sim.time >= opts.until)) { // opts.until: stop early (probes)
     if (sim.state === 'levelup') {
-      if (sim.offer.start && sim.offer.start.startsWith('chest')) { const key = pick(sim, rng); if (key.startsWith('b:')) blessPicks++; sim.pickCard(key); continue; } // EN8 chest choices are not level-ups
+      if (sim.offer.start && (sim.offer.start.startsWith('chest') || sim.offer.start === 'siteBless')) { const key = pick(sim, rng); if (key.startsWith('b:')) blessPicks++; sim.pickCard(key); continue; } // EN8 chest choices are not level-ups
       levelups++;
       if (!sim.offer.gold.length && sim.offer.cards.every((c) => c.kind === 'fallback')) { filler++; if (marks.filler === undefined) marks.filler = Math.round(sim.time); }
       const real = sim.offer.cards.filter((c) => c.kind === 'weapon' || c.kind === 'stat' || c.kind === 'evolution').length + sim.offer.gold.length;
@@ -286,6 +295,7 @@ export function playRun(charId, seed, opts = {}) {
     }
     const hp0 = sim.player.hp;
     sim.step(DT, botInput(sim));
+    if (opts.onStep) opts.onStep(sim);
     if (sim.player.hp < hp0) hpLost += hp0 - sim.player.hp;
     if (marks.bossKill === undefined && sim.bossKilled) marks.bossKill = Math.round(sim.time);
     if (marks.evo === undefined && sim.weapons.some((w) => w.evo)) marks.evo = Math.round(sim.time);
@@ -294,7 +304,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, sitesSum: sim.sites ? sim.sites.summary() : null, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {

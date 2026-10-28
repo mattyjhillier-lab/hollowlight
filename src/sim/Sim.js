@@ -24,6 +24,7 @@ import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.
 import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
 import { BossFight, validateFight } from './boss.js';
 import { bondDef, bondBonus, keepsakeDef } from '../meta/bond.js';
+import { validateSites, Sites, siteSeed } from './sites.js';
 
 const FIGHT_OK = new WeakSet(); // boss fight blocks already validated (shipped data: validated once per object, not per run)
 
@@ -61,7 +62,7 @@ export function endlessDef(b) {
 }
 
 export class Sim {
-  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null, startWeapon = null, bond = 0, keepsakes = null, assist = false }) {
+  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null, startWeapon = null, bond = 0, keepsakes = null, assist = false, sites = false }) {
     this.data = data;
     this.balance = data.balance;
     this.chapterId = chapterId;
@@ -276,6 +277,12 @@ export class Sim {
         r: this.rng.range(18, 34),
       });
     }
+
+    // Map events v1 'Hollow Places' (src/sim/sites.js): opt-in (the game passes sites: true; tests / sweeps default off). Own stream, created
+    // always, drawn only when on, so a run with sites off is byte-identical. Bad chapter data fails closed (no sites).
+    this.siteRng = createRng(siteSeed(seed));
+    this.sites = null;
+    if (sites === true && this.chapter.sites) { const sd = validateSites(this.chapter.sites, data.enemies); if (sd) this.sites = new Sites(this, sd); }
 
     this.addWeapon(this.startWeapon);
     // run-start offers (T6): Kindred Start, Favoured Spirit, Lantern Blessing, in that order; the world waits (state 'levelup', offer.start)
@@ -521,7 +528,7 @@ export class Sim {
   }
 
   // ------------------------------------------------------------------ enemies
-  spawnEnemy(typeId, x, y) {
+  spawnEnemy(typeId, x, y, rng = this.rng) { // rng: map-event foes pass the sites stream so the main stream never shifts
     const d = this.data.enemies[typeId];
     const hs = this.balance.hpScale;
     const m = this.fight ? this.fightDef.scaleMin : this.minutes; // boss-fight adds use a frozen run minute (no hidden ramp while the clock holds)
@@ -535,12 +542,12 @@ export class Sim {
       r: d.r, hp: d.hp * hpMul, maxHp: d.hp * hpMul,
       speed: d.speed, dmg: d.dmg * dmgMul, xp: d.xp, gold: d.gold, mass: d.mass, boss: !!d.boss,
       state: 'run', stT: 0, dx: 0, dy: 0, tele: false,
-      chargeCd: this.rng.range(1, 3.5), slamCd: 5,
-      phase: this.rng.range(0, 6.28), cd: {},
+      chargeCd: rng.range(1, 3.5), slamCd: 5,
+      phase: rng.range(0, 6.28), cd: {},
       markT: 0, markSrc: null, bleedT: 0, bleedDps: 0, bleedTot: 0, burnT: 0, burnDps: 0, burnTot: 0, burnSrc: null, fearT: 0, flash: 0, dead: false, faceX: 1,
     };
     if (d.ai) { // EN3-EN5: data-driven telegraph behaviour (src/sim/enemyai.js); the ai block is shared read-only data
-      e.ai = d.ai; e.grace = d.ai.grace ?? 0.8; e.dmgMul = dmgMul; e.aiCd = this.rng.range(d.ai.firstCd?.[0] ?? 1, d.ai.firstCd?.[1] ?? 2);
+      e.ai = d.ai; e.grace = d.ai.grace ?? 0.8; e.dmgMul = dmgMul; e.aiCd = rng.range(d.ai.firstCd?.[0] ?? 1, d.ai.firstCd?.[1] ?? 2);
       if (d.ai.chargeDmg) e.cdmg = d.ai.chargeDmg * dmgMul;
     }
     if (!d.mini) this.markFoe(e, d, false);
@@ -1135,7 +1142,7 @@ export class Sim {
   dashShove() {
     const D = this.dash, p = this.player, sh = this.character.ability.shove ?? 26;
     for (const e of this.enemies) {
-      if (e.dead || e.boss || e.fight || D.hit.has(e.id) || (e.ai && (e.ai.immune === e.state || e.ai.immune === 'all'))) continue;
+      if (e.dead || e.boss || e.fight || e.knot || D.hit.has(e.id) || (e.ai && (e.ai.immune === e.state || e.ai.immune === 'all'))) continue;
       const dx = e.x - p.x, dy = e.y - p.y, rr = p.r + e.r + 10;
       if (dx * dx + dy * dy > rr * rr) continue;
       D.hit.add(e.id);
@@ -1191,7 +1198,7 @@ export class Sim {
     const p = this.player;
     const far = this.balance.despawnDistance;
     for (const e of this.enemies) {
-      if (e.boss || e.mini) continue; // the Branch-Mane is leashed instead (enemyai alpha): it lopes back, never despawns
+      if (e.boss || e.mini || e.knot) continue; // a Hollow Knot never moves; the Branch-Mane is leashed instead (enemyai alpha): it lopes back, never despawns
       const dx = e.x - p.x;
       const dy = e.y - p.y;
       if (dx * dx + dy * dy > far * far) {
@@ -1333,6 +1340,7 @@ export class Sim {
     this.cleanupDead();
     this.updateGems(dt);
     this.updatePickups(dt);
+    if (this.sites) this.sites.step(dt);
     this.updateFx(dt);
     this.checkLevelUp();
     this.checkEnd();
@@ -1371,6 +1379,7 @@ export class Sim {
       gems: this.gemsTaken,
       abilityUses: this.abilityUses,
       blessings: this.blessingsTaken,
+      sites: this.sites ? this.sites.summary() : null, // map events v1 (counters only; gold and the capped shard are already in gold / shards)
       minis: this.miniKills, chests: this.chests, chestTiers: this.chestLog.slice(), miniLog: this.miniLog.map((L) => ({ ...L })), // EN6-EN8 counters
       hurt: { by: { ...this.hurtBy }, hits: { ...this.hitsBy }, lunge: this.lungeHits, last: this.lastHit ? { src: this.lastHit.src, kind: this.lastHit.kind, t: this.lastHit.t } : null }, // DR4 recap (counters only)
       clock: this.clock,

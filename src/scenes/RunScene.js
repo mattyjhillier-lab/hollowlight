@@ -64,6 +64,7 @@ import { threatens, WolfBudget, TELE_FAINT } from '../gfx/telebudget.js'; // DR2
 import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTarget, skipSmallNumber, MUST_OUT_CAP, DEPTH_HERO_OUT } from '../gfx/crowdread.js'; // DR3 crowd readability rules
 import { HeroLine, OL_RES } from '../gfx/heroline.js'; // OL1: hero outline rebuilt from the hero's own transformed parts
 import { BossView, ADD_SCALE, ADD_ORIGIN } from '../gfx/boss/bossview.js'; // Elder Treant fight: arena, tells, boss art, victory flood
+import { SiteView } from '../gfx/siteview.js'; // map events v1 'Hollow Places' (render only)
 import { MiniView, bakeReliquary } from '../gfx/minibossview.js'; // EN7/EN8 Branch-Mane extras + Lantern Reliquary chest (render only)
 import { POD_KEY, SAP_KEY } from '../gfx/boss/bossart.js';
 import { HeldKeys, bindHeldKeys } from '../input/keys.js'; // CTL1: own held-key tracker (window capture, cleared on blur/hidden)
@@ -261,6 +262,8 @@ export class RunScene extends Phaser.Scene {
 
     this.bossView = new BossView(this, { lit: D_LIT, ground: -395, tele: D_VIG + 3 });
     this.miniView = new MiniView(this, { lit: D_LIT, ground: D_LIT - 95 }, INV.chest, INV.glow);
+    this.siteView = new SiteView(this, { ground: D_LIT - 96, prop: D_LIT - 40, badge: D_PART + 3, arrow: D_VIG + 4 }); // map events v1: under the bodies; badges over them; arrows above the vignette
+    this.siteRect = { x0: 0, y0: 0, x1: 0, y1: 0 };
     INV[POD_KEY] = INV[SAP_KEY] = ADD_SCALE;
     this.pools = {
       wolf: new SpritePool(this, 'wolf'),
@@ -1433,6 +1436,7 @@ export class RunScene extends Phaser.Scene {
     for (const e of sim.enemies) {
       ei++;
       if (ei < 512) art.fi[ei] = 255;
+      if (e.knot) continue; // map events v1: the Hollow Knot is drawn by this.siteView
       if (!e.boss && (e.x < vx0 || e.x > vx1 || e.y < vy0 || e.y > vy1)) continue;
       const img = pl[e.type].get(e.id);
       const mr = mustOf[e.type] === true;
@@ -1579,6 +1583,7 @@ export class RunScene extends Phaser.Scene {
     // Elder Treant fight (gfx/boss/bossview.js): ring, roots, brush, the boss art, its tells (DR2 shared style, above the vignette), the victory flood
     this.bossView.update(sim, Math.min(this.game.loop.delta, 100) / 1000, this.quality.tier, this.reducedMotion(), lit ? lm : null, this.life, wv);
     this.miniView.update(sim, Math.min(this.game.loop.delta, 100) / 1000, this.quality.tier, this.reducedMotion(), lit ? lm : null);
+    if (sim.sites) { const R = this.siteRect; R.x0 = wv.x; R.y0 = wv.y; R.x1 = wv.right; R.y1 = wv.bottom; this.siteView.update(sim, Math.min(this.game.loop.delta, 100) / 1000, R, this.quality.tier, this.reducedMotion(), lit ? lm : null, this.life); }
     if (sim.fight) this.bossView.drawTells(this.teleG, sim, this.reducedMotion());
     if (this.bossView.usingArt && sim.boss) { const bs = pl.elder_treant.map.get(sim.boss.id); if (bs) bs.img.setVisible(false); } // the baked First Husk replaces the flat placeholder
 
