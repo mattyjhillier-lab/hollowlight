@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hollowlight wordmark options</title>
+<style>
+:root{--ink:#fff3dc;--dim:#c9bfa8}
+body{margin:0;background:#0d1220;color:var(--ink);font:15px/1.5 'Trebuchet MS','Segoe UI',sans-serif;padding:24px 16px 60px}
+main{max-width:1200px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:18px;margin:36px 0 4px;color:#f5dfae}
+p.n{color:var(--dim);margin:2px 0 14px;max-width:80ch}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+.tile{padding:18px;border-radius:14px}
+.dark{background:linear-gradient(#26384a,#12182b)}.light{background:#f3ead6;color:#2a1608}
+.tile small{display:block;font-size:11px;opacity:.7;margin-top:8px}
+.fav{display:flex;gap:14px;align-items:flex-end}
+.share{width:1200px;max-width:100%;aspect-ratio:1200/630;border-radius:10px;overflow:hidden;margin-top:14px}
+.share svg{display:block;width:100%;height:100%}
+.w480{width:480px;max-width:100%}.w120{width:120px}
+svg{display:block}
+</style></head><body><main>
+<h1>Hollowlight wordmark: three takes</h1>
+<p class="n">All code-drawn SVG, system-safe subtitle font only. Tinted outlines, soft rim light, warm lantern against cool Hollow blue. Add ?take=a, b or c to show one take.</p>
+<div id="out"></div>
+</main>
+<script>
+const SK={H:{w:70,d:'M10 3Q9 50 11 97M60 2Q61 50 59 98M10 52Q35 49 60 52'},L:{w:62,d:'M10 2Q11 50 10 98Q34 100 58 98'},W:{w:96,d:'M4 2Q13 50 24 98Q36 66 48 34Q60 66 72 98Q82 50 92 2'},I:{w:22,d:'M11 2Q12 50 11 98'},G:{w:82,d:'M72 20C64 7 52 2 42 2C20 2 6 24 6 50C6 76 20 98 42 98C58 98 72 88 74 62Q60 61 46 62'},T:{w:78,d:'M4 4Q39 -2 74 4M39 4Q38 50 39 98'}};
+const WORD='HOLLOWLIGHT',DY=[0,-2,1.5,-1,2,0,-2,1,0,-1.5,1],ROT=[-.8,.5,-.4,.7,-.6,.4,-.7,.4,-.5,.6,-.3];
+const R=v=>Math.round(v*10)/10;
+let UID=0;
+const st=(d,w,s,x='')=>`<path d="${d}" fill="none" stroke="${s}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" ${x}/>`;
+const flame=(t,big)=>`<g transform="${t}"><path d="M0 -14C6 -6 8 -2 6 4C4 9 -4 9 -6 4C-8 -2 -6 -6 0 -14Z" fill="#ffab3a" stroke="#8a3f10" stroke-width="2"/><path d="${big?'M0 -6C4 -1 4 3 0 7C-4 3 -4 -1 0 -6Z':'M0 -4C3 0 3 3 0 6C-3 3 -3 0 0 -4Z'}" fill="#fff6d8"/></g>`;
+const defs=(u)=>`<defs>
+<linearGradient id="${u}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0c4"/><stop offset=".45" stop-color="#e2b866"/><stop offset="1" stop-color="#9b6a2c"/></linearGradient>
+<linearGradient id="${u}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4b66"/><stop offset="1" stop-color="#1e2738"/></linearGradient>
+<linearGradient id="${u}h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fa0bf"/><stop offset=".5" stop-color="#5a6b88"/><stop offset="1" stop-color="#2f3b54"/></linearGradient>
+<linearGradient id="${u}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#f1d9a4"/></linearGradient>
+<radialGradient id="${u}f"><stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".6" stop-color="#ff9a2e" stop-opacity=".35"/><stop offset="1" stop-color="#ff9a2e" stop-opacity="0"/></radialGradient>
+<radialGradient id="${u}k"><stop offset="0" stop-color="#ffab3a" stop-opacity=".55"/><stop offset="1" stop-color="#ffab3a" stop-opacity="0"/></radialGradient></defs>`;
+// lantern O. style: brass (A), lit (B, hollow-blue frame, warm glass), ring (C, thin ring)
+function lantern(u,style,OUT){
+ if(style==='ring') return `<circle cx="40" cy="52" r="46" fill="url(#${u}k)"/>`+
+  `<circle cx="40" cy="52" r="33" fill="none" stroke="${OUT}" stroke-width="17"/><circle cx="40" cy="52" r="33" fill="none" stroke="url(#${u}c)" stroke-width="10"/>`+
+  `<circle cx="40" cy="52" r="23" fill="url(#${u}f)"/>`+flame('translate(40 52) scale(.95)',true);
+ const frame=style==='lit'?`url(#${u}h)`:`url(#${u}b)`;
+ return `<ellipse cx="40" cy="104" rx="36" ry="6" fill="#000" opacity=".28"/><rect x="14" y="93" width="52" height="9" rx="4" fill="${OUT}"/><rect x="17" y="94" width="46" height="5.5" rx="2.5" fill="${frame}"/>`+
+  st('M26 -6Q40 -22 54 -6',7,OUT)+st('M26 -6Q40 -22 54 -6',3,frame)+
+  `<circle cx="40" cy="-17" r="4.2" fill="none" stroke="${OUT}" stroke-width="3.4"/><circle cx="40" cy="-17" r="4.2" fill="none" stroke="${frame}" stroke-width="1.6"/>`+
+  `<rect x="6" y="2" width="68" height="96" rx="30" fill="${OUT}"/><rect x="11" y="7" width="58" height="86" rx="25" fill="url(#${u}g)"/>`+
+  `<circle cx="40" cy="58" r="${style==='lit'?40:34}" fill="url(#${u}f)"/>`+flame('translate(40 56) scale(1.05)',true)+st('M40 7V93',3,OUT,'opacity=".5"')+
+  `<rect x="11" y="7" width="58" height="86" rx="25" fill="none" stroke="${frame}" stroke-width="6"/>`+
+  st('M18 30Q17 50 19 72',3,'#fff','stroke-opacity=".55"')+st('M62 26Q64 36 63 44',2,'#fff','stroke-opacity=".3"');
+}
+function letter(u,take,d,k,OUT,light){
+ if(take==='a') return st(d,22,OUT)+st(d,15,`url(#${u}b)`)+st(d,2.5,'#fff8e0','stroke-opacity=".7" transform="translate(-3 -3)"')+st(d,2,'#6b4512','stroke-opacity=".4" transform="translate(3.2 3.2)"');
+ if(take==='b'){ const warm=[.42,0,.38,.22,0,.4,.3,.08,0,0,0][k];
+  return st(d,22,OUT)+st(d,15,`url(#${u}h)`)+(warm?st(d,15,'#ffb552',`stroke-opacity="${warm*(light?.8:1)}"`):'')+st(d,2.5,warm?'#ffe9b8':'#c9d6ee','stroke-opacity=".6" transform="translate(-3 -3)"')+st(d,2,'#0d1424','stroke-opacity=".45" transform="translate(3.2 3.2)"');}
+ return st(d,17,OUT)+st(d,10,`url(#${u}c)`)+st(d,2,'#fff','stroke-opacity=".8" transform="translate(-2 -2)"')+st(d,1.6,'#b88a3e','stroke-opacity=".5" transform="translate(2.4 2.4)"');
+}
+const OUTS={a:'#3a2412',b:'#141c2e',c:'#3a2a1c'};
+function word(take,opt){
+ const light=!!(opt&&opt.light),sub=!!(opt&&opt.sub);
+ const u='w'+(UID++),OUT=OUTS[take],gap=take==='c'?16:10;let x=0;const pos=[];
+ for(const ch of WORD){pos.push([ch,x]);x+=(ch==='O'?80:SK[ch].w)+gap;}
+ const W=R(x-gap+24),TOP=14,H=172+TOP+(sub?42:0);
+ let g='';
+ pos.forEach(([ch,px],k)=>{
+  g+=`<g transform="translate(${R(px+12)} ${R(30+DY[k])}) rotate(${ROT[k]} 40 50)">`+(ch==='O'?lantern(u,take==='a'?'brass':take==='b'?'lit':'ring',OUT):letter(u,take,SK[ch].d,k,OUT,light));
+  if(ch==='I') g+=`<ellipse cx="11" cy="-1" rx="10" ry="4" fill="${OUT}"/><ellipse cx="11" cy="-2" rx="7.5" ry="2.6" fill="#fff0c4"/><g transform="translate(11 -17)"><circle r="19" fill="url(#${u}k)"/>${flame('',false)}</g>`;
+  g+='</g>';});
+ let under='';
+ if(take==='a') under=`<path d="M${R(W*.18)} 150Q${R(W/2)} 138 ${R(W*.82)} 150" fill="none" stroke="${light?'#c98a2a':'#ffe0a0'}" stroke-width="2" stroke-dasharray="7 5" opacity=".85"/><circle cx="${R(W/2)}" cy="144" r="4.5" fill="#ffd36b" stroke="#6b4512" stroke-width="1.5"/>`;
+ if(take==='c') under=`<path d="M6 164C${R(W*.25)} 146 ${R(W*.5)} 168 ${R(W-34)} 146" fill="none" stroke="#ffab3a" stroke-opacity=".35" stroke-width="9" stroke-linecap="round"/><path d="M6 164C${R(W*.25)} 146 ${R(W*.5)} 168 ${R(W-34)} 146" fill="none" stroke="${light?'#d98a1f':'#ffd27a'}" stroke-width="3" stroke-linecap="round"/><g transform="translate(${R(W-26)} 144)"><circle r="14" fill="url(#${u}k)"/>${flame('scale(.7)',false)}</g>`;
+ const subtxt=sub?`<text x="${R(W/2)}" y="${H-TOP-10}" text-anchor="middle" font-family="'Trebuchet MS','Segoe UI',sans-serif" font-size="25" letter-spacing="${take==='c'?9:7}" font-weight="700" fill="${light?'#5a3a14':'#e9d6a8'}" stroke="${light?'none':OUT}" stroke-width="${light?0:.6}" paint-order="stroke">SPIRITS OF THE DUSK</text>`:'';
+ return {W,H,TOP,svg:(cls,w)=>`<svg class="${cls||''}" ${w?`width="${w}"`:''} viewBox="0 ${-TOP} ${W} ${H}" role="img" aria-label="Hollowlight${sub?': Spirits of the Dusk':''}">${defs(u)}${g}${under}${subtxt}</svg>`};
+}
+function icon(take,size){
+ const u='i'+(UID++),OUT=OUTS[take],bg=take==='b'?['#3a4a68','#1a2236']:take==='c'?['#2a3a52','#12182b']:['#26384a','#12182b'];
+ const inner=take==='c'?`<g transform="translate(14 -4)">${lantern(u,'ring',OUT)}</g>${st('M6 90C26 74 40 98 70 80',4,'#ffd27a','stroke-opacity=".9"')}`:`<g transform="translate(10 -2)">${lantern(u,take==='b'?'lit':'brass',OUT)}</g>`;
+ return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" role="img" aria-label="Hollowlight icon">${defs(u)}<linearGradient id="${u}bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${bg[0]}"/><stop offset="1" stop-color="${bg[1]}"/></linearGradient><rect width="100" height="100" rx="22" fill="url(#${u}bg)"/><g transform="translate(50 52) scale(.82) translate(-50 -52)">${inner}</g></svg>`;
+}
+function share(take){
+ const m=word(take,{sub:true}),u='s'+(UID++);
+ const stars=[[90,70],[240,150],[420,60],[980,90],[1100,200],[780,40],[160,420],[1080,500],[300,540],[880,560]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${1.2+i%3*.6}" fill="#ffe9b8" opacity="${.35+i%4*.12}"/>`).join('');
+ const w=1000,h=w*m.H/m.W;
+ return `<svg viewBox="0 0 1200 630" role="img" aria-label="Hollowlight share image"><defs><linearGradient id="${u}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3d56"/><stop offset=".7" stop-color="#161d30"/><stop offset="1" stop-color="#0d1220"/></linearGradient><radialGradient id="${u}p" cx="50%" cy="48%" r="55%"><stop offset="0" stop-color="#ffab3a" stop-opacity=".28"/><stop offset="1" stop-color="#ffab3a" stop-opacity="0"/></radialGradient></defs>
+ <rect width="1200" height="630" fill="url(#${u}s)"/><rect width="1200" height="630" fill="url(#${u}p)"/>${stars}
+ <path d="M0 560Q150 520 300 548T600 540T900 552T1200 530V630H0Z" fill="#0b101c"/><path d="M0 590Q200 566 420 584T820 578T1200 574V630H0Z" fill="#070a13"/>
+ <g transform="translate(${(1200-w)/2} ${(630-h)/2-30})">${m.svg('',w).replace(/^<svg /,'<svg x="0" y="0" ')}</g></svg>`;
+}
+const NAMES={
+ a:['A. Brass Lantern (recommended)','Chunky brass letters with a tinted dark outline; the two Os are real lanterns with live flames, the I is a candle. Matches the in-game build, so it is the polish path rather than a redo. Glow: flames plus a warm thread-and-knot underline. Small size: the single lit lantern O becomes the icon; at 120px letters stay fat enough to read.'],
+ b:['B. Hollow Blue, Two Lit Lanterns','The word is drained Hollow blue-grey (the world before spirits) and only the two lantern Os are alive: their warm light bleeds into neighbouring letters, so colour visibly returns. Strongest story link to the Hollow idea. Risk: cool letters have lower contrast on dark; the outline must stay thick at 120px.'],
+ c:['C. Spirit Trail','Slimmer cream letters with a dark tinted outline, spaced wider; the Os are ring lanterns and a glowing spirit-thread swoops under the word ending in a wisp. Quieter and more elegant, closest to the long glowing trails of Style v1. Risk: thinnest strokes, so it reads worst at 120px and 32px; icon is a single ring lantern plus trail.'],
+};
+const q=new URLSearchParams(location.search).get('take');
+let html='';
+for(const t of ['a','b','c']){ if(q&&q!==t)continue;
+ const d=word(t,{sub:true}),dn=word(t),l=word(t,{light:true,sub:true}),ln=word(t,{light:true});
+ html+=`<h2>${NAMES[t][0]}</h2><p class="n">${NAMES[t][1]}</p>
+ <div class="row"><div class="tile dark"><div class="w480">${d.svg('')}</div><small>480px, dark</small></div>
+ <div class="tile light"><div class="w480">${l.svg('')}</div><small>480px, light</small></div></div>
+ <div class="row" style="margin-top:14px"><div class="tile dark"><div class="w120">${dn.svg('')}</div><small>120px phone, dark</small></div>
+ <div class="tile light"><div class="w120">${ln.svg('')}</div><small>120px phone, light</small></div>
+ <div class="tile dark"><div class="fav">${icon(t,32)}${icon(t,64)}${icon(t,128)}</div><small>icon 32 / 64 / 128</small></div></div>
+ <div class="share">${share(t)}</div><p class="n">1200x630 share image</p>`;}
+document.getElementById('out').innerHTML=html;
+</script></body></html>
