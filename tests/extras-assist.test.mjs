@@ -1,4 +1,4 @@
-// EXTRAS v1 (1) Gentle Light: Twilight-only assist bundle (foe damage x0.70, foe speed x0.90, hearts 1.5x sooner); stars and best times rest,
+// EXTRAS v1 (1) Gentle Light: Twilight-only assist bundle (foe damage x0.85, foe speed x0.95, hearts 1.25x sooner (RT7)); stars and best times rest,
 // gold / shards / Bond / clears count; assist off (and on any harder night) is byte-identical; hostile saves, params and data are refused.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ const fp = (s) => JSON.stringify([s.time, s.player, s.kills, s.gold, s.level, s.
 const memStore = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
 
 test('Gentle Light data: Twilight bundle is the locked one; only Twilight may carry an assist; bad knobs are refused', () => {
-  assert.deepEqual(resolveAssist(data.tiers, 'normal', true), { enemyDmg: 0.7, enemySpeed: 0.9, heartSooner: 1.5 });
+  assert.deepEqual(resolveAssist(data.tiers, 'normal', true), { enemyDmg: 0.85, enemySpeed: 0.95, heartSooner: 1.25 });
   for (const bad of [false, 1, 'true', null, undefined, {}]) assert.equal(resolveAssist(data.tiers, 'normal', bad), null, String(bad));
   for (const t of ['hard', 'expert', '__proto__', 'x']) assert.equal(resolveAssist(data.tiers, t, true), null, t);
   const clone = () => JSON.parse(JSON.stringify(data.tiers));
@@ -35,14 +35,14 @@ test('Gentle Light off is byte-identical; on a harder night the flag does nothin
   assert.equal(new Sim({ data, seed: 1, tier: 'expert', assist: true }).assist, null);
 });
 
-test('Gentle Light: foes hit 30% softer, move 10% slower, hearts come sooner', () => {
+test('Gentle Light: foes hit 15% softer, move 5% slower (RT7), hearts come sooner', () => {
   const a = new Sim({ data, seed: 3, assist: true }), b = new Sim({ data, seed: 3 });
   for (const s of [a, b]) { s.player.iframes = 0; s.damagePlayer(10, 'wolf'); }
   assert.equal(b.player.maxHp - b.player.hp, 10);
-  assert.ok(Math.abs((a.player.maxHp - a.player.hp) - 7) < 1e-9);
+  assert.ok(Math.abs((a.player.maxHp - a.player.hp) - 8.5) < 1e-9);
   for (const s of [a, b]) { const e = s.spawnEnemy('wolf', s.player.x + 300, s.player.y); s.player.iframes = 99; s.updateEnemies(0.05); s.e0 = e; }
   const da = 300 - (a.e0.x - a.player.x), db = 300 - (b.e0.x - b.player.x);
-  assert.ok(db > 0 && Math.abs(da / db - 0.9) < 0.02, `speed ratio ${da / db}`);
+  assert.ok(db > 0 && Math.abs(da / db - 0.95) < 0.02, `speed ratio ${da / db}`);
   // hearts: same pity state, the assisted run's chance is higher
   const heartP = (s) => { s.player.hp = s.player.maxHp * 0.6; s.sinceHeart = 20; let n = 0; s.rng = { chance: (p) => { n = p; return false; }, next: () => 0.5, range: (lo) => lo }; s.rollDrops({ x: 0, y: 0 }); return n; };
   assert.ok(heartP(new Sim({ data, seed: 3, assist: true })) > heartP(new Sim({ data, seed: 3 })));

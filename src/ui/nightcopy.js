@@ -15,7 +15,7 @@ export const NIGHT = {
   harder: 'harder night',
   first: 'first night',
   // EXTRAS v1 Gentle Light (Twilight assist, B1)
-  gentle: { name: 'Gentle Light', line: 'The Hollow bites softer tonight. Your dawn still counts; the stars wait for another night.', bullets: ['Foes hit 30% softer', 'Foes move a little slower', 'Hearts come sooner'], rest: 'Stars and best times rest while Gentle Light is on. Gold, shards and Bond are earned as normal.', on: 'On', off: 'Off' },
+  gentle: { name: 'Gentle Light', line: 'The Hollow bites softer tonight. Your dawn still counts; the stars wait for another night.', bullets: ['Foes hit 15% softer', 'Foes move a little slower', 'Hearts come sooner'], rest: 'Stars and best times rest while Gentle Light is on. Gold, shards and Bond are earned as normal.', on: 'On', off: 'Off' },
   longest: 'Longest night',
   headline: { normal: 'The Hollow as you first met it', hard: 'The Hollow presses closer', expert: 'The longest dark' },
   same: { normal: 'Foes, the Elder Treant and hearts as you know them', glassNone: 'No Dawnglass on Twilight' },

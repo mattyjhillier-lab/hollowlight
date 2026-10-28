@@ -285,3 +285,7 @@ every power state; harder nights last (tier-only knobs cannot disturb Twilight).
 | wren | Orbit | full | Long Night | 25 | random | 96 | **15** (9-23) | 0 | 4 / 42 / 33 / 6 | 9:48 (7:40-13:32) | 21 | 70 | 7 | 286 s (555) | 6:32 (66%) |
 | wren | Ravens | full | Long Night | 25 | random | 96 | **32** (24-42) | 0 | 0 / 20 / 40 / 8 | 11:32 (8:35-18:15) | 41 | 79 | 12 | 156 s (316) | 7:33 (76%) |
 | wren | Bolts | full | Long Night | 25 | random | 96 | **30** (22-40) | 0 | 1 / 21 / 42 / 6 | 11:30 (8:16-13:57) | 36 | 83 | 9 | 157 s (326) | 7:05 (78%) |
+
+## RT6-RT8 overnight (2026-10-28)
+See docs/LOCKED.md rows 'RT6 Long Night', 'RT7 Gentle Light', 'RT7 Endless Dusk', 'RT8 reconciliation'; data docs/design/rt6-data/.
+scripts/rt-matrix.mjs gained RT_ASSIST=1 / RT_ENDLESS=1 (bot field random-assist / random-endless; endless lines carry `dark`).

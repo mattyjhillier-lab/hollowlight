@@ -8,6 +8,7 @@
 //   1 fresh Twilight FOCUS (focusSeeds) | 2 Long Night maxed (full, Bond 25) random (headSeeds)
 //   3 context (otherSeeds): Twilight full Bond 0 and none Bond 25; Deep Dusk none/half/full Bond 0 + full Bond 25; Long Night half/full Bond 0.
 //   CELLS=<regex> limits the cells (matched against the cell key).
+//   RT_ASSIST=1 (Gentle Light) / RT_ENDLESS=1 (stay in the dark after a dawn): bot field becomes random-assist / random-endless; endless lines add dark (s past dawn).
 import { Worker, isMainThread, workerData, parentPort } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { readFileSync, existsSync, appendFileSync } from 'node:fs';
@@ -35,18 +36,19 @@ if (!isMainThread) {
     return aggregateMods(t, def, data, { tier: tierIndex(tier) });
   };
   for (const j of workerData.jobs) {
-    const r = playRun(j.hero, j.seed, { weapon: j.weapon, tree: treeFor(j.tree, j.weapon, j.tier), bond: j.bond, endless: false, assist: false });
-    parentPort.postMessage({ key: j.key, seed: j.seed, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, bossKill: r.marks.bossKill ?? null, minis: r.minis, w: r.weaponIds.length, kills: r.kills, gold: r.gold });
+    const r = playRun(j.hero, j.seed, { weapon: j.weapon, tree: treeFor(j.tree, j.weapon, j.tier), bond: j.bond, endless: !!workerData.endless, assist: !!workerData.assist });
+    parentPort.postMessage({ key: j.key, seed: j.seed, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, bossKill: r.marks.bossKill ?? null, minis: r.minis, w: r.weaponIds.length, kills: r.kills, gold: r.gold, ...(workerData.endless ? { win: !!r.endless || r.outcome === 'victory', dark: r.endless ? Math.round(r.endless.dark) : null } : {}) });
   }
 } else {
   const out = process.argv[2] || 'rt-matrix.jsonl';
   const HEAD = Number(process.argv[3] || 96), OTHER = Number(process.argv[4] || 24), NW = Number(process.argv[5] || 10), FOC = Number(process.argv[6] || 48);
+  const AS = process.env.RT_ASSIST === '1', EN = process.env.RT_ENDLESS === '1', EXTRA = AS ? '-assist' : EN ? '-endless' : '';
   const only = process.env.CELLS ? new RegExp(process.env.CELLS) : null;
   const done = new Set();
   if (existsSync(out)) for (const l of readFileSync(out, 'utf8').split('\n')) if (l) { const o = JSON.parse(l); done.add(`${o.key}#${o.seed}`); }
   const groups = new Map(); // tier|focus -> jobs
   const add = (hero, weapon, tree, tier, bond, focus, n, pri) => {
-    const key = `${hero}|${weapon}|${tree}|${tier}|b${bond}|${focus ? 'focus' : 'random'}`;
+    const key = `${hero}|${weapon}|${tree}|${tier}|b${bond}|${focus ? 'focus' : 'random'}${EXTRA}`;
     if (only && !only.test(key)) return;
     for (let seed = 1; seed <= n; seed++) if (!done.has(`${key}#${seed}`)) {
       const g = `${pri}|${tier}|${focus ? 1 : 0}`; if (!groups.has(g)) groups.set(g, []);
@@ -75,7 +77,7 @@ if (!isMainThread) {
     while (next < chunks.length) {
       const c = chunks[next++];
       await new Promise((res, rej) => {
-        const w = new Worker(fileURLToPath(import.meta.url), { workerData: { jobs: c.jobs }, env: { ...process.env, TIER: c.tier, FOCUS: c.focus, GATES: 'starter', BLESS: 'on', META: 'none', BOND: '0', ENDLESS: '0', ASSIST: '0' } });
+        const w = new Worker(fileURLToPath(import.meta.url), { workerData: { jobs: c.jobs, assist: AS, endless: EN }, env: { ...process.env, TIER: c.tier, FOCUS: c.focus, GATES: 'starter', BLESS: 'on', META: 'none', BOND: '0', ENDLESS: '0', ASSIST: '0' } });
         w.on('message', (m) => { appendFileSync(out, JSON.stringify(m) + '\n'); if (++n % 200 === 0) console.error(`${n}/${total} ${((Date.now() - t0) / 60000).toFixed(1)} min`); });
         w.on('error', rej); w.on('exit', res);
       });
