@@ -153,3 +153,5 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 .overlay.u4 .u4-about__list { margin: 0; padding-left: 1.2em; }
 .overlay.u4 .u4-about__list li { font: var(--fw-body) var(--fs-small)/1.4 var(--font-body); color: var(--lg-dim); margin: .15em 0; }
 .overlay.u4 .u4-about .u4-note { margin: .5em 0; }
+/* final QA: at 375-420 px portrait 'Picture' / 'Controls' touched their pill rims; a little less tracking and side padding gives them air */
+@media (max-width: 420px) { .overlay.u4 .u4-body .lg-tabs { gap: 4px; } .overlay.u4 .u4-body .lg-tab { padding: .1em .2em; font-size: 14px; letter-spacing: 0; } }
