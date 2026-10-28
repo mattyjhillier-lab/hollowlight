@@ -204,3 +204,14 @@ Audio stings join the AU pipeline (code-made, no downloads).
 1. Rest site: 1A Grey Well (rec) / 1B Lamp Posts / 1C Stand of Memory.
 2. Route site: 2A Lantern Road (rec) / 2B Lost Reliquary / 2C Wandering Wisp.
 3. Risk site: 3A Hollow Knot (rec) / 3B Hungry Lantern / 3C Grey Circle.
+
+## 13. As built (2026-10-28, wip/ev-build; see LOCKED 'LAMP POSTS ADAPTATION' and 'MAP EVENTS E0-E5 BUILT')
+| Item | Built |
+|---|---|
+| Rest | Lamp Posts (Matt's pick): 12 lamps, groups 0:40 near / 4:20 mid / 10:20 far, 2 XP + 1 gold + 1 heart per group, glyph badge before you commit, instant light. Budget = the wells' (1.5 L, 45 gold, 65% heal). |
+| Route | Lantern Road as section 3 2A; road 1 wakes 2:10 (2:40 broke the +-15 s swarm rule); road 2 picked at wake (3 candidates, closest to 1100 u from the hero). |
+| Risk | Hollow Knot as 3A; far knot picked at wake like road 2; the knot is a pinned target in sim.enemies (vanish: no kill / gem / drop), not an enemies.json type. |
+| Timeline | 0:40 lamps, 2:10 road 1, 4:20 lamps, 5:30 knot 1, 8:00 road 2, 9:20 knot 2, 10:20 lamps; 13:30 sleep. All checked by tests/sites.test.mjs. |
+| Code | src/sim/sites.js, src/gfx/siteview.js, src/ui/sitecopy.js, scripts/sitebot.mjs, scripts/ev-shots.mjs, tests/sites.test.mjs. |
+| Deferred | Almanac page + sitesRestored leaf + lifetime counts (Almanac agent owns codex/tree), Lantern Compass (node gone from the tree on dev), minimap (post-launch per section 5). |
+| Bot | calm = goes to a site within 900 u only when the area is swept (< 12 loose gems within 300 u) or the site is within 350 u; skips while a Branch-Mane is out; runs a started road at weight 1.5; knot: holds 130 u, steps out of the pulse tell. Travel is costly for the bot (gems left behind): an always-go bot (greedy) loses ~2 levels by 6:00. |
