@@ -1,0 +1,2 @@
+/* A1 save safety: the title-screen backup reminder reuses the install card's look (.u3 .pwa-card in title.css); only its width slot is set here. */
+.overlay.u3 .a1-nudge { width: min(100%, 400px); box-sizing: border-box; }

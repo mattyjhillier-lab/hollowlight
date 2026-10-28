@@ -19,9 +19,10 @@ app.pwa = createPwa(window);
 app.ui.pwa = app.pwa;
 if (import.meta.env.PROD) app.pwa.registerServiceWorker(); // never in vite dev
 // FD1: one save per lantern (profile); the first boot copies the legacy single save into lantern 1.
-app.lanterns = new Lanterns().init();
-app.save = app.lanterns.openActive();
-app.save.load();
+try { app.lanterns = new Lanterns().init(); app.save = app.lanterns.openActive(); } catch { // A1: storage that misbehaves never stops the boot (memory-only session)
+  app.lanterns = new Lanterns(null).init(); app.save = app.lanterns.openActive();
+}
+app.save.load(); // never throws (A1): a damaged save falls back to a fresh one and keeps a bounded copy
 if (app.lanterns.note && !app.save.loadNote) app.save.loadNote = app.lanterns.note;
 app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
 app.audio = createAudio(window, document, { onMute: (m) => { app.save.setSettings({ muted: m }); app.applySettings(); if (app.sim && app.ui.toast) app.ui.toast(m ? 'Sound off (M)' : 'Sound on'); } });

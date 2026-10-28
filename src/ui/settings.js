@@ -3,6 +3,7 @@
 import { el, kitRoot, panel, button, toggle, tabs, slider } from './kit.js';
 import { SET } from './u4copy.js';
 import { ABOUT } from './aboutcopy.js';
+import { SAFE, downloadText } from './savesafety.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 let sid = 0;
@@ -173,7 +174,11 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     clearTimeout(armTimer); armed = false; l.textContent = SET.reset.label;
     ask(SET.confirmReset.text, SET.confirmReset.yes, () => { api.resetSave(); onRebuild(SET.msg.reset, 'saves'); }, bRes);
   } });
-  const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null);
+  // A1: the kept copy of an unreadable save can be downloaded (it may be repairable); the backup reminder can be switched off (device setting).
+  const dmg = api.damagedText ? api.damagedText() : null;
+  const bDmg = dmg ? button({ label: SAFE.damaged.label, whisper: SAFE.damaged.whisper, variant: 'quiet', onClick: () => { say(downloadText(dmg, SAFE.damagedFile, 'text/plain') ? SAFE.damagedDone : SET.msg.exportFail, false); } }) : null;
+  const nudgeT = wickToggle({ ...SAFE.reminder, checked: st.backupNudge !== false, onChange: (v) => set({ backupNudge: v === true }) });
+  const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes, bDmg), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null, nudgeT);
 
   // ---- About: blurb, how to play, credits, version, maker, feedback, AI-use note (textContent only) ----
   const ver = typeof __APP_VERSION__ !== 'undefined' ? String(__APP_VERSION__).slice(0, 24) : 'dev';
@@ -195,7 +200,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   const body = add(el('div', 'u4-body'), tl, add(el('div', 'u4-panes'), sound, picture, controls, saves, about), add(el('div', 'u4-foot'), back));
   add(root, panel({ title: SET.title, whisper: SET.whisper, body: [body] }));
   return {
-    root, tabs: tl, back, panes, say, msg, confirmBox, file, buttons: { export: bExp, import: bImp, reset: bRes }, select: (id) => tl.select(id),
+    root, tabs: tl, back, panes, say, msg, confirmBox, file, buttons: { export: bExp, import: bImp, reset: bRes, damaged: bDmg, nudge: nudgeT }, select: (id) => tl.select(id),
     focusFirst: () => { const t = [...tl.children].find((b) => b.getAttribute('aria-selected') === 'true'); if (t) t.focus(); },
   };
 }

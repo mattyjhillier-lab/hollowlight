@@ -1,5 +1,5 @@
 // Save manager: localStorage with in-memory fallback, rolling backup, debounced writes.
-import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS } from './schema.js';
+import { defaultSave, parseSave, sanitize, serializeSave, treeReady, RECENT_RUNS, MAX_SAVE_BYTES } from './schema.js';
 import { metConditions } from '../meta/tree.js';
 import { recordTierRun } from './tiers.js';
 import { bankChars } from './chars.js';
@@ -10,6 +10,9 @@ export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
 export const DAMAGED_KEY = 'hollowlight:save:damaged'; // one slot: the last damaged main save, never written by saveNow
 export const NEWER_NOTE = 'This save is from a newer version of Wispwick: it is kept safe and untouched. Update the game to continue. Nothing is saved in this session; Settings > Export save still gives you the file.';
+export const DAMAGED_MAX = MAX_SAVE_BYTES + 8 * 1024; // A1: the kept damaged copy is bounded (an oversized blob keeps its first part only)
+export const DAMAGED_NOTE = 'Your save could not be read, so a fresh one was started. Nothing was thrown away: a copy of the damaged file was kept in this browser. Settings > Saves can download it, and Import brings back a backup file.';
+export const RESTORED_NOTE = 'Your save could not be read, so the last good copy was loaded instead. A copy of the damaged file was kept in this browser: Settings > Saves can download it.';
 const DEBOUNCE_MS = 400;
 
 function defaultStorage() {
@@ -36,7 +39,16 @@ export class SaveStore {
   _get(key) { try { return this.storage ? this.storage.getItem(key) : null; } catch { this.persistent = false; return null; } }
   _set(key, val) { try { if (!this.storage) throw new Error('none'); this.storage.setItem(key, val); return true; } catch { this.persistent = false; return false; } }
 
+  // A1: never throws. Anything unexpected (a storage that misbehaves, a hostile shape) falls back to a fresh in-memory state.
   load() {
+    try { return this._load(); } catch {
+      this.data = defaultSave(); this.stamp = this.data.updatedAt;
+      this.loadNote = DAMAGED_NOTE;
+      return this.data;
+    }
+  }
+
+  _load() {
     let res = null;
     const main = this._get(this.keys.save);
     const bak = this._get(this.keys.backup);
@@ -46,8 +58,8 @@ export class SaveStore {
     else if (rm && !rm.ok) {
       this._quarantine(main);
       if (rb && rb.code === 'future') this._lock(bak);
-      else if (rb && rb.ok) { res = rb; this.loadNote = 'Save was damaged; restored from backup. A copy of the damaged file was kept in this browser.'; }
-      else { this.loadNote = 'Save was damaged; started fresh. A copy of the damaged file was kept in this browser: Settings > Export save gives it to you.'; this.keptRaw = main; }
+      else if (rb && rb.ok) { res = rb; this.loadNote = RESTORED_NOTE; }
+      else { this.loadNote = DAMAGED_NOTE; this.keptRaw = main.length > DAMAGED_MAX ? main.slice(0, DAMAGED_MAX) : main; }
     } else if (rm) res = rm;
     else if (rb && rb.code === 'future') this._lock(bak);
     else if (rb && rb.ok) res = rb;
@@ -64,7 +76,20 @@ export class SaveStore {
     this.loadNote = NEWER_NOTE;
   }
 
-  _quarantine(text) { if (text !== this._get(this.keys.damaged)) this._set(this.keys.damaged, text); }
+  _quarantine(text) {
+    const t = typeof text === 'string' ? (text.length > DAMAGED_MAX ? text.slice(0, DAMAGED_MAX) : text) : '';
+    if (t !== this._get(this.keys.damaged)) { const p = this.persistent; this._set(this.keys.damaged, t); this.persistent = p; } // a full storage must not mark the whole session unsaved
+  }
+
+  // A1: the kept copy of the last unreadable save (bounded), or null. Offered as a download in Settings > Saves.
+  damagedText() { const t = this._get(this.keys.damaged); return typeof t === 'string' && t.length && t.length <= DAMAGED_MAX ? t : null; }
+
+  // A1 backup reminder: an export (or 'Not now') restarts the count (stats.runs + time; src/save/nudge.js).
+  markBackup(now = Date.now()) {
+    if (this.readOnly) return;
+    this.data.notes = sanitize({ ...this.data, notes: { ...this.data.notes, backup: { r: this.data.stats.runs, t: now } } }).notes;
+    this.saveSoon();
+  }
 
   // Immediate write; keeps the previous good copy as the backup.
   // Refuses (returns false, writes nothing) when the stored save is from a newer version, when another tab saved newer

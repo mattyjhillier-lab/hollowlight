@@ -44,7 +44,7 @@ test('settings: every previous setting is present, grouped in five tabs (About a
   assert.deepEqual(find(s.root, (n) => n.attrs.role === 'tab').map((n) => n.attrs['data-id']), ['sound', 'picture', 'controls', 'saves', 'about']);
   assert.equal(find(s.root, (n) => n.tag === 'select' || (n.tag === 'input' && n.attrs.type === 'checkbox')).length, 0, 'no native selects/checkboxes');
   assert.equal(find(s.root, (n) => n.attrs.type === 'range').length, 3); // AU0: Master + Music + Sound effects
-  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 7); // AU0: + Mute all; FM1 Tips + FM5 Vibration; EXTRAS v1 Gentle Light
+  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 8); // AU0: + Mute all; FM1 Tips + FM5 Vibration; EXTRAS v1 Gentle Light; A1 Backup reminder
   assert.equal(find(s.root, (n) => n.attrs.role === 'radiogroup').length, 4);
   for (const k of ['musicVol', 'sfxVol', 'quality', 'brightness', 'screenShake', 'reducedMotion', 'damageNumbers', 'touchMode', 'stickSize']) assert.ok(k in defaults);
   for (const g of find(s.root, (n) => n.attrs.role === 'radiogroup')) assert.ok(g.attrs['aria-describedby'] && g.attrs['aria-labelledby']);

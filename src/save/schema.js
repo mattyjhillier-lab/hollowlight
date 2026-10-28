@@ -29,7 +29,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHe
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -166,6 +166,8 @@ function notesOf(o) {
     const seen = Array.isArray(n.seen) ? [...new Set(n.seen.slice(0, 8).filter(tOk))] : [];
     out.night = { map: chOk(n.map) ? n.map : null, tier: tOk(n.tier) ? n.tier : null, seen };
   }
+  // A1 backup reminder: stats.runs and time at the last export / 'Not now' (src/save/nudge.js). Clamped ints only.
+  if (isObj(o) && isObj(o.backup)) out.backup = { r: int(o.backup.r, 0, 0, 1e9), t: int(o.backup.t, 0, 0, 1e14) };
   // CHARACTER SYSTEM v2: the starter pick and the last loadout (known hero + weapon ids only; anything else is dropped)
   if (isObj(o) && TREE_DATA) { const st = cleanPick(o.starter, TREE_DATA); if (st) out.starter = st; const lo = cleanPick(o.loadout, TREE_DATA); if (lo) out.loadout = lo; }
   return out;
@@ -266,6 +268,7 @@ export function sanitize(raw, now = Date.now()) {
       autoRule: AUTO_RULE_NAMES.includes(st.autoRule) ? st.autoRule : ds.autoRule,
       tips: bool(st.tips, ds.tips), // FM1 Settings > Controls 'Tips'
       vibration: bool(st.vibration, ds.vibration),
+      backupNudge: bool(st.backupNudge, ds.backupNudge), // A1 'export a backup' reminder on the title screen (device setting)
       gentleLight: bool(st.gentleLight, ds.gentleLight), // EXTRAS v1 Gentle Light (Twilight assist; read only when a Twilight run starts) // FM5 phone buzz (device setting; never used under Calm or a hidden tab)
     },
   };
@@ -309,5 +312,5 @@ export function parseSave(text) {
       }
     }
   } catch { return { ok: false, code: 'migrate', error: 'Save could not be upgraded.' }; }
-  return { ok: true, save: sanitize(cur) };
+  try { return { ok: true, save: sanitize(cur) }; } catch { return { ok: false, code: 'shape', error: 'Save file has the wrong format.' }; } // A1: a hostile shape never crashes the boot
 }
