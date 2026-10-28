@@ -1,5 +1,5 @@
 # Wordmark v1: three takes (checklist item 18)
-Mock-up: docs/mockups/wordmark/index.html (?take=a|b|c). Screenshots: docs/screenshots/wordmark/ (take-a/b/c, overview). All code-drawn SVG; subtitle uses system-safe Trebuchet/Segoe UI, no fonts or assets downloaded. Nothing in src/ changed.
+Mock-up: docs/mockups/wordmark/index.html (?take=a|b|c). Screenshots: docs/screenshots/wordmark/ (take-a, take-b, take-c). All code-drawn SVG; subtitle uses system-safe Trebuchet/Segoe UI, no fonts or assets downloaded. Nothing in src/ changed.
 
 | | A. Brass Lantern (RECOMMENDED) | B. Hollow Blue, Two Lit Lanterns | C. Spirit Trail |
 |---|---|---|---|
