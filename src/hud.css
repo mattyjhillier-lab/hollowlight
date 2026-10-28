@@ -92,7 +92,7 @@
   .h-knot { left: 194px; top: 14px; width: 32px; height: 32px; } .h-knotnum { font-size: 16px; }
   .h-strip { left: calc(var(--ml) + 2px); top: calc(var(--mt) + 68px); bottom: auto; gap: 6px; }
   .h-tile { width: 32px; height: 32px; border-radius: 9px; } .h-tile svg { width: 32px; height: 32px; left: -2px; top: -2px; }
-  .h-moon { width: 150px; top: calc(var(--mt) - 17px); }
+  .h-moon { width: 150px; top: max(0px, calc(var(--mt) - 17px)); } /* final QA: on phones (no letterbox) the arc started 7 px above the screen */
   .h-timeplate { left: 19px; top: 41px; width: 112px; height: 32px; } .h-timetxt { font-size: 22px; }
   .h-boss { top: calc(var(--mt) + 66px); width: 300px; } .h-bossname { font-size: 17px; } .h-bbar { height: 14px; }
   .h-coin { right: calc(var(--mr) + 56px); top: calc(var(--mt) + 10px); width: 112px; height: 34px; } .h-goldnum { font-size: 18px; } .h-coinicon { width: 21px; height: 21px; }
