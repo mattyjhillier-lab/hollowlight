@@ -194,6 +194,7 @@ export function buildNightSelect({ view, viewFor, purses = null, onBegin, onBack
     const i = ids.indexOf(v.sel);
     if (k === 'Escape') { e.preventDefault(); if (onBack) onBack(); return true; }
     if (k === 't' || k === 'T') { e.preventDefault(); if (onTree) onTree(v.side.gate ? v.side.gate.id : null); return true; }
+    if (k === 'PageUp' || k === 'PageDown') { e.preventDefault(); pick(ids[(i + (k === 'PageDown' ? 1 : ids.length - 1)) % ids.length], true); return true; } // LB / RB
     if (/^[1-9]$/.test(k)) { const j = Number(k) - 1; if (j < ids.length) { e.preventDefault(); pick(ids[j], true); return true; } return false; }
     if (!onBtn && (k === 'ArrowRight' || k === 'ArrowDown' || k === 'd' || k === 'D' || k === 's' || k === 'S')) { e.preventDefault(); pick(ids[(i + 1) % ids.length], true); return true; }
     if (!onBtn && (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'a' || k === 'A' || k === 'w' || k === 'W')) { e.preventDefault(); pick(ids[(i + ids.length - 1) % ids.length], true); return true; }

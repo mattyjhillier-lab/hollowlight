@@ -29,6 +29,7 @@ import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
 import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
 import { DARK } from './ui/darkui.js';
+import { createPad } from './ui/padmap.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 validateCosmTree(treeDef, data.cosmetics); // EXTRAS v1: every Wardrobe lantern names a real cosmetic and nothing else (throws at boot)
@@ -472,9 +473,35 @@ export const app = {
     return { ok: true };
   },
 
+  // FD6 controller stub: while no run is being played (menus, pause, level-up, results) a pad drives the screens like the keyboard. Never moves the hero.
+  padTick(sim, dt) {
+    const nav = globalThis.navigator;
+    if (!nav || !nav.getGamepads) return;
+    const playing = !!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen;
+    const pad = this.pad || (this.pad = createPad());
+    if (playing) { pad.reset(); return; }
+    let pads; try { pads = Array.from(nav.getGamepads() || []); } catch { return; }
+    for (const key of pad.step(pads, dt)) this.padKey(key);
+  },
+  padKey(key) {
+    const doc = globalThis.document;
+    if (!doc) return;
+    const a = doc.activeElement;
+    if (key === 'Enter' && a && a.classList && a.classList.contains('lg-btn') && a.click) { this.setInput('kb'); a.click(); return; } // a synthetic Enter does not press a focused button
+    const ev = new globalThis.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    globalThis.dispatchEvent(ev);
+    if (!ev.defaultPrevented && key.startsWith('Arrow')) { // a screen with no arrow handling: walk its buttons
+      const list = Array.from(doc.querySelectorAll('.lg-btn')).filter((b) => b.offsetParent !== null && !b.disabled);
+      if (!list.length) return;
+      const i = list.indexOf(a), fwd = key === 'ArrowDown' || key === 'ArrowRight';
+      list[i < 0 ? 0 : (i + (fwd ? 1 : list.length - 1)) % list.length].focus();
+    }
+  },
+
   // Called every rendered frame by the scene.
   frame(dt) {
     const sim = this.sim;
+    this.padTick(sim, dt);
     if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
     if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
