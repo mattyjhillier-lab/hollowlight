@@ -26,6 +26,7 @@ export const SET = {
     { id: 'picture', label: 'Picture' },
     { id: 'controls', label: 'Controls' },
     { id: 'saves', label: 'Saves' },
+    { id: 'about', label: 'About' },
   ],
   tabsLabel: 'Settings sections',
   masterVol: { label: 'Master', help: 'How loud the whole game is.' },

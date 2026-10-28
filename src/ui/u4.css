@@ -145,3 +145,11 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 .overlay.u4.u4-settingsscreen .lg-panel__body, .overlay.u4.u4-settingsscreen .u4-body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .overlay.u4.u4-settingsscreen .u4-panes { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c79a4c transparent; padding-right: 4px; }
 .overlay.u4.u4-settingsscreen .u4-foot { flex: none; }
+
+/* About tab */
+.overlay.u4 .u4-about { display: block; }
+.overlay.u4 .u4-about > * { grid-column: 1 / -1; }
+.overlay.u4 .u4-about__h { font: var(--fw-display, 400) 1.25em/1.2 var(--font-display); color: var(--lg-brass-text, #ffd36b); margin: .9em 0 .2em; }
+.overlay.u4 .u4-about__list { margin: 0; padding-left: 1.2em; }
+.overlay.u4 .u4-about__list li { font: var(--fw-body) var(--fs-small)/1.4 var(--font-body); color: var(--lg-dim); margin: .15em 0; }
+.overlay.u4 .u4-about .u4-note { margin: .5em 0; }

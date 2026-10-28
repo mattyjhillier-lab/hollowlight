@@ -16,3 +16,6 @@ Recommendation: A (fastest, most legible at 32/120px, already consistent with th
 
 Decision for Matt: pick A/B/C; then build chunk = swap kit.js wordmark(), regenerate icons (public/*.png/svg) and share image, tests/screenshots.
 Security: no deps, no assets, no user input.
+
+## Update 2026-10-28: relettered for WISPWICK (name locked)
+Option A style kept (chunky brass, tinted outline, rim light, thread underline). WISPWICK has no O, so the lantern mark moved: a small brass lantern now hangs from the thread under the word. Both Is are candles; the first has a small detached wisp floating off its flame, the second has a wick curl. New skeletons S, P, C, K in src/ui/kit.js `wordmark()`. Subtitle 'Spirits of the Dusk' unchanged. Screenshots: docs/screenshots/brand/. Fit: same family as the lantern UI kit; one glow idea (flames). Taste call (candle-Is vs other motif) is Matt's at review.

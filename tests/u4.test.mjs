@@ -36,12 +36,12 @@ function api(log) {
 }
 const mkSettings = (over = {}) => { const log = []; const s = buildSettings({ settings: defaults, api: api(log), onBack: () => log.push(['back']), onRebuild: (m, t) => log.push(['rebuild', m, t]), ...over }); return { s, log }; };
 
-test('settings: every previous setting is present, grouped in four tabs, each with a plain description', () => {
+test('settings: every previous setting is present, grouped in five tabs (About added), each with a plain description', () => {
   const { s } = mkSettings();
   const t = texts(s.root);
   for (const w of ['Settings', 'Sound', 'Picture', 'Controls', 'Saves', 'Master', 'Mute all', 'Music', 'Sound effects', 'Picture quality', 'Brightness', 'Screen shake', 'Calm motion', 'Damage numbers', 'Touch controls', 'Joystick size',
     'Export save', 'Import save', 'Reset save', 'Back']) assert.ok(t.includes(w), w);
-  assert.deepEqual(find(s.root, (n) => n.attrs.role === 'tab').map((n) => n.attrs['data-id']), ['sound', 'picture', 'controls', 'saves']);
+  assert.deepEqual(find(s.root, (n) => n.attrs.role === 'tab').map((n) => n.attrs['data-id']), ['sound', 'picture', 'controls', 'saves', 'about']);
   assert.equal(find(s.root, (n) => n.tag === 'select' || (n.tag === 'input' && n.attrs.type === 'checkbox')).length, 0, 'no native selects/checkboxes');
   assert.equal(find(s.root, (n) => n.attrs.type === 'range').length, 3); // AU0: Master + Music + Sound effects
   assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 7); // AU0: + Mute all; FM1 Tips + FM5 Vibration; EXTRAS v1 Gentle Light
@@ -54,14 +54,14 @@ test('settings: every previous setting is present, grouped in four tabs, each wi
 
 test('settings tabs: roving tabindex, arrows switch, only one pane visible, panes labelled by their tab', () => {
   const { s } = mkSettings();
-  assert.deepEqual(Object.entries(s.panes).map(([k, p]) => [k, !!p.hidden]), [['sound', false], ['picture', true], ['controls', true], ['saves', true]]);
+  assert.deepEqual(Object.entries(s.panes).map(([k, p]) => [k, !!p.hidden]), [['sound', false], ['picture', true], ['controls', true], ['saves', true], ['about', true]]);
   const tabs = find(s.root, (n) => n.attrs.role === 'tab');
-  assert.deepEqual(tabs.map((x) => x.attrs.tabindex), ['0', '-1', '-1', '-1']);
+  assert.deepEqual(tabs.map((x) => x.attrs.tabindex), ['0', '-1', '-1', '-1', '-1']);
   tabs[0].fire('keydown', key('ArrowRight'));
   assert.equal(s.panes.picture.hidden, false);
   assert.equal(s.panes.sound.hidden, true);
   tabs[1].fire('keydown', key('End'));
-  assert.equal(s.panes.saves.hidden, false);
+  assert.equal(s.panes.about.hidden, false);
   for (const [k, p] of Object.entries(s.panes)) { assert.equal(p.attrs.role, 'tabpanel'); assert.equal(p.attrs['aria-labelledby'], `u4-tab-${k}`); }
   assert.equal(mkSettings({ tab: 'saves' }).s.panes.saves.hidden, false);
   assert.equal(mkSettings({ tab: '<script>' }).s.panes.sound.hidden, false, 'unknown tab falls back to Sound');
@@ -242,4 +242,12 @@ test('FM1/FM5 settings: Tips and Vibration switches (on by default) set their ke
   assert.ok(texts(s.root).includes('Tips will show again on your next run.'));
   const none = buildSettings({ settings: defaults, api: api([]), onBack() {}, onRebuild() {} });
   assert.equal(find(none.root, (n) => n.tag === 'button' && texts(n).includes('Show tips again')).length, 0, 'no handler: no button');
+});
+
+test('About tab: blurb, how to play, credits, version, maker, feedback TODO and AI disclosure draft, all as plain text', async () => {
+  const { s } = mkSettings({ tab: 'about' });
+  const t = texts(s.panes.about);
+  const { ABOUT } = await import('../src/ui/aboutcopy.js');
+  for (const w of [ABOUT.blurb, ABOUT.howTitle, ABOUT.how[0], ABOUT.creditsTitle, 'Phaser 3', 'Fondamento', 'Alegreya Sans', 'Made by Matt Hillier', 'Version', 'TODO Matt', 'Draft for Matt to edit']) assert.ok(t.includes(w), w);
+  assert.equal(s.panes.about.hidden, false);
 });

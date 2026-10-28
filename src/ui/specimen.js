@@ -29,14 +29,14 @@ export function mountSpecimen(root) {
   applyCssPalette(document.documentElement);
   const st = el('style', null, STYLE);
   document.head.appendChild(st);
-  document.title = 'Hollowlight type specimen';
+  document.title = 'Wispwick type specimen';
   const page = el('div', null, null, { id: 'specimen' });
   const wrap = el('div', 'wrap');
   page.appendChild(wrap);
 
   const head = el('div', 'head pane');
   head.append(el('div', 'ty-kicker dim', 'Chapter 1 - The Cursed Forest', { 'data-size': '' }),
-    el('div', 'ty-wordmark', 'Hollowlight', { 'data-size': '' }),
+    el('div', 'ty-wordmark', 'Wispwick', { 'data-size': '' }),
     el('div', 'ty-whisper dim', 'Spirits of the Dusk', { 'data-size': '' }));
   wrap.appendChild(head);
 

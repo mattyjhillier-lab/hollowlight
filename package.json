@@ -1,6 +1,7 @@
 {
-  "name": "hollowlight",
+  "name": "wispwick",
   "version": "0.4.0",
+  "description": "Wispwick: Spirits of the Dusk. A summoner survivors-like.",
   "private": true,
   "type": "module",
   "scripts": {

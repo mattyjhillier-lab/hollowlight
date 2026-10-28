@@ -295,7 +295,7 @@ test('H1 newer-version save: read-only session, message, export gives the kept f
   mem.setItem(SAVE_KEY, v4); mem.setItem(BACKUP_KEY, v4);
   const s = new SaveStore(mem); s.load();
   assert.equal(s.readOnly, true);
-  assert.match(s.loadNote, /newer version of Hollowlight/);
+  assert.match(s.loadNote, /newer version of Wispwick/);
   assert.equal(s.saveNow(), false);
   s.setSettings({ musicVol: 0.1 }); s.flush();
   assert.equal(s.reset(), false);

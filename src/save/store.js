@@ -9,7 +9,7 @@ import { cleanCodex, cleanTitles } from '../meta/codex.js';
 export const SAVE_KEY = 'hollowlight:save';
 export const BACKUP_KEY = 'hollowlight:save:backup';
 export const DAMAGED_KEY = 'hollowlight:save:damaged'; // one slot: the last damaged main save, never written by saveNow
-export const NEWER_NOTE = 'This save is from a newer version of Hollowlight: it is kept safe and untouched. Update the game to continue. Nothing is saved in this session; Settings > Export save still gives you the file.';
+export const NEWER_NOTE = 'This save is from a newer version of Wispwick: it is kept safe and untouched. Update the game to continue. Nothing is saved in this session; Settings > Export save still gives you the file.';
 const DEBOUNCE_MS = 400;
 
 function defaultStorage() {

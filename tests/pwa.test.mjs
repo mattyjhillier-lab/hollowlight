@@ -93,8 +93,8 @@ test('fullscreen: feature detection and enter/exit with a fake document', async 
 const manifest = JSON.parse(readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
 test('manifest: required fields, relative paths, icons exist, maskable present', () => {
   for (const k of ['id', 'name', 'short_name', 'start_url', 'scope', 'display', 'orientation', 'background_color', 'theme_color', 'icons']) assert.ok(manifest[k], k);
-  assert.equal(manifest.name, 'Hollowlight: Spirits of the Dusk');
-  assert.equal(manifest.short_name, 'Hollowlight');
+  assert.equal(manifest.name, 'Wispwick: Spirits of the Dusk');
+  assert.equal(manifest.short_name, 'Wispwick');
   assert.equal(manifest.display, 'fullscreen');
   assert.deepEqual(manifest.display_override, ['fullscreen', 'standalone', 'minimal-ui']);
   assert.ok(manifest.categories.includes('games'));

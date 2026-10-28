@@ -208,12 +208,12 @@ test('U2 entry: ?kit=1 is a dev switch that does not import the game', () => {
   assert.ok(!/localStorage|save\//.test(pageJs + kitJs), 'no save access');
 });
 
-test('U2b wordmark: accessible name Hollowlight, svg built with createElementNS (no markup strings), inner shapes decorative', () => {
+test('U2b wordmark: accessible name Wispwick, svg built with createElementNS (no markup strings), inner shapes decorative', () => {
   const w = K.wordmark();
   assert.equal(w.ns, 'http://www.w3.org/2000/svg'); assert.equal(w.tag, 'svg');
-  assert.equal(w.getAttribute('role'), 'img'); assert.equal(w.getAttribute('aria-label'), 'Hollowlight');
+  assert.equal(w.getAttribute('role'), 'img'); assert.equal(w.getAttribute('aria-label'), 'Wispwick');
   assert.equal(w.getAttribute('class'), 'lg-wordmark');
-  assert.equal(find(w, (n) => n.tag === 'g' && n.getAttribute('aria-hidden') === 'true').length, 11, 'one decorative group per letter');
+  assert.equal(find(w, (n) => n.tag === 'g' && n.getAttribute('aria-hidden') === 'true').length, 9, 'one decorative group per letter (8) plus the hanging lantern');
   const ids = find(w, (n) => n.getAttribute('id')).map((n) => n.getAttribute('id')); assert.equal(new Set(ids).size, ids.length);
   const w2 = K.wordmark(); const ids2 = find(w2, (n) => n.getAttribute('id')).map((n) => n.getAttribute('id'));
   assert.ok(ids2.every((i) => !ids.includes(i)), 'gradient ids are unique per instance');

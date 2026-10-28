@@ -43,9 +43,9 @@ test('fmt / lastLit / exportFileName are bounded and plain', () => {
   assert.equal(C.lastLit(now - 2 * 864e5, now), '2 days ago');
   assert.equal(C.lastLit(now + 9e9, now), 'today');
   assert.equal(C.lastLit('nope', now), 'never');
-  assert.equal(C.exportFileName("Sam O'Neil"), 'hollowlight-sam-o-neil.json');
-  assert.equal(C.exportFileName(HOSTILE), 'hollowlight-img-src-x-onerror-alert.json');
-  assert.equal(C.exportFileName('../../'), 'hollowlight-lantern.json');
+  assert.equal(C.exportFileName("Sam O'Neil"), 'wispwick-sam-o-neil.json');
+  assert.equal(C.exportFileName(HOSTILE), 'wispwick-img-src-x-onerror-alert.json');
+  assert.equal(C.exportFileName('../../'), 'wispwick-lantern.json');
 });
 
 test('most played hero: only real heroes, hostile counts ignored', () => {
