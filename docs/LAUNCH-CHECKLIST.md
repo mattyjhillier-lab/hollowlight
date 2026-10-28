@@ -35,7 +35,7 @@ Name: Wispwick: Spirits of the Dusk (LOCKED "NAME LOCKED v2", "NAME CONFIRMED" b
 | Claude | CLAUDE.md edits for the new name and state: drafted in docs/design/claude-md-edits.md, waiting for Matt's approval (Claude does not edit CLAUDE.md itself) |
 | Claude | Item 20 accessibility basics (text size, key remap; gamepad is menus-only) and item 21 save safety (corrupt-save recovery, export reminder): status UNVERIFIED here, check and fix before final verification |
 | Claude | Items 6 and 7 follow-ups (weapon roster review, tree sheet) and item 13 game-feel pass: status UNVERIFIED here |
-| Claude | Item 23 FINAL VERIFICATION: full security review + \`npm audit\`, full balance sweep (rt-matrix), visual QA at all sizes, CREDITS + AI disclosure |
+| Claude | Item 23 FINAL VERIFICATION: DONE 2026-10-28 (docs/design/final-verification-v1.md, wip/final): bands hold with map events on, security clean, 5 CSS QA fixes; follow-up = map events render cost (QUEUE) |
 | Claude | At the launch merge only (after Matt's yes): \`node scripts/tree-release.mjs --snapshot\` and commit tests/fixtures/tree-released.json; confirm the src/save/store.js forward-tolerant store is in the release; Dependabot alerts close via dev's lockfile (item 24b, CONTENT-GUIDE section 10) |
 
 Stale rows below carry a bracketed [STALE 2026-10-28] note; nothing was deleted.
