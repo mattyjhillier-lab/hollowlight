@@ -1,6 +1,7 @@
 // HUD-2: the level-up offer screen (design sheet #1, Direction A). Presentation only: all offer logic stays in the Sim.
 // U5: restyled to Lantern Glass, Lit (kit classes lg-card / lg-badge / lg-pips / lg-btn from kit.css; scoped overrides in cards.css). Behaviour is unchanged.
 // DOM is built with createElement + textContent only (no innerHTML, no data in markup). One render per offer; no per-frame work.
+import { actionOf, keyLabel } from '../input/keymap.js';
 import { orderOffer, cardModel, clampText, cardLabel, peekLine } from './cardview.js';
 import { cardIcon } from './cardicons.js';
 
@@ -111,12 +112,12 @@ export class OfferView {
     this.rerollBtn = null;
     this.banishBtn = null;
     if (!start && sim.rerollsLeft > 0) { // a run-start offer cannot be rerolled or banished (T6)
-      this.rerollBtn = this.pill('reroll', 'R', 'Reroll', sim.rerollsLeft);
+      this.rerollBtn = this.pill('reroll', keyLabel('reroll'), 'Reroll', sim.rerollsLeft);
       this.rerollBtn.addEventListener('click', () => this.h.reroll());
       actions.appendChild(this.rerollBtn);
     }
     if (!start && sim.banishesLeft > 0) {
-      this.banishBtn = this.pill('banish', 'B', 'Banish', sim.banishesLeft);
+      this.banishBtn = this.pill('banish', keyLabel('banish'), 'Banish', sim.banishesLeft);
       this.banishBtn.setAttribute('aria-pressed', 'false');
       this.banishBtn.addEventListener('click', () => this.toggleBanish());
       actions.appendChild(this.banishBtn);
@@ -165,10 +166,11 @@ export class OfferView {
     node.setAttribute('role', 'button');
     node.setAttribute('tabindex', '0');
     node.setAttribute('aria-label', cardLabel(m));
-    node.setAttribute('aria-keyshortcuts', String(i + 1));
+    const pickKey = keyLabel(`pick${i + 1}`); // A3: the remapped pick key ('' when the player left it without a key)
+    if (pickKey) node.setAttribute('aria-keyshortcuts', pickKey);
     node.style.setProperty('--i', String(i));
     if (!quiet) { const eye = this.el('span', 'lg-eyelet lu-eyelet'); eye.setAttribute('aria-hidden', 'true'); node.appendChild(eye); }
-    const key = this.el('kbd', 'c-key lg-btn__key lg-card__key', String(i + 1));
+    const key = this.el('kbd', 'c-key lg-btn__key lg-card__key', pickKey);
     key.setAttribute('aria-hidden', 'true');
     node.appendChild(key);
     if (evolve) {
@@ -251,10 +253,11 @@ export class OfferView {
 
   // Keys: 1-N pick (or banish), R reroll, B banish mode, arrows move, Enter picks. Returns true when handled.
   onKey(e) {
-    const n = parseInt(e.key, 10);
+    const act = actionOf(e); // A3: keys from Settings > Controls (defaults 1-6, R, B)
+    const n = act && act.startsWith('pick') ? Number(act.slice(4)) : 0;
     if (n >= 1 && n <= this.cards.length) { e.preventDefault(); this.activate(n - 1); return true; }
-    if (e.key === 'r' || e.key === 'R') { this.h.reroll(); return true; }
-    if (e.key === 'b' || e.key === 'B') { this.toggleBanish(); return true; }
+    if (act === 'reroll') { this.h.reroll(); return true; }
+    if (act === 'banish') { this.toggleBanish(); return true; }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); this.setSel(this.sel - 1, true); return true; }
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); this.setSel(this.sel + 1, true); return true; }
     if (e.key === 'Enter' && !(e.target && e.target.closest && e.target.closest('button'))) { e.preventDefault(); this.activate(this.sel); return true; }

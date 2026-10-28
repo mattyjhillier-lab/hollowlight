@@ -49,6 +49,7 @@ import './whispers.css';
 import { cardModel } from './cardview.js';
 import { buildAlmanac } from './codexui.js';
 import './codex.css';
+import './a11y.css';
 import { buildCelebration } from './celebrateui.js';
 import './celebrate.css';
 
@@ -184,6 +185,7 @@ export class UI {
       bands: fd ? fd.bands : 0,
       onAlmanac: () => this.showAlmanac('title'),
       chars: fd && fd.chars ? fd.chars : null,
+      nudge: h.backupNudge && !(this.pwa && this.pwa.shouldShowCard && this.pwa.shouldShowCard()) && h.backupNudge() ? { onExport: () => (h.exportBackup ? h.exportBackup() : false), onLater: () => { if (h.dismissNudge) h.dismissNudge(); } } : null, // A1: one title card at a time (the install card first)
       onChars: () => this.showCharacters(),
       onBegin: () => this.beginLoadout(),
       onTree: () => h.openTree(),
@@ -470,7 +472,7 @@ export class UI {
     const s = buildSettings({
       settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
       storageNote: h.storageNote ? h.storageNote() : null,
-      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave, hasAutoRule: h.hasAutoRule, resetTips: h.resetTips },
+      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave, hasAutoRule: h.hasAutoRule, resetTips: h.resetTips, damagedText: h.damagedText },
       onBack: () => this.hideSettings(),
       onRebuild: (m, t) => this.showSettings(m, t),
     });
@@ -483,6 +485,7 @@ export class UI {
   hideSettings() {
     if (!this.settingsOpen) return;
     this.settingsOpen = false;
+    if (this.settingsView && this.settingsView.remap) this.settingsView.remap.stop(false); // A3: never leave a key capture listening
     this.settingsView = null;
     this.hide('settings');
     for (const n of ['start', 'hero', 'pause', 'lanterns', 'nights']) if (this.layers[n]) this.layers[n].removeAttribute('inert');

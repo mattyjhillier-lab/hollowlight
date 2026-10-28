@@ -1,5 +1,6 @@
 // Title screen and hero select in the Lantern Glass, Lit look (U3). Pure DOM construction via the kit (createElement + textContent only,
 // never innerHTML), so a hostile hero name, bank value or version string can only ever be text. Node-testable with a fake DOM.
+import { buildNudge } from './savesafety.js';
 import { el, kitRoot, button, divider, pips, wick, icon, wordmark } from './kit.js';
 import { mk, emblem, EMBLEM_OF } from './hudsvg.js';
 import { TITLE, HERO, LOADOUT, primaryCopy, treeWhisper } from './titlecopy.js';
@@ -17,7 +18,7 @@ const nid = (p) => `u3-${p}-${++sid}`;
  *  FD2 (all optional, so the U3 title still builds without them): lantern {id, name} -> chip top-left (onSwitch); purses {gold, shards, glass|null}
  *  top-right; whisper = Continue whisper; treeDot = something in the tree is affordable now; newGame {free} -> quiet "New game" (onNew). */
 export function buildTitle({ hasProgress = false, firstRun = false, bank = null, version = '', note = '', lantern = null, purses = null, whisper = '', treeDot = false, newGame = null, treeLine = null,
-  almanac = null, bands = 0, chars = null, onBegin, onTree, onSettings, onSwitch, onNew, onAlmanac, onChars } = {}) {
+  almanac = null, bands = 0, chars = null, nudge = null, onBegin, onTree, onSettings, onSwitch, onNew, onAlmanac, onChars } = {}) {
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-title');
   const col = el('main', 'u3-col');
@@ -53,6 +54,8 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
   if (lantern) { menu.classList.add('fd-menu2'); side.classList.add('fd-side'); add(menu, begin, chb, add(el('div', alm ? 'fd-row2 fd-row3' : 'fd-row2'), tree, alm, settings), ng); } else add(menu, begin, chb, tree, alm, settings);
   add(side, menu);
   if (typeof note === 'string' && note) add(side, el('p', 'u3-note ty-small', note.slice(0, 400), { role: 'status' })); // textContent only (el)
+  const nudgeView = nudge && !note ? buildNudge(nudge) : null; // A1 backup reminder (never on top of a recovery / lock message)
+  if (nudgeView) add(side, nudgeView.root); // same slot and look as the install card (the title shows one card at a time)
   if (firstRun) add(side, el('p', 'u3-hint ty-small', TITLE.hint));
   add(side, el('p', 'u3-orient ty-small', TITLE.orient));
   add(col, brand, side);
@@ -68,7 +71,7 @@ export function buildTitle({ hasProgress = false, firstRun = false, bank = null,
   } else add(root, col, foot);
   const nb = Math.max(0, Math.min(9, Math.floor(Number(bands) || 0))); // CX6: colour bands return to the backdrop as the Almanac fills (visual only)
   if (nb) { root.setAttribute('data-bands', String(nb)); const bandEl = el('div', 'cx-bands', null, { 'aria-hidden': 'true' }); bandEl.style.setProperty('--cx-bands', String(nb)); root.insertBefore(bandEl, root.firstChild); }
-  return { root, begin, tree, settings, almanac: alm, chars: chb, newGame: ng, chip, side, menu, foot, version: ver };
+  return { root, begin, tree, settings, almanac: alm, chars: chb, newGame: ng, chip, side, menu, foot, version: ver, nudge: nudgeView };
 }
 
 const weaponEmblem = (weaponId) => {

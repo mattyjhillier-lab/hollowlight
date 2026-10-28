@@ -3,6 +3,9 @@
 import { el, kitRoot, panel, button, toggle, tabs, slider } from './kit.js';
 import { SET } from './u4copy.js';
 import { ABOUT } from './aboutcopy.js';
+import { SAFE, downloadText } from './savesafety.js';
+import { TEXT_COPY } from './textsize.js';
+import { buildKeyRemap } from './keysui.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 let sid = 0;
@@ -108,10 +111,12 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   const picture = group(SET.tabs[1].label,
     choice({ ...SET.quality, options: SET.quality.opts, value: st.quality, onChange: (v) => set({ quality: v }) }),
     choice({ ...SET.brightness, options: SET.brightness.opts, value: api.resolvedBrightness ? api.resolvedBrightness(st.brightness) : (st.brightness === 'auto' ? 'normal' : st.brightness), onChange: (v) => set({ brightness: v }) }),
+    choice({ ...TEXT_COPY, options: TEXT_COPY.opts, value: st.textSize || 'normal', onChange: (v) => set({ textSize: v }) }), // A2
     wickToggle({ ...SET.screenShake, checked: st.screenShake, onChange: (v) => set({ screenShake: v }) }),
     wickToggle({ ...SET.reducedMotion, checked: st.reducedMotion, onChange: (v) => set({ reducedMotion: v }) }),
     wickToggle({ ...SET.damageNumbers, checked: st.damageNumbers, onChange: (v) => set({ damageNumbers: v }) }));
-  const keys = add(el('div', 'u4-row u4-row--keys'), el('span', 'u4-row__label', SET.keysLabel), el('p', 'u4-note', SET.keys));
+  const remap = buildKeyRemap({ keys: st.keys, onChange: (map) => set({ keys: map }) }); // A3 (replaces the fixed key list)
+  const keys = add(el('div', 'u4-row u4-row--keys'), remap.root);
   // FM1: Tips toggle + 'Show tips again' (resets this lantern's whispers); FM5: Vibration (device setting)
   const tipsMsg = el('span', 'u4-row__help', '', { role: 'status', 'aria-live': 'polite' });
   const tipsAgain = api.resetTips ? add(el('div', 'u4-row u4-row--tipsagain'), button({ label: SET.tips.again, variant: 'secondary', inline: true, onClick: () => { api.resetTips(); tipsMsg.textContent = SET.tips.againDone; } }), tipsMsg) : null;
@@ -173,7 +178,11 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     clearTimeout(armTimer); armed = false; l.textContent = SET.reset.label;
     ask(SET.confirmReset.text, SET.confirmReset.yes, () => { api.resetSave(); onRebuild(SET.msg.reset, 'saves'); }, bRes);
   } });
-  const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null);
+  // A1: the kept copy of an unreadable save can be downloaded (it may be repairable); the backup reminder can be switched off (device setting).
+  const dmg = api.damagedText ? api.damagedText() : null;
+  const bDmg = dmg ? button({ label: SAFE.damaged.label, whisper: SAFE.damaged.whisper, variant: 'quiet', onClick: () => { say(downloadText(dmg, SAFE.damagedFile, 'text/plain') ? SAFE.damagedDone : SET.msg.exportFail, false); } }) : null;
+  const nudgeT = wickToggle({ ...SAFE.reminder, checked: st.backupNudge !== false, onChange: (v) => set({ backupNudge: v === true }) });
+  const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes, bDmg), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null, nudgeT);
 
   // ---- About: blurb, how to play, credits, version, maker, feedback, AI-use note (textContent only) ----
   const ver = typeof __APP_VERSION__ !== 'undefined' ? String(__APP_VERSION__).slice(0, 24) : 'dev';
@@ -195,7 +204,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   const body = add(el('div', 'u4-body'), tl, add(el('div', 'u4-panes'), sound, picture, controls, saves, about), add(el('div', 'u4-foot'), back));
   add(root, panel({ title: SET.title, whisper: SET.whisper, body: [body] }));
   return {
-    root, tabs: tl, back, panes, say, msg, confirmBox, file, buttons: { export: bExp, import: bImp, reset: bRes }, select: (id) => tl.select(id),
+    root, tabs: tl, back, panes, say, msg, confirmBox, file, buttons: { export: bExp, import: bImp, reset: bRes, damaged: bDmg, nudge: nudgeT }, remap, select: (id) => tl.select(id),
     focusFirst: () => { const t = [...tl.children].find((b) => b.getAttribute('aria-selected') === 'true'); if (t) t.focus(); },
   };
 }

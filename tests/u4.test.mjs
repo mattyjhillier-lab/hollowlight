@@ -44,8 +44,8 @@ test('settings: every previous setting is present, grouped in five tabs (About a
   assert.deepEqual(find(s.root, (n) => n.attrs.role === 'tab').map((n) => n.attrs['data-id']), ['sound', 'picture', 'controls', 'saves', 'about']);
   assert.equal(find(s.root, (n) => n.tag === 'select' || (n.tag === 'input' && n.attrs.type === 'checkbox')).length, 0, 'no native selects/checkboxes');
   assert.equal(find(s.root, (n) => n.attrs.type === 'range').length, 3); // AU0: Master + Music + Sound effects
-  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 7); // AU0: + Mute all; FM1 Tips + FM5 Vibration; EXTRAS v1 Gentle Light
-  assert.equal(find(s.root, (n) => n.attrs.role === 'radiogroup').length, 4);
+  assert.equal(find(s.root, (n) => n.attrs.role === 'switch').length, 8); // AU0: + Mute all; FM1 Tips + FM5 Vibration; EXTRAS v1 Gentle Light; A1 Backup reminder
+  assert.equal(find(s.root, (n) => n.attrs.role === 'radiogroup').length, 5); // + A2 Text size
   for (const k of ['musicVol', 'sfxVol', 'quality', 'brightness', 'screenShake', 'reducedMotion', 'damageNumbers', 'touchMode', 'stickSize']) assert.ok(k in defaults);
   for (const g of find(s.root, (n) => n.attrs.role === 'radiogroup')) assert.ok(g.attrs['aria-describedby'] && g.attrs['aria-labelledby']);
   for (const sw of find(s.root, (n) => n.attrs.role === 'switch')) assert.ok(sw.attrs['aria-describedby']);
@@ -79,8 +79,8 @@ test('settings: sliders, wick toggles and segmented choices call setSetting with
   const radios = (g) => g.children;
   radios(groups[0])[2].click(); // quality -> Medium
   radios(groups[1])[1].click(); // brightness -> Brighter (WL6a)
-  radios(groups[2])[1].click(); // touch -> On
-  radios(groups[3])[2].click(); // stick -> Large
+  radios(groups[3])[1].click(); // touch -> On (groups[2] = A2 Text size)
+  radios(groups[4])[2].click(); // stick -> Large
   assert.deepEqual(log, [['set', { masterVol: 0.5 }], ['set', { musicVol: 0.35 }], ['set', { sfxVol: 1 }], ['set', { muted: true }], ['set', { screenShake: false }], ['set', { reducedMotion: true }], ['set', { damageNumbers: false }],
     ['set', { quality: 'med' }], ['set', { brightness: 'brighter' }], ['set', { touchMode: 'on' }], ['set', { stickSize: 'large' }]]);
 });

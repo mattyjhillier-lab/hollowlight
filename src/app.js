@@ -1,4 +1,8 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
+import { shouldNudge } from './save/nudge.js';
+import { downloadText, SAFE } from './ui/savesafety.js';
+import { applyTextSize } from './ui/textsize.js';
+import { setActiveKeymap, dirMap } from './input/keymap.js';
 import { Sim } from './sim/Sim.js';
 import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
@@ -747,6 +751,10 @@ export const app = {
   applySettings() {
     const s = this.save.data.settings;
     document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
+    applyTextSize(document.documentElement, s.textSize); // A2
+    const km = setActiveKeymap(s.keys); // A3: remapped keys (validated); movement, hints and the HUD pill follow
+    if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
+    if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();
     if (this.audio) this.audio.configure(s);
     if (this.touch) {
       const coarse = typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches);
@@ -760,7 +768,11 @@ export const app = {
       resolvedBrightness: (stored) => resolveBrightness(stored, this.isPhone()),
       setSetting: (patch) => { this.save.setSettings(patch); this.applySettings(); if (this.audio && patch && 'sfxVol' in patch) this.audio.play('gem'); if (this.sim) this.sim.setAutoRule(this.save.data.settings.autoRule); },
       hasAutoRule: () => !!aggregateMods(this.save.data.tree, treeDef, data).perks.autoRule, // 'Chosen Moment' owned: show the auto-fire choice
-      exportSave: () => this.save.exportText(),
+      exportSave: () => { const raw = this.save.keptRaw === null; const t = this.save.exportText(); if (raw) this.save.markBackup(); return t; }, // A1: an export restarts the backup reminder
+      damagedText: () => this.save.damagedText(),
+      backupNudge: () => shouldNudge(this.save.data, { readOnly: this.save.readOnly || !this.save.persistent }),
+      exportBackup: () => { const ok = downloadText(this.save.exportText(), SAFE.file); if (ok) this.save.markBackup(); return ok; },
+      dismissNudge: () => this.save.markBackup(),
       maxSaveBytes: MAX_SAVE_BYTES,
       checkImport: (t) => this.save.checkImport(t),
       applyImport: (s) => { this.save.applyImport(s); this.applySettings(); },
