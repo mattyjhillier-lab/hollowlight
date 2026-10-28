@@ -32,6 +32,7 @@ html.touch .overlay.u3, .overlay.u3 {
 .u3 .pwa-link { position: static; display: inline-flex; align-items: center; min-height: var(--lg-tap); min-width: var(--lg-tap); padding: 0 10px; margin-left: auto; color: var(--lg-brass-text);
   font: var(--fw-body) var(--fs-small)/1 var(--font-body); text-decoration: underline; text-underline-offset: 3px; }
 .u3 .pwa-link:hover, .u3 .pwa-link:focus-visible { color: var(--lg-text); }
+.overlay.u3:has(.pwa-card) .pwa-link { display: none; } /* final QA: at 640x360 the footer link drew over the open card's 'Not now'; the card already has the same buttons */
 .u3 .pwa-link:focus-visible { outline: 2px solid var(--thread); outline-offset: 2px; border-radius: 8px; }
 
 /* install / full screen card + update notice, restyled for the title (card.js untouched; its buttons keep class .btn) */

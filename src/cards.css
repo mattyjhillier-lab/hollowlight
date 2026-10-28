@@ -7,7 +7,8 @@
 .overlay.layer-levelup {
   --u: clamp(.7px, .08cqw, 1.5px);
   background: radial-gradient(ellipse 54% 50% at 50% 46%, rgba(255, 171, 58, .13), transparent 72%), linear-gradient(180deg, rgba(10, 14, 24, .88), rgba(8, 11, 20, .95));
-  -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: center;
+  -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: safe center;
+  overflow-y: auto; /* final QA: 3 gold + 3 stat cards at 640x360 without touch were taller than the view and centred off both edges (title and Reroll unreachable) */
   padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   gap: calc(10 * var(--u));
 }
@@ -224,3 +225,5 @@ html.touch .c-key { display: none; }
   .layer-levelup .lu-btn { flex: 1; justify-content: center; min-height: 52px; }
   .layer-levelup .lu-btn .lg-btn__text { flex: none; }
 }
+/* final QA: at game size (640x360) the long weapon tag 'CHAIN LIGHTNING' ellipsised on stat cards; tighter tracking on small stages keeps it whole */
+@media (max-width: 700px) and (min-aspect-ratio: 1/1) { .layer-levelup .c-tag:not(.lg-badge) { letter-spacing: .05em; } }
