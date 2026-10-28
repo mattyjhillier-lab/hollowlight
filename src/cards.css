@@ -61,6 +61,10 @@
 .layer-levelup .c-pips .lg-pip.on.fresh { box-shadow: 0 0 0 1.5px var(--lg-text), 0 0 0 3px #2a1a0c, 0 0 11px var(--flame); }
 .layer-levelup .c-desc { order: 7; margin: 0; max-width: 100%; font: var(--fw-body) max(14px, calc(16 * var(--u)))/1.3 var(--font-body); color: var(--lg-dim); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.layer-levelup .is-evolve .c-desc { -webkit-line-clamp: 4; }
+.layer-levelup .lu-main.many .card.is-evolve .c-desc { -webkit-line-clamp: 8; }
+.layer-levelup .lu-main.many .card.is-evolve .c-pips, .layer-levelup .lu-main.many .card.is-evolve .c-from, .layer-levelup .lu-main.many .card.is-evolve .c-unit { display: none; } /* 5-6 narrow cards: the text beats the always-full pips and the repeated weapon name */
+.layer-levelup .c-desc { grid-area: desc; }
 .layer-levelup .c-from { order: 8; max-width: 100%; margin-top: auto; font: italic var(--fw-whisper) max(14px, calc(15 * var(--u)))/1.2 var(--font-whisper); color: var(--lg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .layer-levelup .c-stirs { order: 9; margin-top: auto; font: italic var(--fw-whisper) max(15px, calc(17 * var(--u)))/1.2 var(--font-whisper); color: var(--lg-evo); }
 
@@ -127,7 +131,12 @@ html.touch .c-key { display: none; }
   .layer-levelup .c-icon { width: 54px; height: 54px; margin-bottom: 1px; }
   .layer-levelup .c-title { font-size: 19px; }
   .layer-levelup .c-num { font-size: 30px; } .c-num.long { font-size: 26px; }
-  .layer-levelup .c-desc, .layer-levelup .c-from { display: none; }
+  .layer-levelup .c-from { display: none; }
+  .layer-levelup .card:not(.is-evolve) .c-desc { display: none; }
+  .layer-levelup .card.is-evolve .c-desc { font-size: 12px; line-height: 1.2; -webkit-line-clamp: 4; padding: 0 6px; }
+  .layer-levelup .card.is-evolve .c-title { font-size: 16px; line-height: 1.1; }
+  .layer-levelup .card.is-evolve .c-num { font-size: 24px; }
+  .layer-levelup .card.is-evolve .c-pips, .layer-levelup .card.is-evolve .c-unit { display: none; } /* the pick text replaces the pips + sub line on the tight card */
   .layer-levelup .c-pips { margin: 4px 0 2px; }
   .layer-levelup .card > .lg-card__key { top: 22px; right: 12px; }
   .layer-levelup .card > .lg-card__badge { top: 18px; }
@@ -159,7 +168,7 @@ html.touch .c-key { display: none; }
 @media (min-aspect-ratio: 1/1) {
   @container (max-width: 899px) {
     .lu-main.many { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 720px); gap: 6px 8px; }
-    .lu-main.many .card, .lu-main.many .card.is-evolve { height: auto; min-height: 64px; padding: 6px 10px 6px 12px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon stirs num"; column-gap: 8px; row-gap: 0; align-items: center; justify-items: start; text-align: left;
+    .lu-main.many .card, .lu-main.many .card.is-evolve { height: auto; min-height: 64px; padding: 6px 10px 6px 12px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon desc num" "icon stirs num"; column-gap: 8px; row-gap: 0; align-items: center; justify-items: start; text-align: left;
       border-image: var(--lg-a-panel) 26 / 20px stretch; border-width: 6px; border-radius: 20px; }
     .lu-main.many .card.is-evolve { border-image: var(--lg-a-lead) 36 / 26px round; border-width: 12px; padding: 0 2px; }
     .lu-main.many .c-icon { grid-area: icon; width: 50px; height: 50px; align-self: center; }
@@ -181,7 +190,7 @@ html.touch .c-key { display: none; }
   .layer-levelup .lu-title { font-size: 32px; }
   .lu-main { grid-template-columns: minmax(0, 1fr); width: min(100%, 440px); gap: 8px; margin-top: 0; }
   .layer-levelup .lu-eyelet, .layer-levelup .lu-main.lg-cardrow::before { display: none; }
-  .layer-levelup .card, .layer-levelup .card.is-evolve { height: auto; min-height: 72px; padding: 6px 12px 6px 14px; display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon stirs num"; column-gap: 10px; row-gap: 0; align-items: center; justify-items: start; text-align: left; transform-origin: 50% 0; }
+  .layer-levelup .card, .layer-levelup .card.is-evolve { height: auto; min-height: 72px; padding: 6px 12px 6px 14px; display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon desc num" "icon stirs num"; column-gap: 10px; row-gap: 0; align-items: center; justify-items: start; text-align: left; transform-origin: 50% 0; }
   .layer-levelup .card { border-image: var(--lg-a-panel) 26 / 20px stretch; border-width: 6px; border-radius: 20px; }
   .layer-levelup .card.is-evolve { border-image: var(--lg-a-lead) 36 / 26px round; border-width: 12px; padding: 0 2px 0 4px; }
   .layer-levelup .card.quiet { min-height: 56px; padding: 2px 8px 2px 6px; grid-template-columns: 38px minmax(0, 1fr); grid-template-areas: none; column-gap: 8px; }
@@ -194,7 +203,10 @@ html.touch .c-key { display: none; }
   .layer-levelup .c-num { grid-area: num; font-size: 30px; justify-self: end; align-self: center; } .c-num.long { font-size: 28px; }
   .layer-levelup .c-pips { grid-area: pips; margin: 3px 0 0; }
   .layer-levelup .c-stirs { grid-area: stirs; justify-self: start; margin: 0; font-size: 16px; }
-  .layer-levelup .c-desc, .layer-levelup .c-from { display: none; }
+  .layer-levelup .c-from { display: none; }
+  .layer-levelup .card:not(.is-evolve) .c-desc { display: none; }
+  .layer-levelup .card.is-evolve .c-desc { grid-area: desc; font-size: 13px; line-height: 1.2; -webkit-line-clamp: 8; }
+  .layer-levelup .card.is-evolve { grid-template-areas: "icon tag num" "icon title num" "icon unit num" "icon pips num" "icon desc desc" "icon stirs num"; } /* the pick text runs under the verb word, full width: 3 gold cards never clip it */
   .lg-card__key { display: none; }
   .lu-main.many .card.is-evolve .c-pips { display: none; } /* an evolved weapon is always full: the pips add nothing in a tight row */
   .lu-foot { flex-direction: column; gap: 10px; width: min(100%, 440px); }
