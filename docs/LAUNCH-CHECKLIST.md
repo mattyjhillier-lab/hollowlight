@@ -1,4 +1,46 @@
-# Hollowlight v1: MASTER LAUNCH CHECKLIST
+# Hollowlight v1: MASTER LAUNCH CHECKLIST  [STALE 2026-10-28: the game is now named WISPWICK (LOCKED "NAME LOCKED v2" + "NAME CONFIRMED"); this file keeps its original title and text as history. Read the STATUS block first.]
+
+## STATUS 2026-10-28 (read this first; the sections below are the 2026-10-17 history, stale rows are marked [STALE])
+
+Name: Wispwick: Spirits of the Dusk (LOCKED "NAME LOCKED v2", "NAME CONFIRMED" by Matt, "BRAND + RENAME BUILT", "WORDMARK"). Storage keys, repo and Pages URL keep the old \`hollowlight\` names on purpose.
+
+### DONE (LOCKED row names; verify the row, not this summary)
+- Retune: R1 (R1 BUILT), RT1 to RT8 (RT1 STARTS, RT2 boss threat, RT3/RT4, RT5 Deep Dusk, RT6 Long Night, RT7 Gentle Light and Endless Dusk, RT8 reconciliation, "RT6-RT8 + overnight decisions"). Bands held except the accepted misses in that last row (Long Night hero gap, Ravens fresh win, Orbit-Wren early deaths, first Deep Dusk clear).
+- Enemies and mini-boss: "EN6-EN9 BUILT" and "EN6-EN9 balance"; boss finish: "B5-B7 ELDER TREANT FINISH BUILT".
+- Weapon art: "Summons art #3" rows (per-weapon S1 to S8).
+- Skill tree v2: "T4 BUILT", "Tree screen T4 reviewed", "T6 BUILT", "T6 decisions", "TREE-GEN1 CHARACTER-AGNOSTIC TREE BUILT"; save release guards 24b code done (snapshot step still TODO at the launch merge).
+- Characters v2 and extras: "CHARACTER SYSTEM v2 ... BUILT" (CH1 to CH7), "EXTRAS v1 BUILT" (Gentle Light, wardrobe, Endless Dusk), "DT1 NIGHT GATE LIVE" (nights).
+- Front door: "FD1 BUILT" to "FD5 BUILT", "FD6 + FD7 BUILT" (controller stub for menus, colour-blind check).
+- Audio engine, music, moments: "AU0 + AU1", "AU4 + AU5 + AU6".
+- First minute whispers (first-run hints): "FM1-FM5 FIRST MINUTE BUILT".
+- Codex, Almanac, celebrations: "CX1-CX7 CODEX + CELEBRATIONS BUILT", "ALMANAC DECISIONS".
+- Map events v1: "MAP EVENTS PICKS", "LAMP POSTS ADAPTATION", "MAP EVENTS E0-E5 BUILT", "MAP EVENTS BALANCE CHECK" (partial; decision waiting).
+- Branding: wordmark, icons, share image, About tab: "WORDMARK", "BRAND + RENAME BUILT" (items 18 and 19 built; wording and external fields are Matt's).
+- Evolution plain-words text and 3-card worst case: "EVOLUTION PLAIN-WORDS TEXT", "Evolution pick text, 3-card worst case".
+- Security and repo: "SECURITY HARDENING" (least-privilege workflows, SHA-pinned actions, CI), "MAIN PROTECTION HARDENED" (GitHub settings and 2FA done by Matt: main protected, admins included, required check \`test\`, secret scanning, push protection, Dependabot on).
+- Content pipeline (item 17): docs/CONTENT-GUIDE.md + \`scripts/new-content.mjs\` (print-only) + tests/newcontent.test.mjs, built 2026-10-28.
+
+### OPEN, with owner
+| Owner | Open item |
+|---|---|
+| Matt | Play tests: 3 runs on Normal brightness plus one late-game run (checklist docs/design/visibility-arc-v1.md 4.1); a run with map events on (decision waiting in QUEUE) |
+| Matt | Phone tests: \`?debug=1\` fps/p95 on a real phone (shader ground, trails, fog), PWA install (Android Chrome, iPhone Add to Home Screen), low-end Android pass (item 22) |
+| Matt | Name: UK IPO / EUIPO trademark search for Wispwick using docs/design/name-check.md (stores already checked by Matt) |
+| Matt | About wording, AI-use text and feedback channel (src/ui/aboutcopy.js); confirm the icon/wordmark origin line in docs/CREDITS.md; set absolute og:url / og:image / twitter:image at launch (index.html comment) |
+| Matt | Read the 15 Almanac riddle lines (RIDDLE in src/ui/codexcopy.js) and the placeholder results/bark copy |
+| Matt | Open decisions in docs/QUEUE.md "Decisions waiting" (map events balance 1 to 3; hero-class word Hollowlighters -> Wickbearers; High bloom; Ravens contrast in the lantern pool; override-able defaults) |
+| Matt | Friend-tester list; hosting decision (stay public Pages, or private repo + Cloudflare) before outside testers; approve any downloads |
+| Matt | GitHub settings: DONE (see MAIN PROTECTION HARDENED). Still his: confirm the Actions tab shows CI and the next main deploy passing |
+| Matt | MERGE dev -> main: an explicit yes ("ship it") |
+| Claude | CLAUDE.md edits for the new name and state: drafted in docs/design/claude-md-edits.md, waiting for Matt's approval (Claude does not edit CLAUDE.md itself) |
+| Claude | Item 20 accessibility basics (text size, key remap; gamepad is menus-only) and item 21 save safety (corrupt-save recovery, export reminder): status UNVERIFIED here, check and fix before final verification |
+| Claude | Items 6 and 7 follow-ups (weapon roster review, tree sheet) and item 13 game-feel pass: status UNVERIFIED here |
+| Claude | Item 23 FINAL VERIFICATION: full security review + \`npm audit\`, full balance sweep (rt-matrix), visual QA at all sizes, CREDITS + AI disclosure |
+| Claude | At the launch merge only (after Matt's yes): \`node scripts/tree-release.mjs --snapshot\` and commit tests/fixtures/tree-released.json; confirm the src/save/store.js forward-tolerant store is in the release; Dependabot alerts close via dev's lockfile (item 24b, CONTENT-GUIDE section 10) |
+
+Stale rows below carry a bracketed [STALE 2026-10-28] note; nothing was deleted.
+
+---
 
 Compiled 2026-10-17 from docs/LOCKED.md, QUEUE.md, DESIGN-SHEETS.md, READINESS.md, BUILD-GUIDE.md, CLAUDE.md, docs/design/*, docs/research/* and `git log origin/dev` (300 commits). Facts only; anything I could not check is marked UNVERIFIED. Items marked "recommend" are recommendations: Matt decides.
 
@@ -15,7 +57,7 @@ Legend for C: DECISION = needs Matt (three-options one-tap process); AUTO = can 
 ### A1. Foundations
 | Item | Evidence |
 |---|---|
-| Name "Hollowlight: Spirits of the Dusk" (clash check still open, see E) | LOCKED Name |
+| Name "Hollowlight: Spirits of the Dusk" [STALE 2026-10-28: withdrawn, itch.io clashes; final name is WISPWICK, LOCKED "NAME LOCKED v2" + "NAME CONFIRMED"] | LOCKED Name |
 | Identity "The Hollow" (grey world, spirit light restores colour, visual only) | LOCKED Identity |
 | Art family: polished chunky 2D cartoon, P1 Warm Lantern; Hollowlight Style v1; 3D parked, pixel art rejected | LOCKED Art family / Style recipe |
 | Rules: security first, design-lock-build, fit-the-game, three options, small chunks, fix weak spots, keep going back to back | CLAUDE.md, LOCKED |
@@ -147,25 +189,25 @@ Source: LOCKED RELEASE GATE and RELEASE GATE ADDITIONS (2026-10-17). Rough order
 
 | # | Item | Status | Done means (acceptance gate) | Depends on | Matt? |
 |---|---|---|---|---|---|
-| 1 | R1 RETUNE + merge Rally the Pack (W2, held on branch `w2-rally`) | Not started; prep is "NOW" in QUEUE | Both heroes win 15-30% with no tree (bot, 96+ seeds, noise stated); no deaths before ~5:00; deaths spread 6-14 min; abilities a modest share (on vs off within a few points); Wren-Elias gap small; evolutions still in band; Elias kit lift decided (+15% -> +50% proposed); Rally registers through the srcAmps cap | All weapon/evolution chunks (done) | DECISION on moved targets, Elias kit, Rally softening; mostly AUTO otherwise |
-| 2 | ENEMIES design sheet #4 | Research 37 exists (untracked file); no sheet | Locked roster for Chapter 1 (silhouettes, eyes-only night look, animation personality, behaviours, minibosses at set times + chests, corruption bloom), three options each | Can run in parallel with R1 | DECISION (three options per creature) |
-| 3 | ENEMIES build | Not started | Each enemy a unique data-driven rig; readability gates G1-G8 still pass (contrast harness); sweeps/targets re-checked; true-size + phone shots | #2 locked; R1 numbers (re-tune after) | AUTO after lock |
-| 4 | SUMMONS ART sheet #3 (wolves, ravens, glyphs, lights, lightning in Style v1) | Not started | Three options per summon, Matt picks, locked | Suggested: before tree emblems and after R1 | DECISION |
-| 5 | SUMMONS ART build | Not started | Looks match sheet at true size and phone; perf caps held | #4 | AUTO after lock |
+| 1 | R1 RETUNE + merge Rally the Pack (W2, held on branch `w2-rally`) | Not started; prep is "NOW" in QUEUE [STALE 2026-10-28: R1 BUILT + RT1 to RT8 retune done (LOCKED rows); accepted misses in "RT6-RT8 + overnight decisions"] | Both heroes win 15-30% with no tree (bot, 96+ seeds, noise stated); no deaths before ~5:00; deaths spread 6-14 min; abilities a modest share (on vs off within a few points); Wren-Elias gap small; evolutions still in band; Elias kit lift decided (+15% -> +50% proposed); Rally registers through the srcAmps cap | All weapon/evolution chunks (done) | DECISION on moved targets, Elias kit, Rally softening; mostly AUTO otherwise |
+| 2 | ENEMIES design sheet #4 | Research 37 exists (untracked file); no sheet [STALE 2026-10-28: enemy roster built (LOCKED "EN6-EN9 BUILT" and earlier EN rows)] | Locked roster for Chapter 1 (silhouettes, eyes-only night look, animation personality, behaviours, minibosses at set times + chests, corruption bloom), three options each | Can run in parallel with R1 | DECISION (three options per creature) |
+| 3 | ENEMIES build | Not started [STALE 2026-10-28: built (LOCKED EN rows); sweeps re-run in RT] | Each enemy a unique data-driven rig; readability gates G1-G8 still pass (contrast harness); sweeps/targets re-checked; true-size + phone shots | #2 locked; R1 numbers (re-tune after) | AUTO after lock |
+| 4 | SUMMONS ART sheet #3 (wolves, ravens, glyphs, lights, lightning in Style v1) | Not started [STALE 2026-10-28: summons art sheet locked (LOCKED "Summons art #3")] | Three options per summon, Matt picks, locked | Suggested: before tree emblems and after R1 | DECISION |
+| 5 | SUMMONS ART build | Not started [STALE 2026-10-28: built per weapon (LOCKED "Summons art #3 per-weapon" rows)] | Looks match sheet at true size and phone; perf caps held | #4 | AUTO after lock |
 | 6 | Weapon roster review (Lantern Wisps, Grave Hand, Frost Bell, Bone Servant, Soul Harvest) design only | Queued, not started | Research -> design -> independent review -> lock (building the weapons is post-launch); tree clusters/emblems need the roster | After R1, before tree sheet | DECISION |
-| 7 | SKILL TREE v2 DESIGN sheet #5 | Not started | Per-weapon emblem constellations, 3 evolution sockets per weapon, gates for all 15 evolutions, status power nodes (Bleed/Burn/Mark...), global rings, locked clusters dim, desktop + phone mock-ups, power budget under soft cap | #6, evolution counts final (done) | DECISION |
-| 8 | SKILL TREE v2 BUILD (+ re-skin to Lantern Glass, gate data/counts tuned for gates 13-16, G2 rescale) | Not started (tree v1 plain styling is what exists) | Whole tree reads at phone size, pans, nodes light up, locked nodes show progress; full tree no longer makes the bot win 100%; gate counts replace estimates (gates-pace run) | #7 | AUTO after lock |
-| 9 | BOSS redesign sheet (Elder Treant, 3 phases + intro) | Not started | Fight 60-120 s (now 40-49 s), boss-death share target, never frightened/pinned rules kept; three options | #2 style/behaviour decisions | DECISION |
-| 10 | BOSS build | Not started | Phases readable, telegraphs above vignette, acceptance via sweeps | #9 | AUTO after lock |
-| 11 | FRONT DOOR: device profiles (max 3, skip when one), Continue/New Game, hero select, map/chapter select (Chapter 1 now, others locked/dim), per-device audio + touch settings | Design sheet #6 pending; hero select + title already built (U3) | Flow cover -> play -> profile -> hero -> map -> run works with keyboard + touch; hostile profile names inert; export/import covers profiles; no accounts | U3 done | DECISION on look (sheet), then AUTO |
-| 12 | FIRST-RUN TUTORIAL (short, skippable hints, 3 lines max) | Not started | New player learns move, pick a card, ability, evolve rule without a wall of text; skippable; not shown again | #11 | DECISION on wording |
+| 7 | SKILL TREE v2 DESIGN sheet #5 | Not started [STALE 2026-10-28: tree v2 designed + locked (skill-tree-v2.md)] | Per-weapon emblem constellations, 3 evolution sockets per weapon, gates for all 15 evolutions, status power nodes (Bleed/Burn/Mark...), global rings, locked clusters dim, desktop + phone mock-ups, power budget under soft cap | #6, evolution counts final (done) | DECISION |
+| 8 | SKILL TREE v2 BUILD (+ re-skin to Lantern Glass, gate data/counts tuned for gates 13-16, G2 rescale) | Not started (tree v1 plain styling is what exists) [STALE 2026-10-28: tree v2 BUILT (LOCKED "T4 BUILT", "T6 BUILT", "TREE-GEN1")] | Whole tree reads at phone size, pans, nodes light up, locked nodes show progress; full tree no longer makes the bot win 100%; gate counts replace estimates (gates-pace run) | #7 | AUTO after lock |
+| 9 | BOSS redesign sheet (Elder Treant, 3 phases + intro) | Not started [STALE 2026-10-28: boss redesign done (LOCKED boss rows)] | Fight 60-120 s (now 40-49 s), boss-death share target, never frightened/pinned rules kept; three options | #2 style/behaviour decisions | DECISION |
+| 10 | BOSS build | Not started [STALE 2026-10-28: BUILT (LOCKED "B5-B7 ELDER TREANT FINISH BUILT")] | Phases readable, telegraphs above vignette, acceptance via sweeps | #9 | AUTO after lock |
+| 11 | FRONT DOOR: device profiles (max 3, skip when one), Continue/New Game, hero select, map/chapter select (Chapter 1 now, others locked/dim), per-device audio + touch settings | Design sheet #6 pending; hero select + title already built (U3) [STALE 2026-10-28: BUILT (LOCKED FD1 to FD7)] | Flow cover -> play -> profile -> hero -> map -> run works with keyboard + touch; hostile profile names inert; export/import covers profiles; no accounts | U3 done | DECISION on look (sheet), then AUTO |
+| 12 | FIRST-RUN TUTORIAL (short, skippable hints, 3 lines max) | Not started [STALE 2026-10-28: BUILT as first-minute whispers (LOCKED "FM1-FM5")] | New player learns move, pick a card, ability, evolve rule without a wall of text; skippable; not shown again | #11 | DECISION on wording |
 | 13 | FIRST-60-SECONDS + GAME-FEEL pass | Not started | Hero attacking by ~3 s, first level-up ~5-10 s, first swarm 10-60 s (XP curve check); hit/kill/gem/level-up feel; phone vibration | #3 (enemy feel), #1 | DECISION (feel taste), AUTO measurable parts |
-| 14 | AUDIO: sound palette + music direction sheet, then build | Not started (cue names reserved: evo_<id>, dawn_chorus_1..3) | Sheet locked; free/code-generated sources only, licences in CREDITS; voice caps; music fades; sliders do something; evolution sounds | #3, #9 for the sounds they need | DECISION (sheet), AUTO build |
-| 15 | CODEX + UNLOCK CELEBRATIONS | Not started (codex text lives in evolutions.json) | Codex screen (bestiary + evolutions, recipes shown only once discovered), first-unlock celebrations for tree nodes/weapons/evolutions | #8, #3 | DECISION (look) |
-| 16 | POST-VICTORY REPLAY LOOP (harder tiers or endless dusk after Chapter 1) | Not started | After first clear there is a clear reason to play again; balance targets per tier; no new weapons needed | #1, #10 | DECISION (three options) |
-| 17 | CONTENT PIPELINE (templates + validators + docs/CONTENT-GUIDE.md + scaffold scripts; chapter/ARC/palette per chapter, not hard-coded) | Not started | Weapon, evolution, hero, enemy family, chapter/map templates; `npm test` validates; "how to add X" checklists | After tree and boss builds | AUTO (add the three-options process into the guide) |
-| 18 | LOGO + app/favicon/install icons + share-preview image | BUILT on wip/brand-wisp (Wispwick wordmark, icons, share image); awaiting Matt | Final wordmark polish, icons at all sizes, share image at 1200x630 | Name check (E) | DECISION if wordmark changes; else AUTO (default folded in) |
-| 19 | ABOUT page (credits, licences, AI disclosure, version, feedback link) | BUILT as Settings > About (wording drafts, TODO Matt); awaiting Matt | In-game page; every asset/font/licence listed; AI-use disclosure for itch.io/Steam; feedback link | Final asset list | DECISION on wording/feedback channel |
+| 14 | AUDIO: sound palette + music direction sheet, then build | Not started (cue names reserved: evo_<id>, dawn_chorus_1..3) [STALE 2026-10-28: engine, music, moments BUILT (LOCKED AU0 to AU6)] | Sheet locked; free/code-generated sources only, licences in CREDITS; voice caps; music fades; sliders do something; evolution sounds | #3, #9 for the sounds they need | DECISION (sheet), AUTO build |
+| 15 | CODEX + UNLOCK CELEBRATIONS | Not started (codex text lives in evolutions.json) [STALE 2026-10-28: BUILT (LOCKED "CX1-CX7")] | Codex screen (bestiary + evolutions, recipes shown only once discovered), first-unlock celebrations for tree nodes/weapons/evolutions | #8, #3 | DECISION (look) |
+| 16 | POST-VICTORY REPLAY LOOP (harder tiers or endless dusk after Chapter 1) | Not started [STALE 2026-10-28: BUILT as night tiers + Endless Dusk (LOCKED "DT1", "EXTRAS v1")] | After first clear there is a clear reason to play again; balance targets per tier; no new weapons needed | #1, #10 | DECISION (three options) |
+| 17 | CONTENT PIPELINE (templates + validators + docs/CONTENT-GUIDE.md + scaffold scripts; chapter/ARC/palette per chapter, not hard-coded) | Not started [STALE 2026-10-28: BUILT 2026-10-28: docs/CONTENT-GUIDE.md + scripts/new-content.mjs] | Weapon, evolution, hero, enemy family, chapter/map templates; `npm test` validates; "how to add X" checklists | After tree and boss builds | AUTO (add the three-options process into the guide) |
+| 18 | LOGO + app/favicon/install icons + share-preview image | BUILT on wip/brand-wisp (Wispwick wordmark, icons, share image); awaiting Matt [STALE 2026-10-28: name is Wispwick; wordmark/icons/share image built (LOCKED "BRAND + RENAME BUILT")] | Final wordmark polish, icons at all sizes, share image at 1200x630 | Name check (E) | DECISION if wordmark changes; else AUTO (default folded in) |
+| 19 | ABOUT page (credits, licences, AI disclosure, version, feedback link) | BUILT as Settings > About (wording drafts, TODO Matt); awaiting Matt [STALE 2026-10-28: built under the Wispwick name; wording still Matt's] | In-game page; every asset/font/licence listed; AI-use disclosure for itch.io/Steam; feedback link | Final asset list | DECISION on wording/feedback channel |
 | 20 | ACCESSIBILITY basics (text size, remappable keys, PC gamepad) | BUILT on wip/a11y 2026-10-28 (LOCKED A2 + A3): Text size Normal/Large/Larger, full keyboard remap with hints; gamepad stays the menu-only stub (post-v1); one taste call in QUEUE 'Decisions waiting' | Settings for text size and key remap; gamepad on PC; checked at all sizes | #11 | AUTO (folded in unless Matt vetoes) |
 | 21 | SAVE SAFETY (backup reminder, corruption recovery) | BUILT on wip/a11y 2026-10-28 (LOCKED A1): crash-proof load, bounded damaged copy + download, gentle backup reminder, fuzz tests | Corrupt save never crashes (falls back + keeps a backup); reminder to export; old-version save loads | #11 | AUTO |
 | 22 | LOW-END PHONE PASS (battery, heat, offline, updates) | Not started | Real low-end Android: stable frame rate on Low tier at 350 enemies, no overheating in 15 min, offline works, update prompt safe | Matt's phone (E), #3, #8 | AUTO + Matt's device |
@@ -232,7 +274,7 @@ Open decisions that block C items (all from sections B/F): Rally softening, Elia
 | 2 | Real-phone PWA install test (Android Chrome; iPhone Add to Home Screen) | Never tested; saves are separate on iOS (use Export/Import) |
 | 3 | Play the dev build (3 runs Normal brightness, then a late-game run) | Checklists: docs/design/visibility-arc-v1.md 4.1; look at the Section B items |
 | 4 | Answer open decisions (section B3 + F) via one-tap questions | R1 targets, Elias kit, Alpha, Talon dive, Light Trails name, Vesper Tide 1.5x |
-| 5 | Name search "Hollowlight" on itch.io, Steam and UK IPO / EUIPO | Medium clash risk (Hollow Knight, "Hollow Light" jam game/studio); needed before any public launch |
+| 5 | [STALE 2026-10-28: name is now Wispwick; stores checked by Matt; only the UK IPO / EUIPO search (docs/design/name-check.md) remains] Name search "Hollowlight" on itch.io, Steam and UK IPO / EUIPO | Medium clash risk (Hollow Knight, "Hollow Light" jam game/studio); needed before any public launch |
 | 6 | Read/edit wording: results lines (3 defeat lines, Wren/Elias victory barks), hero epithets, button copy, Blessing flavour lines | Placeholder copy is Claude's draft |
 | 7 | Friend testers list (who gets the private link; at least one Android, one iPhone if possible) | For the private test (#24) |
 | 8 | GitHub settings only he can change: Dependabot, secret scanning, push protection, branch protection on main, 2FA | Claude must not change account/security settings |
@@ -298,4 +340,4 @@ TRIAGED 2026-10-17 (FIX-EVERYTHING-FLAGGED): every line below carries its bucket
 - Live site (main) is v0.4.0-era plus PWA/HUD-1/HUD-2; dev is far ahead. **[NEEDS MATT N12: 'ship it']**
 - tests/visibility-pins and docs/design/visibility-arc-measured.md: the harness test depends on that report existing (it was missing during one in-flight run; present now). **[ACCEPTED A12]**
 - No audio, no tutorial, no profiles, no codex, no About page exist yet (all in section C). **[QUEUED CHUNK, section C]**
-- Name clash risk (Hollowlight vs Hollow Knight / "Hollow Light") unchecked. **[NEEDS MATT N12: his own search]**
+- [STALE 2026-10-28: Hollowlight withdrawn; Wispwick stores-checked, trademark search still Matt's] Name clash risk (Hollowlight vs Hollow Knight / "Hollow Light") unchecked. **[NEEDS MATT N12: his own search]**
