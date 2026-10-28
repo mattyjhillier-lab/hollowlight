@@ -185,6 +185,7 @@ export class TreeScreen {
     this.pState = el('div', 'ts-state');
     this.pWhy = el('div', 'ts-why');
     this.pDesc = el('div', 'ts-desc');
+    this.pEvo = el('div', 'ts-desc ts-evo'); // what the unlocked evolution does (same text as the pick card + Almanac: data.evolutions[id].desc)
     this.pFlav = el('div', 'ts-flav');
     this.pSteps = el('ol', 'ts-steps');
     this.pMeta = el('div', 'ts-meta');
@@ -200,7 +201,7 @@ export class TreeScreen {
     actions.append(this.buyBtn, this.pinBtn, this.almBtn);
     this.pMsg = el('div', 'ts-msg');
     this.pMsg.setAttribute('role', 'status');
-    detail.append(this.pKick, this.pName, this.pState, this.pWhy, this.pDesc, this.pFlav, this.pSteps, this.pMeta, this.pCost, this.pMsg, actions);
+    detail.append(this.pKick, this.pName, this.pState, this.pWhy, this.pEvo, this.pDesc, this.pFlav, this.pSteps, this.pMeta, this.pCost, this.pMsg, actions);
     this.detailEl = detail;
     const goalPane = el('div', 'ts-goalpane');
     this.goalList = el('div', 'ts-goallist');
@@ -962,6 +963,9 @@ export class TreeScreen {
     this.pWhy.textContent = isBest ? `Best next: ${m.best.why}` : '';
     this.pWhy.style.display = isBest ? '' : 'none';
     this.pDesc.textContent = d.desc;
+    const fxE = (n.effects || []).find((e) => e && e.unlock === 'evolution' && typeof e.id === 'string' && Object.hasOwn(this.data.evolutions || {}, e.id));
+    const evoTxt = fxE && !d.masked ? String(this.data.evolutions[fxE.id].desc || '') : ''; // not while the lantern is still veiled
+    this.pEvo.textContent = evoTxt; this.pEvo.style.display = evoTxt ? '' : 'none';
     this.pFlav.textContent = d.flavour || '';
     this.pFlav.style.display = d.flavour ? '' : 'none';
     this.pSteps.replaceChildren();

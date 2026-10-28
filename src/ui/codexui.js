@@ -191,7 +191,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
       verb.style.color = e.state === 'sleeping' ? '' : w.color;
       add(c, socketIcon(e.state, w.id, w.color), verb);
       if (e.state === 'found') {
-        add(c, el('h3', 'cx-h3', e.name), el('p', 'cx-quote cx-quote--s', `“${e.codex}”`), el('p', 'cx-sub', CX.taken(e.taken)), el('p', 'cx-recipe', CX.recipe(e.recipe[0], e.recipe[1])));
+        add(c, el('h3', 'cx-h3', e.name), el('p', 'cx-desc', e.desc || ''), el('p', 'cx-quote cx-quote--s', `“${e.codex}”`), el('p', 'cx-sub', CX.taken(e.taken)), el('p', 'cx-recipe', CX.recipe(e.recipe[0], e.recipe[1])));
       } else if (e.state === 'sealed') {
         add(c, el('h3', 'cx-h3 is-dim', CX.notFound), el('p', 'cx-sub2', CX.awake));
         if (e.riddle) add(c, el('p', 'cx-riddle', `“${e.riddle}”`), el('p', 'cx-sub', CX.riddleNote));

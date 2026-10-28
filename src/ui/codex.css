@@ -64,6 +64,7 @@
 .cx-sub2 { font-size: 15px; color: var(--cx-dim); margin: 0; line-height: 1.3; }
 .cx-quote { font-family: var(--font-whisper, "Hollowlight Chancery"), Georgia, serif; font-style: italic; font-size: 18px; color: var(--cx-dim); line-height: 1.3; margin: 0; }
 .cx-quote--s { font-size: 17px; }
+.cx-desc { font-size: 15px; line-height: 1.3; margin: 0; color: var(--cx-text, inherit); overflow-wrap: anywhere; }
 .cx-kicker { font-size: 13px; font-weight: 700; color: var(--cx-brass); text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; }
 .cx-page { display: flex; gap: 10px; align-items: flex-start; padding: 7px 10px; border-radius: 10px; background: rgba(255, 243, 220, .05); }
 .cx-k { flex: 0 0 86px; font-size: 13px; font-weight: 700; color: var(--cx-brass); text-transform: uppercase; letter-spacing: 1px; padding-top: 2px; }

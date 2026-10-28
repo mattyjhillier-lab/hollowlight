@@ -197,7 +197,7 @@ export function almanac(save, data, def, opts = {}) {
       if (taken > 0) unlocked.add(key);
       const statName = (k) => (w.stats && w.stats[k] && w.stats[k].name) || k;
       const out = { key, id: eid, state, verb: state === 'sleeping' ? '???' : ev.verb, color: w.color || '#ffd27a' };
-      if (state === 'found') Object.assign(out, { name: ev.name, codex: ev.codex, recipe: [statName(ev.pair[0]), statName(ev.pair[1])], taken });
+      if (state === 'found') Object.assign(out, { name: ev.name, codex: ev.codex, desc: typeof ev.desc === 'string' ? ev.desc : '', recipe: [statName(ev.pair[0]), statName(ev.pair[1])], taken });
       else if (state === 'sealed') { if (riddles && own(RIDDLE, eid)) out.riddle = RIDDLE[eid].line; }
       else {
         let text = '', frac = 0;
