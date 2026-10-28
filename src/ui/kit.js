@@ -259,29 +259,29 @@ export function icon(name, { label } = {}) {
   return e;
 }
 
-// ---------- drawn HOLLOWLIGHT wordmark: lantern Os, candle I, brass letters with a tinted outline and rim light; hand-wobble is baked into the paths ----------
+// ---------- drawn WISPWICK wordmark: candle Is (a floating wisp over the first, a wick curl on the second), a small lantern hanging on the thread, brass letters with a tinted outline and rim light; hand-wobble is baked into the paths ----------
 const SVGNS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, ...kids) => { const e = doc().createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, String(v)); for (const c of kids) if (c) e.appendChild(c); return e; };
 const SK = { // skeletons, 100-unit cap height, slightly bent so no stroke is ruler-straight
-  H: { w: 70, d: 'M10 3Q9 50 11 97M60 2Q61 50 59 98M10 52Q35 49 60 52' },
-  L: { w: 62, d: 'M10 2Q11 50 10 98Q34 100 58 98' },
   W: { w: 96, d: 'M4 2Q13 50 24 98Q36 66 48 34Q60 66 72 98Q82 50 92 2' },
   I: { w: 22, d: 'M11 2Q12 50 11 98' },
-  G: { w: 82, d: 'M72 20C64 7 52 2 42 2C20 2 6 24 6 50C6 76 20 98 42 98C58 98 72 88 74 62Q60 61 46 62' },
-  T: { w: 78, d: 'M4 4Q39 -2 74 4M39 4Q38 50 39 98' },
+  S: { w: 70, d: 'M63 20C57 8 46 3 36 3C22 3 12 12 14 26C16 42 40 46 54 56C66 66 64 94 38 97C24 98 12 90 8 76' },
+  P: { w: 70, d: 'M10 98Q9 50 11 3M11 3Q30 1 40 3C62 5 66 20 65 32C64 48 54 55 38 56Q24 57 11 56' },
+  C: { w: 78, d: 'M72 22C64 8 52 3 42 3C20 3 6 24 6 50C6 76 20 97 42 97C54 97 66 90 72 78' },
+  K: { w: 76, d: 'M10 2Q9 50 11 98M64 3Q40 30 12 54M30 40Q48 70 66 98' },
 };
-const WORD = 'HOLLOWLIGHT';
+const WORD = 'WISPWICK';
 const OUT = '#3a2412';
 // Hand-made feel baked in: each letter sits a hair off the baseline and a hair off-square (fixed numbers, so the mark never changes between loads).
-const DY = [0, -2, 1.5, -1, 2, 0, -2, 1, 0, -1.5, 1];
-const ROT = [-0.8, 0.5, -0.4, 0.7, -0.6, 0.4, -0.7, 0.4, -0.5, 0.6, -0.3];
-/** The wordmark as an inline SVG. Accessible name is "Hollowlight" (role=img); everything inside is decorative. The viewBox leaves headroom for the
+const DY = [0, -2, 1.5, -1, 2, -1.5, 1, -1];
+const ROT = [-0.8, 0.5, -0.4, 0.7, -0.6, 0.4, -0.7, 0.5];
+/** The wordmark as an inline SVG. Accessible name is "Wispwick" (role=img); everything inside is decorative. The viewBox leaves headroom for the
  *  lantern caps and the candle flame, so nothing depends on overflow:visible to avoid clipping. */
-export function wordmark({ label = 'Hollowlight' } = {}) {
+export function wordmark({ label = 'Wispwick' } = {}) {
   const id = nextId('lg-wm');
   const gap = 10; let x = 0; const pos = [];
   for (const ch of WORD) { pos.push([ch, x]); x += (ch === 'O' ? 80 : SK[ch].w) + gap; }
-  const W = x - gap + 24, TOP = 14, H = 172 + TOP;
+  const W = x - gap + 24, TOP = 28, H = 190 + TOP;
   const stop = (o, c, a) => sv('stop', { offset: o, 'stop-color': c, ...(a != null ? { 'stop-opacity': a } : {}) });
   const defs = sv('defs', {},
     sv('linearGradient', { id: `${id}b`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#fff0c4'), stop(0.45, '#e2b866'), stop(1, '#9b6a2c')),
@@ -293,26 +293,27 @@ export function wordmark({ label = 'Hollowlight' } = {}) {
   const flame = (cls, tr, big) => sv('g', { class: cls, transform: tr },
     sv('path', { d: 'M0 -14C6 -6 8 -2 6 4C4 9 -4 9 -6 4C-8 -2 -6 -6 0 -14Z', fill: '#ffab3a', stroke: '#8a3f10', 'stroke-width': 2 }),
     sv('path', { d: big ? 'M0 -6C4 -1 4 3 0 7C-4 3 -4 -1 0 -6Z' : 'M0 -4C3 0 3 3 0 6C-3 3 -3 0 0 -4Z', fill: '#fff6d8' }));
+  const wispOver = () => sv('g', { transform: 'translate(33 -40)', class: 'lg-wm-wisp' }, sv('path', { d: 'M-16 12Q-12 4 -6 2', fill: 'none', stroke: '#ffd27a', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-opacity': 0.6 }), sv('circle', { r: 11, fill: `url(#${id}h)` }), flame('lg-wm-flame', 'scale(.5)', false));
+  const wickCurl = () => sv('path', { d: 'M11 -4Q11 -9 14 -11', fill: 'none', stroke: OUT, 'stroke-width': 2.4, 'stroke-linecap': 'round' });
+  const lanternParts = () => [
+      sv('ellipse', { cx: 40, cy: 104, rx: 36, ry: 6, fill: '#000', opacity: 0.28 }),
+      sv('rect', { x: 14, y: 93, width: 52, height: 9, rx: 4, fill: OUT }), sv('rect', { x: 17, y: 94, width: 46, height: 5.5, rx: 2.5, fill: `url(#${id}b)` }),
+      stroke('M26 -6Q40 -22 54 -6', 7, OUT), stroke('M26 -6Q40 -22 54 -6', 3, `url(#${id}b)`),
+      sv('circle', { cx: 40, cy: -17, r: 4.2, fill: 'none', stroke: OUT, 'stroke-width': 3.4 }), sv('circle', { cx: 40, cy: -17, r: 4.2, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 1.6 }),
+      sv('rect', { x: 6, y: 2, width: 68, height: 96, rx: 30, fill: OUT }), sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: `url(#${id}g)` }),
+      sv('circle', { cx: 40, cy: 58, r: 34, fill: `url(#${id}f)` }),
+      flame('lg-wm-flame', 'translate(40 56) scale(1.05)', true),
+      stroke('M40 7V93', 3, OUT, { opacity: 0.5 }),
+      sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 6 }),
+      stroke('M18 30Q17 50 19 72', 3, '#fff', { 'stroke-opacity': 0.55 }), stroke('M62 26Q64 36 63 44', 2, '#fff', { 'stroke-opacity': 0.3 })];
   let i = 0;
   for (const [ch, px] of pos) {
     const k = i++;
     const g = sv('g', { transform: `translate(${R1(px + 12)} ${R1(30 + DY[k])}) rotate(${ROT[k]} 40 50)`, 'aria-hidden': 'true' });
-    if (ch === 'O') {
-      g.append(
-        sv('ellipse', { cx: 40, cy: 104, rx: 36, ry: 6, fill: '#000', opacity: 0.28 }),
-        sv('rect', { x: 14, y: 93, width: 52, height: 9, rx: 4, fill: OUT }), sv('rect', { x: 17, y: 94, width: 46, height: 5.5, rx: 2.5, fill: `url(#${id}b)` }),
-        stroke('M26 -6Q40 -22 54 -6', 7, OUT), stroke('M26 -6Q40 -22 54 -6', 3, `url(#${id}b)`),
-        sv('circle', { cx: 40, cy: -17, r: 4.2, fill: 'none', stroke: OUT, 'stroke-width': 3.4 }), sv('circle', { cx: 40, cy: -17, r: 4.2, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 1.6 }),
-        sv('rect', { x: 6, y: 2, width: 68, height: 96, rx: 30, fill: OUT }), sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: `url(#${id}g)` }),
-        sv('circle', { cx: 40, cy: 58, r: 34, fill: `url(#${id}f)` }),
-        flame('lg-wm-flame', 'translate(40 56) scale(1.05)', true),
-        stroke('M40 7V93', 3, OUT, { opacity: 0.5 }),
-        sv('rect', { x: 11, y: 7, width: 58, height: 86, rx: 25, fill: 'none', stroke: `url(#${id}b)`, 'stroke-width': 6 }),
-        stroke('M18 30Q17 50 19 72', 3, '#fff', { 'stroke-opacity': 0.55 }), stroke('M62 26Q64 36 63 44', 2, '#fff', { 'stroke-opacity': 0.3 }));
-    } else {
+    {
       const d = SK[ch].d;
       g.append(stroke(d, 22, OUT), stroke(d, 15, `url(#${id}b)`), stroke(d, 2.5, '#fff8e0', { 'stroke-opacity': 0.7, transform: 'translate(-3 -3)' }), stroke(d, 2, '#6b4512', { 'stroke-opacity': 0.4, transform: 'translate(3.2 3.2)' }));
-      if (ch === 'I') g.append(
+      if (ch === 'I') g.append(...(k === 1 ? [wispOver()] : [wickCurl()]),
         sv('ellipse', { cx: 11, cy: -1, rx: 10, ry: 4, fill: OUT }), sv('ellipse', { cx: 11, cy: -2, rx: 7.5, ry: 2.6, fill: '#fff0c4' }),
         sv('path', { d: 'M5 -2Q4 4 6.5 7', fill: 'none', stroke: '#fff0c4', 'stroke-width': 2.6, 'stroke-linecap': 'round' }),
         sv('g', { transform: 'translate(11 -17)' }, sv('circle', { r: 19, fill: `url(#${id}h)` }), flame('lg-wm-flame', 'translate(0 0)', false)));
@@ -321,7 +322,7 @@ export function wordmark({ label = 'Hollowlight' } = {}) {
   }
   svg.append(
     sv('path', { d: `M${R1(W * 0.18)} 150Q${R1(W / 2)} 138 ${R1(W * 0.82)} 150`, fill: 'none', stroke: '#ffe0a0', 'stroke-width': 2, 'stroke-dasharray': '7 5', opacity: 0.85, 'aria-hidden': 'true' }),
-    sv('circle', { cx: R1(W / 2), cy: 144, r: 4.5, fill: '#ffd36b', stroke: '#6b4512', 'stroke-width': 1.5, 'aria-hidden': 'true' }));
+    sv('g', { transform: `translate(${R1(W / 2 - 13.6)} 146) scale(.34)`, 'aria-hidden': 'true' }, ...lanternParts()));
   return svg;
 }
 const R1 = (v) => Math.round(v * 10) / 10;

@@ -31,7 +31,7 @@ test('title copy: wordmark name, Begin/Continue + whispers, Skill Tree, Settings
   const t = buildTitle({ version: '9.9.9' });
   const s = texts(t.root);
   for (const w of ['Chapter 1', 'Spirits of the Dusk', 'Begin', 'Pick a hero and walk the Hollow', 'Skill Tree', 'Settings', 'Sound, motion, saves', 'v9.9.9']) assert.ok(s.includes(w), w);
-  assert.equal(find(t.root, (n) => n.attrs.role === 'img' && n.attrs['aria-label'] === 'Hollowlight').length, 1);
+  assert.equal(find(t.root, (n) => n.attrs.role === 'img' && n.attrs['aria-label'] === 'Wispwick').length, 1);
   assert.equal(find(t.root, (n) => n.tag === 'h1').length, 1);
   assert.ok(texts(buildTitle({ hasProgress: true }).root).includes('Continue'));
   assert.ok(!texts(buildTitle({ hasProgress: true }).root).includes('Begin'));

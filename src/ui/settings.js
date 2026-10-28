@@ -2,6 +2,7 @@
 // so nothing read from a save or a file can become markup. Every setting that existed before is here with the same key and the same handler.
 import { el, kitRoot, panel, button, toggle, tabs, slider } from './kit.js';
 import { SET } from './u4copy.js';
+import { ABOUT } from './aboutcopy.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 let sid = 0;
@@ -78,7 +79,7 @@ function fullscreenRow(pwa) {
       add(row, el('span', 'u4-row__label', SET.fullscreen.label), el('span', 'u4-row__help', SET.fullscreen.help),
         button({ label: on ? SET.fullscreen.off : SET.fullscreen.on, variant: 'secondary', inline: true, onClick: () => { pwa.toggleFullscreen(); } }));
     } else if (pwa.state().iosSteps) {
-      add(row, el('span', 'u4-row__label', SET.fullscreen.label), el('p', 'u4-note', 'On iPhone: tap Share, then Add to Home Screen, then open Hollowlight from the new icon.'));
+      add(row, el('span', 'u4-row__label', SET.fullscreen.label), el('p', 'u4-note', 'On iPhone: tap Share, then Add to Home Screen, then open Wispwick from the new icon.'));
     }
   };
   draw();
@@ -141,7 +142,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
       const d = globalThis.document;
       const url = URL.createObjectURL(new Blob([api.exportSave()], { type: 'application/json' }));
       const a = d.createElement('a');
-      a.href = url; a.download = 'hollowlight-save.json';
+      a.href = url; a.download = 'wispwick-save.json';
       d.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       say(SET.msg.exported);
@@ -174,15 +175,24 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   } });
   const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null);
 
+  // ---- About: blurb, how to play, credits, version, maker, feedback, AI-use note (textContent only) ----
+  const ver = typeof __APP_VERSION__ !== 'undefined' ? String(__APP_VERSION__).slice(0, 24) : 'dev';
+  const list = (items) => add(el('ul', 'u4-about__list'), ...items.map((t) => el('li', null, t)));
+  const about = add(el('div', 'u4-grid u4-about', null, { role: 'group', 'aria-label': ABOUT.tab }),
+    el('p', 'u4-note', ABOUT.blurb), el('h3', 'u4-about__h', ABOUT.howTitle), list(ABOUT.how),
+    el('h3', 'u4-about__h', ABOUT.creditsTitle), list(ABOUT.credits),
+    el('p', 'u4-note', ABOUT.madeBy), el('p', 'u4-note', `${ABOUT.versionLabel} ${ver}`),
+    el('p', 'u4-note', `${ABOUT.feedbackLabel}: ${ABOUT.feedback}`),
+    el('h3', 'u4-about__h', ABOUT.aiTitle), el('p', 'u4-note', ABOUT.ai));
   // ---- tabs ----
-  const panes = { sound, picture, controls, saves };
+  const panes = { sound, picture, controls, saves, about };
   const tl = tabs({ label: SET.tabsLabel, items: SET.tabs.map((t) => ({ id: t.id, label: t.label })), selected: tab in panes ? tab : 'sound', onSelect: (id) => {
     for (const [k, p] of Object.entries(panes)) p.hidden = k !== id;
   } });
   for (const b of tl.children) { const id = b.getAttribute('data-id'); b.setAttribute('id', `u4-tab-${id}`); b.setAttribute('aria-controls', `u4-pane-${id}`); }
   for (const [k, p] of Object.entries(panes)) { p.setAttribute('id', `u4-pane-${k}`); p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', `u4-tab-${k}`); p.classList.add('u4-pane'); }
   const back = button({ label: SET.back, hint: 'Esc', variant: 'primary', onClick: () => { if (onBack) onBack(); } });
-  const body = add(el('div', 'u4-body'), tl, add(el('div', 'u4-panes'), sound, picture, controls, saves), add(el('div', 'u4-foot'), back));
+  const body = add(el('div', 'u4-body'), tl, add(el('div', 'u4-panes'), sound, picture, controls, saves, about), add(el('div', 'u4-foot'), back));
   add(root, panel({ title: SET.title, whisper: SET.whisper, body: [body] }));
   return {
     root, tabs: tl, back, panes, say, msg, confirmBox, file, buttons: { export: bExp, import: bImp, reset: bRes }, select: (id) => tl.select(id),

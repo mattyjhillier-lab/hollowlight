@@ -83,7 +83,7 @@ export class Lanterns {
       const r = parseIndex(text);
       if (r.future) {
         this.locked = true;
-        this.note = 'Your lanterns are from a newer version of Hollowlight: they are kept safe and untouched. Update the game to continue.';
+        this.note = 'Your lanterns are from a newer version of Wispwick: they are kept safe and untouched. Update the game to continue.';
         if (r.ok) this.index = r.index;
         return this;
       }
@@ -120,7 +120,7 @@ export class Lanterns {
     const t = this._get(INDEX_KEY);
     if (t === null) return;
     const r = parseIndex(t);
-    if (r.future) { this.locked = true; this.note = 'Your lanterns were updated by a newer version of Hollowlight in another tab.'; return; }
+    if (r.future) { this.locked = true; this.note = 'Your lanterns were updated by a newer version of Wispwick in another tab.'; return; }
     if (r.ok) this.index = r.index;
   }
 

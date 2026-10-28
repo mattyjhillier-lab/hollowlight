@@ -1,4 +1,4 @@
-// PWA-1: draws the Hollowlight lantern emblem in code (SVG) and renders PNGs with headless Chrome. Output -> public/.
+// PWA-1: draws the Wispwick lantern emblem in code (SVG) and renders PNGs with headless Chrome. Output -> public/.
 // Run: node scripts/gen-icons.mjs   (spawns its own Chrome, kills only that PID; no downloads)
 import { spawn } from 'node:child_process';
 import { writeFileSync, mkdtempSync, existsSync, mkdirSync } from 'node:fs';
@@ -42,6 +42,8 @@ const TARGETS = [
   ['icon-maskable-512.png', 512, { scale: 0.95, rounded: false }], // full bleed, content inside the centre 80%
   ['apple-touch-icon.png', 180, { scale: 1.0, rounded: false }], // iOS rounds the corners itself
   ['favicon-32.png', 32, { scale: 1.25, rounded: true }],
+  ['favicon-64.png', 64, { scale: 1.2, rounded: true }],
+  ['icon-128.png', 128, { scale: 1.12, rounded: true }],
 ];
 writeFileSync(join(OUT, 'favicon.svg'), svg({ size: 64, scale: 1.25, rounded: true }));
 

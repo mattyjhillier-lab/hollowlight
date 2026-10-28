@@ -34,7 +34,7 @@ export function mountKit(root) {
   const shell = document.getElementById('app');
   if (shell) { shell.setAttribute('inert', ''); shell.setAttribute('aria-hidden', 'true'); }
   document.head.appendChild(el('style', null, STYLE));
-  document.title = 'Hollowlight UI kit';
+  document.title = 'Wispwick UI kit';
   const page = el('div', null, null, { id: 'kitpage' });
   const kit = kitRoot();
   const wrap = el('div', 'wrap');

@@ -35,7 +35,7 @@ function icon(doc, kind) {
 
 function iosGuide(doc, p) {
   const box = mk(doc, 'div', 'pwa-steps');
-  const steps = [['share', 'Tap Share, the square with an arrow.'], ['add', 'Choose Add to Home Screen.'], ['lantern', 'Open Hollowlight from the new icon.']];
+  const steps = [['share', 'Tap Share, the square with an arrow.'], ['add', 'Choose Add to Home Screen.'], ['lantern', 'Open Wispwick from the new icon.']];
   steps.forEach(([k, t], i) => {
     const s = mk(doc, 'div', 'pwa-step');
     s.append(icon(doc, k), mk(doc, 'span', 'pwa-num', String(i + 1)), mk(doc, 'span', '', t));
@@ -60,7 +60,7 @@ export function mountInstallCard(doc, pwa, parent, after) {
     slot.replaceChildren();
     if (!(forced ? pwa.showFooterLink() : pwa.shouldShowCard())) return;
     const card = mk(doc, 'div', 'pwa-card');
-    card.append(mk(doc, 'div', 'pwa-title', 'Play full screen'), mk(doc, 'div', 'pwa-text', 'Install Hollowlight for the best experience: full screen, no browser bars, works offline.'));
+    card.append(mk(doc, 'div', 'pwa-title', 'Play full screen'), mk(doc, 'div', 'pwa-text', 'Install Wispwick for the best experience: full screen, no browser bars, works offline.'));
     if (pwa.state().iosSteps) card.append(iosGuide(doc, pwa.platform));
     const row = mk(doc, 'div', 'pwa-row');
     if (pwa.canInstall()) row.append(btn(doc, 'btn', 'Install', () => { pwa.install(); }));
@@ -85,7 +85,7 @@ export function fullscreenEntry(doc, pwa, cls = 'btn') {
     if (pwa.canFullscreen()) {
       wrap.append(btn(doc, cls, pwa.isFullscreen() ? 'Exit full screen' : 'Full screen', () => { pwa.toggleFullscreen(); }));
     } else if (pwa.state().iosSteps) {
-      wrap.append(mk(doc, 'div', 'note', 'Full screen on iPhone: tap Share, then Add to Home Screen, then open Hollowlight from the new icon.'));
+      wrap.append(mk(doc, 'div', 'note', 'Full screen on iPhone: tap Share, then Add to Home Screen, then open Wispwick from the new icon.'));
     }
   };
   render();

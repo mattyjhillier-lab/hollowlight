@@ -72,7 +72,7 @@ try {
   await send('Page.navigate', { url: URL0 });
   check('title screen loads under /hollowlight/', await waitFor(titleUp));
   const man = await ev(`fetch(document.querySelector('link[rel=manifest]').href).then(r => r.json()).then(m => ({name: m.name, display: m.display, start: m.start_url, icons: m.icons.length}))`);
-  check('manifest parses', man.name === 'Hollowlight: Spirits of the Dusk' && man.icons === 3, JSON.stringify(man));
+  check('manifest parses', man.name === 'Wispwick: Spirits of the Dusk' && man.icons === 6, JSON.stringify(man));
   check('SW ready', await waitFor(`navigator.serviceWorker.ready.then(() => true)`));
   check('SW controls the page (first visit claim)', await waitFor('!!navigator.serviceWorker.controller', 8000));
   const scope = await ev(`navigator.serviceWorker.getRegistration().then(r => r.scope)`);

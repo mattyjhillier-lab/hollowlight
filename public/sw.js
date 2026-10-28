@@ -1,4 +1,4 @@
-// Hollowlight service worker (hand-written, no dependencies). Own files only: same-origin GET, nothing else.
+// Wispwick service worker (hand-written, no dependencies). Own files only: same-origin GET, nothing else.
 // VERSION is stamped at build time by vite.config.js (package version + hash of index.html). No auto skipWaiting:
 // a new version waits until the player accepts it from a menu (page posts SKIP_WAITING).
 const VERSION = '__SW_VERSION__';

@@ -187,7 +187,7 @@ export function lightLabel(sum, verb = LANTERN.light) {
 /** Export file name from a (whitelisted) lantern name: letters/digits/hyphen only. */
 export function exportFileName(name) {
   const s = String(name || '').normalize('NFKD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+/, '').slice(0, 24).replace(/-+$/, '').toLowerCase();
-  return `hollowlight-${s || 'lantern'}.json`;
+  return `wispwick-${s || 'lantern'}.json`;
 }
 
 /** Hold-to-confirm state (pure; the DOM drives it with timestamps). 1.5 s hold, or two activations within 5 s (keyboard / screen reader). */
