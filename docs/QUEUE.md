@@ -1,3 +1,4 @@
+- NAME OPTIONS v1 DONE 2026-10-28 (research only, docs/design/name-options-v1.md): 8 candidates web-checked; top 3 Wickwake (rec), Tallowlight, Dawnwick; trademark/domain all UNVERIFIED. NEEDS MATT: pick finalist, run docs/design/name-check.md on it.
 - RT6-RT8 OVERNIGHT 2026-10-28 (see LOCKED 'RT6 Long Night', 'RT7 Gentle Light', 'RT7 Endless Dusk', 'RT8 reconciliation'): Gentle Light halved (pooled 79% -> 54%, band 45-60) SHIPPED; Endless no change (maxed 6:08, mid 2:50 vs 3-6); Long Night no change (pooled 18%, 7/10 cells pass; Elias +10 over Wren); Ravens levers flat/backfire (reverted); Orbit-Wren early deaths 9% and first Deep Dusk clear run 10 open. 4 decisions waiting below.
 - RT5 STOPPED 2026-10-27 (no change): Deep Dusk mid tree mostly in 15-30, full + Bond 25 at 61-86 (band 35-55); enemyHp 1.25 crushes mid (4-12) first. Bond is the gap (+26-47 pts). Waiting on Matt (3 decisions: Deep Dusk band/Bond, Ravens, first-clear pace). RT6 Long Night after.
 
