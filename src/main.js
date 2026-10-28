@@ -79,7 +79,7 @@ window.addEventListener('resize', onResize);
 
 window.addEventListener('pagehide', () => app.save.flush());
 window.addEventListener('scene-ready', () => {
-  if (app.params.auto && app.data.characters[app.params.auto]) app.startRun(app.params.auto);
+  if (app.params.auto && Object.hasOwn(app.data.characters, app.params.auto)) app.startRun(app.params.auto);
   else app.showMenu();
 });
 
