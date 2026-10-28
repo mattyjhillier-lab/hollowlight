@@ -23,6 +23,7 @@ const errors = [];
 ws.addEventListener('message', (m) => {
   const d = JSON.parse(m.data);
   if (d.method === 'Runtime.exceptionThrown') errors.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
+  if (d.method === 'Page.javascriptDialogOpening') ws.send(JSON.stringify({ id: 999999, method: 'Page.handleJavaScriptDialog', params: { accept: true } })); // a 'Leave site?' prompt never hangs the run
   if (d.id && pending.has(d.id)) { const p = pending.get(d.id); pending.delete(d.id); d.error ? p.rej(new Error(d.error.message)) : p.res(d.result); }
 });
 const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; pending.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params })); });
@@ -48,8 +49,8 @@ const seed = async (obj, extra = {}) => {
   await go(base + '/');
   await ev(`if (window.__app && window.__app.save) { window.__app.save.readOnly = true; window.__app.lanterns.locked = true; } localStorage.clear(); localStorage.setItem('hollowlight.installCard.v1', String(Date.now())); localStorage.setItem('hollowlight:lantern:l1:save', ${JSON.stringify(typeof obj === 'string' ? obj : JSON.stringify(obj))}); ${Object.entries(extra).map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join('')} true`);
 };
-const noOverflow = async (label) => {
-  const o = await ev(`(()=>{const W=innerWidth,H=innerHeight;const bad=[];for(const e of document.querySelectorAll('#ui button, #ui p, #ui kbd, #ui .lg-btn__label')){const r=e.getBoundingClientRect();if(!r.width||getComputedStyle(e).visibility==='hidden')continue;if(e.closest('[hidden],[inert]'))continue;if(r.right>W+1||r.left<-1)bad.push((e.className||e.tagName)+':'+Math.round(r.left)+'-'+Math.round(r.right));}return {sw:document.documentElement.scrollWidth,W,bad:bad.slice(0,6)}})()`);
+const noOverflow = async (label, skip = '') => {
+  const o = await ev(`(()=>{const W=innerWidth,H=innerHeight;const bad=[];for(const e of document.querySelectorAll('#ui button, #ui p, #ui kbd, #ui .lg-btn__label')){const r=e.getBoundingClientRect();if(!r.width||getComputedStyle(e).visibility==='hidden')continue;if(e.closest('[hidden],[inert]'))continue;if(${JSON.stringify(skip)}&&e.closest(${JSON.stringify(skip || 'x')}))continue;if(r.right>W+1||r.left<-1)bad.push((e.className||e.tagName)+':'+Math.round(r.left)+'-'+Math.round(r.right));}return {sw:document.documentElement.scrollWidth,W,bad:bad.slice(0,6)}})()`);
   check(`${label}: no horizontal overflow`, o.sw <= o.W + 1 && !o.bad.length, JSON.stringify(o));
 };
 const played = { version: 3, createdAt: 1, updatedAt: 2, gold: 120, stats: { runs: 10, wins: 3 } };

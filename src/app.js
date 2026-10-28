@@ -1,6 +1,8 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
 import { shouldNudge } from './save/nudge.js';
 import { downloadText, SAFE } from './ui/savesafety.js';
+import { applyTextSize } from './ui/textsize.js';
+import { setActiveKeymap, dirMap } from './input/keymap.js';
 import { Sim } from './sim/Sim.js';
 import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
@@ -749,6 +751,10 @@ export const app = {
   applySettings() {
     const s = this.save.data.settings;
     document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
+    applyTextSize(document.documentElement, s.textSize); // A2
+    const km = setActiveKeymap(s.keys); // A3: remapped keys (validated); movement, hints and the HUD pill follow
+    if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
+    if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();
     if (this.audio) this.audio.configure(s);
     if (this.touch) {
       const coarse = typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches);

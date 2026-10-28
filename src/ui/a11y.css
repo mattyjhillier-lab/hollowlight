@@ -1,2 +1,71 @@
 /* A1 save safety: the title-screen backup reminder reuses the install card's look (.u3 .pwa-card in title.css); only its width slot is set here. */
 .overlay.u3 .a1-nudge { width: min(100%, 400px); box-sizing: border-box; }
+/* A2 text size: the factor every CSS font size is multiplied by (scripts/textscale.mjs). Normal = 1 = unchanged. */
+:root { --ts: 1; }
+:root[data-text="large"] { --ts: 1.15; }
+:root[data-text="larger"] { --ts: 1.3; }
+body { font-size: 16px; } /* the browser default, written out so em-sized text follows the factor too */
+
+/* A2 level-up cards with Large / Larger text: the fixed-height arches cannot hold bigger words, so the cards become the rows the phone layout
+   already uses (icon | words | number, height grows with the text), two per row on landscape screens. Nothing is line-clamped, so a pick
+   text is never cut; if the rows outgrow the screen, the level-up screen scrolls (keys 1-6 still pick). */
+:root:is([data-text="large"], [data-text="larger"]) .overlay.layer-levelup { overflow-y: auto; justify-content: safe center; }
+:root:is([data-text="large"], [data-text="larger"]) .layer-levelup .c-title, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .c-desc, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card.quiet .c-unit,
+:root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card.quiet .c-title { -webkit-line-clamp: unset; display: block; overflow: visible; }
+:root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card:not(.is-evolve) .c-desc { display: none; }
+/* row cards (phones, and every landscape screen at Large / Larger): the number / verb word sits beside the top line, so the name, the pick
+   text and the stirs line all run full width under it and words wrap whole. (A grid area must be a rectangle.) */
+:root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card:not(.quiet) { grid-template-areas: "icon tag num" "icon title title" "icon unit unit" "icon pips pips" "icon desc desc" "icon stirs stirs"; }
+:root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card:not(.quiet) .c-num { align-self: start; }
+:root:is([data-text="large"], [data-text="larger"]) .layer-levelup .c-title { overflow-wrap: break-word; }
+@media (min-aspect-ratio: 1/1) {
+  :root:is([data-text="large"], [data-text="larger"]) .overlay.layer-levelup { --u: 1px; gap: 8px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-head { flex-direction: row; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-note, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-eyelet, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main.lg-cardrow::before { display: none; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 980px); gap: 8px 10px; margin-top: 0; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .card, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .card.is-evolve { height: auto; min-height: 64px; padding: 6px 10px 6px 12px; display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 0; align-items: center; justify-items: start; text-align: left; transform-origin: 50% 0;
+    border-image: var(--lg-a-panel) 26 / 20px stretch; border-width: 6px; border-radius: 20px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .card.is-evolve { border-image: var(--lg-a-lead) 36 / 26px round; border-width: 12px; padding: 0 4px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-icon { grid-area: icon; width: 50px; height: 50px; align-self: center; margin: 0; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-tag, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .card > .lg-card__badge { position: static !important; grid-area: tag; margin: 0; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-title { grid-area: title; text-align: left; font-size: 20px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-unit { grid-area: unit; text-align: left; display: block; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-from { display: none; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-num { grid-area: num; justify-self: end; font-size: 26px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-pips { grid-area: pips; margin: 2px 0 0; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .card.is-evolve .c-pips, :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .card.is-evolve .c-unit { display: none; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-desc { grid-area: desc; text-align: left; font-size: 14px; line-height: 1.25; padding: 0; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .c-stirs { grid-area: stirs; justify-self: start; margin: 0; font-size: 15px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .lg-badge--evolve .lg-badge__seal { width: 24px; height: 24px; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .lu-main .lg-card__key { display: none; } /* as on every row layout (cards.css): keys 1-6 still pick */
+}
+@media (max-aspect-ratio: 1/1) { /* narrow phones: the EVOLVE seal fills the top line, so the number / verb word gets its own line under the name */
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card:not(.quiet) { grid-template-areas: "icon tag tag" "icon title title" "icon num num" "icon unit unit" "icon pips pips" "icon desc desc" "icon stirs stirs"; }
+  :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .card:not(.quiet) .c-num { justify-self: start; }
+}
+/* HUD: the ability key pill hangs under the dial; with bigger letters it is tucked up a little so it stays on screen at 640x360. */
+:root[data-text="large"] .h-abkey { transform: translate(-50%, 0); }
+:root[data-text="larger"] .h-abkey { transform: translate(-50%, calc(-5 * var(--hu))); }
+/* Settings with bigger words: tab pills and segmented choices wrap onto a second line instead of squeezing their labels together. */
+:root:is([data-text="large"], [data-text="larger"]) .overlay.u4 .u4-body .lg-tabs { flex-wrap: wrap; }
+:root:is([data-text="large"], [data-text="larger"]) .overlay.u4 .u4-body .lg-tab { flex: 1 1 auto; min-width: auto; }
+:root:is([data-text="large"], [data-text="larger"]) .overlay.u4 .u4-seg { flex-wrap: wrap; }
+:root:is([data-text="large"], [data-text="larger"]) .overlay.u4 .u4-seg__opt { flex: 1 1 auto; min-width: auto; white-space: nowrap; }
+/* Title with bigger words on a phone: room under the last button so the version / install footer never sits on it. */
+:root:is([data-text="large"], [data-text="larger"]) .overlay.u3 .u3-col { padding-bottom: 44px; }
+
+/* A3 key remap list (Settings > Controls): name | key 1 | key 2. Keys are the kit's keycap look (cream on dark glass, brass hairline);
+   the one waiting for a press glows with the thread colour. 44 px targets. */
+.overlay.u4 .a3-keys { display: flex; flex-direction: column; gap: 6px; }
+.overlay.u4 .a3-keys__list { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 8px; align-items: center; }
+.overlay.u4 .a3-keys__row { display: contents; }
+.overlay.u4 .a3-keys__name { font: var(--fw-body-strong) var(--fs-body)/1.2 var(--font-body); color: var(--lg-text); }
+.overlay.u4 .a3-key { min-width: 5.2em; min-height: var(--lg-tap, 44px); padding: 0 .7em; border-radius: 10px; cursor: pointer; color: #ffe0a0;
+  font: var(--fw-body-bold) var(--fs-body)/1 var(--font-body); background: linear-gradient(180deg, #2a3248, #171d2c); border: 1.5px solid #8d6c34; box-shadow: var(--lg-rim); }
+.overlay.u4 .a3-key:hover:not(:disabled) { border-color: #d8b26a; }
+.overlay.u4 .a3-key:focus-visible { outline: 3px solid var(--thread); outline-offset: 2px; }
+.overlay.u4 .a3-key:disabled { cursor: default; opacity: .7; }
+.overlay.u4 .a3-key.is-waiting { border-color: var(--thread); color: var(--lg-text); box-shadow: var(--lg-rim), 0 0 14px rgba(255, 190, 110, .45); }
+.overlay.u4 .a3-keys__msg { min-height: 1.3em; }
+.overlay.u4 .u4-row--keys { grid-column: 1 / -1; } /* the key list always takes the full width of the Controls tab */

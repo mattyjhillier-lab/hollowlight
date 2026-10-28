@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { textScalePlugin } from './scripts/textscale.mjs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
@@ -63,7 +64,7 @@ function inlineSingleFile() {
 export default defineConfig({
   base: './',
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  plugins: [inlineSingleFile(), stampServiceWorker()],
+  plugins: [textScalePlugin(), inlineSingleFile(), stampServiceWorker()], // A2: every CSS font size x var(--ts) (Settings > Text size)
   // Dev server: only watch what the game loads. docs/ holds ~150 mockup .html files and screenshots that agents write while Matt
   // plays; any change there made the dev server full-reload his open game page.
   // HMR off by default (HMR=1 turns it on): agents edit src/ while Matt plays the dev server, and every edit to a non-HMR module

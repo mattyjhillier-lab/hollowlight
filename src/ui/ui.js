@@ -485,6 +485,7 @@ export class UI {
   hideSettings() {
     if (!this.settingsOpen) return;
     this.settingsOpen = false;
+    if (this.settingsView && this.settingsView.remap) this.settingsView.remap.stop(false); // A3: never leave a key capture listening
     this.settingsView = null;
     this.hide('settings');
     for (const n of ['start', 'hero', 'pause', 'lanterns', 'nights']) if (this.layers[n]) this.layers[n].removeAttribute('inert');

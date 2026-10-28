@@ -1,6 +1,7 @@
 // HUD-1: the in-run frame, Direction A "Lantern & Thread" (docs/mockups/hud-sheet). DOM + inline SVG built with
 // createElementNS / textContent only (no innerHTML, no data in markup). Display-only: reads the sim, never writes it.
 // All layout lives in style.css (.h-*); this file builds the nodes and updates them when a value changes.
+import { keyLabel } from '../input/keymap.js';
 import { mk, defs, emblem, lantern, moonArc, bakeFrost, EMBLEM_OF, ROLE_COL } from './hudsvg.js';
 import {
   hpFrac, flameScale, isEmber, frostAmount, xpFrac, litNotches, rankPips, ringFrac, moonT, arcGeom, moonPoint,
@@ -77,7 +78,7 @@ export class Hud {
       mk(d, 'circle', { r: 42, fill: 'url(#hlPlate)', 'fill-opacity': 0.9, stroke: '#8d6c34', 'stroke-width': 2 }),
       mk(d, 'circle', { r: 37, fill: 'none', stroke: '#fff', 'stroke-opacity': 0.07, 'stroke-width': 5 }), this.abRing, this.abIcon]);
     this.abSec = el('b', 'h-num h-absec', '');
-    this.abKey = el('span', 'h-abkey', 'SPACE');
+    this.abKey = el('span', 'h-abkey', (keyLabel('ability') || 'Space').toUpperCase()); // A3: refreshKeys() after a remap
     this.ability = el('div', 'h-ability'); this.ability.append(abSvg, this.abSec, this.abKey);
 
     this.toast = el('div', 'toast');
@@ -94,6 +95,9 @@ export class Hud {
   wake() { fadeWake(this.fade, this.t || 0); this.applyFade(this.t || 0); }
 
   // Fresh run: forget everything cached so the first update paints all values.
+  // A3: the ability key pill follows Settings > Controls
+  refreshKeys() { this.abKey.textContent = (keyLabel('ability') || 'Space').toUpperCase(); }
+
   reset() {
     this.cache = {};
     this.peak = [];

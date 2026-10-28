@@ -1,5 +1,6 @@
 // Draws the simulation with Phaser. All art here is generated placeholder shapes,
 // ready to be swapped for real sprite sheets later.
+import { actionOf, codeOf, dirMap, activeKeymap } from '../input/keymap.js';
 import Phaser from 'phaser';
 import { app } from '../app.js';
 import { HLBloomFX } from '../gfx/bloompipe.js';
@@ -358,10 +359,14 @@ export class RunScene extends Phaser.Scene {
     // CTL1: movement comes from our own tracker (sees every key first, drops everything when a keyup can be missed); the ability is a
     // queued Space press made while the run is live (never one that activated a pause/card button), so neither can stick.
     this.held = new HeldKeys();
+    this.held.setDirs(dirMap(activeKeymap())); // A3 remapped movement keys
     this.abilityQ = false;
     bindHeldKeys(this.held, window, document);
     window.addEventListener('keydown', (e) => {
-      if ((e.code !== 'Space' && e.key !== ' ') || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+      const act = actionOf(e); // A3 remappable keys (Esc stays on the Phaser path below)
+      if (act === 'pause' && codeOf(e) !== 'Escape') { if (!(app.ui && app.ui.settingsOpen)) app.togglePause(); return; }
+      if (act !== 'ability') return;
       const s = app.sim;
       if (s && s.state === 'running' && !app.paused && !(app.ui && app.ui.settingsOpen)) this.abilityQ = true;
     }, true);

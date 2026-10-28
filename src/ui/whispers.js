@@ -1,3 +1,4 @@
+import { keyLabel, keyName, activeKeymap } from '../input/keymap.js';
 // FM1-FM3 Lantern whispers (docs/design/first-minute-v1.md, LOCKED 2026-10-24 'FIRST MINUTE'). Pure JS, no DOM, no Phaser:
 // the ladder state, triggers, queue, per-lantern bits and the copy. Reads a plain view built from sim state; never touches the sim or its RNG.
 // Bits live in the lantern's save (save.hints, a small integer; unknown bits are dropped by cleanHints).
@@ -22,7 +23,7 @@ const HERO_TAP = { wren: 'the wolf', elias: 'the candle' };
 const HERO_WHISPER = { wren: 'Your wolves rush in together. It recharges.', elias: 'Stand in the ring of light to heal. It recharges.' };
 export const COPY = {
   move: {
-    kb: [{ key: 'W' }, { key: 'A' }, { key: 'S' }, { key: 'D' }, { text: ' or arrows to walk' }],
+    kb: [{ key: 'W' }, { key: 'A' }, { key: 'S' }, { key: 'D' }, { text: ' or arrows to walk' }], // default keys; plateFor uses the live keymap (A3)
     touch: [{ text: 'Drag on the left side to walk' }], // the stick starts only in the left 55% (src/input/touch.js ZONE_FRAC); the sheet's 'anywhere' was not true
     w: 'Your spirits fight for you. Keep moving.',
   },
@@ -38,6 +39,16 @@ export const COPY = {
   skipTouch: 'Tap to hide',
 };
 
+// A3: the walk plate names the live movement keys (WASD by default; arrows stay the second keys unless remapped)
+function moveParts() {
+  const m = activeKeymap();
+  const first = ['up', 'left', 'down', 'right'].map((a) => keyName(m[a][0]));
+  const second = ['up', 'left', 'down', 'right'].map((a) => m[a][1]);
+  if (first.join() === 'W,A,S,D' && second.join() === 'ArrowUp,ArrowLeft,ArrowDown,ArrowRight') return COPY.move.kb;
+  const arrows = second.join() === 'ArrowUp,ArrowLeft,ArrowDown,ArrowRight';
+  return [...first.filter(Boolean).map((k) => ({ key: k })), { text: arrows ? ' or arrows to walk' : ' to walk' }];
+}
+
 const clip = (s, n) => { s = String(s == null ? '' : s); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 export const partsText = (parts) => parts.map((p, i) => (p.key ? `${i > 0 && parts[i - 1].key ? ' ' : ''}${p.key}` : p.text)).join('').trim();
 const srOf = (parts, w) => `${partsText(parts)}. ${w}`;
@@ -47,8 +58,8 @@ export function plateFor(id, input, hero = {}) {
   const touch = input === 'touch';
   const name = clip(hero.ability || 'your ability', 28);
   let parts, w;
-  if (id === 'move') { parts = touch ? COPY.move.touch : COPY.move.kb; w = COPY.move.w; } else if (id === 'gems') { parts = COPY.gems.kb; w = COPY.gems.w; } else if (id === 'lowhp') { parts = COPY.lowhp.kb; w = COPY.lowhp.w; } else if (id === 'ability') {
-    parts = touch ? [{ text: `Tap ${HERO_TAP[hero.id] || 'the glowing button'}: ${name}` }] : [{ text: 'Press ' }, { key: 'SPACE' }, { text: `: ${name}` }];
+  if (id === 'move') { parts = touch ? COPY.move.touch : moveParts(); w = COPY.move.w; } else if (id === 'gems') { parts = COPY.gems.kb; w = COPY.gems.w; } else if (id === 'lowhp') { parts = COPY.lowhp.kb; w = COPY.lowhp.w; } else if (id === 'ability') {
+    parts = touch ? [{ text: `Tap ${HERO_TAP[hero.id] || 'the glowing button'}: ${name}` }] : [{ text: 'Press ' }, { key: (keyLabel('ability') || 'Space').toUpperCase() }, { text: `: ${name}` }];
     w = HERO_WHISPER[hero.id] || 'It recharges after each use.';
   } else return null;
   return { id, parts, w, sr: srOf(parts, w), skip: touch ? COPY.skipTouch : COPY.skipKb, ring: id === 'ability', ghost: id === 'move' && touch };
@@ -173,7 +184,8 @@ export class Whispers {
 export function rerollTitle(o, input) {
   const r = (o.rerolls | 0) > 0, b = (o.banishes | 0) > 0;
   if (input === 'touch') return r ? 'Tap Reroll for new cards' : 'Tap Banish, then a card';
-  return [r ? 'R: new cards' : '', b ? 'B then a number: banish' : ''].filter(Boolean).join('  ·  ');
+  const rk = keyLabel('reroll'), bk = keyLabel('banish'); // A3: the live keys
+  return [r && rk ? `${rk}: new cards` : '', b && bk ? `${bk} then a number: banish` : ''].filter(Boolean).join('  ·  ');
 }
 
 // ---------------------------------------------------------------- FM3 results teaching (first death / second death / first win)

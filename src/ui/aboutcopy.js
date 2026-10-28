@@ -6,7 +6,7 @@ export const ABOUT = Object.freeze({
   how: Object.freeze([
     'Move with WASD or the arrow keys (or the on-screen stick). Your spirits attack on their own.',
     'Collect glowing gems to level up, then pick one of three cards.',
-    'Space uses your hero\'s ability. Esc pauses. 1 to 4 pick a card, R rerolls once unlocked.',
+    'Space uses your hero\'s ability. Esc pauses. 1 to 4 pick a card, R rerolls once unlocked. (Default keys: change them in Settings > Controls.)',
     'Survive until dawn. Gold and shards you earn grow your skill tree for the next night.',
   ]),
   creditsTitle: 'Credits',

@@ -11,20 +11,29 @@ const KEY_FALLBACK = { w: 'KeyW', W: 'KeyW', a: 'KeyA', A: 'KeyA', s: 'KeyS', S:
 const MAX_HELD = 8;
 
 // Movement code for a KeyboardEvent-like {code, key}, or '' (untrusted input: only whitelisted strings map).
-export function moveCode(e) {
+// dir: code -> 'u'|'d'|'l'|'r' (A3 remap: src/input/keymap.js dirMap); default WASD + arrows.
+export function moveCode(e, dir = DIR) {
   if (!e) return '';
   const c = typeof e.code === 'string' ? e.code : '';
-  if (Object.hasOwn(DIR, c)) return c;
+  if (Object.hasOwn(dir, c)) return c;
   const k = typeof e.key === 'string' ? e.key : '';
-  return !c && Object.hasOwn(KEY_FALLBACK, k) ? KEY_FALLBACK[k] : '';
+  return !c && Object.hasOwn(KEY_FALLBACK, k) && Object.hasOwn(dir, KEY_FALLBACK[k]) ? KEY_FALLBACK[k] : '';
 }
 
 export class HeldKeys {
-  constructor() { this.codes = []; this.seq = []; this.n = 0; this.tick = 0; this.lastClear = ''; }
+  constructor() { this.codes = []; this.seq = []; this.n = 0; this.tick = 0; this.lastClear = ''; this.dir = DIR; }
+
+  // A3: remapped movement keys (validated map from src/input/keymap.js). Held keys are dropped so nothing sticks across a change.
+  setDirs(dir) {
+    const o = {};
+    if (dir && typeof dir === 'object') for (const [c, d] of Object.entries(dir)) if (typeof c === 'string' && /^[A-Za-z0-9]{1,20}$/.test(c) && ['u', 'd', 'l', 'r'].includes(d)) o[c] = d;
+    this.dir = Object.keys(o).length ? o : DIR;
+    this.clear('remap');
+  }
 
   // returns true if it is a movement key
   press(code) {
-    if (!Object.hasOwn(DIR, code)) return false;
+    if (!Object.hasOwn(this.dir, code)) return false;
     for (let i = 0; i < this.n; i++) if (this.codes[i] === code) return true; // autorepeat: keeps its original order
     if (this.n >= MAX_HELD) return true;
     this.codes[this.n] = code; this.seq[this.n] = ++this.tick; this.n++;
@@ -49,7 +58,7 @@ export class HeldKeys {
   axis(out) {
     let sx = 0, tx = -1, sy = 0, ty = -1;
     for (let i = 0; i < this.n; i++) {
-      const d = DIR[this.codes[i]], t = this.seq[i];
+      const d = this.dir[this.codes[i]], t = this.seq[i];
       if (d === 'l' || d === 'r') { if (t > tx) { tx = t; sx = d === 'l' ? -1 : 1; } } else if (t > ty) { ty = t; sy = d === 'u' ? -1 : 1; }
     }
     out.x = sx; out.y = sy;
@@ -66,8 +75,8 @@ export class HeldKeys {
 
 // Wire a HeldKeys to the page. win/doc injectable for tests. Returns an unbind function.
 export function bindHeldKeys(held, win, doc) {
-  const kd = (e) => { if (!e.ctrlKey && !e.metaKey && !e.altKey) held.press(moveCode(e)); };
-  const ku = (e) => { held.release(moveCode(e)); }; // a keyup always releases, modifiers or not, prevented or not
+  const kd = (e) => { if (!e.ctrlKey && !e.metaKey && !e.altKey) held.press(moveCode(e, held.dir || DIR)); };
+  const ku = (e) => { held.release(moveCode(e, held.dir || DIR)); }; // a keyup always releases, modifiers or not, prevented or not
   const blur = () => held.clear('blur');
   const vis = () => { if (doc.hidden) held.clear('hidden'); };
   const hide = () => held.clear('pagehide');
