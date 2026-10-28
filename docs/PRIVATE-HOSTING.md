@@ -16,3 +16,11 @@ Cloudflare Pages (free) + Cloudflare Access (free for up to 50 users) can hide b
 - Saves live in each player's browser, so a new web address means a fresh save: export from the old address first (Settings -> Save -> Export), import on the new one.
 - Do not put API tokens in the repo. Cloudflare's Git connection needs none.
 - Until step 6, treat the GitHub Pages address as public.
+
+## Making the installed app (PWA) work behind Cloudflare Access
+Why: the browser fetches the install files without your login cookie, so the Access redirect can break "Add to Home Screen" (plain icon, wrong name, or no install prompt) and the service worker update check. Fix = let ONLY these public files bypass the gate (they contain no secrets):
+1. Zero Trust -> Access -> Applications -> Add -> Self-hosted, one app per path on the SAME Pages domain: `/manifest.webmanifest`, `/sw.js`, `/favicon.svg`, and each icon (`/icon-192.png`, `/icon-512.png`, `/icon-maskable-512.png`, `/apple-touch-icon.png`, `/favicon-32.png`, `/favicon-64.png`, `/icon-128.png`). (A wildcard like `/icon-*` is fine if the dashboard allows it.)
+2. Policy for each: Action = Bypass, Include = Everyone. More specific paths win over the main app.
+3. Leave the game page (`/` and everything else) behind the email gate.
+4. Test on a real phone: open the link in Safari/Chrome, sign in once, then Add to Home Screen / Install app; open the installed app, switch to airplane mode, relaunch (it should open offline).
+Facts: the manifest uses relative paths (`start_url ./`, `scope ./`), so it works on any host or sub-path. iPhone: the home-screen app has separate storage from Safari, so export/import a save when switching between them. The Access login lasts 24 hours by default; raise it to 30 days in the Access app settings (Session duration) so testers are not asked every day.
