@@ -253,9 +253,9 @@ test('DT0 new condition leaves: clearTier (with hero), stars, killMarked, openCh
 });
 
 // ------------------------------------------------------------------ tool clusters: data
-const TOOL = { satchel: ['li_reach', 'co_pull', 'li_scav', 'co_call', 'li_hearts', 'li_heal', 'li_magnet', 'co_glean'], cardfan: ['sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'cd_stir', 'cd_peek', 'cd_bars', 'cd_radar', 'cd_favour', 'cd_fourth'], hearthkey: ['sp_auto', 'rs_autoset', 'rs_start', 'rs_bless', 'li_last', 'rs_slot5'], nightgate: ['gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'] };
+const TOOL = { satchel: ['li_reach', 'co_pull', 'li_scav', 'co_call', 'li_hearts', 'li_heal', 'li_magnet', 'co_glean'], cardfan: ['sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'cd_stir', 'cd_peek', 'cd_bars', 'cd_favour', 'cd_fourth'], hearthkey: ['sp_auto', 'rs_autoset', 'rs_start', 'rs_bless', 'li_last', 'rs_slot5'], nightgate: ['gt_cursed_forest_hard', 'gt_cursed_forest_expert', 'df_ward', 'df_vigil', 'df_star'] };
 // T6: still inert = needs a feature that is not built (Hollow marks, chests / minibosses, a codex, an enemy tell for crows / crawlers, the tier select + Dawnglass)
-const INERT = ['cd_radar', 'bs_crow3', 'bs_crawl3', 'bs_page', 'df_ward', 'df_vigil', 'df_star'];
+const INERT = ['df_ward', 'df_vigil', 'df_star'];
 
 test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and idx, every new node has a permanent (fragment, idx), layout and budget pass', () => {
   assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel', 'wardrobe']); // + the Wardrobe (EXTRAS v1)
@@ -273,7 +273,8 @@ test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and i
 
 test('DT4 inert (pending) nodes are exactly the ones whose sim / UI hook is not built yet; they cannot be bought, aggregated or forged into a save', () => {
   assert.deepEqual(def.pendingList.slice().sort(), INERT.slice().sort(), 'tool pending set (T6: the bridges and the built Card Fan / Almanac / Hearth-key lanterns are live)');
-  assert.equal(def.pendingList.filter((i) => i.startsWith('bs_')).length, 3, 'the Almanac lanterns that wait: crow / crawler Tells (no attack tell exists) and Full Almanac (codex + chests)');
+  assert.equal(def.pendingList.filter((i) => i.startsWith('bs_')).length, 0, 'every Almanac lantern is live (crow / crawler Tells and Full Almanac are codex-only perks)');
+  assert.ok(def.retiredIds.cd_radar, 'Lantern Compass is a tombstone (never buyable, so no save can own it)');
   for (const id of def.pendingList) { assert.equal(def.nodes[id], undefined, id); assert.ok(!def.list.includes(id)); }
   const forged = { ...own(def.pendingList), ...own(['li_reach']) };
   assert.deepEqual(sanitizeTree(forged, { killsByEnemy: { wolf: 1e9 } }, def, data), { li_reach: 1 });
@@ -404,7 +405,7 @@ test('DT0 tier gates are permanent, chained (Long Night needs Deep Dusk), name n
 test('DT4 Dawnglass costs are bounded in the tree data: a node cannot cost more than 1e5 glass or a fractional / negative amount', () => {
   for (const bad of [-1, 1.5, 1e6, 'x']) {
     const fs = clone(readTreeFiles());
-    fs.find((f) => f.path === 'tools/cardfan.json').json.nodes[5].cost.glass = bad;
+    fs.find((f) => f.path === 'tools/cardfan.json').json.nodes[4].cost.glass = bad;
     const c = composeTree(fs, data);
     assert.throws(() => compileTree(c.v2, data), /bad cost/, String(bad));
   }

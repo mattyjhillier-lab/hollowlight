@@ -236,6 +236,11 @@
    "id": "el_lamp",
    "frag": "el",
    "idx": 2
+  },
+  {
+   "id": "cd_radar",
+   "frag": "cd",
+   "idx": 3
   }
  ],
  "budget": {

@@ -102,36 +102,6 @@
    ]
   },
   {
-   "id": "cd_radar",
-   "idx": 3,
-   "kind": "ring",
-   "name": "Lantern Compass",
-   "desc": "Edge arrows also point to chests and to the next miniboss 20 s before it arrives.",
-   "cost": {
-    "gold": 700
-   },
-   "effects": [
-    {
-     "info": "compass"
-    }
-   ],
-   "branch": "spirit",
-   "inert": true,
-   "unlock": {
-    "t": "openChest",
-    "n": 5
-   },
-   "place": {
-    "at": [
-     -104.6,
-     34
-    ]
-   },
-   "requires": [
-    "br_cardfan"
-   ]
-  },
-  {
    "id": "cd_favour",
    "idx": 4,
    "kind": "ring",

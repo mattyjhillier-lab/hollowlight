@@ -33,7 +33,7 @@ const MOVED = fx('tree-t3b-moved.json'); // the four existing ids the tool-clust
 const T3C = fx('tree-t3c-connected.json'); // T3c connected-unlock patch: li_reach hangs from its bridge, sp_cd1 needs-all -> any-one, + the live bridge br_satchel
 const CH2 = fx('tree-ch2-characters.json'); // CHARACTER SYSTEM v2 overlay (null = retired hero lantern, now a tombstone)
 const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df', 'wd']; // wd = the Wardrobe (EXTRAS v1, zero power)
-const RETIRED = new Set(Object.keys(CH2).filter((k) => CH2[k] === null));
+const RETIRED = new Set([...Object.keys(CH2).filter((k) => CH2[k] === null), 'cd_radar']); // + Lantern Compass (inert tombstone, Almanac delegation 2026-10-28)
 // the v1 tree has no Wolves / Orbit hearts: compile it with those two ungated, as they were
 const v1data = { ...data, weapons: Object.fromEntries(Object.entries(data.weapons).map(([k, w]) => [k, ['ghost_wolves', 'holy_orbit'].includes(k) ? (({ treeGate, ...r }) => r)(w) : w])) };
 const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
@@ -68,7 +68,7 @@ test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 req
   // the live tree IS the v2 view: same nodes, same graph, same positions
   assert.deepEqual(liveDef.list, v2Def.list.filter((id) => liveDef.nodes[id]), 'live = v2 minus the inert (pending) tool nodes, same order');
   for (const id of liveDef.list) { assert.deepEqual(snap(liveDef.nodes[id]), snap(v2Def.nodes[id]), id); assert.deepEqual([liveDef.nodes[id].x, liveDef.nodes[id].y], [v2Def.nodes[id].x, v2Def.nodes[id].y], id); }
-  assert.deepEqual(Object.keys(liveDef.retiredIds).sort(), [...RETIRED].sort(), 'only the six hero lanterns are retired (CHARACTER SYSTEM v2; none by the rescale)');
+  assert.deepEqual(Object.keys(liveDef.retiredIds).sort(), [...RETIRED].sort(), 'the six hero lanterns (CHARACTER SYSTEM v2) and the never-buyable Lantern Compass are retired');
 });
 
 test('T3a a tree-less run is untouched: no nodes owned = the same effects as the v1 tree gave', () => {
@@ -126,7 +126,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 164, '156 + the four T3c bridge lanterns - the six retired hero lanterns + the two new Wolves / Orbit hearts (CHARACTER SYSTEM v2) + the Wardrobe bridge and its 7 lanterns (EXTRAS v1)');
+  assert.equal(real.info.nodes.length, 163, '156 + the four T3c bridge lanterns - the six retired hero lanterns + the two new Wolves / Orbit hearts (CHARACTER SYSTEM v2) + the Wardrobe bridge and its 7 lanterns (EXTRAS v1) - the retired Lantern Compass (cd_radar)');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);

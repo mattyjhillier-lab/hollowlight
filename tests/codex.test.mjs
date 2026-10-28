@@ -70,7 +70,7 @@ test('CX1 pages: same counts as the Almanac tree nodes; pending nodes stay out o
   const w = pageSpec(treeDef, 'wolf');
   assert.deepEqual(w.map((p) => [p.page, p.at, p.live]), [['habits', WOLF_HABITS_DEFAULT, true], ['weakness', 4000, true], ['tells', 12000, true]]);
   const c = pageSpec(treeDef, 'crow');
-  assert.deepEqual(c.map((p) => [p.at, p.live]), [[1000, true], [4000, true], [12000, false]]); // bs_crow3 pending since T6
+  assert.deepEqual(c.map((p) => [p.at, p.live]), [[1000, true], [4000, true], [12000, true]]); // bs_crow3 is a live codex-only page since the Almanac delegation
   const t = pageSpec(treeDef, 'elder_treant');
   assert.deepEqual(t.map((p) => p.at), [1, 5, 15]);
 });
@@ -123,7 +123,8 @@ test('CX7 riddles: one stat of the pair only, never both; shown only with the Fu
   const sealed = (b) => b.spirits.flatMap((w) => w.evos).filter((e) => e.state === 'sealed');
   assert.ok(sealed(almanac(s, data, treeDef)).every((e) => !e.riddle));
   assert.ok(sealed(almanac(s, data, treeDef, { riddles: true })).every((e) => typeof e.riddle === 'string' && e.riddle));
-  assert.ok(Object.hasOwn(treeDef.pending, 'bs_page'), 'Full Almanac stays inert until Matt reads the riddles');
+  assert.ok(treeDef.nodes.bs_page && !Object.hasOwn(treeDef.pending, 'bs_page'), 'Full Almanac is live: a pure codex perk');
+  assert.ok(!JSON.stringify(treeDef.nodes.bs_page).toLowerCase().includes('blessing'), 'Full Almanac has no Blessing effect and says none');
 });
 
 test('CX1 adopt: an old save holds its progress as read + told (no flood); a v1 codex is untouched', () => {

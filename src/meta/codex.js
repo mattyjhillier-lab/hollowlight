@@ -271,7 +271,7 @@ export function almanac(save, data, def, opts = {}) {
   if (nights.every((n) => n.walked) && lore.every((l) => l.open)) complete.add('c:nights');
   const pageKeys = [...live];
   const pagesFound = pageKeys.filter((k) => unlocked.has(k)).length;
-  if (pagesFound === pageKeys.length && pageKeys.length > 0) complete.add('c:book');
+  if (pagesFound === pageKeys.length && pageKeys.length > 0 && ownsFullAlmanac(s)) complete.add('c:book'); // the book is whole only with the Full Almanac lantern (codex perk)
   for (const c of complete) unlocked.add(c);
   for (const t of tabs) t.fresh = [...unlocked].some((k) => isNew(k) && tabOfKey(k) === t.id);
   const earned = TITLE_IDS.filter((t) => { const d = TITLES[t]; return d.weapon ? complete.has(`c:${d.weapon}`) : d.tab ? complete.has(`c:${d.tab}`) : d.book ? complete.has('c:book') : false; });

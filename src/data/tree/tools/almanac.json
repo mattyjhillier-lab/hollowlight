@@ -161,7 +161,7 @@
    "idx": 5,
    "kind": "ring",
    "name": "Grave Crow: Tells",
-   "desc": "Its attack tell shows 0.1 s earlier.",
+   "desc": "Adds the Grave Crow Tells page to the Almanac: how it arrives and what to watch for. No effect in a run.",
    "cost": {
     "gold": 400
    },
@@ -172,7 +172,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_crow2"
    ],
@@ -255,7 +254,7 @@
    "idx": 8,
    "kind": "ring",
    "name": "Root Crawler: Tells",
-   "desc": "Its attack tell shows 0.1 s earlier.",
+   "desc": "Adds the Root Crawler Tells page to the Almanac: how it arrives and what to watch for. No effect in a run.",
    "cost": {
     "gold": 400
    },
@@ -266,7 +265,6 @@
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "requires": [
     "bs_crawl2"
    ],
@@ -380,7 +378,7 @@
    "idx": 12,
    "kind": "ring",
    "name": "Full Almanac",
-   "desc": "The codex pages light up and chests show one more Blessing to choose from. No power beyond the Blessing caps.",
+   "desc": "Lights the riddle hints in the Almanac, and lets the book become whole. No effect in a run.",
    "cost": {
     "gold": 2000,
     "shards": 2
@@ -389,14 +387,9 @@
     {
      "info": "codex",
      "pe": 0.05
-    },
-    {
-     "perk": "blessChoice",
-     "pe": 0
     }
    ],
    "branch": "spirit",
-   "inert": true,
    "unlock": {
     "t": "all",
     "of": [

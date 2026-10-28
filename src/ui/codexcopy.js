@@ -74,8 +74,8 @@ export const UNMET = 'Somewhere in the Cursed Forest.';
 export const PAGE_LABEL = Object.freeze({ habits: 'Habits', weakness: 'Weakness', tells: 'Tells' });
 export const PAGE = Object.freeze({
   wolf: { habits: 'Hunts in twos and threes. Turns when the lantern turns.', weakness: 'Light from the side scatters it; it only knows how to run straight.', tells: 'It drops its head before it lunges. Step aside, not back.' },
-  crow: { habits: 'Comes in clouds after the first howl. Leaves when the light stays.', weakness: 'Hollow bones. One touch of light is enough.', tells: 'It circles once, high, before it falls.' },
-  root_crawler: { habits: 'It goes where the ground is soft and the light is thin.', weakness: 'Slow to turn. Walk around it and it forgets you.', tells: 'The soil shivers just before it rises.' },
+  crow: { habits: 'Comes in clouds after the first howl. Leaves when the light stays.', weakness: 'Hollow bones. One touch of light is enough.', tells: 'No lunge and no warning: a cloud weaves in fast from the edge of the light. The danger is the crowd, so keep moving.' },
+  root_crawler: { habits: 'It goes where the ground is soft and the light is thin.', weakness: 'Slow. Keep walking and it never catches you.', tells: 'No lunge and no warning: it plods straight at the lantern, heavy and hard to shove. Give it room.' },
   elder_treant: { habits: 'It waits for the night to be nearly over. It has always waited.', weakness: 'Its heart glows when it rages. That is where the light gets in.', tells: 'It lifts its arms before the ground answers.' },
 });
 
@@ -93,20 +93,20 @@ export const LORE = Object.freeze([
   { title: 'Hollowlighters', text: 'Each night they walk into the grey with their spirits. Keep the light until dawn, and the sun remembers that place for good.', cond: 'Clear the Long Night.' },
 ]);
 
-// CX7 riddles: { stat (one half of the pair), line }. DRAFT copy for Matt to read (Full Almanac stays inert until he does).
+// CX7 riddles: { stat (one half of the pair), line }. Polished by Claude under Matt's Almanac delegation (2026-10-28). Shown only with the Full Almanac lantern.
 export const RIDDLE = Object.freeze({
-  phantom_stampede: { stat: 'speed', line: 'The pack leaves light where it runs fast.' },
-  howling_legion: { stat: 'count', line: 'The more who run together, the fewer stay fallen.' },
-  dire_alpha: { stat: 'power', line: 'One bite, heavy enough for seven.' },
-  murder_storm: { stat: 'range', line: 'Watch far enough and the sky becomes a wall.' },
-  dive_bombers: { stat: 'power', line: 'A hard beak finds the largest shadow.' },
-  spearhead: { stat: 'speed', line: 'Beat the wings fast and the flock becomes a road.' },
-  spirit_tempest: { stat: 'count', line: 'Enough glyphs, and each one finds its own name.' },
-  soul_lance: { stat: 'pierce', line: 'A light that never stops at the first foe.' },
+  phantom_stampede: { stat: 'speed', line: 'The pack leaves its light behind when it runs fast enough.' },
+  howling_legion: { stat: 'count', line: 'Gather enough voices and the night is howled down.' },
+  dire_alpha: { stat: 'power', line: 'One bite from the oldest wolf, and that is the end of it.' },
+  murder_storm: { stat: 'range', line: 'See far enough, and the wings close in like weather.' },
+  dive_bombers: { stat: 'power', line: 'A hard enough beak goes for the biggest shadow.' },
+  spearhead: { stat: 'speed', line: 'Beat the wings fast and the whole flock becomes one point.' },
+  spirit_tempest: { stat: 'count', line: 'Scatter enough glyphs and the air begins to answer.' },
+  soul_lance: { stat: 'pierce', line: 'A light that does not stop at the first shadow.' },
   returning_pages: { stat: 'speed', line: 'Swift pages always find their way home.' },
-  thunder_judgment: { stat: 'chains', line: 'Enough links, and the sky keeps count for you.' },
+  thunder_judgment: { stat: 'chains', line: 'Many links, and the sky does the counting.' },
   static_storm: { stat: 'cooldown', line: 'Strike often enough and the air takes your side.' },
-  storm_tether: { stat: 'area', line: 'A wide arc is an arc you can hold.' },
+  storm_tether: { stat: 'area', line: 'Reach wide enough and the storm can be held.' },
   vesper_tide: { stat: 'radius', line: 'A wide ring breathes like the evening.' },
   sanctum_halo: { stat: 'count', line: 'Enough candles, and the ground itself is holy.' },
   judgement_wheel: { stat: 'speed', line: 'Spin the lights fast and each becomes a verdict.' },
