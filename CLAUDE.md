@@ -1,5 +1,5 @@
-# Hollowlight: Spirits of the Dusk — survivors-style incremental game
-(Working title was Cursed Forest; that is now Chapter 1's name. Always write "Hollowlight" as one word. Repo: mattyjhillier-lab/hollowlight, live at mattyjhillier-lab.github.io/hollowlight/. Plan: docs/PLAN.md, research: docs/research/.)
+# Wispwick: Spirits of the Dusk — survivors-style incremental game
+(Name locked 2026-10-28: Wispwick, one word; it replaced the earlier title Hollowlight, which clashed with several itch.io games. Cursed Forest is Chapter 1's name. Repo and live URL still use the old name until Matt renames the repo: mattyjhillier-lab/hollowlight, live at mattyjhillier-lab.github.io/hollowlight/. Internal names kept on purpose so saves never break: localStorage keys `hollowlight:*`, service-worker cache prefix, CSS font family "Hollowlight Chancery". Nothing a player reads may say Hollowlight (tests/brandname.test.mjs). Plan: docs/PLAN.md, research: docs/research/, adding content: docs/CONTENT-GUIDE.md.)
 
 Owner: Matt Hillier (non-professional dev, Melton Mowbray UK, Windows PC). Building a game inspired by *Spirit Hunters: Infinite Horde*. **Everything must be free to build and host.**
 
@@ -59,7 +59,7 @@ Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
 - After each chunk: summarise in a few bullets, show what changed, say what the next small chunk would be, and wait.
 
 ## Standing rule: everything must fit the game (set by Matt)
-Whatever is added or designed (feature, creature, weapon, evolution, UI, effect, sound, asset, story) must (1) fit Hollowlight's look and identity (docs/IDENTITY.md, docs/BIBLE.md, the chosen art direction, role colours, restraint) and (2) make mechanical sense inside the game (consistent with the locked design, the sim rules, the summoner fantasy, balance targets, and how the player reads and understands it). Before building anything new, state in one line how it fits the look and why it makes mechanical sense; if it does not clearly fit, do not add it and raise it with Matt. Generic or off-style assets and mechanics that do not belong are rejected even if they are free or easy. Check this in every review and end each task with a one-line "Fit check" next to the "Security check".
+Whatever is added or designed (feature, creature, weapon, evolution, UI, effect, sound, asset, story) must (1) fit Wispwick's look and identity (docs/IDENTITY.md, docs/BIBLE.md, the chosen art direction, role colours, restraint) and (2) make mechanical sense inside the game (consistent with the locked design, the sim rules, the summoner fantasy, balance targets, and how the player reads and understands it). Before building anything new, state in one line how it fits the look and why it makes mechanical sense; if it does not clearly fit, do not add it and raise it with Matt. Generic or off-style assets and mechanics that do not belong are rejected even if they are free or easy. Check this in every review and end each task with a one-line "Fit check" next to the "Security check".
 
 ## Standing rule: token conservation (set by Matt)
 Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.
@@ -75,7 +75,7 @@ Every change, dependency, asset, workflow and deploy gets a security check and i
 - Assets/downloads: only well-known sources (Kenney, OpenGameArt, itch.io CC0); verify licence; treat downloads as untrusted; record in a CREDITS file.
 - Secrets: never put passwords/keys/tokens in code, commits, docs or chat. Ask Matt to do any account/security-setting change himself (e.g. 2FA).
 - Saves/imports and any URL params: treat as untrusted input; validate and sanitise before use; never inject into the DOM with innerHTML from untrusted data; add tests.
-- GitHub: work on `dev` branch and merge via PR; `main` is protected and is the live site. Workflow permissions stay minimal; pin/verify action versions; secret scanning, push protection and Dependabot stay on.
+- GitHub: work on `dev` (or a `wip/*` branch merged to dev) and merge to main only via PR. `main` is protected (admins included, no direct push, force-push and deletion blocked, required status check `test` from ci.yml: npm ci + test + build) and is the live site. Workflow permissions are per-job least privilege with actions pinned to commit SHAs; secret scanning, push protection, Dependabot and 2FA stay on (Matt confirmed 2026-10-28). Never merge to main without Matt's explicit yes.
 - Outward-facing/irreversible actions (publish, push to main, settings, deletes) need Matt's explicit yes first.
 - End each task with a short "Security check" line: what was checked and any findings.
 
@@ -84,7 +84,8 @@ Phaser 3 + Vite, vanilla JS, ES modules. Single-file build (vite-plugin-singlefi
 - `src/sim/` pure-JS simulation (no Phaser/DOM): `Sim.js`, `weapons.js`, `cards.js`, `rng.js`, `grid.js`. Seeded RNG (mulberry32). Unit/bot-testable in Node.
 - `src/data/*.json` all content (balance, weapons, evolutions, characters, enemies, chapters). New content = data first.
 - `src/scenes/RunScene.js` Phaser rendering only (placeholder generated textures, pooled sprites). `src/ui/ui.js` DOM overlay (HUD, cards, menus). `src/app.js` glue. `src/main.js` boot.
-- `tests/*.test.mjs` (`npm test`, ~660 tests at 2026-10-17; run it, do not trust this number). `scripts/bot.mjs` headless balance probe: `node scripts/bot.mjs wren 8` (`FOCUS=1` for a focused-pick bot). Prints first-evolution time.
+- Also: `src/save/` (versioned saves, lanterns/profiles), `src/meta/` (skill tree compile/budget, codex, bond, migrations), `src/audio/` (code-made sound engine + music), `src/gfx/` (code-drawn rigs, summons, night/dawn layers), `src/data/tree/` (tree fragments). Content guide + print-only scaffold: docs/CONTENT-GUIDE.md, `node scripts/new-content.mjs <kind> <id>`.
+- `tests/*.test.mjs` (`npm test`, 1224 tests at 2026-10-29; run it, do not trust this number). `scripts/bot.mjs` headless balance probe: `node scripts/bot.mjs wren 8` (`FOCUS=1` for a focused-pick bot). Prints first-evolution time.
 - Commands: `npm install`, `npm run dev`, `npm run build`, `npm test`.
 - View is 640x360 logical, Phaser FIT scaling, pixelArt. World 4000x4000. DOM HUD scales by container query.
 - URL debug params: `?auto=wren&seed=1&t=540&god=1&rr=3&ban=3&grant=ghost_wolves:speed=5,power=5:phantom_stampede&debug=1`.
@@ -104,31 +105,17 @@ Phaser 3 + Vite, vanilla JS, ES modules. Single-file build (vite-plugin-singlefi
 - Level-up: 3 random cards. New weapons while slots open + stat cards for owned weapons; only stat cards once slots are full; maxed stats leave the pool; fallback cards (heal/gold/xp) if empty. Weighted draw without replacement (weapon card weight 4, stat 1). Stat cards in an evolution pair get a hidden weight bump (x4 for a stat in an evolution pair, x3 more once the partner stat is rank 2+; values live in balance.json evoNudge).
 - Evolutions: maxing a specific stat pair unlocks an evolution as an extra gold card (max 3 shown); multiple per weapon, one evolution per weapon per run and it cannot re-evolve; an evolved weapon KEEPS offering its non-recipe stat cards until maxed (LOCKED 2026-10-16 EVOLUTION RULES, built as D1; this reopened the old 'evolved weapons are final' line). Recipes hidden until discovered (codex later).
 - Reroll/banish are early tree unlocks (not available at start).
-- Characters each have an active ability, 60s base cooldown (Wren: Pack Howl, Elias: Sanctuary). Tree later adds cooldown reduction (floor ~30s) and auto-activate thresholds (e.g. low HP).
+- Characters each have an active ability, 60s base cooldown (Wren: Pelt Dash, Elias: Sanctuary Ring; CHARACTER SYSTEM v2: heroes differ by ability and look, levels are granted after a run only; see docs/design/characters-v2.md and LOCKED). The tree adds cooldown reduction (floor `balance.json` abilityCdFloor) and auto-activate options.
 - Chapter 1 Cursed Forest (wolves, crows, root-crawlers, boss Elder Treant at 10:00). Wren is Matt's favourite character. Planned: 8 chapters, 10 characters: Elias/Holy Orbit, Mara/Raven Flock, Wren/Ghost Wolves, Isolde/Spirit Bolts, Thomas/Lantern Wisps, Gideon/Grave Hand, Captain Vane/Chain Lightning, Sister Agnes/Frost Bell, Kael/Bone Servant, Hollow One/Soul Harvest.
 - Pickups (added): heart (heal 30% max HP, more likely when below half HP, pity timer, boss always drops one) and Soul Magnet (pulls all gems; rarer; boss drops one).
 
-## Current state (stage 1 done, playtested by Matt: "plays really well")
-Playable run with Wren/Elias, all 5 weapons + 15 evolutions (see docs/LAUNCH-CHECKLIST.md for the live status; this section is the stage-1 snapshot), abilities, boss, victory/defeat, pickups. Published privately as a Claude artifact for testing. 
-Latest tuning (see balance.json / chapters.json): xp {3, 0.6, 0.008}; hpScale {0.26, 0.012}; dmgScale 0.04/min; waves ramp with a `curve` exponent (<1 = front-loaded); swarm events at 60/150/240/360/450/540/660s. Bot: first evolution median ~4 min, bot wins nearly every run (may be too easy; ask Matt).
-Wolf evolution id phantom_stampede is now **Light Trails** (provisional card name Lightfoot Pack); the Pouncing Pack leap/pin/maul was removed. Wolves now spread across different targets.
-
-## Matt's feedback so far (drives next work)
-1. Wolves should attack different targets (done).
-2. Enemy density ramped too slowly (faster ramp done; XP rebalanced).
-3. First evolution took until ~6 min left; too long (now ~4 min in bot runs).
-4. Stampede wolves "zipped around" and were far too strong; not wolf-like (reworked). Evolutions in general may be too powerful: **review all 11**.
-5. Wanted a magnet pickup and a way to regain health (done).
-
-## Task list for Claude Code (HISTORICAL stage-1 list; the live queue is docs/QUEUE.md and the launch list is docs/LAUNCH-CHECKLIST.md)
-1. **Research first** (Matt asked for deep research): how survivors-likes (Vampire Survivors, Spirit Hunters, Brotato, Halls of Torment, HoloCure, Soulstone Survivors, Death Must Die, 20 Minutes Till Dawn, Survivor.io) handle enemy scaling, wave/density ramps, XP curves and level-up frequency, time to first evolution, evolution power vs base, summon AI design, healing/magnet drops, meta-progression and difficulty tiers, balance pitfalls. Save notes in `docs/research/` with sources and numbers; flag datamined vs opinion. A partial research run may already exist in `docs/research/` (check first, don't redo).
-2. Apply research to balance: review all 11 evolutions for power and feel (each should change behaviour, not just multiply numbers); retest with `scripts/bot.mjs`; check difficulty (bot should lose some runs, especially unfocused); check heal/magnet frequency.
-3. Save system (localStorage, versioned, migration-ready) + gold/shard banking + results screen.
-4. Skill tree v1 (~60 starter nodes, data-driven JSON, greyed-out locked nodes with unlock conditions, reroll/banish nodes, Summoner and Magic branches, per-weapon and stat nodes, ability cooldown node). Design for 500+ nodes later.
-5. Art pass: free CC0 16x16 packs (re-find the best candidates: Kenney, OpenGameArt, itch.io; verify each licence). Replace generated textures in RunScene.
-6. Parked until core feels right (do NOT start without Matt): weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 characters, prestige, touch controls, codex.
+## Current state (2026-10-29; live status: docs/LAUNCH-CHECKLIST.md "STATUS" block, queue: docs/QUEUE.md, decisions: docs/LOCKED.md)
+The core game is built on `dev` and passes `npm test` and `npm run build`: heroes Wren and Elias (character system v2), 5 weapons + 15 evolutions, skill tree v2 (Lantern Web) with the Almanac/codex, saves with lanterns (profiles), nights (Twilight, Deep Dusk, Long Night), Gentle Light, wardrobe, Endless Dusk, Chapter 1 with Elder Treant, mini-boss and map events (Lamp Posts, Lantern Road, Hollow Knot), audio, first-minute hints, front door, PWA and phone controls, About page, wordmark/icons. The final retune (RT1-RT8) is done; accepted misses are in the LOCKED row "RT6-RT8 + overnight decisions". Test link for the new build: dev.hollowlight-12n.pages.dev (Cloudflare Pages, no login, unlisted, noindex).
+What is LIVE on main is only an older build. The Release Gate (LOCKED) stands: nothing merges to main until the checklist is done and Matt says yes.
+Open (owners in the checklist): Matt's play tests, the About wording, the decisions waiting in docs/QUEUE.md, the merge yes. Claude: playtest fixes queued in docs/QUEUE.md, launch-merge tree snapshot (`node scripts/tree-release.mjs --snapshot`). Players contact Matt directly, so there is no feedback channel to add.
+Balance targets live in LOCKED "FINAL RETUNE TARGETS" (fresh Twilight 15-30%, mid tree 30-55%, max 65-90%, boss rules); sweeps: `scripts/sweep-all.mjs`, `rt-matrix.mjs`, `boss-sweep.mjs`, `bless-sweep.mjs`.
 
 ## Hosting plan (free only)
-- Static site, no backend. Build with `npm run build`; deploy `dist/` to **GitHub Pages** (GitHub Actions workflow on push to main) or Cloudflare Pages / Netlify free tier. Vite `base: './'` is already set. Later optionally publish to itch.io (free, HTML5 zip upload).
+- Static site, no backend. Build with `npm run build`; deploy `dist/` to **GitHub Pages** (deploy.yml on push to main, after a PR with CI green). Also live (2026-10-29): Cloudflare Pages project `hollowlight` (Git-connected, builds main + dev; dev.hollowlight-12n.pages.dev is the test link; Access gate tried and removed). Vite `base: './'` is already set. Later optionally publish to itch.io (free, HTML5 zip upload).
 - Saves live in the browser (localStorage); add export/import save-file buttons so players can back up. No accounts, no server costs.
 - Matt's setup: Windows PC, Node.js LTS + Git to install, GitHub account (free). Walk him through any one-time setup step by step.
