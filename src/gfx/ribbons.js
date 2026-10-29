@@ -1,3 +1,4 @@
+import { probe } from './probe.js';
 // W2 glowing trails (visual only; the sim is never read for anything but positions). Pure logic (RibbonSet) + a pooled renderer (RibbonLayer).
 // Ribbons are short-lived point histories (ring buffers) drawn as stretched additive glow sprites UNDER every creature/halo, so they never
 // hide enemies, pickups or numbers. The long ~25 s mural is the life map (already stamped by hero + spirits); ribbons are the bright head of it.
@@ -216,9 +217,11 @@ export class RibbonLayer {
     this.all = []; this.shown = 0;
   }
   get created() { return this.all.length; }
+  reserve(n) { while (this.all.length < Math.min(n, this.max)) this.make(); } // FIX4: pre-make trail segments in the loading phase
   make() {
     const im = this.scene.add.image(0, 0, this.key).setBlendMode(this.add).setDepth(RIBBON_DEPTH).setVisible(false);
     this.all.push(im);
+    probe.tag('trail:segment-grow');
     return im;
   }
   render(set, count) {

@@ -28,6 +28,8 @@ import { Gate, RateCap, SHAKE_GAP, KILL_POPS_PER_SEC, gemPopScale, GEM_POP_LIFE 
 import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
+import { probe } from '../gfx/probe.js'; // FIX4 ?perf=1 real-device probe
+import { Prebake } from '../gfx/prebake.js'; // FIX4 loading-phase pre-bake
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
 import { PropLayer } from '../gfx/proplayer.js';
@@ -129,6 +131,9 @@ class SpritePool {
     this.stamp = 0;
   }
   begin() { this.stamp++; }
+  reserve(n) { // FIX4: pre-make n hidden sprites in the loading phase (no pool growth in the first seconds)
+    while (this.free.length + this.map.size < n) { const img = this.scene.add.image(0, 0, this.key).setVisible(false); img.setScale(this.inv); if (this.init) this.init(img); this.free.push(img); }
+  }
   get(id) {
     let s = this.map.get(id);
     if (!s) {
@@ -137,6 +142,7 @@ class SpritePool {
         img = this.scene.add.image(0, 0, this.key);
         img.setScale(this.inv);
         if (this.init) this.init(img);
+        probe.tag('pool:grow:' + this.key);
       }
       img.setVisible(true);
       s = { img, stamp: 0, id };
@@ -164,6 +170,7 @@ class SpritePool {
 }
 
 const PROPS_OFF = { props: { live: 0, density: 1, sway: false }, ambient: { petals: 0 } };
+const DAWN_LAG = 20, DAWN_LAG_UP = 2.0, DAWN_LAG_DOWN = 1.2; // FIX4 warmth-then-brightness: while the flood is easing the sky clock, the ambient BRIGHTNESS trails the WARMTH (wash, saturation, enemy tint) by up to 20 ref-s (lag grows at 2.0/s < the 2.4 ease rate, so brightness never goes backwards; it catches up at 1.2/s after)
 const DAWN_EASE = 2.4; // max reference-seconds the sky clock may advance per real second (a 60 s flood takes 25 s)
 const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
 const mulTint = (c, k) => (k === 1 ? c : (Math.min(255, (c >> 16 & 255) * k) << 16) | (Math.min(255, (c >> 8 & 255) * k) << 8) | Math.min(255, (c & 255) * k)); // clamped per channel
@@ -383,6 +390,9 @@ export class RunScene extends Phaser.Scene {
     this.perf = new PerfOverlay(document.getElementById('stage') || document.body);
     this.perf.hook(this.renderer);
     this.perf.toggle(app.params.debug);
+    probe.on = !!app.params.perf; probe.hook(this); probe.mount(document.getElementById('stage') || document.body); if (probe.on) window.__probe = probe;
+    this.flatGround = !!app.params.flat;
+    this.prebake = new Prebake(this);
     this.workT0 = 0;
     this.lastStep = 0;
     this.frameMs = 16.7;
@@ -394,7 +404,7 @@ export class RunScene extends Phaser.Scene {
     this.secMem = !!(new URLSearchParams(location.search).get('mem') === '1' && typeof performance !== 'undefined' && performance.memory);
     this.perfInfo = { sprites: 0, particles: 0, tier: '', mode: '' };
     const ev = this.game.events;
-    ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); });
+    ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); probe.frame(this.workT0); });
     ev.on(Phaser.Core.Events.POST_RENDER, () => {
       this.workMs = performance.now() - this.workT0;
       this.perf.frameEnd();
@@ -415,6 +425,7 @@ export class RunScene extends Phaser.Scene {
     this.sumArt = SUM_ART; // readout (tests / harness)
     if (STYLE === 'a' && app.params.husks) {
       const bake = Promise.all([bakeHuskAtlas(this).then((ok) => { this.enArt.enable(ok); }), wolfBake, bakeReliquary(this)]);
+      this.bootBake = bake; // FIX4: the pre-bake waits for the boot atlases too
       if (app.params.auto) Promise.race([bake, new Promise((r) => setTimeout(r, 4000))]).then(ready); // dev/harness auto-runs start on the Husks
       else ready(); // the title shows at once; the bake (~0.3-1 s) finishes long before anyone starts a run (flat sprites until then)
     } else ready();
@@ -531,6 +542,7 @@ export class RunScene extends Phaser.Scene {
 
   bindSim(sim) {
     this.sim = sim;
+    probe.runStart();
     this.warmMs = 0;
     this.life.clearFloor();
     this.starterGlade(sim);
@@ -576,7 +588,7 @@ export class RunScene extends Phaser.Scene {
     this.evoBeat = null;
     this.beats.clear(); this.verbs.clear(); this.spirits.clear(); // S7
     this.gradeTint = -1;
-    this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds);
+    this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
   }
@@ -688,7 +700,9 @@ export class RunScene extends Phaser.Scene {
     return n;
   }
 
-  applyTier() {
+  applyTier() { probe.span('tier:apply', () => this.applyTierNow()); }
+
+  applyTierNow() {
     const c = this.quality.caps;
     // Lightmap on Med/High if WebGL accepts it; otherwise the Low look (tinted ground + trees, halo pools).
     if (c.lightmap && app.params.lm && !this.lm.rt) this.lm.build(this.scale.width, this.scale.height, this.baseZoom);
@@ -1105,10 +1119,14 @@ export class RunScene extends Phaser.Scene {
   // victory flood would otherwise snap the sky to day in ~2 s). Normal play (1 s/s) is untouched; going backwards (Endless Dusk) snaps. Visual only.
   showClock(sim) {
     const raw = this.rawClock(sim), now = performance.now();
-    if (!sim || this.clkSim !== sim || !(raw >= this.clkV)) { this.clkSim = sim; this.clkV = raw; this.clkAt = now; return raw; }
+    if (!sim || this.clkSim !== sim || !(raw >= this.clkV)) { this.clkSim = sim; this.clkV = raw; this.clkAt = now; this.clkLag = 0; this.clkB = raw; return raw; }
     if (now > this.clkAt) {
       const dt = Math.min(0.25, (now - this.clkAt) / 1000); this.clkAt = now;
       this.clkV = Math.min(raw, this.clkV + Math.max(dt * DAWN_EASE, 0));
+      const flood = raw - this.clkV > 0.5; // the display clock is being held back = the dawn flood is running
+      const lag = this.clkLag || 0;
+      this.clkLag = flood ? Math.min(DAWN_LAG, lag + dt * DAWN_LAG_UP) : Math.max(0, lag - dt * DAWN_LAG_DOWN);
+      this.clkB = Math.min(this.clkV, Math.max(this.clkB || 0, this.clkV - this.clkLag)); // never backwards, never ahead of the warmth clock
     }
     return this.clkV;
   }
@@ -1154,16 +1172,23 @@ export class RunScene extends Phaser.Scene {
   }
 
   // Colour-grade for the current point in the run. Quantised so we only touch objects when it changes.
-  updateGrade(f) {
+  updateGrade(f, fB = f) {
     let col, dw;
     if (app.params.arc) {
       const q = Math.round(f * 900) / 900; // WL6a: 1 s steps so the sky never visibly steps
+      const qB = Math.round((Number.isFinite(fB) ? fB : f) * 900) / 900; // FIX4: the brightness clock (trails the warmth clock during the dawn flood)
       // WL6a arc: brightness setting (Normal / Brighter / Clear; 'auto' = Brighter on phones), quantised to 1 s steps, resampled only when something changed
       const st = app.save.data.settings;
       const mode = app.params.bright || resolveBrightness(st.brightness, this.phone);
       const calm = !!st.reducedMotion;
-      const key = Math.round(q * 900) * 8 + (mode === 'brighter' ? 1 : mode === 'clear' ? 2 : 0) * 2 + (calm ? 1 : 0);
-      if (key !== this.arcKey) { this.arcKey = key; arcSample(q * 900, mode, calm, this.arc); this.arcVer = (this.arcVer | 0) + 1; }
+      const key = (Math.round(q * 900) * 8 + (mode === 'brighter' ? 1 : mode === 'clear' ? 2 : 0) * 2 + (calm ? 1 : 0)) * 1024 + Math.round(qB * 900);
+      if (key !== this.arcKey) {
+        this.arcKey = key; arcSample(q * 900, mode, calm, this.arc); this.arcVer = (this.arcVer | 0) + 1;
+        if (qB !== q) { // warmth from the leading clock (dawn wash, saturation, enemy tint, eyes), brightness from the trailing one (ambient, Low tint, lantern radius, far bodies)
+          const b = arcSample(qB * 900, mode, calm, this.arcB || (this.arcB = makeArcOut())), a = this.arc;
+          a.amb = b.amb; a.low = b.low; a.lan = b.lan; a.farV = b.farV; a.y = b.y;
+        }
+      }
       if (this.bloom) this.bloom.day = Math.min(1, Math.max(0, (1 - this.arc.bodyK) / 0.28)); // BL1: daylight eases the High bloom (no glare on the cream pool)
       col = this.arc.low;
       this.ambient = this.arc.amb;
@@ -1265,7 +1290,7 @@ export class RunScene extends Phaser.Scene {
     sim.view.hw = wv.width / 2; sim.view.hh = wv.height / 2; // EN3-EN5: telegraph enemies only start a tell inside the real camera view
     let halos = 0;
 
-    this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds);
+    this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.sec0(8); this.tickAmbient(sim); this.sec1(8);
     const lm = this.lm;
     const lit = this.lmOn;
@@ -1879,8 +1904,10 @@ export class RunScene extends Phaser.Scene {
         if (lit) lm.add(t.e.x, t.e.y, 40, ROLE.lightning, 0.7);
       }
     }
+    if (probe.on) for (const w of sim.weapons) probe.first('weapon:' + w.id + (w.evo ? ':' + w.evo : ''));
     for (const f of sim.fx) {
       fi++;
+      if (probe.on) probe.first('fx:' + f.kind + (f.pillar ? ':pillar' : '') + (f.field ? ':field' : ''));
       if (f.kind === 'judgetell' || f.kind === 'judgeflash') { // W11b Thunder Judgment: tell = a faint cyan radius ring (all tiers) + sky darkening (Med/High, not in reduced motion)
         if (f.kind === 'judgetell') {
           const k = 1 - f.ttl / f.life;

@@ -103,9 +103,18 @@ export class BossView {
   maybeBake(sim, tier) {
     const B = this.baked;
     if (B.busy || (B.ok && B.tier === tier) || sim.time < BAKE_AT - 1 || typeof document === 'undefined') return;
+    this.bakeNow(tier);
+  }
+
+  // FIX4: also called by the pre-bake (loading phase) so the Treant frames are ready before t=0; resolves when baked (or failed). Idempotent per tier.
+  bakeNow(tier) {
+    const B = this.baked;
+    if (typeof document === 'undefined') return Promise.resolve();
+    if (B.busy) return B.promise || Promise.resolve();
+    if (B.ok && B.tier === tier) return Promise.resolve();
     B.busy = true;
     const L = layout(tier);
-    bake(this.s, tier).then((r) => {
+    B.promise = bake(this.s, tier).then((r) => {
       B.busy = false; B.info = r;
       if (!r.ok) return;
       B.ok = true; B.tier = tier; B.L = L; B.names = new Set(framesFor(tier).map((f) => f[0]));
@@ -113,6 +122,7 @@ export class BossView {
       else this.body.setTexture(BOSS_ATLAS, 'p1');
       this.body.setOrigin(L.frames.p1.ox / L.frames.p1.w, L.frames.p1.oy / L.frames.p1.h).setScale(1 / TPW[tier]);
     });
+    return B.promise;
   }
 
   get live() { return !!(this.sim && this.sim.fight); }
