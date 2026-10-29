@@ -9,7 +9,7 @@ import { CX } from './codexcopy.js';
 
 export const INPUT_LOCK_MS = 250;       // keys right after the screen appears are ignored (a mashed Space or R from the run must not restart it)
 export const COUNT_MS = 900;
-const DROP_ORDER = ['note', 'sites', 'bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
+const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const nowMs = () => (globalThis.performance && globalThis.performance.now ? globalThis.performance.now() : Date.now());
 
@@ -116,8 +116,8 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
   if (v.sites) put(el('p', 'u6-kept u6-sites', v.sites, { 'data-drop': 'sites' })); // map events v1
   if (v.dark) put(add(el('p', 'u6-dark', null, { 'data-drop': 'dark' }), el('span', 'u6-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, v.dark))); // EXTRAS v1 Endless Dusk
   if (nb && nb.gentle) put(add(el('p', 'u6-gentle', null, { 'data-drop': 'gentle' }), el('span', 'u6-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, nb.gentle))); // EXTRAS v1
-  if (b.note) put(el('p', 'u6-note', b.note, { 'data-drop': 'note' }));
-  else if (v.debug) put(el('p', 'u6-note', RES.debug, { 'data-drop': 'note' }));
+  if (b.note) put(el('p', 'u6-note', b.note));
+  else if (v.debug) put(el('p', 'u6-note', RES.debug));
 
   if (v.weapons.length) {
     const ul = el('ul', 'u6-weps', null, { 'aria-label': RES.weaponsLabel, 'data-drop': 'weapons' });
