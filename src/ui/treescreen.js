@@ -1279,7 +1279,7 @@ export class TreeScreen {
     const id = this.hitNode(sx, sy);
     if (id) this.select(id, false);
     else if (now - this.lastTap < 300) this.zoomAt(sx, sy, 1.8);
-    else { this.select(null); this.panelMode = this.panelMode === 'goals' ? 'goals' : null; this.syncPanel(); }
+    else { this.select(null); this.panelMode = null; this.syncPanel(); } // tap on empty map closes the side panel (Goals too)
     this.lastTap = now;
   }
 

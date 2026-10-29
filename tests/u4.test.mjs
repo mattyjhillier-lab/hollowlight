@@ -244,10 +244,11 @@ test('FM1/FM5 settings: Tips and Vibration switches (on by default) set their ke
   assert.equal(find(none.root, (n) => n.tag === 'button' && texts(n).includes('Show tips again')).length, 0, 'no handler: no button');
 });
 
-test('About tab: blurb, how to play, credits, version, maker, feedback TODO and AI disclosure draft, all as plain text', async () => {
+test('About tab: blurb, how to play, credits, version, maker, and AI disclosure, all as plain text', async () => {
   const { s } = mkSettings({ tab: 'about' });
   const t = texts(s.panes.about);
   const { ABOUT } = await import('../src/ui/aboutcopy.js');
-  for (const w of [ABOUT.blurb, ABOUT.howTitle, ABOUT.how[0], ABOUT.creditsTitle, 'Phaser 3', 'Fondamento', 'Alegreya Sans', 'Made by Matt Hillier', 'Version', 'TODO Matt', 'Draft for Matt to edit']) assert.ok(t.includes(w), w);
+  for (const w of [ABOUT.blurb, ABOUT.howTitle, ABOUT.how[0], ABOUT.creditsTitle, 'Phaser 3', 'Fondamento', 'Alegreya Sans', 'Made by Matt Hillier', 'Version', 'one developer working with an AI coding assistant']) assert.ok(t.includes(w), w);
+  for (const w of ['TODO Matt', 'Draft for Matt', 'Feedback']) assert.ok(!t.includes(w), 'no placeholder: ' + w);
   assert.equal(s.panes.about.hidden, false);
 });

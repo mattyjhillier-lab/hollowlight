@@ -164,6 +164,7 @@ class SpritePool {
 }
 
 const PROPS_OFF = { props: { live: 0, density: 1, sway: false }, ambient: { petals: 0 } };
+const DAWN_EASE = 2.4; // max reference-seconds the sky clock may advance per real second (a 60 s flood takes 25 s)
 const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
 const mulTint = (c, k) => (k === 1 ? c : (Math.min(255, (c >> 16 & 255) * k) << 16) | (Math.min(255, (c >> 8 & 255) * k) << 8) | Math.min(255, (c & 255) * k)); // clamped per channel
 const dimTint = (c, k) => (((c >> 16 & 255) * k | 0) << 16) | (((c >> 8 & 255) * k | 0) << 8) | ((c & 255) * k | 0);
@@ -1100,7 +1101,19 @@ export class RunScene extends Phaser.Scene {
   }
 
   // display clock for the arc light + AL-6: holds at 14:00 in the boss fight, runs to dawn across the victory flood (bossview.js)
+  // Night-to-day never steps: the DISPLAY clock may only run ahead of the true one at DAWN_EASE reference-seconds per real second (the 840->900
+  // victory flood would otherwise snap the sky to day in ~2 s). Normal play (1 s/s) is untouched; going backwards (Endless Dusk) snaps. Visual only.
   showClock(sim) {
+    const raw = this.rawClock(sim), now = performance.now();
+    if (!sim || this.clkSim !== sim || !(raw >= this.clkV)) { this.clkSim = sim; this.clkV = raw; this.clkAt = now; return raw; }
+    if (now > this.clkAt) {
+      const dt = Math.min(0.25, (now - this.clkAt) / 1000); this.clkAt = now;
+      this.clkV = Math.min(raw, this.clkV + Math.max(dt * DAWN_EASE, 0));
+    }
+    return this.clkV;
+  }
+
+  rawClock(sim) {
     if (sim && sim.endless) { // EXTRAS v1 Endless Dusk: the sky slips back to night over 45 s after the choice (arc light, music), then holds deep night
       const k = Math.min(1, Math.max(0, (sim.time - sim.endless.t0) / 45)), e = k * k * (3 - 2 * k);
       const from = Math.min(sim.chapter.bossAt || 840, 840);
@@ -1224,7 +1237,7 @@ export class RunScene extends Phaser.Scene {
     app.frame(dt);
     this.sec1(0);
     // W1b: paint the Deep Forest Floor tiles on the title / menus (idle frames), so a run normally starts with them done
-    if (!this.sim) { const b = this.bState; if (b && b.ready < 1 && STYLE === 'a') { if (!b.lazy) b.lazy = makeGroundLazy(this); if (!b.lazy.done && b.lazy.step(4)) b.fade = 0; } }
+    if (!this.sim) { const b = this.bState; if (b && b.ready < 1 && STYLE === 'a') { if (!b.lazy) b.lazy = makeGroundLazy(this); if (!b.lazy.done && b.lazy.step(this.workMs > 9 ? 3 : 7)) b.fade = 0; } } // front door / menus: paint the forest floor as early and as fast as idle frames allow (a run then starts with it done)
     if (this.sim) {
       this.sec0(1);
       this.draw();
@@ -1995,12 +2008,12 @@ export class RunScene extends Phaser.Scene {
     if (!b || b.ready >= 1 || !this.gbOn) return;
     if (!b.lazy) {
       b.t += dt;
-      let near = b.t > 2.5;
+      let near = b.t > 0.4; // was 2.5 s: start painting at once so the forest floor is not still arriving 10+ s into a phone run
       if (!near) for (let k = 0; k < 8 && !near; k++) { const a = k * 0.7854; near = zoneB(p.x + Math.cos(a) * 1000, p.y + Math.sin(a) * 1000, app.data.balance.worldSize) > 0.004; }
       if (!near) return;
       b.lazy = makeGroundLazy(this);
     }
-    if (!b.lazy.done) { b.lazy.step(this.workMs > 9 ? 1.2 : 3); if (!b.lazy.done) return; b.fade = 0; }
+    if (!b.lazy.done) { b.lazy.step(this.workMs > 9 ? 2.5 : 6); if (!b.lazy.done) return; b.fade = 0; }
     b.fade += dt;
     b.ready = Math.min(1, b.fade / 0.8);
     this.gb.setBReady(b.ready);

@@ -11,6 +11,7 @@ import { ROLE, PAL } from './palette.js';
 
 const LANTERN = ROLE.lantern, CORE = ROLE.lanternCore, CREAM = PAL.cream, BRASS = PAL.brass, BRASS_D = PAL.brassDark;
 const IRON = 0x2b2633, IRON_HI = 0x4a4458, COLD = 0x8fa3ba, INK = 0x1a1020, VEIN = 0x6a58a0, KNOT = 0x221a2c, KNOT_HI = 0x3d2f4f, LIFE = 0x6fae5a;
+const POST_K = 1.35; // lamp / lantern posts drawn larger so they read at a glance (visual only)
 const SHARD = ROLE.spiritB2, DANGER = ROLE.danger;
 export const HUD_TOP = 0.22, HUD_BOT = 0.14, HUD_TOP_TALL = 0.26, HUD_BOT_TALL = 0.16; // locked HUD bands (share of the view height) the arrows keep out of; a portrait phone stacks its HUD taller
 
@@ -95,8 +96,9 @@ export class SiteView {
     this.sim = sim; this.time += dt;
     const gg = this.gg, pg = this.pg, bg = this.bg, ag = this.ag;
     gg.clear(); pg.clear(); bg.clear(); ag.clear();
+    this.labelOn = false;
     const S = sim.sites;
-    if (!S) return;
+    if (!S) { if (this.label) this.label.setVisible(false); return; }
     if (this.wakeT > 0) this.wakeT -= dt;
     // colour floods (render only): each write grows over its duration
     if (life) {
@@ -118,30 +120,57 @@ export class SiteView {
       else if (vis(s.x, s.y)) this.drawKnot(s, sim, pulse, lm, calm);
     }
     this.drawArrows(sim, view);
+    if (!this.labelOn && this.label && this.label.visible) this.label.setVisible(false);
   }
 
-  post(x, y, h, lit, ember) {
-    const pg = this.pg;
-    pg.fillStyle(INK, 0.35).fillEllipse(x, y + 1, 12, 4); // contact shadow
-    pg.fillStyle(IRON, 1).fillRect(x - 1.2, y - h, 2.4, h);
-    pg.fillStyle(IRON_HI, 1).fillRect(x - 1.2, y - h, 0.8, h);
-    pg.fillStyle(IRON, 1).fillRect(x - 3, y - 1.5, 6, 1.5); // foot
-    const gy = y - h - 5;
-    pg.fillStyle(IRON, 1).fillRect(x - 4, gy - 5, 8, 1.4); // cap
-    pg.fillStyle(lit ? LANTERN : COLD, lit ? 1 : 0.55).fillRoundedRect(x - 3, gy - 3.6, 6, 7.4, 1.5); // glass
-    pg.lineStyle(1, lit ? BRASS_D : IRON, 1).strokeRoundedRect(x - 3, gy - 3.6, 6, 7.4, 1.5);
-    if (lit) pg.fillStyle(CORE, 1).fillCircle(x, gy, 1.5);
-    else pg.fillStyle(ember > 0 ? LANTERN : COLD, ember > 0 ? 0.35 + 0.5 * ember : 0.6).fillCircle(x, gy + 1.5, 1.1); // the one cold ember
+  post(x, y, h, lit, ember, k = POST_K) { // k: visual scale only (footprint read at a glance; the sim radius is untouched)
+    const pg = this.pg; h *= k;
+    pg.fillStyle(INK, 0.35).fillEllipse(x, y + 1, 12 * k, 4 * k); // contact shadow
+    pg.fillStyle(IRON, 1).fillRect(x - 1.2 * k, y - h, 2.4 * k, h);
+    pg.fillStyle(IRON_HI, 1).fillRect(x - 1.2 * k, y - h, 0.8 * k, h);
+    pg.fillStyle(IRON, 1).fillRect(x - 3 * k, y - 1.5 * k, 6 * k, 1.5 * k); // foot
+    const gy = y - h - 5 * k;
+    pg.fillStyle(IRON, 1).fillRect(x - 4 * k, gy - 5 * k, 8 * k, 1.4 * k); // cap
+    pg.fillStyle(lit ? LANTERN : COLD, lit ? 1 : 0.55).fillRoundedRect(x - 3 * k, gy - 3.6 * k, 6 * k, 7.4 * k, 1.5 * k); // glass
+    pg.lineStyle(1, lit ? BRASS_D : IRON, 1).strokeRoundedRect(x - 3 * k, gy - 3.6 * k, 6 * k, 7.4 * k, 1.5 * k);
+    if (lit) pg.fillStyle(CORE, 1).fillCircle(x, gy, 1.5 * k);
+    else pg.fillStyle(ember > 0 ? LANTERN : COLD, ember > 0 ? 0.35 + 0.5 * ember : 0.6).fillCircle(x, gy + 1.5 * k, 1.1 * k); // the one cold ember
     return gy;
+  }
+
+  // a dashed ground ellipse (n dashes), used for wake / reach rings
+  dashRing(g, x, y, rx, ry, n, w, col, a, rot = 0) {
+    g.lineStyle(w, col, a);
+    for (let i = 0; i < n; i++) {
+      const a0 = rot + (i / n) * Math.PI * 2, a1 = a0 + (Math.PI * 2 / n) * 0.55;
+      g.beginPath().moveTo(x + Math.cos(a0) * rx, y + Math.sin(a0) * ry);
+      g.lineTo(x + Math.cos((a0 + a1) / 2) * rx, y + Math.sin((a0 + a1) / 2) * ry).lineTo(x + Math.cos(a1) * rx, y + Math.sin(a1) * ry).strokePath();
+    }
+  }
+
+  // bobbing "go here" chevron pointing down at a place (cream on a dark backing so it reads on any ground)
+  hint(x, y, pulse, col = CREAM) {
+    const g = this.bg, b = Math.round(pulse * 3);
+    g.fillStyle(INK, 0.7).fillTriangle(x - 7.5, y - 10 + b, x + 7.5, y - 10 + b, x, y + 1 + b);
+    g.fillStyle(col, 1).fillTriangle(x - 5.5, y - 8 + b, x + 5.5, y - 8 + b, x, y - 1 + b);
+  }
+
+  // the one pooled world label ("Destroy the knot"); fixed strings only
+  say(txt, x, y) {
+    let t = this.label;
+    if (!t) { t = this.label = this.scene.add.text(0, 0, '', { fontFamily: 'Georgia, serif', fontSize: '10px', color: '#fff3dc', stroke: '#1a1020', strokeThickness: 3, resolution: 4 }).setOrigin(0.5, 1).setDepth(this.bg.depth + 1); }
+    if (t.text !== txt) t.setText(txt);
+    t.setPosition(Math.round(x), Math.round(y)).setVisible(true);
+    this.labelOn = true;
   }
 
   drawLamp(s, pulse, lm) {
     const lit = s.state === 'done', awake = s.state === 'awake';
-    if (awake) this.gg.lineStyle(1.5, CREAM, 0.25 + 0.2 * pulse).strokeEllipse(s.x, s.y + 1, 44, 18);
+    if (awake) { this.gg.fillStyle(CREAM, 0.07 + 0.05 * pulse).fillEllipse(s.x, s.y + 1, 44, 18); this.gg.lineStyle(2.5, INK, 0.5).strokeEllipse(s.x, s.y + 1, 44, 18); this.gg.lineStyle(2, CREAM, 0.6 + 0.3 * pulse).strokeEllipse(s.x, s.y + 1, 44, 18); } // = the real touch radius (22)
     const gy = this.post(s.x, s.y, 20, lit, awake ? pulse : 0);
     if (lit && lm) lm.add(s.x, gy, 40, LANTERN, 0.6);
-    else if (awake && lm) lm.add(s.x, gy, 16, LANTERN, 0.18 + 0.12 * pulse);
-    if (awake) this.badge(s.x, gy - 14, [s.reward]);
+    else if (awake && lm) lm.add(s.x, gy, 30, LANTERN, 0.3 + 0.15 * pulse);
+    if (awake) this.badge(s.x, gy - 16 * POST_K, [s.reward]);
   }
 
   drawRoad(s, pulse, lm, vis) {
@@ -153,11 +182,12 @@ export class SiteView {
     let first = true;
     for (const L of s.lanterns) {
       if (!vis(L.x, L.y)) continue;
-      if (live && !L.lit) gg.lineStyle(1.5, CREAM, 0.25 + 0.2 * pulse).strokeEllipse(L.x, L.y + 1, 56, 22);
+      if (live && !L.lit) { gg.fillStyle(CREAM, 0.07 + 0.05 * pulse).fillEllipse(L.x, L.y + 1, 52, 21); gg.lineStyle(2.5, INK, 0.5).strokeEllipse(L.x, L.y + 1, 52, 21); gg.lineStyle(2, CREAM, 0.6 + 0.3 * pulse).strokeEllipse(L.x, L.y + 1, 52, 21); } // = the real touch radius (26)
       const gy = this.post(L.x, L.y, 26, L.lit, live && !L.lit ? pulse : 0);
-      this.pg.lineStyle(1, IRON, 1).lineBetween(L.x, L.y - 26, L.x + 5, L.y - 30); // a little hook arm: a lantern post, not a lamp post
-      if (L.lit && lm) lm.add(L.x, gy, 46, LANTERN, 0.65);
-      if (live && !L.lit && first) { first = false; this.badge(L.x, gy - 14, s.def.set.bless ? ['gold', 'bless'] : ['gold', 'magnet']); }
+      this.pg.lineStyle(1.4, IRON, 1).lineBetween(L.x, L.y - 26 * POST_K, L.x + 6, L.y - 26 * POST_K - 5); // a little hook arm: a lantern post, not a lamp post
+      if (L.lit && lm) lm.add(L.x, gy, 54, LANTERN, 0.7);
+      else if (live && lm) lm.add(L.x, gy, 30, LANTERN, 0.25 + 0.15 * pulse);
+      if (live && !L.lit && first) { first = false; this.badge(L.x, gy - 16 * POST_K, s.def.set.bless ? ['gold', 'bless'] : ['gold', 'magnet']); }
     }
   }
 
@@ -178,7 +208,11 @@ export class SiteView {
       gg.fillStyle(DANGER, 0.12 + 0.18 * k).fillEllipse(x, y + 2, K.pulse.r * 2 * k, K.pulse.r * 1.3 * k);
       gg.lineStyle(2, DANGER, 0.75).strokeEllipse(x, y + 2, K.pulse.r * 2, K.pulse.r * 1.3);
     } else if (fight) gg.lineStyle(1.2, VEIN, 0.35).strokeEllipse(x, y + 2, K.pulse.r * 2, K.pulse.r * 1.3); // the reach of the pulse, quiet between tells
-    if (s.state === 'awake') gg.lineStyle(1.5, CREAM, 0.2 + 0.15 * pulse).strokeEllipse(x, y + 2, 70, 28);
+    if (s.state === 'awake') { // wake ring: step inside the dashed ring and it wakes (the real wake distance); a bold ring hugs the knot
+      this.dashRing(gg, x, y + 2, K.wake, K.wake * 0.64, 40, 3, INK, 0.35, 0);
+      this.dashRing(gg, x, y + 2, K.wake, K.wake * 0.64, 40, 1.8, CREAM, 0.45 + 0.25 * pulse, 0);
+      gg.lineStyle(2.5, CREAM, 0.5 + 0.3 * pulse).strokeEllipse(x, y + 2, 70, 28);
+    }
     // roots: thick dark curves lying on the ground around a raised core
     const wob = calm ? 0 : Math.sin(this.time * 1.6) * 0.6;
     pg.fillStyle(INK, 0.4).fillEllipse(x, y + 3, 44, 14);
@@ -197,7 +231,15 @@ export class SiteView {
       this.bg.lineStyle(4, INK, 0.6).beginPath().arc(x, y - 6, 16, -Math.PI / 2, Math.PI * 1.5).strokePath();
       this.bg.lineStyle(2.4, VEIN, 0.95).beginPath().arc(x, y - 6, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f).strokePath();
     }
-    if (s.state === 'awake' || s.state === 'calm') { const W = s.def.reward; this.badge(x, y - 30, W.bless ? (W.shard ? ['bless', 'shard'] : ['bless']) : ['xp', 'gold', 'heart']); }
+    if (s.state === 'awake' || fight) { // clarity: what it is, what to do, and (while fighting) its health, in the world
+      this.hint(x, y - (fight ? 44 : 56), pulse, fight ? VEIN : CREAM);
+      this.say(fight ? 'Destroy the knot' : 'Hollow Knot: destroy it', x, y - (fight ? 52 : 64));
+      if (fight && s.maxHp > 0) {
+        const f = Math.max(0, Math.min(1, s.hp / s.maxHp)), w = 44, bx = Math.round(x - w / 2), by = Math.round(y + 14);
+        this.bg.fillStyle(INK, 0.85).fillRect(bx - 1, by - 1, w + 2, 6).fillStyle(VEIN, 1).fillRect(bx, by, Math.max(1, Math.round(w * f)), 4);
+      }
+    }
+    if (s.state === 'awake' || s.state === 'calm') { const W = s.def.reward; this.badge(x, y - 28, W.bless ? (W.shard ? ['bless', 'shard'] : ['bless']) : ['xp', 'gold', 'heart']); }
   }
 
   // the offer badge: 1-3 round icons on a dark backing (same icon family as the cards / results)
