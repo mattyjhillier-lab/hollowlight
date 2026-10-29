@@ -2,6 +2,9 @@
 
 Status 2026-10-28: the game is PRIVATE and NON-COMMERCIAL (LOCKED). Today it is on public GitHub Pages: anyone with the link can play, and the repo/source is public. Done already: `noindex` meta + `robots.txt` (asks search engines not to list it; not a lock).
 
+## STATUS 2026-10-29: LIVE (see LOCKED 'PRIVATE HOSTING LIVE')
+Pages project `hollowlight` built from the repo; stable test link https://dev.hollowlight-12n.pages.dev (dev branch). Access email gate was tried and removed (nobody else plays until launch). Production address still serves the old build until the launch merge. Phone install/offline checked OK.
+
 ## The real lock (Matt does these account steps; nothing here needs a secret in the repo)
 Cloudflare Pages (free) + Cloudflare Access (free for up to 50 users) can hide both the game and, if the repo is private, the source.
 1. Create a free Cloudflare account (turn on 2FA).

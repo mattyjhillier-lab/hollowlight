@@ -346,3 +346,9 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - Internal names kept on purpose: CSS font family "Hollowlight Chancery" and its font files (not shown to players), service-worker cache prefix 'hollowlight-', localStorage keys 'hollowlight:*'.
 - EVOLUTION TEXT DONE 2026-10-28 (wip/evo-text, text-only): `desc` per evolution shown on pick card (incl. phone), Almanac found entries, Lantern Web seal panel; screenshots docs/screenshots/evo-text/. Sweep wren 24 unchanged, tree budget unchanged.
 - EVO 3-CARD WORST CASE DONE 2026-10-28 (wip/evo3, CSS only): 3 gold evolve cards + 3 stat cards checked at 1280x720, 640x360, 812x375, 375x812, 320x568; clipped evolve text fixed (full-width text row on portrait, 6-card desktop hides pips/sub-line/from on gold cards, clamps raised). Shots docs/screenshots/evo-text/3evo-*.jpg, script scripts/evo3-shots.mjs. Sim untouched.
+
+## Matt playtest feedback 2026-10-29 (logged, NOT yet acted on; Matt to say go)
+- Lightning bolt: game hitches for about a second each time one fires (suspect render allocation/pooling; profile first). Render-only, sim stays byte-identical.
+- Map events: rewards not worth chasing; first Lantern Road and first Knot give no Blessing (only the second of each does); Knot unclear (what to do) and its area too small; add label/HP bar/hint. Max-level fallback card choice (gold / health / XP): XP option is a loop, replace (3 options needed).
+- Menus: reach every tab from any tab (persistent tab bar); Goals close "x" too small (44px min); night-to-day brightness cuts instead of easing (smooth dawn curve).
+- Cold playtest: explanations of new features should pause the game and take focus so players can read (design question, 3 options).
