@@ -8,6 +8,19 @@ import { makeGroundLazy } from './sprites.js';
 import { drawArc, drawPillar, drawDome, drawBraid, CrackPool, pillarTop, chainCaps } from './summon/chain.js';
 import { probe } from './probe.js';
 
+// Crash guard: a flag is set while the bake runs and cleared when it finishes. If the page is found with the flag still set (the browser died or was
+// closed mid-bake, e.g. out of memory on a phone), the bake stays off on this device and the game falls back to its old lazy behaviour. ?prebake=1 re-enables it.
+const PB_KEY = 'hollowlight:pb';
+const pbGet = () => { try { return localStorage.getItem(PB_KEY); } catch (e) { return null; } };
+const pbSet = (v) => { try { localStorage.setItem(PB_KEY, v); } catch (e) { /* storage blocked: ignore */ } };
+export function prebakeAllowed(force) {
+  if (force) { pbSet('ok'); return true; }
+  const v = pbGet();
+  if (v === 'run') { pbSet('off'); return false; }
+  return v !== 'off';
+}
+export const prebakeMark = (done) => pbSet(done ? 'ok' : 'run');
+
 export const GROUND_STEPS = 140; // generator slices for both Deep Forest Floor tiles (progress denominator; the bar holds at 99% until really done)
 const frame = () => new Promise((r) => { let d = false; const f = () => { if (!d) { d = true; r(); } }; if (typeof requestAnimationFrame === 'function') requestAnimationFrame(f); setTimeout(f, 80); });
 
@@ -107,6 +120,7 @@ export class Prebake {
   start() {
     if (this.main) return this.main;
     this.main = (async () => {
+      prebakeMark(false);
       const st = this.steps(); this.total = st.reduce((a, x) => a + x.w, 0) + 4;
       for (const step of st) {
         this.cur = step; this.label = step.label; this.emit();
@@ -115,7 +129,7 @@ export class Prebake {
         probe.tag('prebake:' + step.label, performance.now() - t);
         this.doneW += step.w; this.cur = null; this.emit();
       }
-      this.main.ok = true; this.mainDone = true;
+      this.main.ok = true; this.mainDone = true; prebakeMark(true);
       return true;
     })();
     return this.main;

@@ -13,6 +13,7 @@ import { createPwa } from './pwa/index.js';
 import { Lanterns } from './save/lanterns.js';
 import { createAudio } from './audio/index.js';
 import { Vibe } from './gfx/feel.js';
+import { prebakeAllowed } from './gfx/prebake.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
@@ -81,6 +82,7 @@ window.addEventListener('resize', onResize);
 
 window.addEventListener('pagehide', () => app.save.flush());
 window.addEventListener('scene-ready', () => {
+  if (app.scene && app.scene.prebake && !prebakeAllowed(new URLSearchParams(location.search).get('prebake') === '1')) app.scene.prebake = null; // crashed mid-bake last time: old lazy behaviour
   if (app.scene && app.scene.prebake && (!app.params.auto || app.params.perf)) app.scene.prebake.start(); // FIX4: bake quietly while the front door is up
   if (app.params.auto && Object.hasOwn(app.data.characters, app.params.auto)) app.startRun(app.params.auto);
   else app.showMenu();
