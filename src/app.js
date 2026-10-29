@@ -2,7 +2,7 @@
 import { shouldNudge } from './save/nudge.js';
 import { downloadText, SAFE } from './ui/savesafety.js';
 import { applyTextSize } from './ui/textsize.js';
-import { setActiveKeymap, dirMap } from './input/keymap.js';
+import { setActiveKeymap, dirMap, keyLabel } from './input/keymap.js';
 import { Sim } from './sim/Sim.js';
 import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
@@ -19,6 +19,7 @@ import { tierIndex, TIER_IDS, resolveTier } from './sim/tiers.js';
 import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } from './ui/nightcopy.js';
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
+import { cardFor, hasIntro, withIntro, introsForOffer, CARDS, INTRO_IDS, cleanIntros } from './ui/introcopy.js';
 import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from './ui/whispers.js';
 import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js';
 import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
@@ -49,6 +50,10 @@ export const app = {
   scene: null,
   paused: false,
   freeze: false, // hit-stop
+  introQ: [], // FIX3 new-feature cards waiting / open (src/ui/introcopy.js)
+  introOpen: false,
+  introMem: 0,
+  introOfferRef: null,
   lastState: null,
   hudAcc: 0,
   params: parseParams(window.location.search),
@@ -98,6 +103,7 @@ export const app = {
     if (p.grant) this.applyGrants(sim, p.grant);
     if (p.bless) this.applyBless(sim, p.bless);
     this.sim = sim;
+    this.introClear(); this.introOfferRef = null;
     this.paused = false;
     this.banked = false;
     this.endPending = false;
@@ -162,7 +168,64 @@ export const app = {
   resetTips() {
     if (this.save.readOnly) return;
     this.save.setHints(TIPS_AGAIN);
+    this.introKeep(0);
     if (this.whispers) this.whispers.bits = TIPS_AGAIN;
+  },
+  // ------------------------------------------------------------------ FIX3 new-feature cards (first time only; the sim is frozen while one is up)
+  // On for real runs of a writable lantern with Tips on. Debug / ?auto= / bot runs never show or block on a card unless ?intros=1 (then 'seen' stays in memory only).
+  introsOn() { return this.save.data.settings.tips !== false && (!this.isDebugRun() || this.params.intros === true); },
+  introBits() { return this.isDebugRun() ? (this.introMem | 0) : this.save.data.intros; },
+  introKeep(bits) { bits = cleanIntros(bits); if (this.isDebugRun()) this.introMem = bits; else if (!this.save.readOnly) this.save.setIntros(bits); else this.save.data.intros = bits; },
+  introCtx() {
+    const sim = this.sim;
+    return { abilityName: sim && sim.ability ? sim.ability.name : '', key: (keyLabel('ability') || 'Space').toUpperCase(), touch: this.inputKind() === 'touch' };
+  },
+  introAsk(id) {
+    if (!this.sim || !this.introsOn() || !INTRO_IDS.includes(id) || hasIntro(this.introBits(), id) || this.introQ.includes(id)) return false;
+    this.introQ.push(id);
+    this.introNext();
+    return true;
+  },
+  introNext() {
+    if (this.introOpen || !this.introQ.length) return;
+    const id = this.introQ.shift();
+    const card = cardFor(id, this.introCtx());
+    this.introKeep(withIntro(this.introBits(), id)); // seen the moment it opens: a closed tab never replays it
+    if (!card) { this.introNext(); return; }
+    this.introOpen = true;
+    if (this.touch) this.touch.sync(false);
+    this.ui.showIntro(card, { onDone: () => this.introDone() });
+  },
+  introDone() {
+    this.introOpen = false;
+    this.ui.hideIntro();
+    if (this.introQ.length) this.introNext();
+  },
+  introClear() { this.introQ = []; this.introOpen = false; if (this.ui.hideIntro) this.ui.hideIntro(); },
+  /** Almanac > How things work: every card again, one after the other (works anywhere; does not touch the seen bits). */
+  introReplay() {
+    if (this.ui.introActive()) return;
+    const ids = INTRO_IDS.filter((id) => CARDS[id]);
+    const ctx = this.introCtx();
+    const at = (i) => {
+      if (i >= ids.length) { this.ui.hideIntro(); return; }
+      this.ui.showIntro(cardFor(ids[i], ctx), { pos: { n: i + 1, total: ids.length }, onDone: () => at(i + 1) });
+    };
+    at(0);
+  },
+  // called every frame before the whispers: the ability card (the first time the ability is ready) and the offer cards (Blessing, Evolution, Soul Shard)
+  tickIntros(sim) {
+    if (!this.introsOn()) return;
+    if (sim.state === 'levelup' && sim.offer && sim.offer !== this.introOfferRef) {
+      this.introOfferRef = sim.offer;
+      for (const id of introsForOffer(sim.offer)) this.introAsk(id);
+    }
+    if (sim.state === 'running' && !this.paused && sim.ability && sim.ability.cdLeft <= 0 && sim.time >= 2 && !hasIntro(this.introBits(), 'ability')) {
+      const w = this.whispers;
+      // the first-minute ladder already taught it (plate seen or on screen): count the card as seen instead of saying it twice
+      if (w && (w.bits >>> 3 & 1 || (w.cur && w.cur.id === 'ability'))) this.introKeep(withIntro(this.introBits(), 'ability'));
+      else { if (w && w.on()) { w.bits |= 1 << 3; w.dirty = true; } this.introAsk('ability'); }
+    }
   },
   tickWhispers(sim, dt) {
     const w = this.whispers;
@@ -170,7 +233,7 @@ export const app = {
     const st = this.save.data.settings;
     w.tips = this.tipsOn();
     const v = this.wv, p = sim.player;
-    v.live = sim.state === 'running' && !this.paused && !this.ui.settingsOpen;
+    v.live = sim.state === 'running' && !this.paused && !this.introOpen && !this.ui.settingsOpen;
     v.t = sim.time;
     const dx = p.x - this.wPos.x, dy = p.y - this.wPos.y;
     v.moving = dx * dx + dy * dy > 1e-4; this.wPos.x = p.x; this.wPos.y = p.y;
@@ -306,6 +369,7 @@ export const app = {
   // focusId: a lantern to select on open (FD4 'Open in tree' on a ready Night Gate); back: where Back returns (the map screen), else the title.
   openTree(focusId = null, back = null) {
     this.sim = null;
+    this.introClear();
     this.ui.hideAll();
     const api = this.treeApi();
     if (typeof focusId === 'string' && Object.hasOwn(treeDef.nodes, focusId)) api.focusId = focusId;
@@ -334,6 +398,7 @@ export const app = {
     if (this.sim && this.sim.endless && !this.banked) this.bankRun(this.sim); // EXTRAS v1: leaving the dark keeps the dawn (and the dark so far)
     if (this.ui.hideDarkChoice) this.ui.hideDarkChoice();
     this.sim = null;
+    this.introClear();
     this.paused = false;
     this.ui.hideAll();
     this.ui.showStart((id, tier, weapon) => this.startRun(id, tier, weapon));
@@ -508,11 +573,11 @@ export const app = {
   frame(dt) {
     const sim = this.sim;
     this.padTick(sim, dt);
-    if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
+    if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.introOpen && !this.ui.settingsOpen);
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
     if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
-    if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
-    else if ((this.paused || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
+    if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen) sim.step(dt, this.scene.readInput());
+    else if ((this.paused || this.introOpen || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
     this.bossSoonCheck(sim);
     if (sim.events.length) {
@@ -520,6 +585,7 @@ export const app = {
       sim.events.length = 0;
     }
     this.tickFeel(sim);
+    this.tickIntros(sim);
     this.tickWhispers(sim, dt);
 
     if (sim.state !== this.lastState) {
@@ -592,6 +658,7 @@ export const app = {
     const d = this.data;
     if (this.audio) this.audio.event(ev); // AU4-AU6: every sim event's cue (render/audio only)
     if (this.scene.bossView && ev.type.startsWith('boss')) this.scene.bossView.onEvent(ev);
+    if (ev.type === 'siteWake' && (ev.kind === 'lamp' || ev.kind === 'road' || ev.kind === 'knot')) this.introAsk(ev.kind);
     if (ev.type === 'bossWake') { this.ui.hudView.bossBanner('The Elder Treant wakes', 'the oldest mask in the forest', !this.save.data.settings.reducedMotion); return; }
     if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); this.buzz('hurt'); const p = this.sim && this.sim.player; if (p && p.maxHp > 0 && p.hp > 0 && p.hp / p.maxHp < 0.3) this.scene.stop(0.03); } // FM5: a hit under 30% HP gets the existing hit-stop (cap, cooldown, Calm off) // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
     else if (ev.type === 'boss') {
@@ -807,6 +874,7 @@ export const app = {
       setWear: (h, sel) => this.setWear(h, sel),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
       resetTips: () => this.resetTips(),
+      introReplay: () => this.introReplay(),
       hideWhisper: () => this.hideWhisper(),
       offerTeach: (o) => this.offerTeach(o),
       almanacView: () => this.almanacView(),
@@ -818,6 +886,7 @@ export const app = {
   },
 
   togglePause() {
+    if (this.introOpen) return;
     if (this.ui.settingsOpen || this.ui.codexView || (this.ui.celActive && this.ui.celActive()) || performance.now() - (this.ui.escAt || -1e9) < 250) return;
     const sim = this.sim;
     if (!sim || sim.state !== 'running') return;

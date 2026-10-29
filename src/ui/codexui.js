@@ -5,6 +5,7 @@
 import { el, kitRoot } from './kit.js';
 import { mk, emblem, EMBLEM_OF } from './hudsvg.js';
 import { CX, MARK_LINE, TITLES } from './codexcopy.js';
+import { INTRO } from './introcopy.js';
 import { portraitUrl } from '../gfx/husk/portrait.js';
 import { MARKS } from '../sim/marks.js';
 
@@ -47,7 +48,7 @@ function bar(frac) {
 function kb(k) { return el('span', 'cx-kb', k); }
 
 /** book: almanac(); from: 'title' | 'pause' | 'results' | 'tree'; heroPortraits: {id: url}; titles: {got, pick}; onPickTitle(id); onRead(keys); onBack(). */
-export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits = {}, calm = false, titles = null, onPickTitle, onRead, onBack } = {}) {
+export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits = {}, calm = false, titles = null, onPickTitle, onRead, onHelp = null, onBack } = {}) {
   const root = kitRoot({ calm });
   root.classList.add('cx');
   const read = new Set();
@@ -72,6 +73,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
     add(top, titleBtn);
   }
   add(top, tot);
+  if (onHelp) { const hb = el('button', 'cx-btn cx-titlebtn cx-helpbtn', INTRO.almanacBtn, { type: 'button', 'aria-label': `${INTRO.almanacBtn}: ${INTRO.almanacHint}` }); hb.addEventListener('click', () => onHelp()); add(top, hb); }
   // ---- tabs
   const tabsEl = el('div', 'cx-tabs', null, { role: 'tablist', 'aria-label': CX.title });
   const tabBtns = {};

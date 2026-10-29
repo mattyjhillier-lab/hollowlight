@@ -6,6 +6,7 @@ import { BRIGHTNESS_STORED } from '../gfx/arc.js';
 import { tierRecords, MAX_GLASS } from './tiers.js';
 import { TIER_IDS } from '../sim/tiers.js';
 import { cleanHints } from '../ui/whispers.js';
+import { cleanIntros, withIntro, VETERAN_SEEN } from '../ui/introcopy.js';
 import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
 import { cleanChars, cleanPick, legacySeed } from './chars.js';
 import { cleanCosm } from '../meta/cosmetics.js';
@@ -49,6 +50,7 @@ export function defaultSave(now = Date.now()) {
     creep: {}, // rising-price steps per owned lantern ({id: steps}; src/meta/tree.js creepSteps): refunds pay back exactly what was paid
     seen: {},
     notes: {},
+    intros: 0, // FIX3: new-feature cards already shown (src/ui/introcopy.js INTRO_IDS bits); unknown bits are dropped
     hints: 0, // FM1: lantern whisper bits (src/ui/whispers.js HINT); unknown bits are dropped
     codex: defaultCodex(), // CX1: Almanac read (NEW dots) + told (celebrated once) bitsets over ENTRY_KEYS (src/meta/codex.js); v 0 = not adopted yet
     titles: defaultTitles(), // CX6: earned title ids (fixed list) + the picked one
@@ -72,6 +74,13 @@ export function defaultStats() {
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const num = (v, def, min = 0, max = MAX_NUM) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def);
 const int = (v, def, min = 0, max = MAX_NUM) => Math.floor(num(v, def, min, max));
+
+// FIX3: added inside v3 (older saves read as 0, like the Almanac bitsets). A lantern with finished runs and no intros field yet already knows
+// its own ability, so that card is marked seen; everything else shows once. A bad type -> 0.
+function cleanIntrosField(raw, stats) {
+  if (raw.intros === undefined) return stats.runs > 0 ? VETERAN_SEEN.reduce((b, id) => withIntro(b, id), 0) : 0;
+  return cleanIntros(raw.intros);
+}
 
 // Migration table: MIGRATIONS[n] upgrades a version-n object to n+1. Append later.
 // v1 -> v2: skill tree arrives. The v1 tree was an empty placeholder, so it is reset; new stat maps start empty
@@ -252,6 +261,7 @@ export function sanitize(raw, now = Date.now()) {
     notes: legacy && legacy.starter && !(isObj(raw.notes) && isObj(raw.notes.starter)) ? notesOf({ ...(isObj(raw.notes) ? raw.notes : {}), starter: legacy.starter }) : notesOf(raw.notes),
     chars,
     hints: cleanHints(raw.hints),
+    intros: cleanIntrosField(raw, stats),
     codex: cleanCodex(raw.codex), // CX1: hex bitsets only, unknown bits dropped, bad types -> empty (added inside v3: older saves read as v 0)
     titles: cleanTitles(raw.titles), // CX6: ids from the fixed TITLES list only; pick must be an earned id
     cosm: cleanCosm(raw.cosm, TREE_DATA), // EXTRAS v1: known cosmetic / hero / look ids only; anything else dropped

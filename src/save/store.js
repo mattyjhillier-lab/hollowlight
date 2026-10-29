@@ -4,6 +4,7 @@ import { metConditions } from '../meta/tree.js';
 import { recordTierRun } from './tiers.js';
 import { bankChars } from './chars.js';
 import { cleanHints } from '../ui/whispers.js';
+import { cleanIntros } from '../ui/introcopy.js';
 import { cleanCodex, cleanTitles } from '../meta/codex.js';
 
 export const SAVE_KEY = 'hollowlight:save';
@@ -138,6 +139,15 @@ export class SaveStore {
     const b = cleanHints(bits);
     if (b === this.data.hints) return b;
     this.data.hints = b;
+    this.saveSoon();
+    return b;
+  }
+
+  // FIX3: the new-feature cards already shown (validated; debounced).
+  setIntros(bits) {
+    const b = cleanIntros(bits);
+    if (b === this.data.intros) return b;
+    this.data.intros = b;
     this.saveSoon();
     return b;
   }

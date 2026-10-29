@@ -54,6 +54,8 @@ import './menunav.css';
 import { buildMenuNav } from './menunav.js';
 import { buildCelebration } from './celebrateui.js';
 import './celebrate.css';
+import { buildIntro } from './introui.js';
+import './introui.css';
 
 export class UI {
   constructor(root, data) {
@@ -581,6 +583,7 @@ export class UI {
     this.codexView = buildAlmanac({ book: v.book, from, tab, heroPortraits: PORTRAITS, calm, titles: v.titles,
       onRead: (keys) => { if (h.almanacRead) h.almanacRead(keys); },
       onPickTitle: (id) => { if (h.pickTitle) h.pickTitle(id); },
+      onHelp: h.introReplay ? () => h.introReplay() : null,
       onBack: () => this.hideAlmanac() });
     this.codexFrom = { from, prev };
     const el = this.layer('codex');
@@ -604,6 +607,26 @@ export class UI {
     if (f && f.from === 'title' && this.handlers.closeAlmanac) this.handlers.closeAlmanac(); // title: the NEW dot / bands may have changed
     else if (f && f.prev && f.prev.isConnected && f.prev.focus) f.prev.focus({ preventScroll: true });
   }
+
+  // ------------------------------------------------------------------ FIX3 new-feature card (full screen, first time only; src/ui/introui.js)
+  showIntro(card, { pos = null, onDone = null } = {}) {
+    this.hideIntro();
+    const el = this.layer('intro');
+    el.className = 'overlay layer-intro';
+    const calm = document.documentElement.classList.contains('reduced-motion');
+    const v = buildIntro({ card, pos, calm, onDone: () => { if (onDone) onDone(); } });
+    this.introView = v;
+    el.replaceChildren(v.root);
+    this.show('intro');
+    this.sound('ui_step');
+    v.focus();
+    return v;
+  }
+  hideIntro() {
+    if (this.introView) { this.introView.destroy(); this.introView = null; }
+    if (this.layers.intro) { this.layers.intro.replaceChildren(); this.hide('intro'); }
+  }
+  introActive() { return !!(this.introView && !this.introView.isDone()); }
 
   // ------------------------------------------------------------------ CX4/CX5 celebrations: big -> medium cards, any key / tap continues, Esc skips all
   celebrate(items, { away = false, after = null } = {}) {

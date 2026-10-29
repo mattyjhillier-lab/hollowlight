@@ -110,6 +110,13 @@ export async function fitSweepRun(app, doc = document, win = window, sizes = ['n
     app.togglePause(); await wait(600); note(`${sz}/pause`, fitAudit(doc, win)); app.togglePause(); await wait(300);
     const sim = app.sim;
     if (sim && sim.state === 'running') { sim.beginLevelUp(); ui.showLevelUp(sim); await wait(900); note(`${sz}/levelup`, fitAudit(doc, win)); ui.hideLevelUp(); sim.state = 'running'; }
+    for (const id of ['lamp', 'road', 'knot', 'blessing', 'evolution', 'shard', 'ability']) { // FIX3 new-feature cards: fit + the big button is >= 44 px
+      app.introReplay(); const want = ['lamp', 'road', 'knot', 'blessing', 'evolution', 'shard', 'ability'].indexOf(id);
+      for (let i = 0; i < want; i++) { await wait(450); if (ui.introView) ui.introView.finish(); }
+      await wait(450); note(`${sz}/intro-${id}`, fitAudit(doc, win));
+      const b = doc.querySelector('.fx3-btn'); if (!b || b.getBoundingClientRect().height < 44) rep[`${sz}/intro-${id}-btn`] = 'button < 44px or missing';
+      ui.hideIntro();
+    }
     if (sim) { const st = sim.state; sim.state = 'dead'; try { ui.showEnd(sim, app.bankRun(sim)); await wait(1800); note(`${sz}/results`, fitAudit(doc, win)); } catch (e) { rep[`${sz}/results`] = `ERR ${e.message}`; } ui.hideEnd(); sim.state = st; }
   }
   delete root.dataset.text;
