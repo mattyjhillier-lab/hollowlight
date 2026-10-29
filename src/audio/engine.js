@@ -2,6 +2,7 @@
 // duck stages, a master compressor and a code-made reverb. AU1 cues are ported from the prototype (docs/mockups/audio/index.html).
 // Render/audio only: reads nothing from the sim except what app.js / RunScene hand it, and never uses the sim RNG (Math.random only).
 import { VoiceBudget, duckTargets, masterGain, perceptual, soundSettings } from './budget.js';
+import { probe } from '../gfx/probe.js';
 import { MORE_CUES, EVENT_CUE, SPECIAL, moreCue } from './cues.js';
 import { MusicPlayer } from './music.js';
 
@@ -111,12 +112,26 @@ export class AudioEngine {
     }
   }
 
+  /** FIX4 loading phase: run every cue once at a near-silent level so the first real use does not stall (node creation, JIT). Ducking and the
+   *  gem climb are left untouched. Returns the cue ids (call primeOne for each, a few per frame). */
+  primeIds() { return Object.keys(CUES); }
+  primeOne(id) {
+    const c = this.ctx;
+    if (!c || c.state !== 'running') return false;
+    const gs = this.gemStep, lg = this.lastGem;
+    this.duck = () => {};
+    try { this.cue(id, c.currentTime + 0.01, 0.0002); } catch { /* a cue that cannot prime is skipped */ }
+    delete this.duck; this.gemStep = gs; this.lastGem = lg;
+    return true;
+  }
+
   /** Play cue `id` (n = requests folded into this one, e.g. hits this frame). Returns true if a voice started. */
   play(id, n = 1, delay = 0) {
     if (!this.ctx || this.silent || this.ctx.state !== 'running') return false;
     const now = this.ctx.currentTime;
     const v = this.budget.request(id, now, this.set.calm, n);
     if (!(v > 0)) return false;
+    probe.first('cue:' + id);
     const dur = this.cue(id, now + 0.005 + delay, v);
     this.budget.commit(id, now + delay + Math.max(0.05, dur));
     return true;

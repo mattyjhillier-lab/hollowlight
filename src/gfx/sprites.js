@@ -660,12 +660,14 @@ export function makeGroundLazy(scene) {
   });
   return {
     done: false,
+    n: 0, // FIX4: generator slices run so far (the loading bar's progress)
     step(ms) {
       for (const j of jobs) if (j.up) { j.up = false; j.tex.source[0].update(); return false; } // each 4 MB GPU upload gets a frame of its own
       const t0 = performance.now();
       for (const j of jobs) {
         while (!j.done && performance.now() - t0 < ms) {
           const fin = j.it.next().done;
+          this.n++;
           j.cx.getImageData(0, 0, 1, 1); // forces the canvas to flush this slice now, keeps the cost inside the budget (cheap: CPU canvas)
           if (fin) { j.done = true; j.up = true; return false; }
         }

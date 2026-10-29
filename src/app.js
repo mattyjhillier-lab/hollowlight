@@ -1,4 +1,5 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
+import { showLoading } from './ui/loading.js'; // FIX4 run-start loading bar
 import { shouldNudge } from './save/nudge.js';
 import { downloadText, SAFE } from './ui/savesafety.js';
 import { applyTextSize } from './ui/textsize.js';
@@ -60,7 +61,25 @@ export const app = {
 
   // FD4: tier = the night picked on the map screen. Only 'normal' or a night this lantern has opened is accepted (anything else -> Twilight),
   // and banking re-checks the gate (recordTierRun), so no path can play or pay a night that is not open. Twilight runs are unchanged.
+  // FIX4: the run begins only when the pre-bake is done (no bake work after t=0). Already done (Again, later runs) or a scripted ?auto= run = start at once.
+  // Otherwise the front-door bake is brought to the front behind a truthful loading bar (always shown for the first run of a session: the build and a ~45 frame warm-up hold sit behind it).
   startRun(characterId, tier = 'normal', weaponId = null) {
+    const pb = this.scene && this.scene.prebake;
+    if (!pb || (pb.done && pb.audioDone) || (this.params.auto && !this.params.perf) || this.loadingRun) return this.loadingRun ? undefined : this.startRunNow(characterId, tier, weaponId);
+    this.loadingRun = true;
+    const ld = showLoading(); ld.set(pb.p, pb.label);
+    pb.finish(this.audio, (pr, label) => ld.set(pr, label)).catch(() => {}).then(() => {
+      // The run is built behind the bar and held frozen for ~45 rendered frames, so the first-draw costs (lightmap build, first sprite/shader use) land here, not in the first second of play.
+      let released = false, n = 0;
+      const release = () => { if (released) return; released = true; this.warmHold = false; this.loadingRun = false; ld.close(); };
+      try { this.startRunNow(characterId, tier, weaponId); } catch (e) { release(); throw e; }
+      this.warmHold = true; ld.set(0.99, 'Lighting the lantern');
+      const tick = () => { if (released) return; if (++n < 45) requestAnimationFrame(tick); else release(); };
+      requestAnimationFrame(tick); setTimeout(release, 8000); // (a hidden tab never ticks: the timer is the safety net)
+    });
+  },
+
+  startRunNow(characterId, tier = 'normal', weaponId = null) {
     const p = this.params;
     this.ensureStarter();
     const s0 = this.save.data;
@@ -511,7 +530,7 @@ export const app = {
     if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.ui.settingsOpen);
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
     if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
-    if (sim.state === 'running' && !this.paused && !this.freeze) sim.step(dt, this.scene.readInput());
+    if (sim.state === 'running' && !this.paused && !this.freeze && !this.warmHold) sim.step(dt, this.scene.readInput());
     else if ((this.paused || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
     this.bossSoonCheck(sim);

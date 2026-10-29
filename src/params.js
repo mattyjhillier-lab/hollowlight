@@ -10,7 +10,7 @@ const ID_RE = /^[a-z0-9_]{1,32}$/;
 // Flags that default ON and are turned off with =0 (A/B perf switches). Only '0' and '1' are meaningful; other values keep the default.
 export const FLAGS_ON = ['trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums', 'husks', 'summons', 'sites']; // sites: map events v1 (?sites=0 = a run without Hollow Places; a debug run, never banked)
 // Flags that default OFF and are turned on with =1.
-export const FLAGS_OFF = ['god', 'debug', 'life', 'tips', 'assist']; // assist: EXTRAS v1 Gentle Light on a debug (never banked) run // tips: FM1 whispers in an ?auto= run (scripted captures); off by default so bot / screenshot runs stay clean
+export const FLAGS_OFF = ['god', 'debug', 'perf', 'life', 'tips', 'assist']; // assist: EXTRAS v1 Gentle Light on a debug (never banked) run // tips: FM1 whispers in an ?auto= run (scripted captures); off by default so bot / screenshot runs stay clean
 export const KNOWN_KEYS = ['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'ground', 'bright', 'touch', 'meta', 'mem', 'style', 'specimen', 'kit', 'tier', ...FLAGS_ON, ...FLAGS_OFF];
 
 export function parseParams(search) {

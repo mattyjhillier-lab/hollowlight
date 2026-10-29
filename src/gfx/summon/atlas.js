@@ -3,6 +3,7 @@
 // then the texture is re-uploaded; until that lands (or on any failure) RunScene keeps today's wolf sprite (SUM_ART.wolf stays false).
 // ?summons=0 skips the bake entirely and the game keeps today's sprites (sprites.js wolfU / raven / bolt / orb).
 import { PACK, SUM_KEY, TEXELS_PER_UNIT, PAGE_W, FRAME_BY_NAME } from './frames.js';
+import { probe } from '../probe.js';
 import { paintAll } from './paint.js';
 import { wolfSheet } from './wolf.js';
 import { ravenSheet, POSES, GOLD_POSES } from './raven.js';
@@ -71,9 +72,12 @@ async function rasterise(rects, sa, sheet = wolfSheet) {
   const c = sa.cv.getContext('2d');
   for (const r of rects) c.clearRect(r.x, r.y, r.w, r.h);
   for (const r of rects) c.drawImage(img, r.x - x0, r.y - y0, r.w, r.h, r.x, r.y, r.w, r.h);
-  return performance.now() - t;
+  const dt = performance.now() - t;
+  probe.tag('bake:summon-frame', dt);
+  return dt;
 }
-const yieldTask = () => new Promise((r) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 0)));
+SUM_ART.fast = false; // FIX4: the loading phase sets this so the bakes yield by timer (frames are idle then), not by idle callback
+const yieldTask = () => SUM_ART.fast ? new Promise((r) => setTimeout(r, 0)) : new Promise((r) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 0)));
 
 export function bakeWolfArt(sa) {
   if (SUM_ART.promise) return SUM_ART.promise;
@@ -83,7 +87,7 @@ export function bakeWolfArt(sa) {
       const rects = wolfRects().filter((r) => BOOT_KINDS.includes(r.kind));
       SUM_ART.wolfMainMs = await rasterise(rects, sa);
       const t = performance.now();
-      if (sa.tex && sa.tex.refresh) sa.tex.refresh();
+      if (sa.tex && sa.tex.refresh) { sa.tex.refresh(); probe.tag('bake:atlas-upload'); }
       SUM_ART.wolfMainMs += performance.now() - t;
       for (const k of BOOT_KINDS) SUM_ART.kinds.add(k);
       SUM_ART.wolf = true;
@@ -123,7 +127,7 @@ function bakeKinds(sa, need, rectsOf, sheet, onDone) {
         }
         await yieldTask();
         const t = performance.now();
-        if (sa.tex && sa.tex.refresh) sa.tex.refresh();
+        if (sa.tex && sa.tex.refresh) { sa.tex.refresh(); probe.tag('bake:atlas-upload'); }
         const ms = performance.now() - t; SUM_ART.evoMs += ms; SUM_ART.evoMaxStepMs = Math.max(SUM_ART.evoMaxStepMs, ms);
         SUM_ART.kinds.add(k); SUM_ART.pending.delete(k);
       }
@@ -157,7 +161,7 @@ export function bakeWolfEvo(sa, evo) {
         }
         await yieldTask();
         const t = performance.now();
-        if (sa.tex && sa.tex.refresh) sa.tex.refresh();
+        if (sa.tex && sa.tex.refresh) { sa.tex.refresh(); probe.tag('bake:atlas-upload'); }
         const ms = performance.now() - t; SUM_ART.evoMs += ms; SUM_ART.evoMaxStepMs = Math.max(SUM_ART.evoMaxStepMs, ms);
         SUM_ART.kinds.add(k); SUM_ART.pending.delete(k);
       }
