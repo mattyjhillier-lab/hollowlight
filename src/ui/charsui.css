@@ -10,7 +10,7 @@
 .overlay.u3 .ch-tile.is-chosen { border-color: #ffe0a0; box-shadow: 0 0 0 3px rgba(255, 214, 140, .5), 0 0 26px rgba(255, 170, 60, .3); }
 .overlay.u3 .ch-tile.is-sleeping { border-style: dashed; }
 .overlay.u3 .ch-tile:focus-visible { outline: 2px solid var(--thread); outline-offset: 3px; }
-.overlay.u3 .ch-por { width: 72px; aspect-ratio: 150 / 200; overflow: hidden; display: grid; place-items: center; background: #1a2030; border-radius: 50% 50% 10px 10px / 34% 34% 10px 10px; box-shadow: 0 0 0 2px #d9ab5c; }
+.overlay.u3 .ch-por { flex: none; min-width: 30px; width: 72px; aspect-ratio: 150 / 200; overflow: hidden; display: grid; place-items: center; background: #1a2030; border-radius: 50% 50% 10px 10px / 34% 34% 10px 10px; box-shadow: 0 0 0 2px #d9ab5c; }
 .overlay.u3 .ch-por__img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; pointer-events: none; }
 .overlay.u3 .ch-q { color: var(--lg-dim); font: var(--fw-display) 34px/1 var(--font-display); }
 .overlay.u3 .ch-tname { color: var(--lg-text); }
@@ -92,3 +92,8 @@ html.touch .overlay.u3 .ch-bar2 .lg-btn__key { display: none; }
   .overlay.u3 .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) > .ch-btn, .overlay.u3 .u3-menu.fd-menu2:has(.ch-btn) .fd-row3 > .lg-btn { min-height: 52px; padding-left: .6em; padding-right: .45em; gap: .4em; }
   .overlay.u3 .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) > .ch-btn .lg-btn__label, .overlay.u3 .u3-menu.fd-menu2:has(.ch-btn) .fd-row3 > .lg-btn .lg-btn__label { font-size: 17px; white-space: nowrap; }
 }
+
+/* fit audit: the sleeping-hero "?" must fit its small portrait window on narrow phones (and at larger text) */
+@media (max-width: 420px) { .overlay.u3 .ch-q { font-size: 14px; line-height: 1.2; } }
+@media (max-width: 420px) { .overlay.u3 .ch-tsub { white-space: normal; text-align: center; } .overlay.u3 .ch-tile { min-width: 0; } }
+@media (max-width: 420px) { .overlay.u3 .ch-tile { flex-wrap: wrap; row-gap: 2px; } }

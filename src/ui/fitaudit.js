@@ -34,8 +34,10 @@ export function fitAudit(doc = document, win = window, tol = 1.5) {
     const tr = { l: Math.min(...rects.map((q) => q.left)), t: Math.min(...rects.map((q) => q.top)), r: Math.max(...rects.map((q) => q.right)), b: Math.max(...rects.map((q) => q.bottom)) };
     if (tr.r - tr.l < 2) continue;
     const add = (why, over) => { seen.add(el); out.push({ sel: sel(el), text: txt.slice(0, 48), why, over: Math.round(over) }); };
-    // (c) viewport
-    if (tr.l < -tol || tr.r > W + tol) { add('outside the screen (sideways)', Math.max(-tr.l, tr.r - W)); continue; }
+    // (c) viewport (text inside a horizontal scroller is reachable by scrolling)
+    let inSX = false;
+    for (let a = el; a && a !== doc.body; a = a.parentElement) { const c = win.getComputedStyle(a); if (c.overflowX === 'auto' || c.overflowX === 'scroll') { inSX = true; break; } }
+    if (!inSX && (tr.l < -tol || tr.r > W + tol)) { add('outside the screen (sideways)', Math.max(-tr.l, tr.r - W)); continue; }
     // (a) clipped by an ancestor (or itself)
     let clipped = false, scrX = false, scrY = false; // once inside a scroller, off-box text on that axis is reachable by scrolling, not lost
     for (let a = el; a && a !== doc.body; a = a.parentElement) {
@@ -57,8 +59,8 @@ export function fitAudit(doc = document, win = window, tol = 1.5) {
       if (!filled(c) || a.id === 'ui' || /overlay|layer-/.test(typeof a.className === 'string' ? a.className : '')) continue;
       const b = a.getBoundingClientRect();
       if (b.width < 8 || b.height < 8) continue;
-      const over = Math.max(b.left - tr.l, tr.r - b.right, b.top - tr.t, tr.b - b.bottom);
-      if (over > tol && !(scrY && (tr.t >= b.bottom || tr.b <= b.top))) add(`sticks out of ${sel(a)}`, over);
+      const over = scrY ? Math.max(b.left - tr.l, tr.r - b.right) : Math.max(b.left - tr.l, tr.r - b.right, b.top - tr.t, tr.b - b.bottom); // inside a vertical scroller the edge cut is just scrolling
+      if (over > tol) add(`sticks out of ${sel(a)}`, over);
       break;
     }
   }
@@ -88,7 +90,7 @@ export async function fitSweep(app, doc = document, win = window, sizes = ['norm
         const f = fitAudit(doc, win);
         const small = [...doc.querySelectorAll('#ui button, #ui [role=tab]')].filter((b) => b.offsetParent && (b.getBoundingClientRect().width < 40 || b.getBoundingClientRect().height < 40) && !/sr$/.test(typeof b.className === 'string' ? b.className : '')).map((b) => `${b.className}|${Math.round(b.getBoundingClientRect().width)}x${Math.round(b.getBoundingClientRect().height)}`);
         const hs = doc.documentElement.scrollWidth > win.innerWidth + 1;
-        if (f.length || small.length || hs) rep[`${sz}/${vn}`] = `${f.length} ${[...new Set(f.map((x) => `${x.sel}[${x.over}]:${x.text.slice(0, 16)}`))].join(' ; ')}${small.length ? ` SMALL ${small.slice(0, 4).join(' ; ')}` : ''}${hs ? ' HSCROLL' : ''}`;
+        if (f.length || small.length || hs) rep[`${sz}/${vn}`] = `${f.length} ${[...new Set(f.map((x) => `${x.sel}[${x.over}]:${x.text.slice(0, 16)} <${x.why.slice(0, 60)}>`))].join(' ; ')}${small.length ? ` SMALL ${small.slice(0, 4).join(' ; ')}` : ''}${hs ? ' HSCROLL' : ''}`;
       }
     }
   }
@@ -96,4 +98,22 @@ export async function fitSweep(app, doc = document, win = window, sizes = ['norm
   return { viewport: `${win.innerWidth}x${win.innerHeight}`, problems: Object.keys(rep).length, rep };
 }
 
-if (typeof window !== 'undefined' && /[?&]debug=1/.test(window.location.search)) { window.__fitAudit = () => fitAudit(); window.__fitSweep = (sizes) => fitSweep(window.__app, document, window, sizes); }
+// In-run screens (open the game with ?debug=1&auto=wren&seed=1&t=200&god=1): HUD, event toast, pause, level-up cards, results. Console: await __fitSweepRun()
+export async function fitSweepRun(app, doc = document, win = window, sizes = ['normal', 'large', 'larger']) {
+  const ui = app.ui, wait = (ms) => new Promise((r) => setTimeout(r, ms)), root = doc.documentElement, rep = {};
+  const note = (k, f) => { if (f.length) rep[k] = `${f.length} ${[...new Set(f.map((x) => `${x.sel}[${x.over}]:${x.text.slice(0, 16)} <${x.why.slice(0, 60)}>`))].join(' ; ')}`; };
+  for (const sz of sizes) {
+    if (sz === 'normal') delete root.dataset.text; else root.dataset.text = sz;
+    await wait(1200);
+    note(`${sz}/hud`, fitAudit(doc, win));
+    if (ui.toast) { ui.toast('A long event label to test wrapping: The Hollow Knot wakes, burn it out'); await wait(400); note(`${sz}/toast`, fitAudit(doc, win)); }
+    app.togglePause(); await wait(600); note(`${sz}/pause`, fitAudit(doc, win)); app.togglePause(); await wait(300);
+    const sim = app.sim;
+    if (sim && sim.state === 'running') { sim.beginLevelUp(); ui.showLevelUp(sim); await wait(900); note(`${sz}/levelup`, fitAudit(doc, win)); ui.hideLevelUp(); sim.state = 'running'; }
+    if (sim) { const st = sim.state; sim.state = 'dead'; try { ui.showEnd(sim, app.bankRun(sim)); await wait(1800); note(`${sz}/results`, fitAudit(doc, win)); } catch (e) { rep[`${sz}/results`] = `ERR ${e.message}`; } ui.hideEnd(); sim.state = st; }
+  }
+  delete root.dataset.text;
+  return { viewport: `${win.innerWidth}x${win.innerHeight}`, problems: Object.keys(rep).length, rep };
+}
+
+if (typeof window !== 'undefined' && /[?&]debug=1/.test(window.location.search)) { window.__fitAudit = () => fitAudit(); window.__fitSweep = (sizes) => fitSweep(window.__app, document, window, sizes); window.__fitSweepRun = (sizes) => fitSweepRun(window.__app, document, window, sizes); }

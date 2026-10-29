@@ -155,3 +155,10 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 .overlay.u4 .u4-about .u4-note { margin: .5em 0; }
 /* final QA: at 375-420 px portrait 'Picture' / 'Controls' touched their pill rims; a little less tracking and side padding gives them air */
 @media (max-width: 420px) { .overlay.u4 .u4-body .lg-tabs { gap: 4px; } .overlay.u4 .u4-body .lg-tab { padding: .1em .2em; font-size: 14px; letter-spacing: 0; } }
+
+/* fit audit: narrow phones (320 px) and larger text: tabs and segmented choices shrink their padding instead of overflowing their buttons */
+@media (max-width: 420px) { .overlay.u4 .u4-body .lg-tab { flex: 0 0 auto; } .overlay.u4 .lg-tabs { overflow-x: auto; scrollbar-width: none; } .overlay.u4 .u4-seg__opt { padding: 0 .15em; min-width: min-content; } }
+
+/* fit audit: the pause screen scrolls instead of clipping on small phones / larger text */
+.overlay.u4.u4-pausescreen { overflow-y: auto; justify-content: safe center; }
+.overlay.u4.u4-pausescreen .lg-panel { max-height: none; }
