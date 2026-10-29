@@ -50,6 +50,8 @@ import { cardModel } from './cardview.js';
 import { buildAlmanac } from './codexui.js';
 import './codex.css';
 import './a11y.css';
+import './menunav.css';
+import { buildMenuNav } from './menunav.js';
 import { buildCelebration } from './celebrateui.js';
 import './celebrate.css';
 
@@ -64,6 +66,8 @@ export class UI {
     this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
     this.tree = new TreeScreen(this);
     this.buildHud();
+    this.nav = null;
+    if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }
     window.addEventListener('keydown', (e) => this.onKey(e));
   }
 
@@ -87,12 +91,59 @@ export class UI {
     const el = this.layer(name);
     el.style.display = name === 'hud' ? 'block' : 'flex';
     el.style.pointerEvents = name === 'hud' ? 'none' : 'auto';
+    this.syncNav();
     return el;
   }
 
   hide(name) {
     if (name === 'end' && this.endView) { this.endView.destroy(); this.endView = null; }
     if (this.layers[name]) this.layers[name].style.display = 'none';
+    this.syncNav();
+  }
+
+  // ------------------------------------------------------------------ persistent menu tab bar (never over a run)
+  navActive() {
+    const on = (n) => !!(this.layers[n] && this.layers[n].style.display !== 'none');
+    if (on('settings')) return 'settings';
+    if (on('codex')) return 'almanac';
+    if (on('tree')) return this.tree && this.tree.panelMode === 'goals' ? 'goals' : 'tree';
+    if (on('hero') && this.layers.hero.querySelector('.ld-step-chars')) return 'character';
+    return null;
+  }
+
+  syncNav() {
+    if (!this.nav) return;
+    const on = (n) => !!(this.layers[n] && this.layers[n].style.display !== 'none');
+    const menu = ['start', 'hero', 'lanterns', 'nights', 'settings', 'codex', 'tree'].some(on);
+    const inRun = ['hud', 'pause', 'end', 'levelup', 'dark'].some(on);
+    const show = menu && !inRun;
+    this.nav.set(show, show ? this.navActive() : null);
+    this.root.classList.toggle('has-mnav', show);
+  }
+
+  /** Jump to another menu screen from any menu screen: close what is open WITHOUT its back-side-effects, then open the target. */
+  navTo(dest) {
+    const active = this.navActive();
+    if (dest === active && dest !== 'goals') return;
+    if (dest === 'goals' && active === 'goals') return;
+    if (this.sound) this.sound('ui_step');
+    if (this.settingsOpen) {
+      this.settingsOpen = false;
+      if (this.settingsView && this.settingsView.remap) this.settingsView.remap.stop(false);
+      this.settingsView = null;
+    }
+    if (this.codexView) { this.codexView = null; this.codexFrom = null; if (this.layers.codex) this.layers.codex.replaceChildren(); }
+    if (dest === 'goals' && this.tree.isOpen) { this.tree.toggleGoals(true); this.syncNav(); return; }
+    if (this.tree.isOpen) { if (this.tree.api) this.tree.api.onClose = null; this.tree.close(); }
+    this.hideAll();
+    for (const n of Object.keys(this.layers)) if (this.layers[n]) this.layers[n].removeAttribute('inert');
+    const h = this.handlers;
+    if (dest === 'character') this.showCharacters();
+    else if (dest === 'tree' && h.openTree) h.openTree();
+    else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
+    else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }
+    else if (dest === 'settings') { this.showStart(this.onPick); this.showSettings(); }
+    this.syncNav();
   }
 
   // ------------------------------------------------------------------ HUD (HUD-1: src/ui/hud.js, display only)

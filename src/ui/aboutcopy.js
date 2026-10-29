@@ -1,4 +1,4 @@
-// About tab copy (Settings > About). Plain strings only: the screen renders them with textContent. Placeholders marked TODO Matt are for Matt to fill or edit.
+// About tab copy (Settings > About). Plain strings only: the screen renders them with textContent.
 export const ABOUT = Object.freeze({
   tab: 'About',
   blurb: 'Wispwick: Spirits of the Dusk is a small survivors-like about a lantern-bearer and the spirits who follow them. Walk the grey Hollow, let your spirits fight for you, and bring the colour back until dawn.',
@@ -18,8 +18,6 @@ export const ABOUT = Object.freeze({
   ]),
   madeBy: 'Made by Matt Hillier, with the heavy lifting done by Claude.',
   versionLabel: 'Version',
-  feedbackLabel: 'Feedback',
-  feedback: 'TODO Matt: add the feedback channel (itch.io page, email or form).',
   aiTitle: 'How AI was used',
-  ai: 'Draft for Matt to edit: Wispwick was made by one developer working with an AI coding assistant (Claude). The code, game systems, art-drawing code and sound synthesis were written with its help, directed and playtested by the developer. All design decisions were made or approved by the developer. The game makes no network calls and sends no data anywhere; saves stay in your browser.',
+  ai: 'Wispwick was made by one developer working with an AI coding assistant (Claude). The code, game systems, art-drawing code and sound synthesis were written with its help, directed and playtested by the developer. All design decisions were made or approved by the developer. The game makes no network calls and sends no data anywhere; saves stay in your browser.',
 });

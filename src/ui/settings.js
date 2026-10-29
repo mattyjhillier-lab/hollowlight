@@ -184,14 +184,13 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   const nudgeT = wickToggle({ ...SAFE.reminder, checked: st.backupNudge !== false, onChange: (v) => set({ backupNudge: v === true }) });
   const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes, bDmg), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null, nudgeT);
 
-  // ---- About: blurb, how to play, credits, version, maker, feedback, AI-use note (textContent only) ----
+  // ---- About: blurb, how to play, credits, version, maker, AI-use note (textContent only) ----
   const ver = typeof __APP_VERSION__ !== 'undefined' ? String(__APP_VERSION__).slice(0, 24) : 'dev';
   const list = (items) => add(el('ul', 'u4-about__list'), ...items.map((t) => el('li', null, t)));
   const about = add(el('div', 'u4-grid u4-about', null, { role: 'group', 'aria-label': ABOUT.tab }),
     el('p', 'u4-note', ABOUT.blurb), el('h3', 'u4-about__h', ABOUT.howTitle), list(ABOUT.how),
     el('h3', 'u4-about__h', ABOUT.creditsTitle), list(ABOUT.credits),
     el('p', 'u4-note', ABOUT.madeBy), el('p', 'u4-note', `${ABOUT.versionLabel} ${ver}`),
-    el('p', 'u4-note', `${ABOUT.feedbackLabel}: ${ABOUT.feedback}`),
     el('h3', 'u4-about__h', ABOUT.aiTitle), el('p', 'u4-note', ABOUT.ai));
   // ---- tabs ----
   const panes = { sound, picture, controls, saves, about };

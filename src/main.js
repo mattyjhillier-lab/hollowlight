@@ -3,6 +3,7 @@ import './style.css';
 import './hud.css';
 import { app } from './app.js';
 import { UI } from './ui/ui.js';
+import './ui/fitaudit.js'; // debug aid: __fitAudit() with ?debug=1 (never runs by itself)
 import { RunScene } from './scenes/RunScene.js';
 import { applyCssPalette } from './gfx/palette.js';
 import { TouchControls } from './input/touch.js';

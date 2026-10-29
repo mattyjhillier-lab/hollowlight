@@ -23,7 +23,7 @@
 /* toolbar: a solid band (never floats over map names) */
 .ts-bar { position: absolute; left: 0; right: 0; top: 0; min-height: 60px; display: flex; align-items: center; gap: 8px; padding: 8px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right));
   background: linear-gradient(var(--ts-band), #0b101cf2); border-bottom: 1px solid #d8b26a2a; z-index: 6; }
-.ts-title { font-family: var(--font-display); font-size: 22px; color: var(--ts-cream); margin-right: auto; white-space: nowrap; text-shadow: 0 0 12px #ffb35a66; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ts-title { font-family: var(--font-display); font-size: 22px; color: var(--ts-cream); margin-right: auto; white-space: normal; line-height: 1.1; text-shadow: 0 0 12px #ffb35a66; min-width: 0; flex: 0 1 auto; }
 .ts-purse { display: flex; gap: 6px; }
 .ts-pill { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 4px 10px; border-radius: 17px; background: linear-gradient(var(--ts-glassA), var(--ts-glassB)); border: 1px solid var(--ts-line); font-weight: 700; font-size: 14px; white-space: nowrap; font-feature-settings: "tnum" 1; }
 .ts-pill.short { border-color: var(--ts-lock); border-style: dashed; }
@@ -74,7 +74,8 @@
 .ts-primary[disabled] { background: linear-gradient(var(--ts-glassA), var(--ts-glassB)); color: var(--ts-mute) !important; border-color: var(--ts-lock); cursor: default; }
 .ts-primary.confirm { background: linear-gradient(#fff6e0, #ffcf7a); box-shadow: 0 0 18px #ffb35a; }
 .ts-msg { font-size: 14px; color: var(--ts-teal); min-height: 1em; }
-.ts-close { position: absolute; right: 6px; top: 6px; background: none; border: 0; font-size: 24px; color: var(--ts-mute) !important; min-width: 44px; min-height: 44px; }
+.ts-close { position: absolute; right: 6px; top: 6px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; display: grid; place-items: center; font: 700 28px/1 var(--font-body, system-ui, sans-serif); color: #fff3d6 !important; background: #2a2236; border: 2px solid #ffd98a; border-radius: 50%; cursor: pointer; }
+.ts-close:hover, .ts-close:focus-visible { background: #ffd98a; color: #1a1020 !important; outline: none; }
 .ts-handle { display: none; }
 .ts-bar2 { height: 6px; border-radius: 3px; background: #ffffff18; margin-top: 4px; overflow: hidden; }
 .ts-bar2 b { display: block; height: 100%; background: linear-gradient(90deg, #3aa79a, var(--ts-teal)); border-radius: 3px; }
