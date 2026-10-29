@@ -352,3 +352,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - Map events: rewards not worth chasing; first Lantern Road and first Knot give no Blessing (only the second of each does); Knot unclear (what to do) and its area too small; add label/HP bar/hint. Max-level fallback card choice (gold / health / XP): XP option is a loop, replace (3 options needed).
 - Menus: reach every tab from any tab (persistent tab bar); Goals close "x" too small (44px min); night-to-day brightness cuts instead of easing (smooth dawn curve).
 - Cold playtest: explanations of new features should pause the game and take focus so players can read (design question, 3 options).
+- 2026-10-29 PICKS LOCKED (see LOCKED 'PLAYTEST PICKS'): soul-shard maxed card; Blessing on first Road + first Knot; pause + full-card explanations. Build next in small chunks with bot sweeps after (1)/(2).
