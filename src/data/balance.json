@@ -147,9 +147,10 @@
       "name": "Grave Coins",
       "desc": "+25 gold for this run."
     },
-    "xp": {
-      "name": "Soul Surge",
-      "desc": "Gain a chunk of XP."
+    "shard": {
+      "name": "Soul Shard",
+      "desc": "+1 soul shard."
     }
-  }
+  },
+  "fallbackShardMax": 2
 }

@@ -38,7 +38,7 @@ test('HUD-2 effect numbers: percent / count / seconds / label per stat kind', ()
   assert.equal(effectOf(blessingCard('dawnlit_soles', data.blessings, 0), data).num, '+2%');
   assert.equal(effectOf(fallbackCard('heal', data), data).num, '+35%');
   assert.equal(effectOf(fallbackCard('gold', data), data).num, '+25');
-  assert.equal(effectOf(fallbackCard('xp', data), data).num, 'XP');
+  assert.equal(effectOf(fallbackCard('shard', data), data).num, '+1');
   // garbage in -> empty, never a throw
   for (const bad of [null, undefined, {}, { kind: 'stat' }, { kind: 'stat', weaponId: 'nope', stat: 'x', rank: 0 }, { kind: 'evolution', evoId: 'zzz' }]) {
     const r = effectOf(bad, data); assert.equal(typeof r.num, 'string'); assert.ok(!/NaN|Infinity|undefined/.test(r.num + r.unit));

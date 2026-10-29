@@ -209,6 +209,7 @@ export class Sim {
     this.kills = 0;
     this.gold = 0;
     this.shards = 0;
+    this.fallbackShards = 0; // soul-shard fallback cards taken this run (cap balance.fallbackShardMax)
     this.damageDealt = 0;
     // R2 counters (read-only stats for the results screen; never feed back into the sim).
     this._src = null;
@@ -330,7 +331,7 @@ export class Sim {
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions, offerSize: this.offerSize, weaponSlots: this.weaponSlots, favour: this.favour, loudStir: this.tfx.loudStir };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions, offerSize: this.offerSize, weaponSlots: this.weaponSlots, favour: this.favour, loudStir: this.tfx.loudStir, fallbackShards: this.fallbackShards };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).
@@ -1295,7 +1296,7 @@ export class Sim {
     if (card.kind === 'fallback') {
       if (card.fallback === 'heal') { this.healPlayer(this.player.maxHp * 0.35); if (card.swapped) this.healSwapReady = this.time + this.blessDef.heal.cooldown; }
       else if (card.fallback === 'gold') this.gold += 25;
-      else if (card.fallback === 'xp') this.xp += Math.ceil(this.xpNeeded * 0.5);
+      else if (card.fallback === 'shard' && this.fallbackShards < (this.balance.fallbackShardMax ?? 2)) { this.fallbackShards += 1; this.shards += 1; }
     } else if (card.kind === 'blessing') {
       this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1);
       this.blessingsTaken += 1;

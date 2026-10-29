@@ -88,7 +88,7 @@ export function effectOf(card, data) {
       const g = /\+\s*(\d{1,5})/.exec(t);
       if (card.fallback === 'heal') return { mode: 'percent', num: n ? `+${n[1]}%` : 'HEAL', unit: 'max HP' };
       if (card.fallback === 'gold') return { mode: 'count', num: g ? `+${g[1]}` : 'GOLD', unit: 'gold' };
-      return { mode: 'label', num: 'XP', unit: 'a chunk of XP' };
+      return { mode: 'count', num: '+1', unit: 'soul shard' };
     }
   } catch { /* fall through: never throw while drawing a card */ }
   return { mode: 'label', num: '', unit: '' };

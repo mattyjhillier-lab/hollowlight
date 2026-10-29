@@ -205,10 +205,12 @@ function drawWeighted(pool, n, rng) {
   return out;
 }
 
-function fillWithFallbacks(cards, n, data, rng) {
+function fillWithFallbacks(cards, n, data, rng, ctx = {}) {
   const kinds = rng.shuffle(Object.keys(data.balance.fallback));
+  const shardsLeft = (data.balance.fallbackShardMax ?? 2) - (ctx.fallbackShards || 0); // the shard card is offered only while the run cap has room
   for (const kind of kinds) {
     if (cards.length >= n) break;
+    if (kind === 'shard' && !(shardsLeft > 0)) continue;
     cards.push(fallbackCard(kind, data));
   }
   return cards;
@@ -233,7 +235,7 @@ export function drawNormalCards(ctx, rng, count, exclude = new Set()) {
     const bp = blessingPool(ctx).filter((p) => !exclude.has(p.card.key) && !have.has(p.card.key));
     cards.push(...drawWeighted(bp, count - cards.length, rng));
   }
-  return fillWithFallbacks(cards, count, ctx.data, rng);
+  return fillWithFallbacks(cards, count, ctx.data, rng, ctx);
 }
 
 export function generateOffer(ctx, rng) {

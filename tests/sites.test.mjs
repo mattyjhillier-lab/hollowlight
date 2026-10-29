@@ -144,19 +144,24 @@ test('road: first touch starts the timer; each lantern pays; all three = magnet 
   at(f, r2.lanterns[1].x, r2.lanterns[1].y); run(f, 0.05); assert.equal(r2.lit, 1, 'no retry');
 });
 
-test('road 2 set prize is a Blessing choice (Blessing cards only; never a weapon, stat or evolution); floor when none can be offered', () => {
-  const sim = mk(); jump(sim, 480); run(sim, 0.05);
-  const r = site(sim, 'road', 1); assert.equal(r.state, 'awake');
+test('road 1 set prize is a Blessing choice (Blessing cards only); floor when none can be offered; road 2 pays a bigger non-Blessing prize', () => {
+  const sim = mk(); jump(sim, 130); run(sim, 0.05);
+  const r = site(sim, 'road', 0); assert.equal(r.state, 'awake');
   for (const L of r.lanterns) { at(sim, L.x, L.y); sim.step(1 / 60, {}); }
   assert.equal(r.state, 'done');
   assert.equal(sim.state, 'levelup'); assert.equal(sim.offer.start, 'siteBless');
   assert.ok(sim.offer.cards.length > 0 && sim.offer.cards.every((c) => c.kind === 'blessing'));
   assert.equal(sim.sites.paid.bless, 1);
   const nb = new Sim({ data: { ...data, blessings: undefined }, seed: 7, sites: true, godMode: true });
-  jump(nb, 480); run(nb, 0.05);
-  const r3 = site(nb, 'road', 1), g0 = nb.gold;
+  jump(nb, 130); run(nb, 0.05);
+  const r3 = site(nb, 'road', 0), g0 = nb.gold;
   for (const L of r3.lanterns) { at(nb, L.x, L.y); nb.step(1 / 60, {}); }
-  assert.equal(nb.state, 'running'); assert.equal(nb.gold - g0, 3 * 8 + 35 + 25, 'floor: +25 gold (and half a level of XP)');
+  assert.equal(nb.state, 'running'); assert.equal(nb.gold - g0, 3 * 5 + 25 + 25, 'floor: +25 gold (and half a level of XP)');
+  const s2 = mk(); jump(s2, 480); run(s2, 0.05);
+  const r2 = site(s2, 'road', 1), g2 = s2.gold;
+  for (const L of r2.lanterns) { at(s2, L.x, L.y); s2.step(1 / 60, {}); }
+  assert.equal(r2.state, 'done'); assert.equal(s2.state, 'running'); assert.equal(s2.sites.paid.bless, 0);
+  assert.equal(s2.gold - g2, 3 * 8 + 60); assert.equal(s2.sites.paid.magnet, 1);
 });
 
 test('knot: wakes near, a still target in sim.enemies (never recycled / shoved / counted), pulse tell then one hit, leash heals it back', () => {
@@ -199,18 +204,20 @@ test('knot spawns: cap 14 alive, paused while the map is crowded', () => {
   assert.equal(sim.enemies.filter((e) => e.knotBorn === k.id && !e.dead).length, 0, 'paused above 200 foes');
 });
 
-test('far knot: Blessing choice + at most one soul shard per run; the mid knot pays a heart', () => {
+test('first knot: Blessing choice + heart; far knot: bigger prize + at most one soul shard per run, no Blessing', () => {
   const sim = mk();
   jump(sim, 330); run(sim, 0.05);
   const k0 = site(sim, 'knot', 0); at(sim, k0.x + 200, k0.y); run(sim, 0.05);
-  const f0 = sim.enemies.find((e) => e.knot === k0.id); f0.hp = 0; f0.dead = true; run(sim, 0.05);
+  const f0 = sim.enemies.find((e) => e.knot === k0.id); f0.hp = 0; f0.dead = true; sim.step(1 / 60, {});
   assert.equal(k0.state, 'done'); assert.ok(sim.pickups.some((p) => p.type === 'heart'));
   assert.equal(sim.shards, 0);
+  assert.equal(sim.state, 'levelup'); assert.equal(sim.offer.start, 'siteBless');
+  sim.state = 'running'; sim.offer = null;
   jump(sim, 560); run(sim, 0.05);
   const k1 = site(sim, 'knot', 1); at(sim, k1.x + 200, k1.y); run(sim, 0.05);
   const f1 = sim.enemies.find((e) => e.knot === k1.id); f1.dead = true; sim.step(1 / 60, {});
   assert.equal(k1.state, 'done'); assert.equal(sim.shards, 1); assert.equal(sim.sites.paid.shard, 1);
-  assert.equal(sim.state, 'levelup'); assert.equal(sim.offer.start, 'siteBless');
+  assert.equal(sim.sites.paid.bless, 1, 'only the first knot offered a Blessing');
   sim.sites.paid.shard = 1; k1.state = 'fight'; k1.foe = { dead: true }; sim.state = 'running'; sim.sites.stepKnot(k1, sim.player, 0.01);
   assert.equal(sim.shards, 1, 'never a second shard');
   const r = sim.result(); assert.equal(r.sites.knot[0], 2); assert.equal(r.shards, 1);
@@ -262,4 +269,16 @@ test('?sites=0 is the only off switch (a debug run); default on', () => {
   assert.equal(parseParams('').sites, true);
   assert.equal(parseParams('?sites=0').sites, false);
   assert.equal(parseParams('?sites=<x>').sites, true);
+});
+
+test('maxed-card fallback: soul-shard card replaces the XP card, max 2 per run, never past the cap', async () => {
+  const { fallbackCard, drawNormalCards } = await import('../src/sim/cards.js');
+  assert.equal(data.balance.fallback.xp, undefined); assert.equal(data.balance.fallback.shard.name, 'Soul Shard');
+  const sim = new Sim({ data, seed: 3, godMode: true });
+  const take = () => { sim.state = 'levelup'; sim.offer = { cards: [fallbackCard('shard', data)], gold: [] }; sim.pickCard(sim.offer.cards[0].key); };
+  take(); take(); take();
+  assert.equal(sim.shards, 2); assert.equal(sim.fallbackShards, 2);
+  const ctx = { ...sim.cardCtx, weapons: [] };
+  const rng = sim.rng;
+  assert.ok(!drawNormalCards({ ...ctx, fallbackShards: 2 }, rng, 3).some((c) => c.fallback === 'shard'));
 });

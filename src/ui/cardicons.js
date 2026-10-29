@@ -47,7 +47,7 @@ const FALLBACK = {
   heal: (d) => [P(d, 'M0 17 C-18 4 -17 -12 -8 -14 C-3 -15 0 -11 0 -8 C0 -11 3 -15 8 -14 C17 -12 18 4 0 17Z', { fill: ROSE, stroke: '#7a2540', ...OL(3) }),
     P(d, 'M-9 -8 C-12 -6 -12 -1 -10 1', { fill: 'none', stroke: '#fff', 'stroke-opacity': 0.6, ...OL(2) })],
   gold: (d) => [emblem(d, 'coin', 40)], // brass coin (never evolution gold)
-  xp: (d) => [P(d, 'M0 -19 L12 -4 L0 19 L-12 -4Z', { fill: TEAL, stroke: '#1f5f58', ...OL(2.8) }),
+  shard: (d) => [P(d, 'M0 -19 L12 -4 L0 19 L-12 -4Z', { fill: TEAL, stroke: '#1f5f58', ...OL(2.8) }),
     P(d, 'M0 -19 L0 19 M-12 -4 H12', { fill: 'none', stroke: '#e6fffa', 'stroke-opacity': 0.55, 'stroke-width': 1.4 }),
     P(d, 'M-3 -12 L-7 -4 L-4 -4Z', { fill: '#fff', 'fill-opacity': 0.7 })],
 };
