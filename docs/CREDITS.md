@@ -31,7 +31,7 @@ Reserved Font Name: Fondamento declares RFNs "Fondamento" and "Fondamento Italic
 | Wispwick wordmark (Brass Lantern, LOCKED "WORDMARK") | Inline SVG built in code: src/ui/kit.js `wordmark()` |
 | App icons (public/favicon.svg, favicon-32/64.png, icon-128/192/512.png, icon-maskable-512.png, apple-touch-icon.png) | Lantern emblem drawn in SVG by scripts/gen-icons.mjs, rendered to PNG with local headless Chrome (no downloads) |
 | Share image (public/share.png, 1200x630) | scripts/gen-share.mjs: the real code-drawn wordmark over a code-drawn dusk background |
-| Hero portraits (src/assets/heroes/wren.webp, elias.webp) | Crops of the project's own approved hero sheets (docs/mockups/wren-v2, elias-v2) by scripts/gen-hero-portraits.mjs. How the sheets were first produced (code only, or with an AI image tool): TODO Matt, confirm. |
+| Hero portraits (src/assets/heroes/wren.webp, elias.webp) | Crops of the project's own approved hero sheets (docs/mockups/wren-v2, elias-v2) by scripts/gen-hero-portraits.mjs. The sheets are drawn by code (docs/mockups/wren-v2 and elias-v2: sheet.mjs, build.mjs, anim.mjs), written by Claude and approved by Matt; no image-generation tool was used (checked against the repo 2026-10-29; Matt does not recall using one). |
 
 ## Audio
 All sound and music is synthesised at run time with the Web Audio API in src/audio/ (oscillators, noise, envelopes), including the map-event sounds. No audio files are shipped or downloaded.
@@ -39,6 +39,6 @@ All sound and music is synthesised at run time with the Web Audio API in src/aud
 ## AI-use disclosure
 - The code, game data, tests, documentation, art-drawing code and sound synthesis were written with the help of Claude (Anthropic's AI coding assistant, used through Claude Code), directed and playtested by the developer, Matt Hillier.
 - Design, balance targets and creative decisions were made or approved by the developer.
-- No generative-AI image, music or voice files are known to be shipped. TODO Matt: confirm the hero sheets did not come from an AI image tool; if any did, name the tool, date and terms here.
+- No generative-AI image, music or voice files are known to be shipped. The hero sheets and all other art are drawn by code (see the hero portraits row); confirmed against the repo 2026-10-29.
 - No runtime AI and no network calls: static site, saves in the browser's localStorage.
 - In-game text: Settings > About (src/ui/aboutcopy.js, draft wording for Matt). Wispwick is private and non-commercial (LOCKED "PRIVATE, NON-COMMERCIAL"), so store AI-disclosure forms are not needed unless that changes.
