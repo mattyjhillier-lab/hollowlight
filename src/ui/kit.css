@@ -242,7 +242,7 @@
 @keyframes lg-wmf { from { transform: scale(1, 1); } to { transform: scale(.94, 1.07) skewX(-2deg); } }
 
 /* ---------- phone rules: drop secondary lines by priority instead of scrolling (landscape phones) ---------- */
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .lg-btn__whisper, .lg-panel__whisper, .lg-card__line { display: none; }
   .lg-card { min-height: 0; padding-top: 1.5em; border-image-width: 44px 56px 18px 56px; border-radius: 56px 56px 18px 18px / 44px 44px 18px 18px; }
   .lg-card--evolve { border-image-width: 44px 56px 24px 56px; border-radius: 56px 56px 18px 18px / 44px 44px 18px 18px; }

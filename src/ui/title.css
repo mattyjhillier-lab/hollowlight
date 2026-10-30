@@ -117,7 +117,7 @@ html.touch .overlay.u3 .u3-keys { display: none; }
 }
 
 /* ---- landscape phones (short): two columns on the title, compact cards, secondary lines dropped by priority instead of scrolling ---- */
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .overlay.u3 .u3-wrap { gap: 6px; padding: 8px 14px 46px; }
   .overlay.u3 .u3-col { flex-direction: row; max-width: none; justify-content: center; align-items: center; gap: clamp(16px, 4vw, 36px); }
   .overlay.u3 .u3-brand { flex: 1 1 48%; min-width: 0; }
@@ -169,7 +169,7 @@ html.touch .overlay.u3 .u3-keys { display: none; }
   .overlay.u3 .ld-spirits { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .overlay.u3 .ld-spirit { min-height: 60px; padding: 8px 14px; }
 }
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .overlay.u3 .ld-spirits { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .overlay.u3 .ld-spirit { min-height: 56px; padding: 6px 12px; gap: 10px; }
   .overlay.u3 .ld-spirit__emb { width: 38px; height: 38px; }

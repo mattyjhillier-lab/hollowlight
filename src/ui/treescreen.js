@@ -325,7 +325,7 @@ export class TreeScreen {
     this.W = Math.max(1, r.width);
     this.H = Math.max(1, r.height);
     this.root.classList.toggle('ts-port', this.W <= 600 && this.H > this.W);
-    this.root.classList.toggle('ts-short', this.H <= 500 && this.W > this.H);
+    this.root.classList.toggle('ts-short', this.H <= 520 && this.W > this.H);
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
     this.canvas.width = Math.round(this.W * this.DPR);
     this.canvas.height = Math.round(this.H * this.DPR);

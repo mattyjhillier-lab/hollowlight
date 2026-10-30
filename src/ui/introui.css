@@ -8,7 +8,7 @@
 .fx3-lines { display: flex; flex-direction: column; gap: 8px; }
 .fx3-line { margin: 0; color: #fff3dc; font-family: var(--font-body, "Alegreya Sans"), "Segoe UI", sans-serif; font-size: 18px; line-height: 1.3; max-width: none; }
 .fx3-btn { min-height: 48px; min-width: 200px; align-self: center; cursor: pointer; }
-@media (max-height: 420px) {
+@media (max-height: 520px) {
   .fx3-body { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px 14px; }
   .fx3-glyph { width: 48px; height: 48px; }
   .fx3-lines { flex: 1 1 260px; text-align: left; gap: 4px; }

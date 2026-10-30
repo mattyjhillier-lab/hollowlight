@@ -189,7 +189,7 @@
 .overlay.u6 .u6-almlink--bar { display: none; align-self: center; }
 .overlay.u6 .u6-wrap[data-dropped~="ledger"] .u6-almlink--bar { display: inline-flex; }
 @media (max-width: 899px), (max-height: 480px) { .overlay.u6 .u6-wrap[data-dropped~="ledger"] .u6-acts .lg-btn__key { display: none; } .overlay.u6 .u6-almlink--bar { padding: 0 10px; font-size: 13px; } }
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .overlay.u3 .u3-menu.fd-menu2:has(.fd-row3) { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(100%, 560px); }
   .overlay.u3 .fd-menu2:has(.fd-row3) > .lg-btn--primary { grid-column: 1 / -1; }
   .overlay.u3 .fd-menu2:has(.fd-row3) { gap: 6px; }

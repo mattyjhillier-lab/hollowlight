@@ -165,6 +165,6 @@ html.touch .h-ability, html.touch .h-pause, html.touch .h-abkey { display: none;
 @media (prefers-reduced-motion: reduce) { .h-thread.pulse .h-rail, .h-lamp.flare::after, .h-coin.tick, .h-knot.flare::after, .h-ability.ping::after, .h-boss.enter, .h-boss.enter .h-bfill { animation: none; } }
 
 /* fit audit: short landscape phones: the SPACE key pill sits above the ability, not below the screen edge; larger text keeps the clock inside its plate */
-@media (max-height: 430px) { .h-abkey { top: auto; bottom: 100%; transform: translate(-50%, calc(-4 * var(--hu))); } }
+@media (max-height: 520px) { .h-abkey { top: auto; bottom: 100%; transform: translate(-50%, calc(-4 * var(--hu))); } }
 :root:is([data-text="large"], [data-text="larger"]) .h-timetxt { letter-spacing: 0; }
 :root[data-text="larger"] .h-timetxt { font-size: calc(19 * var(--hu)); line-height: 1; }

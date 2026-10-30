@@ -108,15 +108,18 @@ export function layoutAudit(doc = document, win = window, tol = 2) {
     if (el.classList.contains('ts-item') || el.closest('.sr, .sr-only') || /(^|\s)(sr|ts-sr)(\s|$)/.test(typeof el.className === 'string' ? el.className : '')) continue;
     const label = (el.textContent || el.getAttribute('aria-label') || el.type || '').trim();
     // (3) cut off by a clipping ancestor that does not scroll
+    let scrX = false, scrY = false; // once inside a scroller on an axis, being past its edge on that axis is reachable by scrolling
     for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
       const c = win.getComputedStyle(a);
       const sx = c.overflowX === 'auto' || c.overflowX === 'scroll', sy = c.overflowY === 'auto' || c.overflowY === 'scroll';
       if (c.overflowX === 'visible' && c.overflowY === 'visible') continue;
       const b = a.getBoundingClientRect();
-      if (b.width < 8 || b.height < 8) continue;
-      const ox = sx ? 0 : Math.max(b.left - r.left, r.right - b.right), oy = sy ? 0 : Math.max(b.top - r.top, r.bottom - b.bottom);
-      if ((c.overflowX !== 'visible' && ox > tol + 2) || (c.overflowY !== 'visible' && oy > tol + 2)) { add(sel(el), label, `control cut off by ${sel(a)} (${c.overflowX}/${c.overflowY})`, Math.max(ox, oy)); break; }
-      if (sx && sy) break;
+      if (b.width >= 8 && b.height >= 8) {
+        const ox = (sx || scrX) ? 0 : Math.max(b.left - r.left, r.right - b.right), oy = (sy || scrY) ? 0 : Math.max(b.top - r.top, r.bottom - b.bottom);
+        if ((c.overflowX !== 'visible' && ox > tol + 2) || (c.overflowY !== 'visible' && oy > tol + 2)) { add(sel(el), label, `control cut off by ${sel(a)} (${c.overflowX}/${c.overflowY})`, Math.max(ox, oy)); break; }
+      }
+      if (sx) scrX = true;
+      if (sy) scrY = true;
     }
     // (4) safe-area frame (only meaningful when there are insets)
     if (sa.l + sa.r + sa.t + sa.b > 0 && (r.left < sa.l - tol || r.right > W - sa.r + tol || r.top < sa.t - tol || r.bottom > H - sa.b + tol) && !el.closest('.overlay.u3, .mnav, #game')) add(sel(el), label, 'control inside the safe-area inset', 0);
