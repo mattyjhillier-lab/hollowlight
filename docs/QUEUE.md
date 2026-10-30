@@ -365,3 +365,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - Cold playtest: explanations of new features should pause the game and take focus so players can read (design question, 3 options).
 - 2026-10-29 PICKS LOCKED (see LOCKED 'PLAYTEST PICKS'): soul-shard maxed card; Blessing on first Road + first Knot; pause + full-card explanations. Build next in small chunks with bot sweeps after (1)/(2).
 - 2026-10-29 BUILT on wip/fix2: (1) Soul Shard fallback (balance.fallback.shard, cap balance.fallbackShardMax 2, sim.fallbackShards) replaces Soul Surge; (2) Blessing moved to Road 1 (2:10) + Knot 1 (5:30); Road 2 = magnet + 60 gold + 0.9 L XP, Knot 2 = 0.9 L XP + 90 gold + heart + the 1 shard. Balance numbers in LOCKED 'PLAYTEST PICKS BUILT'. Still open: (3) pause + full-card explanations.
+
+- HOSTING (discuss with Matt when home, 2026-10-30): recommended Cloudflare Pages as launch host, fresh `wispwick` project before launch (saves are per address), GitHub Pages replaced by a moved-link page, repo stays public until wanted, optional custom domain later. Nothing done; needs Matt yes.
