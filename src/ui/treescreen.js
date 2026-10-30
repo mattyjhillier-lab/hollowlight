@@ -161,7 +161,8 @@ export class TreeScreen {
     const help = btn('ts-btn ts-round', '?', 'What the lanterns mean');
     help.setAttribute('title', 'What the lanterns mean (?)');
     help.addEventListener('click', () => this.openSheet('help'));
-    bar.append(back, title, purse, this.nextBtn, this.goalsBtn, idx, help);
+    if (this.host.nav && this.host.nav.setPurse) this.host.nav.setPurse(purse); else bar.append(purse); // C1: the purse lives in the menu tab row (strip under it on narrow screens)
+    bar.append(back, title, this.nextBtn, this.goalsBtn, idx, help);
     this.barEl = bar;
 
     // side panel / bottom sheet: Lantern details + Goals tab
@@ -325,7 +326,7 @@ export class TreeScreen {
     this.W = Math.max(1, r.width);
     this.H = Math.max(1, r.height);
     this.root.classList.toggle('ts-port', this.W <= 600 && this.H > this.W);
-    this.root.classList.toggle('ts-short', this.H <= 520 && this.W > this.H);
+    this.root.classList.toggle('ts-short', this.H <= 520 && this.W > this.H && this.W <= 1000); // phone-landscape sized only: a wide short desktop window keeps the roomy layout
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
     this.canvas.width = Math.round(this.W * this.DPR);
     this.canvas.height = Math.round(this.H * this.DPR);

@@ -132,7 +132,9 @@ export async function fitSweep(app, doc = document, win = window, sizes = ['norm
   const ui = app.ui, wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const screens = {
     front: () => { ui.hideAll(); ui.showStart(ui.onPick); },
-    chars: () => ui.navTo('character'), tree: () => ui.navTo('tree'), goals: () => ui.navTo('goals'), almanac: () => ui.navTo('almanac'), settings: () => ui.navTo('settings'),
+    treesel: () => { ui.navTo('tree'); const t = ui.tree, ids = t.def.list; const long = ids.reduce((a, i) => (JSON.stringify(t.def.nodes[i]).length > JSON.stringify(t.def.nodes[a]).length ? i : a), ids[0]); t.select(long); },
+    treesel2: () => { ui.navTo('tree'); const t = ui.tree; t.select(t.def.list[t.def.list.length - 1]); },
+    home: () => ui.navTo('home'), chars: () => ui.navTo('character'), tree: () => ui.navTo('tree'), goals: () => ui.navTo('goals'), almanac: () => ui.navTo('almanac'), settings: () => ui.navTo('settings'),
     hero: () => { ui.hideAll(); ui.showStart(ui.onPick); ui.showHeroSelect(); }, lanterns: () => { ui.hideAll(); ui.showLanterns('pick'); },
   };
   const tabs = { settings: '.layer-settings [role=tab]', almanac: '.layer-codex [role=tab]' };

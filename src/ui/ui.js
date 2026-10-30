@@ -109,7 +109,9 @@ export class UI {
     if (on('settings')) return 'settings';
     if (on('codex')) return 'almanac';
     if (on('tree')) return this.tree && this.tree.panelMode === 'goals' ? 'goals' : 'tree';
-    if (on('hero') && this.layers.hero.querySelector('.ld-step-chars')) return 'character';
+    if (on('hero')) return this.layers.hero.querySelector('.ld-step-chars') ? 'character' : null;
+    if (on('lanterns') || on('nights')) return null;
+    if (on('start')) return 'home';
     return null;
   }
 
@@ -119,7 +121,8 @@ export class UI {
     const menu = ['start', 'hero', 'lanterns', 'nights', 'settings', 'codex', 'tree'].some(on);
     const inRun = ['hud', 'pause', 'end', 'levelup', 'dark'].some(on);
     const show = menu && !inRun;
-    this.nav.set(show, show ? this.navActive() : null);
+    const purse = this.nav.set(show, show ? this.navActive() : null);
+    this.root.classList.toggle('has-purse', !!purse);
     this.root.classList.toggle('has-mnav', show);
   }
 
@@ -140,7 +143,8 @@ export class UI {
     this.hideAll();
     for (const n of Object.keys(this.layers)) if (this.layers[n]) this.layers[n].removeAttribute('inert');
     const h = this.handlers;
-    if (dest === 'character') this.showCharacters();
+    if (dest === 'home') this.showStart(this.onPick);
+    else if (dest === 'character') this.showCharacters();
     else if (dest === 'tree' && h.openTree) h.openTree();
     else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
     else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }

@@ -26,7 +26,7 @@ const shot = async (name) => { await ev("if(!document.getElementById('nop')){con
 const menu = {
   // fallback card icons (heal / gold / shard) next to two weapon icons on a dark plate, to check the set reads as one family
   cardicons: "ui.hideAll(); import('/src/ui/cardicons.js').then(m=>{const d=document;const w=d.createElement('div');w.setAttribute('data-icons','');w.style.cssText='position:fixed;inset:0;z-index:99;background:#14100c;display:flex;flex-wrap:wrap;gap:12px;align-content:center;justify-content:center';const defs=d.createElementNS('http://www.w3.org/2000/svg','svg');for(const c of [{kind:'fallback',fallback:'heal'},{kind:'fallback',fallback:'gold'},{kind:'fallback',fallback:'shard'},{kind:'blessing',blessId:'wider_glow'},{kind:'weapon',weaponId:'ghost_wolves'}]){const s=m.cardIcon(d,c);s.style.cssText='width:96px;height:96px';w.append(s)}d.body.append(w)})",
-  front: 'ui.hideAll(); ui.showStart(ui.onPick)', settings: "ui.navTo('settings')", almanac: "ui.navTo('almanac')", goals: "ui.navTo('goals')", tree: "ui.navTo('tree')", chars: "ui.navTo('character')",
+  front: 'ui.hideAll(); ui.showStart(ui.onPick)', treesel: "ui.navTo('tree'); setTimeout(()=>{const t=ui.tree,ids=t.def.list;t.select(ids.reduce((a,i)=>JSON.stringify(t.def.nodes[i]).length>JSON.stringify(t.def.nodes[a]).length?i:a,ids[0]))},500)", home: "ui.navTo('home')", settings: "ui.navTo('settings')", almanac: "ui.navTo('almanac')", goals: "ui.navTo('goals')", tree: "ui.navTo('tree')", chars: "ui.navTo('character')",
 };
 const tabClick = { 'settings-controls': ["settings", ".layer-settings [role=tab]", 2], 'almanac-foes': ["almanac", ".layer-codex [role=tab]", 1] };
 try {
@@ -35,7 +35,7 @@ try {
     await send('Emulation.setTouchEmulationEnabled', { enabled: s.mobile, maxTouchPoints: s.mobile ? 5 : 0 });
     const menuWant = want.filter((k) => menu[k] || tabClick[k]);
     if (menuWant.length) {
-      await send('Page.navigate', { url: 'http://127.0.0.1:5193/?debug=1' });
+      await send('Page.navigate', { url: 'http://127.0.0.1:5193/?debug=1' + (process.env.SHOT_QS || '') });
       for (let i = 0; i < 120; i++) { if (await ev('!!(window.__app && window.__app.ui)')) break; await sleep(500); }
       await sleep(1500);
       for (const k of menuWant) {
