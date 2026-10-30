@@ -79,7 +79,7 @@ export function layoutAudit(doc = document, win = window, tol = 2) {
   const root = doc.documentElement, W = win.innerWidth, H = win.innerHeight, phone = root.classList.contains('phone');
   const add = (sel_, text, why, over) => out.push({ sel: sel_, text: String(text || '').slice(0, 48), why, over: Math.round(over) });
   const stage = doc.getElementById('stage');
-  if (phone && stage) {
+  if (stage) { // DESKTOP A1: every window is full-bleed now, not just phones
     const b = stage.getBoundingClientRect();
     if (b.width < W * 0.98 - tol) add('#stage', '', `dead gutters: stage ${Math.round(b.width)}px of ${W}px wide`, W - b.width);
     if (b.height < H * 0.98 - tol) add('#stage', '', `dead gutters: stage ${Math.round(b.height)}px of ${H}px high`, H - b.height);
@@ -101,6 +101,7 @@ export function layoutAudit(doc = document, win = window, tol = 2) {
   doc.body.appendChild(probe);
   const pcs = win.getComputedStyle(probe), sa = { t: parseFloat(pcs.paddingTop) || 0, r: parseFloat(pcs.paddingRight) || 0, b: parseFloat(pcs.paddingBottom) || 0, l: parseFloat(pcs.paddingLeft) || 0 };
   probe.remove();
+  if (!phone) { sa.l = 0; sa.r = 0; } // desktop: the side insets are only the ultrawide safe frame (--fx), which menus may use; real notches are phone-only
   for (const el of doc.querySelectorAll('#ui button, #ui [role=tab], #ui input, #ui select')) {
     const cs = win.getComputedStyle(el);
     if (!vis(el, cs)) continue;

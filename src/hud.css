@@ -168,3 +168,4 @@ html.touch .h-ability, html.touch .h-pause, html.touch .h-abkey { display: none;
 @media (max-height: 520px) { .h-abkey { top: auto; bottom: 100%; transform: translate(-50%, calc(-4 * var(--hu))); } }
 :root:is([data-text="large"], [data-text="larger"]) .h-timetxt { letter-spacing: 0; }
 :root[data-text="larger"] .h-timetxt { font-size: calc(19 * var(--hu)); line-height: 1; }
+:root[data-text="large"] .h-timetxt { font-size: calc(22 * var(--hu)); line-height: 1; } /* desktop audit: the clock stuck out of its plate by 1-3px at Large */

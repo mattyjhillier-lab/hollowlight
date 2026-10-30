@@ -43,9 +43,9 @@ test('every safe-area inset is read from the shared --sa-* frame (no stray env()
   assert.deepEqual(stray, []);
 });
 
-test('phone.css: stage fills the screen under html.phone; desktop rule untouched', () => {
+test('phone.css: stage fills the screen under html.phone; desktop is full-bleed too (DESKTOP A1)', () => {
   const css = readFileSync(new URL('../src/ui/phone.css', import.meta.url), 'utf8');
   assert.match(css, /html\.phone #stage \{ width: 100%; height: 100%; aspect-ratio: auto/);
   const base = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8');
-  assert.match(base, /width: min\(100%, calc\(\(100vh\) \* 16 \/ 9\)\)/);
+  assert.ok(!base.includes('100vh) * 16 / 9'));
 });

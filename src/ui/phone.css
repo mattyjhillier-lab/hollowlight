@@ -12,7 +12,9 @@ html.phone #stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius
 
 /* ---- A2: one safe-area frame. The four insets are defined ONCE here and every screen (HUD, touch controls, menus, cards, results, tree) reads --sa-*.
    With a full-bleed stage the stage edge is the screen edge, so notch / rounded-corner / gesture-bar insets apply directly. Desktop: all zero. */
-:root { --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); }
+:root { --fx: 0px; /* DESKTOP A1: extra side inset on ultrawide desktop windows (set by src/ui/desktop.js; 0 on phones and on 16:9..2.1:1 windows) */
+  --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); }
+html:not(.phone) { --sa-r: max(env(safe-area-inset-right, 0px), var(--fx)); --sa-l: max(env(safe-area-inset-left, 0px), var(--fx)); }
 /* the persistent menu tab bar keeps its tabs out of the notch and rounded corners */
 html.phone .mnav { padding-left: max(4px, var(--sa-l)); padding-right: max(4px, var(--sa-r)); }
 

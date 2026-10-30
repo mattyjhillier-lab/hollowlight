@@ -98,21 +98,16 @@
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
 body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 
-#app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 0 16px; }
+/* DESKTOP A1 (docs/design/desktop-v1.md): the stage fills every window edge to edge (phones already did, PHONE-A). The camera (zoomFor) crops/extends the world to any
+   shape; on ultrawide screens the HUD and menus stay inside a centred ~2.1:1 safe frame (--fx -> --sa-l/--sa-r, src/ui/desktop.js). Render only, the sim is untouched. */
+#app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 0; }
 #stage {
   position: relative;
-  width: min(100%, calc((100vh) * 16 / 9));
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 100%;
   container-type: inline-size;
   background: var(--ink);
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(94, 230, 255, .16), 0 0 40px rgba(139, 108, 255, .12);
   overflow: hidden;
-}
-/* Portrait screens: the stage fills the screen so the camera zoom can use the full height (docs/research/15 s3). */
-@media (max-aspect-ratio: 1/1) {
-  #app { padding: 0; }
-  #stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
 }
 #game, #ui { position: absolute; inset: 0; }
 #game canvas { display: block; width: 100% !important; height: 100% !important; }

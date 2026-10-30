@@ -34,10 +34,9 @@ for (const [name, w, h, dpr, mobile] of sizes) {
   const r = JSON.parse(await ev(mode === 'run' ? `__fitSweepRun(${process.env.TEXTS ? JSON.stringify(process.env.TEXTS.split(',')) : 'undefined'}).then(r=>JSON.stringify(r))` : '__fitSweep().then(r=>JSON.stringify(r))'));
   bad += r.problems;
   console.log(mode, name, r.problems ? JSON.stringify(r.rep) : 'clean');
-  if (mode === 'menu' && mobile) { // self-test: a deliberately gutter-ed stage must be detected on a phone-shaped screen
+  if (mode === 'menu') { // self-test: a deliberately gutter-ed stage must be detected (phones and, since DESKTOP A1, desktop windows)
     const st = await ev("(()=>{const s=document.getElementById('stage');const o=s.style.width;s.style.width='80%';const bad=window.__layoutAudit().some(x=>/dead gutters/.test(x.why));s.style.width=o;return bad})()");
-    const phone = await ev("document.documentElement.classList.contains('phone')");
-    if (phone && !st) { bad++; console.log('SELFTEST FAIL: dead-gutter check did not fire at', name); }
+    if (!st) { bad++; console.log('SELFTEST FAIL: dead-gutter check did not fire at', name); }
   }
 }
 ws.close(); p.kill(); if (srv) await srv.close();
