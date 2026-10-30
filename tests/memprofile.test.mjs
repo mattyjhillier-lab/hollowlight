@@ -20,3 +20,10 @@ test('mode choice: low-memory = ground-only, otherwise full; ?prebake=1 forces f
   assert.equal(pickPrebakeMode(false, false), 'full');
   assert.equal(pickPrebakeMode(true, true), 'full');
 });
+
+test('iOS (incl. iPadOS as Mac) is detected; others are not', async () => {
+  const { isIOS } = await import('../src/gfx/memprofile.js');
+  assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' }), true);
+  assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (Macintosh)', maxTouchPoints: 5 }), true);
+  assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (Linux; Android 13)', deviceMemory: 4 }), false);
+});

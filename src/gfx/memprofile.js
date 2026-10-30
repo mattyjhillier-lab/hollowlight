@@ -10,4 +10,7 @@ export function isLowMem(nav = typeof navigator !== 'undefined' ? navigator : nu
   return m > 0 && m <= 4;
 }
 export const LOWMEM = isLowMem();
+/** iOS Safari / iPadOS: WebKit reports a capped core count (often 4 on a fast iPhone), so cores say nothing about speed; those devices start on Med (the auto-tier still steps down if they are slow). */
+export const isIOS = (nav = typeof navigator !== 'undefined' ? navigator : null) => !!nav && (/iPhone|iPad|iPod/.test(String(nav.userAgent || '')) || (/Macintosh/.test(String(nav.userAgent || '')) && Number(nav.maxTouchPoints) > 1));
+export const IOS = isIOS();
 export const LOWMEM_DPR = 1.5; // render-scale cap (full-frame render targets are w*h*4 bytes each, ~8 of them)
