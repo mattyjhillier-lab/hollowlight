@@ -88,15 +88,24 @@ if (typeof ResizeObserver !== 'undefined') new ResizeObserver(onResize).observe(
 window.addEventListener('resize', onResize);
 
 window.addEventListener('pagehide', () => app.save.flush());
+// PWA-FIX: the pre-bake is optional; it must never stop the title from showing (a throw here left the bare world canvas: a blank blue-grey window).
+// The boot guard (ui/bootguard.js) hears 'boot-done' only once the title (or the auto-run) is really up, or shows its message at once on a failure.
+const bootDone = (err) => window.dispatchEvent(new CustomEvent('boot-done', { detail: err ? { error: err } : {} }));
 window.addEventListener('scene-ready', () => {
+  try { startPrebake(); } catch (e) { if (window.__boot) window.__boot.errors.push('prebake: ' + String((e && e.message) || e).slice(0, 200)); if (app.scene) app.scene.prebake = null; }
+  try {
+    if (app.params.auto && Object.hasOwn(app.data.characters, app.params.auto)) app.startRun(app.params.auto);
+    else app.showMenu();
+    bootDone();
+  } catch (e) { bootDone(e || new Error('menu failed')); }
+});
+function startPrebake() {
   if (app.scene && app.scene.prebake) { // ground-only on iPhone / iPad / low-memory devices, full elsewhere; a mode that crashed last time stays off (the other mode is unaffected)
     const mode = pickPrebakeMode(LOWMEM, new URLSearchParams(location.search).get('prebake') === '1');
     if (mode) app.scene.prebake.setMode(mode); else app.scene.prebake = null;
   }
   if (app.scene && app.scene.prebake && (!app.params.auto || app.params.perf)) app.scene.prebake.start(); // FIX4: bake quietly while the front door is up
-  if (app.params.auto && Object.hasOwn(app.data.characters, app.params.auto)) app.startRun(app.params.auto);
-  else app.showMenu();
-});
+}
 
 // Handy for debugging and automated checks.
 window.__app = app;

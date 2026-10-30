@@ -3,14 +3,16 @@
 // a new version waits until the player accepts it from a menu (page posts SKIP_WAITING).
 const VERSION = '__SW_VERSION__';
 const CACHE = 'hollowlight-' + VERSION;
-const INDEX = './index.html';
+// The page is cached under './' only: some hosts (Cloudflare Pages) answer ./index.html with a 308 to ./, and a redirected response
+// cannot be served to a navigation (the installed app then shows an error page offline).
+const INDEX = './';
 const STATIC = ['./manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.svg', './favicon-32.png'];
 let firstInstall = false;
 let accepted = false;
 
 self.addEventListener('install', (e) => {
   firstInstall = !self.registration.active;
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', INDEX, ...STATIC])));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll([INDEX, ...STATIC])));
 });
 
 self.addEventListener('message', (e) => {
@@ -38,7 +40,9 @@ self.addEventListener('fetch', (e) => {
         return res;
       } catch {
         const hit = await caches.match(INDEX);
-        return hit || Response.error();
+        if (!hit) return Response.error();
+        // never hand a redirected response to a navigation; rebuild it as a plain 200
+        return hit.redirected ? new Response(await hit.blob(), { status: 200, headers: hit.headers }) : hit;
       }
     })());
     return;

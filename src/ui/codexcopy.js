@@ -6,7 +6,7 @@ export const CX = Object.freeze({
   sub: 'What you have learned of the Hollow',
   back: 'Back',
   readOnly: 'Read only while the night waits',
-  tabs: Object.freeze({ foes: 'Foes', spirits: 'Spirits', heroes: 'Hollowlighters', nights: 'Nights' }),
+  tabs: Object.freeze({ foes: 'Foes', spirits: 'Spirits', heroes: 'Wickbearers', nights: 'Nights' }),
   pages: (a, b) => `${a} / ${b} pages`,
   unknown: '?????',
   notMet: 'not met',
@@ -90,7 +90,7 @@ export const LORE = Object.freeze([
   { title: 'Before the Long Dusk', text: 'Colour was simply what life looked like from the outside. Every leaf, wolf and person held a little light, and the sun came back each morning to top it up.', cond: 'Walk your first night.' },
   { title: 'The Hollow wakes', text: 'Something under the world woke hungry and drank colour the way roots drink water. Where it drank, things went grey, then empty, then wrong.', cond: 'See your first dawn.' },
   { title: 'The light that stayed', text: 'The light of the dead did not go into the Hollow. It stayed, waiting for someone living to carry it.', cond: 'Clear the Deep Dusk.' },
-  { title: 'Hollowlighters', text: 'Each night they walk into the grey with their spirits. Keep the light until dawn, and the sun remembers that place for good.', cond: 'Clear the Long Night.' },
+  { title: 'Wickbearers', text: 'Each night they walk into the grey with their spirits. Keep the light until dawn, and the sun remembers that place for good.', cond: 'Clear the Long Night.' },
 ]);
 
 // CX7 riddles: { line } about the evolution's nature (flow v2: no stat, no recipe). Polished by Claude under Matt's Almanac delegation (2026-10-28). Shown only with the Full Almanac lantern.
@@ -135,7 +135,7 @@ export const CEL = Object.freeze({
   tap: '/ tap to continue',
   skip: 'skip all',
   away: 'While you were away',
-  kinds: Object.freeze({ evo: 'Evolution found', title: 'Title earned', weapon: 'Spirit wakes', socket: 'Socket wakes', heart: 'Heart wakes', gate: 'A way opens', key: 'Lantern lit', hero: 'Hollowlighter awakes', night: 'A new night', bond: 'Bond deepens', keepsake: 'Keepsake found', wake: 'Hollowlighter awakes' }),
+  kinds: Object.freeze({ evo: 'Evolution found', title: 'Title earned', weapon: 'Spirit wakes', socket: 'Socket wakes', heart: 'Heart wakes', gate: 'A way opens', key: 'Lantern lit', hero: 'Wickbearer awakes', night: 'A new night', bond: 'Bond deepens', keepsake: 'Keepsake found', wake: 'Wickbearer awakes' }),
   whole: (name) => `${name} ${/s$/.test(name) ? 'are' : 'is'} whole`,
   wholeLine: Object.freeze({
     ghost_wolves: 'Every hunger in the pack has a name again.',

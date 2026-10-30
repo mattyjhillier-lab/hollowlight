@@ -1,5 +1,5 @@
 // CX2 the Almanac screen (docs/design/codex-celebrations-v1.md section 2/5; mock-ups docs/mockups/codex/cx-foes, cx-spirits).
-// One book, four pages (Foes, Spirits, Hollowlighters, Nights). Built with createElement + textContent only (kit el); portraits are the real
+// One book, four pages (Foes, Spirits, Wickbearers, Nights). Built with createElement + textContent only (kit el); portraits are the real
 // code-drawn Husk art through <img src=blob:> (src/gfx/husk/portrait.js) and the hero-select art. The view model is almanac() (src/meta/codex.js).
 // Keyboard: 1-4 / Tab on a grid item switch pages, arrows move in the grid, Enter opens an entry (portrait: full-height sheet), Esc back one step.
 import { el, kitRoot } from './kit.js';
@@ -206,7 +206,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
     add(entry, row);
   }
 
-  // ---- HOLLOWLIGHTERS
+  // ---- WICKBEARERS
   function heroCard(h) {
     const pic = h.walked && heroPortraits[h.id] ? add(el('span', 'cx-pic cx-pic--hero'), img(heroPortraits[h.id], 'cx-img')) : add(el('span', 'cx-pic cx-pic--sil'), silhouette());
     return item(h.walked ? '' : 'is-unk', [h.key], h.walked ? `${h.name}, ${CX.heroWalked(h.runs, h.clears)}` : `${h.name}, ${CX.heroNot}`, [pic, el('span', 'cx-nm', h.name), el('span', 'cx-ct', h.walked ? fmt(h.runs) : CX.heroNot.toLowerCase())], () => heroEntry(h));

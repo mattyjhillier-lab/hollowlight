@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ALLOW = [/hollowlight[:.]/gi /* storage keys hollowlight:save, hollowlight.installCard.v1 */, /hollowlight-(chancery|\$)/gi, /Hollowlight Chancery/g, /\/hollowlight\//g, /Hollowlighters?/g /* hero-class term, naming decision pending in docs/QUEUE.md */, /hollowlight-' \+/g];
+const ALLOW = [/hollowlight[:.]/gi /* storage keys hollowlight:save, hollowlight.installCard.v1 */, /hollowlight-(chancery|\$)/gi, /Hollowlight Chancery/g, /\/hollowlight\//g, /hollowlight-' \+/g, /startsWith\('hollowlight-'\)/g /* service-worker cache prefix (bootguard Repair) */];
 function files(dir) { return readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : [p]; }); }
 
-test('no user-visible string in src/ says Hollowlight (allow list: storage keys, internal font family, hero-class term)', () => {
+test('no user-visible string in src/ says Hollowlight (allow list: storage keys, internal font family, cache prefix)', () => {
   const bad = [];
   for (const f of files('src').filter((p) => /\.(js|css)$/.test(p))) {
     readFileSync(f, 'utf8').split('\n').forEach((line, i) => {

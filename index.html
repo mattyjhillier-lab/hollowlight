@@ -38,6 +38,10 @@
       </div>
     </div>
     <div id="touch"></div>
+    <script>
+      // PWA-FIX: last-resort note if the game script never ran at all (src/ui/bootguard.js handles everything after that)
+      setTimeout(function () { if (window.__boot || !document.body) return; var d = document.createElement('p'); d.id = 'bootnoscript'; d.style.cssText = 'position:fixed;left:16px;right:16px;top:40%;z-index:100000;text-align:center;color:#f3e6c8;font:16px system-ui,sans-serif'; d.textContent = 'Wispwick could not start in this window. Close it and open it again, or play in a normal browser tab.'; document.body.appendChild(d); }, 20000);
+    </script>
     <script type="module" src="/src/entry.js"></script>
   </body>
 </html>

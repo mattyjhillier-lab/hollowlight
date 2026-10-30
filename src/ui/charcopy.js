@@ -77,7 +77,7 @@ export function charsView(save, data, def) {
 // Results Bond beat (CH6): celebration items for the queue (src/ui/celebrateui.js). beat = store.bankRun().bond. A woken hero is the big moment;
 // a Bond level-up and a keepsake found are medium cards. Bond levels are banked after the night, never during it.
 export const BOND_CEL = {
-  kinds: { bond: 'Bond deepens', keepsake: 'Keepsake found', wake: 'Hollowlighter awakes' },
+  kinds: { bond: 'Bond deepens', keepsake: 'Keepsake found', wake: 'Wickbearer awakes' },
   level: (name, lvl) => `Bond ${lvl} with ${name}`,
   gain: (xp) => `+${xp} Bond`,
   gift: (perk, text) => `New gift: ${perk} (${text})`,
