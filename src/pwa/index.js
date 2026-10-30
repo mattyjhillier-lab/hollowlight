@@ -12,7 +12,7 @@ export function createPwa(win) {
   const mm = (q) => { try { return !!win.matchMedia(q).matches; } catch { return false; } };
   const platform = () => detectPlatform({
     ua: nav.userAgent, platform: nav.platform, maxTouchPoints: nav.maxTouchPoints, standalone: nav.standalone,
-    displayModes: ['fullscreen', 'standalone', 'minimal-ui'].filter((m) => mm(`(display-mode: ${m})`)),
+    displayModes: ['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay'].filter((m) => mm(`(display-mode: ${m})`)),
   });
   const storage = (() => { try { return win.localStorage; } catch { return null; } })();
   let deferred = null;

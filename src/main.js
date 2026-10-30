@@ -9,6 +9,7 @@ import { applyCssPalette } from './gfx/palette.js';
 import { TouchControls } from './input/touch.js';
 import { STYLE, parseDpr } from './gfx/style.js';
 import './ui/phone.css';
+import './ui/desktop.css';
 import { initPhone } from './ui/phone.js';
 import { initProbe } from './ui/probe.js';
 import { initDesktop } from './ui/desktop.js';

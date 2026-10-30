@@ -35,3 +35,30 @@ test('--fx feeds both side insets of the shared safe frame', () => {
   assert.ok(rule.includes('--sa-l: max(env(safe-area-inset-left, 0px), var(--fx))'));
   assert.ok(rule.includes('--sa-r: max(env(safe-area-inset-right, 0px), var(--fx))'));
 });
+
+// ---- C1 window-controls-overlay ----
+test('C1 manifest: WCO first for desktop, fullscreen kept for phones', () => {
+  const m = JSON.parse(readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
+  assert.equal(m.display, 'fullscreen');
+  assert.deepEqual(m.display_override, ['window-controls-overlay', 'fullscreen', 'standalone', 'minimal-ui']);
+  assert.equal(m.orientation, 'landscape');
+});
+
+test('C1 css: everything is inside the WCO media query (no API = no change); drag only on the tab row, controls stay clickable', () => {
+  const d = css('ui/desktop.css');
+  const at = d.indexOf('@media (display-mode: window-controls-overlay)');
+  assert.ok(at > 0);
+  assert.ok(!/app-region|titlebar-area/.test(d.slice(0, at).replace(/\/\*[\s\S]*?\*\//g, '')), 'nothing before the media query uses the API');
+  const drags = [...d.matchAll(/([^{}]+)\{[^}]*[^-]app-region:\s*drag/g)].map((m) => m[1].trim());
+  assert.deepEqual(drags, ['.mnav']);
+  assert.match(d, /\.mnav :is\(button[^)]*\[role="tab"\][^)]*\)\s*\{[^}]*app-region:\s*no-drag/);
+  assert.ok(d.includes('env(titlebar-area-x, 0px)') && d.includes('env(titlebar-area-width, 100vw)'));
+  assert.ok(d.includes('--tb-r: 0px'));
+});
+
+test('C1 platform: an app window in WCO counts as installed (no install card)', async () => {
+  const { detectPlatform } = await import('../src/pwa/platform.js');
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36';
+  assert.equal(detectPlatform({ ua, displayModes: ['window-controls-overlay'] }).installed, true);
+  assert.equal(detectPlatform({ ua, displayModes: [] }).installed, false);
+});

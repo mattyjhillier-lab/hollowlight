@@ -1,0 +1,17 @@
+/* DESKTOP (docs/design/desktop-v1.md, LOCKED 2026-10-30). Render/UI only.
+   C1 window-controls-overlay: the installed desktop app (Chrome/Edge) has no title bar; the page draws up to the top edge and the minimise / maximise / close
+   buttons float in the top-right corner. env(titlebar-area-*) describes the free area to their left, so --tb-r is the width of the button corner (0 everywhere
+   else: browsers without the API never match the media query, so nothing changes). The tab row is the drag handle; every control inside it stays clickable. */
+:root { --tb-r: 0px; --tb-h: 0px; }
+@media (display-mode: window-controls-overlay) {
+  :root {
+    --tb-h: env(titlebar-area-height, 0px);
+    --tb-r: max(0px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)));
+  }
+  .mnav { -webkit-app-region: drag; app-region: drag; padding-right: max(6px, var(--sa-r), var(--tb-r)); min-height: max(var(--mnav-h), var(--tb-h)); }
+  .mnav :is(button, a, input, select, [role="tab"], .mnav__slot) { -webkit-app-region: no-drag; app-region: no-drag; }
+  /* top-right controls keep out of the button corner */
+  :root .hud { --mr: max(calc(20 * var(--hu)), var(--sa-r), var(--tb-r)); }
+  :root .overlay.u3 .fd-top { right: max(clamp(10px, 1.6vw, 18px), var(--tb-r)); }
+  :root .ts-zoom { right: max(10px, var(--sa-r), var(--tb-r)); }
+}

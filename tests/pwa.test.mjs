@@ -96,7 +96,7 @@ test('manifest: required fields, relative paths, icons exist, maskable present',
   assert.equal(manifest.name, 'Wispwick: Spirits of the Dusk');
   assert.equal(manifest.short_name, 'Wispwick');
   assert.equal(manifest.display, 'fullscreen');
-  assert.deepEqual(manifest.display_override, ['fullscreen', 'standalone', 'minimal-ui']);
+  assert.deepEqual(manifest.display_override, ['window-controls-overlay', 'fullscreen', 'standalone', 'minimal-ui']); // DESKTOP C1: desktop Chrome/Edge take WCO, phones skip it
   assert.ok(manifest.categories.includes('games'));
   for (const v of [manifest.id, manifest.start_url, manifest.scope]) assert.match(v, /^\.\/?$/);
   assert.match(manifest.theme_color, /^#[0-9a-f]{6}$/i);
