@@ -31,3 +31,8 @@ html.phone [data-sc="both"] { -webkit-mask-image: linear-gradient(transparent, #
   html.phone .ts.ts-short .ts-panel { width: var(--ts-pw); }
   html.phone .ts.ts-short.ts-sel .ts-zoom { right: calc(var(--ts-pw) + 14px); }
 }
+
+/* phones have no Esc key: drop the keyboard hint badge in the Almanac header (it overflowed its pill at larger text) */
+html.phone .cx-kb { display: none; }
+/* level-up card titles: the 2-line clamp box cut descenders by ~2px on phones (audit) */
+html.phone .layer-levelup .c-title { padding-bottom: .12em; }

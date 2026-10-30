@@ -202,5 +202,8 @@ test('HUD-1 source: no innerHTML / outerHTML / insertAdjacentHTML in the HUD mod
   }
   const css = readFileSync(new URL('../src/hud.css', import.meta.url), 'utf8');
   assert.ok(!/backdrop-filter/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')), 'no backdrop-filter in the HUD');
-  assert.ok(/env\(safe-area-inset-left/.test(css) && /env\(safe-area-inset-bottom/.test(css) && /env\(safe-area-inset-top/.test(css) && /env\(safe-area-inset-right/.test(css));
+  // PHONE-A A2: the HUD reads the one shared safe-area frame (--sa-*), which src/ui/phone.css defines from env(safe-area-inset-*)
+  assert.ok(/var\(--sa-l\)/.test(css) && /var\(--sa-b\)/.test(css) && /var\(--sa-t\)/.test(css) && /var\(--sa-r\)/.test(css));
+  const phone = readFileSync(new URL('../src/ui/phone.css', import.meta.url), 'utf8');
+  assert.ok(/--sa-l: env\(safe-area-inset-left/.test(phone) && /--sa-b: env\(safe-area-inset-bottom/.test(phone) && /--sa-t: env\(safe-area-inset-top/.test(phone) && /--sa-r: env\(safe-area-inset-right/.test(phone));
 });
