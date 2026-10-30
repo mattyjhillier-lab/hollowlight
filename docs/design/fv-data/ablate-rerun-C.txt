@@ -1,0 +1,26 @@
+part C, seeds 48, live bot random picks unless noted
+wren|+holy_orbit (starter grant)|focus            21% +-6 L25 evo 6:32 e0.6  hurts 32  uses 7.5  dmg 105335
+wren|+holy_orbit (starter grant)|random           23% +-6 L25 evo 6:45 e0.7  hurts 32  uses 7.5  dmg 119987
+wren|+raven_flock (starter grant)|focus           42% +-7 L29 evo 6:00 e0.9  hurts 33  uses 8.1  dmg 165839
+wren|+raven_flock (starter grant)|random          29% +-7 L29 evo 6:19 e0.6  hurts 31  uses 7.4  dmg 127003
+wren|+spirit_bolts (starter grant)|focus          42% +-7 L30 evo 7:18 e0.9  hurts 26  uses 8.1  dmg 158891
+wren|+spirit_bolts (starter grant)|random         65% +-7 L51 evo 7:32 e1.3  hurts 25  uses 9.5  dmg 223015
+wren|all gates open, wolves start|focus            2% +-2 L29 evo 5:03 e0  hurts 30  uses 7.0  dmg 73348
+wren|all gates open, wolves start|random           0% +-0 L28 evo - e0  hurts 31  uses 6.5  dmg 63369
+wren|sig only|focus                               27% +-6 L44 evo 3:57 e0.8  hurts 38  uses 9.2  dmg 195272
+wren|sig only|random                              21% +-6 L45 evo 3:58 e0.9  hurts 38  uses 9.3  dmg 206425
+wren|start WITH spirit_bolts only|focus           46% +-7 L45 evo 5:26 e0.6  hurts 36  uses 11.1  dmg 167085
+wren|start WITH spirit_bolts only|random          35% +-7 L41 evo 5:05 e0.6  hurts 32  uses 10.1  dmg 155173
+paired delta (first - second), win points +-SE, and discordant seeds
+wren|+holy_orbit (starter grant)|focus           weapon adoption: ghost_wolves 100%, holy_orbit 100%
+wren|+holy_orbit (starter grant)|random          weapon adoption: ghost_wolves 100%, holy_orbit 100%
+wren|+raven_flock (starter grant)|focus          weapon adoption: ghost_wolves 100%, raven_flock 100%
+wren|+raven_flock (starter grant)|random         weapon adoption: ghost_wolves 100%, raven_flock 100%
+wren|+spirit_bolts (starter grant)|focus         weapon adoption: ghost_wolves 100%, spirit_bolts 100%
+wren|+spirit_bolts (starter grant)|random        weapon adoption: ghost_wolves 100%, spirit_bolts 100%
+wren|all gates open, wolves start|focus          weapon adoption: ghost_wolves 100%, holy_orbit 63%, chain_lightning 88%, spirit_bolts 63%, raven_flock 67%
+wren|all gates open, wolves start|random         weapon adoption: ghost_wolves 100%, chain_lightning 75%, spirit_bolts 77%, raven_flock 67%, holy_orbit 81%
+wren|sig only|focus                              weapon adoption: ghost_wolves 100%
+wren|sig only|random                             weapon adoption: ghost_wolves 100%
+wren|start WITH spirit_bolts only|focus          weapon adoption: spirit_bolts 100%
+wren|start WITH spirit_bolts only|random         weapon adoption: spirit_bolts 100%
