@@ -73,9 +73,9 @@ test('Wall of Wings: fear lasts 0.6-0.8 s by Wingbeat rank, never on a boss, 1.5
   run(sim, 15, () => assert.equal(boss.fearT, 0));
 });
 
-test('Wall of Wings: ring pecks are 0.7x a scout peck and every raven stat is live after evolving', () => {
+test('Wall of Wings: ring pecks are 0.52x a scout peck and every raven stat is live after evolving', () => {
   const t = data.evolutions.murder_storm.tune;
-  assert.equal(t.peck, 0.7);
+  assert.equal(t.peck, 0.52);
   const dpsOf = (ranks) => { const sim = mk(ranks, 'murder_storm'); for (const c of place(sim, 'crow', 10, 70, 180)) { c.speed = 0; c.dmg = 0; } let tot = 0; const o = sim.hurt.bind(sim); sim.hurt = (e, a, x) => { if (!e.dead && a > 0) tot += a; return o(e, a, x); }; run(sim, 12); return tot / 12; };
   const mid = { count: 2, power: 2, range: 2, speed: 2 };
   const ref = dpsOf(mid);

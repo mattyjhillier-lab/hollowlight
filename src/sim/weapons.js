@@ -313,7 +313,7 @@ const ravenFlock = {
           u.tellK = Math.min(1, u.tell / tell); // renderer: the growing violet shadow on the target
           if (u.tell < tell) { moveToward(u, t.x, t.y - 22, flight, dt); return; } // climb above the foe
           if (moveToward(u, t.x, t.y, flight * tune(sim, w, 'strike', 1.6), dt) < t.r + u.r + 1) {
-            sim.hurt(t, dmg * tune(sim, w, 'dive', 8));
+            sim.hurt(t, dmg * tune(sim, w, 'dive', 6.5));
             sim.mark(t);
             sim.addFx({ kind: 'ring', x: t.x, y: t.y, r: 16, ttl: 0.2, color: '#b79cff' });
             u.tellK = 0;
@@ -367,7 +367,7 @@ function ravenWall(sim, w, dmg, dt) {
   const spin = tune(sim, w, 'spin', 2.4) * Math.max(0.2, s.speed);
   rt.wang = (rt.wang || 0) + spin * dt;
   rt.wallR = [rIn, rOut];
-  const hit = dmg * tune(sim, w, 'peck', 0.7);
+  const hit = dmg * tune(sim, w, 'peck', 0.52);
   const fdur = tune(sim, w, 'fear', 0.6) + tune(sim, w, 'fearPer', 0.04) * (ranks.speed || 0);
   const immune = tune(sim, w, 'immune', 1.5);
   const nOut = count - nIn;
@@ -819,6 +819,7 @@ export function orbitRadius(sim, rt, dt, radius, suppressed) {
 // Holy Orbit hit gap per light per foe: 0.5 s, shortened by the Orbit speed rate (+5% hits per rank).
 export const ORBIT_GAP = 0.5;
 
+const nearCount = (sim, p, reach) => { let n = 0; for (const o of sim.enemies) if (!o.dead && !o.boss && Math.hypot(o.x - p.x, o.y - p.y) < reach) n++; return n; };
 const holyOrbit = {
   update(sim, w, dt) {
     const { s, evo, rt } = w;
@@ -913,13 +914,19 @@ const holyOrbit = {
         const hit = dmg * tune(sim, w, 'ground', 3);
         let n = 0;
         const cap = tune(sim, w, 'max', 20);
+        const inside = [];
         for (const e of sim.enemies) {
           if (e.dead) continue;
           const dx = e.x - p.x, dy = e.y - p.y, rr = radius + e.r;
           if (dx * dx + dy * dy >= rr * rr) continue;
-          sim.burn(e, hit * (e.boss ? bossHit : 1)); // RT2 boss-contact rule holds for every Orbit form
+          inside.push(e);
           if (++n >= cap) break;
         }
+        // Evo-fix: the ring is wide, so a lone foe inside it can slip between the lights; the ground then burns it harder (solo / foes in the disc,
+        // floor 1, bosses excluded) so the Halo is never below the base ring on a sparse field. Crowds (>= solo foes) are untouched.
+        const solo = Math.max(1, tune(sim, w, 'solo', 4.5) / Math.max(1, nearCount(sim, p, radius + tune(sim, w, 'soloReach', 60))));
+        for (const e of inside) { const slipped = !(rt.gTouch > 0) && !(rt.gK > 0) && Math.hypot(e.x - p.x, e.y - p.y) + e.r + 6 < radius; // body wholly inside the lights' reach: nothing else can touch it
+          sim.burn(e, hit * (e.boss ? bossHit : slipped ? solo : 1)); } // RT2 boss-contact rule holds for every Orbit form
       }
     } else rt.ground = null;
   },
