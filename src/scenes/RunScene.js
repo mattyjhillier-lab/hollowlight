@@ -206,7 +206,8 @@ export class RunScene extends Phaser.Scene {
     };
     makeTextures(this);
     const size = app.data.balance.worldSize;
-    this.ground = this.add.tileSprite(size / 2, size / 2, size, size, 'ground').setDepth(-1000).setTileScale(inv('ground'));
+    // FIX4c: the flat ground tile is a VIEW-sized tile sprite that follows the camera (syncGround), not a 4000x4000 one: Phaser backs a tile sprite with a canvas of its own size (61 MB, plus a GPU copy, for the whole world)
+    this.ground = this.add.tileSprite(size / 2, size / 2, 512, 512, 'ground').setDepth(-1000).setTileScale(inv('ground'));
     this.groundG = this.add.graphics().setDepth(-400);
     // W0 life map (visual only): hero + spirits paint life, it fades in ~25 s; the ground shader (Med/High) or warm pool sprites (Low) show it
     this.life = new LifeMap({ n: 256, world: size, decay: 25, zone: (x, y) => zoneB(x, y, size) });
@@ -698,6 +699,15 @@ export class RunScene extends Phaser.Scene {
     let n = 1 + (this.sim ? this.air.count + this.critters.count + this.sway.count : 0);
     for (const pool of this.poolList) n += pool.map.size;
     return n;
+  }
+
+  // FIX4c: keep the view-sized ground tile centred on the camera with the tile phase of a world-anchored one (world x = 0 is a tile edge): same picture, ~1 MB instead of 61 MB.
+  syncGround(wv) {
+    const g = this.ground, w = Math.ceil((wv.width + 8) / 256) * 256, h = Math.ceil((wv.height + 8) / 256) * 256;
+    if (g.width < w || g.height < h) g.setSize(Math.max(g.width, w), Math.max(g.height, h));
+    g.setPosition(wv.centerX, wv.centerY);
+    const k = inv('ground');
+    g.setTilePosition((wv.centerX - g.width / 2) / k, (wv.centerY - g.height / 2) / k);
   }
 
   applyTier() { probe.span('tier:apply', () => this.applyTierNow()); }
@@ -1290,6 +1300,7 @@ export class RunScene extends Phaser.Scene {
     sim.view.hw = wv.width / 2; sim.view.hh = wv.height / 2; // EN3-EN5: telegraph enemies only start a tell inside the real camera view
     let halos = 0;
 
+    if (this.ground.visible) this.syncGround(wv);
     this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.sec0(8); this.tickAmbient(sim); this.sec1(8);
     const lm = this.lm;
