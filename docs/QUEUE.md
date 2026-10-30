@@ -369,3 +369,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - 2026-10-29 BUILT on wip/fix2: (1) Soul Shard fallback (balance.fallback.shard, cap balance.fallbackShardMax 2, sim.fallbackShards) replaces Soul Surge; (2) Blessing moved to Road 1 (2:10) + Knot 1 (5:30); Road 2 = magnet + 60 gold + 0.9 L XP, Knot 2 = 0.9 L XP + 90 gold + heart + the 1 shard. Balance numbers in LOCKED 'PLAYTEST PICKS BUILT'. Still open: (3) pause + full-card explanations.
 
 - HOSTING (discuss with Matt when home, 2026-10-30): recommended Cloudflare Pages as launch host, fresh `wispwick` project before launch (saves are per address), GitHub Pages replaced by a moved-link page, repo stays public until wanted, optional custom domain later. Nothing done; needs Matt yes.
+
+- PHONE PLAYTEST (2026-10-30, Matt, iPhone, dev build): plays really well; new card icon looks much better; everything fits. Evolution flow v2, phone layout and smooth ground accepted on iPhone.
