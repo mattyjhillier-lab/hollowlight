@@ -320,6 +320,8 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - BUG (boss agent report): results screen 'Main menu' button text is cut off on phone landscape - fix in the character-system results UI chunk.
 - BUILD ORDER after character system v2: EXTRAS (cosmetics wardrobe + Wear drawer, Gentle Light assist, Endless Dusk) per docs/design/extras-v1.md; then final retune; then final verification.
 
+ANSWERED 2026-10-30 (Matt): big-text cards = rows; map events = accept for now; Long Night gap = accept (see LOCKED 'QUEUE DECISIONS ANSWERED').
+
 ## Decisions waiting (overnight left agent, 2026-10-28): NOT built, no locked design. Each is one tap; recommended first.
 
 ### Level-up cards at Large / Larger text (A2, wip/a11y, 2026-10-28): the arched desktop cards have a fixed height, so bigger words were cut off. Built default (reversible, CSS only in src/ui/a11y.css): at Large / Larger every screen uses the row cards the phones already use (icon | words | number, two per row on landscape, grow with the text, the screen scrolls if needed). Normal text is unchanged (arches).
