@@ -1,7 +1,7 @@
 /* U4: pause + settings in Lantern Glass, Lit (UI IDENTITY v2). Scoped under .overlay.u4 / .u4-*; the kit (kit.css) supplies the panel, buttons, wick toggle, thread slider,
    tabs, pips and divider. Pause shows the frozen game through a lighter veil; settings sits on a darker one. No raster, no backdrop-filter. */
 html.touch .overlay.u4, .overlay.u4 {
-  padding: calc(env(safe-area-inset-top, 0px) + 28px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  padding: calc(var(--sa-t) + 28px) var(--sa-r) var(--sa-b) var(--sa-l);
   overflow: hidden; align-items: center; justify-content: center; text-align: left; z-index: 2; touch-action: manipulation;
   background: radial-gradient(ellipse 50% 46% at 50% 44%, rgba(255, 171, 58, .12), transparent 72%), linear-gradient(180deg, rgba(10, 14, 24, .66), rgba(8, 11, 20, .78));
 }
@@ -94,7 +94,7 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 
 /* ---- portrait phones ---- */
 @media (orientation: portrait) {
-  html.touch .overlay.u4, .overlay.u4 { padding-top: calc(env(safe-area-inset-top, 0px) + 22px); }
+  html.touch .overlay.u4, .overlay.u4 { padding-top: calc(var(--sa-t) + 22px); }
   .overlay.u4 .u4-weps { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .overlay.u4 .u4-wep { display: flex; gap: 8px; }
   .overlay.u4 .u4-wep__name { flex: 1; }
@@ -105,8 +105,8 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 }
 
 /* ---- landscape phones (short): pause as two columns, settings tabs and rows compacted; tabs carry the length so nothing scrolls ---- */
-@media (max-height: 430px) and (orientation: landscape) {
-  html.touch .overlay.u4, .overlay.u4 { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); padding-bottom: 6px; }
+@media (max-height: 520px) and (orientation: landscape) {
+  html.touch .overlay.u4, .overlay.u4 { padding-top: calc(var(--sa-t) + 20px); padding-bottom: 6px; }
   .overlay.u4 .lg-panel { padding: 14px 16px 10px; }
   .overlay.u4 .lg-panel__whisper, .overlay.u4 .lg-panel .lg-divider { display: none; }
   .overlay.u4 .lg-panel__title { font-size: 26px; text-align: left; }
@@ -121,7 +121,7 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
   .overlay.u4.u4-pausescreen .u4-act { grid-column: 2; grid-row: 1 / span 3; align-self: center; margin: 0; }
   .overlay.u4 .u4-menu { gap: 8px; }
   .overlay.u4 .u4-menu .lg-btn--primary { min-height: 56px; }
-  html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { padding-top: calc(env(safe-area-inset-top, 0px) + 6px); }
+  html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { padding-top: calc(var(--sa-t) + 6px); }
   .overlay.u4.u4-settingsscreen .lg-cap { display: none; }
   .overlay.u4.u4-settingsscreen .lg-panel { width: min(100%, 760px); padding-top: 10px; }
   .overlay.u4.u4-settingsscreen .lg-panel__title { text-align: center; }

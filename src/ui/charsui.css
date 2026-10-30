@@ -66,7 +66,7 @@ html.touch .overlay.u3 .ch-bar2 .lg-btn__key { display: none; }
   .overlay.u3 .ch-bigpor { width: 72px; }
   .overlay.u3 .ch-bar2 > * { flex: 1 1 auto; }
 }
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .overlay.u3 .ch-whisper { display: none; }
   .overlay.u3 .ch-title { font-size: 24px; }
   .overlay.u3 .ch-body { grid-template-columns: minmax(150px, 210px) minmax(0, 1fr); }
@@ -81,7 +81,7 @@ html.touch .overlay.u3 .ch-bar2 .lg-btn__key { display: none; }
 }
 /* the title's Characters button: its own full row under Begin / Continue (keeps the Tree / Almanac / Settings row as it was) */
 .overlay.u3 .u3-menu > .ch-btn { grid-column: 1 / -1; }
-@media (max-height: 430px) and (orientation: landscape) { .overlay.u3 .ch-bondline { display: none; } .overlay.u3 .ch-skill { padding: 4px 10px; } }
+@media (max-height: 520px) and (orientation: landscape) { .overlay.u3 .ch-bondline { display: none; } .overlay.u3 .ch-skill { padding: 4px 10px; } }
 /* wide screens: Characters joins the Tree / Almanac / Settings row (4 across) so the title keeps its height */
 @media (min-width: 900px) and (min-height: 431px) {
   .overlay.u3 .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(100%, 880px); }

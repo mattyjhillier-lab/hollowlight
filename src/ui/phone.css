@@ -1,0 +1,38 @@
+/* PHONE-A (Option A, docs/design/phone-layout-v1.md). Everything here is scoped under html.phone (set by phone.js on touch-first or short wide screens),
+   so desktop windows keep the framed 16:9 column exactly as before. Render/UI only. */
+
+/* ---- A1: full-bleed stage. The 16:9 lock left 75-91px dead gutters on 2:1+ phones; the stage now fills the screen and the camera (zoomFor) crops the
+   long side sensibly (never squashes). The base type stays what the old 16:9 column gave on a height-limited phone (3.02vh), so the tuned layouts keep their size and just gain width. */
+html.phone #app { padding: 0; }
+html.phone #stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+@media (orientation: landscape) {
+  html.phone #ui { font-size: clamp(9px, min(1.7cqw, 3.02vh), 20px); }
+  html.phone.touch #ui { font-size: clamp(11px, min(1.7cqw, 3.02vh), 20px); }
+}
+
+/* ---- A2: one safe-area frame. The four insets are defined ONCE here and every screen (HUD, touch controls, menus, cards, results, tree) reads --sa-*.
+   With a full-bleed stage the stage edge is the screen edge, so notch / rounded-corner / gesture-bar insets apply directly. Desktop: all zero. */
+:root { --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); }
+/* the persistent menu tab bar keeps its tabs out of the notch and rounded corners */
+html.phone .mnav { padding-left: max(4px, var(--sa-l)); padding-right: max(4px, var(--sa-r)); }
+
+/* ---- A3: scroll cues. phone.js sets data-sc on any menu panel that scrolls while more lies past an edge; the edge fades so "there is more" is visible. ---- */
+html.phone [data-sc="bottom"] { -webkit-mask-image: linear-gradient(#000 calc(100% - 2.6em), transparent); mask-image: linear-gradient(#000 calc(100% - 2.6em), transparent); }
+html.phone [data-sc="top"] { -webkit-mask-image: linear-gradient(transparent, #000 2.6em); mask-image: linear-gradient(transparent, #000 2.6em); }
+html.phone [data-sc="both"] { -webkit-mask-image: linear-gradient(transparent, #000 2.6em, #000 calc(100% - 2.6em), transparent); mask-image: linear-gradient(transparent, #000 2.6em, #000 calc(100% - 2.6em), transparent); }
+
+/* ---- A3: phone landscape menu layouts (rail + content use the whole width; panels stop being desktop panels shrunk) ---- */
+@media (orientation: landscape) {
+  /* Settings: the persistent nav already says "Settings", so the big title goes (kept for screen readers); the freed height lets all Sound rows show */
+  html.phone .overlay.u4.u4-settingsscreen .lg-panel__title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html.phone .overlay.u4.u4-settingsscreen .lg-panel { width: min(100%, 900px); }
+  /* Goals / lantern details: a narrower side drawer so the tree stays readable (the map frame re-measures from the panel) */
+  html.phone .ts.ts-short { --ts-pw: clamp(280px, 36%, 380px); }
+  html.phone .ts.ts-short .ts-panel { width: var(--ts-pw); }
+  html.phone .ts.ts-short.ts-sel .ts-zoom { right: calc(var(--ts-pw) + 14px); }
+}
+
+/* phones have no Esc key: drop the keyboard hint badge in the Almanac header (it overflowed its pill at larger text) */
+html.phone .cx-kb { display: none; }
+/* level-up card titles: the 2-line clamp box cut descenders by ~2px on phones (audit) */
+html.phone .layer-levelup .c-title { padding-bottom: .12em; }

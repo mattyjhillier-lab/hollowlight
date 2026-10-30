@@ -2,7 +2,7 @@
    The live game canvas shows through a dark Hollow veil with a warm lantern pool, so the menu sits in the same world as the run. No raster except the two
    hero portraits (static webp crops of the approved sheets), no backdrop-filter. */
 html.touch .overlay.u3, .overlay.u3 {
-  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); overflow: hidden; align-items: stretch; justify-content: stretch; text-align: left; z-index: 2;
+  padding: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l); overflow: hidden; align-items: stretch; justify-content: stretch; text-align: left; z-index: 2;
   background: radial-gradient(ellipse 55% 48% at 50% 46%, rgba(255, 171, 58, .16), transparent 72%),
     radial-gradient(ellipse 120% 100% at 50% 50%, transparent 45%, rgba(6, 9, 16, .55)),
     linear-gradient(180deg, rgba(14, 20, 34, .7), rgba(10, 14, 24, .86));
@@ -117,7 +117,7 @@ html.touch .overlay.u3 .u3-keys { display: none; }
 }
 
 /* ---- landscape phones (short): two columns on the title, compact cards, secondary lines dropped by priority instead of scrolling ---- */
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .overlay.u3 .u3-wrap { gap: 6px; padding: 8px 14px 46px; }
   .overlay.u3 .u3-col { flex-direction: row; max-width: none; justify-content: center; align-items: center; gap: clamp(16px, 4vw, 36px); }
   .overlay.u3 .u3-brand { flex: 1 1 48%; min-width: 0; }
@@ -169,7 +169,7 @@ html.touch .overlay.u3 .u3-keys { display: none; }
   .overlay.u3 .ld-spirits { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .overlay.u3 .ld-spirit { min-height: 60px; padding: 8px 14px; }
 }
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: 520px) and (orientation: landscape) {
   .overlay.u3 .ld-spirits { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .overlay.u3 .ld-spirit { min-height: 56px; padding: 6px 12px; gap: 10px; }
   .overlay.u3 .ld-spirit__emb { width: 38px; height: 38px; }

@@ -11,7 +11,7 @@ const el = (tag, cls, text, attrs) => {
 };
 
 const STYLE = `
-#specimen { position: fixed; inset: 0; overflow: auto; background: var(--lg-glass-solid); color: var(--lg-text); padding: max(16px, env(safe-area-inset-top)) 16px 32px; }
+#specimen { position: fixed; inset: 0; overflow: auto; background: var(--lg-glass-solid); color: var(--lg-text); padding: max(16px, var(--sa-t)) 16px 32px; }
 #specimen .wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
 #specimen .head { grid-column: 1 / -1; }
 #specimen .pane { position: relative; padding: 16px 18px; background: var(--lg-glass); border: 1px solid var(--lg-hairline); box-shadow: inset 0 0 40px var(--lg-leak); }
