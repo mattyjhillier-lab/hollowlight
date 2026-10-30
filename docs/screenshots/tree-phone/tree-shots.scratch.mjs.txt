@@ -1,0 +1,37 @@
+import { spawn } from 'node:child_process';
+import { writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { startDev } from 'file:///C:/Users/matty/spirit-game/.claude/worktrees/agent-a5c6a0c1fa7423592/scripts/_devserver.mjs';
+const [outDir, prefix] = process.argv.slice(2);
+const sizes = [[844, 390], [874, 402], [390, 844]];
+mkdirSync(outDir, { recursive: true });
+const srv = await startDev(5194);
+const p = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', '--remote-debugging-port=9335', `--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'hlc-'))}`, '--no-first-run', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let tabs; for (let i = 0; i < 40; i++) { try { tabs = await (await fetch('http://127.0.0.1:9335/json')).json(); if (tabs.length) break; } catch {} await sleep(300); }
+const ws = new WebSocket(tabs.find((t) => t.type === 'page').webSocketDebuggerUrl); await new Promise((r) => ws.addEventListener('open', r));
+let id = 0; const pend = new Map(); ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } });
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (e) => (await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true })).result?.result?.value;
+const shot = async (n) => { await sleep(300); const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(path.join(outDir, n), Buffer.from(r.result.data, 'base64')); };
+const measure = `(()=>{const q=s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}};return {vw:innerWidth,vh:innerHeight,mnav:q('.mnav'),bar:q('.ts-bar'),panel:q('.ts-panel.open'),step:q('.ts-step'),tip:q('.ts-tip.open'),zoom:q('.ts-zoom'),title:q('.ts-title'),cls:document.querySelector('.ts')?.className}})()`;
+try {
+  for (const [w, h] of sizes) {
+    await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
+    await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    await send('Page.navigate', { url: 'http://127.0.0.1:5194/?x=1' });
+    for (let i = 0; i < 120; i++) { if (await ev('!!(window.__app&&window.__app.ui)')) break; await sleep(500); }
+    await sleep(1500);
+    await ev("window.__app.ui.navTo('tree')"); await sleep(1200);
+    await ev('window.__app.ui.tree.dismissTip&&window.__app.ui.tree.dismissTip()'); await sleep(1200);
+    console.log(w, h, 'idle', JSON.stringify(await ev(measure)));
+    await shot(`${prefix}-${w}x${h}-idle.png`);
+    const ids = await ev("Object.keys(window.__app.ui.tree.def.nodes).filter(k=>/murder_storm|howling|dire/.test(k)).join(',')");
+    const nid = (ids || '').split(',')[0] || (await ev('Object.keys(window.__app.ui.tree.def.nodes)[8]'));
+    await ev(`window.__app.ui.tree.select('${nid}',true)`); await sleep(1500);
+    console.log(w, h, 'sel', nid, JSON.stringify(await ev(measure)));
+    await shot(`${prefix}-${w}x${h}-sel.png`);
+  }
+} finally { ws.close(); p.kill(); await srv.close(); }
+process.exit(0);

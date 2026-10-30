@@ -1,0 +1,114 @@
+// Scratch mock renderer (NOT committed to src): applies each option's approximate CSS/DOM tweaks to the real tree screen and screenshots it.
+import { spawn } from 'node:child_process';
+import { writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { startDev } from 'file:///C:/Users/matty/spirit-game/.claude/worktrees/agent-a5c6a0c1fa7423592/scripts/_devserver.mjs';
+const [outDir] = process.argv.slice(2);
+const sizes = [[844, 390], [390, 844]];
+mkdirSync(outDir, { recursive: true });
+const srv = await startDev(5195);
+const p = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', '--remote-debugging-port=9336', `--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'hlc-'))}`, '--no-first-run', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let tabs; for (let i = 0; i < 40; i++) { try { tabs = await (await fetch('http://127.0.0.1:9336/json')).json(); if (tabs.length) break; } catch {} await sleep(300); }
+const ws = new WebSocket(tabs.find((t) => t.type === 'page').webSocketDebuggerUrl); await new Promise((r) => ws.addEventListener('open', r));
+let id = 0; const pend = new Map(); ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } });
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (e) => { const r = await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true }); if (r.result?.exceptionDetails) console.log('EXC', JSON.stringify(r.result.exceptionDetails).slice(0, 300)); return r.result?.result?.value; };
+const shot = async (n) => { await sleep(400); const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(path.join(outDir, n), Buffer.from(r.result.data, 'base64')); };
+
+// ---- shared helper: build a rail button
+const HELP = `window.__mk=(t,cls,title)=>{const b=document.createElement('button');b.className=cls||'ts-btn ts-round';b.textContent=t;b.title=title||'';b.style.pointerEvents='auto';return b};`;
+
+// Option A: one bar (purse + badge in the nav row), tool rail, bottom node strip, label cap, distant fade
+const A_CSS = (land) => `
+.ts-bar{display:none!important}
+.ts-tip{display:none!important}
+.mnav{height:44px}
+.mnav .mx-purse{display:flex;gap:6px;align-items:center;margin-left:6px;flex:none}
+.mnav .mx-purse .ts-pill{min-height:30px;padding:2px 8px;font-size:13px}
+.mnav__tab{position:relative}
+.mnav__tab .mx-dot{position:absolute;top:3px;right:2px;min-width:18px;height:18px;border-radius:9px;background:#fff6e0;color:#3a2412;font:700 12px/18px system-ui;text-align:center;box-shadow:0 0 8px #ffb35a}
+.mx-rail{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.ts-zoom{display:none!important}
+.ts-step{display:none}
+.ts-panel.open{left:8px!important;right:8px!important;top:auto!important;bottom:8px!important;width:auto!important;max-height:${land ? '108px' : '170px'}!important;border-radius:16px!important;padding:8px 12px 8px!important;overflow:hidden!important}
+.ts-panel .ts-tabs,.ts-panel .ts-handle,.ts-kick,.ts-why,.ts-evo,.ts-flav,.ts-steps,.ts-meta,.ts-msg{display:none!important}
+.ts-panel .ts-close{width:36px;height:36px;min-width:36px;min-height:36px;font-size:22px;top:6px;right:6px}
+.ts-detail{display:grid!important;grid-template-columns:1fr auto;grid-template-areas:'n a' 's a' 'd a' 'c a';gap:2px 12px;align-items:center;padding-right:${land ? '44px' : '40px'}}
+.ts-detail>*{min-width:0}
+h2.ts-name{grid-area:n;font-size:20px!important}
+.ts-state{grid-area:s}.ts-desc{grid-area:d;font-size:13px!important;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}.ts-cost{grid-area:c}
+.ts-actions{grid-area:a;position:static!important;box-shadow:none!important;padding:0!important;flex-wrap:nowrap!important;margin:0!important;${land ? '' : 'flex-direction:column'}}
+.ts-actions .ts-primary{min-width:130px}
+.ts-actions .ts-btn:not(.ts-primary){min-height:36px}
+`;
+const A_JS = `(()=>{${HELP}
+const nav=document.querySelector('.mnav'); const t=window.__app.ui.tree;
+const purse=document.createElement('div');purse.className='mx-purse';
+const bar=document.querySelector('.ts-bar'); const pills=[...bar.querySelectorAll('.ts-pill')].slice(0,2).map(n=>n.cloneNode(true));purse.append(...pills);nav.append(purse);
+const tab=[...nav.querySelectorAll('.mnav__tab')].find(x=>/Tree/.test(x.textContent));const d=document.createElement('span');d.className='mx-dot';d.textContent='3';tab.append(d);
+const rail=document.createElement('div');rail.className='mx-rail';
+const home=__mk('⌂','ts-btn ts-round','Whole web');const idx=__mk('☰','ts-btn ts-round','Spirits');const q=__mk('?','ts-btn ts-round','Legend');
+rail.append(home,idx,q);t.root.append(rail);
+document.querySelectorAll('.mnav__tab').forEach(x=>{if(/Goals/.test(x.textContent))x.title='Goals'});
+})()`;
+
+// Option B: CSS-only patch: slimmer two rows, side drawer narrowed, no tabs/flavour
+const B_CSS = (land) => `
+.mnav{height:40px}
+.ts-tip{display:none!important}
+.ts .ts-bar{min-height:38px!important;padding-top:2px!important;padding-bottom:2px!important}
+.ts-title,.ts-bar .ts-back + .ts-title{display:none}
+.ts-bar .ts-btn{min-height:36px}.ts-bar .ts-pill{min-height:28px}
+.ts-bar .ts-btn.ts-back{margin-right:auto}
+.ts-bar>.ts-btn:nth-of-type(3){display:none}
+.ts-step{max-width:calc(100% - 130px)!important}
+${land ? `.ts.ts-short .ts-panel{width:30%!important;top:44px!important}.ts.ts-short.ts-sel .ts-zoom{right:calc(30% + 14px)!important}
+.ts-panel .ts-tabs{display:none!important}.ts-panel .ts-close{top:4px;width:36px;height:36px;min-width:36px;min-height:36px;font-size:22px}.ts-kick,.ts-flav,.ts-why{display:none!important}.ts-steps{display:none!important}` : `.ts.ts-port .ts-bar{min-height:44px!important;flex-wrap:nowrap!important}.ts-panel{max-height:42%!important}.ts-panel .ts-tabs,.ts-kick,.ts-flav,.ts-steps{display:none!important}.ts-panel .ts-close{top:4px;width:36px;height:36px;min-width:36px;min-height:36px}`}
+`;
+// Option C: immersive map: nav hidden behind a menu button, floating chips, popover card
+const C_CSS = (land) => `
+.mnav{display:none!important}
+#ui.has-mnav .layer-tree{top:0!important}
+.ts-bar{background:none!important;border:0!important;min-height:0!important;padding:6px 8px!important;pointer-events:none;gap:6px!important;right:0}
+.ts-bar>*{pointer-events:auto}
+.ts-title,.ts-bar>.ts-btn:nth-of-type(n+3){display:none!important}
+.ts-bar .ts-purse{margin-left:auto}
+.ts-tip{display:none!important}
+.ts-step{display:none}
+.ts-panel.open{left:auto!important;right:8px!important;top:${land ? '56px' : 'auto'}!important;bottom:${land ? 'auto' : '8px'}!important;width:${land ? '250px' : 'auto'}!important;${land ? '' : 'left:8px!important;'}max-height:${land ? '170px' : '150px'}!important;overflow:hidden!important;border-radius:16px!important}
+.ts-panel .ts-tabs,.ts-handle,.ts-kick,.ts-why,.ts-evo,.ts-flav,.ts-steps,.ts-meta,.ts-msg,.ts-desc{display:none!important}
+.ts-panel .ts-close{width:32px;height:32px;min-width:32px;min-height:32px;font-size:20px;top:4px;right:4px}
+h2.ts-name{font-size:18px!important;padding-right:34px}
+.ts-actions{position:static!important;box-shadow:none!important;padding:4px 0 0!important}
+`;
+const C_JS = `(()=>{${HELP}const t=window.__app.ui.tree;const m=__mk('☰ Menu','ts-btn','Menu');m.style.cssText+='position:absolute;left:auto;right:auto;z-index:7;pointer-events:auto;top:6px;right:8px';const b=document.querySelector('.ts-bar');b.append(m);b.insertBefore(m,b.querySelector('.ts-purse'));
+const zoom=document.querySelector('.ts-zoom'); })()`;
+
+const variants = { A: [A_CSS, A_JS], B: [B_CSS, ''], C: [C_CSS, C_JS] };
+try {
+  for (const [w, h] of sizes) {
+    for (const [vk, [cssf, js]] of Object.entries(variants)) {
+      for (const sel of [false, true]) {
+        await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
+        await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+        await send('Page.navigate', { url: 'http://127.0.0.1:5195/?x=1' });
+        for (let i = 0; i < 120; i++) { if (await ev('!!(window.__app&&window.__app.ui)')) break; await sleep(500); }
+        await sleep(1200);
+        await ev("window.__app.ui.navTo('tree')"); await sleep(1000);
+        await ev('window.__app.ui.tree.dismissTip&&window.__app.ui.tree.dismissTip()');
+        const css = cssf(w > h);
+        await ev(`(()=>{const s=document.createElement('style');s.textContent=${JSON.stringify(css)};document.head.append(s)})()`);
+        if (js) await ev(js);
+        await sleep(500);
+        await ev('window.__app.ui.tree.resize&&window.__app.ui.tree.resize()');
+        if (sel) { await ev("window.__app.ui.tree.select('gt_dire_alpha',true)"); await sleep(300); await ev('window.__app.ui.tree.fr=null;window.__app.ui.tree.dirty()'); await ev("window.__app.ui.tree.select('gt_dire_alpha',true)"); }
+        await sleep(1400);
+        await shot(`opt${vk}-${w}x${h}-${sel ? 'sel' : 'idle'}.png`);
+        if (sel) console.log(vk, w, h, JSON.stringify(await ev("(()=>{const r=document.querySelector('.ts-panel.open')?.getBoundingClientRect();return r&&[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]})()")));
+      }
+    }
+  }
+} finally { ws.close(); p.kill(); await srv.close(); }
+process.exit(0);
