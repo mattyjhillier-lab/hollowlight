@@ -51,3 +51,6 @@
 @media (prefers-reduced-motion: reduce) { .mnav__pill { transition: none; } }
 
 #ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: calc(var(--mnav-h) + 1px + var(--sa-t)); }
+
+/* C2: the Home tab replaces the big Back buttons on Character, Settings and the Almanac while the tab row shows. Esc still goes back (key handlers untouched); without the row (in-run pause / results) Back stays. */
+#ui.has-mnav .overlay.u3 .ch-bar2, #ui.has-mnav .overlay.u4.u4-settingsscreen .u4-foot, #ui.has-mnav .overlay .cx-back { display: none; }

@@ -72,4 +72,8 @@ test('C1 menu tab row: one stylesheet for phone and desktop (container query, no
   assert.match(css, /\.mnav\.has-purse \.mnav__slot \{ flex: 1 1 100%; height: 30px/);
   assert.match(R('src/ui/treescreen.js'), /'ts-short', this\.H <= 520 && this\.W > this\.H && this\.W <= 1000/);
   assert.match(R('src/ui/ui.js'), /dest === 'home'/);
+  // C2: Back buttons hide only while the row shows (in-run pause / results keep them); Esc handlers stay in the builders
+  assert.match(css, /#ui\.has-mnav \.overlay\.u3 \.ch-bar2, #ui\.has-mnav \.overlay\.u4\.u4-settingsscreen \.u4-foot, #ui\.has-mnav \.overlay \.cx-back \{ display: none; \}/);
+  assert.match(R('src/ui/charsui.js'), /k === 'Escape'/); assert.match(R('src/ui/codexui.js'), /k === 'Escape'/);
+  assert.match(R('src/ui/ui.js'), /hideSettings/);
 });
