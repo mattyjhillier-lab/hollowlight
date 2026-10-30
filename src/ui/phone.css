@@ -36,3 +36,8 @@ html.phone [data-sc="both"] { -webkit-mask-image: linear-gradient(transparent, #
 html.phone .cx-kb { display: none; }
 /* level-up card titles: the 2-line clamp box cut descenders by ~2px on phones (audit) */
 html.phone .layer-levelup .c-title { padding-bottom: .12em; }
+
+/* ---- C0: installed Home Screen app. phone.js measures the true screen height (--app-h) when the reported viewport is shorter than the screen; the backdrop matches the menu screens so a leftover strip (home-indicator area) never shows as a black band. */
+html.phone.standalone, html.phone.standalone body { background: #0b101c; }
+html.phone.standalone #app { top: 0; bottom: auto; height: var(--app-h, 100%); background: #0b101c; }
+html.phone.standalone #stage { height: 100%; }

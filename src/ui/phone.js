@@ -10,6 +10,14 @@ export function isPhoneShape({ w, h, coarse }) {
   return !!coarse || (h <= 520 && w / h >= 1.9);
 }
 
+/** C0 pure: stage height in px for the installed app, or 0 to leave it to CSS. The screen's own short side is the true landscape height, so take the largest honest figure. */
+export function standaloneHeight({ standalone, innerH, vvH, screenW, screenH, landscape }) {
+  if (!standalone) return 0;
+  const sh = landscape ? Math.min(screenW || 0, screenH || 0) : Math.max(screenW || 0, screenH || 0);
+  const h = Math.max(innerH || 0, vvH || 0, sh);
+  return h > 0 && h < 4000 ? Math.round(h) : 0;
+}
+
 /** Pure: which edge cues does a scroller need? scrollTop/clientHeight/scrollHeight in px. */
 export function cueFor(scrollTop, clientHeight, scrollHeight, tol = 2) {
   if (!(scrollHeight > clientHeight + tol)) return '';
@@ -21,8 +29,20 @@ export function initPhone(win = window, doc = document) {
   if (!win.matchMedia) return;
   const root = doc.documentElement;
   const mq = win.matchMedia(PHONE_QUERY);
-  const apply = () => root.classList.toggle('phone', mq.matches);
+  // C0: Home Screen (standalone) app. iOS can report a layout viewport shorter than the screen (home-indicator strip), which left a dead band under the Home screen.
+  const vv = win.visualViewport, nav = win.navigator || {};
+  const isStandalone = () => !!(nav.standalone || win.matchMedia('(display-mode: standalone)').matches || win.matchMedia('(display-mode: fullscreen)').matches);
+  const size = () => {
+    const sa = isStandalone();
+    root.classList.toggle('standalone', sa);
+    const sc = win.screen || {};
+    const h = standaloneHeight({ standalone: sa && win.matchMedia('(pointer: coarse)').matches, innerH: win.innerHeight, vvH: vv ? vv.height : 0, screenW: sc.width, screenH: sc.height, landscape: win.innerWidth > win.innerHeight });
+    if (h) root.style.setProperty('--app-h', h + 'px'); else root.style.removeProperty('--app-h');
+  };
+  const apply = () => { root.classList.toggle('phone', mq.matches); size(); };
   apply();
+  win.addEventListener('resize', size); win.addEventListener('orientationchange', () => win.setTimeout(size, 250));
+  if (vv && vv.addEventListener) vv.addEventListener('resize', size);
   if (mq.addEventListener) mq.addEventListener('change', apply); else if (mq.addListener) mq.addListener(apply);
 
   const ui = doc.getElementById('ui');

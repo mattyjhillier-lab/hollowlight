@@ -10,6 +10,7 @@ import { TouchControls } from './input/touch.js';
 import { STYLE, parseDpr } from './gfx/style.js';
 import './ui/phone.css';
 import { initPhone } from './ui/phone.js';
+import { initProbe } from './ui/probe.js';
 import './pwa/pwa.css';
 import { createPwa } from './pwa/index.js';
 import { Lanterns } from './save/lanterns.js';
@@ -51,6 +52,7 @@ app.ui.setHandlers({
 // stage size x min(devicePixelRatio, 2); RunScene maps the 640x360 logical world onto it with camera zoom.
 document.documentElement.dataset.style = STYLE;
 initPhone(); // PHONE-A: html.phone before the first stage measurement
+initProbe(); // C0: ?probe=1 viewport overlay (debug only)
 const stage = document.getElementById('stage');
 const renderSize = () => {
   const r = stage.getBoundingClientRect();

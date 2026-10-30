@@ -35,7 +35,7 @@ test('params.js has no storage access at all (parsing a URL can never touch a sa
 });
 
 test('every known param key is a debug trigger or a pure render/UI flag (new params must be classified)', () => {
-  const RENDER_UI = new Set(['ground', 'bright', 'touch', 'style', 'specimen', 'kit', 'mem', 'tips', 'intros', 'life', 'trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums', 'husks', 'summons', 'perf']);
+  const RENDER_UI = new Set(['ground', 'bright', 'touch', 'style', 'specimen', 'kit', 'mem', 'tips', 'intros', 'life', 'trails', 'props', 'push', 'sway', 'fog', 'motes', 'dawn', 'critters', 'edge', 'corr', 'bloom', 'arc', 'vib', 'night', 'lm', 'nums', 'husks', 'summons', 'perf', 'probe']);
   const DEBUG = new Set(['auto', 'seed', 't', 'rr', 'ban', 'grant', 'bless', 'meta', 'tier', 'god', 'debug', 'assist', 'sites']); // sites: ?sites=0 plays without map events (a run-changing switch)
   for (const k of KNOWN_KEYS) assert.ok(RENDER_UI.has(k) || DEBUG.has(k), `param ${k} is unclassified: decide if it can touch a save`);
   for (const k of DEBUG) assert.ok(KNOWN_KEYS.includes(k), k);
