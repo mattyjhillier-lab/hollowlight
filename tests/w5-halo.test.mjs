@@ -88,7 +88,7 @@ test('Halo: hug DPS >= 25% of ring DPS, Burn share <= 35% of Orbit damage', () =
   assert.ok(ring.burn <= 0.35 && hug.burn <= 0.35, `burn share ${ring.burn} ${hug.burn}`);
 });
 
-test('Halo: cap at pick (pair 5, others 1) <= 3.0x base in stream40/single and never below base; boss >= 1.0x and <= 3.0x', () => {
+test('Halo: cap at pick (pair 5, the other 5 ranks shared) <= 3.0x base in stream40/single and never below base; boss >= 1.0x and <= 3.0x', () => {
   const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair', 'max'], only: ['sanctum_halo'] }).sanctum_halo;
   assert.ok(res.pair.stream40.ratio <= 3.0, `stream40 ${res.pair.stream40.ratio}`);
   for (const m of ['pair', 'max']) for (const [sc, c] of Object.entries(res[m])) assert.ok(c.ratio >= 0.98, `${m} ${sc} ${c.ratio}`);
@@ -97,10 +97,10 @@ test('Halo: cap at pick (pair 5, others 1) <= 3.0x base in stream40/single and n
     const b = sim.spawnEnemy('elder_treant', sim.player.x + 70, sim.player.y);
     b.hp = b.maxHp = 1e12; const h = b.hp; run(sim, 25); return h - b.hp;
   };
-  for (const other of [1, 2]) {
-    const rk = { count: 5, radius: 5, power: other, speed: other };
+  for (const [pw, sp] of [[3, 2], [2, 3]]) { // flow v2: 15 ranks in all (count 5 + radius 5 + the rest)
+    const rk = { count: 5, radius: 5, power: pw, speed: sp };
     const r = boss('sanctum_halo', rk) / boss(null, rk);
-    assert.ok(r >= 1.0 && r <= 3.0, `boss ratio at others r${other}: ${r.toFixed(2)}`);
+    assert.ok(r >= 1.0 && r <= 3.0, `boss ratio at power ${pw} speed ${sp}: ${r.toFixed(2)}`);
   }
 });
 

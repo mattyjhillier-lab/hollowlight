@@ -17,7 +17,7 @@ const tough = (sim, x, y) => { const e = sim.spawnEnemy('wolf', x, y); e.hp = e.
 
 test('B4 Thunder Judgment smites the nearest enemies first, only on screen (<=180 px)', () => {
   const sim = fresh();
-  const w = sim.debugGrant('chain_lightning', {}, 'thunder_judgment');
+  const w = sim.debugGrant('chain_lightning', { chains: 5 }, 'thunder_judgment'); // full Chains rank = the full smite reach (30)
   const p = sim.player;
   const far = tough(sim, p.x + 250, p.y); // spawned FIRST (oldest): the old code struck it
   const edge = tough(sim, p.x + 200, p.y);

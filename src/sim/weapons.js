@@ -112,7 +112,10 @@ function trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt) {
     const b = grid.get(key);
     if (b) b.push(q); else grid.set(key, [q]);
   }
-  const hit = dmg * tune(sim, w, 'trailHit', 0.16);
+  // Flow v2 (E2): fewer wolves lay fewer, thinner trails, so Pack size still counts for Lightfoot Pack (full strength at max Pack size).
+  const cs = sim.data.weapons[w.id].stats.count;
+  const packK = Math.min(1, w.s.count / (cs.base + cs.perRank * sim.balance.maxRank)) ** tune(sim, w, 'trailPack', 1.5);
+  const hit = dmg * tune(sim, w, 'trailHit', 0.16) * packK;
   const gate = tune(sim, w, 'gate', 0.4);
   for (const e of sim.enemies) {
     if (e.dead) continue;
@@ -750,7 +753,9 @@ const chainLightning = {
         rt.jCd = tune(sim, w, 'cd', 3);
         rt.jTold = false;
         let n = 0;
-        const cap = tune(sim, w, 'cap', 30);
+        // Flow v2 (E2): the smite reaches `cap` foes at full Chains rank and fewer below it, so a rank in Chains still counts for the evolution.
+        const cdef = sim.data.weapons[w.id].stats.chains;
+        const cap = Math.max(1, Math.round(tune(sim, w, 'cap', 30) * Math.min(1, s.chains / (cdef.base + cdef.perRank * sim.balance.maxRank))));
         // Nearest first, inside radius 180 (a circle that sits wholly inside the 640x360 view, so nothing is struck off screen).
         const near = [];
         for (const e of sim.enemies) {
@@ -777,7 +782,7 @@ const chainLightning = {
     const boss = sim.boss && !sim.boss.dead && !(sim.boss.immuneT > 0) && Math.hypot(sim.boss.x - p.x, sim.boss.y - p.y) <= 220 ? sim.boss : null;
     const first = boss || sim.nearestEnemy(p.x, p.y, 220);
     if (!first) { rt.cd = 0.15; return; }
-    const chains = evo === 'thunder_judgment' ? tune(sim, w, 'chains', 9) : s.chains;
+    const chains = evo === 'thunder_judgment' ? Math.min(tune(sim, w, 'chains', 9), s.chains + tune(sim, w, 'chainsBonus', 2)) : s.chains; // Judgment adds two links to the base chain (9 at full Chains rank, as before)
     strikeChain(sim, w, first, chains, dmg, area);
     rt.cd = Math.max(0.2, s.cooldown) * sim.mods.cooldown;
   },

@@ -1,6 +1,7 @@
 // Same-ranks probe: each evolution vs its base weapon at the SAME stat ranks, in static/stream scenarios (god mode, no waves).
 // Usage: node scripts/evo-same-ranks.mjs [seconds=20] [seeds=2]   (read-only; exports measureRatios for tests/evo-promises.test.mjs)
-// ranks 'max' = every stat maxed; 'pair' = only the evolution's recipe pair maxed, other stats rank 1 (how it first unlocks in a run).
+// ranks 'max' = every stat maxed; 'pair' = the evolution's home pair maxed and the other stats sharing the ranks left up to balance.evoTriggerRanks
+// (flow v2: how a pair-first player reaches the awakening; before v2 the others sat at rank 1).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -23,7 +24,12 @@ export function ranksFor(weaponId, evoId, mode) {
   const def = data.weapons[weaponId];
   const max = base.balance.maxRank;
   const pair = evoId ? data.evolutions[evoId].pair : [];
-  return Object.fromEntries(Object.keys(def.stats).map((k) => [k, mode === 'max' || pair.includes(k) ? max : 1]));
+  if (mode === 'max') return Object.fromEntries(Object.keys(def.stats).map((k) => [k, max]));
+  const rest = Object.keys(def.stats).filter((k) => !pair.includes(k));
+  let left = Math.max(0, base.balance.evoTriggerRanks - pair.length * max);
+  const r = Object.fromEntries(Object.keys(def.stats).map((k) => [k, pair.includes(k) ? max : 0]));
+  for (let i = 0; left > 0 && rest.length; i = (i + 1) % rest.length) if (r[rest[i]] < max) { r[rest[i]]++; left--; } else if (rest.every((k) => r[k] >= max)) break;
+  return r;
 }
 
 export function measure(weaponId, evoId, scen, mode, seed, secs) {

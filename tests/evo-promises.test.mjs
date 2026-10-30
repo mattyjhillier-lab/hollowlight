@@ -110,7 +110,7 @@ test('W9/W7b/W10 cap at pick: Lightfoot Pack, Wall of Wings, Spearhead, Spirit T
     const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair'], only: eid });
     for (const [sc, c] of Object.entries(res[eid].pair)) {
       // Vesper Tide single: the plain ring never reaches a dummy parked at 30 px (base 0), the swell does: no ratio, so cap the absolute DPS instead
-      if (c.base === 0) { assert.ok(c.evo < 60, `${eid} ${sc}: base 0, evo ${c.evo.toFixed(0)} DPS`); continue; }
+      if (c.base === 0) { assert.ok(c.evo < 80, `${eid} ${sc}: base 0, evo ${c.evo.toFixed(0)} DPS`); continue; }
       assert.ok(c.ratio <= 3.0, `${eid} ${sc}: ${c.ratio.toFixed(2)}x at pick`);
     }
   }

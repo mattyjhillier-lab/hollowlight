@@ -8,7 +8,7 @@ const filter = process.argv[2] || '';
 const secs = Number(process.argv[3] || 10);
 const seeds = Array.from({ length: Number(process.argv[4] || 2) }, (_, i) => i + 1);
 const SCENS = ['single', 'stream10', 'stream40'];
-const GRID = [-1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2];
+const GRID = [-1.5, -1, -0.5, 0, 0.25, 0.5, 0.75, 1, 1.5, 2];
 const avg = (fn) => seeds.reduce((s, sd) => s + fn(sd), 0) / seeds.length;
 const out = {};
 for (const [eid, e] of Object.entries(data.evolutions)) {
@@ -20,15 +20,18 @@ for (const [eid, e] of Object.entries(data.evolutions)) {
   for (const sc of SCENS) { bmax[sc] = avg((sd) => measure(e.weapon, null, sc, mx, sd, secs)); rmax[sc] = avg((sd) => measure(e.weapon, eid, sc, mx, sd, secs)); }
   const use = SCENS.filter((sc) => bmax[sc] > 8 && rmax[sc] > 8); // skip scenarios where a side does ~nothing at max (geometry artefacts)
   const base = {};
-  for (const [name, r] of Object.entries(sp)) for (const sc of use) base[`${name}|${sc}`] = avg((sd) => measure(e.weapon, null, sc, r, sd, secs));
+  for (const [name, r] of Object.entries(sp)) for (const sc of SCENS) base[`${name}|${sc}`] = avg((sd) => measure(e.weapon, null, sc, r, sd, secs));
   const loss = (rs) => {
     e.rankScale = rs;
     let L = 0;
-    for (const [name, r] of Object.entries(sp)) for (const sc of use) {
-      const b = base[`${name}|${sc}`], v = avg((sd) => measure(e.weapon, eid, sc, r, sd, secs));
-      const ratio = Math.min(20, Math.max(0.05, v / Math.max(b, 1)));
-      const target = rmax[sc] / bmax[sc];
-      L += Math.log(ratio / target) ** 2;
+    for (const [name, r] of Object.entries(sp)) for (const sc of SCENS) {
+      const b = base[`${name}|${sc}`];
+      if (b < 8) continue;
+      const v = avg((sd) => measure(e.weapon, eid, sc, r, sd, secs));
+      const ratio = Math.min(20, Math.max(0.05, v / b));
+      if (use.includes(sc)) L += Math.log(ratio / (rmax[sc] / bmax[sc])) ** 2; // stay near the accepted ratio at max rank
+      L += 20 * Math.max(0, Math.log(1.03 / ratio)) ** 2; // floor: never below the base weapon
+      if (sc !== 'stream40' && rmax[sc] / bmax[sc] < 3) L += 8 * Math.max(0, Math.log(ratio / 3)) ** 2; // cap 3x (raw stream40 is judged against its max-rank ratio only)
     }
     return L;
   };

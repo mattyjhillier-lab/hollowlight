@@ -93,8 +93,10 @@ export function evoRankMult(data, w) {
   let m = 1;
   for (const [k, e] of Object.entries(rs)) {
     if (!Object.hasOwn(def.stats, k) || !Number.isFinite(e)) continue;
-    const vmax = statValue(def, k, max), v = statValue(def, k, w.ranks[k] || 0);
-    if (vmax > 0 && v > 0) m *= (v / vmax) ** e;
+    const vmax = statValue(def, k, max);
+    if (vmax <= 0) continue;
+    const v = Math.max(statValue(def, k, w.ranks[k] || 0), vmax * 0.1); // a stat that starts at 0 counts as 10% of its max, never zero
+    m *= (v / vmax) ** e;
   }
   return m;
 }

@@ -101,10 +101,10 @@ test('trail hit = 0.16 x bite, scales with Bite power, applies Rend bleed once f
     const orig = sim.hurt.bind(sim);
     sim.hurt = (t, a, o) => { if (t === e && !o?.silent) seen.push(a); return orig(t, a, o); };
     sim.step(DT, {});
-    return { first: seen[0], bite: w.s.power * sim.dmgMult(w), bleedDps: e.bleedDps, bleedT: e.bleedT, rend: w.s.duration };
+    return { first: seen[0], pk: Math.min(1, w.s.count / 7) ** sim.data.evolutions.phantom_stampede.tune.trailPack, bite: w.s.power * sim.dmgMult(w), bleedDps: e.bleedDps, bleedT: e.bleedT, rend: w.s.duration };
   };
   const a = probe(1); const b = probe(5);
-  assert.ok(Math.abs(a.first - 0.16 * a.bite) < 1e-6, 'trail hit = 0.16 x bite');
+  assert.ok(Math.abs(a.first - 0.16 * a.bite * a.pk) < 1e-6, 'trail hit = 0.16 x bite x the Pack size factor (1 at full Pack size)');
   assert.ok(b.first > a.first * 2, 'Bite power raises trail damage');
   assert.ok(Math.abs(b.bleedDps - b.bite * b.rend) < 1e-6, 'bleed = bite x Rend');
   assert.ok(b.bleedT > 3.9 && b.bleedT <= 4, 'bleed time 4 s');

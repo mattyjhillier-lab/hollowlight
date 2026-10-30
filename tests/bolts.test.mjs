@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Sim } from '../src/sim/Sim.js';
-import { hintText } from '../src/sim/cards.js';
+import { hintText, evoRankMult } from '../src/sim/cards.js';
 import { data, measureRatios } from '../scripts/evo-same-ranks.mjs';
 import { run as runRanks } from '../scripts/stat-ranks.mjs';
 
@@ -206,7 +206,7 @@ test('Lance damage = Bolt power x (2.0 + 0.07 per Bolt count rank); width = 1 + 
     const sim = lanceSim({ count: rc, pierce: rp }); place(sim, 1, 100, 100);
     const [b] = firstVolley(sim);
     const w = sim.weapons[0];
-    assert.ok(Math.abs(b.dmg - w.s.power * (2.0 + 0.07 * rc)) < 1e-6, `dmg ${b.dmg}`);
+    assert.ok(Math.abs(b.dmg - w.s.power * evoRankMult(data, w) * (2.0 + 0.07 * rc)) < 1e-6, `dmg ${b.dmg}`); // x the flow v2 rank scale (1 at max ranks)
     assert.equal(b.r, 1 + 2 * rp);
     assert.ok(Math.abs(b.speed - w.s.speed * 1.3) < 1e-6);
     assert.ok(Math.abs(b.life * b.speed - 300) < 10, 'range 300 px (one frame already flown)');

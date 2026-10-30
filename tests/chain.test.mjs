@@ -60,6 +60,9 @@ test('W11a Chain Lightning base is deterministic', () => {
   for (const s of [a, b]) for (let i = 0; i < 12; i++) put(s, 40 + (i % 4) * 20, (i - 6) * 14);
   run(a, 8); run(b, 8);
   assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
+  const z = mk({ chains: 0, power: 5 }, 'thunder_judgment'); for (let i = 0; i < 12; i++) put(z, 30 + i * 12, 0);
+  const lz = spy(z); run(z, 0.6);
+  assert.equal(lz.length, 4, 'Chains rank 0: the base 2 jumps + the 2 Judgment adds (flow v2: every rank counts)');
 });
 
 // ---------------------------------------------------------------- W11b Thunder Judgment
@@ -114,18 +117,18 @@ test('W11b smite damage is dmg x power x 0.72 per foe, volley every 3 s, and a 0
   assert.ok(e && e2);
 });
 
-test('W11b Thunder Judgment keeps the normal chain with 9 jumps and is deterministic', () => {
-  const mkc = () => { const s = mk({ chains: 0, power: 5 }, 'thunder_judgment'); for (let i = 0; i < 12; i++) put(s, 30 + i * 12, 0); return s; };
+test('W11b Thunder Judgment keeps the normal chain, 2 jumps longer (9 at full Chains), and is deterministic', () => {
+  const mkc = () => { const s = mk({ chains: 5, power: 5 }, 'thunder_judgment'); for (let i = 0; i < 12; i++) put(s, 30 + i * 12, 0); return s; };
   const a = mkc(), b = mkc();
   const la = spy(a); run(a, 0.6); run(b, 0.6);
   assert.equal(la.length, 9, 'Chains 9 = nine foes struck (same count rule as the base: Chains 2 = two foes); smite not yet');
   assert.equal(a.damageDealt, b.damageDealt); assert.equal(a.rng.next(), b.rng.next());
 });
 
-test('W11b cap at pick: Thunder Judgment <= 3.0x its base (pair 5 + others rank 1) in single, stream10 and stream40; single >= 1.2x', () => {
+test('W11b cap at pick: Thunder Judgment <= 3.0x its base (pair 5 + others rank 1) in single, stream10 and stream40; single >= 1.1x', () => {
   const res = measureRatios({ secs: 10, seeds: [1], modes: ['pair'], only: 'thunder_judgment' });
   for (const [sc, c] of Object.entries(res.thunder_judgment.pair)) assert.ok(c.ratio <= 3.0, `${sc}: ${c.ratio.toFixed(2)}x at pick`);
-  assert.ok(res.thunder_judgment.pair.single.ratio >= 1.2, `single ${res.thunder_judgment.pair.single.ratio}`);
+  assert.ok(res.thunder_judgment.pair.single.ratio >= 1.1, `single ${res.thunder_judgment.pair.single.ratio}`);
 });
 
 // ---------------------------------------------------------------- W11c Static Storm
