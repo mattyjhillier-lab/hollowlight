@@ -441,3 +441,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-10-30 | EVO FLOW v2 LOCKED CHOICE | evoTriggerRanks=16; evoTriggerPerWeapon stays OFF (first evolution ~10:30 with 4 weapons held, accepted) | Matt |
 
 | 2026-10-30 | PARKED DESIGN PICKS | Minimap = option A (round Lantern Pool, desktop on / phone off), build AFTER launch. Events Almanac = option A (Places tab, stats.sites), build AFTER launch. Account steps (Access, repo rename, private repo) = leave as is, revisit after launch. | Matt |
+
+| 2026-10-30 | HARD NIGHTS ACCEPTED AFTER EVO FLOW v2 | Deep Dusk full tree Bond 0 ~19%/17% (band 35-55) and Wren Long Night ~3% (band 10-20; Elias 19% ok) accepted as measured; loadout knob stays OFF; no target changed. Cause: evolution later when ranks spread over 4-5 weapons. Re-check after Matt playtest. Options: docs/design/fv-data/nights-retune-options.md | Matt |
