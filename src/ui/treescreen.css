@@ -20,10 +20,7 @@
 #ui .ts .ts-item:focus { outline: none; }
 #ui .ts .ts-item:focus-visible { outline: 3px solid var(--ts-teal); outline-offset: 2px; box-shadow: 0 0 0 6px rgba(12, 18, 32, .7); }
 
-/* toolbar: a solid band (never floats over map names) */
-.ts-bar { position: absolute; left: 0; right: 0; top: 0; min-height: 60px; display: flex; align-items: center; gap: 8px; padding: 8px 12px; padding-left: max(12px, var(--sa-l)); padding-right: max(12px, var(--sa-r));
-  background: linear-gradient(var(--ts-band), #0b101cf2); border-bottom: 1px solid #d8b26a2a; z-index: 6; }
-.ts-title { font-family: var(--font-display); font-size: 22px; color: var(--ts-cream); margin-right: auto; white-space: normal; line-height: 1.1; text-shadow: 0 0 12px #ffb35a66; min-width: 0; flex: 0 1 auto; }
+/* C3: no second header; the purse is in the menu tab row (menunav.css). The map starts right under the tab row. */
 .ts-purse { display: flex; gap: 6px; }
 .ts-pill { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 4px 10px; border-radius: 17px; background: linear-gradient(var(--ts-glassA), var(--ts-glassB)); border: 1px solid var(--ts-line); font-weight: 700; font-size: 14px; white-space: nowrap; font-feature-settings: "tnum" 1; }
 .ts-pill.short { border-color: var(--ts-lock); border-style: dashed; }
@@ -40,7 +37,7 @@
 .ts-lightable { display: inline-flex; align-items: center; gap: 8px; }
 
 /* side panel / bottom sheet: Lantern details + Goals tab */
-.ts-panel { position: absolute; right: 12px; top: 72px; bottom: 12px; width: 340px; z-index: 7; background: var(--ts-panel); border: 1px solid var(--ts-line); border-radius: 16px; padding: 12px 16px 0; display: none; flex-direction: column; gap: 8px; overflow: auto; touch-action: pan-y; }
+.ts-panel { position: absolute; right: 12px; top: 12px; bottom: 12px; width: 340px; z-index: 7; background: var(--ts-panel); border: 1px solid var(--ts-line); border-radius: 16px; padding: 12px 16px 0; display: none; flex-direction: column; gap: 8px; overflow: auto; touch-action: pan-y; }
 .ts-panel.open { display: flex; }
 .ts-tabs { display: flex; gap: 6px; margin-right: 44px; }
 .ts-tab { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid transparent; background: none; color: var(--ts-mute); font-weight: 700; }
@@ -97,9 +94,14 @@
 .ts-step .ts-btn { flex: none; }
 .ts.ts-sel .ts-step, .ts.ts-pan .ts-step { display: none; }
 
-/* zoom buttons + edge arrow */
-.ts-zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 4; }
-.ts.ts-sel .ts-zoom { right: 364px; }
+/* C3 tool rail (right edge, vertical): best next, zoom, whole web, Spirits, ? . 44px hit areas, 6px gaps. Desktop: moves left of the docked card. */
+.ts-zoom { position: absolute; right: max(10px, var(--sa-r)); top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 6; }
+.ts:not(.ts-small).ts-sel .ts-zoom { right: 364px; }
+.ts-ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ts-rail .ts-btn { box-shadow: 0 2px 10px #0006; }
+.ts-more { display: none; }
+.ts-more.open .ts-ico { transform: rotate(180deg); }
+.ts-handle { cursor: pointer; }
 .ts-edge { position: absolute; z-index: 4; display: none; align-items: center; gap: 6px; min-height: 44px; padding: 4px 12px; border-radius: 22px; border: 1px solid var(--ts-wick); background: var(--ts-panel); color: var(--ts-wick) !important; font-weight: 700; font-size: 13px; transform: translate(-50%, -50%); }
 .ts-edge.show { display: inline-flex; }
 .ts-edge i { font-style: normal; display: inline-block; }
@@ -118,48 +120,49 @@
 .ts-legend small { display: block; color: var(--ts-mute); font-size: 13px; }
 .ts-scrim { position: absolute; inset: 0; background: #0009; z-index: 8; display: none; }
 .ts-scrim.open { display: block; }
-.ts-toast { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); z-index: 10; background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 14px; padding: 10px 16px; font: 18px var(--font-display); color: var(--ts-wick); display: none; text-align: center; max-width: 90%; pointer-events: none; }
+.ts-toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 10; background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 14px; padding: 10px 16px; font: 18px var(--font-display); color: var(--ts-wick); display: none; text-align: center; max-width: 90%; pointer-events: none; }
 .ts-toast.open { display: block; }
 /* first-visit tip (fades away) */
-.ts-tip { position: absolute; z-index: 9; left: 50%; bottom: 84px; transform: translateX(-50%); width: min(440px, calc(100% - 32px)); background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 16px; padding: 14px 16px; box-shadow: 0 0 30px #ffb35a44; display: none; transition: opacity .8s; }
+.ts-tip { position: absolute; z-index: 9; left: 50%; bottom: 24px; transform: translateX(-50%); width: min(440px, calc(100% - 32px)); background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 16px; padding: 14px 16px; box-shadow: 0 0 30px #ffb35a44; display: none; transition: opacity .8s; }
 .ts-tip.open { display: block; }
 .ts-tip.fade { opacity: 0; }
 .ts-tiph { font: 20px var(--font-display); color: var(--ts-wick); margin-bottom: 6px; }
 .ts-tipp { font-size: 15px; margin-bottom: 6px; }
 
-/* ---------- phone landscape (short screen) ---------- */
-.ts.ts-short .ts-bar { min-height: 52px; padding-top: 4px; padding-bottom: 4px; gap: 6px; }
-.ts.ts-short .ts-title { font-size: 18px; }
-.ts.ts-short .ts-pill { min-height: 30px; padding: 2px 8px; font-size: 13px; }
-.ts.ts-short .ts-btn { font-size: 13px; padding: 4px 10px; }
-.ts.ts-short .ts-round { padding: 0; }
-.ts.ts-short .ts-panel { top: 58px; bottom: 6px; right: max(6px, var(--sa-r)); width: 46%; padding: 8px 12px 0; gap: 6px; }
-.ts.ts-short .ts-tabs .ts-tab { min-height: 44px; }
-.ts.ts-short .ts-flav { display: none; }
-.ts.ts-short h2.ts-name { font-size: 21px; }
-.ts.ts-short .ts-desc { font-size: 15px; }
-.ts.ts-short.ts-sel .ts-zoom { right: calc(46% + 14px); }
-.ts.ts-short .ts-zoom { bottom: 6px; }
-.ts.ts-short .ts-zx { display: none; }
-.ts.ts-short .ts-step { bottom: 6px; max-width: calc(100% - 130px); }
-.ts.ts-short .ts-tip { bottom: 64px; }
-.ts.ts-short .ts-ph-hide { display: none; }
-/* ---------- phone portrait ---------- */
-.ts.ts-port .ts-bar { min-height: 104px; flex-wrap: wrap; align-content: center; row-gap: 6px; padding-top: max(8px, var(--sa-t)); }
-.ts.ts-port .ts-title { font-size: 19px; flex: 1 0 40%; }
-.ts.ts-port .ts-panel { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 56%; border-radius: 18px 18px 0 0; padding: 6px 16px 0; }
-.ts.ts-port .ts-actions { padding-bottom: calc(12px + var(--sa-b)); }
-.ts.ts-port .ts-handle { display: block; width: 44px; height: 5px; border-radius: 3px; background: #ffffff40; margin: 2px auto 4px; }
-.ts.ts-port .ts-tabs { margin-right: 40px; }
-.ts.ts-port.ts-sel .ts-zoom { display: none; }
-.ts.ts-port .ts-zx { display: none; }
-.ts.ts-port .ts-zoom { bottom: calc(84px + var(--sa-b)); }
-.ts.ts-port .ts-step { left: 12px; right: 12px; transform: none; max-width: none; bottom: calc(12px + var(--sa-b)); }
-.ts.ts-port .ts-tip { bottom: calc(84px + var(--sa-b)); }
-.ts.ts-port .ts-hide-port { display: none; }
-.ts.ts-port .ts-lightable { order: 5; }
-.ts.ts-port .ts-bar .ts-btn { padding: 4px 12px; }
-.ts.ts-port .ts-bar .ts-round { padding: 0; }
+/* ---------- small screens (phone landscape and portrait, or any small window): ONE compact node strip that opens to the full sheet ---------- */
+.ts.ts-small .ts-lt, .ts.ts-small .ts-zx { display: none; }
+.ts.ts-small .ts-lightable { width: 44px; padding: 0; justify-content: center; }
+.ts.ts-small .ts-tabs { display: none; }
+.ts.ts-small .ts-more { display: inline-flex; align-items: center; justify-content: center; padding: 0; width: 44px; }
+.ts.ts-small .ts-panel { left: max(8px, var(--sa-l)); right: max(8px, var(--sa-r)); top: auto; bottom: max(8px, var(--sa-b)); width: auto; max-height: none; padding: 14px 56px 8px 12px; border-radius: 16px; overflow: visible; gap: 0; }
+.ts.ts-small .ts-handle { display: block; position: absolute; left: 50%; top: 0; width: 96px; height: 18px; transform: translateX(-50%); }
+.ts.ts-small .ts-handle::before { content: ''; position: absolute; left: 26px; top: 6px; width: 44px; height: 5px; border-radius: 3px; background: #ffffff40; }
+.ts.ts-small .ts-panel:not(.exp) :is(.ts-kick, .ts-why, .ts-evo, .ts-flav, .ts-steps, .ts-meta, .ts-cost) { display: none; }
+.ts.ts-small .ts-panel:not(.exp) .ts-detail { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n s" "d d" "m m" "a a"; column-gap: 8px; row-gap: 3px; align-items: center; }
+.ts.ts-small .ts-panel:not(.exp) h2.ts-name { grid-area: n; font-size: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts.ts-small .ts-panel:not(.exp) .ts-state { grid-area: s; justify-self: end; }
+.ts.ts-small .ts-panel:not(.exp) .ts-detail > .ts-desc { grid-area: d; font-size: 14px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts.ts-small .ts-panel:not(.exp) .ts-msg { grid-area: m; font-size: 13px; }
+.ts.ts-small .ts-msg:empty { display: none; }
+.ts.ts-small .ts-panel:not(.exp) .ts-actions { grid-area: a; margin: 4px 0 0; padding: 0; position: static; box-shadow: none; background: none; flex-wrap: nowrap; gap: 6px; }
+.ts.ts-small .ts-actions .ts-btn:not(.ts-more) { font-size: 13px; padding: 4px 12px; }
+.ts.ts-small .ts-actions .ts-primary { font-size: 15px; }
+.ts.ts-small .ts-panel.exp { max-height: 62%; overflow: auto; padding: 14px 14px 0; gap: 8px; }
+.ts.ts-small .ts-panel.exp h2.ts-name { margin-right: 44px; font-size: 21px; }
+.ts.ts-small .ts-panel.goals { padding-top: 52px; }
+.ts.ts-small .ts-step { min-height: 40px; padding: 3px 4px 3px 14px; bottom: max(8px, var(--sa-b)); }
+.ts.ts-small .ts-steptext small { display: none; }
+.ts.ts-small .ts-tip { bottom: 24px; }
+.ts.ts-small .ts-almbtn { white-space: normal; line-height: 1.1; padding: 4px 8px; max-width: 130px; }
+.ts.ts-port .ts-panel:not(.exp) .ts-actions { flex-wrap: wrap; }
+/* phone landscape: more room beside the strip, so name + state + description + the actions share ONE row (about 64px tall); the open sheet leaves the rail clear */
+.ts.ts-short .ts-panel:not(.exp) .ts-detail { grid-template-columns: 1fr auto auto; grid-template-areas: "n s a" "d d a" "m m a"; }
+.ts.ts-short .ts-panel:not(.exp) .ts-actions { margin: 0; align-self: center; }
+.ts.ts-short .ts-panel:not(.exp) .ts-primary { flex: none; min-width: 170px; }
+.ts.ts-short .ts-panel.exp { right: calc(max(8px, var(--sa-r)) + 54px); max-height: 72%; }
+/* phone portrait */
+.ts.ts-port .ts-panel.exp { max-height: 55%; }
+.ts.ts-port .ts-panel.exp .ts-actions { padding-bottom: calc(12px + var(--sa-b)); }
 
 /* Calm motion (setting or system): no fades or slides */
 .ts.ts-calm *, .ts.ts-calm { transition: none !important; animation: none !important; }

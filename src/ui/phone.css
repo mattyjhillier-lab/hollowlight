@@ -26,10 +26,6 @@ html.phone [data-sc="both"] { -webkit-mask-image: linear-gradient(transparent, #
   /* Settings: the persistent nav already says "Settings", so the big title goes (kept for screen readers); the freed height lets all Sound rows show */
   html.phone .overlay.u4.u4-settingsscreen .lg-panel__title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   html.phone .overlay.u4.u4-settingsscreen .lg-panel { width: min(100%, 900px); }
-  /* Goals / lantern details: a narrower side drawer so the tree stays readable (the map frame re-measures from the panel) */
-  html.phone .ts.ts-short { --ts-pw: clamp(280px, 36%, 380px); }
-  html.phone .ts.ts-short .ts-panel { width: var(--ts-pw); }
-  html.phone .ts.ts-short.ts-sel .ts-zoom { right: calc(var(--ts-pw) + 14px); }
 }
 
 /* phones have no Esc key: drop the keyboard hint badge in the Almanac header (it overflowed its pill at larger text) */

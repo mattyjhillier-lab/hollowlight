@@ -2,7 +2,7 @@
 // Usage: node scripts/phone-shots.mjs <outDir> <prefix> <WxH[@dpr][p]>,... [screens]  (p = portrait/mobile emulation off? no: mobile is on unless size is flagged d)
 // Size suffix: L = Larger text (data-text=larger); @2 = dpr 2; "d" suffix = desktop (no mobile/touch emulation). Example: 915x412,1280x720d,1000x460@2
 import { spawn } from 'node:child_process';
-import { writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { startDev } from './_devserver.mjs';
@@ -26,7 +26,7 @@ const shot = async (name) => { await ev("if(!document.getElementById('nop')){con
 const menu = {
   // fallback card icons (heal / gold / shard) next to two weapon icons on a dark plate, to check the set reads as one family
   cardicons: "ui.hideAll(); import('/src/ui/cardicons.js').then(m=>{const d=document;const w=d.createElement('div');w.setAttribute('data-icons','');w.style.cssText='position:fixed;inset:0;z-index:99;background:#14100c;display:flex;flex-wrap:wrap;gap:12px;align-content:center;justify-content:center';const defs=d.createElementNS('http://www.w3.org/2000/svg','svg');for(const c of [{kind:'fallback',fallback:'heal'},{kind:'fallback',fallback:'gold'},{kind:'fallback',fallback:'shard'},{kind:'blessing',blessId:'wider_glow'},{kind:'weapon',weaponId:'ghost_wolves'}]){const s=m.cardIcon(d,c);s.style.cssText='width:96px;height:96px';w.append(s)}d.body.append(w)})",
-  front: 'ui.hideAll(); ui.showStart(ui.onPick)', treesel: "ui.navTo('tree'); setTimeout(()=>{const t=ui.tree,ids=t.def.list;t.select(ids.reduce((a,i)=>JSON.stringify(t.def.nodes[i]).length>JSON.stringify(t.def.nodes[a]).length?i:a,ids[0]))},500)", home: "ui.navTo('home')", settings: "ui.navTo('settings')", almanac: "ui.navTo('almanac')", goals: "ui.navTo('goals')", tree: "ui.navTo('tree')", chars: "ui.navTo('character')",
+  front: 'ui.hideAll(); ui.showStart(ui.onPick)', treeexp: "ui.navTo('tree'); setTimeout(()=>{const t=ui.tree,ids=t.def.list;t.select(ids.reduce((a,i)=>JSON.stringify(t.def.nodes[i]).length>JSON.stringify(t.def.nodes[a]).length?i:a,ids[0]));t.setExpanded(true)},500)", treesel: "ui.navTo('tree'); setTimeout(()=>{const t=ui.tree,ids=t.def.list;t.select(ids.reduce((a,i)=>JSON.stringify(t.def.nodes[i]).length>JSON.stringify(t.def.nodes[a]).length?i:a,ids[0]))},500)", home: "ui.navTo('home')", settings: "ui.navTo('settings')", almanac: "ui.navTo('almanac')", goals: "ui.navTo('goals')", tree: "ui.navTo('tree')", chars: "ui.navTo('character')",
 };
 const tabClick = { 'settings-controls': ["settings", ".layer-settings [role=tab]", 2], 'almanac-foes': ["almanac", ".layer-codex [role=tab]", 1] };
 try {
@@ -38,6 +38,7 @@ try {
       await send('Page.navigate', { url: 'http://127.0.0.1:5193/?debug=1' + (process.env.SHOT_QS || '') });
       for (let i = 0; i < 120; i++) { if (await ev('!!(window.__app && window.__app.ui)')) break; await sleep(500); }
       await sleep(1500);
+      if (process.env.SHOT_JS_FILE) { await ev(readFileSync(process.env.SHOT_JS_FILE, 'utf8')); await sleep(500); } // e.g. seed a mid-game save before the screens open
       for (const k of menuWant) {
         const base = tabClick[k] ? tabClick[k][0] : k;
         await ev(`(()=>{const ui=window.__app.ui; ${menu[base]}})()`); await sleep(900);

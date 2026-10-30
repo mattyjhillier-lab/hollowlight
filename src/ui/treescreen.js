@@ -30,6 +30,17 @@ const btn = (cls, text, label) => {
   if (label) b.setAttribute('aria-label', label);
   return b;
 };
+const SVG_NS = 'http://www.w3.org/2000/svg';
+// C3: small code-drawn line glyph for the tool rail (static paths, no data in it)
+const glyph = (parts) => {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'ts-ico'); svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
+  for (const [tag, attrs] of parts) { const n = document.createElementNS(SVG_NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v)); svg.appendChild(n); }
+  return svg;
+};
+const ICON_WEB = [['circle', { cx: 12, cy: 12, r: 3.2 }], ['path', { d: 'M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2M5.3 5.3l2.3 2.3M16.4 16.4l2.3 2.3M18.7 5.3l-2.3 2.3M7.6 16.4l-2.3 2.3' }]];
+const ICON_SPIRITS = [['path', { d: 'M5 17l5-8 4 5 5-9' }], ['circle', { cx: 5, cy: 17, r: 1.8 }], ['circle', { cx: 10, cy: 9, r: 1.8 }], ['circle', { cx: 14, cy: 14, r: 1.8 }], ['circle', { cx: 19, cy: 5, r: 1.8 }]];
+const ICON_MORE = [['path', { d: 'M6 15l6-6 6 6' }]];
 const hexA = (hex, a) => { const v = parseInt(String(hex).slice(1), 16) || 0; return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -134,41 +145,33 @@ export class TreeScreen {
     this.itemsEl = el('div', 'ts-items');
     map.append(this.canvas, this.itemsEl);
 
-    // toolbar: a solid band, never floating over the map
-    const bar = el('div', 'ts-bar');
-    bar.setAttribute('role', 'toolbar');
-    bar.setAttribute('aria-label', 'Skill tree');
-    const back = btn('ts-btn ts-back', 'Back', 'Back to the menu (Esc)');
-    back.addEventListener('click', () => this.close());
-    const title = el('div', 'ts-title', 'The Lantern Web');
+    // C3: no second header. Back / title / Goals are gone (the tab row has Home, Tree and Goals); the purse lives in the tab row; the tools sit in the right rail (built below).
     const purse = el('div', 'ts-purse');
     purse.setAttribute('aria-label', 'Your purse');
     const pill = (icon, label) => { const p = el('span', 'ts-pill'); p.setAttribute('title', label); const i = el('i', icon); i.setAttribute('aria-hidden', 'true'); const v = el('span'); const sr = el('span', 'ts-sr', ` ${label}`); p.append(i, v, sr); purse.append(p); return { p, v }; };
     this.goldEl = pill('ts-i-gold', 'gold');
     this.shardEl = pill('ts-i-shard', 'soul shards');
     this.glassEl = pill('ts-i-glass', 'Dawnglass');
+    if (this.host.nav && this.host.nav.setPurse) this.host.nav.setPurse(purse); // C1: the purse lives in the menu tab row (strip under it on narrow screens)
     this.nextBtn = btn('ts-btn ts-lightable');
     this.nextBtn.setAttribute('title', 'Show the best lantern to light next (N)');
     this.lightN = el('span', 'ts-badge', '0');
-    this.nextBtn.append(this.lightN, el('span', 'ts-ph-hide', 'can light'));
+    this.nextBtn.append(this.lightN, el('span', 'ts-lt', 'can light'));
     this.nextBtn.addEventListener('click', () => this.nextAfford());
-    this.goalsBtn = btn('ts-btn', 'Goals');
-    this.goalsBtn.setAttribute('title', 'Goals (G)');
-    this.goalsBtn.addEventListener('click', () => this.toggleGoals());
-    const idx = btn('ts-btn ts-hide-port', 'Spirits');
+    const idx = btn('ts-btn ts-round', null, 'All spirits and groups');
     idx.setAttribute('title', 'All spirits and groups');
+    idx.append(glyph(ICON_SPIRITS));
     idx.addEventListener('click', () => this.openSheet('idx'));
     const help = btn('ts-btn ts-round', '?', 'What the lanterns mean');
     help.setAttribute('title', 'What the lanterns mean (?)');
     help.addEventListener('click', () => this.openSheet('help'));
-    if (this.host.nav && this.host.nav.setPurse) this.host.nav.setPurse(purse); else bar.append(purse); // C1: the purse lives in the menu tab row (strip under it on narrow screens)
-    bar.append(back, title, this.nextBtn, this.goalsBtn, idx, help);
-    this.barEl = bar;
+    this.barEl = null;
 
     // side panel / bottom sheet: Lantern details + Goals tab
     const panel = el('aside', 'ts-panel');
     panel.setAttribute('aria-label', 'Lantern details');
     const handle = el('div', 'ts-handle');
+    handle.addEventListener('click', () => { if (this.small && this.panelMode !== 'goals') this.setExpanded(!this.panelEl.classList.contains('exp')); }); // only the handle toggles the sheet: the map keeps its own pan/pinch
     const tabs = el('div', 'ts-tabs');
     tabs.setAttribute('role', 'tablist');
     this.tabD = btn('ts-tab', 'Lantern');
@@ -182,10 +185,10 @@ export class TreeScreen {
     const detail = el('div', 'ts-detail');
     detail.setAttribute('aria-live', 'polite');
     this.pKick = el('div', 'ts-kick');
-    this.pName = el('h2', 'ts-name');
+    this.pName = el('h2', 'ts-name'); this.pName.dataset.clamp = 'more'; // compact strip: ellipsis by design, the More chevron shows it all
     this.pState = el('div', 'ts-state');
     this.pWhy = el('div', 'ts-why');
-    this.pDesc = el('div', 'ts-desc');
+    this.pDesc = el('div', 'ts-desc'); this.pDesc.dataset.clamp = 'more';
     this.pEvo = el('div', 'ts-desc ts-evo'); // what the unlocked evolution does (same text as the pick card + Almanac: data.evolutions[id].desc)
     this.pFlav = el('div', 'ts-flav');
     this.pSteps = el('ol', 'ts-steps');
@@ -199,7 +202,11 @@ export class TreeScreen {
     this.almBtn = btn('ts-btn ts-almbtn', 'Open the Almanac'); // CX3: the Almanac cluster's lanterns link to the book (same kill counts)
     this.almBtn.hidden = true;
     this.almBtn.addEventListener('click', () => { if (this.host.showAlmanac) this.host.showAlmanac('tree', 'foes'); });
-    actions.append(this.buyBtn, this.pinBtn, this.almBtn);
+    this.moreBtn = btn('ts-btn ts-more', null, 'More about this lantern');
+    this.moreBtn.setAttribute('aria-expanded', 'false');
+    this.moreBtn.append(glyph(ICON_MORE));
+    this.moreBtn.addEventListener('click', () => this.setExpanded(!this.panelEl.classList.contains('exp')));
+    actions.append(this.buyBtn, this.pinBtn, this.moreBtn, this.almBtn);
     this.pMsg = el('div', 'ts-msg');
     this.pMsg.setAttribute('role', 'status');
     detail.append(this.pKick, this.pName, this.pState, this.pWhy, this.pEvo, this.pDesc, this.pFlav, this.pSteps, this.pMeta, this.pCost, this.pMsg, actions);
@@ -227,14 +234,17 @@ export class TreeScreen {
     this.edge.append(this.edgeArrow, el('span', null, 'Best next'));
     this.edge.addEventListener('click', () => { if (this.model.best) this.select(this.model.best.id, true); });
 
-    const zoom = el('div', 'ts-zoom');
+    const zoom = el('div', 'ts-zoom ts-rail');
+    zoom.setAttribute('role', 'toolbar');
+    zoom.setAttribute('aria-label', 'Lantern Web tools');
     const zin = btn('ts-btn ts-round ts-zx', '+', 'Zoom in');
     const zout = btn('ts-btn ts-round ts-zx', '−', 'Zoom out');
-    const zhome = btn('ts-btn ts-round', '⌂', 'Whole web');
+    const zhome = btn('ts-btn ts-round', null, 'Whole web');
+    zhome.append(glyph(ICON_WEB));
     zin.addEventListener('click', () => this.zoomAt(this.W / 2, this.H / 2, 1.4));
     zout.addEventListener('click', () => this.zoomAt(this.W / 2, this.H / 2, 1 / 1.4));
     zhome.addEventListener('click', () => this.home());
-    zoom.append(zin, zout, zhome);
+    zoom.append(this.nextBtn, zin, zout, zhome, idx, help);
     this.zoomEl = zoom;
 
     // sheets: index + help/legend
@@ -280,7 +290,7 @@ export class TreeScreen {
     this.srEl = el('div', 'ts-sr');
     this.srEl.setAttribute('aria-live', 'polite');
 
-    root.append(map, bar, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.srEl);
+    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.srEl);
     layer.append(root);
     this.bindInput(map);
   }
@@ -326,6 +336,8 @@ export class TreeScreen {
     this.W = Math.max(1, r.width);
     this.H = Math.max(1, r.height);
     this.root.classList.toggle('ts-port', this.W <= 600 && this.H > this.W);
+    this.small = this.W <= 640 || this.H <= 520;
+    this.root.classList.toggle('ts-small', this.small);
     this.root.classList.toggle('ts-short', this.H <= 520 && this.W > this.H && this.W <= 1000); // phone-landscape sized only: a wide short desktop window keeps the roomy layout
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
     this.canvas.width = Math.round(this.W * this.DPR);
@@ -456,7 +468,8 @@ export class TreeScreen {
     const [hx, hy] = this.toS(0, 0);
     const R = (240 + 260 * p) * z + 20;
     const pool = c.createRadialGradient(hx, hy, 0, hx, hy, R);
-    pool.addColorStop(0, `rgba(255,179,90,${0.16 + 0.26 * p})`);
+    const ga = this.small ? 0.6 : 1; // C3: the hub wash is calmer on small screens
+    pool.addColorStop(0, `rgba(255,179,90,${(0.16 + 0.26 * p) * ga})`);
     pool.addColorStop(1, 'rgba(255,154,58,0)');
     c.fillStyle = pool;
     c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
@@ -473,7 +486,9 @@ export class TreeScreen {
     const far = lod === 'far';
     const batches = new Map();
     const hw = W / 2, hh = H / 2, cx0 = cam.x, cy0 = cam.y;
-    const dot = (style, dim, x, y, r) => { const k = dim ? `D${style}` : style; let pa = batches.get(k); if (!pa) { pa = new Path2D(); batches.set(k, pa); } pa.moveTo(x + r, y); pa.arc(x, y, r, 0, 6.2832); };
+    const selR = this.selected ? m.region(this.selected) : null; // C3: while a lantern is selected, other constellations step back
+    const DIMA = [1, 0.2, 0.35, 0.55];
+    const dot = (style, dim, x, y, r) => { const k = dim ? `D${dim}${style}` : style; let pa = batches.get(k); if (!pa) { pa = new Path2D(); batches.set(k, pa); } pa.moveTo(x + r, y); pa.arc(x, y, r, 0, 6.2832); };
     const ids = this.idsIn(vx0, vy0, vx1, vy1);
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
@@ -483,7 +498,7 @@ export class TreeScreen {
       const ce = m.cache[id];
       const s = ce.s;
       if (s === 'fog' && lod !== 'near') continue;
-      const dim = this.onlyLight && s !== 'ready';
+      const dim = this.onlyLight && s !== 'ready' ? 1 : selR && s !== 'ready' && m.region(id) !== selR ? 2 : far && !this.selected && s === 'notyet' ? 3 : 0;
       if (far) {
         if (s === 'notyet') dot('rgba(150,160,190,.30)', dim, sx, sy, 1.4);
         else if (s === 'challenge') dot('#6fd3c5', dim, sx, sy, 2.4);
@@ -496,7 +511,7 @@ export class TreeScreen {
         continue;
       }
       const r = this.radiusOf(n, lod);
-      c.globalAlpha = dim ? 0.2 : 1;
+      c.globalAlpha = DIMA[dim];
       if (s === 'ready') { this.affordMark(c, sx, sy, r, pulse, false, best && best.id === id); this.animNeeded = true; }
       this.nodeShape(c, n, sx, sy, r, s, ce, id, lod);
       if (ce.fresh) this.newFlag(c, sx, sy - r - 9);
@@ -507,7 +522,7 @@ export class TreeScreen {
     if (far) {
       const halo = batches.get('rgba(255,179,90,.22)'); // halos first, under the dots
       if (halo) { c.fillStyle = 'rgba(255,179,90,.22)'; c.fill(halo); batches.delete('rgba(255,179,90,.22)'); }
-      for (const [k, pa] of batches) { const d = k[0] === 'D'; c.globalAlpha = d ? 0.2 : 1; c.fillStyle = d ? k.slice(1) : k; c.fill(pa); }
+      for (const [k, pa] of batches) { const d = k[0] === 'D'; c.globalAlpha = d ? DIMA[Number(k[1])] : 1; c.fillStyle = d ? k.slice(2) : k; c.fill(pa); }
       c.globalAlpha = 1;
       if (this.selected) { const n = this.def.nodes[this.selected]; const [sx, sy] = this.toS(n.x, n.y); c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, 8, 0, 7); c.stroke(); }
     }
@@ -516,8 +531,8 @@ export class TreeScreen {
     // hub lantern: brightens with total progress
     const lr = Math.max(8, 26 * z);
     const hl = c.createRadialGradient(hx, hy - lr * 0.2, 0, hx, hy, lr * 1.8);
-    hl.addColorStop(0, `rgba(255,244,208,${0.6 + 0.4 * p})`);
-    hl.addColorStop(0.5, `rgba(255,199,102,${0.35 + 0.5 * p})`);
+    hl.addColorStop(0, `rgba(255,244,208,${(0.6 + 0.4 * p) * (this.small ? 0.8 : 1)})`);
+    hl.addColorStop(0.5, `rgba(255,199,102,${(0.35 + 0.5 * p) * ga})`);
     hl.addColorStop(1, 'rgba(255,154,46,0)');
     c.fillStyle = hl;
     c.beginPath(); c.arc(hx, hy, lr * 1.8, 0, 7); c.fill();
@@ -807,12 +822,15 @@ export class TreeScreen {
     for (const r of byNear) {
       if (r.kind === 'rings' || !r.ids.length) continue; // the hub needs no name: it is the lantern
       if (r.r * z < 26) continue; // too small on screen: no name, zoom in to read
-      const [sx, sy] = this.toS(r.x, r.y - (r.kind === 'cluster' ? r.r + 26 : lod === 'far' ? r.r * 0.8 : 0));
-      if (sx < -100 || sx > this.W + 100 || sy < -40 || sy > this.H + 40) continue;
-      const fs = Math.max(14, Math.min(22, 70 * z));
+      let [sx, sy] = this.toS(r.x, r.y - (r.kind === 'cluster' ? r.r + 26 : lod === 'far' ? r.r * 0.8 : 0));
+      const [fx0, fy0, fx1, fy1] = this.freeRect();
+      if (sx < fx0 || sx > fx1 || sy < fy0 || sy > fy1) continue; // only the constellations in view
+      const fs = Math.max(11, Math.min(this.small ? 13 : 18, 70 * z));
       c.font = `${fs}px ${FONT_HEAD}`; c.textAlign = 'center';
       const name = r.done ? `${r.name} ✓` : r.name; const nw = c.measureText(name).width;
       const badge = r.light > 0; const bw = badge ? 24 : 0;
+      sx = clamp(sx, fx0 + nw / 2 + 8, Math.max(fx0 + nw / 2 + 8, fx1 - nw / 2 - bw - 8 - (this.small ? 54 : 0))); // a name is never cut off by the edge or hidden under the tools
+      sy = clamp(sy, fy0 + fs / 2 + 6, Math.max(fy0 + fs / 2 + 6, fy1 - fs / 2 - 6));
       const rb = { x0: sx - nw / 2 - 6, x1: sx + nw / 2 + 6 + bw, y0: sy - fs / 2 - 3, y1: sy + fs / 2 + 3 };
       if (rboxes.some((b) => b.x0 < rb.x1 && b.x1 > rb.x0 && b.y0 < rb.y1 && b.y1 > rb.y0)) continue;
       rboxes.push(rb);
@@ -921,17 +939,30 @@ export class TreeScreen {
     this.tabD.setAttribute('aria-selected', String(this.panelMode !== 'goals'));
     this.tabG.setAttribute('aria-selected', String(this.panelMode === 'goals'));
     this.tabD.disabled = !this.selected;
-    this.goalsBtn.classList.toggle('on', this.panelMode === 'goals');
-    this.goalsBtn.setAttribute('aria-pressed', String(this.panelMode === 'goals'));
+    this.panelEl.classList.toggle('goals', this.panelMode === 'goals');
+    this.setExpanded(this.panelMode === 'goals'); // the goals list is a list: always the full sheet
     this.camSig = '';
     this.fr = null;
     this.dirty();
   }
 
+  /** C3: the node sheet is a compact strip on small screens and opens to the full sheet (steps, why, flavour) here; desktop always shows the full docked card. */
+  setExpanded(on) {
+    if (!this.panelEl) return;
+    this.panelEl.classList.toggle('exp', !!on);
+    this.moreBtn.setAttribute('aria-expanded', String(!!on));
+    this.moreBtn.setAttribute('aria-label', on ? 'Less about this lantern' : 'More about this lantern');
+    this.moreBtn.classList.toggle('open', !!on);
+    this.fr = null; this.camSig = '';
+    this.dirty();
+  }
+
   // fly: true = centre it, 'keep' = only if it is off the free part of the screen, false = stay
   select(id, fly = false) {
+    const was = this.selected;
     this.selected = id && this.def.nodes[id] ? id : null;
     this.confirmT = 0;
+    if (this.selected && this.selected !== was && this.panelEl) this.setExpanded(false); // a new lantern starts as the compact strip
     this.panelMode = this.selected ? 'detail' : this.panelMode === 'goals' ? 'goals' : null;
     this.syncPanel();
     if (this.selected) {
@@ -1109,6 +1140,7 @@ export class TreeScreen {
 
   showTip(force) {
     if (!force && store.get(TIP_KEY)) return;
+    if (!force && this.small) return; // C3: one message at a time on small screens: the Next-step bar already says it
     const isNew = this.model.isNew();
     this.tipH.textContent = isNew ? 'Welcome to the Lantern Web' : 'The Lantern Web'; // FM3: copy aligned with the first-death lesson
     this.tipP.textContent = isNew

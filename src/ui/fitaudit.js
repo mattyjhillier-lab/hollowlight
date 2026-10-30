@@ -42,6 +42,7 @@ export function fitAudit(doc = document, win = window, tol = 1.5) {
     let clipped = false, scrX = false, scrY = false; // once inside a scroller, off-box text on that axis is reachable by scrolling, not lost
     for (let a = el; a && a !== doc.body; a = a.parentElement) {
       const c = win.getComputedStyle(a);
+      if (a.dataset && a.dataset.clamp === 'more' && !a.closest('.ts-panel.exp')) { clipped = true; break; } // intentional compact-strip ellipsis with a More chevron (tree node sheet)
       if (c.overflowX === 'visible' && c.overflowY === 'visible') continue;
       const b = a.getBoundingClientRect();
       const isSX = c.overflowX === 'auto' || c.overflowX === 'scroll', isSY = c.overflowY === 'auto' || c.overflowY === 'scroll';

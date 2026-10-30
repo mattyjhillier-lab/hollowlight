@@ -182,3 +182,20 @@ test('1000-node synthetic tree: view + model build fast enough for a phone', () 
   assert.ok(m.best);
   assert.ok(ms < 1500, `${ms.toFixed(0)} ms (npm test runs every file at once; idle ~100-200 ms)`);
 });
+
+test('C3 Lantern Web option A: no second header, right tool rail, compact node strip, capped labels, fade on select', () => {
+  const js = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/ui/treescreen.css', import.meta.url), 'utf8');
+  assert.ok(!/ts-bar'|ts-back|ts-title/.test(js), 'Back / title / toolbar are gone (tab row has Home, Tree, Goals)');
+  assert.match(js, /zoom\.append\(this\.nextBtn, zin, zout, zhome, idx, help\)/, 'rail: best next, zoom, whole web, Spirits, ?');
+  assert.match(js, /host\.nav\.setPurse\(purse\)/, 'purse lives in the tab row');
+  assert.match(js, /Math\.min\(this\.small \? 13 : 18, 70 \* z\)/, 'region name size capped 13 (small) / 18');
+  assert.match(js, /if \(!force && this\.small\) return;/, 'welcome card replaced by the step bar on small screens');
+  assert.match(js, /const DIMA = \[1, 0\.2, 0\.35, 0\.55\]/);
+  assert.match(js, /setExpanded\(on\)/);
+  // the rail and tab buttons keep 44px hit areas; the close button too (existing rule)
+  assert.match(css, /\.ts-btn \{ min-height: 44px; min-width: 44px;/);
+  assert.match(css, /\.ts\.ts-small \.ts-panel:not\(\.exp\) :is\(\.ts-kick, \.ts-why, \.ts-evo, \.ts-flav, \.ts-steps, \.ts-meta, \.ts-cost\) \{ display: none; \}/);
+  assert.match(css, /\.ts:not\(\.ts-small\)\.ts-sel \.ts-zoom \{ right: 364px; \}/, 'desktop: docked card, rail steps left of it');
+  assert.ok(!/\.ts-bar \{|\.ts-title \{/.test(css), 'old toolbar rules removed');
+});
