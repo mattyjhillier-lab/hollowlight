@@ -57,42 +57,16 @@ export function gatedData(allowedEvos) {
   return { ...base, weapons, evolutions };
 }
 
-// ---- soft cap (applied to aggregateMods output): total = cap * (1 - exp(-sum/cap)); negatives pass through.
-export const SOFT = {
-  // percent caps per stat category (the asymptote of the positive total)
-  mod_damage: 20, mod_area: 20, mod_cooldown: 15, mod_speed: 10, mod_pickup: 40, mod_xp: 25, mod_gold: 40, mod_abilityCd: 40,
-  maxHp: 20, levelHeal: 6, heart: 100, magnet: 100, heartHeal: 60, abilityDur: 40,
-  w_power: 25, w_other: 20,
-};
-const sc = (s, cap) => (s <= 0 ? s : cap * (1 - Math.exp(-s / cap)));
-export function softCap(agg, caps = SOFT, scale = 1) {
-  if (!agg) return agg;
-  const o = JSON.parse(JSON.stringify(agg));
-  const P = (v, cap) => 1 + sc((v - 1) * 100, cap * scale) / 100;
-  for (const k of ['damage', 'area', 'speed', 'pickup', 'xp', 'gold']) o.mods[k] = P(agg.mods[k], caps[`mod_${k}`]);
-  for (const k of ['cooldown', 'abilityCd']) { const red = (1 - agg.mods[k]) * 100; o.mods[k] = 1 - sc(red, caps[`mod_${k}`] * scale) / 100; }
-  o.player.maxHp = P(agg.player.maxHp, caps.maxHp);
-  o.player.levelHeal = sc(agg.player.levelHeal, caps.levelHeal * scale);
-  for (const k of ['heart', 'magnet', 'heartHeal']) o.drops[k] = P(agg.drops[k], caps[k]);
-  o.ability.dur = P(agg.ability.dur, caps.abilityDur);
-  for (const w of Object.values(o.weaponBonus)) for (const [stat, b] of Object.entries(w)) b.pct = sc(b.pct, (stat === 'power' ? caps.w_power : caps.w_other) * scale);
-  return o;
-}
+// soft cap + strip live in live-tree.mjs (shared with the live-bot probes)
+import { SOFT, softCap, applyStrip } from './live-tree.mjs';
+export { SOFT, softCap };
 
 // spec: { preset:'none'|'half'|'full'|number, soft?:bool, caps?, scale?, noVerbs?:bool }
 export function buildTree(spec) {
   if (!spec || spec.preset === 'none') return null;
   let agg = aggregateMods(presetTree(treeDef, spec.preset), treeDef, base);
   if (spec.soft) agg = softCap(agg, spec.caps || SOFT, spec.scale || 1);
-  for (const g of spec.strip || []) {
-    if (g === 'rerolls') { agg.meta.rerolls = 0; agg.meta.banishes = 0; }
-    if (g === 'revive') agg.player.revive = 0;
-    if (g === 'perks') { agg.rush = null; agg.evoLuck = 1; }
-    if (g === 'auto') agg.ability.autoHp = 0;
-    if (g === 'heal') { agg.player.levelHeal = 0; agg.drops = { heart: 1, magnet: 1, heartHeal: 1 }; }
-    if (g === 'flat') for (const w of Object.values(agg.weaponBonus)) for (const b of Object.values(w)) b.add = 0;
-    if (g === 'ability') { agg.mods.abilityCd = 1; agg.ability.dur = 1; }
-  }
+  applyStrip(agg, spec.strip);
   return agg;
 }
 

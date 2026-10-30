@@ -21,20 +21,8 @@ const BONDS = [0, 25];
 
 if (!isMainThread) {
   const { playRun } = await import('./bot.mjs'); // env TIER + FOCUS set per worker; GATES=starter
-  const { compileTree, presetTree, aggregateMods } = await import('../src/meta/tree.js');
-  const { loadTree } = await import('../src/meta/treefs.mjs');
-  const { starterNodes } = await import('../src/meta/starter.js');
-  const { tierIndex } = await import('../src/sim/tiers.js');
-  const dir = new URL('../src/data/', import.meta.url);
-  const load = (n) => JSON.parse(readFileSync(new URL(`${n}.json`, dir), 'utf8'));
-  const data = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
-  const composed = loadTree(data); data.tree = composed.live;
-  const def = compileTree(data.tree, data);
-  const treeFor = (name, weapon, tier) => {
-    const own = Object.fromEntries(starterNodes(composed.info, weapon).map((id) => [id, 1]));
-    const t = name === 'none' ? own : { ...presetTree(def, name, true), ...own };
-    return aggregateMods(t, def, data, { tier: tierIndex(tier) });
-  };
+  const { liveTreeFactory } = await import('./live-tree.mjs'); // shared with gates-kits / gates-softcap / gates-ablate
+  const { treeFor } = await liveTreeFactory();
   for (const j of workerData.jobs) {
     const r = playRun(j.hero, j.seed, { weapon: j.weapon, tree: treeFor(j.tree, j.weapon, j.tier), bond: j.bond, endless: !!workerData.endless, assist: !!workerData.assist });
     parentPort.postMessage({ key: j.key, seed: j.seed, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, bossKill: r.marks.bossKill ?? null, minis: r.minis, w: r.weaponIds.length, kills: r.kills, gold: r.gold, ...(r.sitesSum ? { st: { l: r.sitesSum.lamp[0], r: r.sitesSum.road[0], k: r.sitesSum.knot[0], xp: +r.sitesSum.paid.xpL.toFixed(2), g: r.sitesSum.paid.gold, b: r.sitesSum.paid.bless, sh: r.sitesSum.paid.shard }, kd: Math.round(r.hurtBy.knot || 0) } : {}), ...(workerData.endless ? { win: !!r.endless || r.outcome === 'victory', dark: r.endless ? Math.round(r.endless.dark) : null } : {}) });
