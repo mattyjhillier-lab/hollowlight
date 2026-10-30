@@ -25,7 +25,7 @@ export const probe = {
   /** Patch the texture/canvas creators so every bake is tagged without touching each module. */
   hook(scene) {
     if (!this.on || this.hooked) return;
-    this.hooked = true;
+    this.hooked = true; this.scene = scene;
     const tm = scene.textures, self = this;
     for (const name of ['addCanvas', 'createCanvas', 'addBase64', 'addImage']) {
       const orig = tm[name];
@@ -72,8 +72,9 @@ export const probe = {
     const avg = this.am / Math.max(1, this.af);
     let worst = 0; for (let i = 0; i < this.wn; i++) if (this.worst[i] > worst) worst = this.worst[i];
     const m = typeof performance !== 'undefined' && performance.memory ? performance.memory.usedJSHeapSize / 1048576 : -1;
+    let tex = ''; if (this.scene) { try { let b = 0; const L = this.scene.textures.list; for (const k in L) for (const r of L[k].source || []) b += (r.width || 0) * (r.height || 0) * 4; tex = '  tex ~' + ((b * 2) / 1048576).toFixed(0) + ' MB'; } catch (e) { tex = ''; } }
     const lazy = now - this.labelAt < 3000 ? this.label : '-';
-    let s = 'frame ' + avg.toFixed(1) + ' ms  worst10s ' + worst.toFixed(0) + ' ms  heap ' + (m >= 0 ? m.toFixed(0) + ' MB' : 'n/a') + '\nlazy: ' + lazy + '\nlong frames (>' + LONG_MS + ' ms): ' + this.long.length;
+    let s = 'frame ' + avg.toFixed(1) + ' ms  worst10s ' + worst.toFixed(0) + ' ms  heap ' + (m >= 0 ? m.toFixed(0) + ' MB' : 'n/a') + tex + '\nlazy: ' + lazy + '\nlong frames (>' + LONG_MS + ' ms): ' + this.long.length;
     for (const l of this.long.slice(0, 8)) s += '\n ' + (l.at >= 0 ? l.at.toFixed(1) + 's ' : '') + l.ms.toFixed(0) + 'ms ' + (l.tags.length ? l.tags.slice(0, 4).join(', ') : '(no tag)');
     if (this.el) this.el.textContent = s; // textContent only: tags are our own labels, never untrusted input
     this.acc = 0; this.af = 0; this.am = 0;

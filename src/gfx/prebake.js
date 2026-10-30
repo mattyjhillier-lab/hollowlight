@@ -25,7 +25,8 @@ export const GROUND_STEPS = 140; // generator slices for both Deep Forest Floor 
 const frame = () => new Promise((r) => { let d = false; const f = () => { if (!d) { d = true; r(); } }; if (typeof requestAnimationFrame === 'function') requestAnimationFrame(f); setTimeout(f, 80); });
 
 export class Prebake {
-  constructor(scene) {
+  constructor(scene, owned = null) {
+    this.owned = owned; this.peakMB = 0; // owned(): weapon ids this lantern can be offered (null = all); only their art is baked
     this.s = scene; this.done = false; this.audioDone = false; this.p = 0; this.label = ''; this.budget = 5; this.fg = false;
     this.listeners = new Set(); this.main = null; this.cur = null; this.doneW = 0; this.total = 1; this.err = []; this.lazy = null;
   }
@@ -34,7 +35,15 @@ export class Prebake {
   foreground() { this.fg = true; this.budget = 14; SUM_ART.fast = true; }
 
   onProgress(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
+  /** Estimated texture memory in MB: every texture source w*h*4, x2 (CPU canvas + GPU copy). Peak is kept in peakMB (probe / measurement). */
+  estMB() {
+    let b = 0;
+    try { const L = this.s.textures.list; for (const k in L) for (const src of L[k].source || []) b += (src.width || 0) * (src.height || 0) * 4; } catch (e) { /* estimate only */ }
+    const mb = (b * 2) / 1048576; if (mb > this.peakMB) this.peakMB = mb; return mb;
+  }
+  has(id) { let o = null; try { o = typeof this.owned === 'function' ? this.owned() : this.owned; } catch (e) { o = null; } return !Array.isArray(o) || o.includes(id); }
   emit() {
+    this.estMB();
     let f = this.cur ? this.cur.frac() : 0; if (!(f >= 0)) f = 0;
     this.p = Math.min(this.done ? 1 : 0.99, (this.doneW + (this.cur ? this.cur.w * Math.min(1, f) : 0)) / this.total);
     for (const fn of this.listeners) fn(this.p, this.label);
@@ -52,7 +61,7 @@ export class Prebake {
       { label: 'Waking the spirits', w: 8, frac: () => 0, run: async () => { if (s.bootBake) await s.bootBake; } },
       { label: 'Painting the forest floor', w: 30, frac: () => (this.lazy ? Math.min(1, this.lazy.n / GROUND_STEPS) : 0), run: async () => {
         const b = s.bState;
-        if (!b || b.ready >= 1 || s.flatGround) return;
+        if (!b || b.ready >= 1 || s.flatGround || !s.gbOn) return; // Low tier / flat ground never shows the Deep Forest tiles: no 2 x 4 MB canvases
         if (!b.lazy) b.lazy = makeGroundLazy(s);
         this.lazy = b.lazy;
         while (!b.lazy.done) { probe.span('prebake:ground-tile', () => b.lazy.step(self.budget)); self.emit(); await self.idle(); }
@@ -62,27 +71,33 @@ export class Prebake {
       { label: 'Calling the summons', w: 32, frac: () => { const w = this.want(); return w.length ? w.filter((k) => SUM_ART.kinds.has(k)).length / w.length : 1; }, run: async () => {
         const sa = s.sumAtlas; if (!sa) return;
         await bakeWolfArt(sa);
-        const bolts = Object.keys(GLYPH_KINDS).filter((k) => k !== 'base');
-        bakeRavenArt(sa, true); bakeOrbitArt(sa, true); bakeBoltArt(sa, null);
-        for (const e of bolts) bakeBoltArt(sa, e);
-        for (const e of Object.keys(EVO_KINDS)) bakeWolfEvo(sa, e);
-        const until = performance.now() + 30000;
-        while (performance.now() < until && !SUM_ART.error && this.want().some((k) => !SUM_ART.kinds.has(k))) { self.emit(); await frame(); }
+        const one = async (kinds, go) => { // one weapon's frames at a time (a few SVG decodes in flight, not ten)
+          if (kinds.every((k) => SUM_ART.kinds.has(k))) return;
+          go(); const until = performance.now() + 20000;
+          while (performance.now() < until && !SUM_ART.error && kinds.some((k) => !SUM_ART.kinds.has(k))) { self.emit(); await frame(); }
+          await self.idle();
+        };
+        if (this.has('raven_flock')) await one(this.wantKinds('raven_flock'), () => bakeRavenArt(sa, true));
+        if (this.has('holy_orbit')) await one(this.wantKinds('holy_orbit'), () => bakeOrbitArt(sa, true));
+        if (this.has('spirit_bolts')) for (const e of [null, ...Object.keys(GLYPH_KINDS).filter((k) => k !== 'base')]) await one(e ? GLYPH_KINDS[e] : GLYPH_KINDS.base, () => bakeBoltArt(sa, e));
+        if (this.has('ghost_wolves') && SUM_ART.wolf) for (const e of Object.keys(EVO_KINDS)) await one(EVO_KINDS[e], () => bakeWolfEvo(sa, e));
       } },
-      { label: 'Waking the Elder Treant', w: 12, frac: () => 0, run: async () => { if (s.bossView && s.bossView.bakeNow) await s.bossView.bakeNow(s.quality.tier); } },
+      { label: 'Waking the Elder Treant', w: 12, frac: () => 0, run: async () => { if (s.phone || s.quality.tier === 'low') return; if (s.bossView && s.bossView.bakeNow) await s.bossView.bakeNow(s.quality.tier); } /* phones / Low: the Treant bakes at 10:00 as before (7 MB atlas x2 stays out of the start-up peak) */ },
       { label: 'Gathering the spirits', w: 4, frac: () => 0, run: async () => {
-        for (const p of Object.values(s.pools || {})) { if (p.reserve) { p.reserve(6); await self.idle(); } }
-        if (s.ribLayer && s.ribLayer.reserve) { s.ribLayer.reserve(240); await self.idle(); }
+        for (const p of Object.values(s.pools || {})) { if (p.reserve) { p.reserve(s.phone ? 3 : 6); await self.idle(); } }
+        if (s.ribLayer && s.ribLayer.reserve) { s.ribLayer.reserve(s.phone ? 100 : 240); await self.idle(); }
       } },
       { label: 'Warming the lightning', w: 6, frac: () => 0, run: async () => { await this.warmFx(); } },
     ];
   }
 
-  want() {
-    const k = [...Object.values(RAVEN_KINDS).flat(), ...Object.values(ORBIT_KINDS).flat(), ...Object.values(GLYPH_KINDS).flat()];
-    if (SUM_ART.wolf) for (const v of Object.values(EVO_KINDS)) k.push(...v);
-    return k;
+  wantKinds(w) {
+    if (w === 'raven_flock') return Object.values(RAVEN_KINDS).flat();
+    if (w === 'holy_orbit') return Object.values(ORBIT_KINDS).flat();
+    if (w === 'spirit_bolts') return Object.values(GLYPH_KINDS).flat();
+    return SUM_ART.wolf ? Object.values(EVO_KINDS).flat() : [];
   }
+  want() { return ['raven_flock', 'holy_orbit', 'spirit_bolts', 'ghost_wolves'].filter((w) => this.has(w)).flatMap((w) => this.wantKinds(w)); }
 
   // a dummy Storm Thread bolt on a scratch Graphics (same blend as the fx layer), over two real frames, then removed
   async warmFx() {
