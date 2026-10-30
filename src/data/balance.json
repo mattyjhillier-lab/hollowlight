@@ -111,6 +111,7 @@
   "gemCap": 350,
   "weaponCardWeight": 4,
   "evoTriggerRanks": 16,
+  "evoTriggerPerWeapon": 0,
   "playerIframes": 0.4,
   "pickupRadius": 38,
   "drops": {
