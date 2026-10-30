@@ -31,7 +31,7 @@ test('the trigger is reachable: every weapon has at least evoTriggerRanks ranks 
 });
 
 // Known misses at an extreme spread (reported in docs/design/fv-data/evo-flow-sweeps.md). key = evolution|spread|scenario.
-const KNOWN_LOW = new Set(['sanctum_halo|no-radius|single']); // a dummy parked 30 px out is inside the Halo ring but on the base ring's path
+const KNOWN_LOW = new Set([]); // (Sanctum Halo no-radius single fixed by the solo ground boost; see the explicit test below)
 const KNOWN_HIGH = new Set([]);
 const SCEN = ['single', 'stream10'];
 test('every evolution stays >= its base weapon (floor) and <= ~3x (cap) at every trigger spread, single + stream10', () => {
@@ -45,9 +45,16 @@ test('every evolution stays >= its base weapon (floor) and <= ~3x (cap) at every
       const v = avg((sd) => measure(e.weapon, eid, sc, ranks, sd, secs));
       const key = `${eid}|${name}|${sc}`, r = v / b;
       if (r < 0.95 && !KNOWN_LOW.has(key)) lows.push(`${key} ${r.toFixed(2)}x`);
-      if (r > 3.4 && !KNOWN_HIGH.has(key)) highs.push(`${key} ${r.toFixed(2)}x`);
+      if (r > (sc === 'stream40' ? 3.2 : 3.4) && !KNOWN_HIGH.has(key)) highs.push(`${key} ${r.toFixed(2)}x`);
     }
   }
   assert.deepEqual(lows, [], `below base: ${lows.join('; ')}`);
   assert.deepEqual(highs, [], `over the cap: ${highs.join('; ')}`);
+});
+
+test('Sanctum Halo is never below its base ring for a lone foe, even with Orbit size at 0 (solo ground boost)', () => {
+  for (const r of [{ count: 5, power: 5, radius: 0, speed: 5 }, { count: 4, power: 4, radius: 0, speed: 4 }, { count: 3, power: 5, radius: 0, speed: 5 }]) {
+    const b = measure('holy_orbit', null, 'single', r, 1, 8), v = measure('holy_orbit', 'sanctum_halo', 'single', r, 1, 8);
+    assert.ok(v >= b, `${JSON.stringify(r)} ${v.toFixed(0)} vs ${b.toFixed(0)}`);
+  }
 });
