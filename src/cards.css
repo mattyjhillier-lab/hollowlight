@@ -227,6 +227,7 @@ html.touch .c-key { display: none; }
 }
 /* final QA: at game size (640x360) the long weapon tag 'CHAIN LIGHTNING' ellipsised on stat cards; tighter tracking on small stages keeps it whole */
 @media (max-width: 700px) and (min-aspect-ratio: 1/1) { .layer-levelup .c-tag:not(.lg-badge) { letter-spacing: .05em; } }
+@media (max-width: 340px) { .layer-levelup .c-tag:not(.lg-badge) { letter-spacing: .03em; white-space: normal; overflow: visible; line-height: 1.15; } } /* 320 px: a long weapon tag wraps instead of clipping */
 
 /* fit audit: at larger text the weapon tag on a stat card wraps instead of clipping */
 :root:is([data-text="large"], [data-text="larger"]) .layer-levelup .c-tag:not(.lg-badge) { white-space: normal; line-height: 1.2; overflow: visible; }

@@ -160,5 +160,5 @@ html.touch .overlay.u4.u4-settingsscreen, .overlay.u4.u4-settingsscreen { z-inde
 @media (max-width: 420px) { .overlay.u4 .u4-body .lg-tab { flex: 0 0 auto; } .overlay.u4 .lg-tabs { overflow-x: auto; scrollbar-width: none; } .overlay.u4 .u4-seg__opt { padding: 0 .15em; min-width: min-content; } }
 
 /* fit audit: the pause screen scrolls instead of clipping on small phones / larger text */
-.overlay.u4.u4-pausescreen { overflow-y: auto; justify-content: safe center; }
+html .overlay.u4.u4-pausescreen { overflow-y: auto; justify-content: safe center; } /* html prefix: beats html.touch .overlay.u4 (overflow hidden) so the pause screen scrolls instead of cutting off Full screen */
 .overlay.u4.u4-pausescreen .lg-panel { max-height: none; }
