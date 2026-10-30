@@ -320,6 +320,7 @@ Weapon combining, boss chest rewards, item/passive list, chapters 2-8, other 8 c
 - BUG (boss agent report): results screen 'Main menu' button text is cut off on phone landscape - fix in the character-system results UI chunk.
 - BUILD ORDER after character system v2: EXTRAS (cosmetics wardrobe + Wear drawer, Gentle Light assist, Endless Dusk) per docs/design/extras-v1.md; then final retune; then final verification.
 
+TRADEMARK SEARCH DROPPED 2026-10-30 (Matt; revisit if public or monetised; see LOCKED).
 ANSWERED 2026-10-30 (Matt): big-text cards = rows; map events = accept for now; Long Night gap = accept (see LOCKED 'QUEUE DECISIONS ANSWERED').
 
 ## Decisions waiting (overnight left agent, 2026-10-28): NOT built, no locked design. Each is one tap; recommended first.
