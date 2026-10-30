@@ -1,8 +1,8 @@
 /* ---------- HUD-1: Lantern & Thread (docs/mockups/hud-sheet, Direction A) ---------- */
 /* One unit --hu = 1 sheet pixel. Desktop sheet = 1280 wide; phones use 1px (their own sheet layouts). No backdrop-filter, no CSS filter. */
 .hud { position: absolute; inset: 0; --hu: clamp(.7px, .08cqw, 1.5px);
-  --ml: max(calc(20 * var(--hu)), env(safe-area-inset-left, 0px)); --mr: max(calc(20 * var(--hu)), env(safe-area-inset-right, 0px));
-  --mt: max(calc(16 * var(--hu)), env(safe-area-inset-top, 0px)); --mb: max(calc(20 * var(--hu)), env(safe-area-inset-bottom, 0px));
+  --ml: max(calc(20 * var(--hu)), var(--sa-l)); --mr: max(calc(20 * var(--hu)), var(--sa-r));
+  --mt: max(calc(16 * var(--hu)), var(--sa-t)); --mb: max(calc(20 * var(--hu)), var(--sa-b));
   --font-num: "Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif; }
 .hud svg { overflow: visible; display: block; }
 .h-num { font-family: var(--font-num); font-weight: 900; color: var(--cream); font-variant-numeric: tabular-nums; line-height: 1; -webkit-text-stroke: calc(3.4 * var(--hu)) var(--ink); paint-order: stroke fill; letter-spacing: .01em; }
@@ -84,7 +84,7 @@
 
 /* compact landscape (phones and small windows): the sheet's phone-landscape layout at 1px per unit */
 @container (max-width: 899px) {
-  .hud { --hu: 1px; --ml: max(12px, env(safe-area-inset-left, 0px)); --mr: max(12px, env(safe-area-inset-right, 0px)); --mt: max(10px, env(safe-area-inset-top, 0px)); --mb: max(12px, env(safe-area-inset-bottom, 0px)); }
+  .hud { --hu: 1px; --ml: max(12px, var(--sa-l)); --mr: max(12px, var(--sa-r)); --mt: max(10px, var(--sa-t)); --mb: max(12px, var(--sa-b)); }
   .h-lantern { width: 210px; height: 60px; }
   .h-lamp { left: 10px; top: -2px; width: 41px; height: 56px; }
   .h-hp { left: 58px; top: 6px; } .h-hpnum { font-size: 22px; }
@@ -102,7 +102,7 @@
 }
 /* portrait phones: lantern + moon-pill + pause on one row, full-width thread, strip + coin chip under it */
 @media (max-aspect-ratio: 1/1) {
-  .hud { --hu: 1px; --ml: max(12px, env(safe-area-inset-left, 0px)); --mr: max(12px, env(safe-area-inset-right, 0px)); --mt: max(16px, env(safe-area-inset-top, 0px)); --mb: max(12px, env(safe-area-inset-bottom, 0px)); }
+  .hud { --hu: 1px; --ml: max(12px, var(--sa-l)); --mr: max(12px, var(--sa-r)); --mt: max(16px, var(--sa-t)); --mb: max(12px, var(--sa-b)); }
   .h-lantern { top: calc(var(--mt) + 6px); width: 132px; height: 54px; }
   .h-lamp { left: 8px; top: -2px; width: 40px; height: 54px; } .h-hp { left: 56px; top: 8px; } .h-hpnum { font-size: 24px; } .h-hpmax { display: none; }
   .h-thread { left: 32px; top: 66px; width: calc(100cqw - var(--ml) - var(--mr) - 32px); height: 8px; }

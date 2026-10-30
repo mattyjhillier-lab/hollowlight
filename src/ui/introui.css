@@ -1,6 +1,6 @@
 /* FIX3 new-feature card: full screen, warm lantern glass; the big button is >= 44 px; fits 320 px wide and 812x375 landscape. */
 .layer-intro { position: absolute; inset: 0; z-index: 80; background: rgba(6, 9, 16, .86); padding: 0; }
-.fx3 { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: max(10px, env(safe-area-inset-top, 0px)) 14px max(10px, env(safe-area-inset-bottom, 0px)); overflow: auto; cursor: pointer; animation: fx3-in .22s ease-out both; }
+.fx3 { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: max(10px, var(--sa-t)) 14px max(10px, var(--sa-b)); overflow: auto; cursor: pointer; animation: fx3-in .22s ease-out both; }
 .fx3.lg-calm { animation: none; }
 .fx3-panel { width: min(460px, 100%); max-height: 100%; overflow: auto; text-align: center; }
 .fx3-body { display: flex; flex-direction: column; align-items: center; gap: 12px; }

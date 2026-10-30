@@ -6,7 +6,7 @@ import { applyCssPalette } from '../gfx/palette.js';
 import { el, kitRoot, panel, button, toggle, tabs, slider, divider, badge, pips, wick, withTooltip, tooltip, card, icon, wordmark } from './kit.js';
 
 const STYLE = `
-#kitpage { position: fixed; inset: 0; overflow: auto; color: var(--lg-text); padding: max(16px, env(safe-area-inset-top)) 16px 40px;
+#kitpage { position: fixed; inset: 0; overflow: auto; color: var(--lg-text); padding: max(16px, var(--sa-t)) 16px 40px;
   background: radial-gradient(ellipse 60% 45% at 18% 8%, rgba(255, 171, 58, .18), transparent 70%), radial-gradient(ellipse 90% 70% at 70% 90%, #1d2433, transparent 75%), linear-gradient(180deg, #232b3c, #161c2a 60%, #0e121b); }
 #kitpage .head { max-width: 1180px; margin: 0 auto 30px; display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: center; justify-content: space-between; }
 #kitpage .head .lg-wordmark { width: min(100%, 470px); }

@@ -2,7 +2,7 @@
    Lantern Glass kit look; locked fonts and colours only; no raster except the hero portraits. Scoped under .overlay.u3. */
 
 /* ---------- title: top bar (chip left, purses right) ---------- */
-.overlay.u3 .fd-top { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); left: clamp(10px, 1.6vw, 18px); right: clamp(10px, 1.6vw, 18px); display: flex; align-items: center; justify-content: space-between; gap: 10px; pointer-events: none; z-index: 2; }
+.overlay.u3 .fd-top { position: absolute; top: max(12px, var(--sa-t)); left: clamp(10px, 1.6vw, 18px); right: clamp(10px, 1.6vw, 18px); display: flex; align-items: center; justify-content: space-between; gap: 10px; pointer-events: none; z-index: 2; }
 .overlay.u3 .fd-top > * { pointer-events: auto; }
 .overlay.u3 .fd-chip { display: flex; align-items: center; gap: 8px; min-height: 48px; min-width: 44px; max-width: min(60vw, 280px); padding: 3px 18px 3px 6px; border-radius: 99px; cursor: pointer; text-align: left;
   color: var(--lg-text); border: 1.5px solid #8d6c34; background: rgba(12, 9, 8, .55); box-shadow: var(--lg-rim), 0 4px 12px rgba(0, 0, 0, .35); -webkit-tap-highlight-color: transparent; font: inherit; }

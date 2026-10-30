@@ -9,7 +9,7 @@
   background: radial-gradient(ellipse 54% 50% at 50% 46%, rgba(255, 171, 58, .13), transparent 72%), linear-gradient(180deg, rgba(10, 14, 24, .88), rgba(8, 11, 20, .95));
   -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: safe center;
   overflow-y: auto; /* final QA: 3 gold + 3 stat cards at 640x360 without touch were taller than the view and centred off both edges (title and Reroll unreachable) */
-  padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  padding: max(10px, var(--sa-t)) max(12px, var(--sa-r)) max(10px, var(--sa-b)) max(12px, var(--sa-l));
   gap: calc(10 * var(--u));
 }
 .layer-levelup .lu-head { display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); text-align: center; }

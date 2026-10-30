@@ -1,9 +1,9 @@
 /* Persistent menu tab bar (src/ui/menunav.js). Real pixels, not em: tap targets stay >= 44px on any screen. */
-.mnav { position: absolute; left: 0; right: 0; top: 0; height: 46px; z-index: 65; display: flex; gap: 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: env(safe-area-inset-top, 0px) 4px 0; box-sizing: content-box;
+.mnav { position: absolute; left: 0; right: 0; top: 0; height: 46px; z-index: 65; display: flex; gap: 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: var(--sa-t) 4px 0; box-sizing: content-box;
   background: #0b101cf5; border-bottom: 1px solid #d8b26a55; pointer-events: auto; }
 .mnav__tab { flex: 1 0 auto; min-width: 44px; min-height: 44px; margin: 1px 0; padding: 0 10px; font: 700 clamp(11px, 3vw, 15px)/1.2 var(--font-body, system-ui, sans-serif); color: #f3e7cc; background: transparent;
   border: 1px solid transparent; border-radius: 10px; cursor: pointer; white-space: nowrap; pointer-events: auto; }
 .mnav__tab:hover { background: #ffffff14; }
 .mnav__tab:focus-visible { outline: 2px solid #ffd98a; outline-offset: -2px; }
 .mnav__tab.is-on { background: #ffd98a; color: #1a1020; border-color: #ffd98a; }
-#ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: calc(47px + env(safe-area-inset-top, 0px)); }
+#ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: calc(47px + var(--sa-t)); }
