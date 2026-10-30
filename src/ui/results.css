@@ -181,3 +181,21 @@ html.reduced-motion .overlay.u6 * { transition: none !important; animation: none
 
 /* fit audit: chip values / labels wrap instead of sticking out of their chip */
 .overlay.u6 .u6-chip__val, .overlay.u6 .u6-chip__lab { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+
+/* ui-fix: chips grow instead of clipping (narrow phones + Larger text). Words never split mid-word; the main column scrolls if the content is taller than the screen. */
+.overlay.u6 .u6-chip__val, .overlay.u6 .u6-chip__lab { overflow-wrap: break-word; hyphens: manual; }
+.overlay.u6 .u6-main { align-items: start; }
+@media (max-width: 400px) {
+  .overlay.u6 .u6-chip { padding: 4px 6px; }
+  .overlay.u6 .u6-chip__lab { letter-spacing: .02em; font-size: calc(var(--fs-small, 13px) * .95); }
+  .overlay.u6 .u6-chip__val { font-size: clamp(18px, 3.4vh, 26px); }
+  .overlay.u6 .u6-chips { gap: 6px; }
+}
+@media (max-width: 400px) and (orientation: portrait) {
+  .overlay.u6 .u6-panel .lg-panel__body { gap: 5px; }
+  .overlay.u6 .u6-timeval { font-size: clamp(30px, 5vh, 40px); }
+  .overlay.u6 .u6-chip { padding: 3px 6px; gap: 0; }
+  .overlay.u6 .u6-chip__val { font-size: clamp(17px, 3vh, 22px); line-height: 1; }
+  .overlay.u6 h2.u6-title { font-size: clamp(22px, 6.4vw, 30px); }
+  .overlay.u6 .u6-lamp { width: clamp(44px, 8vh, 60px); }
+}

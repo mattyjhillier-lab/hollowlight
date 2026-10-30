@@ -170,6 +170,10 @@ export async function fitSweepRun(app, doc = document, win = window, sizes = ['n
     app.togglePause(); await wait(600); note(`${sz}/pause`, fitAudit(doc, win).concat(layoutAudit(doc, win))); app.togglePause(); await wait(300);
     const sim = app.sim;
     if (sim && sim.state === 'running') { sim.beginLevelUp(); ui.showLevelUp(sim); await wait(900); note(`${sz}/levelup`, fitAudit(doc, win).concat(layoutAudit(doc, win))); ui.hideLevelUp(); sim.state = 'running'; }
+    if (ui.wPlate) { // whisper bubble: a long two-line plate must fit the screen at every text size
+      ui.wPlate.show({ id: 'move', parts: [{ text: 'Walk with ' }, { key: 'WASD' }, { text: ' or the arrow keys, the spirits follow your light' }], w: 'Take it slow. The dark will wait for you a little while.', skip: 'tap to hide' }, 1, false, []);
+      await wait(600); note(`${sz}/whisper`, fitAudit(doc, win).concat(layoutAudit(doc, win))); ui.wPlate.show(null, 0, false, []);
+    }
     for (const id of ['lamp', 'road', 'knot', 'blessing', 'evolution', 'shard', 'ability']) { // FIX3 new-feature cards: fit + the big button is >= 44 px
       app.introReplay(); const want = ['lamp', 'road', 'knot', 'blessing', 'evolution', 'shard', 'ability'].indexOf(id);
       for (let i = 0; i < want; i++) { await wait(450); if (ui.introView) ui.introView.finish(); }

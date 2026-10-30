@@ -31,7 +31,7 @@ for (const [name, w, h, dpr, mobile] of sizes) {
   await send('Page.navigate', { url: `http://localhost:${port}/?debug=1${mode === 'run' ? '&auto=wren&seed=1&t=200&god=1' : ''}` });
   for (let i = 0; i < 200; i++) { if (await ev('!!(window.__app && window.__app.ui && window.__fitSweep)')) break; await sleep(500); }
   await sleep(1500);
-  const r = JSON.parse(await ev(mode === 'run' ? '__fitSweepRun().then(r=>JSON.stringify(r))' : '__fitSweep().then(r=>JSON.stringify(r))'));
+  const r = JSON.parse(await ev(mode === 'run' ? `__fitSweepRun(${process.env.TEXTS ? JSON.stringify(process.env.TEXTS.split(',')) : 'undefined'}).then(r=>JSON.stringify(r))` : '__fitSweep().then(r=>JSON.stringify(r))'));
   bad += r.problems;
   console.log(mode, name, r.problems ? JSON.stringify(r.rep) : 'clean');
   if (mode === 'menu' && mobile) { // self-test: a deliberately gutter-ed stage must be detected on a phone-shaped screen

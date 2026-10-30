@@ -47,9 +47,15 @@ const FALLBACK = {
   heal: (d) => [P(d, 'M0 17 C-18 4 -17 -12 -8 -14 C-3 -15 0 -11 0 -8 C0 -11 3 -15 8 -14 C17 -12 18 4 0 17Z', { fill: ROSE, stroke: '#7a2540', ...OL(3) }),
     P(d, 'M-9 -8 C-12 -6 -12 -1 -10 1', { fill: 'none', stroke: '#fff', 'stroke-opacity': 0.6, ...OL(2) })],
   gold: (d) => [emblem(d, 'coin', 40)], // brass coin (never evolution gold)
-  shard: (d) => [P(d, 'M0 -19 L12 -4 L0 19 L-12 -4Z', { fill: TEAL, stroke: '#1f5f58', ...OL(2.8) }),
-    P(d, 'M0 -19 L0 19 M-12 -4 H12', { fill: 'none', stroke: '#e6fffa', 'stroke-opacity': 0.55, 'stroke-width': 1.4 }),
-    P(d, 'M-3 -12 L-7 -4 L-4 -4Z', { fill: '#fff', 'fill-opacity': 0.7 })],
+  // Soul shard: a chunky faceted crystal of lantern light (cream-amber, brown tinted outline) with a small flame held inside and a rim glint
+  shard: (d) => [
+    mk(d, 'circle', { r: 20, fill: '#ffc766', 'fill-opacity': 0.18 }),
+    P(d, 'M0 -20 L11 -9 L13 4 L0 20 L-13 4 L-11 -9Z', { fill: '#f6d9a0', stroke: '#7a4a18', ...OL(2.8) }),
+    P(d, 'M0 -20 L-11 -9 L-4 -4 L0 -20 L4 -4 L11 -9Z', { fill: '#fff1cf', 'fill-opacity': 0.9, stroke: '#7a4a18', ...OL(1.4) }),
+    P(d, 'M-4 -4 L0 20 L4 -4Z M-13 4 L-4 -4 L0 20Z', { fill: '#e9b867', 'fill-opacity': 0.75 }),
+    P(d, 'M0 -2 C-4 3 -4 8 0 10 C4 8 4 3 0 -2Z', { fill: '#ffab3a', stroke: '#9a3a0c', ...OL(1.2) }),
+    P(d, 'M0 3 C-1.5 5 -1.5 7 0 8 C1.5 7 1.5 5 0 3Z', { fill: '#fff6c8' }),
+    P(d, 'M-8 -10 L-10 -3', { fill: 'none', stroke: '#fff', 'stroke-opacity': 0.85, ...OL(1.8) })],
 };
 
 const star = (d, x, y, r) => P(d, `M${x} ${y - r} L${x + r * 0.28} ${y - r * 0.28} L${x + r} ${y} L${x + r * 0.28} ${y + r * 0.28} L${x} ${y + r} L${x - r * 0.28} ${y + r * 0.28} L${x - r} ${y} L${x - r * 0.28} ${y - r * 0.28}Z`, { fill: '#fff3c8', stroke: GOLD, 'stroke-width': 1 });
@@ -58,7 +64,7 @@ const star = (d, x, y, r) => P(d, `M${x} ${y - r} L${x + r * 0.28} ${y - r * 0.2
 export function iconSpec(card) {
   const k = card && card.kind;
   if (k === 'blessing') return { type: 'blessing', id: card.blessId, ring: CREAM };
-  if (k === 'fallback') return { type: 'fallback', id: card.fallback, ring: card.fallback === 'heal' ? ROSE : card.fallback === 'gold' ? BRASS : TEAL };
+  if (k === 'fallback') return { type: 'fallback', id: card.fallback, ring: card.fallback === 'heal' ? ROSE : card.fallback === 'gold' ? BRASS : '#ffc766' };
   const kind = EMBLEM_OF[card && card.weaponId] || 'sanctuary';
   if (k === 'evolution') return { type: 'weapon', id: kind, ring: GOLD, sparkles: true };
   return { type: 'weapon', id: kind, ring: ROLE_COL[kind] || BRASS };

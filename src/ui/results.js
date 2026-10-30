@@ -113,11 +113,11 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
     put(row);
   }
   if (nb && nb.kept) put(el('p', 'u6-kept', nb.kept, { 'data-drop': 'kept' }));
-  if (v.sites) put(el('p', 'u6-kept u6-sites', v.sites, { 'data-drop': 'sites' })); // map events v1
+  if (v.sites) put(el('p', 'u6-kept u6-sites', v.sites, { 'data-drop': 'kept' })); // map events v1
   if (v.dark) put(add(el('p', 'u6-dark', null, { 'data-drop': 'dark' }), el('span', 'u6-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, v.dark))); // EXTRAS v1 Endless Dusk
   if (nb && nb.gentle) put(add(el('p', 'u6-gentle', null, { 'data-drop': 'gentle' }), el('span', 'u6-moon', '☽', { 'aria-hidden': 'true' }), el('span', null, nb.gentle))); // EXTRAS v1
-  if (b.note) put(el('p', 'u6-note', b.note));
-  else if (v.debug) put(el('p', 'u6-note', RES.debug));
+  if (b.note) put(el('p', 'u6-note', b.note, { 'data-drop': 'kept' }));
+  else if (v.debug) put(el('p', 'u6-note', RES.debug, { 'data-drop': 'kept' }));
 
   if (v.weapons.length) {
     const ul = el('ul', 'u6-weps', null, { 'aria-label': RES.weaponsLabel, 'data-drop': 'weapons' });
@@ -281,7 +281,8 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
     }
     fit();
     if (globalThis.addEventListener) { ids.onResize = () => fit(); globalThis.addEventListener('resize', ids.onResize); }
-    if (globalThis.ResizeObserver) { ids.ro = new globalThis.ResizeObserver(() => fit()); ids.ro.observe(main); }
+    if (globalThis.ResizeObserver) { ids.ro = new globalThis.ResizeObserver(() => fit()); ids.ro.observe(main); if (sum) ids.ro.observe(sum); }
+    if (globalThis.document && globalThis.document.fonts && globalThis.document.fonts.ready) globalThis.document.fonts.ready.then(() => { if (!dead) fit(); }); // late font / text-size layout shifts
     const first = v.treePrimary ? tree : again;
     if (first.focus) first.focus({ preventScroll: true });
   }
