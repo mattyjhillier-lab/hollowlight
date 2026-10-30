@@ -1,0 +1,14 @@
+part B, seeds 48, live bot random picks unless noted
+elias|maxed|evos                                  83% +-5 L53 evo 10:28 e1  hurts 49  uses 21.8  dmg 278025
+elias|maxed|noevos                                92% +-4 L53 evo 10:15 e1.2  hurts 44  uses 21.8  dmg 293651
+elias|mid|evos                                    31% +-7 L40 evo 11:59 e0.2  hurts 50  uses 13.1  dmg 181407
+elias|mid|noevos                                  50% +-7 L45 evo 10:25 e0.5  hurts 53  uses 13.7  dmg 220003
+wren|maxed|evos                                   79% +-6 L53 evo 10:31 e0.9  hurts 43  uses 20.0  dmg 279472
+wren|maxed|noevos                                 88% +-5 L54 evo 9:08 e1  hurts 32  uses 20.0  dmg 293891
+wren|mid|evos                                     33% +-7 L43 evo 11:19 e0.4  hurts 47  uses 12.5  dmg 196215
+wren|mid|noevos                                   29% +-7 L42 evo 11:37 e0.3  hurts 42  uses 11.7  dmg 185242
+paired delta (first - second), win points +-SE, and discordant seeds
+wren|mid|evos vs noevos                          +4.2 +-10.3  (only-first-wins 13, only-second-wins 11)
+wren|maxed|evos vs noevos                        -8.3 +-5.8  (only-first-wins 2, only-second-wins 6)
+elias|mid|evos vs noevos                         -18.8 +-10.2  (only-first-wins 8, only-second-wins 17)
+elias|maxed|evos vs noevos                       -8.3 +-5.0  (only-first-wins 1, only-second-wins 5)

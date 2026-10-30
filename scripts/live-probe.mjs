@@ -14,7 +14,7 @@ if (!isMainThread && workerData && workerData.liveProbe) {
     process.env.FOCUS = j.focus ? '1' : '0'; // the bot reads these on every pick / input frame
     process.env.ABILITY = j.ability === false ? 'off' : 'on';
     const r = playRun(j.hero, j.seed, { weapon: j.weapon, tree: treeFor(j.tree, j.weapon, j.tier || 'normal', j.spec), bond: j.bond || 0 });
-    parentPort.postMessage({ key: j.key, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, hurts: r.hurts, uses: r.abilityUses || 0, dmg: Math.round(r.dmg || 0) });
+    parentPort.postMessage({ key: j.key, seed: j.seed, wp: r.weaponIds, evoIds: r.evolved, win: r.outcome === 'victory', t: Math.round(r.time), lvl: r.level, evo: r.marks.evo ?? null, nEvo: r.evolved.length, hurts: r.hurts, uses: r.abilityUses || 0, dmg: Math.round(r.dmg || 0) });
   }
 }
 
