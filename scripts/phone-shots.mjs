@@ -22,7 +22,7 @@ let id = 0; const pend = new Map();
 ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } });
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async (expr) => (await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
-const shot = async (name) => { const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(path.join(outDir, name), Buffer.from(r.result.data, 'base64')); };
+const shot = async (name) => { await ev("if(!document.getElementById('nop')){const s=document.createElement('style');s.id='nop';s.textContent='[data-probe]{display:none!important}';document.head.append(s)}"); await sleep(150); const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(path.join(outDir, name), Buffer.from(r.result.data, 'base64')); };
 const menu = {
   front: 'ui.hideAll(); ui.showStart(ui.onPick)', settings: "ui.navTo('settings')", almanac: "ui.navTo('almanac')", goals: "ui.navTo('goals')", tree: "ui.navTo('tree')", chars: "ui.navTo('character')",
 };
