@@ -375,3 +375,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - HOSTING (discuss with Matt when home, 2026-10-30): recommended Cloudflare Pages as launch host, fresh `wispwick` project before launch (saves are per address), GitHub Pages replaced by a moved-link page, repo stays public until wanted, optional custom domain later. Nothing done; needs Matt yes.
 
 - PHONE PLAYTEST (2026-10-30, Matt, iPhone, dev build): plays really well; new card icon looks much better; everything fits. Evolution flow v2, phone layout and smooth ground accepted on iPhone.
+
+- PAUSED 2026-10-30 night (Matt). Desktop build (wip/desktop-build, A1/C1/D1-D5) stopped mid-run; chunks already pushed on that branch are kept, restart from the last pushed chunk. Nothing else running.
