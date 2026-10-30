@@ -138,12 +138,12 @@ test('a double level-up queues two offers back to back', () => {
 
 test('picking the evolution gold card evolves the weapon and kills the old units (needs the gate node, G1b)', () => {
   const sim = mk({ godMode: true, tree: aggregateMods({ gt_phantom_stampede: 1 }, treeDef, data) });
-  sim.debugGrant('ghost_wolves', { speed: 5, power: 5 });
+  sim.debugGrant('ghost_wolves', { speed: 5, power: 5, duration: 5 });
   run(sim, 1);
   sim.xp = sim.xpNeeded + 1;
   sim.step(DT, {});
-  assert.equal(sim.offer.gold.length, 1);
-  sim.pickCard(sim.offer.gold[0].key);
+  assert.equal(sim.offer.gold.length, 2, 'the free evolution and the one the node unlocked');
+  sim.pickCard(sim.offer.gold.find((c) => c.evoId === 'phantom_stampede').key);
   assert.equal(sim.weapons[0].evo, 'phantom_stampede');
   assert.ok(sim.events.some((e) => e.type === 'evolve'));
 });

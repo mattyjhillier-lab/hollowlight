@@ -63,35 +63,28 @@ export function evoOpen(evo, id, unlocked) {
   return !evo.treeGate || !!(unlocked && unlocked.has(id));
 }
 
-// Evolutions whose stat pair is fully maxed and that haven't been taken yet.
-export function availableEvolutions(w, data, unlocked) {
-  if (w.evo) return [];
-  const max = data.balance.maxRank;
-  const out = [];
-  for (const [evoId, evo] of Object.entries(data.evolutions)) {
-    if (evo.weapon !== w.id || !evoOpen(evo, evoId, unlocked)) continue;
-    if (w.ranks[evo.pair[0]] >= max && w.ranks[evo.pair[1]] >= max) out.push(evoId);
-  }
-  return out;
+// EVOLUTION FLOW v2 (LOCKED 2026-10-30): a weapon's "level" is its total stat ranks. When it reaches balance.evoTriggerRanks every UNLOCKED
+// evolution of that weapon is offered as a gold card (one-tap even if only one). Card Fan 'Louder Stirring' (ctx.evoEarly) offers it EVO_EARLY_RANKS sooner.
+// The stat pair in evolutions.json is now only the evolution's HOME stats (what the home-scenario measurements max); it no longer triggers anything.
+export const EVO_TRIGGER_DEFAULT = 15;
+export const EVO_TRIGGER_MIN = 8; // 'Louder Stirring' can never pull the trigger below this
+export const EVO_EARLY_RANKS = 1;
+export const totalRanks = (w) => Object.values(w.ranks).reduce((a, b) => a + b, 0);
+export function evoTrigger(data, early = false) {
+  const t = Number(data.balance.evoTriggerRanks);
+  const base = Number.isInteger(t) && t >= 1 ? t : EVO_TRIGGER_DEFAULT;
+  return early ? Math.max(Math.min(base, EVO_TRIGGER_MIN), base - EVO_EARLY_RANKS) : base;
 }
 
-// EVO-HINT (display only): true when taking this stat card would leave BOTH stats of an unlocked,
-// not-yet-taken evolution pair at max rank. Never exposes which evolution or partner stat.
-// loud (Card Fan 'Louder Stirring', T6): it also stirs when the PARTNER stat is at rank LOUD_STIR_RANK or more (an earlier hint; still never names it).
-export const LOUD_STIR_RANK = 2;
-export function stirs(w, statKey, data, unlocked, loud = false) {
-  if (w.evo) return false;
-  const max = data.balance.maxRank;
-  const finishing = (w.ranks[statKey] || 0) + 1 >= max;
-  if (!finishing && !loud) return false;
-  for (const [id, e] of Object.entries(data.evolutions)) {
-    if (e.weapon !== w.id || !e.pair.includes(statKey) || !evoOpen(e, id, unlocked)) continue;
-    const other = e.pair[0] === statKey ? e.pair[1] : e.pair[0];
-    const pr = w.ranks[other] || 0;
-    if (finishing && pr >= max) return true;
-    if (loud && pr >= LOUD_STIR_RANK) return true;
-  }
-  return false;
+// Unlocked evolutions of this weapon that are on offer now (none once the weapon has evolved or while it is below the trigger).
+export function availableEvolutions(w, data, unlocked, early = false) {
+  if (w.evo || totalRanks(w) < evoTrigger(data, early)) return [];
+  return Object.entries(data.evolutions).filter(([evoId, evo]) => evo.weapon === w.id && evoOpen(evo, evoId, unlocked)).map(([evoId]) => evoId);
+}
+
+// True while a weapon is still waiting on its awakening (unevolved and with at least one unlocked evolution); Attuned Hands (evoLuck) favours its stat cards.
+export function awaitsEvolution(w, data, unlocked) {
+  return !w.evo && Object.entries(data.evolutions).some(([id, e]) => e.weapon === w.id && evoOpen(e, id, unlocked));
 }
 
 function weaponCard(id, data) {
@@ -107,15 +100,10 @@ function weaponCard(id, data) {
   };
 }
 
-function statCard(w, statKey, data, unlocked, loud = false) {
+function statCard(w, statKey, data) {
   const def = data.weapons[w.id];
   const s = def.stats[statKey];
   const rank = w.ranks[statKey];
-  const next = rank + 1;
-  // Evolved weapons cannot evolve again: no recipe hints (D1).
-  const evoHints = w.evo ? 0 : Object.entries(data.evolutions)
-    .filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, unlocked))
-    .length;
   return {
     key: `s:${w.id}:${statKey}`,
     kind: 'stat',
@@ -124,11 +112,9 @@ function statCard(w, statKey, data, unlocked, loud = false) {
     title: `${def.name}: ${s.name}`,
     desc: hintText(def, statKey, rank),
     rank,
-    nextRank: next,
+    nextRank: rank + 1,
     maxRank: data.balance.maxRank,
-    evoHints,
     color: def.color,
-    ...(stirs(w, statKey, data, unlocked, loud) ? { stirs: true } : {}),
   };
 }
 
@@ -167,17 +153,14 @@ export function buildPool(ctx) {
     }
   }
   for (const w of weapons) {
-    // D1: an evolved weapon keeps offering its remaining (non-recipe) stat cards as normal; no nudge, no 'stirs' (it cannot evolve again).
+    // D1: an evolved weapon keeps offering its remaining stat cards as normal. No recipe nudge any more (flow v2); Attuned Hands (evoLuck)
+    // favours the stat cards of a weapon still awaiting its awakening.
+    const awaiting = ctx.evoLuck > 1 && awaitsEvolution(w, data, ctx.unlockedEvolutions);
     for (const statKey of Object.keys(data.weapons[w.id].stats)) {
       if (w.ranks[statKey] >= data.balance.maxRank) continue;
-      const pairs = w.evo ? [] : Object.entries(data.evolutions).filter(([id, e]) => e.weapon === w.id && e.pair.includes(statKey) && evoOpen(e, id, ctx.unlockedEvolutions)).map(([, e]) => e);
-      // RT3: a weapon may carry its own evoNudge (weapons.json <id>.evoNudge, e.g. Spirit Bolts' late first evolution); else the global one
-      const nudge = data.weapons[w.id].evoNudge || data.balance.evoNudge || { pair: 2.2, partnerRank: 3, partnerMult: 2 };
-      let wt = pairs.length ? nudge.pair * (ctx.evoLuck || 1) : 1;
-      // Hidden nudge: if the partner stat is well along, finishing the pair is more likely.
-      if (pairs.some((e) => w.ranks[e.pair.find((k) => k !== statKey)] >= nudge.partnerRank)) wt *= nudge.partnerMult;
+      let wt = awaiting ? ctx.evoLuck : 1;
       if (ctx.favour === w.id) wt *= FAVOUR_WEIGHT; // Card Fan 'Favoured Spirit' (T6): the marked weapon's stat cards come more often
-      pool.push({ card: statCard(w, statKey, data, ctx.unlockedEvolutions, !!ctx.loudStir), w: wt });
+      pool.push({ card: statCard(w, statKey, data), w: wt });
     }
   }
   return pool.filter((p) => !banished.has(p.card.key));
@@ -216,13 +199,14 @@ function fillWithFallbacks(cards, n, data, rng, ctx = {}) {
   return cards;
 }
 
+// Max balance.maxGoldCards gold cards PER WEAPON (not shared): up to 3 per weapon, and several weapons can be due at once.
 export function goldCards(ctx) {
   const { weapons, data } = ctx;
   const out = [];
   for (const w of weapons) {
-    for (const evoId of availableEvolutions(w, data, ctx.unlockedEvolutions)) out.push(evolutionCard(w, evoId, data));
+    for (const evoId of availableEvolutions(w, data, ctx.unlockedEvolutions, !!ctx.evoEarly).slice(0, data.balance.maxGoldCards)) out.push(evolutionCard(w, evoId, data));
   }
-  return out.slice(0, data.balance.maxGoldCards);
+  return out;
 }
 
 // Draws the normal cards for an offer. `exclude` keys (cards already on screen) are skipped.
@@ -293,7 +277,7 @@ export function startOffer(ctx, rng, kind) {
     cards = drawWeighted(blessingPool(ctx), 3, rng);
   } else if (kind === 'chestStat') { // EN8: a Large Lantern Reliquary's free stat rank: 3 owned-weapon stats not yet maxed (a plain stat card: never names an evolution)
     const pool = [];
-    for (const w of weapons) for (const k of Object.keys(data.weapons[w.id].stats)) if (w.ranks[k] < data.balance.maxRank) pool.push({ card: statCard(w, k, data, ctx.unlockedEvolutions, !!ctx.loudStir), w: 1 });
+    for (const w of weapons) for (const k of Object.keys(data.weapons[w.id].stats)) if (w.ranks[k] < data.balance.maxRank) pool.push({ card: statCard(w, k, data), w: 1 });
     cards = drawWeighted(pool, 3, rng);
   }
   return cards;

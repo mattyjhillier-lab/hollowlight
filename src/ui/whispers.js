@@ -3,7 +3,7 @@ import { keyLabel, keyName, activeKeymap } from '../input/keymap.js';
 // the ladder state, triggers, queue, per-lantern bits and the copy. Reads a plain view built from sim state; never touches the sim or its RNG.
 // Bits live in the lantern's save (save.hints, a small integer; unknown bits are dropped by cleanHints).
 
-export const HINT = { started: 0, move: 1, gems: 2, ability: 3, heart: 4, magnet: 5, chest: 6, lowhp: 7, reroll: 8, offer: 9, stirs: 10, evolve: 11, full: 12 };
+export const HINT = { started: 0, move: 1, gems: 2, ability: 3, heart: 4, magnet: 5, chest: 6, lowhp: 7, reroll: 8, offer: 9, stirs: 10 /* retired in flow v2; bit kept so saved hint bits keep their meaning */, evolve: 11, full: 12 };
 export const HINT_COUNT = 13;
 export const HINT_MASK = (1 << HINT_COUNT) - 1;
 /** Validated hint bits from untrusted save data: a non-negative safe integer, masked to the known bits; anything else is 0. */
@@ -31,8 +31,7 @@ export const COPY = {
   lowhp: { kb: [{ text: 'Your flame is low' }], w: 'Back away from the pack; hearts fall from the Husks.' },
   pickup: { heart: 'Hearts mend the flame.', magnet: 'The magnet calls every mote home.', chest: 'Strong foes guard the best gifts.' },
   offer: { t: 'Your light grows', w: 'Pick one. Each card makes a spirit stronger.', note: 'Dots = rank, 5 is the most' },
-  stirs: { w: 'Something stirs: max this and its partner to wake an evolution.' },
-  evolve: { t: 'Evolution', w: 'Your spirit changes its nature. One per weapon.' },
+  evolve: { t: 'Evolution', w: 'A spirit has grown enough to change. Choose its new nature: one per weapon.' },
   full: { w: 'Your hands are full: now your spirits grow.' },
   reroll: { w: 'Spend them; they come back each night.' },
   skipKb: 'Tab: hide tips',
@@ -164,8 +163,8 @@ export class Whispers {
   }
 
   /**
-   * The one teaching line for a level-up offer (or null). o: { start: run-start offer, classes: card classes ('evolve'|'stirs'|'new'|...),
-   * weaponCard: any new-weapon card, full: all weapon slots taken, rerolls, banishes }. Evolution > stirs > reroll > first offer > slots full.
+   * The one teaching line for a level-up offer (or null). o: { start: run-start offer, classes: card classes ('evolve'|'new'|...),
+   * weaponCard: any new-weapon card, full: all weapon slots taken, rerolls, banishes }. Evolution > reroll > first offer > slots full.
    */
   offer(o) {
     if (!this.tips || !o || o.start) return null;
@@ -173,7 +172,6 @@ export class Whispers {
     const lad = this.on();
     const pick = (id, t) => { this.mark(id); return { id, ...t }; };
     if (lad && cls.includes('evolve') && !hasBit(this.bits, 'evolve')) return pick('evolve', { title: COPY.evolve.t, whisper: COPY.evolve.w, card: 'evolve' });
-    if (lad && cls.includes('stirs') && !hasBit(this.bits, 'stirs')) return pick('stirs', { title: '', whisper: COPY.stirs.w, card: 'stirs' });
     if (((o.rerolls | 0) > 0 || (o.banishes | 0) > 0) && !hasBit(this.bits, 'reroll')) return pick('reroll', { title: rerollTitle(o, this.input), whisper: COPY.reroll.w, card: null });
     if (lad && !hasBit(this.bits, 'offer')) return pick('offer', { title: COPY.offer.t, whisper: COPY.offer.w, note: this.input === 'kb' ? COPY.offer.note : '', card: null });
     if (lad && o.full && !o.weaponCard && !hasBit(this.bits, 'full')) return pick('full', { title: '', whisper: COPY.full.w, card: null });

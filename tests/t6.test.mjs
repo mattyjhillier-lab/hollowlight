@@ -9,7 +9,7 @@ import { composeTree } from '../src/meta/treedata.js';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
 import { connectIssues } from '../src/meta/treelayout.js';
 import { Sim, AUTO_RULES, AUTO_NEAR, AUTO_CROWD, TELL_EARLY, WOLF_TELL } from '../src/sim/Sim.js';
-import { buildPool, newWeapon, stirs, FAVOUR_WEIGHT, offerFromPreview, startOffer, generateOffer } from '../src/sim/cards.js';
+import { buildPool, newWeapon, goldCards, FAVOUR_WEIGHT, offerFromPreview, startOffer, generateOffer } from '../src/sim/cards.js';
 import { createRng } from '../src/sim/rng.js';
 import { cardClass, cardModel, cardLabel, peekLine } from '../src/ui/cardview.js';
 import { OfferView, START_COPY } from '../src/ui/cardsui.js';
@@ -81,20 +81,17 @@ test('T6 Almanac Tells: a Fell Wolf lunge tell lasts 0.1 s longer (shows earlier
 });
 
 // ------------------------------------------------------------------ Card Fan
-test('T6 Louder Stirring: a recipe stat stirs once its partner is rank 2; never without the lantern; never names it', () => {
-  const unlocked = new Set(Object.keys(data.evolutions));
-  const [id, e] = Object.entries(data.evolutions).find(([, v]) => v.weapon === 'ghost_wolves');
+test('T6 Louder Stirring (flow v2): the awakening comes one stat rank sooner; no card text changes; never below the floor', () => {
   const w = newWeapon('ghost_wolves', data.weapons.ghost_wolves);
-  w.ranks[e.pair[0]] = 2;
-  assert.equal(stirs(w, e.pair[1], data, unlocked), false);
-  assert.equal(stirs(w, e.pair[1], data, unlocked, true), true);
-  w.ranks[e.pair[0]] = 1;
-  assert.equal(stirs(w, e.pair[1], data, unlocked, true), false);
-  assert.equal(stirs(w, e.pair[1], data, new Set(), true), false, `${id}: a locked recipe never stirs`);
-  w.ranks[e.pair[0]] = 2;
-  const card = buildPool({ weapons: [w], data, banished: new Set(), unlockedEvolutions: unlocked, loudStir: true }).find((p) => p.card.stat === e.pair[1]).card;
-  assert.equal(card.stirs, true);
-  assert.ok(!JSON.stringify(cardModel(card, data)).includes(data.evolutions[id].name), 'the card text never names the evolution');
+  const ctx = { weapons: [w], data, banished: new Set(), unlockedEvolutions: new Set(Object.keys(data.evolutions)) };
+  w.ranks.power = 5; w.ranks.speed = 5; w.ranks.duration = 4; // 14 of 15
+  assert.equal(goldCards(ctx).length, 0);
+  assert.equal(goldCards({ ...ctx, evoEarly: true }).length, 3);
+  assert.ok(buildPool({ ...ctx, evoEarly: true }).filter((p) => p.card.kind === 'stat').every((p) => p.card.stirs === undefined && p.w === 1));
+  // the tree effect reaches the Sim context
+  const sim = new Sim({ data, characterId: 'wren', seed: 1, tree: { ...fx(['cd_stir']) } });
+  assert.equal(sim.cardCtx.evoEarly, true);
+  assert.equal(new Sim({ data, characterId: 'wren', seed: 1 }).cardCtx.evoEarly, false);
 });
 
 test('T6 Favoured Spirit: a start offer of every unlocked weapon (hero first); the mark weighs its stat cards x1.5', () => {

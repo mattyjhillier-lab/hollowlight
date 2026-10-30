@@ -39,7 +39,7 @@ const wpn = () => ({ key: 'w:spirit_bolts', kind: 'weapon', weaponId: 'spirit_bo
 const setup = (offer, extra) => { const doc = fakeDoc(), host = doc.createElement('div'); const log = []; const v = new OfferView(doc, host, { pick: (k) => log.push(['pick', k]), reroll: () => log.push(['reroll']), banish: (k) => log.push(['banish', k]) }); v.render(mkSim(offer, extra), data); return { doc, host, v, log }; };
 
 test('U5 leadlight (lg-lead) and seal appear ONLY on the evolution card; Blessings are cream pills with no arch and no gold', () => {
-  const { host } = setup({ gold: [evo()], cards: [stat({ stirs: true }), wpn(), fallbackCard('heal', data), blessingCard('dawnlit_soles', data.blessings, 0)] });
+  const { host } = setup({ gold: [evo()], cards: [stat(), wpn(), fallbackCard('heal', data), blessingCard('dawnlit_soles', data.blessings, 0)] });
   const cards = all(host, 'card');
   assert.equal(cards.length, 5);
   for (const c of cards) {
@@ -58,10 +58,10 @@ test('U5 leadlight (lg-lead) and seal appear ONLY on the evolution card; Blessin
   assert.equal(textOf(all(cards[0], 'c-tag')[0]).trim(), 'EVOLVE');
   assert.equal(all(cards[2], 'lg-badge--new').length, 1);
   assert.equal(all(cards[2], 'lg-badge--new')[0]._text, 'NEW');
-  // the evolution card whispers only its BASE weapon, never a recipe; the stirs hint still never names an evolution
+  // the evolution card whispers only its BASE weapon, never a recipe
   assert.equal(all(cards[0], 'c-from')[0]._text, 'from Ghost Wolves');
   assert.equal(all(cards[1], 'c-from').length, 0);
-  assert.ok(textOf(cards[1]).includes('Something stirs'));
+  assert.ok(!textOf(cards[1]).includes('Something stirs'));
 });
 
 test('U5 accessibility: dialog host, labelled cards with key shortcuts, decorative bits hidden, labelled buttons', () => {
@@ -95,7 +95,7 @@ test('U5 hostile strings stay inert and clamped (no markup, no overflow in the D
   for (const c of all(host, 'card')) assert.ok(c.getAttribute('aria-label').length <= CLAMP.label);
   const m = cardModel(offer.gold[0], data, maxRank);
   assert.ok(m.from.length <= CLAMP.from); assert.ok(m.title.length <= CLAMP.title);
-  assert.equal(cardLabel({ cls: 'stat', tag: 'Holy Orbit', title: 'Wider', num: '+12%', unit: '50 → 56', pips: { total: 5, filled: 3 }, desc: 'x', stirs: '' }), 'Holy Orbit. Wider. +12% 50 → 56. rank 3 of 5. x');
+  assert.equal(cardLabel({ cls: 'stat', tag: 'Holy Orbit', title: 'Wider', num: '+12%', unit: '50 → 56', pips: { total: 5, filled: 3 }, desc: 'x' }), 'Holy Orbit. Wider. +12% 50 → 56. rank 3 of 5. x');
   assert.equal(clampText({}, 10), ''); assert.equal(clampText(null, 10), '');
   const note = setup({ gold: [], cards: [wpn()] }).host; void note;
   const doc = fakeDoc(), host2 = doc.createElement('div'); const v2 = new OfferView(doc, host2, { pick() {}, reroll() {}, banish() {} });

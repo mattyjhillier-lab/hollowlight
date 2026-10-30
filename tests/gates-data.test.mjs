@@ -78,31 +78,27 @@ test('hidden reveal: evolution gates read ??? until progress starts, then show n
   assert.equal(describeNode(def, defaultSave(), 'gt_raven_flock', data).name, 'Raven Flock');
 });
 
-test('locked evolution: pair maxed in a starter run gives no gold card; owning the gate node restores it', () => {
-  const mkSim = (tree) => { const s = new Sim({ data, characterId: 'wren', seed: 5, tree }); s.debugGrant('ghost_wolves', { power: 5, speed: 5 }); return s; };
-  assert.deepEqual(goldCards(mkSim(null).cardCtx), []);
+test('locked evolution: at the trigger a starter run gets only the free evolution; owning the gate node adds it', () => {
+  const mkSim = (tree) => { const s = new Sim({ data, characterId: 'wren', seed: 5, tree }); s.debugGrant('ghost_wolves', { power: 5, speed: 5, duration: 5 }); return s; };
+  assert.deepEqual(goldCards(mkSim(null).cardCtx).map((c) => c.evoId), ['howling_legion']);
   const open = mkSim(withNodes(['gt_phantom_stampede']));
-  assert.deepEqual(goldCards(open.cardCtx).map((c) => c.evoId), ['phantom_stampede']);
-  // a starter evolution still works with no tree at all
-  const starter = new Sim({ data, characterId: 'wren', seed: 5 });
-  starter.debugGrant('ghost_wolves', { count: 5, duration: 5 });
-  assert.deepEqual(goldCards(starter.cardCtx).map((c) => c.evoId), ['howling_legion']);
+  assert.deepEqual(goldCards(open.cardCtx).map((c) => c.evoId).sort(), ['howling_legion', 'phantom_stampede']);
+  // below the trigger nothing is offered
+  const low = new Sim({ data, characterId: 'wren', seed: 5 });
+  low.debugGrant('ghost_wolves', { count: 5, duration: 5 });
+  assert.deepEqual(goldCards(low.cardCtx), []);
 });
 
-test('locked evolution: its stat gets no pair nudge or hint in the real pool', () => {
-  const s = new Sim({ data, characterId: 'wren', seed: 5 });
-  const speed = buildPool(s.cardCtx).find((p) => p.card.key === 's:ghost_wolves:speed');
-  assert.equal(speed.w, 1, 'speed is only in the locked phantom_stampede pair, so no nudge');
-  assert.equal(speed.card.evoHints, 0);
-  const o = new Sim({ data, characterId: 'wren', seed: 5, tree: withNodes(['gt_phantom_stampede']) });
-  assert.equal(buildPool(o.cardCtx).find((p) => p.card.key === 's:ghost_wolves:speed').w, data.balance.evoNudge.pair);
+test('flow v2: stat cards in the real pool carry no recipe weight or hint', () => {
+  const s = new Sim({ data, characterId: 'wren', seed: 5, tree: withNodes(['gt_phantom_stampede']) });
+  for (const p of buildPool(s.cardCtx).filter((x) => x.card.kind === 'stat')) { assert.equal(p.w, 1); assert.equal(p.card.evoHints, undefined); }
 });
 
 test('owning a weapon gate node adds that weapon card to the pool; its evolution stays locked without its own node', () => {
   const s = new Sim({ data, characterId: 'wren', seed: 3, tree: withNodes(['gt_raven_flock']) });
   assert.deepEqual([...weaponKeys(s)].sort(), ['raven_flock']);
   const w = newWeapon('raven_flock', data.weapons.raven_flock);
-  w.ranks.count = 5; w.ranks.range = 5;
+  w.ranks.count = 5; w.ranks.range = 5; w.ranks.speed = 5;
   const sim = new Sim({ data, seed: 2, tree: withNodes(['gt_raven_flock']) });
   sim.weapons.push(w);
   assert.deepEqual(goldCards(sim.cardCtx), [], 'murder_storm still needs its own gate node');

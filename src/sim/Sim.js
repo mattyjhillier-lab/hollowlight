@@ -331,7 +331,7 @@ export class Sim {
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions, offerSize: this.offerSize, weaponSlots: this.weaponSlots, favour: this.favour, loudStir: this.tfx.loudStir, fallbackShards: this.fallbackShards };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions, offerSize: this.offerSize, weaponSlots: this.weaponSlots, favour: this.favour, evoEarly: this.tfx.loudStir, fallbackShards: this.fallbackShards };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).

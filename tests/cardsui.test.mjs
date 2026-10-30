@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { data } from './helpers.mjs';
-import { clampText, cardClass, isQuiet, orderOffer, pipsOf, effectOf, cardModel, STIRS_TEXT, CLAMP } from '../src/ui/cardview.js';
+import { clampText, cardClass, isQuiet, orderOffer, pipsOf, effectOf, cardModel, CLAMP } from '../src/ui/cardview.js';
 import { iconSpec, cardIcon } from '../src/ui/cardicons.js';
 import { OfferView, INPUT_LOCK_MS } from '../src/ui/cardsui.js';
 import { buildPool, goldCards, newWeapon, fallbackCard } from '../src/sim/cards.js';
@@ -74,8 +74,7 @@ test('HUD-2 pips: show where this pick lands', () => {
 
 test('HUD-2 classification + order: gold first, blessings (and swapped heal) in the quiet row', () => {
   const w = wolves();
-  const stirs = { ...statCard(w, 'speed'), stirs: true };
-  assert.equal(cardClass(stirs), 'stirs');
+  assert.equal(cardClass({ ...statCard(w, 'speed'), stirs: true }), 'stat', 'the stirs hint is retired (flow v2)');
   assert.equal(cardClass(statCard(w, 'power')), 'stat');
   assert.equal(cardClass({ kind: 'weapon' }), 'new');
   assert.equal(cardClass({ kind: 'evolution' }), 'evolve');
@@ -103,20 +102,20 @@ test('HUD-2 text clamps: bounded, control chars dropped, non-strings safe', () =
   for (const e of Object.values(data.evolutions)) assert.ok(e.name.length <= CLAMP.title && e.verb.length <= CLAMP.num && e.sub.length <= CLAMP.unit && e.desc.length <= CLAMP.desc, e.name);
 });
 
-test('HUD-2 NO recipe leak: stat/stirs cards never show an evolution name, verb, partner stat or "evolve"', () => {
+test('HUD-2 NO recipe leak: stat cards never show an evolution name, verb, partner stat or "evolve"', () => {
   for (const [evoId, evo] of Object.entries(data.evolutions)) {
     const def = data.weapons[evo.weapon];
     for (let i = 0; i < 2; i++) {
       const statKey = evo.pair[i];
       const partner = def.stats[evo.pair[1 - i]];
-      for (const stirs of [false, true]) {
-        const c = { kind: 'stat', weaponId: evo.weapon, stat: statKey, rank: 4, nextRank: 5, maxRank, key: `s:${evo.weapon}:${statKey}`, title: 'x', desc: 'x', ...(stirs ? { stirs: true } : {}) };
+      {
+        const c = { kind: 'stat', weaponId: evo.weapon, stat: statKey, rank: 4, nextRank: 5, maxRank, key: `s:${evo.weapon}:${statKey}`, title: 'x', desc: 'x' };
         const m = cardModel(c, data, maxRank);
-        const text = [m.tag, m.title, m.num, m.unit, m.desc, m.stirs].join(' | ').toLowerCase();
+        const text = [m.tag, m.title, m.num, m.unit, m.desc].join(' | ').toLowerCase();
         for (const [oid, o] of Object.entries(data.evolutions)) for (const needle of [o.name, o.verb, o.sub, oid]) assert.ok(!text.includes(String(needle).toLowerCase()), `${evoId}/${statKey}: leaks ${needle}`);
         if (partner.name.toLowerCase() !== def.stats[statKey].name.toLowerCase()) assert.ok(!text.includes(partner.name.toLowerCase()), `${evoId}/${statKey}: leaks partner ${partner.name}`);
         assert.ok(!/evolv|recipe/.test(text), text);
-        assert.equal(m.stirs, stirs ? STIRS_TEXT : '');
+        assert.equal(m.stirs, undefined);
       }
     }
   }
@@ -175,11 +174,11 @@ test('HUD-2 OfferView on a fake DOM: structure, order, quiet row, keys, banish m
   const main = all(host, 'lu-main')[0], quiet = all(host, 'lu-quiet')[0];
   assert.equal(main.children.length, 3); assert.equal(quiet.children.length, 2);
   assert.ok(main.children[0].className.includes('is-evolve') && main.children[0].className.includes('gold'));
-  assert.ok(main.children[1].className.includes('is-stirs') && main.children[1].className.includes('stirs'));
+  assert.ok(main.children[1].className.includes('is-stat'));
   assert.ok(main.children[2].className.includes('is-new'));
   assert.ok(quiet.children.every((c) => c.className.includes('quiet')));
   assert.ok(textOf(host).includes('The light stirs') && textOf(host).includes('LEVEL 8') && textOf(host).includes('Quiet gifts'));
-  assert.ok(textOf(main.children[1]).includes(STIRS_TEXT));
+  assert.ok(!textOf(main.children[1]).includes('stirs'));
   assert.ok(!textOf(main.children[0]).includes('NaN'));
   assert.equal(all(host, 'c-key').map((k) => k._text).join(''), '12345'); // keys 1..5 follow display order
   assert.equal(all(host, 'lu-btn').length, 2);

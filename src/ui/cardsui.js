@@ -45,7 +45,7 @@ export class OfferView {
   }
 
   // note: optional plain whisper line under the title (the 'Unlocked in the Skill Tree' hint for a NEW card; it used to be a HUD toast hidden under this screen).
-  // teach (FM2, optional): { title, whisper, note, card: 'evolve' | 'stirs' | null } from the Whispers director: one line, in the whisper voice.
+  // teach (FM2, optional): { title, whisper, note, card: 'evolve' | null } from the Whispers director: one line, in the whisper voice.
   render(sim, data, note = '', teach = null) {
     const d = this.doc;
     const { main, quiet, all } = orderOffer(sim.offer);
@@ -161,7 +161,7 @@ export class OfferView {
     const evolve = m.cls === 'evolve';
     // Blessings are quiet cream chips (no arch, no gold). Every other card is an arched lantern window; ONLY the evolution card gets the leadlight border (lg-lead).
     const frame = quiet ? '' : ` lg-card lg-frame${evolve ? ' lg-card--evolve lg-lead' : ''}`;
-    const node = this.el('div', `card k-${c.kind} is-${m.cls}${evolve ? ' gold' : ''}${m.cls === 'stirs' ? ' stirs' : ''}${quiet ? ' quiet' : ''}${frame}`);
+    const node = this.el('div', `card k-${c.kind} is-${m.cls}${evolve ? ' gold' : ''}${quiet ? ' quiet' : ''}${frame}`);
     node.setAttribute('data-key', m.key);
     node.setAttribute('role', 'button');
     node.setAttribute('tabindex', '0');
@@ -211,7 +211,6 @@ export class OfferView {
     }
     if (m.desc) node.appendChild(this.el('p', 'c-desc', m.desc));
     if (m.from) node.appendChild(this.el('div', 'c-from', m.from));
-    if (m.stirs) node.appendChild(this.el('div', 'c-stirs stirs-line', m.stirs));
     node.addEventListener('mouseenter', () => this.setSel(i));
     node.addEventListener('focus', () => this.setSel(i)); // Tab / arrows and Enter agree on which card is chosen
     node.addEventListener('click', () => this.activate(i));

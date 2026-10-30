@@ -106,15 +106,13 @@ test('FM1 pickup whisper lines: once each per lantern, ladder only', () => {
   assert.equal(new Whispers({ bits: 0 }).pickup('heart'), '');
 });
 
-test('FM2 offer lines: first offer, stirs, evolution, slots full, reroll (per unlock, even for veterans); one per screen', () => {
+test('FM2 offer lines: first offer, evolution, slots full, reroll (per unlock, even for veterans); one per screen', () => {
   const w = new Whispers({ bits: TIPS_AGAIN, input: 'kb' });
   assert.equal(w.offer({ start: true, classes: ['evolve'] }), null, 'run-start offers stay clean');
   const a = w.offer({ classes: ['new', 'stat'] });
   assert.equal(a.id, 'offer'); assert.equal(a.title, 'Your light grows'); assert.ok(a.note);
   assert.equal(w.offer({ classes: ['new'] }), null);
-  const s = w.offer({ classes: ['stirs', 'stat'] });
-  assert.equal(s.id, 'stirs'); assert.equal(s.card, 'stirs');
-  assert.doesNotMatch(s.whisper, /Spirit Lance|Stampede|Light Trails/, 'never names the evolution');
+  assert.equal(w.offer({ classes: ['stirs', 'stat'] }), null, 'the stirs hint is retired (flow v2)');
   const e = w.offer({ classes: ['stat', 'evolve'] });
   assert.equal(e.id, 'evolve'); assert.equal(e.title, 'Evolution');
   assert.equal(w.offer({ classes: ['stat'], full: true, weaponCard: true }), null, 'a weapon card on offer: not full yet');
