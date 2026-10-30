@@ -24,9 +24,8 @@ export function itemFor(key, book, data) {
     const ev = data.evolutions[id];
     const w = ev && data.weapons[ev.weapon];
     if (!ev || !w) return null;
-    const st = (k) => (w.stats && w.stats[k] && w.stats[k].name) || k;
-    Object.assign(it, { kind: 'evo', title: ev.name, line: ev.codex, sub: `Recipe: ${st(ev.pair[0])} + ${st(ev.pair[1])} · ${CEL_WRITTEN}`, weapon: ev.weapon, color: w.color || it.color, cue: ev.cue || `evo_${id}`, gold: true });
-    it.sr = `${CEL.remembers}: ${ev.name}, recipe ${st(ev.pair[0])} and ${st(ev.pair[1])}`;
+    Object.assign(it, { kind: 'evo', title: ev.name, line: ev.codex, sub: CEL_WRITTEN, weapon: ev.weapon, color: w.color || it.color, cue: ev.cue || `evo_${id}`, gold: true });
+    it.sr = `${CEL.remembers}: ${ev.name}`;
     return it;
   }
   if (key.startsWith('c:')) {

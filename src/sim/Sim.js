@@ -13,6 +13,7 @@ import {
   fallbackCard,
   previewDraw,
   offerFromPreview,
+  evoRankMult,
   startOffer,
   BURN_RATE,
   BURN_TIME,
@@ -348,6 +349,7 @@ export class Sim {
     let m = this.mods.damage;
     if (this.data.weapons[w.id].type === 'summon') m *= this.bless.damage;
     if (this.buffs.rush > 0 && this.data.weapons[w.id].type === 'summon') m *= 1 + this.tfx.rush.pct / 100;
+    if (w.evo) m *= evoRankMult(this.data, w); // flow v2: every rank counts toward every evolution
     return m;
   }
 

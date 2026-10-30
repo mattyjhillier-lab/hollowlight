@@ -49,7 +49,7 @@
    "idx": 0,
    "kind": "socket",
    "name": "Lightfoot Pack",
-   "desc": "Unlocks the Lightfoot Pack evolution for Ghost Wolves. Its recipe stays hidden.",
+   "desc": "Unlocks the Lightfoot Pack evolution for Ghost Wolves. It is offered once that spirit has grown.",
    "branch": "summoner",
    "cost": {
     "gold": 100
@@ -72,7 +72,7 @@
    "idx": 1,
    "kind": "socket",
    "name": "The Alpha",
-   "desc": "Unlocks the Alpha evolution for Ghost Wolves. Its recipe stays hidden.",
+   "desc": "Unlocks the Alpha evolution for Ghost Wolves. It is offered once that spirit has grown.",
    "branch": "summoner",
    "cost": {
     "gold": 300

@@ -1,5 +1,5 @@
 // CX2 / CX7 Almanac copy (docs/design/codex-celebrations-v1.md). Pure data: quiet, warm, a little sad; one line each. Shown via textContent only.
-// Riddles (CX7) name ONE stat of an evolution's pair, never both: the recipe stays hidden (tests/codex.test.mjs checks the other label is absent).
+// Riddles (CX7) describe what an evolution will BE (its verb), never a recipe: flow v2 has none (tests/codex.test.mjs checks they name no stat).
 
 export const CX = Object.freeze({
   title: 'The Almanac',
@@ -27,11 +27,11 @@ export const CX = Object.freeze({
   sleeping: 'Sleeping',
   notFound: 'Not yet found',
   awake: 'Its socket is awake in the Lantern Web.',
-  riddleNote: 'Riddle from the Full Almanac: one half of the way',
+  riddleNote: 'Riddle from the Full Almanac: what it will be',
   wake: (t) => `Wake its socket in the Lantern Web: ${t}.`,
   stirs: 'Something stirs in the Hollow. Keep playing to find out what.',
   taken: (n) => `Taken ${n} time${n === 1 ? '' : 's'}`,
-  recipe: (a, b) => `Recipe: ${a} + ${b}`,
+  awakens: (weapon, n) => `Offered once ${weapon} has grown ${n} ranks`,
   weaponAsleep: 'This spirit still sleeps in the Lantern Web.',
   fullAlmanacOn: 'Full Almanac: riddles are lit',
   // heroes
@@ -93,23 +93,23 @@ export const LORE = Object.freeze([
   { title: 'Hollowlighters', text: 'Each night they walk into the grey with their spirits. Keep the light until dawn, and the sun remembers that place for good.', cond: 'Clear the Long Night.' },
 ]);
 
-// CX7 riddles: { stat (one half of the pair), line }. Polished by Claude under Matt's Almanac delegation (2026-10-28). Shown only with the Full Almanac lantern.
+// CX7 riddles: { line } about the evolution's nature (flow v2: no stat, no recipe). Polished by Claude under Matt's Almanac delegation (2026-10-28). Shown only with the Full Almanac lantern.
 export const RIDDLE = Object.freeze({
-  phantom_stampede: { stat: 'speed', line: 'The pack leaves its light behind when it runs fast enough.' },
-  howling_legion: { stat: 'count', line: 'Gather enough voices and the night is howled down.' },
-  dire_alpha: { stat: 'power', line: 'One bite from the oldest wolf, and that is the end of it.' },
-  murder_storm: { stat: 'range', line: 'See far enough, and the wings close in like weather.' },
-  dive_bombers: { stat: 'power', line: 'A hard enough beak goes for the biggest shadow.' },
-  spearhead: { stat: 'speed', line: 'Beat the wings fast and the whole flock becomes one point.' },
-  spirit_tempest: { stat: 'count', line: 'Scatter enough glyphs and the air begins to answer.' },
-  soul_lance: { stat: 'pierce', line: 'A light that does not stop at the first shadow.' },
-  returning_pages: { stat: 'speed', line: 'Swift pages always find their way home.' },
-  thunder_judgment: { stat: 'chains', line: 'Many links, and the sky does the counting.' },
-  static_storm: { stat: 'cooldown', line: 'Strike often enough and the air takes your side.' },
-  storm_tether: { stat: 'area', line: 'Reach wide enough and the storm can be held.' },
-  vesper_tide: { stat: 'radius', line: 'A wide ring breathes like the evening.' },
-  sanctum_halo: { stat: 'count', line: 'Enough candles, and the ground itself is holy.' },
-  judgement_wheel: { stat: 'speed', line: 'Spin the lights fast and each becomes a verdict.' },
+  phantom_stampede: { line: 'The pack runs, and the light it sheds stays behind.' },
+  howling_legion: { line: 'What the pack brings down rises again, howling.' },
+  dire_alpha: { line: 'Seven hungers become one, and one bite is enough.' },
+  murder_storm: { line: 'The flock closes into rings, and the dark flees the wings.' },
+  dive_bombers: { line: 'One raven picks the largest shadow and falls on it.' },
+  spearhead: { line: 'The flock narrows to a point and drives into the crowd.' },
+  spirit_tempest: { line: 'Eight glyphs scatter, and each finds its own name.' },
+  soul_lance: { line: 'One light, spoken through the densest line of them.' },
+  returning_pages: { line: 'What is sent out reads itself home again.' },
+  thunder_judgment: { line: 'The sky holds its breath, then strikes all that are near.' },
+  static_storm: { line: 'The air itself crackles and takes your side.' },
+  storm_tether: { line: 'Arcs that reach out, and do not let go.' },
+  vesper_tide: { line: 'The ring swells outward and draws back, like evening breath.' },
+  sanctum_halo: { line: 'The candles walk, and the ground they cross burns holy.' },
+  judgement_wheel: { line: 'The lights burst and re-form, each one a verdict.' },
 });
 
 // CX6 titles (fixed list; the save keeps only these ids). weapon: Almanac weapon page complete (3 / 3); tab / book completion.

@@ -47,15 +47,15 @@ test('locked codex lines are used verbatim', () => {
   assert.equal(E.thunder_judgment.codex, 'The sky keeps its own count.');
 });
 
-test('plate model: name + codex, recipe only on the first take, never for an unknown or hostile id', () => {
+test('plate model: name + codex, Almanac note only on the first take, never for an unknown or hostile id', () => {
   for (const id of IDS) {
     const m = plateModel(id, data, false);
     assert.equal(m.name, data.evolutions[id].name);
     assert.equal(m.codex, data.evolutions[id].codex);
-    assert.equal(m.recipe, '');
+    assert.equal(m.note, '');
     assert.equal(m.cue, `evo_${id}`);
     const f = plateModel(id, data, true);
-    assert.ok(/^Recipe: .+ \+ .+$/.test(f.recipe), `${id}: ${f.recipe}`);
+    assert.equal(f.note, 'Written in your Almanac'); assert.equal(f.recipe, undefined);
   }
   for (const bad of ['', '__proto__', 'constructor', 'toString', null, undefined, 5, {}, '<img src=x>']) assert.equal(plateModel(bad, data, true), null);
 });
@@ -66,7 +66,7 @@ test('plate model clamps long and hostile strings (text only, control chars drop
   const m = plateModel('x', evil, true);
   assert.ok(m.name.length <= PLATE_CLAMP.name && !/[\u0000-\u001f]/.test(m.name));
   assert.ok(m.codex.length <= PLATE_CLAMP.codex);
-  assert.ok(m.recipe.length <= PLATE_CLAMP.recipe);
+  assert.ok(m.note.length <= PLATE_CLAMP.note);
   assert.equal(m.cue, '', 'a malformed cue is dropped');
   const root = mkNode('div');
   const p = new EvoPlate(root);

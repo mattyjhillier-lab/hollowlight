@@ -1197,7 +1197,7 @@
    "idx": 33,
    "kind": "ring",
    "name": "Attuned Hands",
-   "desc": "New verb: cards that complete an evolution pair appear 50% more often.",
+   "desc": "New verb: upgrade cards of a spirit still waiting to evolve appear 50% more often.",
    "flavour": "Your spells remember what they can become.",
    "branch": "magic",
    "cost": {

@@ -4,14 +4,14 @@
  "prefix": "cd",
  "slot": "far10",
  "name": "The Card Fan",
- "blurb": "Cards and information: see more, choose better, never learn a recipe early.",
+ "blurb": "Cards and information: see more, choose better, awaken sooner.",
  "nodes": [
   {
    "id": "cd_stir",
    "idx": 0,
    "kind": "ring",
    "name": "Louder Stirring",
-   "desc": "\"Something stirs\" also lights when the partner stat is at rank 2. It never names an evolution.",
+   "desc": "Your spirits awaken one stat rank sooner: the evolution cards are offered a rank earlier.",
    "cost": {
     "gold": 600
    },

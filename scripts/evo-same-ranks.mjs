@@ -19,6 +19,7 @@ export const data = {
 export const SCEN = { single: ['dummy', 1], stream10: ['walker', 10], stream40: ['walker', 40] };
 
 export function ranksFor(weaponId, evoId, mode) {
+  if (mode && typeof mode === 'object') return { ...mode }; // flow v2: an explicit rank spread (scripts/evo-flow-ranks.mjs)
   const def = data.weapons[weaponId];
   const max = base.balance.maxRank;
   const pair = evoId ? data.evolutions[evoId].pair : [];

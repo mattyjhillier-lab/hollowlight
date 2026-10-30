@@ -51,7 +51,7 @@
    "idx": 1,
    "kind": "socket",
    "name": "Spirit Tempest",
-   "desc": "Unlocks the Spirit Tempest evolution for Spirit Bolts. Its recipe stays hidden.",
+   "desc": "Unlocks the Spirit Tempest evolution for Spirit Bolts. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 400
@@ -84,7 +84,7 @@
    "idx": 2,
    "kind": "socket",
    "name": "Soul Lance",
-   "desc": "Unlocks the Soul Lance evolution for Spirit Bolts. Its recipe stays hidden.",
+   "desc": "Unlocks the Soul Lance evolution for Spirit Bolts. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 500
@@ -117,7 +117,7 @@
    "idx": 3,
    "kind": "socket",
    "name": "Returning Pages",
-   "desc": "Unlocks the Returning Pages evolution for Spirit Bolts. Its recipe stays hidden.",
+   "desc": "Unlocks the Returning Pages evolution for Spirit Bolts. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 600

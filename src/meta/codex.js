@@ -1,8 +1,9 @@
 // CX1 the Almanac model (docs/design/codex-celebrations-v1.md; LOCKED 'CODEX + CELEBRATIONS'). Pure JS, no DOM: every entry is DERIVED from the
 // stats the save already keeps (kills, boss kills, evolutions, heroes, tier records, marked kills) plus the tree; the only new save data are
 // two small validated fields: `codex` {v, read, told} (bitsets over ENTRY_KEYS: NEW dots and celebrated-once) and `titles` {got, pick}.
-// Recipes stay hidden until the evolution was taken (stats.evolved); a riddle naming ONE stat shows only when the Full Almanac lantern is owned.
+// Evolution flow v2: there are no recipes. An entry is found once the evolution was taken (stats.evolved); a riddle about its nature shows only when the Full Almanac lantern is owned.
 import { conditionProgress, describeNode } from './tree.js';
+import { evoTrigger } from '../sim/cards.js';
 import { TIER_IDS, MARK_IDS, resolveTier } from '../sim/tiers.js';
 import { FOE, PAGE, PAGE_LABEL, MARK_LINE, LORE, RIDDLE, TITLES, UNMET } from '../ui/codexcopy.js';
 
@@ -195,9 +196,8 @@ export function almanac(save, data, def, opts = {}) {
       const awake = !ev.treeGate || gateOwned(gid) || taken > 0;
       let state = taken > 0 ? 'found' : awake && wKnown ? 'sealed' : 'sleeping';
       if (taken > 0) unlocked.add(key);
-      const statName = (k) => (w.stats && w.stats[k] && w.stats[k].name) || k;
       const out = { key, id: eid, state, verb: state === 'sleeping' ? '???' : ev.verb, color: w.color || '#ffd27a' };
-      if (state === 'found') Object.assign(out, { name: ev.name, codex: ev.codex, desc: typeof ev.desc === 'string' ? ev.desc : '', recipe: [statName(ev.pair[0]), statName(ev.pair[1])], taken });
+      if (state === 'found') Object.assign(out, { name: ev.name, codex: ev.codex, desc: typeof ev.desc === 'string' ? ev.desc : '', trigger: evoTrigger(data), taken });
       else if (state === 'sealed') { if (riddles && own(RIDDLE, eid)) out.riddle = RIDDLE[eid].line; }
       else {
         let text = '', frac = 0;

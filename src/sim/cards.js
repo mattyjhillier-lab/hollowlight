@@ -82,6 +82,23 @@ export function availableEvolutions(w, data, unlocked, early = false) {
   return Object.entries(data.evolutions).filter(([evoId, evo]) => evo.weapon === w.id && evoOpen(evo, evoId, unlocked)).map(([evoId]) => evoId);
 }
 
+// E2 'no wasted ranks': an evolution may carry evolutions.json "rankScale": { stat: exponent }. Its damage is multiplied by (stat value / stat value at max rank) ^ exponent,
+// so a rank in that stat moves the evolution roughly as much as it moves the base weapon (exponent 1 = like a damage stat; negative = the evolution leans on the stat less
+// than its base does). Exactly 1 at max rank, so the tuned home values never change; below max it keeps the evolution's ratio to its base weapon steady across every spread of ranks.
+export function evoRankMult(data, w) {
+  const rs = w.evo && data.evolutions[w.evo] && data.evolutions[w.evo].rankScale;
+  if (!rs) return 1;
+  const def = data.weapons[w.id];
+  const max = data.balance.maxRank;
+  let m = 1;
+  for (const [k, e] of Object.entries(rs)) {
+    if (!Object.hasOwn(def.stats, k) || !Number.isFinite(e)) continue;
+    const vmax = statValue(def, k, max), v = statValue(def, k, w.ranks[k] || 0);
+    if (vmax > 0 && v > 0) m *= (v / vmax) ** e;
+  }
+  return m;
+}
+
 // True while a weapon is still waiting on its awakening (unevolved and with at least one unlocked evolution); Attuned Hands (evoLuck) favours its stat cards.
 export function awaitsEvolution(w, data, unlocked) {
   return !w.evo && Object.entries(data.evolutions).some(([id, e]) => e.weapon === w.id && evoOpen(e, id, unlocked));

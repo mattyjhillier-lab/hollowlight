@@ -51,7 +51,7 @@
    "idx": 1,
    "kind": "socket",
    "name": "Talon Mark",
-   "desc": "Unlocks the Talon Mark evolution for Raven Flock. Its recipe stays hidden.",
+   "desc": "Unlocks the Talon Mark evolution for Raven Flock. It is offered once that spirit has grown.",
    "branch": "summoner",
    "cost": {
     "gold": 200
@@ -74,7 +74,7 @@
    "idx": 2,
    "kind": "socket",
    "name": "Wall of Wings",
-   "desc": "Unlocks the Wall of Wings evolution for Raven Flock. Its recipe stays hidden.",
+   "desc": "Unlocks the Wall of Wings evolution for Raven Flock. It is offered once that spirit has grown.",
    "branch": "summoner",
    "cost": {
     "gold": 400
@@ -107,7 +107,7 @@
    "idx": 3,
    "kind": "socket",
    "name": "Spearhead",
-   "desc": "Unlocks the Spearhead evolution for Raven Flock. Its recipe stays hidden.",
+   "desc": "Unlocks the Spearhead evolution for Raven Flock. It is offered once that spirit has grown.",
    "branch": "summoner",
    "cost": {
     "gold": 600

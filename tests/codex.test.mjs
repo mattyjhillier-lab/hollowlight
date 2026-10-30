@@ -90,7 +90,7 @@ test('CX1 almanac: fresh save = all unknown, no names leak, no recipes', () => {
   assert.equal(b.spirits.find((w) => w.id === 'raven_flock').known, false);
 });
 
-test('CX1 almanac: kills open foes and pages at the thresholds; found evolutions show the recipe', () => {
+test('CX1 almanac: kills open foes and pages at the thresholds; found evolutions show when they are offered, never a recipe', () => {
   const s = save({ killsByEnemy: { wolf: 4100, crow: 10 }, bossKills: { elder_treant: 1 }, evolved: { howling_legion: 6 }, charsUsed: { wren: 3 }, runs: 3, wins: 1 });
   const b = almanac(s, data, treeDef);
   const wolf = b.foes.find((f) => f.id === 'wolf');
@@ -100,7 +100,7 @@ test('CX1 almanac: kills open foes and pages at the thresholds; found evolutions
   const tr = b.foes.find((f) => f.id === 'elder_treant');
   assert.ok(tr.known); assert.deepEqual(tr.pages.map((p) => p.open), [true, false, false]);
   const hl = b.spirits.find((w) => w.id === 'ghost_wolves').evos.find((e) => e.id === 'howling_legion');
-  assert.equal(hl.state, 'found'); assert.deepEqual(hl.recipe, ['Pack size', 'Rend']); assert.equal(hl.taken, 6);
+  assert.equal(hl.state, 'found'); assert.equal(hl.recipe, undefined); assert.equal(hl.trigger, data.balance.evoTriggerRanks); assert.equal(hl.taken, 6);
   assert.ok(b.unlocked.has('h:wren') && !b.unlocked.has('h:elias'));
   assert.ok(b.unlocked.has('l:1') && b.unlocked.has('l:2') && !b.unlocked.has('l:3'));
   assert.equal(b.tabs.find((t) => t.id === 'spirits').found, 1);
@@ -109,14 +109,12 @@ test('CX1 almanac: kills open foes and pages at the thresholds; found evolutions
   assert.ok(!almanac({ ...s, codex: r }, data, treeDef).isNew('f:wolf'));
 });
 
-test('CX7 riddles: one stat of the pair only, never both; shown only with the Full Almanac (or forced preview)', () => {
+test('CX7 riddles: about the evolution itself, naming no stat of its weapon; shown only with the Full Almanac (or forced preview)', () => {
   for (const [id, ev] of Object.entries(data.evolutions)) {
     const r = RIDDLE[id];
     assert.ok(r, id);
-    assert.ok(ev.pair.includes(r.stat), `${id} riddle stat in pair`);
-    const other = ev.pair.find((p) => p !== r.stat);
-    const lab = data.weapons[ev.weapon].stats[other].name.toLowerCase();
-    assert.ok(!r.line.toLowerCase().includes(lab), `${id} riddle must not name ${lab}`);
+    assert.equal(r.stat, undefined);
+    for (const st of Object.values(data.weapons[ev.weapon].stats)) assert.ok(!new RegExp(`\b${st.name.toLowerCase()}\b`).test(r.line.toLowerCase()), `${id} riddle must not name ${st.name}`);
     assert.ok(r.line.length <= 70);
   }
   const s = save();
@@ -147,7 +145,7 @@ test('CX4 queue: sizes, caps (1 big + 3 medium), order, once only, defeat holds 
   assert.equal(q.medium.length, CAP.medium);
   assert.equal(q.waiting, 5, 'the other completions wait'); // 5 weapon pages + spirits tab, one shown
   assert.ok(q.more >= 12);
-  assert.ok(q.medium.every((i) => i.kind === 'evo' && i.gold && /Recipe: /.test(i.sub) && i.cue.startsWith('evo_')));
+  assert.ok(q.medium.every((i) => i.kind === 'evo' && i.gold && !/Recipe/.test(i.sub) && i.cue.startsWith('evo_')));
   assert.ok(q.big[0].pills.length === 2 && q.big[0].cue === 'tree_whole');
   for (const k of q.tell) assert.ok(!k.startsWith('c:') || q.big.some((i) => i.key === k), 'held bigs are not told');
   const told = markTold(s.codex, q.tell);

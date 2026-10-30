@@ -61,7 +61,7 @@
    "idx": 1,
    "kind": "socket",
    "name": "Thunder Judgment",
-   "desc": "Unlocks the Thunder Judgment evolution for Chain Lightning. Its recipe stays hidden.",
+   "desc": "Unlocks the Thunder Judgment evolution for Chain Lightning. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 600
@@ -94,7 +94,7 @@
    "idx": 2,
    "kind": "socket",
    "name": "Static Storm",
-   "desc": "Unlocks the Static Storm evolution for Chain Lightning. Its recipe stays hidden.",
+   "desc": "Unlocks the Static Storm evolution for Chain Lightning. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 600
@@ -117,7 +117,7 @@
    "idx": 3,
    "kind": "socket",
    "name": "Storm Tether",
-   "desc": "Unlocks the Storm Tether evolution for Chain Lightning. Its recipe stays hidden.",
+   "desc": "Unlocks the Storm Tether evolution for Chain Lightning. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 600

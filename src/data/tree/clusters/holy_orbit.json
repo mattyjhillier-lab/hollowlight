@@ -49,7 +49,7 @@
    "idx": 0,
    "kind": "socket",
    "name": "Judgement Wheel",
-   "desc": "Unlocks the Judgement Wheel evolution for Holy Orbit. Its recipe stays hidden.",
+   "desc": "Unlocks the Judgement Wheel evolution for Holy Orbit. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 100
@@ -72,7 +72,7 @@
    "idx": 1,
    "kind": "socket",
    "name": "Vesper Tide",
-   "desc": "Unlocks the Vesper Tide evolution for Holy Orbit. Its recipe stays hidden.",
+   "desc": "Unlocks the Vesper Tide evolution for Holy Orbit. It is offered once that spirit has grown.",
    "branch": "magic",
    "cost": {
     "gold": 600
