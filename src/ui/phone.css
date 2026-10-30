@@ -1,0 +1,11 @@
+/* PHONE-A (Option A, docs/design/phone-layout-v1.md). Everything here is scoped under html.phone (set by phone.js on touch-first or short wide screens),
+   so desktop windows keep the framed 16:9 column exactly as before. Render/UI only. */
+
+/* ---- A1: full-bleed stage. The 16:9 lock left 75-91px dead gutters on 2:1+ phones; the stage now fills the screen and the camera (zoomFor) crops the
+   long side sensibly (never squashes). The base type stays what the old 16:9 column gave on a height-limited phone (3.02vh), so the tuned layouts keep their size and just gain width. */
+html.phone #app { padding: 0; }
+html.phone #stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+@media (orientation: landscape) {
+  html.phone #ui { font-size: clamp(9px, min(1.7cqw, 3.02vh), 20px); }
+  html.phone.touch #ui { font-size: clamp(11px, min(1.7cqw, 3.02vh), 20px); }
+}
