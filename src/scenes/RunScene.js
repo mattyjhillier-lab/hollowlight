@@ -28,6 +28,7 @@ import { Gate, RateCap, SHAKE_GAP, KILL_POPS_PER_SEC, gemPopScale, GEM_POP_LIFE 
 import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
+import { LOWMEM } from '../gfx/memprofile.js'; // FIX4d low-memory profile
 import { probe } from '../gfx/probe.js'; // FIX4 ?perf=1 real-device probe
 import { Prebake } from '../gfx/prebake.js'; // FIX4 loading-phase pre-bake
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
@@ -740,7 +741,7 @@ export class RunScene extends Phaser.Scene {
     const cam = this.cameras.main;
     try {
       if (this.bloom && !(c.bloom && app.params.bloom)) { cam.removePostPipeline(HLBloomFX); this.bloom = null; }
-      if (c.bloom && app.params.bloom && !this.bloom && this.renderer.type === Phaser.WEBGL && this.renderer.pipelines && typeof cam.setPostPipeline === 'function') {
+      if (c.bloom && app.params.bloom && !LOWMEM && !this.bloom && this.renderer.type === Phaser.WEBGL && this.renderer.pipelines && typeof cam.setPostPipeline === 'function') {
         // BL1: bright-pass bloom 'B tuned' added on top of the sharp frame (src/gfx/bloompipe.js); replaces the built-in addBloom (it dimmed the frame ~25%)
         this.renderer.pipelines.addPostPipeline('HLBloom', HLBloomFX); // no-op once registered
         cam.setPostPipeline(HLBloomFX);

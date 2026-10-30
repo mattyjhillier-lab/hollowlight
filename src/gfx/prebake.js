@@ -7,29 +7,42 @@ import { SUM_ART, bakeWolfArt, bakeRavenArt, bakeOrbitArt, bakeBoltArt, bakeWolf
 import { makeGroundLazy } from './sprites.js';
 import { drawArc, drawPillar, drawDome, drawBraid, CrackPool, pillarTop, chainCaps } from './summon/chain.js';
 import { probe } from './probe.js';
+import { LOWMEM } from './memprofile.js';
 
 // Crash guard: a flag is set while the bake runs and cleared when it finishes. If the page is found with the flag still set (the browser died or was
 // closed mid-bake, e.g. out of memory on a phone), the bake stays off on this device and the game falls back to its old lazy behaviour. ?prebake=1 re-enables it.
-const PB_KEY = 'hollowlight:pb';
-const pbGet = () => { try { return localStorage.getItem(PB_KEY); } catch (e) { return null; } };
-const pbSet = (v) => { try { localStorage.setItem(PB_KEY, v); } catch (e) { /* storage blocked: ignore */ } };
-export function prebakeAllowed(force) {
-  if (force) { pbSet('ok'); return true; }
-  const v = pbGet();
-  if (v === 'run') { pbSet('off'); return false; }
+// The guard is per mode: 'full' (everything) and 'ground' (forest-floor tiles only, the default on iPhone / iPad / low-memory devices) have their own flags,
+// so a crash in full mode never switches ground-only off (the legacy flag name is the full mode's).
+const keyOf = (mode) => (mode === 'ground' ? 'hollowlight:pb:ground' : 'hollowlight:pb');
+const pbGet = (mode) => { try { return localStorage.getItem(keyOf(mode)); } catch (e) { return null; } };
+const pbSet = (mode, v) => { try { localStorage.setItem(keyOf(mode), v); } catch (e) { /* storage blocked: ignore */ } };
+export function prebakeAllowed(mode = 'full', force = false) {
+  if (force) { pbSet(mode, 'ok'); return true; }
+  const v = pbGet(mode);
+  if (v === 'run') { pbSet(mode, 'off'); return false; }
   return v !== 'off';
 }
-export const prebakeMark = (done) => pbSet(done ? 'ok' : 'run');
+export const prebakeMark = (mode, done) => pbSet(mode, done ? 'ok' : 'run');
+/** Which mode this device starts in: ground-only on low-memory devices, everything elsewhere; ?prebake=1 forces full. Returns null when both are off. */
+export function pickPrebakeMode(lowMem, force) {
+  if (force) { prebakeAllowed('full', true); return 'full'; }
+  const want = lowMem ? ['ground'] : ['full', 'ground'];
+  for (const m of want) if (prebakeAllowed(m)) return m;
+  return null;
+}
 
 export const GROUND_STEPS = 140; // generator slices for both Deep Forest Floor tiles (progress denominator; the bar holds at 99% until really done)
 const frame = () => new Promise((r) => { let d = false; const f = () => { if (!d) { d = true; r(); } }; if (typeof requestAnimationFrame === 'function') requestAnimationFrame(f); setTimeout(f, 80); });
 
 export class Prebake {
-  constructor(scene, owned = null) {
+  constructor(scene, owned = null, mode = 'full') {
+    this.mode = mode; this.hold = mode === 'ground' ? 20 : 45;
     this.owned = owned; this.peakMB = 0; // owned(): weapon ids this lantern can be offered (null = all); only their art is baked
     this.s = scene; this.done = false; this.audioDone = false; this.p = 0; this.label = ''; this.budget = 5; this.fg = false;
-    this.listeners = new Set(); this.main = null; this.cur = null; this.doneW = 0; this.total = 1; this.err = []; this.lazy = null;
+    this.listeners = new Set(); this.main = null; this.cur = null; this.audioDone = mode === 'ground'; this.doneW = 0; this.total = 1; this.err = []; this.lazy = null;
   }
+
+  setMode(mode) { this.mode = mode; this.hold = mode === 'ground' ? 20 : 45; this.audioDone = mode === 'ground'; }
 
   /** Bring the work to the front (Start was pressed): bigger slices, summon bakes yield by timer. */
   foreground() { this.fg = true; this.budget = 14; SUM_ART.fast = true; }
@@ -57,10 +70,11 @@ export class Prebake {
 
   steps() {
     const s = this.s, self = this;
-    return [
+    const all = [
       { label: 'Waking the spirits', w: 8, frac: () => 0, run: async () => { if (s.bootBake) await s.bootBake; } },
-      { label: 'Painting the forest floor', w: 30, frac: () => (this.lazy ? Math.min(1, this.lazy.n / GROUND_STEPS) : 0), run: async () => {
+      { id: 'ground', label: 'Painting the forest floor', w: 30, frac: () => (this.lazy ? Math.min(1, this.lazy.n / GROUND_STEPS) : 0), run: async () => {
         const b = s.bState;
+        for (let i = 0; i < 40 && !s.gbOn && s.quality.tier !== 'low'; i++) await frame(); // the ground shader is built on the first frames
         if (!b || b.ready >= 1 || s.flatGround || !s.gbOn) return; // Low tier / flat ground never shows the Deep Forest tiles: no 2 x 4 MB canvases
         if (!b.lazy) b.lazy = makeGroundLazy(s);
         this.lazy = b.lazy;
@@ -84,11 +98,12 @@ export class Prebake {
       } },
       { label: 'Waking the Elder Treant', w: 12, frac: () => 0, run: async () => { if (s.phone || s.quality.tier === 'low') return; if (s.bossView && s.bossView.bakeNow) await s.bossView.bakeNow(s.quality.tier); } /* phones / Low: the Treant bakes at 10:00 as before (7 MB atlas x2 stays out of the start-up peak) */ },
       { label: 'Gathering the spirits', w: 4, frac: () => 0, run: async () => {
-        for (const p of Object.values(s.pools || {})) { if (p.reserve) { p.reserve(s.phone ? 3 : 6); await self.idle(); } }
-        if (s.ribLayer && s.ribLayer.reserve) { s.ribLayer.reserve(s.phone ? 100 : 240); await self.idle(); }
+        for (const p of Object.values(s.pools || {})) { if (p.reserve) { p.reserve(LOWMEM ? 0 : s.phone ? 3 : 6); await self.idle(); } }
+        if (s.ribLayer && s.ribLayer.reserve) { s.ribLayer.reserve(LOWMEM ? 40 : s.phone ? 100 : 240); await self.idle(); }
       } },
       { label: 'Warming the lightning', w: 6, frac: () => 0, run: async () => { await this.warmFx(); } },
     ];
+    return this.mode === 'ground' ? all.filter((x) => x.id === 'ground') : all;
   }
 
   wantKinds(w) {
@@ -121,7 +136,7 @@ export class Prebake {
   /** The audio step needs a running context (a user gesture); call after Start. Idempotent. */
   async primeAudio(eng) {
     if (this.audioDone || !eng || !eng.ctx || eng.ctx.state !== 'running') return;
-    const ids = eng.primeIds();
+    const ids = eng.primeIds(LOWMEM); // low memory: only the hot weapon / pickup cues, the rest build on first use
     let t0 = performance.now();
     for (let i = 0; i < ids.length; i++) {
       probe.span('prebake:audio-cue', () => eng.primeOne(ids[i]));
@@ -135,7 +150,7 @@ export class Prebake {
   start() {
     if (this.main) return this.main;
     this.main = (async () => {
-      prebakeMark(false);
+      prebakeMark(this.mode, false);
       const st = this.steps(); this.total = st.reduce((a, x) => a + x.w, 0) + 4;
       for (const step of st) {
         this.cur = step; this.label = step.label; this.emit();
@@ -144,7 +159,7 @@ export class Prebake {
         probe.tag('prebake:' + step.label, performance.now() - t);
         this.doneW += step.w; this.cur = null; this.emit();
       }
-      this.main.ok = true; this.mainDone = true; prebakeMark(true);
+      this.main.ok = true; this.mainDone = true; prebakeMark(this.mode, true);
       return true;
     })();
     return this.main;

@@ -114,7 +114,7 @@ export class AudioEngine {
 
   /** FIX4 loading phase: run every cue once at a near-silent level so the first real use does not stall (node creation, JIT). Ducking and the
    *  gem climb are left untouched. Returns the cue ids (call primeOne for each, a few per frame). */
-  primeIds() { return Object.keys(CUES); }
+  primeIds(core = false) { return core ? Object.keys(CUES).slice(0, 11) : Object.keys(CUES); }
   primeOne(id) {
     const c = this.ctx;
     if (!c || c.state !== 'running') return false;

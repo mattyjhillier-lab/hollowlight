@@ -13,7 +13,8 @@ import { createPwa } from './pwa/index.js';
 import { Lanterns } from './save/lanterns.js';
 import { createAudio } from './audio/index.js';
 import { Vibe } from './gfx/feel.js';
-import { prebakeAllowed } from './gfx/prebake.js';
+import { pickPrebakeMode } from './gfx/prebake.js';
+import { LOWMEM, LOWMEM_DPR } from './gfx/memprofile.js';
 
 applyCssPalette(document.documentElement);
 app.ui = new UI(document.getElementById('ui'), app.data);
@@ -50,12 +51,13 @@ document.documentElement.dataset.style = STYLE;
 const stage = document.getElementById('stage');
 const renderSize = () => {
   const r = stage.getBoundingClientRect();
-  const d = parseDpr(window.devicePixelRatio);
+  const d = Math.min(parseDpr(window.devicePixelRatio), LOWMEM ? LOWMEM_DPR : 2);
   return { w: Math.max(320, Math.round(r.width * d)), h: Math.max(180, Math.round(r.height * d)) };
 };
 const first = renderSize();
 const game = new Phaser.Game({
   type: Phaser.AUTO,
+  disablePreFX: true, // FIX4d: nothing here uses the built-in per-object FX; Phaser would still allocate ~80 MB of render targets for them (4 full-frame + a 32..768 px ladder)
   parent: 'game',
   width: first.w,
   height: first.h,
@@ -82,7 +84,10 @@ window.addEventListener('resize', onResize);
 
 window.addEventListener('pagehide', () => app.save.flush());
 window.addEventListener('scene-ready', () => {
-  if (app.scene && app.scene.prebake && !prebakeAllowed(new URLSearchParams(location.search).get('prebake') === '1')) app.scene.prebake = null; // crashed mid-bake last time: old lazy behaviour
+  if (app.scene && app.scene.prebake) { // ground-only on iPhone / iPad / low-memory devices, full elsewhere; a mode that crashed last time stays off (the other mode is unaffected)
+    const mode = pickPrebakeMode(LOWMEM, new URLSearchParams(location.search).get('prebake') === '1');
+    if (mode) app.scene.prebake.setMode(mode); else app.scene.prebake = null;
+  }
   if (app.scene && app.scene.prebake && (!app.params.auto || app.params.perf)) app.scene.prebake.start(); // FIX4: bake quietly while the front door is up
   if (app.params.auto && Object.hasOwn(app.data.characters, app.params.auto)) app.startRun(app.params.auto);
   else app.showMenu();

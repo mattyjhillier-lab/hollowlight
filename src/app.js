@@ -79,7 +79,7 @@ export const app = {
       const release = () => { if (released) return; released = true; this.warmHold = false; this.loadingRun = false; ld.close(); };
       try { this.startRunNow(characterId, tier, weaponId); } catch (e) { release(); throw e; }
       this.warmHold = true; ld.set(0.99, 'Lighting the lantern');
-      const tick = () => { if (released) return; if (++n < 45) requestAnimationFrame(tick); else release(); };
+      const tick = () => { if (released) return; if (++n < (pb.hold || 45)) requestAnimationFrame(tick); else release(); };
       requestAnimationFrame(tick); setTimeout(release, 8000); // (a hidden tab never ticks: the timer is the safety net)
     });
   },
