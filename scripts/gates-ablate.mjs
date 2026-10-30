@@ -1,3 +1,4 @@
+// STALE PROBE (2026-10-30): old gates-lib bot, win rates not comparable to the live game. Ability ablation now: ABILITY=off node scripts/rt-matrix.mjs (see nights-retune-options.md).
 // Which parts of the old full tree still drive the win rate AFTER the stat soft cap? (All gates unlocked.)
 // Usage: node scripts/gates-ablate.mjs [seeds=48] [scale=0.6]
 import { GATES, STARTER_EVOS, runGrid, printGrid } from './gates-lib.mjs';

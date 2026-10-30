@@ -1,3 +1,4 @@
+// STALE PROBE (2026-10-30): uses the old gates-lib bot (no dodge, Blessings, Bond or map events), so its win rates read far below the live game (32 seeds: 0-13% vs 15-30% measured by rt-matrix). Use scripts/rt-matrix.mjs for balance numbers. See docs/design/fv-data/nights-retune-options.md.
 // Starter-kit candidates: which second starter weapon keeps a no-tree starter run near the 15-25% target?
 // Usage: node scripts/gates-kits.mjs [seeds=48]   (no tree, evolutions: the one starter evolution per kit weapon)
 import { runJobs, summarise } from './gates-lib.mjs';

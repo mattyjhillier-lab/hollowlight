@@ -1,3 +1,4 @@
+// STALE PROBE (2026-10-30): old gates-lib bot, win rates not comparable to the live game; the aggregate table at the top is still valid. Balance numbers: scripts/rt-matrix.mjs.
 // Soft-cap effect on the EXISTING 63-node tree. The cap is a script-side transform of aggregateMods output
 // (total = cap * (1 - exp(-sum/cap)) per stat category; verbs such as rerolls/revive/auto are untouched).
 // Usage: node scripts/gates-softcap.mjs [seeds=48] [scales=1,0.6,0.4]
