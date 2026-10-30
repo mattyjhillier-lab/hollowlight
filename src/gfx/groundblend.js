@@ -178,6 +178,22 @@ export class GroundBlend {
     gl.bindTexture(gl.TEXTURE_2D, cur || null);
   }
 
+  // FIX4g: between the 10 Hz life-map refreshes, send just the rows the hero / spirits stamped this frame (a ~10-row strip), so the lit ground grows
+  // smoothly with the walker instead of in 100 ms chunks. Same texture, same format; no new memory.
+  uploadRows(lifeMap, y0, y1) {
+    if (!this.ok || !this.fullDone || !this.lifeTex || !this.lifeTex.webGLTexture) return;
+    const n = lifeMap.n, h = y1 - y0 + 1;
+    if (h <= 0 || lifeMap.n !== this.n) return;
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE0);
+    const cur = gl.getParameter(gl.TEXTURE_BINDING_2D);
+    gl.bindTexture(gl.TEXTURE_2D, this.lifeTex.webGLTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, y0, n, h, gl.RGBA, gl.UNSIGNED_BYTE, lifeMap.rgba.subarray(y0 * n * 4, (y0 + h) * n * 4));
+    gl.bindTexture(gl.TEXTURE_2D, cur || null);
+  }
+
   setTint(col) {
     if (!this.sh) return;
     const u = this.sh.uniforms.uTint.value;

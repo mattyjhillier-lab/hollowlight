@@ -35,6 +35,9 @@ export class LifeMap {
     this.rowAct = new Uint8Array(n).fill(1);
     this.dy0 = 0;
     this.dy1 = n - 1;
+    // FIX4g: stamps write the R byte at once (see stamp) so the reveal can reach the GPU every frame; sy0..sy1 = rows stamped since the last upload (sy1 < sy0 = none)
+    this.sy0 = n;
+    this.sy1 = -1;
   }
 
   reset() {
@@ -72,10 +75,11 @@ export class LifeMap {
         if (d >= 1) continue;
         const t = 1 - d;
         const v = s * t * t * (3 - 2 * t);
-        if (v > life[row + i]) life[row + i] = v;
+        if (v > life[row + i]) { life[row + i] = v; if (arr === this.life) this.rgba[(row + i) * 4] = (v * 255 + 0.5) | 0; }
       }
     }
     this.rowAct.fill(1, y0, y1 + 1);
+    if (arr === this.life) { if (y0 < this.sy0) this.sy0 = y0; if (y1 > this.sy1) this.sy1 = y1; }
     this.dirty = true;
   }
 
@@ -157,6 +161,7 @@ export class LifeMap {
     if (r1 < 0) { r0 = 0; r1 = -1; }
     this.dy0 = r0;
     this.dy1 = r1;
+    this.sy0 = n; this.sy1 = -1; // this pass rewrote every active row (stamped rows are active), so nothing is left pending
     this.dirty = false;
     this.version++;
     return true;

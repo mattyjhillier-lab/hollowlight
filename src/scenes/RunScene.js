@@ -2129,7 +2129,10 @@ export class RunScene extends Phaser.Scene {
     this.lifeAcc += this.game.loop.delta / 1000;
     if (this.corrAcc === undefined || this.corrAcc >= 0.1) { this.corrAcc = 0; if (app.params.corr) this.tickCorruption(sim); }
     this.corrAcc += this.game.loop.delta / 1000;
-    if (!life.update(this.game.loop.delta / 1000)) return;
+    if (!life.update(this.game.loop.delta / 1000)) { // between the 10 Hz refreshes: just the rows stamped this frame (FIX4g: smooth reveal behind the walker)
+      if (this.gbOn && life.sy1 >= life.sy0) { this.gb.uploadRows(life, life.sy0, life.sy1); life.sy0 = life.n; life.sy1 = -1; }
+      return;
+    }
     if (this.gbOn) this.gb.upload(life);
     if (this.lifeDbg) drawLifeDebug(this.lifeDbg, life, p);
     if (++this.lifeFrames === 8 && this.gbOn) { // one-time GL error check after the first uploads
