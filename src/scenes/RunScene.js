@@ -392,7 +392,7 @@ export class RunScene extends Phaser.Scene {
     this.perf.toggle(app.params.debug);
     probe.on = !!app.params.perf; probe.hook(this); probe.mount(document.getElementById('stage') || document.body); if (probe.on) window.__probe = probe;
     this.flatGround = !!app.params.flat;
-    this.prebake = new Prebake(this);
+    this.prebake = new Prebake(this, () => app.ownedWeapons());
     this.workT0 = 0;
     this.lastStep = 0;
     this.frameMs = 16.7;

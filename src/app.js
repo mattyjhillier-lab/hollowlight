@@ -84,6 +84,9 @@ export const app = {
     });
   },
 
+  // FIX4b: weapon ids this lantern can be offered (tree-gated ones need their heart); the pre-bake only makes art for these. Render-side, reads the save only.
+  ownedWeapons() { return startableWeapons(data, treeDef, this.save.data.tree); },
+
   startRunNow(characterId, tier = 'normal', weaponId = null) {
     const p = this.params;
     this.ensureStarter();
