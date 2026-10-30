@@ -8,21 +8,12 @@ import { makeGroundLazy } from './sprites.js';
 import { drawArc, drawPillar, drawDome, drawBraid, CrackPool, pillarTop, chainCaps } from './summon/chain.js';
 import { probe } from './probe.js';
 import { LOWMEM } from './memprofile.js';
+import { guardAllowed, guardStart, guardDone, guardPause, guardLabel } from './pbguard.js';
 
-// Crash guard: a flag is set while the bake runs and cleared when it finishes. If the page is found with the flag still set (the browser died or was
-// closed mid-bake, e.g. out of memory on a phone), the bake stays off on this device and the game falls back to its old lazy behaviour. ?prebake=1 re-enables it.
-// The guard is per mode: 'full' (everything) and 'ground' (forest-floor tiles only, the default on iPhone / iPad / low-memory devices) have their own flags,
-// so a crash in full mode never switches ground-only off (the legacy flag name is the full mode's).
-const keyOf = (mode) => (mode === 'ground' ? 'hollowlight:pb:ground' : 'hollowlight:pb');
-const pbGet = (mode) => { try { return localStorage.getItem(keyOf(mode)); } catch (e) { return null; } };
-const pbSet = (mode, v) => { try { localStorage.setItem(keyOf(mode), v); } catch (e) { /* storage blocked: ignore */ } };
-export function prebakeAllowed(mode = 'full', force = false) {
-  if (force) { pbSet(mode, 'ok'); return true; }
-  const v = pbGet(mode);
-  if (v === 'run') { pbSet(mode, 'off'); return false; }
-  return v !== 'off';
-}
-export const prebakeMark = (mode, done) => pbSet(mode, done ? 'ok' : 'run');
+// Crash guard (src/gfx/pbguard.js): per mode, needs two unfinished starts in a row to switch a mode off, ignores backgrounding, 'off' expires after 24 h / a new build.
+// ?prebake=1 forces full mode and clears its guard.
+export const prebakeAllowed = (mode = 'full', force = false) => guardAllowed(mode, { force });
+export const prebakeMark = (mode, done) => (done ? guardDone(mode) : guardStart(mode));
 /** Which mode this device starts in: ground-only on low-memory devices, everything elsewhere; ?prebake=1 forces full. Returns null when both are off. */
 export function pickPrebakeMode(lowMem, force) {
   if (force) { prebakeAllowed('full', true); return 'full'; }
@@ -31,6 +22,7 @@ export function pickPrebakeMode(lowMem, force) {
   return null;
 }
 
+export const guardState = (mode) => guardLabel(mode);
 export const GROUND_STEPS = 140; // generator slices for both Deep Forest Floor tiles (progress denominator; the bar holds at 99% until really done)
 const frame = () => new Promise((r) => { let d = false; const f = () => { if (!d) { d = true; r(); } }; if (typeof requestAnimationFrame === 'function') requestAnimationFrame(f); setTimeout(f, 80); });
 
@@ -75,7 +67,7 @@ export class Prebake {
       { id: 'ground', label: 'Painting the forest floor', w: 30, frac: () => (this.lazy ? Math.min(1, this.lazy.n / GROUND_STEPS) : 0), run: async () => {
         const b = s.bState;
         for (let i = 0; i < 40 && !s.gbOn && s.quality.tier !== 'low'; i++) await frame(); // the ground shader is built on the first frames
-        if (!b || b.ready >= 1 || s.flatGround || !s.gbOn) return; // Low tier / flat ground never shows the Deep Forest tiles: no 2 x 4 MB canvases
+        if (!b || b.ready >= 1 || s.flatGround) return; // any tier: on Low the tiles wait for a later step-up to Med, which then shows the forest floor at once // Low tier / flat ground never shows the Deep Forest tiles: no 2 x 4 MB canvases
         if (!b.lazy) b.lazy = makeGroundLazy(s);
         this.lazy = b.lazy;
         while (!b.lazy.done) { probe.span('prebake:ground-tile', () => b.lazy.step(self.budget)); self.emit(); await self.idle(); }
@@ -150,7 +142,10 @@ export class Prebake {
   start() {
     if (this.main) return this.main;
     this.main = (async () => {
-      prebakeMark(this.mode, false);
+      if (!this.noGuard) prebakeMark(this.mode, false);
+      const onHide = () => { if (!this.mainDone && !this.noGuard) guardPause(this.mode); }, onShow = () => { if (!this.mainDone && !this.noGuard) guardStart(this.mode); };
+      const onVis = () => (document.hidden ? onHide() : onShow());
+      if (typeof window !== 'undefined') { window.addEventListener('pagehide', onHide); document.addEventListener('visibilitychange', onVis); this.offVis = () => { window.removeEventListener('pagehide', onHide); document.removeEventListener('visibilitychange', onVis); }; }
       const st = this.steps(); this.total = st.reduce((a, x) => a + x.w, 0) + 4;
       for (const step of st) {
         this.cur = step; this.label = step.label; this.emit();
@@ -159,7 +154,7 @@ export class Prebake {
         probe.tag('prebake:' + step.label, performance.now() - t);
         this.doneW += step.w; this.cur = null; this.emit();
       }
-      this.main.ok = true; this.mainDone = true; prebakeMark(this.mode, true);
+      this.main.ok = true; this.mainDone = true; if (!this.noGuard) prebakeMark(this.mode, true); if (this.offVis) this.offVis();
       return true;
     })();
     return this.main;

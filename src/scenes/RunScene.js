@@ -30,7 +30,7 @@ import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
 import { LOWMEM, IOS } from '../gfx/memprofile.js'; // FIX4d low-memory profile
 import { probe } from '../gfx/probe.js'; // FIX4 ?perf=1 real-device probe
-import { Prebake } from '../gfx/prebake.js'; // FIX4 loading-phase pre-bake
+import { Prebake, guardState } from '../gfx/prebake.js'; // FIX4 loading-phase pre-bake
 import { makeAmbAtlas, ATLAS_KEY } from '../gfx/ambatlas.js';
 import { SwayLayer } from '../gfx/swaylayer.js';
 import { PropLayer } from '../gfx/proplayer.js';
@@ -395,7 +395,7 @@ export class RunScene extends Phaser.Scene {
     probe.on = !!app.params.perf; probe.hook(this); probe.mount(document.getElementById('stage') || document.body); if (probe.on) window.__probe = probe;
     this.flatGround = !!app.params.flat;
     this.prebake = new Prebake(this, () => app.ownedWeapons());
-    probe.status = () => { const p = this.prebake, b = this.bState; return 'prebake ' + (p ? p.mode + ' ' + (p.done ? 'done' : Math.round(p.p * 100) + '%') : 'off') + '  tier ' + this.quality.tier + '  gb ' + (this.gbOn ? 'on' : 'off') + ' ready ' + (b ? b.ready.toFixed(1) : '-') + '  lm ' + (this.lmOn ? 'on' : 'off') + '  canvas ' + this.game.canvas.width + 'x' + this.game.canvas.height + '  cores ' + (navigator.hardwareConcurrency || '?') + (LOWMEM ? '  lowmem' : ''); };
+    probe.status = () => { const p = this.prebake, b = this.bState; return 'prebake ' + (p ? p.mode + ' ' + (p.done ? 'done' : Math.round(p.p * 100) + '%') : 'off') + '  tier ' + this.quality.tier + '  gb ' + (this.gbOn ? 'on' : 'off') + ' ready ' + (b ? b.ready.toFixed(1) : '-') + '  lm ' + (this.lmOn ? 'on' : 'off') + '  canvas ' + this.game.canvas.width + 'x' + this.game.canvas.height + '  cores ' + (navigator.hardwareConcurrency || '?') + (LOWMEM ? '  lowmem' : '') + '  guard ground:' + guardState('ground') + ' full:' + guardState('full'); };
     this.workT0 = 0;
     this.lastStep = 0;
     this.frameMs = 16.7;

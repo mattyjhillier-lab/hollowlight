@@ -1,5 +1,6 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
-import { showLoading } from './ui/loading.js'; // FIX4 run-start loading bar
+import { showLoading } from './ui/loading.js';
+import { Prebake } from './gfx/prebake.js'; // FIX4 run-start loading bar
 import { shouldNudge } from './save/nudge.js';
 import { downloadText, SAFE } from './ui/savesafety.js';
 import { applyTextSize } from './ui/textsize.js';
@@ -69,7 +70,12 @@ export const app = {
   // FIX4: the run begins only when the pre-bake is done (no bake work after t=0). Already done (Again, later runs) or a scripted ?auto= run = start at once.
   // Otherwise the front-door bake is brought to the front behind a truthful loading bar (always shown for the first run of a session: the build and a ~45 frame warm-up hold sit behind it).
   startRun(characterId, tier = 'normal', weaponId = null) {
-    const pb = this.scene && this.scene.prebake;
+    let pb = this.scene && this.scene.prebake;
+    const sc = this.scene, bs = sc && sc.bState;
+    // The forest floor must be ready before the run begins for ANY reason (mode switched off by the guard, Low tier, no pre-bake): then a ground-only bake runs behind the loading bar, unguarded.
+    if (!pb && sc && !(this.params.auto && !this.params.perf) && bs && !sc.flatGround && bs.ready < 1 && !(bs.lazy && bs.lazy.done)) {
+      pb = sc.prebake = new Prebake(sc, () => this.ownedWeapons(), 'ground'); pb.noGuard = true;
+    }
     if (!pb || (pb.done && pb.audioDone) || (this.params.auto && !this.params.perf) || this.loadingRun) return this.loadingRun ? undefined : this.startRunNow(characterId, tier, weaponId);
     this.loadingRun = true;
     const ld = showLoading(); ld.set(pb.p, pb.label);
