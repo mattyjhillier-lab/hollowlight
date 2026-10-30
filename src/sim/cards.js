@@ -70,15 +70,18 @@ export const EVO_TRIGGER_DEFAULT = 15;
 export const EVO_TRIGGER_MIN = 8; // 'Louder Stirring' can never pull the trigger below this
 export const EVO_EARLY_RANKS = 1;
 export const totalRanks = (w) => Object.values(w.ranks).reduce((a, b) => a + b, 0);
-export function evoTrigger(data, early = false) {
+// balance.evoTriggerPerWeapon (default 0 = off): ranks added per weapon held beyond two (negative = earlier). Ranks spread over more weapons, so a deeper loadout
+// reaches the same total on any one weapon later; this knob lets the balance sweep keep the timing of the first evolution steady (measured, not locked).
+export function evoTrigger(data, early = false, held = 2) {
   const t = Number(data.balance.evoTriggerRanks);
-  const base = Number.isInteger(t) && t >= 1 ? t : EVO_TRIGGER_DEFAULT;
-  return early ? Math.max(Math.min(base, EVO_TRIGGER_MIN), base - EVO_EARLY_RANKS) : base;
+  const per = Number(data.balance.evoTriggerPerWeapon);
+  const base = (Number.isInteger(t) && t >= 1 ? t : EVO_TRIGGER_DEFAULT) + (Number.isFinite(per) ? Math.round(per) * Math.max(0, Math.min(4, held) - 2) : 0);
+  return Math.max(1, early ? Math.max(Math.min(base, EVO_TRIGGER_MIN), base - EVO_EARLY_RANKS) : base);
 }
 
 // Unlocked evolutions of this weapon that are on offer now (none once the weapon has evolved or while it is below the trigger).
-export function availableEvolutions(w, data, unlocked, early = false) {
-  if (w.evo || totalRanks(w) < evoTrigger(data, early)) return [];
+export function availableEvolutions(w, data, unlocked, early = false, held = 2) {
+  if (w.evo || totalRanks(w) < evoTrigger(data, early, held)) return [];
   return Object.entries(data.evolutions).filter(([evoId, evo]) => evo.weapon === w.id && evoOpen(evo, evoId, unlocked)).map(([evoId]) => evoId);
 }
 
@@ -223,7 +226,7 @@ export function goldCards(ctx) {
   const { weapons, data } = ctx;
   const out = [];
   for (const w of weapons) {
-    for (const evoId of availableEvolutions(w, data, ctx.unlockedEvolutions, !!ctx.evoEarly).slice(0, data.balance.maxGoldCards)) out.push(evolutionCard(w, evoId, data));
+    for (const evoId of availableEvolutions(w, data, ctx.unlockedEvolutions, !!ctx.evoEarly, weapons.length).slice(0, data.balance.maxGoldCards)) out.push(evolutionCard(w, evoId, data));
   }
   return out;
 }

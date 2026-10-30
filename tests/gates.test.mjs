@@ -17,7 +17,7 @@ const raw = (nodes) => ({ ...B, nodes });
 const comp = (nodes, d = gd) => compileTree(raw(nodes), d);
 
 const wolf = (ranks) => { const w = newWeapon('ghost_wolves', gd.weapons.ghost_wolves); Object.assign(w.ranks, ranks); return w; };
-const maxed = () => wolf({ speed: 5, power: 5, duration: 5 }); // 15 ranks = the awakening trigger (flow v2)
+const maxed = () => wolf({ speed: 5, power: 5, duration: 5, count: 1 }); // evoTriggerRanks (16) = the awakening trigger (flow v2)
 const ctx = (weapons, set) => ({ weapons, data: gd, banished: new Set(), unlockedEvolutions: set });
 const entry = (pool, key) => pool.find((p) => p.card.key === key);
 const OPEN = () => new Set(['phantom_stampede']);

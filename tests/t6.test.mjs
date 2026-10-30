@@ -84,7 +84,7 @@ test('T6 Almanac Tells: a Fell Wolf lunge tell lasts 0.1 s longer (shows earlier
 test('T6 Louder Stirring (flow v2): the awakening comes one stat rank sooner; no card text changes; never below the floor', () => {
   const w = newWeapon('ghost_wolves', data.weapons.ghost_wolves);
   const ctx = { weapons: [w], data, banished: new Set(), unlockedEvolutions: new Set(Object.keys(data.evolutions)) };
-  w.ranks.power = 5; w.ranks.speed = 5; w.ranks.duration = 4; // 14 of 15
+  w.ranks.power = 5; w.ranks.speed = 5; w.ranks.duration = 4; w.ranks.count = 1; // one short of evoTriggerRanks (16)
   assert.equal(goldCards(ctx).length, 0);
   assert.equal(goldCards({ ...ctx, evoEarly: true }).length, 3);
   assert.ok(buildPool({ ...ctx, evoEarly: true }).filter((p) => p.card.kind === 'stat').every((p) => p.card.stirs === undefined && p.w === 1));

@@ -79,7 +79,7 @@ test('hidden reveal: evolution gates read ??? until progress starts, then show n
 });
 
 test('locked evolution: at the trigger a starter run gets only the free evolution; owning the gate node adds it', () => {
-  const mkSim = (tree) => { const s = new Sim({ data, characterId: 'wren', seed: 5, tree }); s.debugGrant('ghost_wolves', { power: 5, speed: 5, duration: 5 }); return s; };
+  const mkSim = (tree) => { const s = new Sim({ data, characterId: 'wren', seed: 5, tree }); s.debugGrant('ghost_wolves', { power: 5, speed: 5, duration: 5, count: 1 }); return s; };
   assert.deepEqual(goldCards(mkSim(null).cardCtx).map((c) => c.evoId), ['howling_legion']);
   const open = mkSim(withNodes(['gt_phantom_stampede']));
   assert.deepEqual(goldCards(open.cardCtx).map((c) => c.evoId).sort(), ['howling_legion', 'phantom_stampede']);

@@ -135,7 +135,7 @@ test('EV1 Louder Stirring (evoEarly) offers the awakening one rank sooner, never
 test('taking an evolution replaces the base weapon and removes the other choices and stat cards', () => {
   const ctx = mkOpen('ghost_wolves');
   const w = ctx.weapons[0];
-  maxStat(w, 'power'); maxStat(w, 'speed'); maxStat(w, 'duration');
+  maxStat(w, 'power'); maxStat(w, 'speed'); maxStat(w, 'duration'); w.ranks.count = TRIG - 15;
   const gold = goldCards(ctx);
   const dire = gold.find((c) => c.evoId === 'dire_alpha');
   applyCard(ctx, dire);
@@ -167,7 +167,7 @@ test('D1: an evolved weapon keeps offering every stat not at max, no nudge, no s
     assert.ok(!pool.some((p) => p.card.kind === 'weapon' && p.card.weaponId === evo.weapon), 'weapon card not re-offered');
     assert.deepEqual(goldCards(ctx), [], 'no further evolution');
     // taking the cards ranks the stat up and removes it at max
-    for (const k of rest) { for (let i = 0; i < data.balance.maxRank; i++) applyCard(ctx, buildPool(ctx).find((p) => p.card.key === `s:${evo.weapon}:${k}`).card); assert.equal(w.ranks[k], data.balance.maxRank); }
+    for (const k of rest) { while (w.ranks[k] < data.balance.maxRank) applyCard(ctx, buildPool(ctx).find((p) => p.card.key === `s:${evo.weapon}:${k}`).card); assert.equal(w.ranks[k], data.balance.maxRank); }
     assert.ok(!buildPool(ctx).some((p) => p.card.weaponId === evo.weapon), 'all maxed -> weapon leaves the pool (fallbacks cover)');
     assert.equal(w.evo, evoId, 'still evolved, cannot re-evolve');
   }

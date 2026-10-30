@@ -110,7 +110,7 @@
   "maxEnemies": 240,
   "gemCap": 350,
   "weaponCardWeight": 4,
-  "evoTriggerRanks": 15,
+  "evoTriggerRanks": 16,
   "playerIframes": 0.4,
   "pickupRadius": 38,
   "drops": {
