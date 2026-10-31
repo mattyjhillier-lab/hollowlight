@@ -61,6 +61,12 @@ Work in small, manageable chunks, one at a time. Do not get ahead of Matt.
 ## Standing rule: everything must fit the game (set by Matt)
 Whatever is added or designed (feature, creature, weapon, evolution, UI, effect, sound, asset, story) must (1) fit Wispwick's look and identity (docs/IDENTITY.md, docs/BIBLE.md, the chosen art direction, role colours, restraint) and (2) make mechanical sense inside the game (consistent with the locked design, the sim rules, the summoner fantasy, balance targets, and how the player reads and understands it). Before building anything new, state in one line how it fits the look and why it makes mechanical sense; if it does not clearly fit, do not add it and raise it with Matt. Generic or off-style assets and mechanics that do not belong are rejected even if they are free or easy. Check this in every review and end each task with a one-line "Fit check" next to the "Security check".
 
+## Standing rule: exploit + feel pass, and fix order (set by Matt, 2026-10-31)
+Applies to ALL weapons, evolutions, power-ups, abilities, heroes and any future content. Trigger: Spirit Tempest let Matt stand still and win.
+- Every new or changed piece of content passes the EXPLOIT + FEEL PASS before it ships (docs/QUEUE.md, docs/LAUNCH-CHECKLIST.md): stand-still / minimal-movement, camping, kiting and spam probes against controls, plus Matt's feel notes (too strong / too easy / dull). It is also a gate before friend testing and the merge.
+- If something feels too strong or exploitable: TUNE it first (keep its verb), then add a limit that only bites on the exploit (for example standing still), and only as a LAST RESORT replace it with a different design (three options, Matt picks).
+- Any change to a locked number stays Matt's decision. Report numbers with seed counts and noise.
+
 ## Standing rule: token conservation (set by Matt)
 Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.
 - Agents: set `model` explicitly. haiku = file lookups, formatting, simple edits, running scripts and reporting. sonnet = research, routine coding, tests, balance sweeps. opus (or stronger) only for hard architecture/design decisions, tricky bugs, or security-critical review.
