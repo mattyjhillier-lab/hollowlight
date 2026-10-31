@@ -1,6 +1,6 @@
-// CHARACTER SYSTEM v2 Characters page ("Kindred") view model + copy (CH5). Pure, no DOM; every string is later set with textContent.
-// Awake heroes show Bond (level, bar to the next level), their action skill, the shared body with the Bond share, the perk ladder and the kindred
-// spirit; sleeping heroes show their keepsake (found / needed) and its hint with progress. Nothing here can change the save.
+// CHARACTER SYSTEM v2 Characters page ("Characters") view model + copy (CH5). Pure, no DOM; every string is later set with textContent.
+// Awake heroes show Bond (level, bar to the next level), their action skill, the shared body with the Bond share, the perk ladder;
+// sleeping heroes show their keepsake (found / needed) and its hint with progress. Nothing here can change the save.
 import { bondDef, levelOf, xpToLevel, levelCost, bondBonus } from '../meta/bond.js';
 import { conditionProgress } from '../meta/tree.js';
 import { splitName } from './titlecopy.js';
@@ -9,7 +9,7 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 export const CHARS = {
   open: 'Characters',
   openWhisper: 'Bond, keepsakes and skills',
-  title: 'Kindred',
+  title: 'Characters',
   whisper: 'Those who walk with the spirits',
   back: 'Back',
   skill: 'Action skill',
@@ -18,7 +18,6 @@ export const CHARS = {
   bondMax: (lvl) => `Bond ${lvl} · the bond is complete`,
   bondShare: (pct) => (pct > 0 ? `+${pct}% Bond` : 'Bond grows with every run'),
   perks: 'Bond gifts',
-  kindred: (w) => `Kindred spirit: ${w} (a suggested start; any awake spirit works)`,
   sleeping: 'Sleeping',
   keepsake: (name, n, need) => `${name} ${n}/${need}`,
   keepWhere: 'Found in chests and from the Elder Treant once the hint is met. At most one a night.',
@@ -61,7 +60,6 @@ export function charsView(save, data, def) {
       const names = isObj(c.bondPerks) ? c.bondPerks : {};
       v.perks = D.perks.map((p) => ({ lvl: p.lvl, name: typeof names[p.id] === 'string' ? names[p.id] : `Bond ${p.lvl}`, text: PERK_TEXT[p.effect] ? PERK_TEXT[p.effect](p.pct) : '', lit: lvl >= p.lvl }));
       v.ability = { name: c.ability ? String(c.ability.name) : '', desc: c.ability ? String(c.ability.desc) : '', cd: c.ability ? Math.floor(Number(c.ability.cooldown) || 0) : 0 };
-      v.kindred = data.weapons[c.kindred] ? CHARS.kindred(data.weapons[c.kindred].name) : '';
     } else {
       const ks = isObj(c.keepsake) ? c.keepsake : null;
       const got = Math.max(0, Math.min(K.need, Math.floor(Number(rec.keep) || 0)));
@@ -110,7 +108,7 @@ export function bondCelebration(beat, data) {
       else if (L === beat.to) { const atCap = []; for (let k = 1; k <= D.cap; k++) if (D.cycle[(k - 1) % D.cycle.length] === s) atCap.push(k); bits.push(BOND_CEL.stat(STAT_WORD[s] || s, pct1(D.total[s] / atCap.length))); }
     }
     const title = BOND_CEL.level(nm(beat.hero), beat.to);
-    out.push({ key: `bond:lvl:${beat.hero}:${beat.to}`, size: 'medium', kind: 'bond', title, line: '', sub: bits.join(' · '), weapon: c && data.weapons[c.kindred] ? c.kindred : null, color: c && c.color ? c.color : '#ffd27a', cue: 'bond_level', sr: `${BOND_CEL.kinds.bond}: ${title}. ${bits.join('. ')}` });
+    out.push({ key: `bond:lvl:${beat.hero}:${beat.to}`, size: 'medium', kind: 'bond', title, line: '', sub: bits.join(' · '), weapon: null, color: c && c.color ? c.color : '#ffd27a', cue: 'bond_level', sr: `${BOND_CEL.kinds.bond}: ${title}. ${bits.join('. ')}` });
   }
   return out;
 }

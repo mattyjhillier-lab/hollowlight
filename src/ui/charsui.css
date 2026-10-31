@@ -28,7 +28,7 @@
 .overlay.u3 .ch-bondrow { display: flex; align-items: center; gap: 10px; }
 .overlay.u3 .ch-bar { position: relative; flex: 1; height: 12px; border-radius: 999px; background: #120d08; box-shadow: inset 0 0 0 2px #3a2412; overflow: hidden; }
 .overlay.u3 .ch-bar__fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--f, 0) * 100%); background: linear-gradient(90deg, #c9772a, #ffd28a); border-radius: 999px; }
-.overlay.u3 .ch-bondline, .overlay.u3 .ch-note, .overlay.u3 .ch-kin { margin: 0; color: var(--lg-dim); }
+.overlay.u3 .ch-bondline, .overlay.u3 .ch-note { margin: 0; color: var(--lg-dim); }
 .overlay.u3 .ch-skill { padding: 8px 12px; border: 2px solid rgba(201, 154, 78, .6); border-radius: 14px; background: rgba(10, 14, 24, .4); }
 .overlay.u3 .ch-skill__k { color: var(--lg-brass-text); }
 .overlay.u3 .ch-skill__n { color: var(--lg-text); font: var(--fw-display) clamp(20px, 3vh, 26px)/1.1 var(--font-display); }

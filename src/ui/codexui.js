@@ -214,7 +214,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
   function heroEntry(h) {
     const head = el('div', 'cx-ehead');
     const pic = heroPortraits[h.id] ? add(el('span', `cx-epic cx-epic--hero${h.walked ? '' : ' is-grey'}`), img(heroPortraits[h.id], 'cx-img')) : add(el('span', 'cx-epic'), silhouette());
-    add(head, pic, add(el('div', 'cx-etxt'), el('div', 'cx-sub', h.weapon), el('h2', 'cx-h2', h.name), el('div', 'cx-sub', h.epithet)));
+    add(head, pic, add(el('div', 'cx-etxt'), h.weapon ? el('div', 'cx-sub', h.weapon) : null, el('h2', 'cx-h2', h.name), el('div', 'cx-sub', h.epithet)));
     add(entry, head);
     if (h.walked) {
       add(entry, el('p', 'cx-quote', h.blurb), add(el('div', 'cx-page'), el('span', 'cx-k', CX.ability), el('div', 'cx-v', `${h.ability}: ${h.abilityText}`)), el('p', 'cx-sub', CX.heroWalked(h.runs, h.clears)));

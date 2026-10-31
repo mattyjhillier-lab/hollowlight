@@ -117,7 +117,7 @@ test('GEN1 Almanac + celebrations: the hero page, NEW dot and celebrate-once wor
   s.codex = adopt(defaultCodex(), { unlocked: new Set() });
   const b = almanac(s, D, def);
   const h = b.heroes.find((x) => x.id === 'sable');
-  assert.ok(h && h.walked && h.name === 'Sable' && h.weapon === 'Spirit Bolts' && h.ability === 'Still Hour');
+  assert.ok(h && h.walked && h.name === 'Sable' && h.weapon === '' && h.ability === 'Still Hour');
   assert.ok(b.unlocked.has('h:sable') && b.isNew('h:sable'));
   const read = markRead(s.codex, ['h:sable']);
   assert.ok(!almanac({ ...s, codex: read }, D, def).isNew('h:sable'), 'read bit persists');

@@ -100,7 +100,7 @@ export const app = {
     // CHARACTER SYSTEM v2: only an awake hero and a tree-unlocked starting spirit can be played (anything else falls back); the pick is remembered
     if (!(typeof characterId === 'string' && Object.hasOwn(data.characters, characterId) && (p.auto || isAwake(s0, characterId)))) characterId = (s0.notes.loadout || s0.notes.starter || { hero: 'wren' }).hero;
     const startable = startableWeapons(data, treeDef, s0.tree);
-    const want = [weaponId, s0.notes.loadout && s0.notes.loadout.hero === characterId ? s0.notes.loadout.weapon : null, data.characters[characterId].kindred, s0.notes.loadout && s0.notes.loadout.weapon];
+    const want = [weaponId, s0.notes.loadout && s0.notes.loadout.hero === characterId ? s0.notes.loadout.weapon : null, s0.notes.loadout && s0.notes.loadout.weapon]; // never the hero's built-in (kindred) weapon: heroes are not tied to a spirit
     const startWeapon = want.find((w) => typeof w === 'string' && startable.includes(w)) || startable[0] || data.characters[characterId].kindred;
     if (!p.auto && !this.save.readOnly && !this.isDebugRun()) { s0.notes.loadout = { hero: characterId, weapon: startWeapon }; }
     this.characterId = characterId;
@@ -349,18 +349,17 @@ export const app = {
   spiritChoices(heroId) {
     const s = this.save.data;
     const open = startableWeapons(data, treeDef, s.tree);
-    const kin = Object.hasOwn(data.characters, heroId) ? data.characters[heroId].kindred : null;
     return Object.keys(data.weapons).map((id) => {
       const heart = treeDef.hearts && treeDef.hearts[id];
       let note = '';
       if (!open.includes(id) && heart) { try { const st = nodeStatus(treeDef, s, heart, data); const L = st && st.cond && st.cond.lines && st.cond.lines[0]; note = L ? `Wake it in the Lantern Web · ${String(L.text).slice(0, 48)} ${L.cur}/${L.goal}` : 'Wake it in the Lantern Web'; } catch { note = ''; } }
-      return { id, name: data.weapons[id].name, line: '', open: open.includes(id), kindred: id === kin, note };
+      return { id, name: data.weapons[id].name, line: '', open: open.includes(id), note };
     }).map((x) => ({ ...x, line: x.open ? SPIRIT_LINE_OF(x.id) : '' }));
   },
   lastLoadout(heroId = null) {
     const n = this.save.data.notes || {};
     const lo = n.loadout || n.starter || {};
-    if (heroId && lo.hero !== heroId) return { hero: heroId, weapon: Object.hasOwn(data.characters, heroId) ? data.characters[heroId].kindred : null };
+    if (heroId && lo.hero !== heroId) return { hero: heroId, weapon: null };
     return { hero: lo.hero || null, weapon: lo.weapon || null };
   },
   // Safety net only (a run started with no starter pick, e.g. an old flow): grant the kindred default. Never on read-only or debug lanterns.

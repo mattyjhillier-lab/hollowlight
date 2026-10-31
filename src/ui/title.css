@@ -164,7 +164,6 @@ html.touch .overlay.u3 .u3-keys { display: none; }
 .overlay.u3 .ld-spirit__txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .overlay.u3 .ld-spirit__name { color: var(--lg-text); font-size: clamp(17px, 2.4vh, 21px); }
 .overlay.u3 .ld-spirit__line { color: var(--lg-dim); }
-.overlay.u3 .ld-spirit__kin { position: absolute; top: -10px; right: 12px; padding: 0 8px; border-radius: 999px; color: #2a1a0c; background: #e8b86d; font-size: 12px; }
 @media (orientation: portrait) {
   .overlay.u3 .ld-spirits { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .overlay.u3 .ld-spirit { min-height: 60px; padding: 8px 14px; }

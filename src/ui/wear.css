@@ -56,3 +56,5 @@ html.touch .overlay.u3 .wr-acts .lg-btn__key { display: none; }
   .overlay.u3 .wr-note { width: 100%; }
   .overlay.u3 .wr-acts .lg-btn { flex: 1 1 0; min-width: 0; }
 }
+/* portrait stacks the bar in a column: the Wear button must not keep its 150px row basis as a height (it pushed Back off a phone screen) */
+@media (orientation: portrait) { .overlay.u3 .u3-hero-screen .u3-bar > .u3-wear { flex: none; } }

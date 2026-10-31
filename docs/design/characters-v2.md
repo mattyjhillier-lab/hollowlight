@@ -78,7 +78,7 @@ Weapon unlock source stays the tree (a weapon heart awake = startable). The star
 
 **A (Recommended) One Loadout screen: "Who walks, and with which spirit?"** (ch-loadout mock)
 - Replaces the U3 hero select in place (same arched cards, same look). Top: character cards (portrait, name, Bond level, ability card with its one verb). Below: a row of spirit chips for every awake weapon (locked weapons show a dim emblem + "Wake it in the Lantern Web").
-- Defaults: last pick per lantern. First time ever: Wren + Ghost Wolves preselected; one press/tap of "Walk with Wren · Ghost Wolves" starts (still 2 taps from title). Each character shows a **kindred spirit** mark (Wren: paw on Ghost Wolves, Elias: flame on Holy Orbit) = the suggested default when you switch character; no bonus.
+- Defaults: last pick per lantern. First time ever: Wren + Ghost Wolves preselected; one press/tap of "Walk with Wren · Ghost Wolves" starts (still 2 taps from title). SUPERSEDED 2026-10-31 (NO HERO WEAPON): no kindred mark, no preselected spirit on a first pick, no hero-weapon pairing shown anywhere.
 - The spirit row appears only once 2+ weapons are awake (run 1 pool already has Ghost Wolves + Holy Orbit, so it shows from run 1 with Wolves preselected; a first-time player can ignore it).
 - Then FD4 night select as built (skip rule unchanged). Keys: 1-4 character, Q/E or arrows on the spirit row, Enter.
 

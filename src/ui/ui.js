@@ -325,9 +325,8 @@ export class UI {
     const h = this.handlers;
     return ids.map((id) => {
       const c = this.data.characters[id];
-      const w = this.data.weapons[c.kindred]; // the kindred spirit is only the suggested default (no stat link)
       const lvl = h.bondLevel ? h.bondLevel(id) : 0;
-      return { ...heroView(id, c, w ? w.name : ''), weaponId: c.kindred, pips: null, badge: lvl > 0 ? LOADOUT.bond(lvl) : null };
+      return { ...heroView(id, c, ''), pips: null, badge: lvl > 0 ? LOADOUT.bond(lvl) : null };
     });
   }
 
@@ -383,7 +382,7 @@ export class UI {
     const c = this.data.characters[heroId];
     const spirits = h.spiritChoices ? h.spiritChoices(heroId) : [];
     const vs = buildSpiritSelect({
-      spirits, heroName: heroView(heroId, c, '').name, selected: h.lastLoadout ? h.lastLoadout(heroId).weapon : c.kindred,
+      spirits, heroName: heroView(heroId, c, '').name, selected: h.lastLoadout ? h.lastLoadout(heroId).weapon : null,
       onStart: (wid) => { if (this.onPick) this.onPick(heroId, this.pickTier || undefined, wid); },
       onBack: () => this.showHeroSelect(),
     });
@@ -407,9 +406,9 @@ export class UI {
     const h = this.handlers;
     const pool = h.starterPool ? h.starterPool() : { weapons: [] };
     const c = this.data.characters[heroId];
-    const spirits = pool.weapons.map((id) => ({ id, name: this.data.weapons[id].name, line: SPIRIT_LINE(id, this.data), open: true, kindred: id === c.kindred }));
+    const spirits = pool.weapons.map((id) => ({ id, name: this.data.weapons[id].name, line: SPIRIT_LINE(id, this.data), open: true }));
     const vs = buildSpiritSelect({
-      spirits, heroName: heroView(heroId, c, '').name, selected: c.kindred,
+      spirits, heroName: heroView(heroId, c, '').name, selected: null,
       copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterSpiritTitle, whisper: LOADOUT.starterSpiritWhisper, walk: LOADOUT.starterBegin },
       onStart: (wid) => { if (h.chooseStarter && h.chooseStarter(heroId, wid) && this.onPick) this.onPick(heroId, undefined, wid); },
       onBack: () => this.showStarterHero(),

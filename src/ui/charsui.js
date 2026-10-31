@@ -1,4 +1,4 @@
-// CHARACTER SYSTEM v2 Characters page ("Kindred", CH5) in the Lantern Glass look: hero tiles on the left (awake: portrait + Bond badge; sleeping:
+// CHARACTER SYSTEM v2 Characters page in the Lantern Glass look: hero tiles on the left (awake: portrait + Bond badge; sleeping:
 // '?' + keepsake dots), the chosen hero's page on the right. DOM via the kit only (createElement + textContent), never innerHTML.
 // opts: { view (charsView), portraits, selected, onBack }. Returns { root, tiles, back, onKey(e), current(), focusSelected() }.
 import { el, kitRoot, button } from './kit.js';
@@ -54,7 +54,7 @@ export function buildCharacters({ view = [], portraits = {}, selected = null, on
       for (const s of v.stats) add(stats, stat(s));
       const perks = el('ol', 'ch-perks', null, { 'aria-label': CHARS.perks });
       for (const p of v.perks) add(perks, add(el('li', `ch-perk${p.lit ? ' is-lit' : ''}`), el('span', 'ch-perk__l ty-small', `Bond ${p.lvl}`), el('span', 'ch-perk__n ty-label', p.name), el('span', 'ch-perk__t ty-small', p.text)));
-      add(page, top, skill, stats, el('div', 'ch-perkhead ty-kicker', CHARS.perks), perks, el('p', 'ch-kin ty-small', v.kindred), el('p', 'ch-note ty-small', CHARS.banked));
+      add(page, top, skill, stats, el('div', 'ch-perkhead ty-kicker', CHARS.perks), perks, el('p', 'ch-note ty-small', CHARS.banked));
     } else {
       const k = v.keep || { line: CHARS.sleeping, hint: '', desc: '' };
       add(page, el('div', 'ch-kicker ty-kicker', CHARS.sleeping), el('h2', 'ch-name', '???'), el('p', 'ch-keep ty-label', k.line), k.desc ? el('p', 'ch-keepdesc ty-whisper', k.desc) : null,

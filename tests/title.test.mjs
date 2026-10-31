@@ -25,7 +25,7 @@ const C = await import('../src/ui/titlecopy.js');
 const walk = (n, f) => { f(n); n.children.forEach((c) => walk(c, f)); };
 const find = (r, p) => { const o = []; walk(r, (n) => { if (p(n)) o.push(n); }); return o; };
 const texts = (r) => { const o = []; walk(r, (n) => { if (n._text) o.push(n._text); }); return o.join(' | '); };
-const heroes = () => Object.entries(data.characters).map(([id, c]) => ({ ...C.heroView(id, c, data.weapons[c.kindred].name), weaponId: c.kindred }));
+const heroes = () => Object.entries(data.characters).map(([id, c]) => ({ ...C.heroView(id, c, '') }));
 
 test('title copy: wordmark name, Begin/Continue + whispers, Skill Tree, Settings, version', () => {
   const t = buildTitle({ version: '9.9.9' });
@@ -70,7 +70,8 @@ test('hostile hero names, lines, version and bank are inert text (no innerHTML a
 test('hero select: Wren and Elias cards, stats as pips with names, ability line, radio semantics', () => {
   const hs = buildHeroSelect({ heroes: heroes(), selected: 'wren' });
   const s = texts(hs.root);
-  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Ghost Wolves', 'Holy Orbit', 'Pelt Dash', 'Sanctuary Ring', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Darts out of trouble']) assert.ok(s.includes(w), w);
+  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Pelt Dash', 'Sanctuary Ring', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Darts out of trouble']) assert.ok(s.includes(w), w);
+  assert.ok(!/Ghost Wolves|Holy Orbit|kindred/i.test(s), 'hero cards carry no weapon / kindred text');
   assert.equal(hs.group.attrs.role, 'radiogroup');
   assert.deepEqual(hs.cards.map((c) => c.el.attrs['aria-checked']), ['true', 'false']);
   assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['0', '-1']);
@@ -146,7 +147,7 @@ test('title load note: shown as plain text in a status paragraph, hostile text i
 
 // ---- CHARACTER SYSTEM v2 loadout: starting-spirit step + starter pick (CH4)
 const spirits = () => [
-  { id: 'ghost_wolves', name: 'Ghost Wolves', line: 'pack', open: false, kindred: true, note: 'Wake it in the Lantern Web · Complete 2 runs 0/2' },
+  { id: 'ghost_wolves', name: 'Ghost Wolves', line: 'pack', open: false, note: 'Wake it in the Lantern Web · Complete 2 runs 0/2' },
   { id: 'raven_flock', name: 'Raven Flock', line: 'scouts', open: true },
   { id: 'spirit_bolts', name: '<img src=x onerror=alert(1)>', line: '<b>x</b>', open: false },
   { id: 'chain_lightning', name: 'Chain Lightning', line: 'storm', open: true },
@@ -154,8 +155,13 @@ const spirits = () => [
 test('spirit step: sleeping spirits are aria-disabled and never chosen (click, keys, digits); the label names hero + spirit; text only', () => {
   const out = [];
   const v = buildSpiritSelect({ spirits: spirits(), heroName: 'Elias', selected: 'ghost_wolves', onStart: (id) => out.push(id), onBack: () => out.push('back') });
-  assert.equal(v.current(), 'raven_flock', 'a sleeping preselect falls to the first awake spirit');
-  assert.ok(texts(v.root).includes('Walk with Elias · Raven Flock'));
+  assert.equal(v.current(), null, 'a sleeping preselect gives NO preselect (never the first awake one)');
+  assert.ok(texts(v.root).includes('Choose a spirit to start'));
+  assert.equal(v.start.disabled, true, 'start disabled until a spirit is tapped');
+  assert.equal(buildSpiritSelect({ spirits: spirits(), heroName: 'Elias', selected: 'chain_lightning' }).current(), 'chain_lightning', 'a remembered awake spirit is preselected');
+  assert.ok(texts(buildSpiritSelect({ spirits: spirits(), heroName: 'Elias', selected: 'raven_flock' }).root).includes('Walk with Elias · Raven Flock'));
+  v.cards[1].el.click(); assert.equal(v.current(), 'raven_flock');
+  assert.ok(!v.start.disabled, 'tapping a spirit enables start');
   assert.deepEqual(v.cards.map((c) => c.el.attrs['aria-disabled'] || null), ['true', null, 'true', null]);
   assert.equal(v.group.attrs.role, 'radiogroup');
   v.cards[0].el.click(); assert.equal(v.current(), 'raven_flock');

@@ -106,14 +106,14 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
   };
   heroes.forEach((h) => {
     const c = el('div', 'u3-hero lg-card lg-frame', null, { role: 'radio', 'aria-label': `${h.name}${h.epithet ? `, ${h.epithet}` : ''}` });
-    const sr = el('span', 'u3-sr', `${h.badge ? `${h.badge}. ` : ''}${h.pips ? `${HERO.health} ${h.pips.health} of 5. ${HERO.speed} ${h.pips.speed} of 5. ` : ''}${h.weapon}. ${h.ability}. ${h.gift}`, { id: nid('d') });
+    const sr = el('span', 'u3-sr', `${h.badge ? `${h.badge}. ` : ''}${h.pips ? `${HERO.health} ${h.pips.health} of 5. ${HERO.speed} ${h.pips.speed} of 5. ` : ''}${h.weapon ? `${h.weapon}. ` : ''}${h.ability}. ${h.gift}`, { id: nid('d') });
     c.setAttribute('aria-describedby', sr.getAttribute('id'));
     const por = el('div', 'u3-por', null, { 'aria-hidden': 'true' });
     if (portraits[h.id]) { const img = el('img', 'u3-por__img'); img.alt = ''; img.src = portraits[h.id]; img.draggable = false; add(por, img); }
     const st = el('div', 'u3-state');
     const stat = (label, n) => add(el('div', 'u3-stat'), el('span', 'u3-stat__l ty-kicker', label), pips({ total: 5, filled: n, label }));
     const kit = el('div', 'u3-kit');
-    add(kit, add(el('span', 'u3-kit__row ty-label'), weaponEmblem(h.weaponId), el('span', null, h.weapon)), add(el('span', 'u3-kit__row ty-label'), icon('flame'), el('span', null, h.ability)));
+    add(kit, h.weapon && add(el('span', 'u3-kit__row ty-label'), weaponEmblem(h.weaponId), el('span', null, h.weapon)), add(el('span', 'u3-kit__row ty-label'), icon('flame'), el('span', null, h.ability)));
     const info = el('div', 'u3-info', null, { 'aria-hidden': 'true' });
     const name = h.badge ? add(el('span', 'u3-name u3-name--badge'), el('span', null, h.name), el('span', 'u3-badge ty-label', String(h.badge))) : el('span', 'u3-name', h.name);
     add(info, st, name, h.epithet && el('span', 'u3-epithet', h.epithet), h.line && el('p', 'u3-line ty-body', h.line),
@@ -167,11 +167,11 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
   return { root, group, cards, back, start, wear: wearBtn, onKey, choose, current: () => (heroes[cur] ? heroes[cur].id : null), focusSelected: () => { if (cards[cur]) cards[cur].el.focus(); } };
 }
 
-/** CHARACTER SYSTEM v2 loadout step 3 (and the starter pick's second step): the starting spirit. spirits: [{id, name, line, open, kindred, note}]
+/** CHARACTER SYSTEM v2 loadout step 3 (and the starter pick's second step): the starting spirit. spirits: [{id, name, line, open, note}]
  *  (open = awake in the Lantern Web; a sleeping one is shown dim with its note and can never be chosen). heroName: for the start label.
  *  copy: {kicker, title, whisper, walk(hero, spirit)}. Same radio semantics, keys and Lantern Glass cards as the hero step. Text only via textContent. */
 export function buildSpiritSelect({ spirits = [], heroName = '', selected, onStart, onBack, copy = null } = {}) {
-  const C = { kicker: LOADOUT.spiritKicker, title: LOADOUT.spiritTitle, whisper: LOADOUT.spiritWhisper, walk: LOADOUT.walk, ...(copy || {}) };
+  const C = { choose: LOADOUT.chooseSpirit, kicker: LOADOUT.spiritKicker, title: LOADOUT.spiritTitle, whisper: LOADOUT.spiritWhisper, walk: LOADOUT.walk, ...(copy || {}) };
   const root = cls(kitRoot(), 'u3-wrap');
   root.classList.add('u3-hero-screen', 'ld-spirit-screen');
   const head = el('header', 'u3-head');
@@ -180,9 +180,9 @@ export function buildSpiritSelect({ spirits = [], heroName = '', selected, onSta
   const group = el('div', 'ld-spirits', null, { role: 'radiogroup', 'aria-labelledby': hid });
   const cards = [];
   const openIdx = spirits.map((s, i) => (s.open ? i : -1)).filter((i) => i >= 0);
+  // No spirit is preselected unless the caller passes a remembered one (never a hero's built-in weapon): until one is tapped the start button is disabled and says so.
   let cur = spirits.findIndex((s) => s.id === selected && s.open);
-  if (cur < 0) cur = openIdx.length ? openIdx[0] : -1;
-  const label = () => (spirits[cur] ? C.walk(String(heroName), spirits[cur].name) : String(C.title));
+  const label = () => (spirits[cur] ? C.walk(String(heroName), spirits[cur].name) : String(C.choose));
   spirits.forEach((s) => {
     const c = el('div', `ld-spirit${s.open ? '' : ' is-sleeping'}`, null, { role: 'radio', 'aria-label': s.open ? s.name : `${s.name}: ${s.note || LOADOUT.locked}` });
     if (!s.open) c.setAttribute('aria-disabled', 'true');
@@ -190,7 +190,7 @@ export function buildSpiritSelect({ spirits = [], heroName = '', selected, onSta
     add(emb, weaponEmblem(s.id));
     const txt = el('span', 'ld-spirit__txt');
     add(txt, el('span', 'ld-spirit__name ty-label', s.name), el('span', 'ld-spirit__line ty-small', s.open ? (s.line || '') : (s.note || LOADOUT.locked)));
-    add(c, emb, txt, s.kindred ? el('span', 'ld-spirit__kin ty-kicker', LOADOUT.kindred) : null);
+    add(c, emb, txt);
     add(group, c);
     cards.push({ el: c, spirit: s });
   });
@@ -211,6 +211,7 @@ export function buildSpiritSelect({ spirits = [], heroName = '', selected, onSta
   const choose = (i, focus) => {
     if (!spirits[i] || !spirits[i].open) return;
     cur = i; state(); retitle();
+    start.disabled = false; start.setAttribute('aria-disabled', 'false');
     if (focus) cards[cur].el.focus();
   };
   const step = (d) => { if (!openIdx.length) return; const k = openIdx.indexOf(cur); choose(openIdx[((k < 0 ? 0 : k) + d + openIdx.length) % openIdx.length], true); };

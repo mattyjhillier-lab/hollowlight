@@ -59,6 +59,8 @@ try {
     await ev("__app.ui.screen.hero.start.click()"); await sleep(300);
     const nsp = await ev("document.querySelectorAll('.ld-spirit').length"); const nopen = await ev("document.querySelectorAll('.ld-spirit:not(.is-sleeping)').length");
     if (nsp !== 5 || nopen !== 5) fail(`starter spirits ${nopen}/${nsp}`);
+    if ((await label()) !== 'Choose a spirit to start' || !(await ev("document.querySelector('.layer-hero .lg-btn--primary').disabled"))) fail('starter spirit should start with nothing chosen: ' + (await label()));
+    if (await ev("!!document.querySelector('.ld-spirit.is-chosen') || /kindred/i.test(document.querySelector('.layer-hero').textContent)")) fail('starter spirit preselected / kindred text');
     await shot(`ld-starter-spirit-${n}`); await check('starter spirit');
     await ev("document.querySelector('.ld-spirit[aria-label=\"Chain Lightning\"]').click()");
     const lab = await label(); if (lab !== 'Begin with Elias · Chain Lightning') fail('starter label ' + lab);
@@ -76,6 +78,16 @@ try {
     if (sp.join('') !== '00010') fail('spirit step open set ' + sp.join(''));
     if ((await label()) !== 'Walk with Elias · Chain Lightning') fail('spirit label ' + (await label()));
     await shot(`ld-spirit-${n}`); await check('spirit');
+    // 2b. no hero weapon: with both heroes awake, a hero with no remembered loadout gets NO preselected spirit and no weapon on its card
+    await ev(`(()=>{const d=__app.save.data;d.chars={wren:{xp:0,keep:0,woke:true},elias:{xp:0,keep:0,woke:true}};d.notes.loadout={hero:'wren',weapon:'chain_lightning'};d.tree.gt_ghost_wolves=1;return 1})()`);
+    await ev('__app.ui.beginLoadout()'); await sleep(300);
+    if (/Ghost Wolves|Holy Orbit|Chain Lightning|kindred/i.test(await ev("document.querySelector('.layer-hero').textContent"))) fail('hero tile names a weapon');
+    await shot(`ld-hero-two-${n}`); await check('character two');
+    await ev("__app.ui.screen.hero.choose(1,true)"); await ev("__app.ui.screen.hero.start.click()"); await sleep(300);
+    await shot(`ld-spirit-nopick-${n}`); await check('spirit nopick');
+    if ((await label()) !== 'Choose a spirit to start') fail('hero without memory should preselect nothing: ' + (await label()));
+    await ev("document.querySelector('.ld-spirit:not(.is-sleeping)').click()");
+    if (!/^Walk with .* · /.test(await label())) fail('tap picks a spirit: ' + (await label()));
     // 3. the map step comes first once a night choice exists (Deep Dusk opened in-page, as fd45), and its button reads Next
     await ev(`(()=>{const d=__app.save.data;d.stats.runs=14;d.stats.wins=2;d.stats.tiers={cursed_forest:{normal:{runs:12,clears:2,best:{t:900,kills:1500,level:19},stars:3,heroes:{elias:{clears:2,first:false}}}}};__app.openTiers=()=>['cursed_forest:hard'];return 1})()`);
     await ev('__app.ui.beginLoadout()'); await sleep(400);

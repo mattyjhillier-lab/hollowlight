@@ -34,7 +34,7 @@ export const LOADOUT = {
   spiritWhisper: 'Any spirit awake in the Lantern Web. More join from level-up cards.',
   walk: (hero, spirit) => `Walk with ${hero} · ${spirit}`,
   next: 'Next',
-  kindred: 'kindred',
+  chooseSpirit: 'Choose a spirit to start',
   locked: 'Wake it in the Lantern Web',
   bond: (n) => `Bond ${n}`,
   starterKicker: 'A new lantern',
