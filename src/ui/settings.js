@@ -189,7 +189,12 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
   const saves = group(SET.tabs[3].label, add(el('div', 'u4-saverow'), bExp, bImp, bRes, bDmg), confirmBox, msg, file, storageNote ? el('p', 'u4-note u4-note--warn', storageNote) : null, nudgeT);
 
   // ---- About: blurb, how to play, credits, version, maker, AI-use note (textContent only) ----
-  const ver = typeof __APP_VERSION__ !== 'undefined' ? String(__APP_VERSION__).slice(0, 24) : 'dev';
+  let ver = typeof __APP_VERSION__ !== 'undefined' ? String(__APP_VERSION__).slice(0, 24) : 'dev';
+  // Build time (from __BUILD_ID__ = version-base36 ms) so an update can be checked by eye; never throws.
+  try {
+    const ms = parseInt(String(typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : '').split('-').pop(), 36);
+    if (Number.isFinite(ms) && ms > 1.7e12) ver += ' · built ' + new Date(ms).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch { /* version only */ }
   const list = (items) => add(el('ul', 'u4-about__list'), ...items.map((t) => el('li', null, t)));
   const about = add(el('div', 'u4-grid u4-about', null, { role: 'group', 'aria-label': ABOUT.tab }),
     el('p', 'u4-note', ABOUT.blurb), el('h3', 'u4-about__h', ABOUT.howTitle), list(ABOUT.how),
