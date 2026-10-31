@@ -44,6 +44,8 @@ const ICON_MORE = [['path', { d: 'M6 15l6-6 6 6' }]];
 const hexA = (hex, a) => { const v = parseInt(String(hex).slice(1), 16) || 0; return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+// DESKTOP D3: the tree's keys, shown as a quiet hint strip while the keyboard was the last input (these keys are fixed in onKey)
+const TREE_KEYS = [['Arrows', 'pan'], ['+ -', 'zoom'], ['N', 'next lantern'], ['G', 'goals'], ['Enter', 'light'], ['Esc', 'back']];
 export class TreeScreen {
   // host: UI instance (layer/show/hide). api: app.treeApi() = { def, data, view, save(), buy(id), respec(), markSeen(id), onClose(), clearRegrowth?() }.
   constructor(host) {
@@ -290,7 +292,13 @@ export class TreeScreen {
     this.srEl = el('div', 'ts-sr');
     this.srEl.setAttribute('aria-live', 'polite');
 
-    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.srEl);
+    // DESKTOP D3: mouse hover preview (name, state, one line) and a key hint strip; both are hidden on touch / phone screens by CSS
+    this.hoverEl = el('div', 'ts-hover'); this.hoverEl.setAttribute('aria-hidden', 'true');
+    this.hoverName = el('div', 'ts-hover__n'); this.hoverState = el('div', 'ts-hover__s'); this.hoverDesc = el('div', 'ts-hover__d');
+    this.hoverEl.append(this.hoverName, this.hoverState, this.hoverDesc);
+    const keys = el('div', 'ts-keyhint'); keys.setAttribute('aria-hidden', 'true');
+    for (const [k, t] of TREE_KEYS) { const b = el('span', 'ts-keyhint__i'); b.append(el('kbd', null, k), document.createTextNode(` ${t}`)); keys.append(b); }
+    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.srEl, this.hoverEl, keys);
     layer.append(root);
     this.bindInput(map);
   }
@@ -1250,7 +1258,8 @@ export class TreeScreen {
       if (this.ptrs.size === 2) { const [a, b] = [...this.ptrs.values()]; this.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: this.cam.z, w: this.toW((a.x + b.x) / 2, (a.y + b.y) / 2) }; this.drag = null; }
     });
     map.addEventListener('pointermove', (e) => {
-      if (!this.ptrs.has(e.pointerId)) return;
+      if (!this.ptrs.has(e.pointerId)) { this.hover(e); return; }
+      if (this.hoverEl) this.hoverEl.classList.remove('on');
       const [x, y] = this.rel(e);
       this.ptrs.set(e.pointerId, { x, y });
       if (this.pinch && this.ptrs.size >= 2) {
@@ -1275,9 +1284,35 @@ export class TreeScreen {
       if (this.ptrs.size < 2) this.pinch = null;
       if (!this.ptrs.size) { this.drag = null; if (this.root.classList.contains('ts-pan')) { this.root.classList.remove('ts-pan'); this.fr = null; } }
     };
+    map.addEventListener('pointerleave', () => { if (this.hoverEl) { this.hoverEl.classList.remove('on'); this.hoverId = null; } });
     map.addEventListener('pointerup', up);
     map.addEventListener('pointercancel', up);
     map.addEventListener('wheel', (e) => { e.preventDefault(); const [x, y] = this.rel(e); this.zoomAt(x, y, Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015)); }, { passive: false });
+  }
+
+  /** DESKTOP D3: hover preview. Mouse only; text comes from the model, set as plain text. Positions are real pixels, the layer may be zoomed (Menu size), so divide by --uik. */
+  hover(e) {
+    if (!this.hoverEl) return;
+    const off = () => { this.hoverEl.classList.remove('on'); this.hoverId = null; if (this.mapEl) this.mapEl.style.cursor = ''; };
+    if (e.pointerType !== 'mouse' || this.ptrs.size || this.sheetOpen || this.cam.z < this.view.lod.far) { off(); return; }
+    const [x, y] = this.rel(e);
+    const id = this.hitNode(x, y);
+    if (!id) { off(); return; }
+    if (this.mapEl) this.mapEl.style.cursor = 'pointer';
+    if (id !== this.hoverId) {
+      const ce = this.model.cache[id]; const d = ce.d;
+      this.hoverId = id;
+      this.hoverName.textContent = d.name;
+      this.hoverState.textContent = this.model.stateText(id);
+      this.hoverState.className = `ts-hover__s ts-st-${ce.s}`;
+      const t = String(d.desc || '');
+      this.hoverDesc.textContent = t.length > 110 ? `${t.slice(0, 107)}...` : t;
+    }
+    const k = Number(document.documentElement.style.getPropertyValue('--uik')) || 1;
+    const w = this.hoverEl.offsetWidth * k || 240, h = this.hoverEl.offsetHeight * k || 90;
+    const px = Math.min(Math.max(8, x + 18), this.W - w - 8), py = y + 22 + h > this.H - 8 ? y - h - 14 : y + 22;
+    this.hoverEl.style.left = `${Math.round(px / k)}px`; this.hoverEl.style.top = `${Math.round(Math.max(8, py) / k)}px`;
+    this.hoverEl.classList.add('on');
   }
 
   hitNode(sx, sy) {

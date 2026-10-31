@@ -13,6 +13,7 @@ import { Hud } from './hud.js';
 import { OfferView } from './cardsui.js';
 import { orderOffer } from './cardview.js';
 import '../cards.css';
+import { deskKeyAction, NUMBER_SCREENS } from './deskkeys.js';
 import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
 import './kit.css';
 import { EvoPlate, plateModel } from './evoplate.js';
@@ -71,9 +72,23 @@ export class UI {
     this.nav = null;
     if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }
     window.addEventListener('keydown', (e) => this.onKey(e));
+    window.addEventListener('keydown', (e) => this.onDeskKey(e)); // DESKTOP D5: 1-6 tabs, F full screen (through the key map)
   }
 
   setHandlers(h) { this.handlers = h; }
+
+  /** DESKTOP D5: menu-only shortcuts (src/ui/deskkeys.js). Never in a run; yields to remapping, modals and typing. */
+  onDeskKey(e) {
+    const on = (n) => !!(this.layers[n] && this.layers[n].style.display !== 'none');
+    const menu = !!(this.nav && this.nav.root.style.display !== 'none');
+    const pause = on('pause');
+    const blocked = this.celActive() || !!(this.codexView && this.codexView.isSheet && this.codexView.isSheet()) || !!(this.tree.isOpen && this.tree.sheetOpen) || !!document.querySelector('.a3-key.is-waiting');
+    const r = deskKeyAction(e, { menu, pause, active: menu ? this.navActive() : null, blocked });
+    if (!r) return;
+    e.preventDefault();
+    if (r.type === 'tab') this.navTo(r.id);
+    else if (this.pwa && this.pwa.canFullscreen && this.pwa.canFullscreen()) this.pwa.toggleFullscreen();
+  }
 
   /** AU6: a UI / tree sound (no-op until the audio engine is set by main.js). */
   sound(id) { if (this.audio) this.audio.play(id); }
@@ -121,7 +136,8 @@ export class UI {
     const menu = ['start', 'hero', 'lanterns', 'nights', 'settings', 'codex', 'tree'].some(on);
     const inRun = ['hud', 'pause', 'end', 'levelup', 'dark'].some(on);
     const show = menu && !inRun;
-    const purse = this.nav.set(show, show ? this.navActive() : null);
+    const act = show ? this.navActive() : null;
+    const purse = this.nav.set(show, act, NUMBER_SCREENS.includes(act)); // D5: tab number badges only where the digits are free
     this.root.classList.toggle('has-purse', !!purse);
     this.root.classList.toggle('has-mnav', show);
   }

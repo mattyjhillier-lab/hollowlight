@@ -25,3 +25,32 @@
   html:not(.phone) .overlay.u4 .u4-grid > .u4-saverow, html:not(.phone) .overlay.u4 .u4-grid > .u4-confirm, html:not(.phone) .overlay.u4 .u4-grid > .u4-msg, html:not(.phone) .overlay.u4 .u4-grid > .u4-note,
   html:not(.phone) .overlay.u4 .u4-grid > .u4-row--keys, html:not(.phone) .overlay.u4 .u4-about > * { grid-column: 1 / -1; }
 }
+
+/* ---- DESKTOP D3: Tree hover preview + key hint strip (mouse / keyboard only: hidden on touch and phone screens) ---- */
+.ts-hover { position: absolute; z-index: 9; max-width: 260px; padding: 8px 12px; border-radius: 12px; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--ts-panel, rgba(16, 21, 34, .985));
+  border: 1px solid var(--ts-line, rgba(216, 178, 106, .38)); box-shadow: 0 6px 22px #000a, 0 0 14px #ffb35a22; }
+.ts-hover.on { opacity: 1; }
+.ts-hover__n { font: 400 19px/1.15 var(--font-display); color: var(--ts-cream, #fff3dc); }
+.ts-hover__s { margin-top: 2px; font: 700 12px/1.3 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: #f5dfae; }
+.ts-hover__s.ts-st-ready { color: var(--ts-wick, #fff6e0); }
+.ts-hover__s.ts-st-notyet, .ts-hover__s.ts-st-fog { color: var(--ts-mute, #b3bbcf); }
+.ts-hover__d { margin-top: 4px; font: 400 14px/1.3 var(--font-body); color: var(--ts-cream, #fff3dc); opacity: .85; }
+.ts-keyhint { position: absolute; left: 12px; bottom: 8px; z-index: 6; display: flex; gap: 14px; padding: 4px 14px; border-radius: 14px; pointer-events: none; white-space: nowrap;
+  background: rgba(12, 18, 32, .72); border: 1px solid rgba(216, 178, 106, .25); font: 400 13px/1.4 var(--font-body); color: var(--ts-mute, #b3bbcf); }
+.ts-keyhint kbd { font: 700 12px/1 var(--font-body); padding: 2px 6px; border-radius: 6px; color: #ffe0a0; background: linear-gradient(180deg, #2a3248, #171d2c); border: 1px solid #8d6c34; }
+html.phone .ts-keyhint, html.touch .ts-keyhint, html.phone .ts-hover, html.touch .ts-hover { display: none; }
+.ts.ts-port .ts-keyhint, .ts.ts-small .ts-keyhint { display: none; }
+@media (prefers-reduced-motion: reduce) { .ts-hover { transition: none; } }
+
+/* ---- DESKTOP D5: hover glow on the menu tiles (the selected glow at half strength; keyboard focus rings are untouched) ---- */
+html:not(.phone):not(.touch) .ch-tile:not(.is-chosen):hover { border-color: #ffe0a0; box-shadow: 0 0 0 2px #2a1a0c, 0 0 18px rgba(255, 170, 60, .28); }
+html:not(.phone):not(.touch) .cx-grid button:hover, html:not(.phone):not(.touch) .cx-item:hover { border-color: #d8b26a; box-shadow: 0 0 14px rgba(255, 190, 110, .28); }
+html:not(.phone):not(.touch) .ts-goal:hover { background: #ffffff0f; }
+html:not(.phone):not(.touch) .u4-seg__opt:hover:not(.is-on) { box-shadow: 0 0 12px rgba(255, 190, 110, .3); }
+html:not(.phone):not(.touch) .lg-tab:hover:not([aria-selected="true"]) { box-shadow: 0 0 12px rgba(255, 190, 110, .3); }
+
+/* ---- DESKTOP D5: number-key badges on the menu tabs (shown when the keyboard was the last input, or while hovering the tab row) ---- */
+.mnav__key { display: none; position: absolute; right: 3px; top: -3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 5px; box-sizing: border-box; align-items: center; justify-content: center;
+  font: 700 11px/1 var(--font-body); color: #ffe0a0; background: #171d2c; border: 1px solid #8d6c34; pointer-events: none; }
+.mnav__tab { position: relative; }
+html:not(.phone):not(.touch).inp-kb .mnav.has-keys .mnav__key, html:not(.phone):not(.touch) .mnav.has-keys:hover .mnav__key { display: inline-flex; }

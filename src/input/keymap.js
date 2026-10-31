@@ -1,18 +1,18 @@
 // A3 KEY REMAP: keyboard controls as data (pure JS, no DOM). Physical keys (KeyboardEvent.code), so WASD stays WASD on any layout.
 // Stored per device in settings.keys (src/save/schema.js runs cleanKeymap on every load / import: untrusted input). Two keys per action;
 // Esc always pauses (every menu uses Esc for Back, so it cannot be taken away); a second pause key can be added.
-export const ACTIONS = Object.freeze(['up', 'down', 'left', 'right', 'ability', 'pause', 'pick1', 'pick2', 'pick3', 'pick4', 'pick5', 'pick6', 'reroll', 'banish', 'mute']);
+export const ACTIONS = Object.freeze(['up', 'down', 'left', 'right', 'ability', 'pause', 'pick1', 'pick2', 'pick3', 'pick4', 'pick5', 'pick6', 'reroll', 'banish', 'mute', 'fullscreen']);
 export const SLOTS = 2;
 export const ACTION_LABEL = Object.freeze({
   up: 'Move up', down: 'Move down', left: 'Move left', right: 'Move right', ability: 'Ability', pause: 'Pause',
   pick1: 'Pick card 1', pick2: 'Pick card 2', pick3: 'Pick card 3', pick4: 'Pick card 4', pick5: 'Pick card 5', pick6: 'Pick card 6',
-  reroll: 'Reroll', banish: 'Banish', mute: 'Mute',
+  reroll: 'Reroll', banish: 'Banish', mute: 'Mute', fullscreen: 'Full screen (menus)',
 });
 export const DEFAULT_KEYS = Object.freeze({
   up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
   ability: ['Space', null], pause: ['Escape', null],
   pick1: ['Digit1', 'Numpad1'], pick2: ['Digit2', 'Numpad2'], pick3: ['Digit3', 'Numpad3'], pick4: ['Digit4', 'Numpad4'], pick5: ['Digit5', 'Numpad5'], pick6: ['Digit6', 'Numpad6'],
-  reroll: ['KeyR', null], banish: ['KeyB', null], mute: ['KeyM', null],
+  reroll: ['KeyR', null], banish: ['KeyB', null], mute: ['KeyM', null], fullscreen: ['KeyF', null],
 });
 export const FIXED = Object.freeze({ pause: 'Escape' }); // slot 0, never remapped
 export const MOVES = Object.freeze({ up: 'u', down: 'd', left: 'l', right: 'r' });

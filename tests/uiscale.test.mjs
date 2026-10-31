@@ -91,7 +91,7 @@ test('every game CSS file survives both passes with balanced braces and no stray
 });
 
 test('D2 roomy layouts: every rule is inside a container query and scoped to html:not(.phone) (phone layouts untouched)', () => {
-  const c = css('ui/deskroom.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const c = css('ui/deskroom.css').split('DESKTOP D3')[0].replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(c, /^\s*@container \(min-width: 1100px\)/);
   const inner = c.slice(c.indexOf('{') + 1);
   const sels = [...inner.matchAll(/(^|\})\s*([^{}]+)\{/g)].map((m) => m[2].trim());

@@ -184,7 +184,9 @@ export const app = {
   },
   // Copy follows the CURRENT input (last used), not the screen size.
   trackInput(win) {
-    win.addEventListener('keydown', () => this.setInput('kb'), true);
+    const root = win.document && win.document.documentElement; // DESKTOP D5: html.inp-kb while the keyboard was the last input (shows key badges on the menu tabs)
+    win.addEventListener('keydown', (e) => { this.setInput('kb'); if (root && e.key !== 'F5') root.classList.add('inp-kb'); }, true);
+    win.addEventListener('pointerdown', () => { if (root) root.classList.remove('inp-kb'); }, true);
     win.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch' || e.pointerType === 'pen') this.setInput('touch'); }, true);
   },
   setInput(kind) {

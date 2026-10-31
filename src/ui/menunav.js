@@ -1,6 +1,7 @@
 // Persistent menu tab row (C1, docs/design/tree-phone-v1.md T1): Home, Character, Tree, Goals, Almanac, Settings as lantern-glass pills with code-drawn glyphs.
 // ONE component for phone and desktop (the stylesheet lays it out by the stage's own width). Shown over every menu screen (never in a run).
 // Pure DOM, labels and glyph paths are fixed strings (no untrusted data, no innerHTML). The UI class owns navigation (UI.navTo); this only draws and reports taps.
+import { keyLabel } from '../input/keymap.js';
 export const NAV_TABS = [
   { id: 'home', label: 'Home', iconOnly: true },
   { id: 'character', label: 'Character' },
@@ -49,6 +50,7 @@ export function buildMenuNav(doc, onGo) {
   slot.className = 'mnav__slot';
   slot.setAttribute('aria-label', 'Your purse');
   const btns = {};
+  const keyEls = {};
   const order = [];
   for (const t of NAV_TABS) {
     const b = doc.createElement('button');
@@ -61,6 +63,7 @@ export function buildMenuNav(doc, onGo) {
     pill.appendChild(glyph(doc, t.id));
     if (!t.iconOnly) { const l = doc.createElement('span'); l.className = 'mnav__lbl'; l.textContent = t.label; pill.appendChild(l); }
     b.appendChild(pill);
+    const kb = doc.createElement('span'); kb.className = 'mnav__key'; kb.setAttribute('aria-hidden', 'true'); b.appendChild(kb); keyEls[t.id] = kb; // D5: number-key badge (CSS shows it for keyboard users)
     b.dataset.nav = t.id;
     b.addEventListener('click', () => onGo(t.id));
     // roving arrows: Left/Right move focus between tabs (desktop keyboard mirror)
@@ -82,7 +85,9 @@ export function buildMenuNav(doc, onGo) {
     /** Tree screen hands over its gold / shards pills; they live in the row's right slot (strip under the row on narrow screens). */
     setPurse(el) { purse = el || null; slot.replaceChildren(...(purse ? [purse] : [])); },
     /** Returns true when the purse slot is showing (tree / goals with a purse), so the UI can reserve the strip height. */
-    set(visible, active) {
+    set(visible, active, keys = false) {
+      root.classList.toggle('has-keys', !!(visible && keys));
+      NAV_TABS.forEach((t, i) => { const k = keyLabel(`pick${i + 1}`); const kbEl = keyEls[t.id]; if (kbEl) kbEl.textContent = k; btns[t.id].setAttribute('title', keys && k ? `${t.label} (${k})` : t.label); });
       root.style.display = visible ? 'flex' : 'none';
       for (const id of Object.keys(btns)) {
         const on = id === active;

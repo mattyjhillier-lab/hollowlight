@@ -43,6 +43,8 @@ try {
         const base = tabClick[k] ? tabClick[k][0] : k;
         await ev(`(()=>{const ui=window.__app.ui; ${menu[base]}})()`); await sleep(900);
         if (tabClick[k]) { await ev(`document.querySelectorAll('${tabClick[k][1]}')[${tabClick[k][2]}]?.click()`); await sleep(600); }
+        if (process.env.SHOT_PRE) { await ev(process.env.SHOT_PRE); await sleep(300); } // debug: run an expression before the shot (e.g. add html.inp-kb)
+        if (process.env.SHOT_HOVER) { const hv = process.env.SHOT_HOVER; const [hx, hy] = (hv.startsWith('(') ? String(await ev(hv)) : hv).split(',').map(Number); await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: hx, y: hy }); await sleep(120); await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: hx + 1, y: hy + 1 }); await sleep(350); } // debug: mouse hover before the shot
         await shot(`${prefix}-${s.name}-${k}.png`);
         if (process.env.SHOT_EVAL) console.log(s.name, k, await ev(process.env.SHOT_EVAL)); // debug: print an expression's value per screen
       }
