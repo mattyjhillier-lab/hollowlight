@@ -382,3 +382,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - DESKTOP BUILD MERGED TO DEV (2026-10-31): A1 fill, C1 window overlay, D1 Menu size (settings.uiScale), D2 two-column Character/Settings, D3 tree hover, D5 hover/keys 1-6 + F fullscreen. Unverified: real installed app window, real iPhone. Not done: Almanac 6-8 col grid, tree node scaling, stored fullscreen pref. Thunder Judgment radius flagged.
 
 - 2026-10-31 UPDATE TEST: pushed a no-op build to check the installed app updates with no hard refresh (PWA-1 instant update). Matt: close and reopen the app; report if it sticks on loading.
+- 2026-10-31 UPDATE TEST 2: second no-op build; app was already on the new helper, so reopening it without a hard refresh is the real proof.
