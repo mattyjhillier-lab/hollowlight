@@ -22,6 +22,7 @@ const MIN_HOLD = 15000; // ms after any change before stepping up
 export class Quality {
   constructor(initial = 'med') {
     this.mode = 'auto';
+    this.floor = 0; // lowest tier Auto may drop to (RunScene sets 1 = 'med' on desktop: Low drops the ground blend and the walking glow, which is the whole look)
     this.idx = Math.max(0, TIERS.indexOf(initial));
     this.b = [{ t: 0, w: 0, n: 0 }, { t: 0, w: 0, n: 0 }, { t: 0, w: 0, n: 0 }];
     this.bi = 0;
@@ -31,6 +32,13 @@ export class Quality {
     this.lock = MIN_HOLD;
     this.avgMs = 0;
     this.avgWork = 0;
+  }
+
+  /** Auto never goes below `tier` (a name in TIERS); an explicit Low in Settings is still honoured. Lifts the current tier if it is under the floor. */
+  setFloor(tier) {
+    this.floor = Math.max(0, TIERS.indexOf(tier));
+    if (this.mode === 'auto' && this.idx < this.floor) { this.idx = this.floor; this.resetWindow(); return true; }
+    return false;
   }
 
   get tier() { return TIERS[this.idx]; }
@@ -76,7 +84,7 @@ export class Quality {
     this.avgWork = w / n;
     if (this.mode !== 'auto') return false;
 
-    if ((this.avgMs > DOWN_MS || this.avgWork > DOWN_WORK) && this.idx > 0) {
+    if ((this.avgMs > DOWN_MS || this.avgWork > DOWN_WORK) && this.idx > this.floor) {
       this.idx--;
       this.afterChange(true);
       return true;

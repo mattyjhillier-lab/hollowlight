@@ -59,3 +59,17 @@ test('hitches and bad input are ignored; caps respect budget', () => {
   assert.equal(CAPS.low.lightmap, false);
   assert.ok(CAPS.med.lights === 40 && CAPS.high.lights === 80 && CAPS.low.lights === 0);
 });
+
+test('desktop floor: Auto never drops below it and lifts a Low start; an explicit Low is still honoured', () => {
+  const q = new Quality('low');
+  assert.equal(q.setFloor('med'), true);
+  assert.equal(q.tier, 'med');
+  run(q, 40, 18, 12);
+  assert.equal(q.tier, 'med');
+  q.setMode('low');
+  assert.equal(q.tier, 'low');
+  const h = new Quality('high');
+  h.setFloor('med');
+  run(h, 40, 18, 30);
+  assert.equal(h.tier, 'med');
+});

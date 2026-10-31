@@ -388,6 +388,7 @@ export class RunScene extends Phaser.Scene {
     // quality tiers + frame measurement (docs/research/11)
     const cores = navigator.hardwareConcurrency || 4;
     this.quality = new Quality(cores <= 4 && !IOS ? 'low' : 'med');
+    if (!app.isPhone() && !IOS) this.quality.setFloor('med'); // desktop: a busy GPU (another program) must not flatten the ground to the Low look
     this.qMode = null;
     this.perf = new PerfOverlay(document.getElementById('stage') || document.body);
     this.perf.hook(this.renderer);
