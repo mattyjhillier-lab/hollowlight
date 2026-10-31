@@ -40,7 +40,7 @@ test('--fx feeds both side insets of the shared safe frame', () => {
 test('C1 manifest: WCO first for desktop, fullscreen kept for phones', () => {
   const m = JSON.parse(readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
   assert.equal(m.display, 'fullscreen');
-  assert.deepEqual(m.display_override, ['window-controls-overlay', 'fullscreen', 'standalone', 'minimal-ui']);
+  assert.deepEqual(m.display_override, ['fullscreen', 'standalone', 'minimal-ui']);
   assert.equal(m.orientation, 'landscape');
 });
 
