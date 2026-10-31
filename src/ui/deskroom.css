@@ -54,3 +54,14 @@ html:not(.phone):not(.touch) .lg-tab:hover:not([aria-selected="true"]) { box-sha
   font: 700 11px/1 var(--font-body); color: #ffe0a0; background: #171d2c; border: 1px solid #8d6c34; pointer-events: none; }
 .mnav__tab { position: relative; }
 html:not(.phone):not(.touch).inp-kb .mnav.has-keys .mnav__key, html:not(.phone):not(.touch) .mnav.has-keys:hover .mnav__key { display: inline-flex; }
+
+/* ---- DESKTOP polish: Almanac grid uses the width. Foes/default list gets 6 columns >= 1400 virtual px and 8 >= 1800, with a wider list column; spirit/night/hero lists keep their own layouts. ---- */
+@container (min-width: 1400px) {
+  html:not(.phone) .cx-list:not(.cx-list--spirits):not(.cx-list--nights):not(.cx-list--heroes) { grid-template-columns: repeat(6, 1fr); flex-basis: 56%; }
+}
+@container (min-width: 1800px) {
+  html:not(.phone) .cx-list:not(.cx-list--spirits):not(.cx-list--nights):not(.cx-list--heroes) { grid-template-columns: repeat(8, 1fr); flex-basis: 62%; }
+}
+@container (min-width: 1400px) {
+  html:not(.phone) .cx-socks { height: auto; align-items: start; }
+}
