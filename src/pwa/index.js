@@ -63,9 +63,11 @@ export function createPwa(win) {
     subscribe(cb) { listeners.add(cb); return () => listeners.delete(cb); },
     updateReady: () => !!waiting || swapped,
     applyUpdate() {
-      if (!waiting) { if (swapped) win.location.reload(); return; }
+      // The worker may already have taken over (sw.js never waits), so no controllerchange would follow: always reload, with a short
+      // fallback timer, so the Reload button can never do nothing.
       reloading = true;
-      try { waiting.postMessage('SKIP_WAITING'); } catch { reloading = false; }
+      try { if (waiting) waiting.postMessage('SKIP_WAITING'); } catch { /* the timer below still reloads */ }
+      setTimeout(() => { reloading = false; try { win.location.reload(); } catch { /* nothing more to do */ } }, 400);
     },
     // Production only (main.js decides). Relative URL + scope so it works under /hollowlight/.
     registerServiceWorker() {
