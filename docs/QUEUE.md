@@ -383,3 +383,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 
 - 2026-10-31 UPDATE TEST: pushed a no-op build to check the installed app updates with no hard refresh (PWA-1 instant update). Matt: close and reopen the app; report if it sticks on loading.
 - 2026-10-31 UPDATE TEST 2: second no-op build; app was already on the new helper, so reopening it without a hard refresh is the real proof.
+- 2026-10-31 UPDATE TEST 3: no-op build to check the Reload note and button after the fix.
