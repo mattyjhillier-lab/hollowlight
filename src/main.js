@@ -22,25 +22,37 @@ import { Vibe } from './gfx/feel.js';
 import { pickPrebakeMode } from './gfx/prebake.js';
 import { LOWMEM, LOWMEM_DPR } from './gfx/memprofile.js';
 
-applyCssPalette(document.documentElement);
+// BLANK-FIX: every optional boot stage is guarded. A stage that throws is noted for the boot guard (window.__boot.errors, shown in its
+// panel and Copy details) and the boot carries on without it, so one odd setting or device quirk never leaves a blank window.
+const optional = (name, fn, fallback = null) => {
+  try { return fn(); } catch (e) {
+    try { if (window.__boot && window.__boot.errors.length < 8) window.__boot.errors.push(name + ': ' + String((e && e.message) || e).slice(0, 200)); } catch { /* ignore */ }
+    try { console.error('[boot] ' + name, e); } catch { /* ignore */ }
+    return fallback;
+  }
+};
+// a do-nothing stand-in for an optional service whose start failed (any method call returns undefined)
+const inert = () => { const f = new Proxy(function () {}, { get: (_t, k) => (k === 'then' || typeof k === 'symbol' ? undefined : f), apply: () => undefined }); return f; };
+window.__bootStage = optional; // tests / harness readout
+optional('palette', () => applyCssPalette(document.documentElement));
 app.ui = new UI(document.getElementById('ui'), app.data);
 app.pwa = createPwa(window);
 app.ui.pwa = app.pwa;
-if (import.meta.env.PROD) app.pwa.registerServiceWorker(); // never in vite dev
+if (import.meta.env.PROD) optional('service worker', () => app.pwa.registerServiceWorker()); // never in vite dev
 // FD1: one save per lantern (profile); the first boot copies the legacy single save into lantern 1.
 try { app.lanterns = new Lanterns().init(); app.save = app.lanterns.openActive(); } catch { // A1: storage that misbehaves never stops the boot (memory-only session)
   app.lanterns = new Lanterns(null).init(); app.save = app.lanterns.openActive();
 }
 app.save.load(); // never throws (A1): a damaged save falls back to a fresh one and keeps a bounded copy
 if (app.lanterns.note && !app.save.loadNote) app.save.loadNote = app.lanterns.note;
-app.touch = new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) });
-app.audio = createAudio(window, document, { onMute: (m) => { app.save.setSettings({ muted: m }); app.applySettings(); if (app.sim && app.ui.toast) app.ui.toast(m ? 'Sound off (M)' : 'Sound on'); } });
+app.touch = optional('touch', () => new TouchControls(document.getElementById('touch'), { pause: () => app.togglePause(), autoPause: () => app.autoPause(), tapAt: (x, y) => app.ui.hudTapAt(x, y) }));
+app.audio = optional('audio', () => createAudio(window, document, { onMute: (m) => { app.save.setSettings({ muted: m }); app.applySettings(); if (app.sim && app.ui.toast) app.ui.toast(m ? 'Sound off (M)' : 'Sound on'); } }), null) || inert();
 app.ui.audio = app.audio; // AU6: tree / results sounds
 // AU1: a tiny tick when the pointer moves onto a button (one per button, never on touch)
-{ let last = null; document.getElementById('ui').addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') return; const b = e.target && e.target.closest ? e.target.closest('button') : null; if (b && b !== last && !b.disabled) app.audio.play('ui_tick'); last = b; }); }
-app.applySettings();
-app.vibe = new Vibe(navigator, () => app.save.data.settings, () => document.hidden); // FM5 phone buzz (guarded; Android only in practice)
-app.trackInput(window); // FM1: whispers speak in the input you used last
+optional('ui tick', () => { let last = null; document.getElementById('ui').addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') return; const b = e.target && e.target.closest ? e.target.closest('button') : null; if (b && b !== last && !b.disabled) app.audio.play('ui_tick'); last = b; }); });
+app.applySettings(); // each step guarded inside (app.js)
+app.vibe = optional('vibe', () => new Vibe(navigator, () => app.save.data.settings, () => document.hidden)); // FM5 phone buzz (guarded; Android only in practice)
+optional('input tracking', () => app.trackInput(window)); // FM1: whispers speak in the input you used last
 app.ui.setHandlers({
   ...app.settingsHandlers(),
   pick: (k) => app.pick(k),
@@ -54,10 +66,10 @@ app.ui.setHandlers({
 // Native-resolution rendering. Phaser 3.90 has no `resolution` option, so the canvas itself is
 // stage size x min(devicePixelRatio, 2); RunScene maps the 640x360 logical world onto it with camera zoom.
 document.documentElement.dataset.style = STYLE;
-initPhone(); // PHONE-A: html.phone before the first stage measurement
-app.desktop = initDesktop(); // DESKTOP A1 safe frame (--fx) + D1 UI scale (--uik)
-app.desktop.setPref(app.save.data.settings.uiScale);
-initProbe(); // C0: ?probe=1 viewport overlay (debug only)
+optional('phone', () => initPhone()); // PHONE-A: html.phone before the first stage measurement
+app.desktop = optional('desktop', () => initDesktop()); // DESKTOP A1 safe frame (--fx) + D1 UI scale (--uik)
+if (app.desktop) optional('menu size', () => app.desktop.setPref(app.save.data.settings.uiScale));
+optional('probe', () => initProbe()); // C0: ?probe=1 viewport overlay (debug only)
 const stage = document.getElementById('stage');
 const renderSize = () => {
   const r = stage.getBoundingClientRect();
@@ -89,7 +101,7 @@ const onResize = () => {
     if (n.w !== game.scale.width || n.h !== game.scale.height) game.scale.resize(n.w, n.h);
   });
 };
-if (typeof ResizeObserver !== 'undefined') new ResizeObserver(onResize).observe(stage);
+optional('resize observer', () => { if (typeof ResizeObserver !== 'undefined') new ResizeObserver(onResize).observe(stage); });
 window.addEventListener('resize', onResize);
 
 window.addEventListener('pagehide', () => app.save.flush());

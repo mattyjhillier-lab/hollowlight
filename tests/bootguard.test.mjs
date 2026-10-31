@@ -31,7 +31,7 @@ test('errText: clips, strips control characters, reads error/reason shapes', () 
   assert.ok(errText('x'.repeat(1000)).length <= 240);
 });
 
-test('guard: shows the failure panel after the limit of visible time, not while hidden, never after boot-done', () => {
+test('guard: shows the failure panel after the limit (wall clock, BLANK-FIX: also in a window reported hidden), never after boot-done', () => {
   const a = fakeWin();
   const st = installBootGuard(a.win, a.doc, '0.4.0');
   a.tick(BOOT_LIMIT_MS - 1000);
@@ -45,8 +45,10 @@ test('guard: shows the failure panel after the limit of visible time, not while 
 
   const h = fakeWin({ hidden: true });
   const sh = installBootGuard(h.win, h.doc);
-  h.tick(BOOT_LIMIT_MS * 3);
-  assert.equal(sh.shown, null, 'a hidden window is not a failure yet');
+  h.tick(BOOT_LIMIT_MS + 500);
+  assert.ok(sh.shown, 'a window the OS reports as hidden still gets the panel (it used to wait for ever)');
+  h.fire('boot-done', { detail: {} });
+  assert.equal(sh.shown, null, 'and a late boot removes it');
 
   const r = fakeWin();
   const sr = installBootGuard(r.win, r.doc);
@@ -79,7 +81,11 @@ test('guard: errors are collected (capped) and listed', () => {
 
 test('guard source: textContent only, no network, saves untouched by Repair', () => {
   const src = readFileSync(new URL('../src/ui/bootguard.js', import.meta.url), 'utf8');
-  assert.ok(!/innerHTML|insertAdjacentHTML|fetch\(|XMLHttpRequest|localStorage/.test(src));
+  assert.ok(!/innerHTML|insertAdjacentHTML|fetch\(|XMLHttpRequest/.test(src));
+  // BLANK-FIX: storage is touched only through storeOf() (reset buttons + the auto-repair flag); Repair itself never touches it
+  assert.ok(!/localStorage\./.test(src) && !/sessionStorage\./.test(src), 'no direct storage calls');
+  const rep = src.slice(src.indexOf('export async function repair'), src.indexOf('export function installBootGuard'));
+  assert.ok(!/storeOf|Storage|removeItem|setItem/.test(rep), 'Repair keeps saves');
   assert.ok(src.includes("k.startsWith('hollowlight-')"));
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(html.includes('bootnoscript') && !/innerHTML/.test(html));

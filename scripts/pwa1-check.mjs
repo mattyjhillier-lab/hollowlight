@@ -26,7 +26,7 @@ const server = createServer((req, res) => {
   const f = join(DIST, rel);
   if (!existsSync(f) || !statSync(f).isFile()) { res.statusCode = 404; res.end('missing'); return; }
   let body = readFileSync(f);
-  if (rel === 'sw.js' && bumped) body = Buffer.from(body.toString().replace(/const VERSION = '([^']+)'/, "const VERSION = '$1-bumped'"));
+  if (rel === 'sw.js' && bumped) body = Buffer.from(body.toString().replace(/const VERSION = '([^']+)'/, "const VERSION = '$1-bumped'").replace(/const BUILD = '([^']+)'/, "const BUILD = '$1-bumped'")); // BLANK-FIX: a new deploy has a new build id too
   res.setHeader('Content-Type', MIME[extname(f)] || 'application/octet-stream');
   res.setHeader('Cache-Control', 'max-age=600');
   res.end(body);
@@ -103,7 +103,7 @@ try {
   check('no update notice before a new version', (await ev(`document.querySelector('.layer-start .pwa-update').style.display`)) === 'none');
   await ev(`fetch('/__bump')`);
   await ev(`navigator.serviceWorker.getRegistration().then(r => r.update())`);
-  check('waiting worker detected (updateReady)', await waitFor('__app.pwa.updateReady()', 15000));
+  check('new worker took over, update offered (updateReady)', await waitFor('__app.pwa.updateReady()', 15000));
   check('"New version ready" notice visible on title', (await ev(`getComputedStyle(document.querySelector('.layer-start .pwa-update')).display`)) !== 'none' && (await ev(`document.querySelector('.layer-start .pwa-update').textContent`)).includes('New version ready'));
   await shot('title-update-notice-desktop');
   await ev(`window.__app.startRun('wren')`);

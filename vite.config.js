@@ -5,8 +5,11 @@ import { textScalePlugin } from './scripts/textscale.mjs';
 import { unitScalePlugin } from './scripts/unitscale.mjs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+// BLANK-FIX: one id per build, baked into the page (__BUILD_ID__) and into sw.js, so a page can tell whether the worker that
+// took over belongs to a newer deploy than itself (then it offers 'New version ready').
+const BUILD_ID = `${pkg.version}-${Date.now().toString(36)}`;
 
-// Stamps public/sw.js (copied to dist) with package version + hash of the built index.html, so every changed build
+// Stamps public/sw.js (copied to dist) with package version + hash of the built index.html + the build id, so every build
 // gets a new cache name and the browser sees a new service worker.
 function stampServiceWorker() {
   return {
@@ -17,7 +20,7 @@ function stampServiceWorker() {
       const sw = out + '/sw.js', idx = out + '/index.html';
       if (!existsSync(sw) || !existsSync(idx)) return;
       const id = createHash('sha256').update(readFileSync(idx)).digest('hex').slice(0, 10);
-      writeFileSync(sw, readFileSync(sw, 'utf8').replace('__SW_VERSION__', `${pkg.version}-${id}`));
+      writeFileSync(sw, readFileSync(sw, 'utf8').replace('__SW_VERSION__', `${pkg.version}-${id}`).replace('__BUILD_ID__', BUILD_ID));
     },
   };
 }
@@ -64,7 +67,7 @@ function inlineSingleFile() {
 // Single-file build so the whole game can be opened or hosted as one page.
 export default defineConfig({
   base: './',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __BUILD_ID__: JSON.stringify(BUILD_ID) },
   plugins: [textScalePlugin(), unitScalePlugin(), inlineSingleFile(), stampServiceWorker()], // A2: every CSS font size x var(--ts) (Settings > Text size); D1: vh / vw divide by the UI zoom (unitscale)
   // Dev server: only watch what the game loads. docs/ holds ~150 mockup .html files and screenshots that agents write while Matt
   // plays; any change there made the dev server full-reload his open game page.
