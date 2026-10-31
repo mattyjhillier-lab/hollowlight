@@ -386,3 +386,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - 2026-10-31 UPDATE TEST 3: no-op build to check the Reload note and button after the fix.
 - 2026-10-31 UPDATE TEST 4: proof push; Settings > About build stamp should move forward.
 - 2026-10-31 ABOUT WORDING OK (Matt: "about is fine"). Closes the About-wording item in LAUNCH-CHECKLIST OPEN.
+- 2026-10-31 NAV CLIP CLOSED: fit-audit menu is clean at 1920x1001d, 1280x720d, 844x390, 375x812 after the floating-tabs change; the 3px top-tab clip no longer reproduces.
