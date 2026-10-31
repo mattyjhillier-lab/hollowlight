@@ -385,3 +385,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - 2026-10-31 UPDATE TEST 2: second no-op build; app was already on the new helper, so reopening it without a hard refresh is the real proof.
 - 2026-10-31 UPDATE TEST 3: no-op build to check the Reload note and button after the fix.
 - 2026-10-31 UPDATE TEST 4: proof push; Settings > About build stamp should move forward.
+- 2026-10-31 ABOUT WORDING OK (Matt: "about is fine"). Closes the About-wording item in LAUNCH-CHECKLIST OPEN.
