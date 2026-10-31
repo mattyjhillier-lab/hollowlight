@@ -10,6 +10,7 @@ import { TouchControls } from './input/touch.js';
 import { STYLE, parseDpr } from './gfx/style.js';
 import './ui/phone.css';
 import './ui/desktop.css';
+import './ui/deskroom.css'; // DESKTOP D2: roomy layouts
 import { initPhone } from './ui/phone.js';
 import { initProbe } from './ui/probe.js';
 import { initDesktop } from './ui/desktop.js';
