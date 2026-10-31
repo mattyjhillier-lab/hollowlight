@@ -1,0 +1,10 @@
+# Cloudflare Pages response headers (GitHub Pages ignores this file). BLANK-FIX: the page, the service worker and the
+# manifest are always revalidated, so a new deploy is picked up on the next launch without a hard refresh.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache

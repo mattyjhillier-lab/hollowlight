@@ -8,7 +8,7 @@ import { setActiveKeymap, dirMap, keyLabel } from './input/keymap.js';
 import { Sim } from './sim/Sim.js';
 import data, { treeInfo } from './data/index.js';
 import { SaveStore } from './save/store.js';
-import { MAX_SAVE_BYTES, setTreeDef, parseSave } from './save/schema.js';
+import { MAX_SAVE_BYTES, setTreeDef, parseSave, defaultSettings } from './save/schema.js';
 import { MAX_LANTERNS, cleanName } from './save/lanterns.js';
 import { LANTERN, treeWhisperShort, purses, continueWhisper, treeAffordable, mostPlayedHero, lanternSummary, exportFileName } from './ui/lanterncopy.js';
 import { splitName } from './ui/titlecopy.js';
@@ -845,18 +845,36 @@ export const app = {
   },
 
   applySettings() {
-    const s = this.save.data.settings;
-    document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
-    applyTextSize(document.documentElement, s.textSize); // A2
-    if (this.desktop) this.desktop.setPref(s.uiScale); // DESKTOP D1: Menu size
-    const km = setActiveKeymap(s.keys); // A3: remapped keys (validated); movement, hints and the HUD pill follow
-    if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
-    if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();
-    if (this.audio) this.audio.configure(s);
-    if (this.touch) {
+    // BLANK-FIX: each step is guarded. A step that throws on a stored value puts that setting back to its default (saved),
+    // tries once more and leaves a one-time note for the title; it never stops the boot or a menu.
+    const reset = [];
+    const step = (name, keys, fn) => {
+      try { fn(this.save.data.settings); return; } catch (e) {
+        try { if (globalThis.__boot && globalThis.__boot.errors.length < 8) globalThis.__boot.errors.push('settings ' + name + ': ' + String((e && e.message) || e).slice(0, 160)); } catch { /* ignore */ }
+      }
+      if (!keys.length) return;
+      try {
+        const d = defaultSettings(), patch = {};
+        for (const k of keys) patch[k] = d[k];
+        this.save.setSettings(patch); reset.push(name);
+        fn(this.save.data.settings);
+      } catch { /* the default failed too: leave this part off for the session */ }
+    };
+    step('motion', ['reducedMotion'], (s) => document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion));
+    step('text size', ['textSize'], (s) => applyTextSize(document.documentElement, s.textSize)); // A2
+    step('menu size', ['uiScale'], (s) => { if (this.desktop) this.desktop.setPref(s.uiScale); }); // DESKTOP D1: Menu size
+    step('keys', ['keys'], (s) => { // A3: remapped keys (validated); movement, hints and the HUD pill follow
+      const km = setActiveKeymap(s.keys);
+      if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
+      if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();
+    });
+    step('sound', ['masterVol', 'musicVol', 'sfxVol', 'muted'], (s) => { if (this.audio) this.audio.configure(s); });
+    step('touch', ['touchMode', 'stickSize'], (s) => {
+      if (!this.touch) return;
       const coarse = typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches);
       this.touch.configure(touchEnabled(s.touchMode, this.params.touch, coarse, 'ontouchstart' in window), s.stickSize);
-    }
+    });
+    if (reset.length && this.save && !this.save.loadNote) this.save.loadNote = 'Some settings could not be used and were put back to their defaults: ' + reset.join(', ') + '.';
   },
 
   settingsHandlers() {

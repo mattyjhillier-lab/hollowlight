@@ -4,6 +4,21 @@ import { detectPlatform } from './platform.js';
 import { readDismissed, writeDismissed, shouldShowCard, showFooterLink } from './prompt.js';
 import * as fs from './fullscreen.js';
 
+const ownBuild = typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : '';
+
+/** BLANK-FIX: ask the controlling worker which build it is (MessageChannel; no answer in 2 s = unknown, nothing shown). */
+export function askBuild(worker, cb, setT = setTimeout, MC = globalThis.MessageChannel) {
+  let done = false;
+  const end = (v) => { if (!done) { done = true; cb(typeof v === 'string' ? v.slice(0, 64) : ''); } };
+  try {
+    if (!worker || !MC) return end('');
+    const ch = new MC();
+    ch.port1.onmessage = (m) => end(m && m.data);
+    worker.postMessage('BUILD', [ch.port2]);
+    setT(() => end(''), 2000);
+  } catch { end(''); }
+}
+
 export function createPwa(win) {
   const doc = win.document;
   const nav = win.navigator || {};
@@ -19,6 +34,7 @@ export function createPwa(win) {
   let appInstalled = false;
   let dismissedAt = storage ? readDismissed(storage, Date.now()) : 0;
   let waiting = null;
+  let swapped = false; // BLANK-FIX: a newer worker took over while this page runs (sw.js no longer waits); the page itself is older
   let reloading = false;
 
   win.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; notify(); });
@@ -45,9 +61,9 @@ export function createPwa(win) {
     showFooterLink() { return showFooterLink(api.state()); },
     dismiss() { dismissedAt = Date.now(); if (storage) writeDismissed(storage, dismissedAt); notify(); },
     subscribe(cb) { listeners.add(cb); return () => listeners.delete(cb); },
-    updateReady: () => !!waiting,
+    updateReady: () => !!waiting || swapped,
     applyUpdate() {
-      if (!waiting) return;
+      if (!waiting) { if (swapped) win.location.reload(); return; }
       reloading = true;
       try { waiting.postMessage('SKIP_WAITING'); } catch { reloading = false; }
     },
@@ -55,13 +71,19 @@ export function createPwa(win) {
     registerServiceWorker() {
       try {
         if (!nav.serviceWorker) return;
-        nav.serviceWorker.addEventListener('controllerchange', () => { if (reloading) { reloading = false; win.location.reload(); } });
+        let hadController = !!nav.serviceWorker.controller; // false on the very first visit: that first take-over is not an update
+        nav.serviceWorker.addEventListener('controllerchange', () => {
+          if (reloading) { reloading = false; win.location.reload(); return; }
+          waiting = null;
+          if (!hadController) { hadController = true; return; }
+          askBuild(nav.serviceWorker.controller, (b) => { if (b && b !== ownBuild) { swapped = true; notify(); } });
+        });
         nav.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' }).then((reg) => {
           const check = (w) => { if (w && nav.serviceWorker.controller) { waiting = w; notify(); } };
           check(reg.waiting);
           reg.addEventListener('updatefound', () => {
             const w = reg.installing;
-            if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') check(w); });
+            if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') check(w); else if (w.state === 'activated' && waiting === w) { waiting = null; notify(); } });
           });
           doc.addEventListener('visibilitychange', () => { if (!doc.hidden) reg.update().catch(() => {}); });
         }).catch(() => {});
