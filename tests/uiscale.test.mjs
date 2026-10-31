@@ -98,3 +98,25 @@ test('D2 roomy layouts: every rule is inside a container query and scoped to htm
   assert.ok(sels.length > 10);
   for (const s of sels) assert.ok(s.split(',').every((p) => p.trim().startsWith('html:not(.phone)')), s);
 });
+
+test('DESKTOP polish: Almanac grid widens (6 then 8 columns) only inside container queries and html:not(.phone)', () => {
+  const full = css('ui/deskroom.css');
+  const c = full.slice(full.indexOf('DESKTOP polish')).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(c, /@container \(min-width: 1400px\)[\s\S]*repeat\(6, 1fr\)/);
+  assert.match(c, /@container \(min-width: 1800px\)[\s\S]*repeat\(8, 1fr\)/);
+  const heads = c.split('{').map((p) => p.split('}').pop().trim()).filter((h) => h && !h.startsWith('@container') && !/^(grid-|height|flex)/.test(h) && !h.includes(':') || h.startsWith('html:'));
+  const sels = heads.filter((h) => !h.startsWith('@'));
+  assert.ok(sels.length >= 3, String(sels.length));
+  for (const s of sels) assert.ok(s.startsWith('html:not(.phone)'), s);
+  assert.match(css('ui/codex.css'), /\.cx-list \{[^}]*repeat\(5, 1fr\)/);
+});
+
+test('DESKTOP polish: Lantern Web scales lanterns, labels and hit areas by Menu size (--uik)', () => {
+  const src = css('ui/treescreen.js');
+  assert.match(src, /ukNow\(\)/);
+  assert.match(src, /--uik/);
+  assert.match(src, /\* 1\.15 \* k/);
+  assert.match(src, /13 \* uk/);
+  assert.match(src, /\* \(this\.uk \|\| 1\)/);
+  assert.match(src, /\$\{this\.uk \|\| 1\}/); // in both cache signatures, so a Menu size change redraws
+});

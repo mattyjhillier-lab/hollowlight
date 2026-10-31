@@ -445,7 +445,7 @@ export class TreeScreen {
     this.animNeeded = false;
     this.draw(t);
     // the focus buttons follow the map only when it settles (no 120 DOM writes per frame while dragging or flying)
-    const sig = `${this.cam.x},${this.cam.y},${this.cam.z},${this.W},${this.H}`;
+    const sig = `${this.cam.x},${this.cam.y},${this.cam.z},${this.W},${this.H},${this.uk || 1}`;
     if (sig !== this.moveSig) {
       this.moveSig = sig;
       if (this.items.size) this.itemsEl.style.opacity = '0';
@@ -459,12 +459,15 @@ export class TreeScreen {
 
   lod() { const z = this.cam.z; const L = this.view.lod; return z < L.far ? 'far' : z < L.near ? 'mid' : 'near'; }
   colorOf(id) { const r = this.model.region(id); return r && r.kind === 'cluster' ? r.color : '#ffd9a0'; }
-  radiusOf(n, lod) { return Math.max(lod === 'far' ? 2.2 : 4.5, (KIND_R[n.kind] || 8) * this.cam.z * 1.15); }
+  /** DESKTOP polish: Menu size (--uik, the CSS zoom of #ui) does not scale canvas pixels, so lanterns, labels and hit areas multiply by it here. 1 on phones. */
+  ukNow() { const v = Number(document.documentElement.style.getPropertyValue('--uik')); return v >= 1 && v <= 1.6 ? v : 1; }
+  radiusOf(n, lod) { const k = this.uk || 1; return Math.max((lod === 'far' ? 2.2 : 4.5) * k, (KIND_R[n.kind] || 8) * this.cam.z * 1.15 * k); }
 
   draw(t) {
     const c = this.ctx;
     if (!c) return;
     const { W, H, cam } = this;
+    this.uk = this.ukNow();
     const m = this.model;
     c.setTransform(this.DPR, 0, 0, this.DPR, 0, 0);
     const p = Math.min(1, m.progress + (1 - m.progress) * 0.25 * Math.max(0, Math.min(1, Number(this.api.bookFrac) || 0))); // CX6: the Almanac's book total adds a little light (never dims)
@@ -549,7 +552,7 @@ export class TreeScreen {
     if (lod === 'far') {
       const ty = hy + (this.view.nearHub - 10) * z;
       if (!this.lastRB.some((b) => b.x0 < hx + 90 && b.x1 > hx - 90 && b.y0 < ty + 16 && b.y1 > ty)) {
-        c.font = `13px ${FONT_UI}`; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center'; c.textBaseline = 'top';
+        c.font = `${13 * (this.uk || 1)}px ${FONT_UI}`; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center'; c.textBaseline = 'top';
         c.fillText(`The Hollow remembers: ${Math.round(p * 100)}%`, hx, ty);
       }
     }
@@ -809,14 +812,15 @@ export class TreeScreen {
     const addBox = (b) => { for (const k of cells(b)) { if (!G.has(k)) G.set(k, []); G.get(k).push(b); } };
     const hits = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0));
     for (const L of list) addBox({ x0: L.x - L.r - 3, x1: L.x + L.r + 3, y0: L.y - L.r - 3, y1: L.y + L.r + 3, id: L.id });
-    c.font = `13px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top';
+    const uk = this.uk || 1; const lh = Math.round(17 * uk);
+    c.font = `${13 * uk}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top';
     for (const L of pick) {
       const txt = m.cache[L.id].d.name; const w = c.measureText(txt).width + 8;
       const y0 = L.y + L.r + (L.s === 'ready' ? 10 : 5);
-      const bx = { x0: L.x - w / 2, x1: L.x + w / 2, y0, y1: y0 + 17 };
+      const bx = { x0: L.x - w / 2, x1: L.x + w / 2, y0, y1: y0 + lh };
       if (hits(bx, L.id)) continue;
       addBox(bx);
-      c.fillStyle = 'rgba(10,14,24,.78)'; c.fillRect(bx.x0, bx.y0, w, 17);
+      c.fillStyle = 'rgba(10,14,24,.78)'; c.fillRect(bx.x0, bx.y0, w, lh);
       c.fillStyle = L.s === 'ready' ? '#fff6e0' : L.s === 'lit' ? '#fff3dc' : L.s === 'open' ? '#f5dfae' : L.s === 'challenge' ? '#9fe6dc' : '#b3bbcf';
       c.fillText(txt, L.x, y0 + 1);
     }
@@ -833,10 +837,10 @@ export class TreeScreen {
       let [sx, sy] = this.toS(r.x, r.y - (r.kind === 'cluster' ? r.r + 26 : lod === 'far' ? r.r * 0.8 : 0));
       const [fx0, fy0, fx1, fy1] = this.freeRect();
       if (sx < fx0 || sx > fx1 || sy < fy0 || sy > fy1) continue; // only the constellations in view
-      const fs = Math.max(11, Math.min(this.small ? 13 : 18, 70 * z));
+      const uk = this.uk || 1; const fs = Math.max(11, Math.min(this.small ? 13 : 18, 70 * z)) * uk;
       c.font = `${fs}px ${FONT_HEAD}`; c.textAlign = 'center';
       const name = r.done ? `${r.name} ✓` : r.name; const nw = c.measureText(name).width;
-      const badge = r.light > 0; const bw = badge ? 24 : 0;
+      const badge = r.light > 0; const bw = badge ? 24 * uk : 0;
       sx = clamp(sx, fx0 + nw / 2 + 8, Math.max(fx0 + nw / 2 + 8, fx1 - nw / 2 - bw - 8 - (this.small ? 54 : 0))); // a name is never cut off by the edge or hidden under the tools
       sy = clamp(sy, fy0 + fs / 2 + 6, Math.max(fy0 + fs / 2 + 6, fy1 - fs / 2 - 6));
       const rb = { x0: sx - nw / 2 - 6, x1: sx + nw / 2 + 6 + bw, y0: sy - fs / 2 - 3, y1: sy + fs / 2 + 3 };
@@ -845,7 +849,7 @@ export class TreeScreen {
       const awake = r.kind !== 'cluster' || m.awake(r);
       c.fillStyle = r.done ? '#ffe39a' : awake ? 'rgba(255,243,220,.95)' : 'rgba(179,187,207,.85)';
       c.fillText(name, sx, sy);
-      if (badge) { const bx = sx + nw / 2 + 14; c.fillStyle = '#fff6e0'; c.beginPath(); c.arc(bx, sy, 10, 0, 7); c.fill(); c.fillStyle = '#3a2412'; c.font = `bold 12px ${FONT_UI}`; c.fillText(String(r.light), bx, sy + 1); }
+      if (badge) { const bx = sx + nw / 2 + 14 * uk; c.fillStyle = '#fff6e0'; c.beginPath(); c.arc(bx, sy, 10 * uk, 0, 7); c.fill(); c.fillStyle = '#3a2412'; c.font = `bold ${12 * uk}px ${FONT_UI}`; c.fillText(String(r.light), bx, sy + 1); }
     }
   }
 
@@ -858,7 +862,7 @@ export class TreeScreen {
 
   syncItems() {
     const lod = this.lodNow || this.lod();
-    const sig = `${this.cam.x.toFixed(1)},${this.cam.y.toFixed(1)},${this.cam.z.toFixed(4)},${this.W},${this.H},${this.selected},${this.itemSig}`;
+    const sig = `${this.cam.x.toFixed(1)},${this.cam.y.toFixed(1)},${this.cam.z.toFixed(4)},${this.W},${this.H},${this.uk || 1},${this.selected},${this.itemSig}`;
     if (sig === this.camSig) return;
     this.camSig = sig;
     const vis = [];
@@ -1326,7 +1330,7 @@ export class TreeScreen {
       }
     }
     if (!bestId) return null;
-    const hit = Math.max(22, (KIND_R[this.def.nodes[bestId].kind] || 8) * this.cam.z * 1.3); // 44 px touch target at least
+    const hit = Math.max(22, (KIND_R[this.def.nodes[bestId].kind] || 8) * this.cam.z * 1.3) * (this.uk || 1); // 44 px touch target at least
     return bd <= hit ? bestId : null;
   }
 
