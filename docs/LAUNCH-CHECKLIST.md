@@ -341,3 +341,6 @@ TRIAGED 2026-10-17 (FIX-EVERYTHING-FLAGGED): every line below carries its bucket
 - tests/visibility-pins and docs/design/visibility-arc-measured.md: the harness test depends on that report existing (it was missing during one in-flight run; present now). **[ACCEPTED A12]**
 - No audio, no tutorial, no profiles, no codex, no About page exist yet (all in section C). **[QUEUED CHUNK, section C]**
 - [STALE 2026-10-28: Hollowlight withdrawn; Wispwick stores-checked, trademark search still Matt's] Name clash risk (Hollowlight vs Hollow Knight / "Hollow Light") unchecked. **[NEEDS MATT N12: his own search]**
+
+### EXPLOIT + FEEL PASS (added 2026-10-31, required before friend testing and the merge)
+Stand-still / minimal-movement / camping / kiting probes on every weapon and evolution, plus Matt's per-weapon feel notes. See docs/QUEUE.md "EXPLOIT + FEEL PASS". Owner: Claude (probes), Matt (feel notes). Status: started with Spirit Tempest.
