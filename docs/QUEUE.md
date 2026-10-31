@@ -377,3 +377,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - PHONE PLAYTEST (2026-10-30, Matt, iPhone, dev build): plays really well; new card icon looks much better; everything fits. Evolution flow v2, phone layout and smooth ground accepted on iPhone.
 
 - PAUSED 2026-10-30 night (Matt). Desktop build (wip/desktop-build, A1/C1/D1-D5) stopped mid-run; chunks already pushed on that branch are kept, restart from the last pushed chunk. Nothing else running.
+
+- DESKTOP BUILD MERGED TO DEV (2026-10-31): A1 fill, C1 window overlay, D1 Menu size (settings.uiScale), D2 two-column Character/Settings, D3 tree hover, D5 hover/keys 1-6 + F fullscreen. Unverified: real installed app window, real iPhone. Not done: Almanac 6-8 col grid, tree node scaling, stored fullscreen pref. Thunder Judgment radius flagged.
