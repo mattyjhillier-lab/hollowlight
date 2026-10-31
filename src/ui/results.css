@@ -185,6 +185,8 @@ html.reduced-motion .overlay.u6 * { transition: none !important; animation: none
 /* ui-fix: chips grow instead of clipping (narrow phones + Larger text). Words never split mid-word; the main column scrolls if the content is taller than the screen. */
 .overlay.u6 .u6-chip__val, .overlay.u6 .u6-chip__lab { overflow-wrap: break-word; hyphens: manual; }
 .overlay.u6 .u6-main { align-items: start; }
+/* desktop windows only: centre the main block vertically (safe = tall content never clips at the top); phones keep top alignment */
+html:not(.phone) .overlay.u6 .u6-main { align-items: safe center; }
 @media (max-width: 400px) {
   .overlay.u6 .u6-chip { padding: 4px 6px; }
   .overlay.u6 .u6-chip__lab { letter-spacing: .02em; font-size: calc(var(--fs-small, 13px) * .95); }

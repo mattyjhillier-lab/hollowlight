@@ -316,7 +316,7 @@ test('CSS: every rule is scoped under .overlay.u6 (nothing leaks to the HUD or o
   for (const rule of rules) {
     const sel = rule.slice(0, rule.indexOf('{')).trim();
     if (!sel || sel.startsWith('@')) continue;
-    for (const part of sel.split(',').map((x) => x.trim())) assert.ok(/^(html(\.touch|\.reduced-motion)? )?\.overlay\.u6/.test(part), `unscoped selector: ${part}`);
+    for (const part of sel.split(',').map((x) => x.trim())) assert.ok(/^(html(\.touch|\.reduced-motion|:not\(\.phone\))? )?\.overlay\.u6/.test(part), `unscoped selector: ${part}`);
   }
   assert.ok(!/overflow(-y)?:\s*(auto|scroll)/.test(cssNoComments), 'results never scroll');
   assert.ok(!/backdrop-filter|filter:\s*blur|url\(http|@import/.test(cssNoComments));

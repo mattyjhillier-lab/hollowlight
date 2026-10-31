@@ -2,11 +2,12 @@
 // Own headless Chrome on port 9396 (kills only that PID). The REAL ui.showEnd is called in a debug run (never touches the real save) with staged
 // result + bank objects of the exact shapes sim.result() / app.bankRun() produce. Screenshots every scenario at 1280x720, 844x390@2x, 390x844@2x.
 // 'after' also measures (no scroll, buttons in view and >= 44 px, text >= 12 px, dropped rows).
-import { launch, VIEWS, sleep } from './u3-lib.mjs';
+import { launch, VIEWS as V0, sleep } from './u3-lib.mjs';
+const VIEWS = process.env.BIG ? [['d2560x1440', 2560, 1440, 1, false], ['d2560x1080', 2560, 1080, 1, false], ['d1920x1001', 1920, 1001, 1, false], ['d1440x900', 1440, 900, 1, false], ...V0] : V0; // BIG=1 adds large desktop windows
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const out = process.argv[2]; const mode = process.argv[3] || 'after'; const base = process.argv[4] || 'http://localhost:4190';
-const c = await launch(9396);
+const c = await launch(+process.env.PORT || 9396);
 const shot = async (dir, name) => { mkdirSync(dir, { recursive: true }); const r = await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 82 }); writeFileSync(join(dir, name + '.jpg'), Buffer.from(r.data, 'base64')); console.log('  shot', name); };
 let fails = 0;
 
@@ -26,7 +27,7 @@ const SCEN = {
 };
 const names = Object.keys(SCEN).filter((n) => !process.env.ONLY || process.env.ONLY.split(',').includes(n)).filter((n) => mode !== 'before' || n !== 'hostile'); // the old screen throws on unknown evolution ids
 
-const STAGE = (n) => `(() => { const S = ${JSON.stringify(SCEN[n])}; if (S.tweak) eval(S.tweak); __app.ui.hideAll(); __app.sim.state = 'defeat'; __app.ui.showEnd({ result: () => S.r }, S.bank); return 1; })()`;
+const STAGE = (n) => `(() => { ${process.env.INJECT ? `if(!document.getElementById('inj')){const st=document.createElement('style');st.id='inj';st.textContent=${JSON.stringify(process.env.INJECT)};document.head.append(st);}` : ''} const S = ${JSON.stringify(SCEN[n])}; if (S.tweak) eval(S.tweak); __app.ui.hideAll(); __app.sim.state = 'defeat'; __app.ui.showEnd({ result: () => S.r }, S.bank); return 1; })()`;
 const MEASURE = `(async () => { await document.fonts.ready; await new Promise((r) => setTimeout(r, 1200));
   const lay = document.querySelector('.layer-end'); const R = (e) => e.getBoundingClientRect();
   const vis = (e) => { const r = R(e), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
