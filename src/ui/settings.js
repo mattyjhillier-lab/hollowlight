@@ -5,6 +5,7 @@ import { SET } from './u4copy.js';
 import { ABOUT } from './aboutcopy.js';
 import { SAFE, downloadText } from './savesafety.js';
 import { TEXT_COPY } from './textsize.js';
+import { UI_SCALE_COPY, cleanUiScale } from './uiscale.js';
 import { buildKeyRemap } from './keysui.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
@@ -72,6 +73,8 @@ function wickToggle({ label: text, help, checked, onChange }) {
   return t;
 }
 
+const deskOnly = (row) => { row.classList.add('u4-row--desk'); return row; };
+
 function fullscreenRow(pwa) {
   if (!pwa) return null;
   const row = el('div', 'u4-row u4-row--fs');
@@ -112,6 +115,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     choice({ ...SET.quality, options: SET.quality.opts, value: st.quality, onChange: (v) => set({ quality: v }) }),
     choice({ ...SET.brightness, options: SET.brightness.opts, value: api.resolvedBrightness ? api.resolvedBrightness(st.brightness) : (st.brightness === 'auto' ? 'normal' : st.brightness), onChange: (v) => set({ brightness: v }) }),
     choice({ ...TEXT_COPY, options: TEXT_COPY.opts, value: st.textSize || 'normal', onChange: (v) => set({ textSize: v }) }), // A2
+    deskOnly(choice({ ...UI_SCALE_COPY, options: UI_SCALE_COPY.opts, value: cleanUiScale(st.uiScale), onChange: (v) => set({ uiScale: v }) })), // DESKTOP D1 (hidden on phones, which always use 1x)
     wickToggle({ ...SET.screenShake, checked: st.screenShake, onChange: (v) => set({ screenShake: v }) }),
     wickToggle({ ...SET.reducedMotion, checked: st.reducedMotion, onChange: (v) => set({ reducedMotion: v }) }),
     wickToggle({ ...SET.damageNumbers, checked: st.damageNumbers, onChange: (v) => set({ damageNumbers: v }) }));

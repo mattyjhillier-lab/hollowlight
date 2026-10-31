@@ -8,6 +8,7 @@ import { TIER_IDS } from '../sim/tiers.js';
 import { cleanHints } from '../ui/whispers.js';
 import { cleanIntros, withIntro, VETERAN_SEEN } from '../ui/introcopy.js';
 import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
+import { cleanUiScale } from '../ui/uiscale.js';
 import { cleanChars, cleanPick, legacySeed } from './chars.js';
 import { cleanCosm } from '../meta/cosmetics.js';
 import { cleanKeymap, defaultKeymap } from '../input/keymap.js';
@@ -32,7 +33,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHe
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true, textSize: 'normal', keys: defaultKeymap() };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true, textSize: 'normal', uiScale: 'auto', keys: defaultKeymap() };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -282,6 +283,7 @@ export function sanitize(raw, now = Date.now()) {
       vibration: bool(st.vibration, ds.vibration),
       backupNudge: bool(st.backupNudge, ds.backupNudge),
       textSize: TEXT_SIZES.includes(st.textSize) ? st.textSize : ds.textSize, // A2 whitelist
+      uiScale: cleanUiScale(st.uiScale), // DESKTOP D1 'Menu size' whitelist (device setting; phones ignore it)
       keys: cleanKeymap(st.keys), // A3 remapped keys: known actions, allowed codes, no duplicates, Esc fixed on Pause // A1 'export a backup' reminder on the title screen (device setting)
       gentleLight: bool(st.gentleLight, ds.gentleLight), // EXTRAS v1 Gentle Light (Twilight assist; read only when a Twilight run starts) // FM5 phone buzz (device setting; never used under Calm or a hidden tab)
     },

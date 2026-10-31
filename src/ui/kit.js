@@ -214,7 +214,8 @@ export function withTooltip(target, tipOpts, { longPressMs = 450, holdMs = 2600 
     const m = 8;
     let dx = 0;
     if (r.left < m) dx = m - r.left; else if (r.right > w.innerWidth - m) dx = w.innerWidth - m - r.right;
-    tip.style.setProperty('--lg-tip-dx', `${Math.round(dx)}px`);
+    const zk = Number(w.document && w.document.documentElement && w.document.documentElement.style.getPropertyValue('--uik')) || 1; // D1: the nudge is set in zoomed px
+    tip.style.setProperty('--lg-tip-dx', `${Math.round(dx / zk)}px`);
   };
   const show = () => { tip.hidden = false; place(); };
   const hide = () => { tip.hidden = true; if (hold) { clearTimeout(hold); hold = null; } };

@@ -5,8 +5,8 @@
 :root { --tb-r: 0px; --tb-h: 0px; }
 @media (display-mode: window-controls-overlay) {
   :root {
-    --tb-h: env(titlebar-area-height, 0px);
-    --tb-r: max(0px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)));
+    --tb-h: calc(env(titlebar-area-height, 0px) / var(--uik, 1));
+    --tb-r: max(0px, calc((100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)) / var(--uik, 1))); /* keep-vw: real pixels, divided by the zoom here */
   }
   .mnav { -webkit-app-region: drag; app-region: drag; padding-right: max(6px, var(--sa-r), var(--tb-r)); min-height: max(var(--mnav-h), var(--tb-h)); }
   .mnav :is(button, a, input, select, [role="tab"], .mnav__slot) { -webkit-app-region: no-drag; app-region: no-drag; }
@@ -15,3 +15,12 @@
   :root .overlay.u3 .fd-top { right: max(clamp(10px, 1.6vw, 18px), var(--tb-r)); }
   :root .ts-zoom { right: max(10px, var(--sa-r), var(--tb-r)); }
 }
+
+/* D1 UI scale (docs/design/desktop-v1.md B1, src/ui/uiscale.js). desktop.js sets --uik (1 .. 1.5; always 1 on phones) and the WHOLE UI layer is zoomed by it, so every menu, card and
+   HUD part grows together and the layouts see a smaller "virtual" window (the same sizes they are built and audited for). #ui is its own size container, so container queries and cqw
+   measure the virtual width. Viewport units written in src/**.css are rewritten at build time to var(--vh1)/var(--vw1) (scripts/unitscale.mjs), which divide by the zoom; the
+   system insets (safe areas, window-controls corner) are real pixels, so they are divided by it as well. At --uik 1 every value is exactly what it was before. */
+:root { --uik: 1; --vh1: calc(1vh / var(--uik)); --vw1: calc(1vw / var(--uik)); } /* keep-vw: the definition itself */
+#ui { zoom: var(--uik); container-type: inline-size; }
+/* the Menu size row means nothing on a phone (always 1x) */
+html.phone .u4-row--desk { display: none; }

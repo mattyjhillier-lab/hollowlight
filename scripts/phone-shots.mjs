@@ -22,7 +22,7 @@ let id = 0; const pend = new Map();
 ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } });
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async (expr) => (await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
-const shot = async (name) => { await ev("if(!document.getElementById('nop')){const s=document.createElement('style');s.id='nop';s.textContent='[data-probe]{display:none!important}';document.head.append(s)}"); await sleep(150); const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(path.join(outDir, name), Buffer.from(r.result.data, 'base64')); };
+const shot = async (name) => { await ev("if(!document.getElementById('nop')){const s=document.createElement('style');s.id='nop';s.textContent='[data-probe]{display:none!important}';document.head.append(s)}"); await sleep(150); const jp = process.env.SHOT_FMT === 'jpeg'; const r = await send('Page.captureScreenshot', jp ? { format: 'jpeg', quality: 78 } : { format: 'png' }); writeFileSync(path.join(outDir, jp ? name.replace(/\.png$/, '.jpg') : name), Buffer.from(r.result.data, 'base64')); };
 const menu = {
   // fallback card icons (heal / gold / shard) next to two weapon icons on a dark plate, to check the set reads as one family
   cardicons: "ui.hideAll(); import('/src/ui/cardicons.js').then(m=>{const d=document;const w=d.createElement('div');w.setAttribute('data-icons','');w.style.cssText='position:fixed;inset:0;z-index:99;background:#14100c;display:flex;flex-wrap:wrap;gap:12px;align-content:center;justify-content:center';const defs=d.createElementNS('http://www.w3.org/2000/svg','svg');for(const c of [{kind:'fallback',fallback:'heal'},{kind:'fallback',fallback:'gold'},{kind:'fallback',fallback:'shard'},{kind:'blessing',blessId:'wider_glow'},{kind:'weapon',weaponId:'ghost_wolves'}]){const s=m.cardIcon(d,c);s.style.cssText='width:96px;height:96px';w.append(s)}d.body.append(w)})",
@@ -44,6 +44,7 @@ try {
         await ev(`(()=>{const ui=window.__app.ui; ${menu[base]}})()`); await sleep(900);
         if (tabClick[k]) { await ev(`document.querySelectorAll('${tabClick[k][1]}')[${tabClick[k][2]}]?.click()`); await sleep(600); }
         await shot(`${prefix}-${s.name}-${k}.png`);
+        if (process.env.SHOT_EVAL) console.log(s.name, k, await ev(process.env.SHOT_EVAL)); // debug: print an expression's value per screen
       }
     }
     const runWant = want.filter((k) => ['hud', 'levelup', 'pause', 'results', 'results-rich'].includes(k));

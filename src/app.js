@@ -847,6 +847,7 @@ export const app = {
     const s = this.save.data.settings;
     document.documentElement.classList.toggle('reduced-motion', !!s.reducedMotion);
     applyTextSize(document.documentElement, s.textSize); // A2
+    if (this.desktop) this.desktop.setPref(s.uiScale); // DESKTOP D1: Menu size
     const km = setActiveKeymap(s.keys); // A3: remapped keys (validated); movement, hints and the HUD pill follow
     if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
     if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();

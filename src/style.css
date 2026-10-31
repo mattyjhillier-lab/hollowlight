@@ -111,7 +111,7 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 }
 #game, #ui { position: absolute; inset: 0; }
 #game canvas { display: block; width: 100% !important; height: 100% !important; }
-#ui { pointer-events: none; font-size: clamp(9px, 1.7cqw, 20px); }
+#ui { pointer-events: none; font-size: clamp(9px, calc(1.7cqw / var(--uik, 1)), 20px); }
 #ui button, #ui .card, #ui .charcard { pointer-events: auto; }
 #ui * { user-select: none; -webkit-user-select: none; }
 :focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }

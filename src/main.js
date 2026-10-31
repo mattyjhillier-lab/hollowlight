@@ -54,7 +54,8 @@ app.ui.setHandlers({
 // stage size x min(devicePixelRatio, 2); RunScene maps the 640x360 logical world onto it with camera zoom.
 document.documentElement.dataset.style = STYLE;
 initPhone(); // PHONE-A: html.phone before the first stage measurement
-initDesktop(); // DESKTOP A1: ultrawide safe frame (--fx)
+app.desktop = initDesktop(); // DESKTOP A1 safe frame (--fx) + D1 UI scale (--uik)
+app.desktop.setPref(app.save.data.settings.uiScale);
 initProbe(); // C0: ?probe=1 viewport overlay (debug only)
 const stage = document.getElementById('stage');
 const renderSize = () => {
