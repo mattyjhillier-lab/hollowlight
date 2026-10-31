@@ -10,6 +10,9 @@
 .mnav__slot .ts-purse { gap: 6px; }
 .mnav__slot .ts-pill { min-height: 30px; padding: 2px 9px; font-size: 14px; }
 
+/* Off Home the screen below is a near-opaque dark layer (#07070d at .97) that starts under this row, so the row takes the same colour: one seamless dark top with the tabs floating on it, no lighter band and no edge. On Home the fade over the art stays. */
+.mnav:has(.mnav__tabs > :first-child:not(.is-on)) { background: rgba(7, 7, 13, .97); }
+
 /* the button is the 44px hit area; the drawn pill inside it is 36px (gold-rimmed navy glass, same family as Begin / Skill Tree / Settings) */
 .mnav__tab { flex: 1 1 auto; min-width: 44px; min-height: 44px; margin: 0; padding: 4px 0; background: transparent; border: 0; color: #f3e7cc; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; max-width: 150px; }
 .mnav__tab--ico { flex: 0 0 auto; }
