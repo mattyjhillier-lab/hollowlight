@@ -2,19 +2,13 @@
    on #stage), never the window or a phone class, so a small desktop window and a phone get the same rules. Real pixels, not em: tap targets stay >= 44px. */
 #ui { --mnav-h: 48px; }
 .mnav { position: absolute; left: 0; right: 0; top: 0; z-index: 65; display: flex; justify-content: center; padding: var(--sa-t) max(6px, var(--sa-r)) 0 max(6px, var(--sa-l)); box-sizing: border-box;
-  background: linear-gradient(#0b101cd9, #0b101c66 70%, #0b101c00); pointer-events: auto; } /* FLOATING TABS: a soft fade for legibility, no strip, divider or shadow */
+  pointer-events: auto; } /* FLOATING TABS: no strip, fade, divider or shadow; the screen's own background runs up behind the tabs (see the layer rule at the end) */
 .mnav__in { display: flex; flex-wrap: wrap; align-items: center; width: 100%; max-width: 1000px; column-gap: 8px; }
 .mnav__tabs { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; align-items: center; height: 48px; }
 .mnav__slot { flex: none; display: none; align-items: center; justify-content: flex-end; gap: 6px; }
 .mnav.has-purse .mnav__slot { display: flex; }
 .mnav__slot .ts-purse { gap: 6px; }
 .mnav__slot .ts-pill { min-height: 30px; padding: 2px 9px; font-size: 14px; }
-
-/* Tree, Goals, Almanac, Settings: every screen has its own dark below the row, so a flat colour always shows a seam. The row is one deep dark and a 30px
-   soft fade below it melts into whatever the screen is, so there is no band and no line. Keyed on the current tab (Home, Character, Tree, Goals, Almanac, Settings):
-   finished layers can linger hidden in the page. Home and Character keep the fade over the art. */
-.mnav:has(.mnav__tabs > :nth-child(n+3).is-on) { background: #07070d; }
-.mnav:has(.mnav__tabs > :nth-child(n+3).is-on)::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 30px; pointer-events: none; background: linear-gradient(#07070d, #07070d00); }
 
 /* the button is the 44px hit area; the drawn pill inside it is 36px (gold-rimmed navy glass, same family as Begin / Skill Tree / Settings) */
 .mnav__tab { flex: 1 1 auto; min-width: 44px; min-height: 44px; margin: 0; padding: 4px 0; background: transparent; border: 0; color: #f3e7cc; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; max-width: 150px; }
@@ -56,7 +50,9 @@
 :root[data-text="larger"] .mnav__tab:not(.is-on) .mnav__pill { padding: 0; }
 @media (prefers-reduced-motion: reduce) { .mnav__pill { transition: none; } }
 
-#ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: calc(var(--mnav-h) + var(--sa-t)); }
+#ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: 0; border-top: calc(var(--mnav-h) + var(--sa-t)) solid transparent; background-origin: border-box; /* the screen's own background paints under this transparent border, so it runs up behind the floating tabs: no strip, no seam */ }
 
 /* C2: the Home tab replaces the big Back buttons on Character, Settings and the Almanac while the tab row shows. Esc still goes back (key handlers untouched); without the row (in-run pause / results) Back stays. */
 #ui.has-mnav .overlay.u3 .ch-bar2, #ui.has-mnav .overlay.u4.u4-settingsscreen .u4-foot, #ui.has-mnav .overlay .cx-back { display: none; }
+
+#ui.has-mnav .layer-tree { background: #0a0e18; } /* close to the map edge colour below (the map is a radial #121826 to #080b13), so the part behind the tabs blends in */
