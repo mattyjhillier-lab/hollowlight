@@ -10,8 +10,11 @@
 .mnav__slot .ts-purse { gap: 6px; }
 .mnav__slot .ts-pill { min-height: 30px; padding: 2px 9px; font-size: 14px; }
 
-/* Off Home the screen below is a near-opaque dark layer (#07070d at .97) that starts under this row, so the row takes the same colour: one seamless dark top with the tabs floating on it, no lighter band and no edge. On Home the fade over the art stays. */
-.mnav:has(.mnav__tabs > :first-child:not(.is-on)) { background: rgba(7, 7, 13, .97); }
+/* Tree, Goals, Almanac, Settings: every screen has its own dark below the row, so a flat colour always shows a seam. The row is one deep dark and a 30px
+   soft fade below it melts into whatever the screen is, so there is no band and no line. Keyed on the current tab (Home, Character, Tree, Goals, Almanac, Settings):
+   finished layers can linger hidden in the page. Home and Character keep the fade over the art. */
+.mnav:has(.mnav__tabs > :nth-child(n+3).is-on) { background: #07070d; }
+.mnav:has(.mnav__tabs > :nth-child(n+3).is-on)::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 30px; pointer-events: none; background: linear-gradient(#07070d, #07070d00); }
 
 /* the button is the 44px hit area; the drawn pill inside it is 36px (gold-rimmed navy glass, same family as Begin / Skill Tree / Settings) */
 .mnav__tab { flex: 1 1 auto; min-width: 44px; min-height: 44px; margin: 0; padding: 4px 0; background: transparent; border: 0; color: #f3e7cc; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; max-width: 150px; }
@@ -53,7 +56,7 @@
 :root[data-text="larger"] .mnav__tab:not(.is-on) .mnav__pill { padding: 0; }
 @media (prefers-reduced-motion: reduce) { .mnav__pill { transition: none; } }
 
-#ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: calc(var(--mnav-h) + 1px + var(--sa-t)); }
+#ui.has-mnav .layer-start, #ui.has-mnav .layer-hero, #ui.has-mnav .layer-lanterns, #ui.has-mnav .layer-nights, #ui.has-mnav .layer-settings, #ui.has-mnav .layer-codex, #ui.has-mnav .layer-tree { top: calc(var(--mnav-h) + var(--sa-t)); }
 
 /* C2: the Home tab replaces the big Back buttons on Character, Settings and the Almanac while the tab row shows. Esc still goes back (key handlers untouched); without the row (in-run pause / results) Back stays. */
 #ui.has-mnav .overlay.u3 .ch-bar2, #ui.has-mnav .overlay.u4.u4-settingsscreen .u4-foot, #ui.has-mnav .overlay .cx-back { display: none; }
