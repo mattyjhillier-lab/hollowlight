@@ -244,8 +244,13 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
     if (!root.querySelectorAll) return;
     const hidden = [];
     const rows = root.querySelectorAll('[data-drop]');
+    // Overflow that is there with every droppable row hidden (e.g. the hero text a few px taller than its cell at 2560x1440) is not caused
+    // by the rows, so it must not drop them: only the overflow the rows add counts.
+    for (const r of rows) r.hidden = true;
+    const boxes = [main, sum, hero];
+    const base = boxes.map((b) => Math.max(0, b.scrollHeight - b.clientHeight));
     for (const r of rows) r.hidden = false;
-    const over = () => main.scrollHeight > main.clientHeight + 1 || sum.scrollHeight > sum.clientHeight + 1 || hero.scrollHeight > hero.clientHeight + 1;
+    const over = () => boxes.some((b, i) => b.scrollHeight - b.clientHeight > base[i] + 1);
     for (const key of DROP_ORDER) {
       if (!over()) break;
       let any = false;

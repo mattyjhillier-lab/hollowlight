@@ -290,6 +290,23 @@ test('fit(): when the body overflows, rows drop in priority order (weapons, nudg
   room = 0; r.fit(); assert.deepEqual(dropped(), [], 'rows return when the window grows');
 });
 
+test('fit(): overflow that is there with every row hidden (hero text a few px taller than its cell) does not drop rows', () => {
+  const v = mkView(res(), bank({ closest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] }));
+  const { r } = build(v);
+  const dropped = () => (r.root.getAttribute('data-dropped') || '').split(' ').filter(Boolean);
+  let rowsOn = false;
+  for (const n of [r.main, r.panel]) Object.defineProperty(n, 'clientHeight', { get: () => 500 });
+  Object.defineProperty(r.main, 'scrollHeight', { get: () => 500 + (rowsOn && r.root.querySelectorAll('[data-drop]').some((n) => !n.hidden) ? 40 : 0) });
+  Object.defineProperty(r.panel, 'scrollHeight', { get: () => 500 });
+  Object.defineProperty(r.hero, 'clientHeight', { get: () => 307 });
+  Object.defineProperty(r.hero, 'scrollHeight', { get: () => 316 });
+  r.fit();
+  assert.deepEqual(dropped(), [], 'a constant 9 px hero overflow does not drop the weapons, Hollow Places or the lunge line');
+  rowsOn = true;
+  r.fit();
+  assert.ok(dropped().length > 0, 'rows that overflow the main column still drop');
+});
+
 // ---------------------------------------------------------------- CSS floors + scoping, ui.js wiring
 const css = R('src/ui/results.css');
 const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
