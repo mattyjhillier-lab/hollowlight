@@ -123,6 +123,12 @@
   .hud .toast { top: calc(var(--mt) + 160px); }
   .perf { top: 72px; }
 }
+/* E6 MINIMAP "Lantern Pool": a round glass disc under the coin pill / pause, top right. Decorative (aria-hidden, no pointer events); size follows Text size, capped at 1.25x. */
+.h-mini { --mm: calc(96 * var(--hu) * min(var(--ts, 1), 1.25)); position: absolute; right: var(--mr); top: calc(var(--mt) + 54 * var(--hu)); width: var(--mm); height: var(--mm); border-radius: 50%; overflow: hidden; display: none; pointer-events: none; background: #222a36; border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .45), inset 0 0 calc(10 * var(--hu)) rgba(0, 0, 0, .55); opacity: .92; }
+.h-mini.on { display: block; }
+.h-mini canvas { display: block; width: 100%; height: 100%; }
+@container (max-width: 899px) { .h-mini { --mm: calc(64px * min(var(--ts, 1), 1.25)); top: calc(var(--mt) + 54px); } }
+@media (max-aspect-ratio: 1/1) { .h-mini { --mm: calc(56px * min(var(--ts, 1), 1.25)); top: calc(var(--mt) + 136px); } .h-boss.on ~ .h-mini { top: calc(var(--mt) + 190px); } }
 html.touch .h-ability, html.touch .h-pause, html.touch .h-abkey { display: none; }
 
 /* TOUCH-1 buttons restyled to the HUD look (positions/behaviour unchanged, see style.css .touch-*) */

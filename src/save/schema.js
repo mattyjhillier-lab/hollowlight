@@ -20,6 +20,7 @@ export const BRIGHTNESS = BRIGHTNESS_STORED; // 'auto' = Brighter on phone-sized
 export const TOUCH_MODES = ['auto', 'on', 'off'];
 export const STICK_NAMES = ['small', 'medium', 'large'];
 export const AUTO_RULE_NAMES = ['hp30', 'hp50', 'crowd25', 'off']; // Hearth-key 'Chosen Moment' (T6; same list as Sim AUTO_RULES, tested)
+export const MINIMAP_MODES = ['auto', 'on', 'off']; // E6 Settings > Picture > Mini map (auto = on for desktop, off for phones)
 export const RECENT_RUNS = 10;
 export const TEXT_SIZES = ['normal', 'large', 'larger']; // A2 Settings > Picture > Text size (src/ui/textsize.js scales)
 
@@ -33,7 +34,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHe
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true, textSize: 'normal', uiScale: 'auto', batterySaver: false, keys: defaultKeymap() };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true, textSize: 'normal', uiScale: 'auto', batterySaver: false, miniMap: 'auto', keys: defaultKeymap() };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -284,6 +285,7 @@ export function sanitize(raw, now = Date.now()) {
       backupNudge: bool(st.backupNudge, ds.backupNudge),
       textSize: TEXT_SIZES.includes(st.textSize) ? st.textSize : ds.textSize, // A2 whitelist
       batterySaver: bool(st.batterySaver, ds.batterySaver), // PHONE HEAT: phones only (30 fps, lower sharpness, Low quality)
+      miniMap: MINIMAP_MODES.includes(st.miniMap) ? st.miniMap : ds.miniMap, // E6 whitelist
       uiScale: cleanUiScale(st.uiScale), // DESKTOP D1 'Menu size' whitelist (device setting; phones ignore it)
       keys: cleanKeymap(st.keys), // A3 remapped keys: known actions, allowed codes, no duplicates, Esc fixed on Pause // A1 'export a backup' reminder on the title screen (device setting)
       gentleLight: bool(st.gentleLight, ds.gentleLight), // EXTRAS v1 Gentle Light (Twilight assist; read only when a Twilight run starts) // FM5 phone buzz (device setting; never used under Calm or a hidden tab)

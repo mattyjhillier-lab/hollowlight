@@ -35,6 +35,7 @@ export const SET = {
   sfxVol: { label: 'Sound effects', help: 'How loud hits, spells and pickups are.' },
   batterySaver: { label: 'Battery saver', help: 'Phones only. Draws 30 frames a second a little less sharp, so the phone stays cooler and the battery lasts longer.' },
   quality: { label: 'Picture quality', help: 'Lower it if the game stutters. Auto decides for you.', opts: [['auto', 'Auto'], ['low', 'Low'], ['med', 'Medium'], ['high', 'High']] },
+  miniMap: { label: 'Mini map', help: 'A small round map of the forest in the corner. Auto shows it on a computer and hides it on a phone.', opts: [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']] },
   brightness: { label: 'Brightness', help: 'Normal starts the night dark and brightens toward dawn. Brighter lifts it. Clear keeps the night light.', opts: [['normal', 'Normal'], ['brighter', 'Brighter'], ['clear', 'Clear']] },
   screenShake: { label: 'Screen shake', help: 'Shake the view when you are hurt or something big lands.' },
   reducedMotion: { label: 'Calm motion', help: 'Fewer flashes, no eye blinks and softer movement.' },

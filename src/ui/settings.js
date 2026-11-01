@@ -7,6 +7,7 @@ import { SAFE, downloadText } from './savesafety.js';
 import { TEXT_COPY } from './textsize.js';
 import { UI_SCALE_COPY, cleanUiScale } from './uiscale.js';
 import { buildKeyRemap } from './keysui.js';
+import { MINIMAP_MODES } from '../save/schema.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 let sid = 0;
@@ -116,6 +117,7 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     choice({ ...SET.quality, options: SET.quality.opts, value: st.quality, onChange: (v) => set({ quality: v }) }),
     choice({ ...SET.brightness, options: SET.brightness.opts, value: api.resolvedBrightness ? api.resolvedBrightness(st.brightness) : (st.brightness === 'auto' ? 'normal' : st.brightness), onChange: (v) => set({ brightness: v }) }),
     choice({ ...TEXT_COPY, options: TEXT_COPY.opts, value: st.textSize || 'normal', onChange: (v) => set({ textSize: v }) }), // A2
+    choice({ ...SET.miniMap, options: SET.miniMap.opts, value: MINIMAP_MODES.includes(st.miniMap) ? st.miniMap : 'auto', onChange: (v) => set({ miniMap: v }) }), // E6
     deskOnly(choice({ ...UI_SCALE_COPY, options: UI_SCALE_COPY.opts, value: cleanUiScale(st.uiScale), onChange: (v) => set({ uiScale: v }) })), // DESKTOP D1 (hidden on phones, which always use 1x)
     wickToggle({ ...SET.screenShake, checked: st.screenShake, onChange: (v) => set({ screenShake: v }) }),
     wickToggle({ ...SET.reducedMotion, checked: st.reducedMotion, onChange: (v) => set({ reducedMotion: v }) }),

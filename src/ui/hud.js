@@ -1,6 +1,7 @@
 // HUD-1: the in-run frame, Direction A "Lantern & Thread" (docs/mockups/hud-sheet). DOM + inline SVG built with
 // createElementNS / textContent only (no innerHTML, no data in markup). Display-only: reads the sim, never writes it.
 // All layout lives in style.css (.h-*); this file builds the nodes and updates them when a value changes.
+import { Minimap } from './minimap.js';
 import { keyLabel } from '../input/keymap.js';
 import { mk, defs, emblem, lantern, moonArc, bakeFrost, EMBLEM_OF, ROLE_COL } from './hudsvg.js';
 import {
@@ -86,6 +87,7 @@ export class Hud {
     this.flash = el('div', 'hurtflash');
     host.append(this.frost, this.lantern, this.strip, this.moon, this.boss, this.coin, this.pause, this.ability, this.toast, this.bossIntro, this.flash);
 
+    this.mini = new Minimap(d, host); // E6 corner map (decorative; shown per Settings > Picture > Mini map, driven by app.frame)
     this.strip.addEventListener('pointerenter', () => this.wake());
     this.strip.addEventListener('pointerdown', () => this.wake());
     this.reset();
@@ -110,6 +112,7 @@ export class Hud {
     this.boss.classList.remove('on', 'enter');
     this.strip.classList.remove('low');
     this.strip.replaceChildren();
+    if (this.mini) this.mini.reset();
   }
 
   // HUD-3 feedback pings: restart a one-shot CSS animation (class toggle + reflow). CSS turns them off under reduced motion.

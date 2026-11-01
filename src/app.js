@@ -38,6 +38,7 @@ import { wearView } from './ui/wearcopy.js';
 import { DARK } from './ui/darkui.js';
 import { SITE_EVENTS, SITE_TOAST } from './ui/sitecopy.js'; // map events v1
 import { createPad } from './ui/padmap.js';
+import { mapOn } from './ui/minimap.js';
 // Validate the skill tree once at boot; the save validator needs it to sanitise owned nodes.
 export const treeDef = compileTree(data.tree, data);
 validateCosmTree(treeDef, data.cosmetics); // EXTRAS v1: every Wardrobe lantern names a real cosmetic and nothing else (throws at boot)
@@ -598,6 +599,14 @@ export const app = {
     }
   },
 
+  // E6 minimap: shown only while a run is being played (hidden under cards, pause, menus, intro cards, results), per Settings > Picture > Mini map.
+  mapTick(sim, dt) {
+    const sc = this.scene;
+    const playing = sim.state === 'running' && !this.paused && !this.introOpen && !this.ui.settingsOpen;
+    const on = playing && mapOn(this.save.data.settings.miniMap, this.isPhone());
+    this.ui.mapFrame(sim, dt, { on, life: sc && sc.life, low: !!(sc && sc.quality && sc.quality.tier === 'low'), calm: document.documentElement.classList.contains('reduced-motion'), world: sim.balance.worldSize || 4000 });
+  },
+
   // Called every rendered frame by the scene.
   frame(dt) {
     const sim = this.sim;
@@ -608,6 +617,7 @@ export const app = {
     if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen && !this.warmHold) sim.step(dt, this.scene.readInput());
     else if ((this.paused || this.introOpen || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
+    this.mapTick(sim, dt);
     this.bossSoonCheck(sim);
     if (sim.events.length) {
       for (const ev of sim.events) this.onEvent(ev);
