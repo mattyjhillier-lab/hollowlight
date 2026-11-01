@@ -93,7 +93,7 @@ function trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt) {
   const { rt, ranks } = w;
   const list = rt.trail || (rt.trail = []);
   const ttl = tune(sim, w, 'ttl0', 1.2) + tune(sim, w, 'ttlPer', 0.22) * (ranks.speed || 0);
-  const hw = tune(sim, w, 'hw0', 5) + tune(sim, w, 'hwPer', 0.8) * (ranks.speed || 0);
+  const hw = tune(sim, w, 'hw0', 7) + tune(sim, w, 'hwPer', 1) * (ranks.speed || 0);
   const space = tune(sim, w, 'space', 7);
   let k = 0;
   for (let i = 0; i < list.length; i++) { const q = list[i]; q.t -= dt; if (q.t > 0) list[k++] = q; }
@@ -115,7 +115,7 @@ function trailUpdate(sim, w, units, dmg, bleedDps, bleedDur, dt) {
   // Flow v2 (E2): fewer wolves lay fewer, thinner trails, so Pack size still counts for Lightfoot Pack (full strength at max Pack size).
   const cs = sim.data.weapons[w.id].stats.count;
   const packK = Math.min(1, w.s.count / (cs.base + cs.perRank * sim.balance.maxRank)) ** tune(sim, w, 'trailPack', 1.5);
-  const hit = dmg * tune(sim, w, 'trailHit', 0.16) * packK;
+  const hit = dmg * tune(sim, w, 'trailHit', 0.22) * packK;
   const gate = tune(sim, w, 'gate', 0.4);
   for (const e of sim.enemies) {
     if (e.dead) continue;
@@ -176,7 +176,7 @@ const ghostWolves = {
     // packPow: the alpha is the pack gathered into one: its bites grow with Pack size as (count / max count)^packPow (1.0 at max Pack size, weaker while the pack is small)
     const cs = sim.data.weapons.ghost_wolves.stats.count;
     const packF = evo === 'dire_alpha' ? (s.count / (cs.base + cs.perRank * sim.balance.maxRank)) ** tune(sim, w, 'packPow', 1.25) : 1;
-    const alphaHit = evo === 'dire_alpha' ? dmg * tune(sim, w, 'dmg', 3.4) * packF : 0;
+    const alphaHit = evo === 'dire_alpha' ? dmg * tune(sim, w, 'dmg', 4.6) * packF : 0;
     const alphaSide = evo === 'dire_alpha' ? dmg * tune(sim, w, 'side', 0.6) * packF : 0;
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank

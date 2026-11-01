@@ -28,14 +28,14 @@ test('data: Lightfoot Pack has the trail keys and none of the leap/pin/maul keys
   for (const k of ['space', 'ttl0', 'ttlPer', 'hw0', 'hwPer', 'trailHit', 'gate', 'cap']) assert.ok(Number.isFinite(e.tune[k]), k);
 });
 
-test('trail points: lifetime 1.2 + 0.22 x Wolf speed rank, half-width 5 + 0.8 x rank', () => {
+test('trail points: lifetime 1.2 + 0.22 x Wolf speed rank, half-width 7 + 1.0 x rank', () => {
   for (const s of [1, 5]) {
     const sim = mk({ count: 3, speed: s, power: 1, duration: 1 });
     sim.spawnEnemy('dummy', sim.player.x + 120, sim.player.y);
     run(sim, 2);
     const tr = W(sim).rt.trail;
     assert.ok(tr.length > 0, 'trail exists');
-    for (const q of tr) assert.ok(Math.abs(q.hw - (5 + 0.8 * s)) < 1e-9, `hw rank ${s}`);
+    for (const q of tr) assert.ok(Math.abs(q.hw - (7 + 1 * s)) < 1e-9, `hw rank ${s}`);
     const maxT = Math.max(...tr.map((q) => q.t));
     assert.ok(maxT <= 1.2 + 0.22 * s + 1e-9 && maxT > 0, `ttl rank ${s}: ${maxT}`);
   }
@@ -90,7 +90,7 @@ test('per-foe gate: a foe standing in many overlapping trail points takes at mos
   for (let i = 1; i < hits.length; i++) assert.ok(hits[i] - hits[i - 1] >= 0.4 - 1e-6, 'gap');
 });
 
-test('trail hit = 0.16 x bite, scales with Bite power, applies Rend bleed once for 4 s', () => {
+test('trail hit = 0.22 x bite, scales with Bite power, applies Rend bleed once for 4 s', () => {
   const probe = (power) => {
     const sim = mk({ count: 1, speed: 3, power, duration: 3 });
     const e = sim.spawnEnemy('dummy', sim.player.x + 400, sim.player.y);
@@ -104,7 +104,7 @@ test('trail hit = 0.16 x bite, scales with Bite power, applies Rend bleed once f
     return { first: seen[0], pk: Math.min(1, w.s.count / 7) ** sim.data.evolutions.phantom_stampede.tune.trailPack, bite: w.s.power * sim.dmgMult(w), bleedDps: e.bleedDps, bleedT: e.bleedT, rend: w.s.duration };
   };
   const a = probe(1); const b = probe(5);
-  assert.ok(Math.abs(a.first - 0.16 * a.bite * a.pk) < 1e-6, 'trail hit = 0.16 x bite x the Pack size factor (1 at full Pack size)');
+  assert.ok(Math.abs(a.first - 0.22 * a.bite * a.pk) < 1e-6, 'trail hit = 0.22 x bite x the Pack size factor (1 at full Pack size)');
   assert.ok(b.first > a.first * 2, 'Bite power raises trail damage');
   assert.ok(Math.abs(b.bleedDps - b.bite * b.rend) < 1e-6, 'bleed = bite x Rend');
   assert.ok(b.bleedT > 3.9 && b.bleedT <= 4, 'bleed time 4 s');
