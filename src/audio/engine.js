@@ -17,7 +17,7 @@ export const CUES = {
   glyph_bolt: { cap: 3, gap: 0.08, pri: 2 },
   storm_thread: { cap: 2, gap: 0.1, pri: 1 },
   candle_flare: { cap: 3, gap: 0.08, pri: 2 },
-  ember_lick: { cap: 2, gap: 0.14, pri: 2 }, // Ember Breath: its foes catching (4 ticks a breath, so fewer and quieter than the Orbit flare)
+  ember_lick: { cap: 2, gap: 0.14, pri: 2 }, // Dragonfire Meteor: its foes catching (burst + pool ticks)
   gem: { cap: 3, gap: 0.03, pri: 1 },
   heart: { cap: 1, gap: 0.2, pri: 1 },
   magnet: { cap: 1, gap: 0.3, pri: 1 },
@@ -27,7 +27,7 @@ export const CUES = {
   ...MORE_CUES,
 };
 // weapon id (the sim hit log's src tag) -> its verb cue
-export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare', ember_breath: 'ember_lick' };
+export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare', dragonfire_meteor: 'ember_lick' };
 
 export class AudioEngine {
   constructor(win) {

@@ -72,20 +72,22 @@
       "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
     }
     },
-  "ember_breath": {
-    "name": "Ember Breath",
+  "dragonfire_meteor": {
+    "name": "Dragonfire Meteor",
     "treeGate": true,
     "unreleased": true,
     "type": "magic",
     "tags": [],
     "color": "#ffb35c",
-    "desc": "Every few seconds a fan of warm spirit-fire breathes toward the thickest crowd in front of you and leaves foes burning.",
-    "boss": 1.5,
+    "desc": "A blazing fireball crashes into the thickest crowd, bursts, and leaves a pool of burning ground.",
+    "boss": 1.4,
+    "cd": 2.6,
+    "first": 0.8,
     "stats": {
-      "power":    { "name": "Heat",     "base": 4.2, "perRank": 1.5,  "fmt": "dec", "hint": "Each flick of the breath hits harder ({old} → {new} a tick)" },
-      "area":     { "name": "Reach",    "base": 80,  "perRank": 12,   "fmt": "int", "hint": "The breath reaches {old} → {new} out and a little wider" },
-      "cooldown": { "name": "Breath",   "base": 2.4, "perRank": -0.2, "fmt": "sec", "hint": "Breathes more often (every {new})" },
-      "duration": { "name": "Smoulder", "base": 1.5, "perRank": 0.5,  "fmt": "sec", "hint": "Foes keep burning {old} → {new} after the breath" }
+      "count":    { "name": "Fireballs", "base": 1,   "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})" },
+      "power":    { "name": "Impact",    "base": 14,  "perRank": 5.6, "fmt": "int", "hint": "The crash hits harder ({old} → {new}), and the fire it leaves burns harder" },
+      "area":     { "name": "Blaze",     "base": 34,  "perRank": 5,   "fmt": "int", "hint": "The burst and the burning ground are {old} → {new} wide" },
+      "duration": { "name": "Embers",    "base": 2.5, "perRank": 0.5, "fmt": "sec", "hint": "The ground burns {old} → {new}" }
     }
   }
 }

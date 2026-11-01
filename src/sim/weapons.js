@@ -932,82 +932,121 @@ const holyOrbit = {
   },
 };
 
-// ---------------------------------------------------------------- Ember Breath (EW1)
-// BREATHE: every Breath seconds a 70 degree cone (half-angle EMBER.half) of reach Reach fans out toward the thickest group in front of the hero
-// (best of 16 directions inside +-100 deg of the heading; the aim is re-read every 0.3 s and only changes when the new one is clearly better).
-// 4 ticks over 0.6 s, every foe in the cone each tick (body edge counts, so a big body is never missed); the existing Burn status is set once per
-// foe per breath (25% of Heat a second for Smoulder seconds). Boss clause: a boss whose body is inside reach pulls the aim onto itself and takes
-// weapons.json "boss" x. No RNG is drawn (deterministic by construction).
-export const EMBER = { half: Math.PI * 35 / 180, ticks: 4, span: 0.6, burnRate: 0.25, dirs: 16, front: Math.PI * 100 / 180, hyst: 0.3, bossW: 5, minCd: 0.8, hold: 0.3 };
-const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return Math.abs(d); };
-// Is foe e inside the cone from p along aim for reach? Edge-based: the cone must touch the body, not just its centre.
-export function emberHit(p, aim, reach, e, half = EMBER.half) {
-  const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy);
-  if (d - e.r > reach) return false;
-  if (d <= e.r) return true; // standing on us
-  return angDiff(Math.atan2(dy, dx), aim) <= half + Math.asin(Math.min(1, e.r / d));
+// ---------------------------------------------------------------- Dragonfire Meteor (DM2)
+// CRASH: a volley every cd (2.6 s, first 0.8 s after the pick; the tree's cooldown mod applies). Each fireball arcs 0.45 s and lands on the DENSEST
+// cluster 50-230 px from the hero (never random; extra fireballs take the next-densest clusters >= 1.4 x Blaze apart, or ring the one cluster).
+// Landing: burst (Impact, radius Blaze) + the existing Burn burn(e, hit, 2, 0.2), then a ground-fire pool (radius 0.9 x Blaze, life Embers).
+// Pools tick every 0.5 s at 0.3 x Impact, bosses at 0.5 x of that; one tick per target per 0.5 s across ALL pools; HARD cap 5 live pools
+// (the oldest is dropped); at most 24 targets per pool tick. Boss rule 1.4 x comes from weapons.json "boss" (Sim.hurt). No RNG is drawn.
+export const METEOR = { arc: 0.45, minD: 50, maxD: 230, apart: 1.4, poolK: 0.9, tick: 0.5, tickK: 0.3, bossTick: 0.5, maxPools: 5, maxTargets: 24, maxCount: 8, cands: 48, burnTime: 2, burnRate: 0.2, first: 0.8, cd: 2.6 };
+const okPt = (e) => e && Number.isFinite(e.x) && Number.isFinite(e.y);
+// The cluster centre (mean of the foes inside r of the seed foe) with the most foes; ties go to the one nearest the hero. Returns {x, y, n} or null.
+function meteorAim(sim, p, r, taken, nTaken) {
+  const E = sim.enemies, r2 = r * r;
+  let cnt = 0;
+  for (let i = 0; i < E.length; i++) { const e = E[i]; if (!e.dead && okPt(e)) { const d = Math.hypot(e.x - p.x, e.y - p.y); if (d >= METEOR.minD && d <= METEOR.maxD) cnt++; } }
+  if (!cnt) return null;
+  const stride = Math.max(1, Math.ceil(cnt / METEOR.cands));
+  let best = null, bn = 0, bd = Infinity, k = 0;
+  for (let i = 0; i < E.length; i++) {
+    const s = E[i];
+    if (s.dead || !okPt(s)) continue;
+    const sd = Math.hypot(s.x - p.x, s.y - p.y);
+    if (sd < METEOR.minD || sd > METEOR.maxD || (k++ % stride)) continue;
+    let ok = true;
+    for (let j = 0; j < nTaken; j++) if (Math.hypot(s.x - taken[j * 2], s.y - taken[j * 2 + 1]) < r * METEOR.apart) { ok = false; break; }
+    if (!ok) continue;
+    let n = 0, sx = 0, sy = 0;
+    for (let m = 0; m < E.length; m++) { const o = E[m]; if (o.dead || !okPt(o)) continue; const dx = o.x - s.x, dy = o.y - s.y; if (dx * dx + dy * dy <= r2) { n++; sx += o.x; sy += o.y; } }
+    if (n > bn || (n === bn && sd < bd)) { bn = n; bd = sd; best = { x: sx / n, y: sy / n, n }; }
+  }
+  return best;
 }
-function emberScore(sim, p, aim, reach) {
-  let n = 0;
-  for (const e of sim.enemies) if (!e.dead && emberHit(p, aim, reach, e)) n += e.boss ? EMBER.bossW : 1;
-  return n;
+function meteorLand(sim, w, f, dmg) {
+  const r = f.r;
+  if (sim.fx.length < 48) sim.addFx({ kind: 'ring', x: f.x, y: f.y, r, ttl: 0.25, color: '#ffb35c' }); // placeholder impact flash (DM3 draws the real art)
+  const E = sim.enemies;
+  for (let i = 0; i < E.length; i++) {
+    const e = E[i];
+    if (e.dead || !okPt(e)) continue;
+    const d = Math.hypot(e.x - f.x, e.y - f.y);
+    if (d > r + (Number.isFinite(e.r) ? e.r : 0)) continue;
+    const dealt = sim.hurt(e, dmg);
+    if (dealt > 0) sim.burn(e, dmg, METEOR.burnTime, METEOR.burnRate);
+    w.rt.lock.set(e, sim.time); // the burst counts as this foe's pool tick, so a landing never double-dips
+  }
+  const pools = w.rt.pools;
+  if (pools.length >= METEOR.maxPools) pools.shift(); // HARD cap: the oldest burns out
+  pools.push({ x: f.x, y: f.y, r: r * METEOR.poolK, life: Math.max(0.1, f.life), t: METEOR.tick, dmg: dmg * METEOR.tickK });
+  sim.pushEvent('ember');
 }
-const emberBreath = {
+const dragonfireMeteor = {
   update(sim, w, dt) {
-    const { s, rt } = w;
+    const { s } = w;
+    const rt = w.rt;
     const p = sim.player;
-    const reach = Math.max(1, s.area * sim.mods.area);
-    const dmg = s.power * sim.dmgMult(w);
-    const head = Math.atan2(Number.isFinite(p.hy) ? p.hy : 0, Number.isFinite(p.hx) && (p.hx || p.hy) ? p.hx : 1);
-    // aim (hysteresis): re-read every 0.3 s; keep the old aim unless the new one catches clearly more
-    rt.aimT = (rt.aimT ?? 0) - dt;
-    if (rt.aim === undefined) { rt.aim = head; rt.aimT = 0; }
-    if (rt.aimT <= 0 && !rt.br) {
-      rt.aimT = EMBER.hold;
-      let best = rt.aim, bestS = emberScore(sim, p, rt.aim, reach) + 0.5, found = false;
-      for (let i = 0; i < EMBER.dirs; i++) {
-        const a = head - EMBER.front + (i / (EMBER.dirs - 1)) * 2 * EMBER.front;
-        const sc = emberScore(sim, p, a, reach) - angDiff(a, head) * 0.01; // ties go toward where you are heading
-        if (sc > bestS) { best = a; bestS = sc; found = true; }
-      }
-      rt.aim = found ? best : (bestS <= 0.5 ? head : rt.aim);
+    if (!rt.pools) { rt.pools = []; rt.fly = []; rt.lock = new Map(); rt.taken = new Array(METEOR.maxCount * 2).fill(0); rt.cd = sdefOf(sim, w).first ?? METEOR.first; }
+    if (!(dt > 0) || !okPt(p)) return;
+    const sdef = sdefOf(sim, w);
+    const dmg = Math.max(0, s.power * sim.dmgMult(w)) || 0;
+    const r = Math.max(1, s.area * sim.mods.area) || 1;
+    const life = Number.isFinite(s.duration) ? s.duration : METEOR.cd;
+    // fireballs in the air
+    const fly = rt.fly;
+    for (let i = fly.length - 1; i >= 0; i--) {
+      const f = fly[i];
+      f.t -= dt;
+      if (f.t <= 0) { fly.splice(i, 1); meteorLand(sim, w, f, f.dmg); }
     }
-    rt.cd = (rt.cd ?? 0.5) - dt; // counts from the breath's start (Breath = time between breaths)
-    // a breath in progress: ticks at span/ticks steps
-    if (rt.br) {
-      const b = rt.br;
-      b.t += dt;
-      while (b.n < EMBER.ticks && b.t >= (b.n + 1) * (EMBER.span / EMBER.ticks)) {
-        b.n++;
-        for (const e of sim.enemies) {
-          if (e.dead || !emberHit(p, b.aim, b.reach, e)) continue;
-          sim.hurt(e, dmg);
-          if (!b.burned.has(e.id)) { b.burned.add(e.id); sim.burn(e, dmg, s.duration, EMBER.burnRate); }
+    // pools: tick, age, drop
+    const pools = rt.pools, lock = rt.lock;
+    for (let i = pools.length - 1; i >= 0; i--) {
+      const q = pools[i];
+      q.life -= dt; q.t -= dt;
+      if (q.t <= 0) {
+        q.t += METEOR.tick;
+        let hit = 0;
+        const E = sim.enemies;
+        for (let m = 0; m < E.length && hit < METEOR.maxTargets; m++) {
+          const e = E[m];
+          if (e.dead || !okPt(e)) continue;
+          const dx = e.x - q.x, dy = e.y - q.y, rr = q.r + (Number.isFinite(e.r) ? e.r : 0);
+          if (dx * dx + dy * dy > rr * rr) continue;
+          hit++;
+          const last = lock.get(e);
+          if (last !== undefined && sim.time - last < METEOR.tick - 1e-6) continue; // one tick per foe per 0.5 s across every pool
+          lock.set(e, sim.time);
+          const h = q.dmg * (e.boss ? METEOR.bossTick : 1);
+          if (sim.hurt(e, h) > 0) sim.burn(e, h, METEOR.burnTime, METEOR.burnRate);
         }
       }
-      if (b.n >= EMBER.ticks) rt.br = null;
-      return;
+      if (q.life <= 0) pools.splice(i, 1);
     }
+    if (lock.size > 96) for (const [e, tm] of lock) if (e.dead || sim.time - tm > 2) lock.delete(e);
+    // volley
+    rt.cd -= dt;
     if (rt.cd > 0) return;
-    // boss clause: a boss whose body the cone could reach takes the aim (so a big body is never missed)
-    let tgt = null, td = Infinity;
-    for (const e of sim.enemies) {
-      if (e.dead || !e.boss) continue;
-      const d = Math.hypot(e.x - p.x, e.y - p.y);
-      if (d - e.r <= reach && d < td) { tgt = e; td = d; }
+    const n = Math.min(METEOR.maxCount, Math.max(1, Math.round(s.count) || 1));
+    const taken = rt.taken;
+    let nt = 0;
+    for (let k = 0; k < n; k++) {
+      let a = meteorAim(sim, p, r, taken, nt);
+      if (!a) {
+        if (!nt) { rt.cd = 0; return; } // no foes in the ring: no volley, try again next frame
+        const ang = k * 2.399963; // one cluster only: the rest ring around it, spaced
+        a = { x: taken[0] + Math.cos(ang) * r * METEOR.apart, y: taken[1] + Math.sin(ang) * r * METEOR.apart };
+      }
+      const d = Math.hypot(a.x - p.x, a.y - p.y) || 1, dc = Math.min(METEOR.maxD, Math.max(METEOR.minD, d));
+      const x = p.x + (a.x - p.x) / d * dc, y = p.y + (a.y - p.y) / d * dc;
+      taken[nt * 2] = x; taken[nt * 2 + 1] = y; nt++;
+      fly.push({ x, y, t: METEOR.arc, r, dmg, life });
+      if (sim.fx.length < 48) sim.addFx({ kind: 'ring', x, y, r: Math.min(r, 20), ttl: METEOR.arc, color: '#ffb35c' }); // placeholder landing tell
     }
-    const aim = tgt ? Math.atan2(tgt.y - p.y, tgt.x - p.x) : rt.aim;
-    rt.cd = Math.max(EMBER.minCd, s.cooldown * sim.mods.cooldown);
-    rt.br = { t: 0, n: 0, aim, reach, burned: new Set() };
-    rt.aim = aim;
-    // placeholder look (EW2 draws the real art): teardrop flames along the cone via the existing 'burst' fx kind would be too grey, so use rings
-    for (let i = 0; i < 3 && sim.fx.length < 48; i++) {
-      const d = reach * (0.35 + 0.3 * i);
-      sim.addFx({ kind: 'ring', x: p.x + Math.cos(aim) * d, y: p.y + Math.sin(aim) * d, r: 8 + 6 * i, ttl: 0.3, color: '#ffb35c' });
-    }
+    rt.cd = Math.max(0.2, (sdef.cd ?? METEOR.cd) * sim.mods.cooldown);
     sim.pushEvent('ember');
   },
 };
+const sdefOf = (sim, w) => sim.data.weapons[w.id] || {};
 
 export const WEAPON_BEHAVIOURS = {
   ghost_wolves: ghostWolves,
@@ -1015,5 +1054,5 @@ export const WEAPON_BEHAVIOURS = {
   spirit_bolts: spiritBolts,
   chain_lightning: chainLightning,
   holy_orbit: holyOrbit,
-  ember_breath: emberBreath,
+  dragonfire_meteor: dragonfireMeteor,
 };
