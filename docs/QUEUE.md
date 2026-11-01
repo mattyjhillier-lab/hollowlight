@@ -404,3 +404,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 
 - DATA POINT (Matt, 2026-11-01): cleared a full run on his FIRST go with Spirit Bolts (fresh target win 15-30%; one run = anecdote, add to exploit confirm run; asked hero/night/evolution/lowest HP/feel).
 - Matt detail: Elias, Twilight, Spirit Bolts, evolved ~halfway (first unlocked evo), lowest ~35/130 HP, easy early + right after evolving, then harder, had to think about movement. Sent to the confirm run as a matching arm.
+- FEEL FLAG (Matt, 2026-11-01): The Alpha (dire_alpha) "doesnt feel good, confused what it is meant to do". Design = pack merges into 1 big wolf (bite x3.4, cleave 0.6, bleed x1.5, 2 shades). Fix order: clearer text/look + tune first, replace last. Alpha vs base wolves check added to confirm run. Asked Matt: weaker, or just unclear?
