@@ -80,7 +80,7 @@ test('CX1 almanac: fresh save = all unknown, no names leak, no recipes', () => {
   assert.equal(b.unlocked.size, 0);
   for (const f of b.foes) { assert.equal(f.known, false); assert.equal(f.name || '', ''); assert.equal(f.line || '', ''); }
   for (const w of b.spirits) for (const e of w.evos) { assert.equal(e.recipe, undefined); assert.equal(e.name, undefined); assert.equal(e.riddle, undefined); }
-  assert.deepEqual(b.tabs.map((t) => t.found), [0, 0, 0, 0]);
+  assert.deepEqual(b.tabs.map((t) => t.found), [0, 0, 0, 0, 0]);
   assert.equal(b.pages.found, 0);
   assert.ok(b.pages.total > 30);
   // non-gated evolutions are sealed (awake) even on a fresh save; gated ones sleep with a vague line until progress begins

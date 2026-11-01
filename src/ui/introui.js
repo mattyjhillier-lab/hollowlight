@@ -10,7 +10,7 @@ const GOLD = '#ffc766', LINE = '#7a4a12', INK = '#27324a';
 const path = (d, a) => mk(globalThis.document, 'path', { d, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', ...a });
 
 // small painted glyphs on a 64x64 board (warm gold on a dark disc; no text inside)
-function glyph(id) {
+export function glyph(id) {
   const d = globalThis.document;
   const K = [mk(d, 'circle', { cx: 32, cy: 32, r: 29, fill: '#1c2335', stroke: GOLD, 'stroke-width': 2.5 })];
   const flame = (x, y, s) => path(`M${x} ${y - 10 * s} C${x - 5 * s} ${y - 3 * s} ${x - 6 * s} ${y + 2 * s} ${x} ${y + 5 * s} C${x + 6 * s} ${y + 2 * s} ${x + 5 * s} ${y - 3 * s} ${x} ${y - 10 * s}Z`, { fill: GOLD, stroke: LINE, 'stroke-width': 1.5 });

@@ -36,12 +36,12 @@ const key = (k, extra = {}) => ({ key: k, preventDefault() {}, ...extra });
 
 const save = (stats) => sanitize({ ...defaultSave(1), stats: { ...defaultSave(1).stats, ...stats } });
 
-test('CX2 Almanac: four tabs with counts, NEW dots, opens on the newest page, read marks reported once', () => {
+test('CX2 Almanac: five tabs with counts, NEW dots, opens on the newest page, read marks reported once', () => {
   const book = almanac(save({ killsByEnemy: { wolf: 2318, crow: 5 }, evolved: { howling_legion: 1 }, charsUsed: { wren: 2 }, runs: 2 }), data, treeDef);
   const reads = [];
   const v = buildAlmanac({ book, onRead: (k) => reads.push(...k), onBack: () => {} });
   const tabs = all(v.root, (n) => n.getAttribute && n.getAttribute('role') === 'tab');
-  assert.equal(tabs.length, 4);
+  assert.equal(tabs.length, 5);
   assert.ok(tabs[0].textContent.includes('Foes') && tabs[0].textContent.includes('2 / 11'));
   assert.equal(v.current(), 'foes');
   assert.ok(reads.includes('f:wolf') && reads.includes('fp:wolf:habits'), 'the first known foe was opened and read');
@@ -146,4 +146,23 @@ test('CX4 results: ledger line + Almanac link (J), hostile names inert, link onl
   assert.equal(opened, 1);
   const r2 = buildResults({ view, reduced: true });
   assert.equal(r2.almanac, null);
+});
+
+test('E7 Places tab: five tabs, locked + unlocked cards, keys 1-5, hostile strings stay inert', () => {
+  const book = almanac(save({ sites: { wLamps: 2, lamps: 8, wKnots: 1 } }), data, treeDef);
+  const v = buildAlmanac({ book, tab: 'places', onRead: () => {}, onBack: () => {} });
+  const tabs = all(v.root, (n) => n.getAttribute && n.getAttribute('role') === 'tab');
+  assert.equal(tabs.length, 5);
+  assert.ok(tabs[4].textContent.includes('Places') && tabs[4].textContent.includes('3 / 6'), tabs[4].textContent);
+  assert.equal(v.current(), 'places');
+  const cards = all(v.list, (n) => n.className.includes('cx-item'));
+  assert.equal(cards.length, 3);
+  assert.ok(cards[0].textContent.includes('Lamp Posts') && cards[0].textContent.includes('8 lit'));
+  assert.ok(cards[1].className.includes('is-unk') && cards[1].textContent.includes('?????') && !cards[1].textContent.includes('Lantern Road'));
+  assert.ok(v.entry.textContent.includes('Lamp Posts') && v.entry.textContent.includes('Woke 2 times') && v.entry.textContent.includes('Tells'));
+  cards[1].click();
+  assert.ok(v.entry.textContent.includes('Somewhere in') && !v.entry.textContent.includes('Lantern Road'));
+  v.onKey(key('1')); assert.equal(v.current(), 'foes');
+  v.onKey(key('5')); assert.equal(v.current(), 'places');
+  tabs[4].fire('keydown', key('ArrowRight')); assert.equal(v.current(), 'foes');
 });

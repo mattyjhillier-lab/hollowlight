@@ -20,6 +20,7 @@ export const BRIGHTNESS = BRIGHTNESS_STORED; // 'auto' = Brighter on phone-sized
 export const TOUCH_MODES = ['auto', 'on', 'off'];
 export const STICK_NAMES = ['small', 'medium', 'large'];
 export const AUTO_RULE_NAMES = ['hp30', 'hp50', 'crowd25', 'off']; // Hearth-key 'Chosen Moment' (T6; same list as Sim AUTO_RULES, tested)
+export const MINIMAP_MODES = ['auto', 'on', 'off']; // E6 Settings > Picture > Mini map (auto = on for desktop, off for phones)
 export const RECENT_RUNS = 10;
 export const TEXT_SIZES = ['normal', 'large', 'larger']; // A2 Settings > Picture > Text size (src/ui/textsize.js scales)
 
@@ -33,7 +34,7 @@ export function setTreeDef(def, data) { TREE = def; TREE_DATA = data; registerHe
 export const treeReady = () => TREE !== null;
 
 export function defaultSettings() {
-  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true, textSize: 'normal', uiScale: 'auto', batterySaver: false, keys: defaultKeymap() };
+  return { masterVol: 0.8, musicVol: 0.7, sfxVol: 0.8, muted: false, screenShake: true, reducedMotion: false, damageNumbers: true, quality: 'auto', brightness: 'auto', touchMode: 'auto', stickSize: 'medium', autoRule: 'hp30', tips: true, vibration: true, gentleLight: false, backupNudge: true, textSize: 'normal', uiScale: 'auto', batterySaver: false, miniMap: 'auto', keys: defaultKeymap() };
 }
 
 export function defaultSave(now = Date.now()) {
@@ -75,6 +76,17 @@ export function defaultStats() {
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const num = (v, def, min = 0, max = MAX_NUM) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def);
 const int = (v, def, min = 0, max = MAX_NUM) => Math.floor(num(v, def, min, max));
+
+// E7 Places: lifetime map-event counters, written once per run at results. Optional: absent = all 0 (no migration), and a save with every
+// counter 0 gets no `sites` key at all, so an old save re-saves byte-identically. Fixed key list only; anything else is dropped.
+export const SITE_KEYS = Object.freeze(['lamps', 'roads', 'knots', 'wLamps', 'wRoads', 'wKnots']); // done lamps / roads / knots, then how many woke
+export function cleanSites(v) {
+  if (!isObj(v)) return null;
+  const out = {};
+  let any = false;
+  for (const k of SITE_KEYS) { const n = Object.hasOwn(v, k) ? int(v[k], 0, 0, 1e9) : 0; out[k] = n; if (n > 0) any = true; }
+  return any ? out : null;
+}
 
 // FIX3: added inside v3 (older saves read as 0, like the Almanac bitsets). A lantern with finished runs and no intros field yet already knows
 // its own ability, so that card is marked seen; everything else shows once. A bad type -> 0.
@@ -228,6 +240,7 @@ export function sanitize(raw, now = Date.now()) {
     startWeapon: countMap(s.startWeapon, 32), // CHARACTER SYSTEM v2: runs started with each spirit (tree 'startWeapon' condition)
     recentRuns: recentRuns(s.recentRuns),
     markedKills: int(s.markedKills, 0, 0, 1e9), chests: int(s.chests, 0, 0, 1e9), gems: int(s.gems, 0, 0, 1e9), abilityUses: int(s.abilityUses, 0, 0, 1e9), blessingsTaken: int(s.blessingsTaken, 0, 0, 1e9),
+    ...(cleanSites(s.sites) ? { sites: cleanSites(s.sites) } : {}), // E7 Places counters (optional; see cleanSites)
     tiers: TREE_DATA ? tierRecords(s.tiers, TREE_DATA, SANITIZE_WARNINGS) : {}, // unknown chapter / tier / hero ids are dropped (and counted)
   };
   // Owned stat nodes whose weapon gate is not owned (pre-G1e saves) are dropped WITH a full refund.
@@ -284,6 +297,7 @@ export function sanitize(raw, now = Date.now()) {
       backupNudge: bool(st.backupNudge, ds.backupNudge),
       textSize: TEXT_SIZES.includes(st.textSize) ? st.textSize : ds.textSize, // A2 whitelist
       batterySaver: bool(st.batterySaver, ds.batterySaver), // PHONE HEAT: phones only (30 fps, lower sharpness, Low quality)
+      miniMap: MINIMAP_MODES.includes(st.miniMap) ? st.miniMap : ds.miniMap, // E6 whitelist
       uiScale: cleanUiScale(st.uiScale), // DESKTOP D1 'Menu size' whitelist (device setting; phones ignore it)
       keys: cleanKeymap(st.keys), // A3 remapped keys: known actions, allowed codes, no duplicates, Esc fixed on Pause // A1 'export a backup' reminder on the title screen (device setting)
       gentleLight: bool(st.gentleLight, ds.gentleLight), // EXTRAS v1 Gentle Light (Twilight assist; read only when a Twilight run starts) // FM5 phone buzz (device setting; never used under Calm or a hidden tab)

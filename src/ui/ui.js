@@ -182,6 +182,7 @@ export class UI {
   showHud() { this.show('hud'); this.hudCache = {}; this.hudView.reset(); }
   hideHud() { this.hide('hud'); }
 
+  mapFrame(sim, dt, cfg) { if (this.hudView && this.hudView.mini) this.hudView.mini.frame(sim, dt, cfg); } // E6 minimap (every frame; cheap)
   updateHud(sim) { this.hudView.update(sim, this.data); }
   // Touch: a tap that lands on the weapon strip wakes it (the touch layer covers it).
   hudTapAt(x, y) { this.hudView.tapAt(x, y); }

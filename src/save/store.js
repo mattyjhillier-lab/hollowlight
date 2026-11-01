@@ -218,7 +218,16 @@ export class SaveStore {
     }
     // tool-cluster unlock counters (the sim counts them per run; sanitize() clamps)
     s.gems += pos(r.gems); s.abilityUses += pos(r.abilityUses); s.blessingsTaken += pos(r.blessings); s.markedKills = Math.min(1e9, s.markedKills + Math.min(pos(r.marked), 5000)); // DT2: a forged run count is clamped (a real run marks a few hundred at most)
-    s.chests += Math.min(pos(r.chests), 50); // (was inside the comment above, so chests were never banked: fixed with CHARACTER SYSTEM v2)
+    s.chests += Math.min(pos(r.chests), 50);
+    // E7 Places: map-event counters, banked once here (results). Per run a real game has <= ~12 lamps, 2 roads, 2 knots: forged values are clamped small.
+    { const D = r.sites && typeof r.sites === 'object' ? r.sites : null, Wk = r.siteWoke && typeof r.siteWoke === 'object' ? r.siteWoke : null;
+      const done = (k) => (D && Array.isArray(D[k]) ? Math.min(pos(D[k][0]), 24) : 0);
+      const woke = (k) => Math.min(Math.max(Wk ? pos(Wk[k]) : 0, done(k)), 24); // a site that finished was awake
+      const o = s.sites && typeof s.sites === 'object' ? s.sites : {};
+      const add = (key, n) => Math.min(1e9, pos(o[key]) + n);
+      const next = { lamps: add('lamps', done('lamp')), roads: add('roads', done('road')), knots: add('knots', done('knot')), wLamps: add('wLamps', woke('lamp')), wRoads: add('wRoads', woke('road')), wKnots: add('wKnots', woke('knot')) };
+      if (Object.values(next).some((n) => n > 0)) s.sites = next;
+    } // (was inside the comment above, so chests were never banked: fixed with CHARACTER SYSTEM v2)
     // CHARACTER SYSTEM v2: Bond XP + keepsake, banked here only (one write per run, with the gold)
     const bond = ctx && ctx.data ? bankChars(this.data, r, ctx.data) : null;
     // difficulty tier records + the one-time first-dawn bounty (a tier whose gate the save does not own is recorded as Twilight)

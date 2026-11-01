@@ -1,18 +1,20 @@
 // CX2 the Almanac screen (docs/design/codex-celebrations-v1.md section 2/5; mock-ups docs/mockups/codex/cx-foes, cx-spirits).
-// One book, four pages (Foes, Spirits, Wickbearers, Nights). Built with createElement + textContent only (kit el); portraits are the real
+// One book, five pages (Foes, Spirits, Wickbearers, Nights, Places). Built with createElement + textContent only (kit el); portraits are the real
 // code-drawn Husk art through <img src=blob:> (src/gfx/husk/portrait.js) and the hero-select art. The view model is almanac() (src/meta/codex.js).
-// Keyboard: 1-4 / Tab on a grid item switch pages, arrows move in the grid, Enter opens an entry (portrait: full-height sheet), Esc back one step.
+// Keyboard: 1-5 / Tab on a grid item switch pages, arrows move in the grid, Enter opens an entry (portrait: full-height sheet), Esc back one step.
 import { el, kitRoot } from './kit.js';
 import { mk, emblem, EMBLEM_OF } from './hudsvg.js';
-import { CX, MARK_LINE, TITLES } from './codexcopy.js';
+import { CX, MARK_LINE, TITLES, PLACE } from './codexcopy.js';
 import { INTRO } from './introcopy.js';
+import { glyph as introGlyph } from './introui.js';
 import { portraitUrl } from '../gfx/husk/portrait.js';
 import { MARKS } from '../sim/marks.js';
 
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const fmt = (n) => Math.max(0, Math.floor(Number(n) || 0)).toLocaleString('en-GB');
 const mmss = (s) => { const t = Math.max(0, Math.floor(Number(s) || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
-const TAB_IDS = ['foes', 'spirits', 'heroes', 'nights'];
+const TAB_IDS = ['foes', 'spirits', 'heroes', 'nights', 'places'];
+const TABN = TAB_IDS.length;
 const doc = () => globalThis.document;
 
 function img(src, cls) {
@@ -83,7 +85,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
     b.addEventListener('click', () => select(t.id, false));
     b.addEventListener('keydown', (e) => {
       const i = TAB_IDS.indexOf(t.id);
-      const n = e.key === 'ArrowRight' ? TAB_IDS[(i + 1) % 4] : e.key === 'ArrowLeft' ? TAB_IDS[(i + 3) % 4] : e.key === 'Home' ? TAB_IDS[0] : e.key === 'End' ? TAB_IDS[3] : null;
+      const n = e.key === 'ArrowRight' ? TAB_IDS[(i + 1) % TABN] : e.key === 'ArrowLeft' ? TAB_IDS[(i + TABN - 1) % TABN] : e.key === 'Home' ? TAB_IDS[0] : e.key === 'End' ? TAB_IDS[TABN - 1] : null;
       if (n) { e.preventDefault(); e.stopPropagation(); select(n, true); tabBtns[n].focus(); }
     });
     tabBtns[t.id] = b;
@@ -239,19 +241,56 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
     markRead(book.lore.filter((l) => l.open).map((l) => l.key));
   }
 
+  // ---- PLACES (E7): foe-card style; a grey ring until the place has woken once; then its glyph, line, gift and a count-gated Tells page
+  function placeSil() {
+    const d = doc();
+    return mk(d, 'svg', { viewBox: '0 0 64 64', class: 'cx-sil cx-sil--place', 'aria-hidden': 'true', focusable: 'false' }, [
+      mk(d, 'circle', { cx: 32, cy: 32, r: 29, fill: '#262d3d', stroke: '#5d6578', 'stroke-width': 2.5 }),
+      mk(d, 'circle', { cx: 32, cy: 32, r: 15, fill: 'none', stroke: '#8a93a8', 'stroke-width': 2, 'stroke-dasharray': '3 4' }),
+    ]);
+  }
+  function placeArt(p) { const g = p.known ? introGlyph(p.id) : placeSil(); g.setAttribute('class', 'cx-sil cx-sil--place'); return g; }
+  function placeCard(p) {
+    const pic = add(el('span', p.known ? 'cx-pic' : 'cx-pic cx-pic--sil'), placeArt(p));
+    const label = p.known ? CX.placeLabel(p.name, p.doneText) : CX.placeLabelNew;
+    return item(p.known ? '' : 'is-unk', [p.key, p.tells.key], label, [pic, el('span', 'cx-nm', p.known ? p.name : CX.unknown), el('span', 'cx-ct', p.known ? p.doneText : CX.notMet)], () => placeEntry(p));
+  }
+  function placeEntry(p) {
+    const head = el('div', 'cx-ehead');
+    const pic = add(el('span', p.known ? 'cx-epic' : 'cx-epic cx-pic--sil'), placeArt(p));
+    const txt = el('div', 'cx-etxt');
+    add(txt, el('div', 'cx-sub', CX.placeWhere(p.where)), el('h2', 'cx-h2', p.known ? p.name : CX.unknown), el('div', 'cx-sub', p.known ? `${CX.placeWoke(p.woke)} · ${p.doneText}` : p.hint));
+    add(head, pic, txt);
+    add(entry, head);
+    if (!p.known) return;
+    add(entry, el('p', 'cx-quote', `“${p.line}”`));
+    add(entry, add(el('div', 'cx-page'), el('span', 'cx-k', CX.placeGift), el('div', 'cx-v', p.gift)));
+    const t = p.tells;
+    const row = el('div', `cx-page${t.open ? '' : ' is-lock'}`);
+    const v = el('div', 'cx-v');
+    if (t.open) v.textContent = t.text;
+    else add(v, el('span', null, CX.placeTellsNext(t.what, fmt(t.at), fmt(t.cur))), bar(t.cur / t.at));
+    add(row, el('span', 'cx-k', t.label), v);
+    add(entry, row);
+    const foot = el('div', 'cx-foot');
+    add(foot, add(el('span', 'cx-keys'), kb('←'), kb('→'), el('span', null, ` ${CX.placeKeys}`)));
+    add(entry, foot);
+  }
+
   // ---- page switch
   function select(id, focusTab) {
     if (!TAB_IDS.includes(id)) id = 'foes';
     cur = id;
     for (const t of TAB_IDS) { const on = t === id; tabBtns[t].classList.toggle('is-on', on); tabBtns[t].setAttribute('aria-selected', on ? 'true' : 'false'); tabBtns[t].setAttribute('tabindex', on ? '0' : '-1'); }
     body.setAttribute('aria-labelledby', `cx-tab-${id}`);
+    if (typeof tabBtns[id].scrollIntoView === 'function') { try { tabBtns[id].scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch { /* old browsers: the strip just stays put */ } }
     items = [];
     list.replaceChildren();
     entry.replaceChildren();
     list.className = `cx-list cx-list--${id}`;
     root.setAttribute('data-page', id);
     if (sheetOpen) { sheetOpen = false; root.classList.remove('cx-sheet'); }
-    const make = id === 'foes' ? book.foes.map(foeCard) : id === 'spirits' ? book.spirits.map(spiritChip) : id === 'heroes' ? book.heroes.map(heroCard) : book.nights.map(nightCard);
+    const make = id === 'foes' ? book.foes.map(foeCard) : id === 'spirits' ? book.spirits.map(spiritChip) : id === 'heroes' ? book.heroes.map(heroCard) : id === 'places' ? book.places.map(placeCard) : book.nights.map(nightCard);
     for (const b of make) add(list, b);
     refreshDots();
     // open on the newest entry (a NEW one first), else the first known
@@ -261,7 +300,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
     else if (first) first.classList.add('is-sel');
     if (focusTab === 'item' && first) first.focus();
   }
-  function tabOf(k) { return k.startsWith('f') ? 'foes' : k.startsWith('e:') ? 'spirits' : k.startsWith('h:') ? 'heroes' : k.startsWith('n:') || k.startsWith('l:') ? 'nights' : ''; }
+  function tabOf(k) { return k.startsWith('s:') || k.startsWith('sp:') || k === 'c:places' ? 'places' : k.startsWith('f') ? 'foes' : k.startsWith('e:') ? 'spirits' : k.startsWith('h:') ? 'heroes' : k.startsWith('n:') || k.startsWith('l:') ? 'nights' : ''; }
 
   function gridCols() {
     if (items.length < 2 || !items[0].offsetTop && !items[1].offsetTop) return cur === 'spirits' || cur === 'nights' ? 1 : 5;
@@ -275,9 +314,9 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
     const k = e.key;
     const a = doc() && doc().activeElement;
     if (k === 'Escape') { e.preventDefault(); if (sheetOpen) closeSheet(); else if (onBack) onBack(); return true; }
-    if (/^[1-4]$/.test(k)) { e.preventDefault(); select(TAB_IDS[Number(k) - 1], 'item'); return true; }
+    if (/^[1-5]$/.test(k)) { e.preventDefault(); select(TAB_IDS[Number(k) - 1], 'item'); return true; }
     const i = items.indexOf(a);
-    if (k === 'Tab' && i >= 0 && !sheetOpen) { e.preventDefault(); const n = TAB_IDS[(TAB_IDS.indexOf(cur) + (e.shiftKey ? 3 : 1)) % 4]; select(n, 'item'); return true; }
+    if (k === 'Tab' && i >= 0 && !sheetOpen) { e.preventDefault(); const n = TAB_IDS[(TAB_IDS.indexOf(cur) + (e.shiftKey ? TABN - 1 : 1)) % TABN]; select(n, 'item'); return true; }
     if (i >= 0 && !sheetOpen) {
       const c = gridCols();
       const d = k === 'ArrowRight' ? 1 : k === 'ArrowLeft' ? -1 : k === 'ArrowDown' ? c : k === 'ArrowUp' ? -c : 0;
