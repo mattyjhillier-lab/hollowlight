@@ -419,3 +419,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - NOW: DESIGN for next hero (female dragon-kin + small dragon pet, fire weapon) and Chapter 2, docs only (wip/design-weapon-hero, wip/design-chapter2). Then Matt one-tap picks, then build in small chunks, each with its tree group.
 
 - LOCKED 2026-11-01: Chapter 2 = Hushbell Hamlet (A), tolls never damage. Hero/weapon design in progress; then build order decided with Matt.
+
+- LOCKED 2026-11-01: Ember Breath + Hearth-Warden hero (name TBD by Matt) + Hushbell Hamlet chapter. Order proposal: 1) weapon + its tree cluster, 2) hero + pet, 3) Chapter 2 (C0-C8). Matt go needed. Open: tree budget for 6th weapon cluster.
