@@ -389,3 +389,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - 2026-10-31 NAV CLIP CLOSED: fit-audit menu is clean at 1920x1001d, 1280x720d, 844x390, 375x812 after the floating-tabs change; the 3px top-tab clip no longer reproduces.
 
 - PARKED (Matt, 2026-11-01): Spirit Tempest "stand and do nothing" feel. Probe (wip/tempest-standstill, docs/design/fv-data/tempest-standstill.md) shows no stand-and-win; best evolution to stand near, halves damage taken. Revisit in the EXPLOIT + FEEL PASS (needs his night/chapter/tree/other-weapons detail for a matched rerun). No number changed.
+
+- LOCKED 2026-11-01: launch hosting = new wispwick Cloudflare project + "moved" page on old address, no domain. Do at launch with Matt.
