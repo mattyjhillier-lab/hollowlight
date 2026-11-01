@@ -53,8 +53,8 @@ test('icons and share image exist, are referenced, and the share meta has no inv
   for (const s of ['32x32', '64x64', '128x128', '192x192', '512x512']) assert.ok(man.icons.some((i) => i.sizes === s), s);
   assert.ok(man.icons.some((i) => i.purpose === 'maskable'));
   const html = readFileSync('index.html', 'utf8');
-  assert.match(html, /og:image" content="\.\/share\.png"/); assert.match(html, /twitter:card" content="summary_large_image"/); assert.match(html, /TODO Matt: set absolute URL/);
-  assert.ok(!/content="https?:\/\//.test(html));
+  assert.match(html, /og:image" content="https:\/\/wispwick\.pages\.dev\/share\.png"/); assert.match(html, /og:url" content="https:\/\/wispwick\.pages\.dev\/"/); assert.match(html, /twitter:card" content="summary_large_image"/); assert.doesNotMatch(html, /TODO Matt/);
+  assert.ok(!/content="https?:\/\/(?!wispwick\.pages\.dev\/)/.test(html)); // only our own launch address may appear as an absolute URL
   const png = readFileSync('public/share.png'); assert.equal(png.readUInt32BE(16), 1200); assert.equal(png.readUInt32BE(20), 630);
 });
 
