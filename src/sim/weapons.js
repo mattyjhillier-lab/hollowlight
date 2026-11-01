@@ -932,10 +932,88 @@ const holyOrbit = {
   },
 };
 
+// ---------------------------------------------------------------- Ember Breath (EW1)
+// BREATHE: every Breath seconds a 70 degree cone (half-angle EMBER.half) of reach Reach fans out toward the thickest group in front of the hero
+// (best of 16 directions inside +-100 deg of the heading; the aim is re-read every 0.3 s and only changes when the new one is clearly better).
+// 4 ticks over 0.6 s, every foe in the cone each tick (body edge counts, so a big body is never missed); the existing Burn status is set once per
+// foe per breath (25% of Heat a second for Smoulder seconds). Boss clause: a boss whose body is inside reach pulls the aim onto itself and takes
+// weapons.json "boss" x. No RNG is drawn (deterministic by construction).
+export const EMBER = { half: Math.PI * 35 / 180, ticks: 4, span: 0.6, burnRate: 0.25, dirs: 16, front: Math.PI * 100 / 180, hyst: 0.3, bossW: 5, minCd: 0.8, hold: 0.3 };
+const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return Math.abs(d); };
+// Is foe e inside the cone from p along aim for reach? Edge-based: the cone must touch the body, not just its centre.
+export function emberHit(p, aim, reach, e, half = EMBER.half) {
+  const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy);
+  if (d - e.r > reach) return false;
+  if (d <= e.r) return true; // standing on us
+  return angDiff(Math.atan2(dy, dx), aim) <= half + Math.asin(Math.min(1, e.r / d));
+}
+function emberScore(sim, p, aim, reach) {
+  let n = 0;
+  for (const e of sim.enemies) if (!e.dead && emberHit(p, aim, reach, e)) n += e.boss ? EMBER.bossW : 1;
+  return n;
+}
+const emberBreath = {
+  update(sim, w, dt) {
+    const { s, rt } = w;
+    const p = sim.player;
+    const reach = Math.max(1, s.area * sim.mods.area);
+    const dmg = s.power * sim.dmgMult(w);
+    const head = Math.atan2(Number.isFinite(p.hy) ? p.hy : 0, Number.isFinite(p.hx) && (p.hx || p.hy) ? p.hx : 1);
+    // aim (hysteresis): re-read every 0.3 s; keep the old aim unless the new one catches clearly more
+    rt.aimT = (rt.aimT ?? 0) - dt;
+    if (rt.aim === undefined) { rt.aim = head; rt.aimT = 0; }
+    if (rt.aimT <= 0 && !rt.br) {
+      rt.aimT = EMBER.hold;
+      let best = rt.aim, bestS = emberScore(sim, p, rt.aim, reach) + 0.5, found = false;
+      for (let i = 0; i < EMBER.dirs; i++) {
+        const a = head - EMBER.front + (i / (EMBER.dirs - 1)) * 2 * EMBER.front;
+        const sc = emberScore(sim, p, a, reach) - angDiff(a, head) * 0.01; // ties go toward where you are heading
+        if (sc > bestS) { best = a; bestS = sc; found = true; }
+      }
+      rt.aim = found ? best : (bestS <= 0.5 ? head : rt.aim);
+    }
+    rt.cd = (rt.cd ?? 0.5) - dt; // counts from the breath's start (Breath = time between breaths)
+    // a breath in progress: ticks at span/ticks steps
+    if (rt.br) {
+      const b = rt.br;
+      b.t += dt;
+      while (b.n < EMBER.ticks && b.t >= (b.n + 1) * (EMBER.span / EMBER.ticks)) {
+        b.n++;
+        for (const e of sim.enemies) {
+          if (e.dead || !emberHit(p, b.aim, b.reach, e)) continue;
+          sim.hurt(e, dmg);
+          if (!b.burned.has(e.id)) { b.burned.add(e.id); sim.burn(e, dmg, s.duration, EMBER.burnRate); }
+        }
+      }
+      if (b.n >= EMBER.ticks) rt.br = null;
+      return;
+    }
+    if (rt.cd > 0) return;
+    // boss clause: a boss whose body the cone could reach takes the aim (so a big body is never missed)
+    let tgt = null, td = Infinity;
+    for (const e of sim.enemies) {
+      if (e.dead || !e.boss) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d - e.r <= reach && d < td) { tgt = e; td = d; }
+    }
+    const aim = tgt ? Math.atan2(tgt.y - p.y, tgt.x - p.x) : rt.aim;
+    rt.cd = Math.max(EMBER.minCd, s.cooldown * sim.mods.cooldown);
+    rt.br = { t: 0, n: 0, aim, reach, burned: new Set() };
+    rt.aim = aim;
+    // placeholder look (EW2 draws the real art): teardrop flames along the cone via the existing 'burst' fx kind would be too grey, so use rings
+    for (let i = 0; i < 3 && sim.fx.length < 48; i++) {
+      const d = reach * (0.35 + 0.3 * i);
+      sim.addFx({ kind: 'ring', x: p.x + Math.cos(aim) * d, y: p.y + Math.sin(aim) * d, r: 8 + 6 * i, ttl: 0.3, color: '#ffb35c' });
+    }
+    sim.pushEvent('ember');
+  },
+};
+
 export const WEAPON_BEHAVIOURS = {
   ghost_wolves: ghostWolves,
   raven_flock: ravenFlock,
   spirit_bolts: spiritBolts,
   chain_lightning: chainLightning,
   holy_orbit: holyOrbit,
+  ember_breath: emberBreath,
 };

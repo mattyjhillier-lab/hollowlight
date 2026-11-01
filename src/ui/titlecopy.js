@@ -50,6 +50,7 @@ export const SPIRIT_LINES = {
   holy_orbit: 'Lights circle you',
   raven_flock: 'Scouts swoop and peck',
   spirit_bolts: 'Glyphs seek the nearest foe',
+  ember_breath: 'A warm breath of fire',
   chain_lightning: 'Storm leaps foe to foe',
 };
 

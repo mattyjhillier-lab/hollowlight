@@ -349,7 +349,7 @@ export function compileTree(raw, data) {
   if (data) {
     for (const [kind, pool] of [['weapon', data.weapons], ['evolution', data.evolutions]]) {
       for (const [gid, g] of Object.entries(pool || {})) {
-        if (g && g.treeGate && !gateNodeFor[kind].has(gid)) fail(`gated ${kind} "${gid}" has no unlocking node (unreachable)`);
+        if (g && g.treeGate && !g.unreleased && !gateNodeFor[kind].has(gid)) fail(`gated ${kind} "${gid}" has no unlocking node (unreachable)`);
       }
     }
   }

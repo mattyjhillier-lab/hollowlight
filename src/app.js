@@ -350,7 +350,7 @@ export const app = {
   spiritChoices(heroId) {
     const s = this.save.data;
     const open = startableWeapons(data, treeDef, s.tree);
-    return Object.keys(data.weapons).map((id) => {
+    return Object.keys(data.weapons).filter((id) => !data.weapons[id].unreleased).map((id) => {
       const heart = treeDef.hearts && treeDef.hearts[id];
       let note = '';
       if (!open.includes(id) && heart) { try { const st = nodeStatus(treeDef, s, heart, data); const L = st && st.cond && st.cond.lines && st.cond.lines[0]; note = L ? `Wake it in the Lantern Web · ${String(L.text).slice(0, 48)} ${L.cur}/${L.goal}` : 'Wake it in the Lantern Web'; } catch { note = ''; } }

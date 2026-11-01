@@ -38,7 +38,7 @@ test('T3a one cap per category: the whole tree can never pass a category cap, ho
   const shared = a.status.bleed + a.status.burn + a.status.mark * RULE.markFace;
   assert.ok(shared <= caps.status.cap + 1e-9, `status ${shared}`);
   // per weapon: one pool for ALL of that weapon's own stat nodes (flat Pierce / Chains count 2 points each but are never scaled)
-  for (const wid of Object.keys(data.weapons)) {
+  for (const wid of Object.keys(data.weapons).filter((w) => !data.weapons[w].unreleased)) {
     const row = a.softcap[`wpn:${wid}`];
     assert.ok(row, `${wid} has a pool row`);
     assert.equal(row.C, RULE.perWeapon.cap);

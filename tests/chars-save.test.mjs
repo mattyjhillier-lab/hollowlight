@@ -83,7 +83,8 @@ test('legacy seed: a played pre-v2 save keeps both heroes awake, Bond from histo
 test('starter set: heart + first socket gate, hero awake, notes; startable weapons follow the hearts', () => {
   assert.deepEqual(starterNodes(info, 'ghost_wolves'), ['gt_ghost_wolves']);
   assert.deepEqual(starterNodes(info, 'raven_flock'), ['gt_raven_flock', 'gt_dive_bombers'], 'a weapon with a gated first socket gets that evolution too');
-  for (const w of Object.keys(data.weapons)) assert.ok(starterNodes(info, w).length >= 1, w);
+  for (const w of Object.keys(data.weapons)) assert.ok(starterNodes(info, w).length >= 1 || data.weapons[w].unreleased, w); // staged weapon (ember_breath): no cluster yet, starterNodes is [] (EW7 adds its heart)
+  assert.deepEqual(starterNodes(info, 'ember_breath'), []);
   const s = sanitize(defaultSave());
   assert.deepEqual(startableWeapons(data, def, s.tree), []);
   assert.equal(grantStarter(s, data, info, def, 'elias', 'chain_lightning'), true);
@@ -191,7 +192,9 @@ test('the live tree compiles with the retired hero lanterns and a third hero nee
 test('starter pool is data-driven (balance.starter; all by default; junk = all; never empty)', async () => {
   const { starterPool } = await import('../src/meta/starter.js');
   const all = starterPool(data);
-  assert.deepEqual(all.heroes, Object.keys(data.characters)); assert.deepEqual(all.weapons, Object.keys(data.weapons));
+  assert.deepEqual(all.heroes, Object.keys(data.characters)); assert.deepEqual(all.weapons, Object.keys(data.weapons).filter((w) => !data.weapons[w].unreleased));
+  assert.deepEqual(all.weapons, ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_lightning', 'holy_orbit'], 'the live starter offer is exactly the five launch weapons');
+  assert.ok(!starterPool({ ...data, balance: { ...data.balance, starter: { heroes: ['*'], weapons: ['*'] } } }).weapons.includes('ember_breath'), 'a staged weapon never enters the offer, even with *');
   const D2 = (st) => ({ ...data, balance: { ...data.balance, starter: st } });
   assert.deepEqual(starterPool(D2({ heroes: ['elias', 'nope'], weapons: ['holy_orbit', 'ghost_wolves', '__proto__'] })), { heroes: ['elias'], weapons: ['ghost_wolves', 'holy_orbit'] });
   assert.deepEqual(starterPool(D2({ heroes: ['nope'], weapons: 'x' })), all);

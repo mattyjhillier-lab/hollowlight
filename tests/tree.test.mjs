@@ -528,7 +528,7 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
 
 test('unlock schema: weapon gate and hero gate work with data that opts in (v2: every shipped weapon is gated; heroes wake by keepsakes)', () => {
   // G1b gated three weapons; CHARACTER SYSTEM v2 (2026-10-24) gates all five (the starter set grants one heart).
-  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
+  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate && !data.weapons[w].unreleased).sort(), ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
   assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no hero is a tree gate');
   const gated = { ...udata, weapons: { ...udata.weapons, ghost_wolves: { ...udata.weapons.ghost_wolves, treeGate: true } } };
   const d = compileTree(raw([node('uw', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }, { unlock: 'abilityUpgrade', id: 'long_howl' }, { unlock: 'modifier', id: 'hard_dusk' }] })]), gated);
@@ -597,7 +597,7 @@ test('G1e: nodes behind an evolution gate show ??? until that gate has progress 
 });
 
 test('G1e: no non-gate node text names a locked weapon or evolution (data-driven over tree.json)', () => {
-  const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate);
+  const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate && !w.unreleased); // staged weapons (Ember Breath) have no tree node yet
   const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
   const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
   assert.ok(lockedW.length === 5 && lockedE.length === 13);

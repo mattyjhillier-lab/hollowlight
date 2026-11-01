@@ -46,5 +46,5 @@ export function starterPool(data) {
     const ok = all.filter((id) => list.includes(id));
     return ok.length ? ok : all;
   };
-  return { heroes: pick(S && S.heroes, Object.keys(data.characters)), weapons: pick(S && S.weapons, Object.keys(data.weapons)) };
+  return { heroes: pick(S && S.heroes, Object.keys(data.characters)), weapons: pick(S && S.weapons, Object.keys(data.weapons).filter((id) => !data.weapons[id].unreleased)) };
 }

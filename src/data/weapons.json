@@ -71,5 +71,21 @@
       "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "bossReach": 16, "bossX": 2, "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
       "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
     }
+    },
+  "ember_breath": {
+    "name": "Ember Breath",
+    "treeGate": true,
+    "unreleased": true,
+    "type": "magic",
+    "tags": [],
+    "color": "#ffb35c",
+    "desc": "Every few seconds a fan of warm spirit-fire breathes toward the thickest crowd in front of you and leaves foes burning.",
+    "boss": 1.5,
+    "stats": {
+      "power":    { "name": "Heat",     "base": 4.2, "perRank": 1.5,  "fmt": "dec", "hint": "Each flick of the breath hits harder ({old} → {new} a tick)" },
+      "area":     { "name": "Reach",    "base": 80,  "perRank": 12,   "fmt": "int", "hint": "The breath reaches {old} → {new} out and a little wider" },
+      "cooldown": { "name": "Breath",   "base": 2.4, "perRank": -0.2, "fmt": "sec", "hint": "Breathes more often (every {new})" },
+      "duration": { "name": "Smoulder", "base": 1.5, "perRank": 0.5,  "fmt": "sec", "hint": "Foes keep burning {old} → {new} after the breath" }
+    }
   }
 }

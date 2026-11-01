@@ -430,11 +430,11 @@ export class Sim {
 
   // Burn (Elias, Holy Orbit hits only): 20% of the triggering hit per second for 2 s. One instance per enemy:
   // potency = strongest, time refreshes to 2 s, potency ends with the burn. Sim-only state (never saved).
-  burn(e, hit) {
+  burn(e, hit, time = BURN_TIME, rate = BURN_RATE) { // time / rate default to Holy Orbit's; Ember Breath passes its own (Smoulder, 25%)
     if (e.dead || !(hit > 0)) return;
     e.burnSrc = this._src;
-    e.burnDps = Math.max(e.burnDps, hit * BURN_RATE * this.tfx.burnMul);
-    e.burnT = Math.max(e.burnT, BURN_TIME);
+    e.burnDps = Math.max(e.burnDps, hit * rate * this.tfx.burnMul);
+    e.burnT = Math.max(e.burnT, time);
   }
 
   nearestEnemy(x, y, maxR, pred) {
