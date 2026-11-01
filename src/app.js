@@ -638,6 +638,7 @@ export const app = {
       if (this.touch) {
         const a = sim.ability;
         const cd = sim.abilityCooldown;
+        if (this.abFaceId !== a.id) { this.abFaceId = a.id; this.touch.setFace(abilityEmblem(globalThis.document, a.id)); } // the phone ability button shows the hero's emblem
         this.touch.setAbility(a.name, a.cdLeft <= 0, a.cdLeft <= 0 ? 1 : 1 - a.cdLeft / cd, Math.ceil(a.cdLeft));
       }
     }
