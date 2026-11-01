@@ -1925,7 +1925,7 @@ export class RunScene extends Phaser.Scene {
       if (f.kind === 'judgetell' || f.kind === 'judgeflash') { // W11b Thunder Judgment: tell = a faint cyan radius ring (all tiers) + sky darkening (Med/High, not in reduced motion)
         if (f.kind === 'judgetell') {
           const k = 1 - f.ttl / f.life;
-          fx.lineStyle(1, PAL.ice, 0.18 + 0.3 * k).strokeCircle(f.x, f.y, f.r);
+          fx.lineStyle(2, PAL.ice, 0.3 + 0.4 * k).strokeCircle(f.x, f.y, f.r); // clearer tell: the strike reaches the full ring (screens show only ~150 u above/below)
           if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * k);
         } else if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * (f.ttl / f.life));
       } else if (chArt && f.kind === 'bolt') { // S6 Storm Thread: 3-layer arcs + forks, capped Judgment pillars, tiny Static strikes, crack-star scorches
