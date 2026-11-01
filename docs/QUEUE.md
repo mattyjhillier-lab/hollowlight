@@ -436,3 +436,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - DESIGN INPUT for Chapter 2 build: chapter multiplier x1.1 per chapter (enemy HP+damage, rewards same factor), stacks with nights; tune by measurement.
 
 - CHAPTER 2 PLAN ADD: enemy-reuse gate audit (which Chapter 1 enemies reappear in Hushbell Hamlet, which gates count them) before the enemy chunk.
+- BUILT 2026-11-01 (dev, hidden): DM1+DM2 Dragonfire Meteor data+sim (d0a7875), 1334 tests, sweep-all byte-identical. Flag for DM9: rank-0 Meteor ~4x Wolves DPS on a 6-foe cluster, 0.7x on a lone target: check as starter. NEXT: DM3 art + sound.
