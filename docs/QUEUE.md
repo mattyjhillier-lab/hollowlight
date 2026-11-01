@@ -426,3 +426,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - NAMES LOCKED 2026-11-01: hero Lucinda, pet Ophimber (ids stay hearthwarden). Use in characters.json name, charcopy, Almanac, results, codex lines.
 
 - NOW: design sheet v2 for Dragonfire Meteor (+ Wildfire, Cinder Wyrm evolutions, third evolution = 3 options) and Lucinda ability (Ophimber three fire rings), docs only. Ember Breath paused (hidden on wip/ember-breath + dev, unreleased flag).
+
+- DECISION GATE (Matt, 2026-11-01): hero level / Bond cap (now 25; maxed bands 65-90 assume it) must be reviewed with Chapter 2 and new nights: at the Chapter 2 balance chunk run maxed-tree bots at 25 and at 30/35, report vs bands, Matt decides (locked target). A higher cap only ADDS levels (saves safe). Also covers Lucinda.
