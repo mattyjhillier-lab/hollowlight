@@ -8,7 +8,8 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 // pri 0 = never dropped (moments), 1 = player actions / pickups / tells, 2 = hits (first to go). Budget table s4.
 export const MORE_CUES = {
   evo: { cap: 1, gap: 1, pri: 0 }, hurt: { cap: 1, gap: 0.25, pri: 0 }, swarm: { cap: 1, gap: 2, pri: 0 },
-  ember_breath: { cap: 1, gap: 0.6, pri: 1 }, // Ember Breath's breath (one per ~2.4 s); its hit tick is ember_lick in engine.js
+  // Dragonfire Meteor (DM3; the RunScene Meteor layer asks for these, the sim's 'ember' event is not mapped): launch whoosh, impact thump, pool crackle tick. Quiet, never a duck; its hit tick is ember_lick in engine.js
+  meteor_launch: { cap: 2, gap: 0.12, pri: 1 }, meteor_impact: { cap: 2, gap: 0.1, pri: 1 }, meteor_crackle: { cap: 1, gap: 0.45, pri: 2 },
   ability: { cap: 1, gap: 1, pri: 0 }, sanctuary: { cap: 1, gap: 1, pri: 0 }, revive: { cap: 1, gap: 1, pri: 0 },
   boss_tremor: { cap: 1, gap: 4, pri: 0 }, boss_intro: { cap: 1, gap: 2, pri: 0 }, boss_phase: { cap: 1, gap: 1.5, pri: 0 }, boss_fall: { cap: 1, gap: 2, pri: 0 },
   treant_creak: { cap: 1, gap: 0.6, pri: 1 }, treant_slam: { cap: 1, gap: 0.3, pri: 1 },
@@ -28,7 +29,7 @@ for (const id of EVO_IDS) MORE_CUES['evo_' + id] = { cap: 1, gap: 1, pri: 0 };
 
 // sim event type -> cue (app.js hands every sim event to AudioEngine.event; render/audio only)
 export const EVENT_CUE = {
-  levelup: 'level_up', ember: 'ember_breath', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', dash: 'ability', sanctuary: 'sanctuary', keepsake: 'keepsake', revive: 'revive',
+  levelup: 'level_up', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', dash: 'ability', sanctuary: 'sanctuary', keepsake: 'keepsake', revive: 'revive',
   bossTell: 'treant_creak', bossHit: 'treant_slam', slam: 'treant_slam', bossPhase: 'boss_phase', bossDead: 'boss_fall', bossSoon: 'boss_tremor',
   thorn: 'thorn_spit', burst: 'toad_puff', charge: 'hart_charge', mini: 'mane_call', howl: 'mane_howl', miniPhase: 'mane_growl', miniDead: 'mane_fall',
   chestDrop: 'chest_drop', chest: 'chest_open',
@@ -88,12 +89,21 @@ export function moreCue(e, id, t, v) {
       e.duck('ability');
       e.tone(t, 'sine', e.hz(0), 0.003, 2.4, 0.16 * v, 0, true); e.tone(t, 'sine', e.hz(0) * 2.76, 0.002, 1.0, 0.05 * v, 0, true);
       for (const n of [12, 19, 24]) e.tone(t + 0.15, 'triangle', e.hz(n), 0.5, 1.2, 0.035 * v, 0, true, null, rnd(-6, 6)); return 2.5;
-    case 'ember_breath': // a soft warm whoosh that opens then settles, dry ember crackle on its tail, one low hum; quiet (no duck: it never masks hit cues)
-      e.noise(t, 'bandpass', 500, 0.8, 0.1, 0.5, 0.14 * v, 1500);
-      e.noise(t + 0.05, 'lowpass', 1100, 0.7, 0.12, 0.4, 0.07 * v, 400);
-      for (let i = 0; i < 5; i++) e.noise(t + 0.12 + i * rnd(0.05, 0.1), 'highpass', rnd(3800, 5600), 1, 0.002, 0.01, 0.07 * v);
-      e.tone(t, 'sine', 170, 0.06, 0.45, 0.05 * v, 120);
-      return 0.65;
+    case 'meteor_launch': // a short rising whoosh (the ball leaving her hand): bandpass sweep up + a soft low breath; quiet
+      e.noise(t, 'bandpass', 320, 1.1, 0.3, 0.2, 0.13 * v, 1500);
+      e.noise(t + 0.02, 'lowpass', 700, 0.7, 0.2, 0.25, 0.06 * v, 1800);
+      e.tone(t, 'sine', 150, 0.25, 0.2, 0.05 * v, 330);
+      return 0.5;
+    case 'meteor_impact': // a soft heavy thump + warm crackle tail (no hit-stop, no duck, so hit cues stay clear)
+      e.tone(t, 'sine', 105, 0.004, 0.28, 0.3 * v, 42);
+      e.noise(t, 'lowpass', 520, 1, 0.004, 0.2, 0.2 * v, 160);
+      e.noise(t + 0.02, 'bandpass', 1500, 0.8, 0.01, 0.16, 0.05 * v, 700);
+      for (let i = 0; i < 4; i++) e.noise(t + 0.08 + i * rnd(0.04, 0.08), 'highpass', rnd(3600, 5400), 1, 0.002, 0.01, 0.07 * v);
+      return 0.55;
+    case 'meteor_crackle': // the burning ground: two or three tiny dry ticks and a breath of warm air
+      for (let i = 0; i < 3; i++) e.noise(t + i * rnd(0.03, 0.09), 'highpass', rnd(3800, 5600), 1, 0.002, 0.009, 0.05 * v);
+      e.noise(t, 'lowpass', 600, 1, 0.03, 0.14, 0.03 * v, 900);
+      return 0.25;
     case 'revive': motif(e, t, v, 0, 0.12); motif(e, t + 0.4, v, 12, 0.1); return 1.4; // Last Light: the motif twice, rising
     case 'boss_tremor': e.noise(t, 'lowpass', 140, 1, 0.6, 1.4, 0.22 * v, 70); e.tone(t + 0.2, 'sine', 38, 0.4, 1.2, 0.18 * v, 32); return 2.0; // 13:55 soft ground tremor (boss sheet arrival warning)
     case 'boss_intro': e.duck('boss'); e.tone(t + 0.8, 'sine', 48, 0.02, 1.6, 0.5 * v, 30); e.noise(t + 0.8, 'lowpass', 250, 1, 0.05, 1.2, 0.3 * v); return 2.5;

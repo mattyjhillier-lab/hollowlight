@@ -437,3 +437,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 
 - CHAPTER 2 PLAN ADD: enemy-reuse gate audit (which Chapter 1 enemies reappear in Hushbell Hamlet, which gates count them) before the enemy chunk.
 - BUILT 2026-11-01 (dev, hidden): DM1+DM2 Dragonfire Meteor data+sim (d0a7875), 1334 tests, sweep-all byte-identical. Flag for DM9: rank-0 Meteor ~4x Wolves DPS on a 6-foe cluster, 0.7x on a lone target: check as starter. NEXT: DM3 art + sound.
+- BUILT 2026-11-01 (wip/meteor-art, hidden): DM3 Meteor art + sound (render/audio only, src/sim 0 diff): src/gfx/meteorfx.js (ball + ember tail + landing tell, impact flash + tongues, burning-ground pools, High/Med/Low/Calm), cues meteor_launch/impact/crackle (ember_breath cue + sim ember event mapping removed), scripts/meteor-shots.mjs, docs/screenshots/meteor/. Not built: 3 px screen punch, Calm 20% slower arc (arc time is sim-owned). Real-phone heat test still Matt (before DM10).

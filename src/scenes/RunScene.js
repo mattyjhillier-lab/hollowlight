@@ -48,6 +48,7 @@ import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
 import { bakeRavenArt, ravenReady } from '../gfx/summon/atlas.js'; // S3 Letter Ravens (lazy bake on first flock)
 import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
 import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
+import { MeteorLayer } from '../gfx/meteorfx.js'; // DM3 Dragonfire Meteor art (render only)
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
 import { bakeBoltArt, boltReady } from '../gfx/summon/atlas.js'; // S5 Ink Glyph Orb (lazy bake on first Spirit Bolts)
@@ -224,6 +225,8 @@ export class RunScene extends Phaser.Scene {
     this.dawnBud = { birds: 0, petals: 0, shafts: 0 };
     this.ribSet = new RibbonSet(1000, 12, 64); // W2 trails (+ W7b Lightfoot trail segments) (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
+    this.meteor = new MeteorLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM3: lazy-baked on the first Meteor
+    this.meteorCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, cue: (id) => { if (app.audio) app.audio.play(id); }, vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
     this.pawLayer = this.sumAtlas ? new PawLayer(this, SUM_KEY, RIBBON_DEPTH + 1, 300) : null; // S2: pawprints over the soft trail ribbon, under every creature/halo/pickup/number
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
@@ -595,10 +598,12 @@ export class RunScene extends Phaser.Scene {
     this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
+    this.meteor.reset();
   }
 
   unbindSim() {
     this.sim = null;
+    this.meteor.reset();
     this.parts.clear();
     this.nums.clear();
     this.playerGlow.setVisible(false);
@@ -1918,6 +1923,7 @@ export class RunScene extends Phaser.Scene {
         if (lit) lm.add(t.e.x, t.e.y, 40, ROLE.lightning, 0.7);
       }
     }
+    { const mc = this.meteorCtx; mc.sim = sim; mc.tier = this.quality.tier; mc.phone = this.phone; mc.calm = this.reducedMotion(); mc.lm = lit ? lm : null; mc.parts = this.parts; mc.vx0 = vx0; mc.vy0 = vy0; mc.vx1 = vx1; mc.vy1 = vy1; this.meteor.update(mc); } // DM3
     if (probe.on) for (const w of sim.weapons) probe.first('weapon:' + w.id + (w.evo ? ':' + w.evo : ''));
     for (const f of sim.fx) {
       fi++;
@@ -1961,6 +1967,7 @@ export class RunScene extends Phaser.Scene {
         if (lit) lm.add(x, y1, 50, ROLE.lightning, 0.9 * a);
       } else if (f.kind === 'burst' || f.kind === 'fizzle') { drawBurstFx(fx, f, this.reducedMotion());
       } else if (f.kind === 'ring') {
+        if (f.color === '#ffb35c' && this.meteor.active) continue; // DM3: the sim's placeholder landing tell / impact rings are replaced by the Meteor art
         const k = Math.max(0, f.ttl / 0.3);
         if (f.color === '#7a4a1b') { // DR2: the Treant's slam landing is the tell resolving: tell red-orange on a dark rim, above the vignette (was a low-contrast brown)
           const rr = f.r * (1.15 - 0.15 * k), a = Math.min(1, k + 0.2);
