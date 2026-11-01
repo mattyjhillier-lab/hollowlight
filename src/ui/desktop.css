@@ -24,3 +24,4 @@
 #ui { zoom: var(--uik); container-type: inline-size; }
 /* the Menu size row means nothing on a phone (always 1x) */
 html.phone .u4-row--desk { display: none; }
+html:not(.phone) .u4-row--phone { display: none; } /* PHONE HEAT: Battery saver is a phone setting */

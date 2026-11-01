@@ -409,3 +409,6 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - RULE (Matt 2026-11-01): new maps/characters/weapons ship WITH their skill tree content (CLAUDE.md standing rule; LOCKED).
 
 - NOW: evo tune chunk (Phantom Stampede up, Alpha modest boost) on wip/evo-tune, then re-measure; ships in the patch release with icon fix + Alpha text (needs Matt yes). Spirit Tempest feel: not confirmed, no change.
+
+- NOW: PHONE HEAT build (60 fps cap on phones + Battery saver setting), render/UI only, on dev. Need Matt phone model + refresh rate to tune (asked).
+- BUILT 2026-11-01 (dev): PHONE HEAT. Phones capped at 60 fps (limit 62 so 60 Hz stays 60), Settings > Picture > Battery saver (phone only): 30 fps (limit 32), canvas dpr cap 1.25, Low quality forced; live toggle verified (limit 62<->32, canvas 750x1624<->469x1015). Low-quality switch only unit-tested (page hidden in preview). Matt to test on real phone: 10 min with saver on, still warm? src/sim+data 0 diff.

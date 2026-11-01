@@ -71,6 +71,7 @@ import { BossView, ADD_SCALE, ADD_ORIGIN } from '../gfx/boss/bossview.js'; // El
 import { SiteView } from '../gfx/siteview.js'; // map events v1 'Hollow Places' (render only)
 import { MiniView, bakeReliquary } from '../gfx/minibossview.js'; // EN7/EN8 Branch-Mane extras + Lantern Reliquary chest (render only)
 import { POD_KEY, SAP_KEY } from '../gfx/boss/bossart.js';
+import { qualityModeFor } from '../gfx/power.js'; // PHONE HEAT
 import { HeldKeys, bindHeldKeys } from '../input/keys.js'; // CTL1: own held-key tracker (window capture, cleared on blur/hidden)
 
 const ADD = Phaser.BlendModes.ADD;
@@ -676,7 +677,7 @@ export class RunScene extends Phaser.Scene {
     this.lastStep = now;
     this.frameMs = dt;
     const q = this.quality;
-    const mode = app.save.data.settings.quality;
+    const mode = qualityModeFor(app.save.data.settings.quality, { phone: app.isPhone(), saver: !!app.save.data.settings.batterySaver }); // PHONE HEAT: Battery saver forces Low
     if (mode !== this.qMode) {
       this.qMode = mode;
       q.setMode(mode);

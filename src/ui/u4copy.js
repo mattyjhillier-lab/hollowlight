@@ -33,6 +33,7 @@ export const SET = {
   muted: { label: 'Mute all', help: 'Turn every sound off. M does the same.' },
   musicVol: { label: 'Music', help: 'How loud the music is.' },
   sfxVol: { label: 'Sound effects', help: 'How loud hits, spells and pickups are.' },
+  batterySaver: { label: 'Battery saver', help: 'Phones only. Draws 30 frames a second a little less sharp, so the phone stays cooler and the battery lasts longer.' },
   quality: { label: 'Picture quality', help: 'Lower it if the game stutters. Auto decides for you.', opts: [['auto', 'Auto'], ['low', 'Low'], ['med', 'Medium'], ['high', 'High']] },
   brightness: { label: 'Brightness', help: 'Normal starts the night dark and brightens toward dawn. Brighter lifts it. Clear keeps the night light.', opts: [['normal', 'Normal'], ['brighter', 'Brighter'], ['clear', 'Clear']] },
   screenShake: { label: 'Screen shake', help: 'Shake the view when you are hurt or something big lands.' },

@@ -869,6 +869,7 @@ export const app = {
       if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
       if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();
     });
+    step('battery saver', ['batterySaver'], () => { if (this.applyPower) this.applyPower(); }); // PHONE HEAT
     step('sound', ['masterVol', 'musicVol', 'sfxVol', 'muted'], (s) => { if (this.audio) this.audio.configure(s); });
     step('touch', ['touchMode', 'stickSize'], (s) => {
       if (!this.touch) return;
