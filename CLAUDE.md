@@ -73,7 +73,8 @@ Everything added from now on (weapons, evolutions, heroes, maps/chapters, nights
 5. Rebalance EVERY time: the full definition-of-done sweeps against the bands (fresh / mid / maxed, soft-cap budget, pace, evolutions 1.8-2.3x with the 3x cap), plus the hero level / Bond cap review when a map or night raises difficulty. A band that breaks comes to Matt with numbers before anything changes.
 6. Exploit + feel pass (stand, camp, kite, ability spam) and the fix order (tune first, limit second, replace last).
 7. Saves are append-only and validated; hostile-save tests; old saves must load byte-identical (golden fixtures). Phone checks (heat, fit-audit down to 320 px) for anything visual.
-8. Fit check + Security check lines on every report.
+8. Reusing an enemy on another map is allowed (Matt, 2026-11-01), but kill-count gates and Almanac unlocks that count it must be reviewed first: list every gate that depends on that enemy id, re-run the pace checks (gates-pace.mjs), and either raise the count, scope the gate to a named map, or give a changed-look/behaviour variant its own id.
+9. Fit check + Security check lines on every report.
 
 ## Standing rule: token conservation (set by Matt)
 Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.

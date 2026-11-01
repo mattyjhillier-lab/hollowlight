@@ -434,3 +434,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - DM8 tree budget: PRE-APPROVED to grow (Matt 2026-11-01); still re-run bands each time.
 
 - DESIGN INPUT for Chapter 2 build: chapter multiplier x1.1 per chapter (enemy HP+damage, rewards same factor), stacks with nights; tune by measurement.
+
+- CHAPTER 2 PLAN ADD: enemy-reuse gate audit (which Chapter 1 enemies reappear in Hushbell Hamlet, which gates count them) before the enemy chunk.
