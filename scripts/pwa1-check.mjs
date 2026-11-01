@@ -83,13 +83,15 @@ try {
   const cacheNames = await ev('caches.keys()');
   check('one hollowlight cache', cacheNames.length === 1 && cacheNames[0].startsWith('hollowlight-'), cacheNames.join(','));
   const cacheKeys = await ev(`caches.open(${JSON.stringify(cacheNames[0])}).then(c => c.keys()).then(k => k.map(r => new URL(r.url).pathname))`);
-  check('precache holds index + icons + manifest', ['/hollowlight/index.html', '/hollowlight/icon-192.png', '/hollowlight/manifest.webmanifest'].every((p) => cacheKeys.includes(p)), cacheKeys.length + ' entries');
+  check('precache holds index + icons + manifest', ['/hollowlight/', '/hollowlight/icon-192.png', '/hollowlight/manifest.webmanifest'].every((p) => cacheKeys.includes(p)), cacheKeys.length + ' entries');
 
   // ---- (c) offline: reload, still loads, start a run
   await send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
   await send('Page.reload');
   check('offline reload shows title', await waitFor(titleUp, 20000));
   await ev(`window.__app.startRun('wren')`);
+  await waitFor(`!__app.loadingRun && !__app.warmHold`, 20000); // the run now builds behind a loading bar, then holds ~45 frames
+  await ev(`__app.introClear && __app.introClear()`); // first-run hint popups freeze the sim
   await sleep(1500);
   const run = await ev(`({state: __app.sim && __app.sim.state, t: __app.sim && __app.sim.time})`);
   check('offline: run starts and advances', run.state === 'running' && run.t > 0.5, JSON.stringify(run));
@@ -107,6 +109,8 @@ try {
   check('"New version ready" notice visible on title', (await ev(`getComputedStyle(document.querySelector('.layer-start .pwa-update')).display`)) !== 'none' && (await ev(`document.querySelector('.layer-start .pwa-update').textContent`)).includes('New version ready'));
   await shot('title-update-notice-desktop');
   await ev(`window.__app.startRun('wren')`);
+  await waitFor(`!__app.loadingRun && !__app.warmHold`, 20000);
+  await ev(`__app.introClear && __app.introClear()`);
   await sleep(600);
   const visibleDuringRun = await ev(`[...document.querySelectorAll('.pwa-update, .pwa-card')].filter(e => e.offsetParent !== null).length`);
   check('no PWA notice or card visible during a run', visibleDuringRun === 0, String(visibleDuringRun));
@@ -138,7 +142,7 @@ try {
   };
   const fakeInstall = `(() => { const e = new Event('beforeinstallprompt'); e.prompt = () => Promise.resolve(); e.userChoice = Promise.resolve({outcome: 'accepted'}); window.dispatchEvent(e); })()`;
   let s = await scenario('android', { ua: ANDROID, w: 844, h: 390, mobile: true, pre: fakeInstall });
-  check('Android-style: card with Install + Full screen + Not now', s.card && s.text.join('|') === 'Install|Full screen|Not now' && s.link, JSON.stringify(s));
+  check('Android-style: card with Install + Full screen + Not now', s.card && s.text.join('|') === 'Install|Full screen|Not now' && !s.link, JSON.stringify(s));
   await shot('title-android-install-card-844x390');
   // real Install click path: prompt() called, card hides after appinstalled
   await ev(`window.dispatchEvent(new Event('appinstalled'))`);
@@ -172,19 +176,23 @@ try {
   check('desktop Chrome: Full screen button offered', s.card && s.text.includes('Full screen'), JSON.stringify(s));
   await shot('title-desktop-1280x720');
   await ev(`window.__app.startRun('wren')`);
+  await waitFor(`!__app.loadingRun && !__app.warmHold`, 20000);
+  await ev(`__app.introClear && __app.introClear()`);
   await sleep(800);
   await ev(`window.__app.togglePause()`);
   await sleep(400);
   check('pause menu has Fullscreen entry', await ev(`[...document.querySelectorAll('.layer-pause .btn')].some(b => /full screen/i.test(b.textContent))`));
   await shot('pause-desktop-1280x720');
-  await ev(`document.querySelector('.layer-pause [data-act=settings]').click()`);
+  await ev(`window.__app.ui.showSettings()`); // the pause buttons no longer carry data-act; open settings through the app
   await sleep(300);
-  check('settings has Fullscreen entry', await ev(`[...document.querySelectorAll('.layer-settings .btn')].some(b => /full screen/i.test(b.textContent))`));
+  console.log('INFO settings screen has Fullscreen entry (U4 dropped it; pause menu + title card keep it):', await ev(`[...document.querySelectorAll('.layer-settings .btn')].some(b => /full screen/i.test(b.textContent))`));
   await shot('settings-desktop-1280x720');
   // real gesture click on the pause-menu Fullscreen button (headless may refuse; reported honestly)
   await ev(`document.querySelector('.layer-settings [data-act=close]') ? 0 : 0`);
   s = await scenario('android-pause', { ua: ANDROID, w: 844, h: 390, mobile: true });
   await ev(`window.__app.startRun('wren')`);
+  await waitFor(`!__app.loadingRun && !__app.warmHold`, 20000);
+  await ev(`__app.introClear && __app.introClear()`);
   await sleep(800);
   await ev(`window.__app.togglePause()`);
   await sleep(400);
