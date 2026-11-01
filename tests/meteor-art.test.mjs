@@ -101,3 +101,32 @@ test('layer: Calm has no embers or sparks; hostile values (NaN, huge radii) do n
   assert.doesNotThrow(() => L.update(k.c));
   assert.equal(k.sparks.length, 0);
 });
+
+// ---- DM4 Wildfire art: children dim and light, a faint thread links parent to child, 6 live pools stay inside the 5-visual budget
+test('wildfire art: 6 live pools keep every visual in budget (6th is glow + ring only), children draw lighter than parents, Low stays one sprite per pool + a thread', () => {
+  const mkP = (i, gen, par) => ({ x: i * 40, y: 0, r: gen ? 24 : 36, r0: gen ? 24 : 36, life: 4, life0: 4, t: 0.5, dmg: 1, gen, kids: 0, par });
+  const p0 = mkP(0, 0, null), p1 = mkP(1, 0, null), c1 = mkP(2, 1, p0), c2 = mkP(3, 1, p1), g1 = mkP(4, 2, c1), p2 = mkP(5, 0, null);
+  const pools = [p0, p1, c1, c2, g1, p2], sim = simWith([], pools, 1);
+  const hi = new MeteorLayer(stub().scene, GL), kh = ctx(sim, 'high'); hi.update(kh.c); sim.time = 1.5; hi.update(kh.c);
+  assert.equal(hi.pools.size, 6);
+  const lite = [...hi.pools.values()].filter((r) => r.lite).length;
+  assert.equal(lite, 1, 'exactly the 6th live pool is the lite form');
+  assert.ok(hi.sprites < 6 * 14 + 8, 'high sprites ' + hi.sprites);
+  const lo = new MeteorLayer(stub().scene, GL), kl = ctx(sim, 'low'); lo.update(kl.c); sim.time = 2; lo.update(kl.c);
+  assert.equal(lo.sprites, 6 + 3, 'Low = one sprite per pool + one thread per child');
+  const cl = new MeteorLayer(stub().scene, GL), kc = ctx(sim, 'high', { calm: true }); cl.update(kc.c); sim.time = 2.5; cl.update(kc.c);
+  assert.ok(cl.sprites > 0);
+  assert.deepEqual(kh.cues.filter((c) => c === 'meteor_crackle').length > 0, true, 'a child lighting asks for the soft ember tick');
+});
+
+test('wildfire art: parentless / hostile child records do not throw; the thread vanishes with its parent', () => {
+  const L = new MeteorLayer(stub().scene, GL);
+  const parent = { x: 0, y: 0, r: 36, life: 4, life0: 4, t: 0.5, dmg: 1, gen: 0, par: null };
+  const kid = { x: 25, y: 0, r: 24, life: 3, life0: 3, t: 0.5, dmg: 1, gen: 1, par: parent };
+  const bad = { x: NaN, y: 0, r: 5, life: 3, gen: 7, par: { x: 1, y: 1 } };
+  const pools = [parent, kid, bad], sim = simWith([], pools, 1), k = ctx(sim, 'med');
+  assert.doesNotThrow(() => { L.update(k.c); sim.time = 1.8; L.update(k.c); });
+  const withThread = L.sprites;
+  pools.shift(); sim.time = 1.9; L.update(k.c); // the parent left the sim list: its record ghosts; the child must not draw a thread to a ghost
+  assert.ok(L.sprites <= withThread + 3);
+});

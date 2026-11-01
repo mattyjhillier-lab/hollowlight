@@ -86,7 +86,7 @@
     "stats": {
       "count":    { "name": "Fireballs", "base": 1,   "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})" },
       "power":    { "name": "Impact",    "base": 14,  "perRank": 5.6, "fmt": "int", "hint": "The crash hits harder ({old} → {new}), and the fire it leaves burns harder" },
-      "area":     { "name": "Blaze",     "base": 34,  "perRank": 5,   "fmt": "int", "hint": "The burst and the burning ground are {old} → {new} wide" },
+      "area":     { "name": "Blaze",     "base": 34,  "perRank": 5,   "fmt": "int", "hint": "The crash and the burning ground are {old} → {new} wide" },
       "duration": { "name": "Embers",    "base": 2.5, "perRank": 0.5, "fmt": "sec", "hint": "The ground burns {old} → {new}" }
     }
   }

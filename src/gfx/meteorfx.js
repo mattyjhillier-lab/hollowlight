@@ -8,7 +8,10 @@
 // Flame-visual budget per run = 8 pool visuals, 3 reserved for Lucinda's ability, so this weapon (and its evolutions) may show at most 5.
 import { METEOR } from '../sim/weapons.js';
 
-export const FLAME_BUDGET = 8, ABILITY_RESERVE = 3, WEAPON_VISUALS = FLAME_BUDGET - ABILITY_RESERVE; // = 5 = the sim's live-pool cap
+export const FLAME_BUDGET = 8, ABILITY_RESERVE = 3, WEAPON_VISUALS = FLAME_BUDGET - ABILITY_RESERVE; // = 5 = the base sim's live-pool cap
+// DM4 Wildfire: up to 6 live pools (WILDFIRE_HARD.maxLive). Only WEAPON_VISUALS (5) are drawn in full; children are always the lighter form
+// (fewer tongues, no embers, dimmer 0.8 / 0.65 per generation) and a 6th live pool is glow + ring only, so the flame budget holds.
+export const PM_MAX = 6, KID_DIM = [1, 0.8, 0.65], KID_TONGUES = [99, 2, 1];
 export const COL = { core: 0xfff1c2, amber: 0xffb35c, rose: 0xe07a6b };
 export const IMPACT_T = 0.38, LINGER_T = 1.0, CAP_FADE_T = 0.3, FADE_IN_T = 0.18;
 export const KEY = 'mt_atlas', K = 2; // texels per world unit in the atlas
@@ -211,12 +214,14 @@ export class MeteorLayer {
     const pm = this.pools;
     for (const q of w.rt.pools) {
       let r = pm.get(q);
-      if (!r) { r = { born: T, gone: -1, cap: false, x: q.x, y: q.y, r: q.r, rem: q.life, s: poolSeed(q.x, q.y), fr }; pm.set(q, r); }
+      if (!r) { r = { born: T, gone: -1, cap: false, x: q.x, y: q.y, r: q.r, rem: q.life, s: poolSeed(q.x, q.y), fr, gen: q.gen > 0 ? Math.min(2, q.gen | 0) : 0, par: q.par || null }; pm.set(q, r); if (r.gen && q.par && inV(q.x, q.y)) c.cue('meteor_crackle'); } // a child lights: the soft ember tick
       r.fr = fr; r.rem = q.life; r.r = q.r;
     }
     if (pm.size) {
       for (const [q, r] of pm) if (r.fr !== fr && r.gone < 0) { r.gone = T; r.cap = r.rem > 0.15; } // left the sim list: natural end vs dropped by the cap
-      while (pm.size > WEAPON_VISUALS) { // shared flame budget: oldest ghost goes first
+      let liveN = 0; for (const r of pm.values()) if (r.gone < 0) liveN++;
+      const lim = Math.min(PM_MAX, Math.max(WEAPON_VISUALS, liveN)); // 5 visuals (6 only while 6 Wildfire pools are really alive; ghosts go first)
+      while (pm.size > lim) { // shared flame budget: oldest ghost goes first
         let ok = null, ov = Infinity;
         for (const [q, r] of pm) { const v = (r.gone >= 0 ? 0 : 1e6) + r.born; if (v < ov) { ov = v; ok = q; } }
         pm.delete(ok);
@@ -225,30 +230,43 @@ export class MeteorLayer {
       let nv = 0, newest = null, nb = -1;
       for (const [q, r] of pm) { if (r.gone < 0 || !r.cap) { nv++; } if (r.gone < 0 && r.born >= nb) { nb = r.born; newest = q; } }
       const ov = 1 / (1 + 0.8 * Math.max(0, nv - 1)); // overlap damping: 5 stacked pools share ~0.4 of a single pool's add-blend light
+      let full = 0; // parents first, then oldest: the first WEAPON_VISUALS live pools get the full form
+      for (const [q, r] of pm) r.lite = true;
+      for (let pass = 0; pass < 2; pass++) for (const [q, r] of pm) if (r.gone < 0 && (pass === 0) === (r.gen === 0) && full < WEAPON_VISUALS) { r.lite = false; full++; }
       for (const [q, r] of pm) {
         poolEnv(r.rem, T, r.born, r.gone, r.cap, env);
         if (r.gone >= 0 && (T - r.gone) > (r.cap ? CAP_FADE_T : LINGER_T)) { pm.delete(q); continue; }
-        const rad = r.r, px = r.x, py = r.y;
+        const rad = r.r, px = r.x, py = r.y, kd = KID_DIM[r.gen] || 0.65;
         if ((px < c.vx0 - rad || px > c.vx1 + rad || py < c.vy0 - rad || py > c.vy1 + rad)) continue;
+        if (r.par) { // the creeping thread: one faint ember streak from the parent's heart to the child's, while both burn (1 sprite; High adds two drifting embers)
+          const pr = pm.get(r.par);
+          if (pr && pr.gone < 0 && r.gone < 0) {
+            const tx = pr.x, ty = pr.y, len = Math.hypot(px - tx, py - ty) || 1, ang = Math.atan2(py - ty, px - tx), ta = 0.5 * env.flame * env.aIn * Math.min(1, (T - r.born) / 0.6);
+            if (ta > 0.01) {
+              fx.put('ember', (tx + px) / 2, (ty + py) / 2, dF - 15, len / 11, 0.42, ta, ang);
+              if (!caps.flat && caps.embers && !caps.calm) for (let j = 0; j < 2; j++) { const ph = frac(T * 0.7 + r.s * 3 + j * 0.5); fx.put('ember', tx + (px - tx) * ph, ty + (py - ty) * ph, dF - 14, 0.55, 0.55, Math.sin(Math.PI * ph) * 0.8 * env.flame * env.aIn); }
+            }
+          }
+        }
         if (caps.flat) { // ONE baked flat sprite
-          const a = env.aIn * (r.gone < 0 ? 0.85 * env.glow + 0.15 : r.cap ? env.tint : 0.15 * env.tint);
+          const a = kd * env.aIn * (r.gone < 0 ? 0.85 * env.glow + 0.15 : r.cap ? env.tint : 0.15 * env.tint);
           this.sNorm.put('poolLow', px, py, dG + 3, rad * 2.2 / 48, rad * 2.2 / 48, Math.min(1, a));
           continue;
         }
         const pulse = caps.flicker ? 0.06 * Math.sin(T * 3.1 + r.s * 6.2832) : 0;
-        this.sTint.put('bloom', px, py, dG + 2, rad * 1.15 / 16, rad * 1.15 / 16, 0.42 * env.aIn * env.tint * (0.45 + 0.55 * ov));
-        if (env.glow > 0.01) this.sGlow.put('glow', px, py, dG + 3, rad * 1.25 / 16, rad * 1.25 / 16, Math.max(0, (0.17 + pulse * 0.5) * env.glow * env.aIn * ov), 0, 0xffc880);
-        const ra = (q === newest ? 0.4 : 0.13) * env.aIn * (0.3 + 0.7 * env.glow) * (r.gone >= 0 ? env.tint : 1); // the newest pool keeps a clear damage edge, older ones a faint one
+        this.sTint.put('bloom', px, py, dG + 2, rad * 1.15 / 16, rad * 1.15 / 16, 0.42 * kd * env.aIn * env.tint * (0.45 + 0.55 * ov));
+        if (env.glow > 0.01) this.sGlow.put('glow', px, py, dG + 3, rad * 1.25 / 16, rad * 1.25 / 16, Math.max(0, (0.17 + pulse * 0.5) * kd * env.glow * env.aIn * ov), 0, 0xffc880);
+        const ra = (q === newest ? 0.4 : 0.13) /* the newest pool keeps a clear damage edge, older ones a faint one */ * kd * env.aIn * (0.3 + 0.7 * env.glow) * (r.gone >= 0 ? env.tint : 1);
         if (ra > 0.01) this.sNorm.put('ring', px, py, dG + 4, rad / 15.2, rad / 15.2, ra);
-        if (env.flame > 0.02) {
-          const nT = Math.min(caps.tongueMax, caps.tongues + Math.max(0, Math.floor((rad - 35) / 15))), base = (rad / 35 < 0.8 ? 0.8 : rad / 35 > 1.2 ? 1.2 : rad / 35) * 0.62;
+        if (env.flame > 0.02 && !r.lite) {
+          const nT = Math.min(caps.tongueMax, caps.tongues + Math.max(0, Math.floor((rad - 35) / 15)), KID_TONGUES[r.gen] || 1), base = (rad / 35 < 0.8 ? 0.8 : rad / 35 > 1.2 ? 1.2 : rad / 35) * 0.62;
           for (let i = 0; i < nT; i++) {
             const th = r.s * 6.2832 + i * 2.399, rho = rad * (0.2 + 0.5 * frac(i * 0.618 + r.s)), tx = px + Math.cos(th) * rho, ty = py + Math.sin(th) * rho * 0.9;
             const fi = caps.flicker ? ((Math.floor(T * 7 + i * 1.7 + r.s * 6)) % 6 + 6) % 6 : (i + Math.floor(r.s * 6)) % 6;
             const wob = caps.flicker ? 1 + 0.12 * Math.sin(T * 9 + i * 2 + r.s * 20) : 1, s = base * env.flame * wob;
-            this.sTongue.put('tongue' + fi, tx, ty, dG + 7, s, s, 0.75 * env.aIn * env.flame);
+            this.sTongue.put('tongue' + fi, tx, ty, dG + 7, s, s, 0.75 * kd * env.aIn * env.flame);
           }
-          for (let j = 0; j < caps.embers; j++) {
+          if (!r.gen) for (let j = 0; j < caps.embers; j++) {
             const ph = frac(T * 0.6 + r.s * 3 + j / 3), ex = px + (frac(r.s * 7 + j * 0.37) - 0.5) * rad * 1.2, ey = py + (frac(r.s * 5 + j * 0.21) - 0.5) * rad * 0.8 - ph * 22;
             this.sFx.put('ember', ex, ey, dF - 14, 0.7 * (1 - 0.4 * ph), 0.7 * (1 - 0.4 * ph), Math.sin(Math.PI * ph) * 0.85 * env.flame * env.aIn);
           }

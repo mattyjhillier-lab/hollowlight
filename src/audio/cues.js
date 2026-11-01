@@ -24,7 +24,7 @@ export const MORE_CUES = {
   site_lamp: { cap: 1, gap: 0.2, pri: 1 }, road_note: { cap: 1, gap: 0.2, pri: 0 }, site_done: { cap: 1, gap: 1, pri: 0 }, knot_wake: { cap: 1, gap: 1, pri: 0 }, knot_pulse: { cap: 1, gap: 0.5, pri: 1 }, // map events v1
   tree_light: { cap: 1, gap: 0.2, pri: 0 }, bond_level: { cap: 1, gap: 1, pri: 0 }, keepsake: { cap: 1, gap: 1, pri: 0 }, tree_whole: { cap: 1, gap: 1, pri: 0 }, ui_step: { cap: 1, gap: 0.15, pri: 1 },
 };
-export const EVO_IDS = ['phantom_stampede', 'howling_legion', 'dire_alpha', 'murder_storm', 'dive_bombers', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages', 'thunder_judgment', 'static_storm', 'storm_tether', 'vesper_tide', 'sanctum_halo', 'judgement_wheel'];
+export const EVO_IDS = ['phantom_stampede', 'howling_legion', 'dire_alpha', 'murder_storm', 'dive_bombers', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages', 'thunder_judgment', 'static_storm', 'storm_tether', 'vesper_tide', 'sanctum_halo', 'judgement_wheel', 'wildfire'];
 for (const id of EVO_IDS) MORE_CUES['evo_' + id] = { cap: 1, gap: 1, pri: 0 };
 
 // sim event type -> cue (app.js hands every sim event to AudioEngine.event; render/audio only)
@@ -58,6 +58,7 @@ function evoVerb(e, id, t, v) {
     case 'vesper_tide': e.noise(t, 'lowpass', 400, 1, 0.8, 1.0, 0.12 * v, 1200, true); e.tone(t, 'sine', e.hz(12), 0.8, 1.0, 0.05 * v, 0, true); return 1.9; // slow breathing swell
     case 'sanctum_halo': for (const n of [0, 7, 12, 16]) e.tone(t, 'triangle', e.hz(n + 12), 0.5, 1.6, 0.035 * v, 0, true, null, rnd(-8, 8)); return 2.2; // soft choir-like pad
     case 'judgement_wheel': e.noise(t, 'lowpass', 600, 1, 0.25, 0.1, 0.18 * v, 3000); e.tone(t + 0.35, 'sine', 100, 0.003, 0.3, 0.35 * v, 50); for (let i = 0; i < 5; i++) e.tone(t + 0.5 + i * 0.08, 'sine', e.hz(31 - i * 2), 0.003, 0.15, 0.04 * v, 0, true); return 1.0; // whoosh-bang, sparks tinkle back
+    case 'wildfire': e.noise(t, 'bandpass', 1800, 2, 0.05, 0.5, 0.05 * v, 3600); for (let i = 0; i < 4; i++) e.tone(t + 0.2 + i * 0.17, 'triangle', e.hz(7 + i * 5), 0.01, 0.35, 0.03 * v, 0, true); return 1.2; // a warm crackle that walks upward: fire passing from patch to patch
     default: return -1;
   }
 }

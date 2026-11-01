@@ -18,7 +18,7 @@ test('E7 append-only: the pre-E7 keys keep their bits, new keys come after, all 
   assert.deepEqual(ENTRY_KEYS.slice(0, 11), ['f:wolf', 'f:crow', 'f:root_crawler', 'f:stoat_piper', 'f:puffback_toad', 'f:bramble_hart', 'f:branch_mane', 'f:elder_treant', 'f:treant_pod', 'f:treant_sapling', 'f:marks']);
   const PIN = { 'e:phantom_stampede': 23, 'h:wren': 38, 'h:elias': 39, 'n:cursed_forest:normal': 40, 'l:1': 43, 'c:ghost_wolves': 47, 'c:foes': 52, 'c:spirits': 53, 'c:nights': 54, 'c:book': 55 };
   for (const [k, i] of Object.entries(PIN)) assert.equal(ENTRY_KEYS.indexOf(k), i, k);
-  assert.deepEqual(ENTRY_KEYS.slice(56), ['s:lamp', 's:road', 's:knot', 'sp:lamp:tells', 'sp:road:tells', 'sp:knot:tells', 'c:places', 'c:dragonfire_meteor']);
+  assert.deepEqual(ENTRY_KEYS.slice(56), ['s:lamp', 's:road', 's:knot', 'sp:lamp:tells', 'sp:road:tells', 'sp:knot:tells', 'c:places', 'c:dragonfire_meteor', 'e:wildfire']); // DM4 appends e:wildfire (evolutions.json needs a codex key)
   assert.ok(ENTRY_KEYS.length <= MAX_BITS_HEX * 4);
   assert.equal(new Set(ENTRY_KEYS).size, ENTRY_KEYS.length);
   const old = new Set(['f:wolf', 'e:dire_alpha', 'c:book', 'l:4', 'c:nights']);

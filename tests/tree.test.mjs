@@ -598,7 +598,7 @@ test('G1e: nodes behind an evolution gate show ??? until that gate has progress 
 
 test('G1e: no non-gate node text names a locked weapon or evolution (data-driven over tree.json)', () => {
   const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate && !w.unreleased); // staged weapons (Ember Breath) have no tree node yet
-  const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
+  const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate && !e.unreleased);
   const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
   assert.ok(lockedW.length === 5 && lockedE.length === 13);
   for (const id of def.list) {

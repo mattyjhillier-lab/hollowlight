@@ -939,7 +939,17 @@ const holyOrbit = {
 // Pools tick every 0.5 s at 0.3 x Impact, bosses at 0.5 x of that; one tick per target per 0.5 s across ALL pools; HARD cap 5 live pools
 // (the oldest is dropped); at most 24 targets per pool tick. Boss rule 1.4 x comes from weapons.json "boss" (Sim.hurt). No RNG is drawn.
 export const METEOR = { arc: 0.45, minD: 50, maxD: 230, apart: 1.4, poolK: 0.9, tick: 0.5, tickK: 0.3, bossTick: 0.5, maxPools: 5, maxTargets: 24, maxCount: 8, cands: 48, burnTime: 2, burnRate: 0.2, first: 0.8, cd: 2.6 };
+// DM4 WILDFIRE (verb SPREAD, recipe area + duration): while a living foe stands in a Wildfire pool, every seedEvery (1.2 s) that pool seeds ONE child
+// pool 20-30 px toward the nearest UN-burning foe within reach (a foe inside the fire is already burning, so the fire creeps to the edge, never
+// teleports). Generations: meteor pool = 0, child 1, grandchild 2, none after; a pool seeds at most 2 children in its life; at most 3 seeds/s across
+// all pools; at most 6 LIVE pools in total (parents and children together, never per meteor). At the cap seeding is blocked (nothing is replaced); a
+// landing at the cap drops the oldest CHILD first (so a parent is never lost to a child), else the oldest pool. Child radius 0.8 x its parent's
+// starting radius, life 0.7 x its parent's starting life; every Wildfire pool swells 1.0 -> 1.5 x over its life (spec 1.25) and ticks 0.8 x Impact (spec 0.45, base 0.3); both retuned in DM4 to land the 1.8-2.3x home band.
+// Burn stays one instance per foe (strongest wins) and the 0.5 s per-target lockout is shared with every pool, so nothing stacks. No RNG is drawn;
+// pools are visited in list order. The tune block in evolutions.json is clamped by these HARD ceilings, so data can never lift a cap.
+export const WILDFIRE_HARD = Object.freeze({ maxLive: 6, maxGen: 2, maxKids: 2, seedRate: 3 });
 const okPt = (e) => e && Number.isFinite(e.x) && Number.isFinite(e.y);
+const wfNum = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
 // The cluster centre (mean of the foes inside r of the seed foe) with the most foes; ties go to the one nearest the hero. Returns {x, y, n} or null.
 function meteorAim(sim, p, r, taken, nTaken) {
   const E = sim.enemies, r2 = r * r;
@@ -975,10 +985,43 @@ function meteorLand(sim, w, f, dmg) {
     if (dealt > 0) sim.burn(e, dmg, METEOR.burnTime, METEOR.burnRate);
     w.rt.lock.set(e, sim.time); // the burst counts as this foe's pool tick, so a landing never double-dips
   }
-  const pools = w.rt.pools;
-  if (pools.length >= METEOR.maxPools) pools.shift(); // HARD cap: the oldest burns out
-  pools.push({ x: f.x, y: f.y, r: r * METEOR.poolK, life: Math.max(0.1, f.life), t: METEOR.tick, dmg: dmg * METEOR.tickK });
+  const pools = w.rt.pools, wf = w.evo === 'wildfire';
+  const cap = wf ? wfNum(tune(sim, w, 'maxLive', WILDFIRE_HARD.maxLive), 1, WILDFIRE_HARD.maxLive, WILDFIRE_HARD.maxLive) : METEOR.maxPools;
+  while (pools.length >= cap) { // HARD cap: the oldest burns out (Wildfire: a child goes before any parent)
+    let k = 0;
+    if (wf) { const c = pools.findIndex((q) => q.gen > 0); if (c >= 0) k = c; }
+    pools.splice(k, 1);
+  }
+  const r0 = r * METEOR.poolK, life = Math.max(0.1, f.life);
+  pools.push({ x: f.x, y: f.y, r: r0, r0, life, life0: life, t: METEOR.tick, dmg: dmg * (wf ? wfNum(tune(sim, w, 'tickK', 0.8), 0.05, 1.5, 0.8) : METEOR.tickK), gen: 0, kids: 0, sd: wf ? wfNum(tune(sim, w, 'seedEvery', 1.2), 0.3, 10, 1.2) : 0, occ: false, par: null });
   sim.pushEvent('ember');
+}
+function wildfireSeed(sim, w, q, pools) {
+  const rt = w.rt, T = sim.time;
+  const retry = wfNum(tune(sim, w, 'retry', 0.25), 0.05, 2, 0.25);
+  const every = wfNum(tune(sim, w, 'seedEvery', 1.2), 0.3, 10, 1.2);
+  const cap = wfNum(tune(sim, w, 'maxLive', 6), 1, WILDFIRE_HARD.maxLive, WILDFIRE_HARD.maxLive);
+  const rate = wfNum(tune(sim, w, 'seedRate', 3), 1, WILDFIRE_HARD.seedRate, WILDFIRE_HARD.seedRate);
+  const st = rt.seedT || (rt.seedT = []);
+  while (st.length && T - st[0] >= 1) st.shift();
+  if (pools.length >= cap || st.length >= rate) { q.sd = retry; return false; } // blocked, never replaced; ask again shortly
+  const lo = wfNum(tune(sim, w, 'reachMin', 20), 0, 60, 20), hi = Math.max(lo, wfNum(tune(sim, w, 'reachMax', 30), lo, 60, 30));
+  let best = null, bd = Infinity;
+  const E = sim.enemies;
+  for (let m = 0; m < E.length; m++) {
+    const e = E[m];
+    if (e.dead || !okPt(e) || e.burnT > 0) continue; // only a foe not yet burning draws the fire on
+    const d = Math.hypot(e.x - q.x, e.y - q.y);
+    if (d > q.r + hi + (Number.isFinite(e.r) ? e.r : 0) || d >= bd) continue;
+    bd = d; best = e;
+  }
+  if (!best) { q.sd = retry; return false; }
+  const dx = best.x - q.x, dy = best.y - q.y, d = Math.hypot(dx, dy), step = Math.min(hi, Math.max(lo, d));
+  const ux = d > 1e-6 ? dx / d : 1, uy = d > 1e-6 ? dy / d : 0;
+  const cr = q.r0 * wfNum(tune(sim, w, 'childR', 0.8), 0.2, 1, 0.8), cl = Math.max(0.1, q.life0 * wfNum(tune(sim, w, 'childLife', 0.7), 0.2, 1, 0.7));
+  pools.push({ x: q.x + ux * step, y: q.y + uy * step, r: cr, r0: cr, life: cl, life0: cl, t: METEOR.tick, dmg: q.dmg, gen: q.gen + 1, kids: 0, sd: every, occ: false, par: q });
+  st.push(T); q.kids++; q.sd = every;
+  return true;
 }
 const dragonfireMeteor = {
   update(sim, w, dt) {
@@ -1000,25 +1043,33 @@ const dragonfireMeteor = {
     }
     // pools: tick, age, drop
     const pools = rt.pools, lock = rt.lock;
+    const wf = w.evo === 'wildfire';
+    const grow = wf ? wfNum(tune(sim, w, 'grow', 0.5), 0, 1, 0.5) : 0;
     for (let i = pools.length - 1; i >= 0; i--) {
       const q = pools[i];
       q.life -= dt; q.t -= dt;
+      if (wf) q.r = q.r0 * (1 + grow * (1 - Math.min(1, Math.max(0, q.life / q.life0)))); // swells 1.0 -> 1.25 over its life
       if (q.t <= 0) {
         q.t += METEOR.tick;
         let hit = 0;
+        q.occ = false;
         const E = sim.enemies;
         for (let m = 0; m < E.length && hit < METEOR.maxTargets; m++) {
           const e = E[m];
           if (e.dead || !okPt(e)) continue;
           const dx = e.x - q.x, dy = e.y - q.y, rr = q.r + (Number.isFinite(e.r) ? e.r : 0);
           if (dx * dx + dy * dy > rr * rr) continue;
-          hit++;
+          hit++; q.occ = true;
           const last = lock.get(e);
           if (last !== undefined && sim.time - last < METEOR.tick - 1e-6) continue; // one tick per foe per 0.5 s across every pool
           lock.set(e, sim.time);
           const h = q.dmg * (e.boss ? METEOR.bossTick : 1);
           if (sim.hurt(e, h) > 0) sim.burn(e, h, METEOR.burnTime, METEOR.burnRate);
         }
+      }
+      if (wf && q.life > 0 && q.gen < wfNum(tune(sim, w, 'maxGen', 2), 0, WILDFIRE_HARD.maxGen, WILDFIRE_HARD.maxGen) && q.kids < wfNum(tune(sim, w, 'maxKids', 2), 0, WILDFIRE_HARD.maxKids, WILDFIRE_HARD.maxKids)) {
+        if (q.occ) q.sd -= dt;
+        if (q.occ && q.sd <= 0) wildfireSeed(sim, w, q, pools);
       }
       if (q.life <= 0) pools.splice(i, 1);
     }
