@@ -412,3 +412,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 
 - NOW: PHONE HEAT build (60 fps cap on phones + Battery saver setting), render/UI only, on dev. Need Matt phone model + refresh rate to tune (asked).
 - BUILT 2026-11-01 (dev): PHONE HEAT. Phones capped at 60 fps (limit 62 so 60 Hz stays 60), Settings > Picture > Battery saver (phone only): 30 fps (limit 32), canvas dpr cap 1.25, Low quality forced; live toggle verified (limit 62<->32, canvas 750x1624<->469x1015). Low-quality switch only unit-tested (page hidden in preview). Matt to test on real phone: 10 min with saver on, still warm? src/sim+data 0 diff.
+- BUILT 2026-11-01 (dev, NOT on main): MINIMAP E6 Lantern Pool (wip/minimap 59b90d1). Setting Mini map Auto/On/Off. 1309 tests. Open: Matt looks on dev link (glow unseen headless), menu-mode fit-audit re-run, boss ring unseen, real-phone perf. Next: Places tab (touches save schema, own security pass).
