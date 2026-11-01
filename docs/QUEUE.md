@@ -401,3 +401,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - LAUNCHED 2026-11-01: dev merged to main (PRs 9 + 10). Live: wispwick.pages.dev. Old GitHub address = moved page. Tests 1299, audit 0. Tree snapshot v4 (160 ids) recorded. OPEN: old hollowlight Cloudflare project (Matt to delete/repoint); tell testers saves start fresh; Dependabot alerts should close; exploit + feel pass finishing on wip/exploit-pass (agent a5971e2acf4540ff5) -> first patch; Tempest feel parked; Matt checks first minute on live.
 
 - NOW: exploit pass CONFIRM run (realistic builds, proper kite bot) on wip/exploit-pass; then tune only confirmed flags (Matt decides). Icon fix ff5462a is on dev, NOT on main yet: waiting Matt yes (or batch with first patch).
+
+- DATA POINT (Matt, 2026-11-01): cleared a full run on his FIRST go with Spirit Bolts (fresh target win 15-30%; one run = anecdote, add to exploit confirm run; asked hero/night/evolution/lowest HP/feel).
