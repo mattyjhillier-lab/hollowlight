@@ -752,62 +752,6 @@ export class RunScene extends Phaser.Scene {
     } catch (err) { this.bloom = null; }
   }
 
-  // EW2 Ember Breath (render only; reads the weapon's rt.br, never writes the sim). A 70 degree fan of teardrop candle-flames (one soft gold -> ember rose ramp)
-  // blooms outward over the 0.6 s breath and fades; a faint warm bloom lingers where it passed (colour returns, nothing scorches, no smoke).
-  // Low: one flat cone, no bloom. Calm motion: no flicker, no pulse. Cost: at most 6 flames x 2 small polygons + 3 discs, only while a breath is live.
-  drawEmberBreath(g, fx, sim, p, lm) {
-    const w = sim.weapons.find((x) => x.id === 'ember_breath');
-    if (!w) { this.emb = null; return; }
-    const br = w.rt.br;
-    if (br && (!this.emb || this.emb.br !== br)) this.emb = { br, t0: sim.time, aim: br.aim, reach: br.reach };
-    const E = this.emb;
-    if (!E) return;
-    const SPAN = 0.6, FADE = 0.35, age = sim.time - E.t0;
-    if (age < 0 || age > SPAN + FADE) { if (age > SPAN + FADE) this.emb = null; return; }
-    const tier = this.quality.tier, calm = this.reducedMotion(), low = tier === 'low';
-    const ax = Math.cos(E.aim), ay = Math.sin(E.aim), half = Math.PI * 35 / 180;
-    const k = Math.min(1, age / SPAN), fade = age <= SPAN ? 1 : 1 - (age - SPAN) / FADE;
-    const R = E.reach, ox = p.x, oy = p.y - 4;
-    const wedge = (r, a0, a1, step) => { const pts = [{ x: ox, y: oy }]; for (let a = a0; a <= a1 + 1e-6; a += step) pts.push({ x: ox + Math.cos(E.aim + a) * r, y: oy + Math.sin(E.aim + a) * r }); return pts; };
-    if (low) { // flat simple cone: one warm wedge that fades, nothing else
-      fx.fillStyle(0xef8a5a, 0.16 * fade * (1 - 0.4 * k)).fillPoints(wedge(R * (0.55 + 0.45 * k), -half, half, half / 2), true);
-      return;
-    }
-    const n = tier === 'med' ? 5 : 7;
-    // ground bloom: three soft discs along the cone's middle, rising then easing out (colour returning, warm cream-gold, no dark rim)
-    for (let i = 0; i < 3; i++) {
-      const d = R * (0.35 + 0.28 * i), r = 9 + 5 * i, a = Math.min(1, age / 0.25) * Math.max(0, 1 - Math.max(0, age - SPAN) / (FADE + 0.2));
-      g.fillStyle(0xffd98a, 0.1 * a).fillCircle(ox + ax * d, oy + ay * d + 2, r * 1.5);
-    }
-    g.fillStyle(0xffb35c, 0.12 * fade).fillPoints(wedge(R * (0.5 + 0.5 * Math.min(1, k * 1.4)), -half, half, half / 3), true);
-    const tick = Math.floor(age / (SPAN / 4)); // 4 ticks: each gives the fan a small swell
-    const ph = (age % (SPAN / 4)) / (SPAN / 4);
-    const ghosts = tier === 'med' ? [0] : [0, 0.14, 0.28]; // each flame drags two fading echoes behind it, so the fan reads as streaks of fire, not dots
-    for (let i = 0; i < n; i++) {
-      const lane = (i / (n - 1) - 0.5) * 2; // -1..1 across the cone
-      const delay = (i % 3) * 0.05, f0 = (age - delay) / (SPAN * 0.85);
-      const ang = E.aim + lane * half * 0.82;
-      for (const gh of ghosts) {
-        const f = Math.max(0, Math.min(1, f0 - gh));
-        if (f <= 0) continue;
-        const out = 1 - (1 - f) * (1 - f), dist = R * (0.18 + 0.8 * out * (1 - 0.12 * Math.abs(lane)));
-        const flick = calm ? 0 : Math.sin(sim.time * 38 + i * 2.1 - gh * 9) * 0.7;
-        const fx0 = ox + Math.cos(ang) * dist + flick * -ay, fy0 = oy + Math.sin(ang) * dist + flick * ax;
-        const swell = calm ? 1 : 1 + 0.12 * Math.sin(Math.PI * ph) * (tick < 4 ? 1 : 0);
-        const gs = gh === 0 ? 1 : gh < 0.2 ? 0.75 : 0.5;
-        const size = (4 + 5.5 * Math.sin(Math.PI * Math.min(1, f * 0.95))) * swell * gs * (R / 80 > 1.4 ? 1.15 : 1);
-        const a = Math.min(1, f * 5) * fade * (1 - 0.3 * f) * (gh === 0 ? 1 : gh < 0.2 ? 0.5 : 0.28);
-        const L = size * 2.1;
-        for (const [sc, col, al] of gh === 0 ? [[1, 0xef8a5a, 0.6], [0.55, 0xffd98a, 0.95]] : [[1, 0xef8a5a, 0.6]]) {
-          const pts = [{ x: fx0 + Math.cos(ang) * L * sc, y: fy0 + Math.sin(ang) * L * sc }];
-          for (let t = 60; t <= 300; t += 24) { const r = (t * Math.PI) / 180, u = Math.cos(r) * size * sc, v = Math.sin(r) * size * sc; pts.push({ x: fx0 + Math.cos(ang) * u - Math.sin(ang) * v, y: fy0 + Math.sin(ang) * u + Math.cos(ang) * v }); }
-          fx.fillStyle(col, al * a).fillPoints(pts, true);
-        }
-      }
-    }
-    if (lm) lm.add(ox + ax * R * 0.5, oy + ay * R * 0.5, R * 0.7, 0xffb35c, 0.45 * fade * Math.min(1, age / 0.15));
-  }
-
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
 
   // EXTRAS v1: what this run wears (resolveCosm view or null). Light colours only: silhouettes, sizes, the pool's brightness and every hit
@@ -1421,7 +1365,7 @@ export class RunScene extends Phaser.Scene {
     let nd = 0, top1 = 0, top2 = 0;
     for (let i = 0; i < nh; i++) { const h = sim.hitBuf[i]; if (h.kill) continue; nd++; if (h.a > top1) { top2 = top1; top1 = h.a; } else if (h.a > top2) top2 = h.a; }
     const aoe = nd > 5, aoeMin = top2;
-    const auH = this.auHits || (this.auHits = { ghost_wolves: 0, raven_flock: 0, spirit_bolts: 0, chain_lightning: 0, holy_orbit: 0, ember_breath: 0 }); // AU1: on-screen hits per weapon this frame (audio only)
+    const auH = this.auHits || (this.auHits = { ghost_wolves: 0, raven_flock: 0, spirit_bolts: 0, chain_lightning: 0, holy_orbit: 0, dragonfire_meteor: 0 }); // AU1: on-screen hits per weapon this frame (audio only)
     for (const k in auH) auH[k] = 0;
     for (let i = 0; i < nh; i++) {
       const h = sim.hitBuf[i];
@@ -1465,7 +1409,6 @@ export class RunScene extends Phaser.Scene {
       g.lineStyle(1, c, 0.6 * a).strokeCircle(z.x, z.y, z.r);
       if (lit) lm.add(z.x, z.y, z.r, c, 0.55 * a);
     }
-    this.drawEmberBreath(g, fx, sim, p, lit ? lm : null);
     // W5 Sanctum Halo: faint ember glow on the burning ground inside the candle ring, thin gold rim on the ring only (never on enemies); still, no flicker
     const ow = sim.weapons.find((w) => w.id === 'holy_orbit'), oCaps = ORBIT_CAPS[this.quality.tier] || ORBIT_CAPS.med;
     if (ow && this.sumAtlas) bakeOrbitArt(this.sumAtlas, !!ow.evo); // S4: lazy, idempotent (fast path once baked)
@@ -1979,7 +1922,6 @@ export class RunScene extends Phaser.Scene {
     for (const f of sim.fx) {
       fi++;
       if (probe.on) probe.first('fx:' + f.kind + (f.pillar ? ':pillar' : '') + (f.field ? ':field' : ''));
-      if (f.kind === 'ring' && f.color === '#ffb35c') continue; // Ember Breath's sim-side placeholder rings: the real look is drawEmberBreath (reads the weapon's breath, render only)
       if (f.kind === 'judgetell' || f.kind === 'judgeflash') { // W11b Thunder Judgment: tell = a faint cyan radius ring (all tiers) + sky darkening (Med/High, not in reduced motion)
         if (f.kind === 'judgetell') {
           const k = 1 - f.ttl / f.life;
