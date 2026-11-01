@@ -1,0 +1,327 @@
+{
+ "kind": "cluster",
+ "weapon": "holy_orbit",
+ "prefix": "or",
+ "emblem": "orbit",
+ "slot": "sky5",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "heart": "gt_holy_orbit",
+ "starterEvo": "sanctum_halo",
+ "sockets": {
+  "a": {
+   "evo": "sanctum_halo",
+   "gate": null
+  },
+  "b": {
+   "evo": "judgement_wheel",
+   "gate": "gt_judgement_wheel"
+  },
+  "c": {
+   "evo": "vesper_tide",
+   "gate": "gt_vesper_tide"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_holy_orbit",
+   "idx": 13,
+   "kind": "heart",
+   "name": "Holy Orbit",
+   "desc": "Unlocks Holy Orbit: you can start a run with it, and it can appear in your level-up cards.",
+   "branch": "magic",
+   "cost": {
+    "gold": 150
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "holy_orbit"
+    }
+   ],
+   "unlock": {
+    "t": "runs",
+    "n": 2
+   }
+  },
+  {
+   "id": "gt_judgement_wheel",
+   "idx": 0,
+   "kind": "socket",
+   "name": "Judgement Wheel",
+   "desc": "Unlocks the Judgement Wheel evolution for Holy Orbit. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 100
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "judgement_wheel"
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 1
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_vesper_tide",
+   "idx": 1,
+   "kind": "socket",
+   "name": "Vesper Tide",
+   "desc": "Unlocks the Vesper Tide evolution for Holy Orbit. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "vesper_tide"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "holy_orbit",
+      "n": 3
+     },
+     {
+      "t": "startWeapon",
+      "id": "holy_orbit",
+      "n": 8
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "outline": [
+  {
+   "id": "or_power",
+   "idx": 2,
+   "kind": "knot",
+   "name": "Burning Orbs",
+   "desc": "Orb power +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 180
+   },
+   "requires": [
+    "ma_area"
+   ],
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_wick",
+   "idx": 3,
+   "kind": "knot",
+   "name": "Long Wick",
+   "desc": "Orb power +4%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 4
+    }
+   ]
+  },
+  {
+   "id": "or_kindle",
+   "idx": 4,
+   "kind": "bead",
+   "name": "Kindling",
+   "desc": "Burn potency +3% (status, shared cap)",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 3
+    }
+   ]
+  },
+  {
+   "id": "or_wide",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Wider Halo",
+   "desc": "Orbit size +2%",
+   "branch": "magic",
+   "maxRank": 1,
+   "rankCost": 1,
+   "cost": {
+    "gold": 450
+   },
+   "requires": [
+    "or_power"
+   ],
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_seventh",
+   "idx": 6,
+   "kind": "mastery",
+   "name": "Seventh Light",
+   "desc": "Orb power +2% and Orbit size +2%",
+   "flavour": "Evolve the orbit and the circle widens.",
+   "branch": "magic",
+   "cost": {
+    "gold": 910,
+    "shards": 1
+   },
+   "requires": [
+    "or_wide"
+   ],
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 2
+    },
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 1
+   }
+  },
+  {
+   "id": "or_tide",
+   "idx": 7,
+   "kind": "knot",
+   "name": "Turning Tide",
+   "desc": "Orbit speed +2%",
+   "cost": {
+    "gold": 450
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_ember",
+   "idx": 8,
+   "kind": "bead",
+   "name": "Votive Embers",
+   "desc": "Burn potency +3% (status, shared cap)",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 3
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 3
+   }
+  },
+  {
+   "id": "or_swing",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Censer Swing",
+   "desc": "Orbit speed +2%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_spin",
+   "idx": 10,
+   "kind": "knot",
+   "name": "Quick Circle",
+   "desc": "Orbit speed +2%",
+   "cost": {
+    "gold": 180
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_bright",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Bright Ring",
+   "desc": "Orbit size +2%",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "or_vigil",
+   "idx": 12,
+   "kind": "bead",
+   "name": "Long Vigil",
+   "desc": "Orb power +4%",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 4
+    }
+   ],
+   "unlock": {
+    "t": "surviveTime",
+    "chapter": "cursed_forest",
+    "seconds": 600
+   }
+  }
+ ]
+}

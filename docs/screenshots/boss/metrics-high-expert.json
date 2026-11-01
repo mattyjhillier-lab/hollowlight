@@ -1,0 +1,102 @@
+{
+ "land-expert-50-defeat-results": {
+  "ro": 0.98,
+  "bossL": 14.8,
+  "groundL": 11.6
+ },
+ "land-expert-00-tremor": {
+  "ro": 0.02,
+  "bossL": null,
+  "groundL": null
+ },
+ "land-expert-01-arrival-ring": {
+  "ro": 0,
+  "bossL": 96.4,
+  "groundL": 82.9
+ },
+ "land-expert-02-arrival-wake": {
+  "ro": 3.58,
+  "bossL": 61.9,
+  "groundL": 58.2
+ },
+ "land-expert-10-tell-slam": {
+  "ro": 4.56,
+  "bossL": 58.8,
+  "groundL": 73.6
+ },
+ "land-expert-11-tell-eruption": {
+  "ro": 2.91,
+  "bossL": 54.5,
+  "groundL": 71.6
+ },
+ "land-expert-12-tell-seeds": {
+  "ro": 2,
+  "bossL": 59.2,
+  "groundL": 70.4
+ },
+ "land-expert-13-saplings": {
+  "ro": 2.65,
+  "bossL": 59.6,
+  "groundL": 68.4
+ },
+ "land-expert-20-phase2-call": {
+  "ro": 0.02,
+  "bossL": 39.9,
+  "groundL": 71.7
+ },
+ "land-expert-21-tell-sweep": {
+  "ro": 2.02,
+  "bossL": 55.3,
+  "groundL": 69.5
+ },
+ "land-expert-22-tell-fan": {
+  "ro": 0.79,
+  "bossL": 59.5,
+  "groundL": 65.5
+ },
+ "land-expert-30-phase3-call": {
+  "ro": 0.22,
+  "bossL": 59.2,
+  "groundL": 65.8
+ },
+ "land-expert-31-tell-lanes": {
+  "ro": 1.24,
+  "bossL": 28.9,
+  "groundL": 65.5
+ },
+ "land-expert-32-tell-nova": {
+  "ro": 0.65,
+  "bossL": 42.5,
+  "groundL": 53.8
+ },
+ "land-expert-40-victory-kneel": {
+  "ro": 0.01,
+  "bossL": 63.6,
+  "groundL": 68.2
+ },
+ "land-expert-41-victory-mask": {
+  "ro": 0.01,
+  "bossL": 60.6,
+  "groundL": 64.4
+ },
+ "land-expert-42-victory-flood": {
+  "ro": 0.01,
+  "bossL": 64.6,
+  "groundL": 64.1
+ },
+ "land-expert-43-victory-flood-full": {
+  "ro": 0.02,
+  "bossL": 71.3,
+  "groundL": 71
+ },
+ "land-expert-44-victory-line": {
+  "ro": 0.02,
+  "bossL": 72.1,
+  "groundL": 71.2
+ },
+ "land-expert-45-victory-results": {
+  "ro": 0,
+  "bossL": 38.4,
+  "groundL": 55.1
+ }
+}

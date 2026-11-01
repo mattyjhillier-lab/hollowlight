@@ -1,0 +1,39 @@
+{
+ "kind": "hero",
+ "hero": "sable",
+ "prefix": "zs",
+ "signature": "spirit_bolts",
+ "gate": null,
+ "lanterns": [
+  {
+   "id": "ch_sable",
+   "idx": 0,
+   "kind": "hero",
+   "name": "Warden's Aim",
+   "desc": "Spirit Bolts +4% (TEST-ONLY synthetic hero, TREE-GEN1)",
+   "cost": { "gold": 600 },
+   "effects": [{ "weapon": "spirit_bolts", "stat": "power", "pct": 4 }],
+   "unlock": { "t": "useCharacter", "id": "sable", "n": 3 }
+  },
+  {
+   "id": "zs_hour",
+   "idx": 1,
+   "kind": "hero",
+   "name": "Long Hour",
+   "desc": "Still Hour lasts +0.5 s (test-only ability parameter)",
+   "cost": { "gold": 900 },
+   "effects": [{ "ability": "hourSecs", "secs": 0.5 }],
+   "unlock": { "t": "useCharacter", "id": "sable", "n": 6 }
+  },
+  {
+   "id": "zs_motes",
+   "idx": 2,
+   "kind": "hero",
+   "name": "Warden Motes",
+   "desc": "Visual only (test-only visual id)",
+   "cost": { "gold": 400 },
+   "effects": [{ "visual": "sableMotes" }],
+   "unlock": { "t": "useCharacter", "id": "sable", "n": 10 }
+  }
+ ]
+}

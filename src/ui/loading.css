@@ -1,0 +1,11 @@
+/* FIX4: run-start loading bar, Warm Lantern look: a dark Hollow veil, one amber flame, a spirit-thread bar. Appears only when the pre-bake has not finished. */
+.wk-loading { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px;
+  background: radial-gradient(ellipse 55% 48% at 50% 46%, rgba(255, 171, 58, .18), transparent 72%), linear-gradient(180deg, rgba(14, 20, 34, .92), rgba(10, 14, 24, .96));
+  color: var(--thread, #ffe9b8); text-align: center; font: 400 clamp(15px, 2.6vh, 20px)/1.3 var(--font-whisper, Georgia, serif); }
+.wk-loading[hidden] { display: none; }
+.wk-loading__flame { width: 18px; height: 26px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: radial-gradient(ellipse at 50% 70%, #fff4d0, #ffb347 55%, #e0731a); box-shadow: 0 0 22px 8px rgba(255, 171, 58, .45); animation: wk-flick 1.4s ease-in-out infinite; }
+.wk-loading__bar { width: min(72vw, 360px); height: 8px; border-radius: 6px; background: rgba(255, 233, 184, .12); box-shadow: inset 0 0 0 1px rgba(255, 233, 184, .25); overflow: hidden; }
+.wk-loading__fill { height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, #e0731a, #ffd27a); box-shadow: 0 0 10px rgba(255, 171, 58, .7); transition: width .18s linear; }
+.wk-loading__msg { margin: 0; min-height: 1.3em; opacity: .85; }
+@keyframes wk-flick { 0%, 100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.08, .94) translateY(1px); } }
+@media (prefers-reduced-motion: reduce) { .wk-loading__flame { animation: none; } .wk-loading__fill { transition: none; } }

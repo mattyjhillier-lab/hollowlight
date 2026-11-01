@@ -104,7 +104,7 @@ test('wrong types and out-of-range numbers are clamped/defaulted', () => {
   assert.equal(d.settings.quality, 'auto');
   assert.equal(d.settings.damageNumbers, false);
   assert.deepEqual(d.unlocks, {});
-  assert.deepEqual(d.tree, {}); // v2: tree ids are validated against the real skill tree, unknown ids are dropped
+  assert.deepEqual(d.tree, { gt_ghost_wolves: 1, gt_holy_orbit: 1 }); // v2: tree ids are validated against the real skill tree, unknown ids are dropped; a played pre-v2 save gets the old run-1 pool hearts
 });
 
 test('non-object / bad version payloads rejected', () => {

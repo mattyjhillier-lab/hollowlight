@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Hollow remembers</title><link rel="stylesheet" href="cx.css"><style>
+.bg{filter:saturate(.25) brightness(.4) blur(4px)}
+.band{position:fixed;left:0;right:0;top:0;bottom:0;background:url(../../screenshots/en-atlas/en-11m30-wren-desk.jpg) center/cover;clip-path:polygon(0 0,58% 0,38% 100%,0 100%);filter:saturate(1.1) brightness(.55) blur(6px)}
+.band:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 52%,rgba(255,211,107,.35) 57%,transparent 62%)}
+.mid{position:fixed;left:50%;top:50%;transform:translate(-50%,-55%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(560px,calc(100vw - 32px));padding:18px 20px;border-radius:18px;background:radial-gradient(ellipse at center,rgba(22,28,42,.82),rgba(22,28,42,.55) 70%,transparent)}
+.kick{font-size:15px;letter-spacing:4px;text-transform:uppercase;color:var(--brass);font-weight:700}
+.big{font-size:44px;font-weight:400;line-height:1.05}
+.em{width:128px;height:128px}
+.line{font-size:18px;color:var(--dim)}
+.reward{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.pill{min-height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:17px;border:1.5px solid var(--brass);background:rgba(20,15,12,.45);font-size:15px;font-weight:700}
+.queue{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;font-size:14px;color:var(--mute)}
+.q{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--brass)}.q.on{background:var(--gold)}
+@media (max-width:899px){.big{font-size:32px}.em{width:84px;height:84px}.line{font-size:15px}.mid{gap:5px;padding:10px}.kick{font-size:13px}.pill{min-height:30px;font-size:13px}.queue{bottom:6px;font-size:13px}}
+@media (orientation:portrait){.band{clip-path:polygon(0 0,100% 0,100% 38%,0 52%)}.big{font-size:34px}.em{width:110px;height:110px}}
+</style></head><body>
+<div class="bg"></div><div class="band"></div>
+<div class="mid" role="status" aria-live="polite">
+ <div class="kick">The Hollow remembers</div>
+ <svg class="em" viewBox="0 0 128 128" aria-hidden="true"><defs><radialGradient id="g" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff3dc" stop-opacity=".9"/><stop offset=".55" stop-color="#9fd8ff" stop-opacity=".55"/><stop offset="1" stop-color="#9fd8ff" stop-opacity="0"/></radialGradient></defs><circle cx="64" cy="64" r="60" fill="url(#g)"/><circle cx="64" cy="64" r="44" fill="none" stroke="#d8b26a" stroke-width="2.5"/><path d="M34 84 L46 44 L58 64 L66 36 L76 62 L86 46 L94 84 Z" fill="#9fd8ff" stroke="#3f6f93" stroke-width="2.5" stroke-linejoin="round"/><circle cx="64" cy="70" r="5" fill="#ffb15c"/></svg>
+ <div class="big disp">The Ghost Wolves are whole</div>
+ <div class="line wh">“Every hunger in the pack has a name again.”</div>
+ <div class="reward"><span class="pill">Title: Friend of Wolves</span><span class="pill">Lantern ornament: wolf-ear charm</span></div>
+</div>
+<div class="queue" aria-hidden="true"><span class="q on"></span><span class="q"></span><span class="q"></span><span>1 of 3 · <span class="keys"><span class="kb">any key</span> / </span>tap to continue</span></div>
+<script src="cx.js"></script></body></html>

@@ -1,11 +1,15 @@
 import { defineConfig } from 'vite';
-import { viteSingleFile } from 'vite-plugin-singlefile';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { textScalePlugin } from './scripts/textscale.mjs';
+import { unitScalePlugin } from './scripts/unitscale.mjs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+// BLANK-FIX: one id per build, baked into the page (__BUILD_ID__) and into sw.js, so a page can tell whether the worker that
+// took over belongs to a newer deploy than itself (then it offers 'New version ready').
+const BUILD_ID = `${pkg.version}-${Date.now().toString(36)}`;
 
-// Stamps public/sw.js (copied to dist) with package version + hash of the built index.html, so every changed build
+// Stamps public/sw.js (copied to dist) with package version + hash of the built index.html + the build id, so every build
 // gets a new cache name and the browser sees a new service worker.
 function stampServiceWorker() {
   return {
@@ -16,7 +20,46 @@ function stampServiceWorker() {
       const sw = out + '/sw.js', idx = out + '/index.html';
       if (!existsSync(sw) || !existsSync(idx)) return;
       const id = createHash('sha256').update(readFileSync(idx)).digest('hex').slice(0, 10);
-      writeFileSync(sw, readFileSync(sw, 'utf8').replace('__SW_VERSION__', `${pkg.version}-${id}`));
+      writeFileSync(sw, readFileSync(sw, 'utf8').replace('__SW_VERSION__', `${pkg.version}-${id}`).replace('__BUILD_ID__', BUILD_ID));
+    },
+  };
+}
+
+// Inlines the built JS and CSS into dist/index.html so the whole game is one page. Replaces vite-plugin-singlefile, whose
+// micromatch -> braces dependency has an open advisory (GHSA-vfj7-8cjw-p6xm) with no fixed release. Same output, no extra deps.
+function inlineSingleFile() {
+  const esc = (f) => f.replaceAll('.', '\\.');
+  return {
+    name: 'inline-single-file',
+    apply: 'build',
+    enforce: 'post',
+    config(config) {
+      const b = (config.build ||= {});
+      b.cssCodeSplit = false; // one CSS file to inline
+      b.assetsDir = ''; // bundle files at dist root so index.html references them by bare name
+      const out = ((b.rollupOptions ||= {}).output ||= {});
+      out.inlineDynamicImports = true; // one JS chunk
+    },
+    generateBundle(_o, bundle) {
+      const names = Object.keys(bundle);
+      const del = [];
+      for (const hn of names.filter((n) => /\.html?$/.test(n))) {
+        let html = bundle[hn].source;
+        for (const f of names.filter((n) => /\.[mc]?js$/.test(n))) {
+          const code = bundle[f].code;
+          if (code == null) continue;
+          del.push(f);
+          const body = code.replace(/"?__VITE_PRELOAD__"?/g, 'void 0').replace(/<(\/script>|!--)/g, '\\x3C$1').trim();
+          html = html.replace(new RegExp(`<script([^>]*?) src="(?:[^"]*?/)?${esc(bundle[f].fileName)}"([^>]*)></script>`), (_, a, c) => `<script${a}${c}>${body}</script>`);
+        }
+        for (const f of names.filter((n) => /\.css$/.test(n))) {
+          del.push(f);
+          const css = String(bundle[f].source).replace('@charset "UTF-8";', '').trim();
+          html = html.replace(new RegExp(`<link([^>]*?) href="(?:[^"]*?/)?${esc(bundle[f].fileName)}"([^>]*)>`), (_, a, c) => `<style${a}${c}>${css}</style>`);
+        }
+        bundle[hn].source = html;
+      }
+      for (const f of del) delete bundle[f];
     },
   };
 }
@@ -24,7 +67,12 @@ function stampServiceWorker() {
 // Single-file build so the whole game can be opened or hosted as one page.
 export default defineConfig({
   base: './',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  plugins: [viteSingleFile(), stampServiceWorker()],
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __BUILD_ID__: JSON.stringify(BUILD_ID) },
+  plugins: [textScalePlugin(), unitScalePlugin(), inlineSingleFile(), stampServiceWorker()], // A2: every CSS font size x var(--ts) (Settings > Text size); D1: vh / vw divide by the UI zoom (unitscale)
+  // Dev server: only watch what the game loads. docs/ holds ~150 mockup .html files and screenshots that agents write while Matt
+  // plays; any change there made the dev server full-reload his open game page.
+  // HMR off by default (HMR=1 turns it on): agents edit src/ while Matt plays the dev server, and every edit to a non-HMR module
+  // full-reloaded his running game mid-run ("struggling to load things in"). With it off the page only changes when he refreshes.
+  server: { hmr: process.env.HMR === '1', watch: { ignored: ['**/docs/**', '**/scripts/**', '**/tests/**', '**/dist/**', '**/.claude/**', '**/*.log'] } },
   build: { chunkSizeWarningLimit: 4000, assetsInlineLimit: 100000000 },
 });

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree Screen Options</title>
+<style>
+:root{--bg:#0c1220;--card:#151c2c;--line:#d8b26a55;--cream:#fff3dc;--mute:#b3bbcf;--wick:#fff6e0;--teal:#6fd3c5;--brass:#f5dfae}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--cream);font:15px/1.45 system-ui,Segoe UI,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 40px}
+h1{font:600 28px Georgia,serif;margin:0 0 4px}
+h2{font:600 20px Georgia,serif;margin:26px 0 8px;color:var(--brass)}
+p,li{color:var(--cream)} .m{color:var(--mute);font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-top:1px solid #ffffff1a;padding:7px 8px;vertical-align:top;text-align:left}
+th{color:var(--brass);font-weight:600}
+td.rec{background:#fff6e00d}
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.shots figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px}
+.shots img{width:100%;display:block;border-radius:6px}
+.shots figcaption{font-size:13px;color:var(--mute);padding:4px 2px 0}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:10px;padding:1px 8px;background:var(--wick);color:#3a2412}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:8px 0}
+code{color:var(--brass)}
+@media (max-width:700px){.shots{grid-template-columns:1fr}table{font-size:13px}}
+</style>
+</head>
+<body><main>
+<h1>Lantern Web: screen options (design only)</h1>
+<p class="m">2026-10-21. Interactive pages (real tree data, real rules, connected-unlock proposal on): <code>option-a.html</code>, <code>option-b.html</code>, <code>option-c.html</code> (gear = presets, bank a run, today's rules via <code>?conn=0</code>). Screenshots in <code>shots/</code> at 1280x720, 844x390@2x, 390x844@2x. Nothing in the game or the locked docs changed.</p>
+
+<h2>1. What the "faint lines behind everything" are</h2>
+<ul>
+<li><b>23 long threads across the web</b>: a lantern's next rank lives in a far group (Second Glance near the hub, Third Glance in the Card Fan 1,268 units away; Kinder Hearts to its next rank 2,255 away). Drawn at 28% alpha.</li>
+<li><b>Criss-cross hub star</b>: 41 hub threads plus ring-to-ring threads that cross each other.</li>
+<li><b>Every locked thread</b> at 12-28% alpha, all over the map.</li>
+<li><b>Guide circles</b>: Hearth, Wick and Dusk rings, dashed chapter-band rings, dashed tool-group circles, dashed "?" circles and the fog ring (the dark wedge).</li>
+</ul>
+<p><b>All three options remove every guide circle and every locked thread.</b> Lines only show where they mean something.</p>
+
+<h2>2. Three options</h2>
+<table>
+<tr><th></th><th>A Lantern Trails <span class="tag">recommended</span></th><th>B Emblem Sky</th><th>C Sky Map + Focus</th></tr>
+<tr><th>Overall look</th><td class="rec">Plain dusk sky that warms as the tree fills. Soft constellation watermarks. The outline appears only when a constellation is complete.</td><td>The emblems are the picture: a stronger fill and a role-colour outline that brightens as it fills. No lines between lanterns.</td><td>Two views. The sky map shows one medallion per spirit or group (on phones, a tidy grid). Focus shows one group at a time, large.</td></tr>
+<tr><th>Links</th><td class="rec">Glowing trails between lit lanterns. A short fading spark reaches from a lit lantern to each open one (cream = can light, brass = need gold, teal = challenge). Hub lanterns get straight rays (they never cross). Hidden: everything else. Tap a lantern: a dotted path shows its route, including far parents.</td><td>None on the map. Tap a lantern to see its route as a dotted path.</td><td>Inside the focused group, every link is a gentle curve in 3 weights. A link to another group is a short stub reading "from Hearth and Wick".</td></tr>
+<tr><th>Node states</th><td class="rec">5 looks: Lit (colour), Can light (rays, locked), Not enough yet (brass ring), Challenge (teal progress ring), Not yet reachable (small quiet bead, no padlock).</td><td>The same 5, but quieter: open lanterns are hollow rings with a coin pip, and unreachable lanterns are a faint outline.</td><td>The same 5, plus an icon inside each (tick, flame, coin, flag, moon), so colour is never the only cue.</td></tr>
+<tr><th>"What do I do now"</th><td class="rec">A calm Next step bar ("Light Third Glance: lets you reroll level-up cards, 270 gold", with a Show me button). A pin marks the ONE best-next lantern, and an edge arrow points to it when it is off screen.</td><td>A guide wisp circles the best-next lantern, with a small speech bubble.</td><td>A numbered "Next steps" checklist on the sky map (1 = best buy). The focus view has a one-line footer.</td></tr>
+<tr><th>Legend + onboarding</th><td colspan="3">All options: a <b>?</b> button always in the toolbar opens "What the lanterns mean" (drawn with the real shapes), plus "Show only what I can light" and "Show the tips again". The first-visit tip fades after 9 s or on the first tap. On a new save, goal bars are hidden and one line says "Finish a run to earn gold".</td></tr>
+<tr><th>Declutter by zoom</th><td class="rec">Far: group names and a ready count only (names drop when too small, e.g. at 1,000 nodes). Mid: names only for the selected, best-next and can-light lanterns. Near: all names except unreachable ones, with a collision pass that also avoids lanterns.</td><td>Names only for the selected, best-next and hovered lanterns.</td><td>Every name, because only one group is on screen.</td></tr>
+<tr><th>Goals panel</th><td class="rec">Never floats over the map: a Goals tab in the same side panel or bottom sheet as the details. Each goal shows its REWARD ("Wakes a new spirit for your runs").</td><td>A slim strip under the toolbar (3 chips on desktop; on phones, 1 chip plus "+2" that opens a dropdown).</td><td>The checklist on the sky map (left column; bottom sheet on a phone).</td></tr>
+<tr><th>Risks</th><td class="rec">Groups with no lit lantern show no lines at all (a "where do I start" moment): the spark and best-next pin cover it.</td><td>Cleanest look, but the "web" and the path feel are weakest. Hidden names mean more tapping.</td><td>Weakens the locked "big pannable web" feel (two views, more taps). Most build work.</td></tr>
+</table>
+<p class="m">Shared fixes from the independent review, built into all three: the best-next rule (pinned path, then options/verbs, then nearly-complete group, then cheapest), with its one "why" line; the "can light" halo only on the best-next lantern (rays stay on every affordable one, as locked); a numbered checklist instead of "Locked" plus "To wake it"; 44 px touch targets; zooming in when 2 lanterns share one finger; a solid toolbar band on phones; fog text at full contrast; "spirit asleep" merged into "Not yet reachable" in player words. Draw time: 156 nodes about 2-3 ms; 1,000 nodes about 3-5 ms (32 ms mid-zoom at 4x CPU throttle, the same as the old prototype).</p>
+
+<h2>3. Screens</h2>
+<div class="shots">
+<figure><img src="shots/a-desk-run10.png" alt="Option A desktop"><figcaption>A: desktop, run 10 (trails, sparks, pin, Next step bar)</figcaption></figure>
+<figure><img src="shots/b-desk-run10.png" alt="Option B desktop"><figcaption>B: desktop, run 10 (no links, wisp bubble, goal strip)</figcaption></figure>
+<figure><img src="shots/c-desk-run10.png" alt="Option C desktop"><figcaption>C: sky map + Next steps checklist</figcaption></figure>
+<figure><img src="shots/a-desk-far.png" alt="Option A far"><figcaption>A: whole web, no guide lines</figcaption></figure>
+<figure><img src="shots/a-desk-selected.png" alt="Option A challenge"><figcaption>A: Raven Flock heart = CHALLENGE (44%, pinnable) with its branch behind it shown quietly</figcaption></figure>
+<figure><img src="shots/c-desk-focus.png" alt="Option C focus"><figcaption>C: focus view, every link in one group</figcaption></figure>
+<figure><img src="shots/a-php-goals.png" alt="Option A phone goals"><figcaption>A: phone portrait, goals in the bottom sheet</figcaption></figure>
+<figure><img src="shots/b-php-goals.png" alt="Option B phone goals"><figcaption>B: phone portrait, goal dropdown</figcaption></figure>
+<figure><img src="shots/c-php-run3.png" alt="Option C phone"><figcaption>C: phone portrait grid + checklist</figcaption></figure>
+<figure><img src="shots/a-phl-selected.png" alt="Option A landscape"><figcaption>A: phone landscape, unreachable lantern, dotted route + numbered checklist</figcaption></figure>
+<figure><img src="shots/a-desk-help.png" alt="Legend"><figcaption>The ? legend (always one tap away)</figcaption></figure>
+<figure><img src="shots/a-desk-1000-far.png" alt="1000 nodes"><figcaption>A at 1,000 nodes (6 staggered slots): no name clutter</figcaption></figure>
+</div>
+
+<h2>4. Connected-unlock rule (Matt 2026-10-21): shown in the mock-ups, not built into the rules</h2>
+<div class="box"><b>Rule as shown:</b> buyable = linked to ANY lantern you own (the hub counts as owned) AND its condition is met (if it has one) AND you have the cost. Several branches can be open at once. A lantern where branches meet opens from either side. A connected lantern still waiting on its condition is a <b>Challenge</b>: teal ring, goal and progress shown, pinnable. Everything behind it is "Not yet reachable" (a quiet bead).</div>
+<p><b>What it changes today</b> (prototype count against the real tree): lanterns you can light right now go 16 to 12 (after run 1), 24 to 17 (after run 3) and 29 to 29 (after run 10). Held back: the 9 far group roots (the first lanterns of the Satchel, Card Fan, Almanac and Hearth-key groups, the Night Gate tier gate, Wider Lantern and Eager Gems), plus the evolution seals of weapons not yet woken. Best-next did not change in any preset.</p>
+<table>
+<tr><th>Exception in today's data</th><th>What the rule would do</th><th>Recommendation (Matt decides)</th></tr>
+<tr><td>Weapon hearts (Raven, Bolts, Chain): <code>requires []</code>, permanent gates</td><td>Nothing next to them is owned, so they could never open</td><td class="rec">Keep them linked to the hub: always on the frontier as a Challenge. No data change. The "gates only require gates" rule stays.</td></tr>
+<tr><td>Evolution seals: <code>requires []</code> by locked design</td><td>Same</td><td class="rec">A seal is reachable once its constellation heart is lit. This is the existing UI-only "dormant" rule, now named; no data change. Its condition still applies.</td></tr>
+<tr><td>Starter constellations hang from display hearts</td><td>The first lanterns would have no owned neighbour</td><td class="rec">Display hearts count as lit (always), so wolf and orbit lanterns are on the frontier from run 1.</td></tr>
+<tr><td>9 group roots hang from "hub" but sit 1,100-1,400 units out</td><td>Open from run 1 while visually disconnected</td><td class="rec">Add one gold-only bridge lantern per group, from the nearest Wick or Dusk lantern (a data change). The mock shows this as "opens once a Wick lantern is lit". The tier gate stays hub-linked (gates may only require gates).</td></tr>
+<tr><td>23 far-placed next ranks (Third Glance etc. in the Card Fan, 1,268 from Second Glance; Kinder Hearts to its next rank 2,255; ...)</td><td>Linked in the data but not next to each other, so the path is not visible</td><td class="rec">Move each next to its parent (positions only, ids kept). Until then, the dotted route on select.</td></tr>
+<tr><td>2 joins that need ALL parents (Steady Breath needs Second Glance AND the first banish; Full Almanac needs all 4 bestiary lanterns)</td><td>The rule says any one neighbour is enough</td><td class="rec">Switch both to "any one". The 5 other joins are already "any".</td></tr>
+</table>
+<p><b>Design risk: stalled behind challenges.</b> If the only open edges are challenge-locked, the player has gold and nothing to buy (or only a grind to chase). The prototype presets have at least 9 gold-buyable frontier lanterns at every stage up to run 25 (new save: 0 affordable, 9 open, 12 challenges; run 25: 23 affordable, 9 challenges). <b>Fix:</b> (1) a layout rule: every challenge lantern has a gold-only sibling branch from the same parent, so a challenge never sits alone on a path; (2) a validator check (C.6) that refuses a group whose only exits are challenge-locked; (3) a timeline-sim metric: "runs with zero gold-buyable frontier while the tree is unfinished", target 0. Challenge conditions stay multi-axis (kills, tiers, heroes, evolutions) and capped at about 5 normal runs at their chapter. Fog teasers are unchanged. The balance/economy analysis of depth-scaled costs follows separately.</p>
+
+<h2>5. Fit and security</h2>
+<p class="m">Fit: Lantern Glass tokens, Hollowlight Chancery + Alegreya Sans, teal NEW, gold only for evolution seals, colour returns as the tree fills. The lines now behave like the in-game spirit trails (only where light has travelled). Security: self-contained pages, no new dependencies (esbuild is already a Vite dependency), textContent only, preset and pin ids validated, URL params whitelisted, localStorage wrapped in try/catch, the temp Chrome profile is deleted after screenshots.</p>
+</main></body></html>

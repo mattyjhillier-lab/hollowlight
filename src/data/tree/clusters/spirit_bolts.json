@@ -1,0 +1,368 @@
+{
+ "kind": "cluster",
+ "weapon": "spirit_bolts",
+ "prefix": "bo",
+ "emblem": "bolt",
+ "slot": "sky3",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "hero": null,
+ "heart": "gt_spirit_bolts",
+ "starterEvo": null,
+ "sockets": {
+  "a": {
+   "evo": "spirit_tempest",
+   "gate": "gt_spirit_tempest"
+  },
+  "b": {
+   "evo": "soul_lance",
+   "gate": "gt_soul_lance"
+  },
+  "c": {
+   "evo": "returning_pages",
+   "gate": "gt_returning_pages"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_spirit_bolts",
+   "idx": 0,
+   "kind": "heart",
+   "name": "Spirit Bolts",
+   "desc": "Unlocks Spirit Bolts: it can then appear in your level-up cards.",
+   "branch": "magic",
+   "cost": {
+    "gold": 300
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "spirit_bolts"
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 1500
+   }
+  },
+  {
+   "id": "gt_spirit_tempest",
+   "idx": 1,
+   "kind": "socket",
+   "name": "Spirit Tempest",
+   "desc": "Unlocks the Spirit Tempest evolution for Spirit Bolts. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 400
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "spirit_tempest"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "bossKill",
+      "id": "elder_treant",
+      "n": 1
+     },
+     {
+      "t": "evolveWeapon",
+      "id": "any",
+      "n": 6
+     }
+    ]
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_soul_lance",
+   "idx": 2,
+   "kind": "socket",
+   "name": "Soul Lance",
+   "desc": "Unlocks the Soul Lance evolution for Spirit Bolts. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "soul_lance"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "bossKill",
+      "id": "elder_treant",
+      "n": 2
+     },
+     {
+      "t": "evolveWeapon",
+      "id": "spirit_bolts",
+      "n": 1
+     }
+    ]
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_returning_pages",
+   "idx": 3,
+   "kind": "socket",
+   "name": "Returning Pages",
+   "desc": "Unlocks the Returning Pages evolution for Spirit Bolts. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "returning_pages"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "spirit_bolts",
+      "n": 2
+     },
+     {
+      "t": "clearChapter",
+      "id": "cursed_forest",
+      "n": 2
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "outline": [
+  {
+   "id": "bo_twin",
+   "idx": 4,
+   "kind": "mastery",
+   "name": "Twin Wisps",
+   "desc": "Bolt power +2% and Swiftness +2%",
+   "flavour": "Evolve the bolts and the wisps answer in pairs.",
+   "branch": "magic",
+   "cost": {
+    "gold": 910,
+    "shards": 1
+   },
+   "requires": [
+    "bo_swift"
+   ],
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 2
+    },
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "spirit_bolts",
+    "n": 1
+   }
+  },
+  {
+   "id": "bo_glyph",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Bright Glyph",
+   "desc": "Bolt power +2%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_pierce",
+   "idx": 6,
+   "kind": "bead",
+   "name": "Piercing Wisp",
+   "desc": "Spirit Bolts pierce +1 enemy.",
+   "branch": "magic",
+   "cost": {
+    "gold": 490
+   },
+   "requires": [
+    "ma_cast",
+    "gt_spirit_bolts"
+   ],
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "pierce",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "bo_swift",
+   "idx": 7,
+   "kind": "knot",
+   "name": "Swift Wisps",
+   "desc": "Swiftness +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 290
+   },
+   "requires": [
+    "bo_pierce"
+   ],
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_ink",
+   "idx": 8,
+   "kind": "knot",
+   "name": "Iron Ink",
+   "desc": "Bolt power +2%",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_quick",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Quick Script",
+   "desc": "Swiftness +2%",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_line",
+   "idx": 10,
+   "kind": "knot",
+   "name": "Running Line",
+   "desc": "Swiftness +2%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_page",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Turned Page",
+   "desc": "Bolt power +2%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_hand",
+   "idx": 12,
+   "kind": "knot",
+   "name": "Steady Hand",
+   "desc": "Swiftness +2%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "bo_kin",
+   "idx": 13,
+   "kind": "bead",
+   "name": "Rootbreaker",
+   "desc": "Bolt power +2%",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 3000
+   }
+  },
+  {
+   "id": "bo_seal",
+   "idx": 14,
+   "kind": "knot",
+   "name": "Sealed Margin",
+   "desc": "Bolt power +2%",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  }
+ ]
+}

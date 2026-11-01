@@ -1,0 +1,62 @@
+// Scratch: chrome (tab bar) option mocks on the Home screen, injected CSS/DOM only.
+import { spawn } from 'node:child_process';
+import { writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { startDev } from 'file:///C:/Users/matty/spirit-game/.claude/worktrees/agent-a5c6a0c1fa7423592/scripts/_devserver.mjs';
+const [outDir] = process.argv.slice(2);
+mkdirSync(outDir, { recursive: true });
+const srv = await startDev(5196);
+const p = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', '--remote-debugging-port=9337', `--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'hlc-'))}`, '--no-first-run', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let tabs; for (let i = 0; i < 40; i++) { try { tabs = await (await fetch('http://127.0.0.1:9337/json')).json(); if (tabs.length) break; } catch {} await sleep(300); }
+const ws = new WebSocket(tabs.find((t) => t.type === 'page').webSocketDebuggerUrl); await new Promise((r) => ws.addEventListener('open', r));
+let id = 0; const pend = new Map(); ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } });
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (e) => { const r = await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true }); if (r.result?.exceptionDetails) console.log('EXC', JSON.stringify(r.result.exceptionDetails).slice(0, 300)); return r.result?.result?.value; };
+const shot = async (n) => { await sleep(500); const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(path.join(outDir, n), Buffer.from(r.result.data, 'base64')); };
+const GLYPH = { Character: '☗', Tree: '✦', Goals: '◎', Almanac: '▤', Settings: '⚙' };
+const ADD_GLYPH = `document.querySelectorAll('.mnav__tab').forEach(b=>{const g=${JSON.stringify(GLYPH)}[b.textContent.trim()];const s=document.createElement('span');s.className='mx-g';s.textContent=g;b.prepend(s)})`;
+const LAY = '#ui.has-mnav .layer-start,#ui.has-mnav .layer-tree,#ui.has-mnav .layer-hero,#ui.has-mnav .layer-settings,#ui.has-mnav .layer-codex';
+const V = {
+  // T1: lantern-glass pill tabs, one slim 44px row, icon + label (label hidden below 360px wide)
+  T1: (land) => `.mnav{height:44px;gap:6px;padding:0 8px;justify-content:${land ? 'flex-start' : 'space-between'};background:linear-gradient(#141c2e,#0b101c);border-bottom:1px solid #d8b26a66}
+.mnav__tab{flex:${land ? '0 0 auto' : '1 1 0'};min-width:0;margin:3px 0;min-height:38px;padding:0 ${land ? '14px' : '4px'};border-radius:19px;display:inline-flex;align-items:center;justify-content:center;gap:5px;font:400 ${land ? '16px' : '12.5px'}/1 var(--font-display);color:#fff3dc;background:linear-gradient(#303c56,#161c2a);border:1px solid #d8b26a99;box-shadow:inset 0 1px 0 #ffffff22,0 2px 6px #0007}
+.mnav__tab .mx-g{color:#ffd98a;font-size:${land ? '14px' : '13px'}}
+.mnav__tab.is-on{background:linear-gradient(#ffe9b8,#e3a64a);color:#3a2412;border-color:#fff6e0;box-shadow:0 0 14px #ffb35a88}.mnav__tab.is-on .mx-g{color:#3a2412}
+${LAY}{top:45px!important}`,
+  // T2: side rail (landscape) / bottom bar (portrait)
+  T2: (land) => land
+    ? `.mnav{top:0;bottom:0;left:0;right:auto;width:62px;height:auto!important;flex-direction:column;gap:6px;padding:8px 4px!important;border-bottom:0;border-right:1px solid #d8b26a66;overflow:hidden;background:linear-gradient(90deg,#0b101c,#141c2e)}
+.mnav__tab{flex:1 1 0;min-height:0;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/1 var(--font-display);border-radius:14px;background:linear-gradient(#303c56,#161c2a);border:1px solid #d8b26a77;color:#fff3dc}
+.mx-g{font-size:18px;color:#ffd98a}.mnav__tab.is-on{background:linear-gradient(#ffe9b8,#e3a64a);color:#3a2412}.mnav__tab.is-on .mx-g{color:#3a2412}
+${LAY}{top:0!important;left:62px!important}`
+    : `.mnav{top:auto;bottom:0;height:60px!important;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))!important;border-bottom:0;border-top:1px solid #d8b26a66;gap:6px;background:linear-gradient(#141c2e,#0b101c)}
+.mnav__tab{flex:1 1 0;min-width:0;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/1 var(--font-display);border-radius:14px;background:linear-gradient(#303c56,#161c2a);border:1px solid #d8b26a77;color:#fff3dc}
+.mx-g{font-size:17px;color:#ffd98a}.mnav__tab.is-on{background:linear-gradient(#ffe9b8,#e3a64a);color:#3a2412}.mnav__tab.is-on .mx-g{color:#3a2412}
+${LAY}{top:0!important;bottom:60px!important}`,
+  // T3: slim header: Back + title + purse + menu button (destinations in a sheet)
+  T3: () => `.mnav{height:44px;padding:0 8px;gap:8px;align-items:center;background:linear-gradient(#141c2e,#0b101c);border-bottom:1px solid #d8b26a66}
+.mnav__tab{display:none}.mx-t3{display:flex;align-items:center;gap:8px;width:100%;color:#fff3dc;font:400 20px var(--font-display)}.mx-t3 b{margin-right:auto;font-weight:400}
+.mx-t3 .pill{border:1px solid #d8b26a99;border-radius:17px;padding:3px 10px;font:700 13px system-ui;background:linear-gradient(#303c56,#161c2a)}
+.mx-t3 .btn{width:40px;height:36px;border-radius:18px;border:1px solid #d8b26a99;background:linear-gradient(#303c56,#161c2a);color:#ffd98a;display:grid;place-items:center;font-size:18px}
+${LAY}{top:45px!important}`,
+};
+try {
+  for (const [w, h] of [[844, 390], [390, 844]]) {
+    for (const [k, f] of Object.entries(V)) {
+      await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
+      await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+      await send('Page.navigate', { url: 'http://127.0.0.1:5196/?x=1' });
+      for (let i = 0; i < 120; i++) { if (await ev('!!(window.__app&&window.__app.ui)')) break; await sleep(500); }
+      await sleep(1500);
+      await ev('(()=>{const ui=window.__app.ui;ui.hideAll();ui.showStart(ui.onPick)})()'); await sleep(900);
+      await ev(`(()=>{const s=document.createElement('style');s.textContent=${JSON.stringify(f(w > h))};document.head.append(s)})()`);
+      if (k !== 'T3') await ev(ADD_GLYPH);
+      else await ev(`(()=>{const n=document.querySelector('.mnav');const d=document.createElement('div');d.className='mx-t3';d.innerHTML='<b>Wispwick</b><span class="pill">0 gold</span><span class="pill">0</span><span class="btn">☰</span>';n.append(d)})()`);
+      await sleep(600);
+      await shot(`chrome${k}-${w}x${h}-front.png`);
+    }
+  }
+} finally { ws.close(); p.kill(); await srv.close(); }
+process.exit(0);

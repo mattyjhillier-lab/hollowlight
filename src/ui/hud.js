@@ -1,6 +1,7 @@
 // HUD-1: the in-run frame, Direction A "Lantern & Thread" (docs/mockups/hud-sheet). DOM + inline SVG built with
 // createElementNS / textContent only (no innerHTML, no data in markup). Display-only: reads the sim, never writes it.
 // All layout lives in style.css (.h-*); this file builds the nodes and updates them when a value changes.
+import { keyLabel } from '../input/keymap.js';
 import { mk, defs, emblem, lantern, moonArc, bakeFrost, EMBLEM_OF, ROLE_COL } from './hudsvg.js';
 import {
   hpFrac, flameScale, isEmber, frostAmount, xpFrac, litNotches, rankPips, ringFrac, moonT, arcGeom, moonPoint,
@@ -28,7 +29,8 @@ export class Hud {
     const d = doc;
     const el = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
     this.el = el;
-    host.appendChild(defs(d));
+    this.defsSvg = defs(d);
+    host.appendChild(this.defsSvg);
 
     this.frost = el('div', 'h-frost');
     // --- lantern plate: flame = HP, thread = XP, knot = level
@@ -76,7 +78,7 @@ export class Hud {
       mk(d, 'circle', { r: 42, fill: 'url(#hlPlate)', 'fill-opacity': 0.9, stroke: '#8d6c34', 'stroke-width': 2 }),
       mk(d, 'circle', { r: 37, fill: 'none', stroke: '#fff', 'stroke-opacity': 0.07, 'stroke-width': 5 }), this.abRing, this.abIcon]);
     this.abSec = el('b', 'h-num h-absec', '');
-    this.abKey = el('span', 'h-abkey', 'SPACE');
+    this.abKey = el('span', 'h-abkey', (keyLabel('ability') || 'Space').toUpperCase()); // A3: refreshKeys() after a remap
     this.ability = el('div', 'h-ability'); this.ability.append(abSvg, this.abSec, this.abKey);
 
     this.toast = el('div', 'toast');
@@ -93,6 +95,9 @@ export class Hud {
   wake() { fadeWake(this.fade, this.t || 0); this.applyFade(this.t || 0); }
 
   // Fresh run: forget everything cached so the first update paints all values.
+  // A3: the ability key pill follows Settings > Controls
+  refreshKeys() { this.abKey.textContent = (keyLabel('ability') || 'Space').toUpperCase(); }
+
   reset() {
     this.cache = {};
     this.peak = [];
@@ -101,9 +106,25 @@ export class Hud {
     this.fresh = true; // first update of a run wakes the strip at the run's own clock
     this.fade = newFade();
     this.abKind = '';
+    this.activeUntil = 0; this.activeDur = 1;
+    this.boss.classList.remove('on', 'enter');
     this.strip.classList.remove('low');
     this.strip.replaceChildren();
   }
+
+  // HUD-3 feedback pings: restart a one-shot CSS animation (class toggle + reflow). CSS turns them off under reduced motion.
+  ping(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+  pulseThread() { this.ping(this.thread, 'pulse'); } // a gem landed
+  flareHp() { this.ping(this.lamp.svg.parentNode, 'flare'); } // a heart landed
+  // EXTRAS v1: the worn lantern flame tints the HP flame (validated #rrggbb from cosmetics.json; null = the default amber). The ember (low HP) stays.
+  setFlame(glow = null, core = null) {
+    const g = this.defsSvg && this.defsSvg.querySelector ? this.defsSvg.querySelector('#hlFlame') : null;
+    const st = g ? g.querySelectorAll('stop') : [];
+    const hex = (v, d) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : d);
+    if (st.length === 3) { st[1].setAttribute('stop-color', hex(glow, '#ffab3a')); st[2].setAttribute('stop-color', hex(core, '#fff0a0')); }
+  }
+  hurtDip() { this.ping(this.lamp.svg.parentNode, 'hurt'); } // DR1: the lantern flame dips and rims light red for 0.3 s when the hero is hit
+  tickCoin() { this.ping(this.coin, 'tick'); } // gold came in
 
   set(key, node, value) { if (this.cache[key] !== value) { this.cache[key] = value; node.textContent = value; return true; } return false; }
   attr(key, node, name, value) { if (this.cache[key] !== value) { this.cache[key] = value; node.setAttribute(name, value); } }
@@ -118,6 +139,19 @@ export class Hud {
   tapAt(x, y) {
     const r = this.strip.getBoundingClientRect ? this.strip.getBoundingClientRect() : null;
     if (r && x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) this.wake();
+  }
+
+  // Elder Treant arrival banner (boss-treant-v1 (a)): bark-textured title + a quiet line, 2.4 s; text only (textContent), Calm = no letter-spacing sweep
+  bossBanner(title, sub, animate) {
+    const el = this.bossIntro;
+    el.textContent = '';
+    const t = this.doc.createElement('span'); t.className = 'bi-title'; t.textContent = String(title).toUpperCase();
+    const s = this.doc.createElement('span'); s.className = 'bi-sub'; s.textContent = String(sub);
+    el.append(t, s);
+    el.classList.add('is-bark');
+    el.classList.remove('on');
+    if (animate) { void el.offsetWidth; el.classList.add('on'); }
+    else { el.style.opacity = '1'; clearTimeout(this.bannerT); this.bannerT = setTimeout(() => { el.style.opacity = ''; }, 2400); }
   }
 
   update(sim, data) {
@@ -139,6 +173,7 @@ export class Hud {
       if (this.frostSrc) this.frost.style.backgroundImage = `url(${this.frostSrc})`;
     }
     this.sty('frost', this.frost, 'opacity', fa.toFixed(2));
+    this.frost.classList.toggle('on', fa > 0);
 
     const xf = xpFrac(sim.xp, sim.xpNeeded);
     this.sty('xp', this.threadFill, 'width', `${(xf * 100).toFixed(1)}%`);
@@ -152,19 +187,44 @@ export class Hud {
 
     // moon arc + timer
     const run = sim.balance.runSeconds;
-    const tf = moonT(t, run);
+    const ck = Number.isFinite(sim.clock) ? sim.clock : t; // boss fight: the display clock holds at 14:00 (sim.clock), the run time keeps counting
+    const held = !!(sim.fight && sim.fight.live);
+    const dawn = !!(sim.fight && sim.state === 'victory'); // the Treant fell: the moon reaches the dawn line
+    const dark = sim.endless ? Math.max(0, sim.time - sim.endless.t0) : -1; // EXTRAS v1 Endless Dusk: '+m:ss' past dawn, the moon stays on the line
+    const tf = dawn || dark >= 0 ? 1 : moonT(ck, run);
     const mp = moonPoint(tf, ARC);
     this.attr('moon', this.moonSvg.moon, 'transform', `translate(${mp.x.toFixed(1)},${mp.y.toFixed(1)})`);
     this.attr('lit', this.moonSvg.lit, 'stroke-dasharray', `${(tf * 100).toFixed(1)} 100`);
     this.sty('trackdot', this.trackDot, 'left', `${(tf * 100).toFixed(1)}%`);
-    this.set('time', this.time, fmtTime(Math.max(0, run - t)));
+    this.set('time', this.time, dark >= 0 ? `+${fmtTime(dark)}` : held ? 'HELD' : dawn ? 'DAWN' : fmtTime(Math.max(0, run - ck))); // no timer in the fight: the moon parks on the dawn line
+    if (this.prev.held !== held) { this.prev.held = held; this.moon.classList.toggle('is-held', held); }
 
     // boss bar
-    const b = sim.boss && !sim.boss.dead ? sim.boss : null;
-    if (b) {
-      if (!this.prev.boss) { this.prev.boss = true; this.boss.classList.add('on'); }
-      this.set('bossname', this.bossName, this.opts.bossName ? this.opts.bossName(b.type) : 'Boss');
-      this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(b.hp, b.maxHp) * 100).toFixed(1)}%`);
+    // EN7: the same bar carries the Branch-Mane miniboss (one notch at 50%: its one phase change) and, 30 s before one arrives, a quiet chip
+    // 'The Branch-Mane stirs 0:12' (no bar). Text only (textContent via set()).
+    const b = (sim.boss && !sim.boss.dead ? sim.boss : null) || (sim.mini && !sim.mini.dead ? sim.mini : null);
+    const soon = !b && Number.isFinite(sim.miniSoon) && sim.miniSoon > 0 ? sim.miniSoon : -1;
+    // map events v1: with no boss / miniboss / stir chip, the same bar shows the active Hollow Place (road = chip with lanterns + time, knot = HP bar)
+    const act = !b && soon <= 0 && sim.sites ? sim.sites.active : null;
+    const mode = b ? (b.mini ? 'mini' : 'boss') : soon > 0 ? 'chip' : act ? (act.kind === 'knot' ? 'mini' : 'chip') : '';
+    if (this.prev.bmode !== mode) {
+      this.prev.bmode = mode;
+      this.boss.classList.toggle('is-mini', mode === 'mini');
+      this.boss.classList.toggle('is-chip', mode === 'chip');
+    }
+    if (b || soon > 0 || act) {
+      if (!this.prev.boss) { this.prev.boss = true; this.boss.classList.add('on'); this.ping(this.boss, 'enter'); }
+      const nm = (type) => (this.opts.bossName ? this.opts.bossName(type) : 'Boss');
+      if (act) {
+        if (act.kind === 'knot') { this.set('bossname', this.bossName, 'Hollow Knot'); this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(act.hp, act.maxHp) * 100).toFixed(1)}%`); }
+        else this.set('bossname', this.bossName, `Lantern Road ${act.lit | 0} of ${act.lanterns.length}  ${fmtTime(Math.ceil(act.left))}`);
+      } else if (b) {
+        this.set('bossname', this.bossName, nm(b.type));
+        this.sty('bossfill', this.bossFill, 'width', `${(hpFrac(b.hp, b.maxHp) * 100).toFixed(1)}%`);
+      } else {
+        const id = sim.chapter && sim.chapter.minis ? sim.chapter.minis.id : null;
+        this.set('bossname', this.bossName, `The ${id ? nm(id) : 'old alpha'} stirs  ${fmtTime(Math.ceil(soon))}`);
+      }
     } else if (this.prev.boss) { this.prev.boss = false; this.boss.classList.remove('on'); }
 
     this.set('gold', this.goldNum, String(Math.max(0, whole(sim.gold, Math.floor))));
@@ -194,9 +254,20 @@ export class Hud {
     }
     const ready = a.cdLeft <= 0;
     const cdTotal = sim.abilityCooldown;
-    this.attr('abring', this.abRing, 'stroke-dasharray', `${((ready ? 1 : clamp01(1 - a.cdLeft / cdTotal)) * 100).toFixed(0)} 100`);
+    if (a.cdLeft > this.prev.cd + 1) { // just used: the ring drains over the effect's duration, then refills as it cools
+      const m = sim.tfx && Number.isFinite(sim.tfx.abilityDur) ? sim.tfx.abilityDur : 1;
+      this.activeDur = Math.max(0.5, 6 * m); this.activeUntil = t + this.activeDur;
+    }
+    const active = t < this.activeUntil && !ready;
+    if (this.cache.abactive !== active) { this.cache.abactive = active; this.ability.classList.toggle('active', active); }
+    const ringF = active ? clamp01((this.activeUntil - t) / this.activeDur) : ready ? 1 : clamp01(1 - a.cdLeft / cdTotal);
+    this.attr('abring', this.abRing, 'stroke-dasharray', `${(ringF * 100).toFixed(0)} 100`);
     this.set('absec', this.abSec, ready ? '' : `${Math.max(0, whole(a.cdLeft, Math.ceil))}s`);
-    if (this.cache.abready !== ready) { this.cache.abready = ready; this.ability.classList.toggle('ready', ready); }
+    if (this.cache.abready !== ready) {
+      const was = this.cache.abready;
+      this.cache.abready = ready; this.ability.classList.toggle('ready', ready);
+      if (ready && was === false) this.ping(this.ability, 'ping'); // became ready: one gentle ring pulse
+    }
     if (a.cdLeft > this.prev.cd + 1) this.wake(); // ability used
     this.prev.cd = a.cdLeft;
 
@@ -204,7 +275,7 @@ export class Hud {
   }
 
   buildStrip(sim, data) {
-    const d = this.doc, slots = sim.balance.weaponSlots, max = sim.balance.maxRank * 4;
+    const d = this.doc, slots = sim.weaponSlots || sim.balance.weaponSlots, max = sim.balance.maxRank * 4;
     this.strip.replaceChildren();
     this.rings = [];
     for (let i = 0; i < slots; i++) {

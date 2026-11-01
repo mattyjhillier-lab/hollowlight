@@ -48,8 +48,6 @@ const SCEN = {
 
 function unitState(u, sim) {
   if (u.kind === 'wolf') {
-    if (u.leap) return 'leap';
-    if (u.maul > 0) return 'maul';
     if (!u.target || u.target.dead) return 'idle';
     return Math.hypot(u.target.x - u.x, u.target.y - u.y) <= u.target.r + u.r + 0.5 ? 'bite' : 'chase';
   }

@@ -9,12 +9,13 @@ export const RESPEC_ARMED = 'Refund spent nodes (gates stay). Click again';
 export const RESPEC_DONE_SUFFIX = ' Gates stay unlocked.';
 export const NEW_CARD_TOAST = 'Unlocked in the Skill Tree';
 
-// The gate effect of a node, or null: { kind: 'weapon'|'evolution'|'hero', id }.
+// The gate effect of a node, or null: { kind: 'weapon'|'evolution'|'hero'|'tier', id } (tier id = 'chapter:tier', the Night Gate).
 export function gateOf(def, id) {
   const n = def && own(def.nodes, id) ? def.nodes[id] : null;
   if (!n || !n.permanent) return null;
-  const e = n.effects.find((x) => x && ['weapon', 'evolution', 'hero'].includes(x.unlock));
-  return e ? { kind: e.unlock, id: e.id } : null;
+  const e = n.effects.find((x) => x && ['weapon', 'evolution', 'hero', 'tier'].includes(x.unlock));
+  if (!e) return null;
+  return e.unlock === 'tier' ? { kind: 'tier', id: `${e.chapter}:${e.tier}` } : { kind: e.unlock, id: e.id };
 }
 
 // Display name for a node. Unmasked evolution gates read "Name (Weapon)"; masked ones read "???".
@@ -28,7 +29,12 @@ export function nodeTitle(def, id, data, masked = false) {
   return n.name;
 }
 
-const goldText = (n) => (n.cost && n.cost.gold ? ` (${n.cost.gold} gold)` : '');
+// '(300 gold)'; a Night Gate lantern also names its shards / Dawnglass: '(1200 gold + 2 shards)'.
+const goldText = (n) => {
+  const c = n.cost || {};
+  const p = [c.gold ? `${c.gold} gold` : '', c.shards ? `${c.shards} shard${c.shards === 1 ? '' : 's'}` : '', c.glass ? `${c.glass} Dawnglass` : ''].filter(Boolean);
+  return p.length ? ` (${p.join(' + ')})` : '';
+};
 
 // Results-screen line for a node whose unlock condition was just met.
 export function newlyLine(def, id, data) {

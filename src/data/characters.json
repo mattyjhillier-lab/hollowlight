@@ -1,24 +1,74 @@
 {
   "wren": {
     "name": "Wren, the Orphan",
-    "blurb": "Fast and fragile. Fights through her wolf pack.",
+    "blurb": "Quick on her feet. Darts out of trouble with her ghost pup.",
     "color": "#e8b86d",
-    "hp": 60,
-    "speed": 96,
-    "traits": { "moveSpeed": 1.1 },
-    "traitText": "+10% move speed",
-    "weapon": "ghost_wolves",
-    "ability": { "id": "pack_howl", "name": "Pack Howl", "cooldown": 60, "desc": "6s: wolves move and bite twice as fast, you run faster, nearby enemies flee." }
+    "kindred": "ghost_wolves",
+    "keepsake": {
+      "id": "scarf_thread",
+      "name": "Scarf Thread",
+      "desc": "A warm amber thread from a child's scarf. The Hollow remembers who wore it.",
+      "hint": {
+        "t": "killEnemy",
+        "id": "wolf",
+        "n": 300
+      }
+    },
+    "ability": {
+      "id": "pelt_dash",
+      "name": "Pelt Dash",
+      "cooldown": 60,
+      "dist": 130,
+      "dashT": 0.2,
+      "secs": 0.5,
+      "shove": 26,
+      "desc": "Dart 130 px the way you are heading with your pup. Untouchable for 0.5 s; foes in the way are knocked aside."
+    },
+    "treeVisuals": [
+      "kinSparks"
+    ],
+    "bondPerks": {
+      "keen": "Pup's Nose",
+      "quick": "Light Feet",
+      "wise": "Street Smarts",
+      "warm": "Scarf Warmth",
+      "bright": "Lucky Find"
+    }
   },
   "elias": {
     "name": "Elias, the Priest",
-    "blurb": "Sturdy and steady. Holy light keeps him alive.",
+    "blurb": "Still and steady. Plants a ring of candles that shelters him.",
     "color": "#f2f2f2",
-    "hp": 130,
-    "speed": 76,
-    "traits": { "holyDamage": 1.15 },
-    "traitText": "+15% holy damage",
-    "weapon": "holy_orbit",
-    "ability": { "id": "sanctuary", "name": "Sanctuary", "cooldown": 60, "desc": "6s of consecrated ground: burns enemies and heals you." }
+    "kindred": "holy_orbit",
+    "keepsake": {
+      "id": "candle_stub",
+      "name": "Candle Stub",
+      "desc": "A burnt-down votive candle that still smells of wax and warm light.",
+      "hint": {
+        "t": "killEnemy",
+        "id": "root_crawler",
+        "n": 400
+      }
+    },
+    "ability": {
+      "id": "sanctuary_ring",
+      "name": "Sanctuary Ring",
+      "cooldown": 60,
+      "radius": 80,
+      "secs": 6,
+      "heal": 1.5,
+      "slow": 0.2,
+      "desc": "Plant a ring of candles for 6 s. You heal while you stand inside; foes inside the ring are slowed 20%."
+    },
+    "treeVisuals": [
+      "graveLamp"
+    ],
+    "bondPerks": {
+      "keen": "Collection Plate",
+      "quick": "Practised Prayer",
+      "wise": "Old Scripture",
+      "warm": "Hearth Blessing",
+      "bright": "Tithe Light"
+    }
   }
 }

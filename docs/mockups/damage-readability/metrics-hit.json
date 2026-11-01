@@ -1,0 +1,212 @@
+[
+ {
+  "name": "hit-before-desk",
+  "view": "desk",
+  "redPct": 0,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 13.93,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-hitA-desk",
+  "view": "desk",
+  "redPct": 1.06,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.22,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-hitB-desk",
+  "view": "desk",
+  "redPct": 0.88,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.44,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-hitC-desk",
+  "view": "desk",
+  "redPct": 0,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.66,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-dirA-desk",
+  "view": "desk",
+  "redPct": 1.89,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.45,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-dirB-desk",
+  "view": "desk",
+  "redPct": 2.43,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.93,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-dirC-desk",
+  "view": "desk",
+  "redPct": 1.61,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 14.78,
+  "occluders": 4,
+  "tellsLive": 1
+ },
+ {
+  "name": "hit-before-land",
+  "view": "land",
+  "redPct": 0,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 16.47,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-hitA-land",
+  "view": "land",
+  "redPct": 0.23,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.28,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-hitB-land",
+  "view": "land",
+  "redPct": 1.77,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.32,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-hitC-land",
+  "view": "land",
+  "redPct": 0,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.75,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-dirA-land",
+  "view": "land",
+  "redPct": 1.15,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.36,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-dirB-land",
+  "view": "land",
+  "redPct": 1.79,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.69,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-dirC-land",
+  "view": "land",
+  "redPct": 0.29,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 18.48,
+  "occluders": 5,
+  "tellsLive": 2
+ },
+ {
+  "name": "hit-before-port",
+  "view": "port",
+  "redPct": 0.56,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 16.41,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "hit-hitA-port",
+  "view": "port",
+  "redPct": 1.82,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.46,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "hit-hitB-port",
+  "view": "port",
+  "redPct": 4.64,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.53,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "hit-hitC-port",
+  "view": "port",
+  "redPct": 0.53,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.5,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "hit-dirA-port",
+  "view": "port",
+  "redPct": 3.18,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.46,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "hit-dirB-port",
+  "view": "port",
+  "redPct": 1.8,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.91,
+  "occluders": 4,
+  "tellsLive": 4
+ },
+ {
+  "name": "hit-dirC-port",
+  "view": "port",
+  "redPct": 2.04,
+  "lightRedPct": 0,
+  "brightPct": 0,
+  "squintEdge": 17.5,
+  "occluders": 4,
+  "tellsLive": 4
+ }
+]

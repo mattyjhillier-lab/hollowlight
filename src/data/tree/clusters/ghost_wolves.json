@@ -1,0 +1,330 @@
+{
+ "kind": "cluster",
+ "weapon": "ghost_wolves",
+ "prefix": "wf",
+ "emblem": "wolf",
+ "slot": "sky1",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "heart": "gt_ghost_wolves",
+ "starterEvo": "howling_legion",
+ "sockets": {
+  "a": {
+   "evo": "howling_legion",
+   "gate": null
+  },
+  "b": {
+   "evo": "phantom_stampede",
+   "gate": "gt_phantom_stampede"
+  },
+  "c": {
+   "evo": "dire_alpha",
+   "gate": "gt_dire_alpha"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_ghost_wolves",
+   "idx": 13,
+   "kind": "heart",
+   "name": "Ghost Wolves",
+   "desc": "Unlocks Ghost Wolves: you can start a run with it, and it can appear in your level-up cards.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 150
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "ghost_wolves"
+    }
+   ],
+   "unlock": {
+    "t": "runs",
+    "n": 2
+   }
+  },
+  {
+   "id": "gt_phantom_stampede",
+   "idx": 0,
+   "kind": "socket",
+   "name": "Lightfoot Pack",
+   "desc": "Unlocks the Lightfoot Pack evolution for Ghost Wolves. It is offered once that spirit has grown.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 100
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "phantom_stampede"
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "ghost_wolves",
+    "n": 1
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_dire_alpha",
+   "idx": 1,
+   "kind": "socket",
+   "name": "The Alpha",
+   "desc": "Unlocks the Alpha evolution for Ghost Wolves. It is offered once that spirit has grown.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 300
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "dire_alpha"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "ghost_wolves",
+      "n": 3
+     },
+     {
+      "t": "killEnemy",
+      "id": "wolf",
+      "n": 10000
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "outline": [
+  {
+   "id": "su_call",
+   "idx": 2,
+   "kind": "knot",
+   "name": "Pack's Calling",
+   "desc": "Wolf speed +2%",
+   "flavour": "The pack answers faster.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 180
+   },
+   "requires": [
+    "su_bond"
+   ],
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "wf_lope",
+   "idx": 3,
+   "kind": "knot",
+   "name": "Long Lope",
+   "desc": "Wolf speed +2%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "wf_bleed",
+   "idx": 4,
+   "kind": "bead",
+   "name": "Deep Bite",
+   "desc": "Bleed potency +3% (status, shared cap)",
+   "branch": "summoner",
+   "cost": {
+    "gold": 390
+   },
+   "requires": [
+    "wf_fang"
+   ],
+   "effects": [
+    {
+     "status": "bleed",
+     "pct": 3
+    }
+   ]
+  },
+  {
+   "id": "wf_scent",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Hunter's Scent",
+   "desc": "Bite power +2%",
+   "cost": {
+    "gold": 450
+   },
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "wf_rend",
+   "idx": 6,
+   "kind": "bead",
+   "name": "Red Thread",
+   "desc": "Bleed potency +3% (status, shared cap)",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "status": "bleed",
+     "pct": 3
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "wolf",
+    "n": 2500
+   }
+  },
+  {
+   "id": "wf_third",
+   "idx": 7,
+   "kind": "mastery",
+   "name": "Packmaster's Calling",
+   "desc": "Bite power +2% and Wolf speed +2%",
+   "flavour": "A thousand fallen wolves whisper your name.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 910,
+    "shards": 1
+   },
+   "requires": [
+    "wf_bleed"
+   ],
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "power",
+     "pct": 2
+    },
+    {
+     "weapon": "ghost_wolves",
+     "stat": "speed",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "wolf",
+    "n": 4000
+   }
+  },
+  {
+   "id": "wf_hunt",
+   "idx": 8,
+   "kind": "knot",
+   "name": "Running Pack",
+   "desc": "Wolf speed +2%",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "speed",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "wf_maul",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Iron Jaw",
+   "desc": "Bite power +4%",
+   "cost": {
+    "gold": 450
+   },
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "power",
+     "pct": 4
+    }
+   ]
+  },
+  {
+   "id": "wf_coat",
+   "idx": 10,
+   "kind": "bead",
+   "name": "Moonlit Coat",
+   "desc": "Bite power +4%",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "power",
+     "pct": 4
+    }
+   ],
+   "unlock": {
+    "t": "startWeapon",
+    "id": "ghost_wolves",
+    "n": 5
+   }
+  },
+  {
+   "id": "wf_bite",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Keen Teeth",
+   "desc": "Bite power +2%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "wf_fang",
+   "idx": 12,
+   "kind": "knot",
+   "name": "Fang Sharpening",
+   "desc": "Bite power +2%",
+   "branch": "summoner",
+   "cost": {
+    "gold": 180
+   },
+   "requires": [
+    "su_call"
+   ],
+   "effects": [
+    {
+     "weapon": "ghost_wolves",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  }
+ ]
+}

@@ -3,16 +3,34 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta name="theme-color" content="#12182b" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="./favicon-64.png" sizes="64x64" type="image/png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Hollowlight" />
+    <meta name="apple-mobile-web-app-title" content="Wispwick" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Hollowlight: Spirits of the Dusk</title>
+    <meta name="description" content="A summoner survivors-like. Light the Hollow, one spirit at a time." />
+    <!-- Absolute URLs (scrapers ignore relative image paths). Launch address: wispwick.pages.dev (LOCKED 2026-11-01). -->
+    <link rel="canonical" href="https://wispwick.pages.dev/" />
+    <meta property="og:url" content="https://wispwick.pages.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Wispwick" />
+    <meta property="og:title" content="Wispwick: Spirits of the Dusk" />
+    <meta property="og:description" content="A summoner survivors-like. Light the Hollow, one spirit at a time." />
+    <meta property="og:image" content="https://wispwick.pages.dev/share.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Wispwick wordmark in brass letters with candle Is and a small hanging lantern, on a dusk-blue sky." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wispwick: Spirits of the Dusk" />
+    <meta name="twitter:description" content="A summoner survivors-like. Light the Hollow, one spirit at a time." />
+    <meta name="twitter:image" content="https://wispwick.pages.dev/share.png" />
+    <title>Wispwick: Spirits of the Dusk</title>
   </head>
   <body>
     <div id="app">
@@ -22,6 +40,10 @@
       </div>
     </div>
     <div id="touch"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script>
+      // PWA-FIX: last-resort note if the game script never ran at all (src/ui/bootguard.js handles everything after that)
+      setTimeout(function () { if (window.__boot || !document.body) return; var d = document.createElement('p'); d.id = 'bootnoscript'; d.style.cssText = 'position:fixed;left:16px;right:16px;top:40%;z-index:100000;text-align:center;color:#f3e6c8;font:16px system-ui,sans-serif'; d.textContent = 'Wispwick could not start in this window. Close it and open it again, or play in a normal browser tab.'; document.body.appendChild(d); }, 20000);
+    </script>
+    <script type="module" src="/src/entry.js"></script>
   </body>
 </html>

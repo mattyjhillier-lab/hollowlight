@@ -1,0 +1,1809 @@
+{
+ "kind": "core",
+ "schema": 2,
+ "version": 4,
+ "layout": {
+  "ringStep": 110,
+  "minGap": 50,
+  "v2MinGap": 18
+ },
+ "branches": {
+  "spirit": {
+   "name": "Spirit",
+   "angle": 90,
+   "color": "#6fd3c5",
+   "blurb": "Rerolls, banishes and your ability. Small verbs that change how a run feels."
+  },
+  "summoner": {
+   "name": "Summoner",
+   "angle": 180,
+   "color": "#8a5cff",
+   "blurb": "Wolves, ravens and the pack. More spirits, hungrier spirits."
+  },
+  "magic": {
+   "name": "Magic",
+   "angle": 0,
+   "color": "#b8f2ff",
+   "blurb": "Bolts, lightning and holy orbit. Sharper, wider, faster light."
+  },
+  "light": {
+   "name": "Light",
+   "angle": 270,
+   "color": "#ffd27a",
+   "blurb": "Health, pickups, healing and fortune. Keep your own flame burning."
+  }
+ },
+ "rings": {
+  "hearth": {
+   "r": 150,
+   "slots": 10
+  },
+  "wick": {
+   "r": 300,
+   "slots": 26
+  },
+  "heroes": {
+   "r": 450
+  },
+  "sky": {
+   "r": 600,
+   "slots": 5
+  },
+  "dusk": {
+   "r": 960,
+   "slots": 12
+  },
+  "fog": {
+   "r": 1180,
+   "angles": [
+    180,
+    0,
+    252
+   ]
+  },
+  "far": {
+   "r": 1280,
+   "slots": 10,
+   "ang0": 18,
+   "step": 36
+  },
+  "bands": {
+   "r0": 1600,
+   "width": 360,
+   "slots": 24,
+   "constellations": 2
+  }
+ },
+ "skySlots": {
+  "sky1": 162,
+  "sky2": 234,
+  "sky3": 306,
+  "sky4": 18,
+  "sky5": 90
+ },
+ "namespaces": {
+  "sp": {
+   "kind": "ring",
+   "owners": [
+    "core"
+   ]
+  },
+  "su": {
+   "kind": "ring",
+   "owners": [
+    "core"
+   ]
+  },
+  "ma": {
+   "kind": "ring",
+   "owners": [
+    "core"
+   ]
+  },
+  "li": {
+   "kind": "ring",
+   "owners": [
+    "core"
+   ]
+  },
+  "tz": {
+   "kind": "teaser",
+   "owners": [
+    "core"
+   ]
+  },
+  "gt": {
+   "kind": "gate",
+   "owners": [
+    "*"
+   ]
+  },
+  "wf": {
+   "kind": "cluster",
+   "owners": [
+    "ghost_wolves"
+   ]
+  },
+  "rv": {
+   "kind": "cluster",
+   "owners": [
+    "raven_flock"
+   ]
+  },
+  "bo": {
+   "kind": "cluster",
+   "owners": [
+    "spirit_bolts"
+   ]
+  },
+  "cl": {
+   "kind": "cluster",
+   "owners": [
+    "chain_lightning"
+   ]
+  },
+  "or": {
+   "kind": "cluster",
+   "owners": [
+    "holy_orbit"
+   ]
+  },
+  "ch": {
+   "kind": "hero",
+   "owners": [
+    "*"
+   ]
+  },
+  "c1": {
+   "kind": "chapter",
+   "owners": [
+    "cursed_forest"
+   ]
+  },
+  "co": {
+   "kind": "tool",
+   "owners": [
+    "satchel"
+   ]
+  },
+  "cd": {
+   "kind": "tool",
+   "owners": [
+    "cardfan"
+   ]
+  },
+  "bs": {
+   "kind": "tool",
+   "owners": [
+    "almanac"
+   ]
+  },
+  "rs": {
+   "kind": "tool",
+   "owners": [
+    "hearthkey"
+   ]
+  },
+  "df": {
+   "kind": "tool",
+   "owners": [
+    "nightgate"
+   ]
+  },
+  "br": {
+   "kind": "ring",
+   "owners": [
+    "core"
+   ]
+  },
+  "wd": {
+   "kind": "tool",
+   "owners": [
+    "wardrobe"
+   ]
+  }
+ },
+ "legacyIds": [
+  "su_call"
+ ],
+ "retired": [
+  {
+   "id": "ch_wren",
+   "frag": "wr",
+   "idx": 0
+  },
+  {
+   "id": "wr_grip",
+   "frag": "wr",
+   "idx": 1
+  },
+  {
+   "id": "wr_spark",
+   "frag": "wr",
+   "idx": 2
+  },
+  {
+   "id": "ch_elias",
+   "frag": "el",
+   "idx": 0
+  },
+  {
+   "id": "el_wheel",
+   "frag": "el",
+   "idx": 1
+  },
+  {
+   "id": "el_lamp",
+   "frag": "el",
+   "idx": 2
+  },
+  {
+   "id": "cd_radar",
+   "frag": "cd",
+   "idx": 3
+  }
+ ],
+ "budget": {
+  "base": {
+   "combat": 31,
+   "sustain": 5
+  },
+  "perChapter": {
+   "combat": 3,
+   "sustain": 0.5
+  },
+  "knotMax": 6,
+  "optionShareMin": 0.6,
+  "flatFace": 2,
+  "markFace": 4,
+  "rushFace": 0.0375,
+  "perWeapon": {
+   "cap": 17.2,
+   "weight": 0.08,
+   "refWeapons": 5
+  },
+  "categories": {
+   "dmg": {
+    "cap": 5.4,
+    "weight": 1
+   },
+   "tagS": {
+    "cap": 12.8,
+    "weight": 0.35
+   },
+   "tagM": {
+    "cap": 11.4,
+    "weight": 0.35
+   },
+   "cast": {
+    "cap": 5.6,
+    "weight": 0.3
+   },
+   "area": {
+    "cap": 8,
+    "weight": 0.12
+   },
+   "hp": {
+    "cap": 12,
+    "weight": 0.2
+   },
+   "heal": {
+    "cap": 3,
+    "weight": 0.4
+   },
+   "status": {
+    "cap": 16,
+    "weight": 0.15
+   },
+   "lore": {
+    "cap": 1.6,
+    "weight": 0.6
+   },
+   "choice": {
+    "cap": 0.8,
+    "weight": 0.8
+   }
+  },
+  "sustain": {
+   "revive": 4,
+   "perReroll": 0.1,
+   "perBanish": 0.1,
+   "heartDrop": 0.04,
+   "heartHeal": 0.04,
+   "reviveMaxFrac": 0.2,
+   "rerollMax": 3,
+   "banishMax": 3,
+   "reviveMax": 1,
+   "heartPity": 0.016
+  },
+  "utility": {
+   "speed": 5,
+   "pickup": 20,
+   "xp": 7.5,
+   "gold": 12,
+   "abilityCdMax": 50
+  },
+  "loreShare": 0.2,
+  "perTier": {
+   "1": {
+    "combat": 5,
+    "sustain": 0
+   },
+   "2": {
+    "combat": 1.2,
+    "sustain": 0
+   }
+  }
+ },
+ "price": {
+  "creep": 0.08
+ },
+ "nodes": [
+  {
+   "id": "sp_reroll1",
+   "idx": 0,
+   "kind": "ring",
+   "name": "Second Glance",
+   "desc": "Unlocks Reroll: +1 per run. Redraw the three level-up cards (R).",
+   "flavour": "The spirits offer again.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 150
+   },
+   "effects": [
+    {
+     "unlock": "rerolls",
+     "n": 1
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 0
+   }
+  },
+  {
+   "id": "sp_ban1",
+   "idx": 1,
+   "kind": "ring",
+   "name": "Let It Pass",
+   "desc": "Unlocks Banish: +1 per run. Remove a card from the pool for the rest of the run.",
+   "flavour": "Some paths you will not walk.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 150
+   },
+   "effects": [
+    {
+     "unlock": "banishes",
+     "n": 1
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 1
+   }
+  },
+  {
+   "id": "li_vigor",
+   "idx": 2,
+   "kind": "ring",
+   "name": "Warm Embers",
+   "desc": "Max health +2%",
+   "flavour": "Your lantern burns a little warmer.",
+   "branch": "light",
+   "cost": {
+    "gold": 180
+   },
+   "effects": [
+    {
+     "player": "maxHp",
+     "pct": 2
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 2
+   }
+  },
+  {
+   "id": "su_bond",
+   "idx": 3,
+   "kind": "ring",
+   "name": "Bound Spirits",
+   "desc": "Summons +2% damage",
+   "flavour": "A promise made in lantern light.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 180
+   },
+   "effects": [
+    {
+     "weapon": "@summon",
+     "stat": "power",
+     "pct": 2
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 3
+   }
+  },
+  {
+   "id": "ma_focus",
+   "idx": 4,
+   "kind": "ring",
+   "name": "Moon-Touched",
+   "desc": "Magic +3% damage",
+   "flavour": "Moonlight settles in your palms.",
+   "branch": "magic",
+   "cost": {
+    "gold": 180
+   },
+   "effects": [
+    {
+     "weapon": "@magic",
+     "stat": "power",
+     "pct": 3
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 4
+   }
+  },
+  {
+   "id": "li_reach",
+   "idx": 5,
+   "kind": "ring",
+   "name": "Wider Lantern",
+   "desc": "Gem pickup range +4% per rank.",
+   "branch": "light",
+   "cost": {
+    "gold": 200
+   },
+   "requires": [
+    "br_satchel"
+   ],
+   "effects": [
+    {
+     "mod": "pickup",
+     "pct": 4
+    }
+   ],
+   "place": {
+    "tool": "satchel",
+    "at": [
+     0,
+     -90
+    ]
+   },
+   "maxRank": 4,
+   "rankCost": 1.5
+  },
+  {
+   "id": "li_step",
+   "idx": 6,
+   "kind": "ring",
+   "name": "Light Step",
+   "desc": "Move speed +2%",
+   "branch": "light",
+   "cost": {
+    "gold": 260
+   },
+   "requires": [
+    "li_vigor"
+   ],
+   "effects": [
+    {
+     "mod": "speed",
+     "pct": 2
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 6
+   }
+  },
+  {
+   "id": "li_study",
+   "idx": 7,
+   "kind": "ring",
+   "name": "Bright Memory",
+   "desc": "Experience +3%",
+   "branch": "light",
+   "cost": {
+    "gold": 320
+   },
+   "requires": [
+    "li_vigor"
+   ],
+   "effects": [
+    {
+     "mod": "xp",
+     "pct": 3
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 7
+   }
+  },
+  {
+   "id": "li_oak",
+   "idx": 8,
+   "kind": "ring",
+   "name": "Steadfast Heart",
+   "desc": "Max health +2%",
+   "branch": "light",
+   "cost": {
+    "gold": 320
+   },
+   "requires": [
+    "li_vigor"
+   ],
+   "effects": [
+    {
+     "player": "maxHp",
+     "pct": 2
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 8
+   }
+  },
+  {
+   "id": "sp_cd1",
+   "idx": 9,
+   "kind": "ring",
+   "name": "Steady Breath",
+   "desc": "Ability cooldown -10% (60s to 54s).",
+   "branch": "spirit",
+   "cost": {
+    "gold": 300
+   },
+   "effects": [
+    {
+     "mod": "abilityCd",
+     "pct": -10
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 9
+   },
+   "requiresAny": [
+    "sp_reroll1",
+    "sp_ban1"
+   ]
+  },
+  {
+   "id": "sp_reroll2",
+   "idx": 10,
+   "kind": "ring",
+   "name": "Third Glance",
+   "desc": "+1 reroll per run.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 270
+   },
+   "requires": [
+    "sp_reroll1"
+   ],
+   "effects": [
+    {
+     "unlock": "rerolls",
+     "n": 1
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 0
+   }
+  },
+  {
+   "id": "sp_reroll3",
+   "idx": 11,
+   "kind": "ring",
+   "name": "Clear Sight",
+   "desc": "+1 reroll per run.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 600
+   },
+   "requires": [
+    "sp_reroll2"
+   ],
+   "effects": [
+    {
+     "unlock": "rerolls",
+     "n": 1
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 1
+   }
+  },
+  {
+   "id": "sp_ban2",
+   "idx": 12,
+   "kind": "ring",
+   "name": "Let It Fade",
+   "desc": "+1 banish per run.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 330
+   },
+   "requires": [
+    "sp_ban1"
+   ],
+   "effects": [
+    {
+     "unlock": "banishes",
+     "n": 1
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 3
+   }
+  },
+  {
+   "id": "sp_ban3",
+   "idx": 13,
+   "kind": "ring",
+   "name": "Banish the Dusk",
+   "desc": "+1 banish per run.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 720
+   },
+   "requires": [
+    "sp_ban2"
+   ],
+   "effects": [
+    {
+     "unlock": "banishes",
+     "n": 1
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 2
+   }
+  },
+  {
+   "id": "sp_cd2",
+   "idx": 14,
+   "kind": "ring",
+   "name": "Quickening Spirit",
+   "desc": "Ability cooldown -10% more.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 660
+   },
+   "requires": [
+    "sp_cd1"
+   ],
+   "effects": [
+    {
+     "mod": "abilityCd",
+     "pct": -10
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 4
+   }
+  },
+  {
+   "id": "sp_cd3",
+   "idx": 15,
+   "kind": "ring",
+   "name": "Hollow Rhythm",
+   "desc": "Ability cooldown -10% more.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 1350
+   },
+   "requires": [
+    "sp_cd2"
+   ],
+   "effects": [
+    {
+     "mod": "abilityCd",
+     "pct": -10
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 5
+   }
+  },
+  {
+   "id": "sp_cd4",
+   "idx": 16,
+   "kind": "ring",
+   "name": "Unbroken Rhythm",
+   "desc": "Ability cooldown -15% more. With every cooldown node the ability returns in 33s; it can never be faster than 30s.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 2100,
+    "shards": 2
+   },
+   "requires": [
+    "sp_cd3"
+   ],
+   "effects": [
+    {
+     "mod": "abilityCd",
+     "pct": -15
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 6
+   }
+  },
+  {
+   "id": "sp_dur",
+   "idx": 17,
+   "kind": "ring",
+   "name": "Long Howl",
+   "desc": "Ability lasts +15%",
+   "branch": "spirit",
+   "cost": {
+    "gold": 900
+   },
+   "requires": [
+    "sp_cd2"
+   ],
+   "effects": [
+    {
+     "ability": "dur",
+     "pct": 15
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 7
+   }
+  },
+  {
+   "id": "sp_auto",
+   "idx": 18,
+   "kind": "ring",
+   "name": "Last Whistle",
+   "desc": "Unlocks auto-activate: your ability fires by itself when health falls below 30%.",
+   "flavour": "The spirits answer before you call.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 1050
+   },
+   "requires": [
+    "sp_cd2"
+   ],
+   "effects": [
+    {
+     "unlock": "autoAbility",
+     "hp": 0.3
+    }
+   ],
+   "place": {
+    "near": "sp_cd2",
+    "at": [
+     74,
+     -51
+    ]
+   },
+   "unlock": {
+    "t": "surviveTime",
+    "chapter": "cursed_forest",
+    "seconds": 300
+   }
+  },
+  {
+   "id": "li_regen",
+   "idx": 19,
+   "kind": "ring",
+   "name": "Growing Warmth",
+   "desc": "Level-up heals 0.75% max health",
+   "flavour": "Each spark of growth warms you.",
+   "branch": "light",
+   "cost": {
+    "gold": 900
+   },
+   "requires": [
+    "li_step"
+   ],
+   "effects": [
+    {
+     "player": "levelHeal",
+     "pct": 0.75
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 9
+   }
+  },
+  {
+   "id": "li_hearts",
+   "idx": 20,
+   "kind": "ring",
+   "name": "Kinder Hearts",
+   "desc": "Hearts drop +3% and come 5 s sooner when you have not seen one.",
+   "branch": "light",
+   "cost": {
+    "gold": 840
+   },
+   "requires": [
+    "li_regen"
+   ],
+   "effects": [
+    {
+     "drop": "heart",
+     "pct": 3
+    },
+    {
+     "drop": "heartPity",
+     "secs": -5
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 10
+   }
+  },
+  {
+   "id": "li_heal",
+   "idx": 21,
+   "kind": "ring",
+   "name": "Mending Light",
+   "desc": "Hearts heal +5%",
+   "branch": "light",
+   "cost": {
+    "gold": 900
+   },
+   "requires": [
+    "li_oak"
+   ],
+   "effects": [
+    {
+     "drop": "heartHeal",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "hearth",
+    "i": 5
+   }
+  },
+  {
+   "id": "li_magnet",
+   "idx": 22,
+   "kind": "ring",
+   "name": "Lodestar",
+   "desc": "Per rank: Soul Magnets +12.5% and 3 s sooner when you have not seen one.",
+   "branch": "light",
+   "cost": {
+    "gold": 750
+   },
+   "requires": [
+    "li_study"
+   ],
+   "effects": [
+    {
+     "drop": "magnet",
+     "pct": 12.5
+    },
+    {
+     "drop": "magnetPity",
+     "secs": -3
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 14
+   },
+   "maxRank": 2,
+   "rankCost": 1.4
+  },
+  {
+   "id": "li_coin",
+   "idx": 23,
+   "kind": "ring",
+   "name": "Grave Coins",
+   "desc": "Gold +5%",
+   "branch": "light",
+   "cost": {
+    "gold": 720
+   },
+   "requires": [
+    "li_study"
+   ],
+   "effects": [
+    {
+     "mod": "gold",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 13
+   }
+  },
+  {
+   "id": "li_scav",
+   "idx": 24,
+   "kind": "ring",
+   "name": "Scavenger",
+   "desc": "Gem pickup range +4%.",
+   "flavour": "Wolves and crows leave much behind.",
+   "branch": "light",
+   "cost": {
+    "gold": 450
+   },
+   "requires": [
+    "li_reach"
+   ],
+   "effects": [
+    {
+     "mod": "pickup",
+     "pct": 4
+    }
+   ],
+   "unlock": {
+    "t": "any",
+    "of": [
+     {
+      "t": "killEnemy",
+      "id": "wolf",
+      "n": 500
+     },
+     {
+      "t": "killEnemy",
+      "id": "crow",
+      "n": 800
+     }
+    ]
+   },
+   "place": {
+    "tool": "satchel",
+    "at": [
+     90,
+     0
+    ]
+   }
+  },
+  {
+   "id": "li_root",
+   "idx": 25,
+   "kind": "ring",
+   "name": "Heartwood Ward",
+   "desc": "Max health +2%",
+   "flavour": "Root-crawler bark, worn as a charm.",
+   "branch": "light",
+   "cost": {
+    "gold": 750
+   },
+   "requires": [
+    "li_oak"
+   ],
+   "effects": [
+    {
+     "player": "maxHp",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 400
+   },
+   "place": {
+    "ring": "wick",
+    "i": 15
+   }
+  },
+  {
+   "id": "li_vow",
+   "idx": 26,
+   "kind": "ring",
+   "name": "Vigil of the Night",
+   "desc": "Gold +4%",
+   "flavour": "You saw the Treant wake.",
+   "branch": "light",
+   "cost": {
+    "gold": 900
+   },
+   "requires": [
+    "li_coin"
+   ],
+   "effects": [
+    {
+     "mod": "gold",
+     "pct": 4
+    }
+   ],
+   "unlock": {
+    "t": "surviveTime",
+    "chapter": "cursed_forest",
+    "seconds": 600
+   },
+   "place": {
+    "ring": "wick",
+    "i": 16
+   }
+  },
+  {
+   "id": "li_hoard",
+   "idx": 27,
+   "kind": "ring",
+   "name": "Grave Wealth",
+   "desc": "Gold +3%",
+   "branch": "light",
+   "cost": {
+    "gold": 1050
+   },
+   "requires": [
+    "li_coin"
+   ],
+   "effects": [
+    {
+     "mod": "gold",
+     "pct": 3
+    }
+   ],
+   "unlock": {
+    "t": "totalGold",
+    "n": 20000
+   },
+   "place": {
+    "ring": "wick",
+    "i": 17
+   }
+  },
+  {
+   "id": "su_pot",
+   "idx": 28,
+   "kind": "ring",
+   "name": "Lantern-Fed",
+   "desc": "Summons deal +2% damage.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 390
+   },
+   "requires": [
+    "su_bond"
+   ],
+   "effects": [
+    {
+     "weapon": "@summon",
+     "stat": "power",
+     "pct": 2
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 8
+   }
+  },
+  {
+   "id": "su_swift",
+   "idx": 29,
+   "kind": "ring",
+   "name": "Swift Spirits",
+   "desc": "Summons move 4% faster (no damage effect)",
+   "branch": "summoner",
+   "cost": {
+    "gold": 540
+   },
+   "requires": [
+    "su_call"
+   ],
+   "effects": [
+    {
+     "weapon": "@summon",
+     "stat": "speed",
+     "pct": 4
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 19
+   }
+  },
+  {
+   "id": "su_rush",
+   "idx": 30,
+   "kind": "ring",
+   "name": "Rousing Light",
+   "desc": "Level-up: summons +10% for 4 s (inside the x1.75 amp cap)",
+   "flavour": "Every spark of growth rouses the pack.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 750
+   },
+   "requires": [
+    "su_bond"
+   ],
+   "effects": [
+    {
+     "perk": "rush",
+     "pct": 10,
+     "secs": 4
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 11
+   }
+  },
+  {
+   "id": "ma_cast",
+   "idx": 31,
+   "kind": "ring",
+   "name": "Quickened Casting",
+   "desc": "Spells cast 3% faster",
+   "branch": "magic",
+   "cost": {
+    "gold": 670
+   },
+   "requires": [
+    "ma_focus"
+   ],
+   "effects": [
+    {
+     "mod": "cooldown",
+     "pct": -3
+    }
+   ],
+   "place": {
+    "ring": "wick",
+    "i": 12
+   }
+  },
+  {
+   "id": "ma_area",
+   "idx": 32,
+   "kind": "ring",
+   "name": "Widening Light",
+   "desc": "Areas and reach +3%",
+   "branch": "magic",
+   "cost": {
+    "gold": 580
+   },
+   "requires": [
+    "ma_focus"
+   ],
+   "effects": [
+    {
+     "mod": "area",
+     "pct": 3
+    }
+   ],
+   "place": {
+    "near": "ma_focus",
+    "at": [
+     53,
+     73
+    ]
+   }
+  },
+  {
+   "id": "ma_attune",
+   "idx": 33,
+   "kind": "ring",
+   "name": "Attuned Hands",
+   "desc": "New verb: upgrade cards of a spirit still waiting to evolve appear 50% more often.",
+   "flavour": "Your spells remember what they can become.",
+   "branch": "magic",
+   "cost": {
+    "gold": 1050
+   },
+   "requires": [
+    "ma_focus"
+   ],
+   "effects": [
+    {
+     "perk": "evoLuck",
+     "pct": 50
+    }
+   ],
+   "place": {
+    "near": "ma_focus",
+    "at": [
+     -14,
+     89
+    ]
+   }
+  },
+  {
+   "id": "ma_pow3",
+   "idx": 34,
+   "kind": "ring",
+   "name": "Dusk Radiance",
+   "desc": "Magic +3% damage",
+   "branch": "magic",
+   "cost": {
+    "gold": 1500,
+    "shards": 1
+   },
+   "requires": [
+    "ma_attune"
+   ],
+   "effects": [
+    {
+     "weapon": "@magic",
+     "stat": "power",
+     "pct": 3
+    }
+   ],
+   "place": {
+    "near": "ma_attune",
+    "at": [
+     -85,
+     30
+    ]
+   }
+  },
+  {
+   "id": "sp_edge",
+   "idx": 35,
+   "kind": "ring",
+   "name": "Edge of Dusk",
+   "desc": "All damage +1%",
+   "branch": "spirit",
+   "cost": {
+    "gold": 1500
+   },
+   "requires": [
+    "sp_dur"
+   ],
+   "effects": [
+    {
+     "mod": "damage",
+     "pct": 1
+    }
+   ],
+   "place": {
+    "near": "sp_dur",
+    "at": [
+     89,
+     11
+    ]
+   }
+  },
+  {
+   "id": "su_key",
+   "idx": 36,
+   "kind": "key",
+   "name": "Bonded Pack",
+   "desc": "KEYSTONE: summons +3%, magic -3%",
+   "flavour": "You are never alone. You are never a mage.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 1800,
+    "shards": 3
+   },
+   "requires": [
+    "su_rush"
+   ],
+   "excludes": [
+    "ma_key"
+   ],
+   "effects": [
+    {
+     "weapon": "@summon",
+     "stat": "power",
+     "pct": 3
+    },
+    {
+     "weapon": "@magic",
+     "stat": "power",
+     "pct": -3
+    }
+   ],
+   "keystone": true,
+   "place": {
+    "near": "su_rush",
+    "at": [
+     42,
+     80
+    ]
+   }
+  },
+  {
+   "id": "ma_key",
+   "idx": 37,
+   "kind": "key",
+   "name": "Unbound Light",
+   "desc": "KEYSTONE: magic +3%, summons -3%",
+   "flavour": "You are never a mage. You are only light.",
+   "branch": "magic",
+   "cost": {
+    "gold": 1800,
+    "shards": 3
+   },
+   "requires": [
+    "ma_attune"
+   ],
+   "excludes": [
+    "su_key"
+   ],
+   "effects": [
+    {
+     "weapon": "@magic",
+     "stat": "power",
+     "pct": 3
+    },
+    {
+     "weapon": "@summon",
+     "stat": "power",
+     "pct": -3
+    }
+   ],
+   "keystone": true,
+   "place": {
+    "near": "ma_attune",
+    "at": [
+     99,
+     -68
+    ]
+   }
+  },
+  {
+   "id": "li_lantern",
+   "idx": 38,
+   "kind": "key",
+   "name": "Lantern-Bearer",
+   "desc": "KEYSTONE: max health +3%, level-ups heal 0.5% more, damage -1%",
+   "flavour": "Carry the light. Let others spend it.",
+   "branch": "light",
+   "cost": {
+    "gold": 1800,
+    "shards": 3
+   },
+   "requires": [
+    "li_hearts"
+   ],
+   "excludes": [
+    "li_glass"
+   ],
+   "effects": [
+    {
+     "player": "maxHp",
+     "pct": 3
+    },
+    {
+     "player": "levelHeal",
+     "pct": 0.5
+    },
+    {
+     "mod": "damage",
+     "pct": -1
+    }
+   ],
+   "keystone": true,
+   "place": {
+    "near": "li_hearts",
+    "at": [
+     60,
+     67
+    ]
+   }
+  },
+  {
+   "id": "li_glass",
+   "idx": 39,
+   "kind": "key",
+   "name": "Glass Dusk",
+   "desc": "KEYSTONE: damage +1.5%, max health -4%",
+   "flavour": "Burn bright. Burn short.",
+   "branch": "light",
+   "cost": {
+    "gold": 1800,
+    "shards": 3
+   },
+   "requires": [
+    "li_magnet"
+   ],
+   "excludes": [
+    "li_lantern"
+   ],
+   "effects": [
+    {
+     "mod": "damage",
+     "pct": 1.5
+    },
+    {
+     "player": "maxHp",
+     "pct": -4
+    }
+   ],
+   "keystone": true,
+   "place": {
+    "near": "li_magnet",
+    "at": [
+     -21,
+     87
+    ]
+   }
+  },
+  {
+   "id": "li_last",
+   "idx": 40,
+   "kind": "ring",
+   "name": "Last Light",
+   "desc": "New verb: once per run, a killing blow returns you at 20% health instead.",
+   "flavour": "The forest cannot hold you.",
+   "branch": "light",
+   "cost": {
+    "gold": 900,
+    "shards": 5
+   },
+   "requires": [
+    "li_regen"
+   ],
+   "effects": [
+    {
+     "player": "revive",
+     "frac": 0.2
+    }
+   ],
+   "unlock": {
+    "t": "clearChapter",
+    "id": "cursed_forest"
+   },
+   "place": {
+    "near": "li_regen",
+    "at": [
+     74,
+     51
+    ]
+   }
+  },
+  {
+   "id": "li_elder",
+   "idx": 41,
+   "kind": "ring",
+   "name": "Elder's Marrow",
+   "desc": "Level-up heals 0.5% max health",
+   "flavour": "Sap from the heart of the Treant.",
+   "branch": "light",
+   "cost": {
+    "gold": 1200,
+    "shards": 2
+   },
+   "requires": [
+    "li_last"
+   ],
+   "effects": [
+    {
+     "player": "levelHeal",
+     "pct": 0.5
+    }
+   ],
+   "unlock": {
+    "t": "bossKill",
+    "id": "elder_treant"
+   },
+   "place": {
+    "near": "li_last",
+    "at": [
+     74,
+     51
+    ]
+   }
+  },
+  {
+   "id": "sp_mastery",
+   "idx": 42,
+   "kind": "ring",
+   "name": "Dusk Mastery",
+   "desc": "All damage +1%",
+   "flavour": "You have walked the whole night.",
+   "branch": "spirit",
+   "cost": {
+    "gold": 2700,
+    "shards": 2
+   },
+   "requires": [
+    "sp_edge"
+   ],
+   "effects": [
+    {
+     "mod": "damage",
+     "pct": 1
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "clearChapter",
+      "id": "cursed_forest"
+     },
+     {
+      "t": "evolveWeapon",
+      "id": "any",
+      "n": 5
+     }
+    ]
+   },
+   "place": {
+    "near": "sp_edge",
+    "at": [
+     89,
+     11
+    ]
+   }
+  },
+  {
+   "id": "ma_ascend",
+   "idx": 43,
+   "kind": "ring",
+   "name": "Convergence",
+   "desc": "Areas and reach +2%",
+   "flavour": "Three evolutions, one light.",
+   "branch": "magic",
+   "cost": {
+    "gold": 1800
+   },
+   "requires": [
+    "ma_pow3"
+   ],
+   "effects": [
+    {
+     "mod": "area",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "any",
+    "n": 3
+   },
+   "place": {
+    "near": "ma_pow3",
+    "at": [
+     -86,
+     -27
+    ]
+   }
+  },
+  {
+   "id": "li_dawn",
+   "idx": 44,
+   "kind": "ring",
+   "name": "Dawnlight",
+   "desc": "All damage +1% (hidden until progress)",
+   "flavour": "A light you did not know you carried.",
+   "branch": "light",
+   "cost": {
+    "gold": 1500
+   },
+   "requires": [
+    "li_vow"
+   ],
+   "effects": [
+    {
+     "mod": "damage",
+     "pct": 1
+    }
+   ],
+   "unlock": {
+    "t": "bestLevel",
+    "n": 50
+   },
+   "hidden": true,
+   "place": {
+    "near": "li_vow",
+    "at": [
+     -60,
+     67
+    ]
+   }
+  },
+  {
+   "id": "tz_marsh",
+   "idx": 45,
+   "kind": "teaser",
+   "name": "Marsh-Light",
+   "desc": "A spirit that waits beyond this forest.",
+   "branch": "summoner",
+   "cost": {
+    "gold": 0
+   },
+   "requires": [
+    "su_key"
+   ],
+   "effects": [],
+   "unlock": {
+    "t": "clearChapter",
+    "id": "drowned_marsh"
+   },
+   "teaser": true,
+   "place": {
+    "ring": "fog",
+    "i": 0
+   }
+  },
+  {
+   "id": "tz_witch",
+   "idx": 46,
+   "kind": "teaser",
+   "name": "Witch-Fire",
+   "desc": "A spell that waits beyond this forest.",
+   "branch": "magic",
+   "cost": {
+    "gold": 0
+   },
+   "requires": [
+    "ma_key"
+   ],
+   "effects": [],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "bog_witch",
+    "n": 200
+   },
+   "teaser": true,
+   "place": {
+    "ring": "fog",
+    "i": 1
+   }
+  },
+  {
+   "id": "tz_crown",
+   "idx": 47,
+   "kind": "teaser",
+   "name": "Drowned Crown",
+   "desc": "A light that waits beyond this forest.",
+   "branch": "light",
+   "cost": {
+    "gold": 0
+   },
+   "requires": [
+    "li_elder"
+   ],
+   "effects": [],
+   "unlock": {
+    "t": "bossKill",
+    "id": "drowned_king"
+   },
+   "teaser": true,
+   "place": {
+    "ring": "fog",
+    "i": 2
+   }
+  },
+  {
+   "id": "br_satchel",
+   "idx": 48,
+   "kind": "ring",
+   "name": "Satchel Path",
+   "desc": "Lights the path to The Satchel. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "su_pot",
+    "li_coin"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 7
+   }
+  },
+  {
+   "id": "br_almanac",
+   "idx": 49,
+   "kind": "ring",
+   "name": "Almanac Path",
+   "desc": "Lights the path to The Almanac. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "ma_cast",
+    "su_rush"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 10
+   }
+  },
+  {
+   "id": "br_cardfan",
+   "idx": 50,
+   "kind": "ring",
+   "name": "Card Fan Path",
+   "desc": "Lights the path to The Card Fan. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "sp_cd3",
+    "sp_cd4"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 2
+   }
+  },
+  {
+   "id": "br_hearthkey",
+   "idx": 51,
+   "kind": "ring",
+   "name": "Hearth-key Path",
+   "desc": "Lights the path to The Hearth-key. Gems fly to you 5% faster.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "li_regen",
+    "li_coin"
+   ],
+   "effects": [
+    {
+     "perk": "gemPull",
+     "pct": 5
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 5
+   }
+  },
+  {
+   "id": "br_wardrobe",
+   "idx": 52,
+   "kind": "ring",
+   "name": "Wardrobe Path",
+   "desc": "Lights the path to the Wardrobe and opens the Moon Teal flame. Looks only: no power.",
+   "branch": "light",
+   "cost": {
+    "gold": 250
+   },
+   "requiresAny": [
+    "li_coin",
+    "li_magnet"
+   ],
+   "effects": [
+    {
+     "cosm": "flame",
+     "id": "moon_teal"
+    }
+   ],
+   "place": {
+    "ring": "dusk",
+    "i": 6
+   }
+  }
+ ]
+}

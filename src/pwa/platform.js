@@ -13,7 +13,7 @@ export function detectPlatform(env = {}) {
   const ios = IOS_UA.test(ua) || ipadOS;
   const android = !ios && /Android/.test(ua);
   const modes = Array.isArray(env.displayModes) ? env.displayModes : [];
-  const installed = env.standalone === true || modes.includes('standalone') || modes.includes('fullscreen') || modes.includes('minimal-ui');
+  const installed = env.standalone === true || modes.includes('standalone') || modes.includes('fullscreen') || modes.includes('minimal-ui') || modes.includes('window-controls-overlay');
   const iosSafari = ios && !OTHER_IOS_BROWSER.test(ua) && /Safari/.test(ua);
   const chromium = !ios && /Chrome\/|Chromium\/|Edg\//.test(ua);
   return {

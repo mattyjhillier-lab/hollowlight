@@ -17,7 +17,7 @@ const raw = (nodes) => ({ ...B, nodes });
 const comp = (nodes, d = gd) => compileTree(raw(nodes), d);
 
 const wolf = (ranks) => { const w = newWeapon('ghost_wolves', gd.weapons.ghost_wolves); Object.assign(w.ranks, ranks); return w; };
-const maxed = () => wolf({ speed: 5, power: 5 });
+const maxed = () => wolf({ speed: 5, power: 5, duration: 5, count: 1 }); // evoTriggerRanks (16) = the awakening trigger (flow v2)
 const ctx = (weapons, set) => ({ weapons, data: gd, banished: new Set(), unlockedEvolutions: set });
 const entry = (pool, key) => pool.find((p) => p.card.key === key);
 const OPEN = () => new Set(['phantom_stampede']);
@@ -49,34 +49,32 @@ test('T4 rejects unreachable gated content, dead unlock nodes and gate nodes han
   comp([gate('g0', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }] }), gate('g_ps', { requires: ['g0'], ang: 40 })], gw2); // chained gates are fine
 });
 
-test('T5 locked evolution: no gold card even with pair maxed', () => {
+test('T5 locked evolution: never offered even at the trigger (the free ones still are)', () => {
   const w = maxed();
-  assert.deepEqual(availableEvolutions(w, gd, new Set()), []);
-  assert.deepEqual(goldCards(ctx([w], new Set())), []);
-  assert.deepEqual(goldCards(ctx([w], undefined)), []);
+  assert.deepEqual(availableEvolutions(w, gd, new Set()).sort(), ['dire_alpha', 'howling_legion']);
+  assert.deepEqual(goldCards(ctx([w], new Set())).map((c) => c.evoId).sort(), ['dire_alpha', 'howling_legion']);
+  assert.ok(!goldCards(ctx([w], undefined)).some((c) => c.evoId === 'phantom_stampede'));
 });
 
-test('T6 locked evolution: no pair nudge, evoHints excludes it (no recipe leak)', () => {
-  const locked = buildPool(ctx([wolf({})], new Set()));
-  const open = buildPool(ctx([wolf({})], OPEN()));
-  assert.equal(entry(locked, 's:ghost_wolves:speed').w, 1);
-  assert.equal(entry(open, 's:ghost_wolves:speed').w, base.balance.evoNudge.pair);
-  assert.equal(entry(locked, 's:ghost_wolves:speed').card.evoHints, 0);
-  assert.equal(entry(open, 's:ghost_wolves:speed').card.evoHints, 1);
-  // the partner-rank bonus must not apply to a locked pair either: power weight differs only because dire_alpha (ungated) pairs it
-  const a = entry(buildPool(ctx([wolf({ speed: 3 })], new Set())), 's:ghost_wolves:power').w;
-  const b = entry(buildPool(ctx([wolf({ speed: 3 })], OPEN())), 's:ghost_wolves:power').w;
-  assert.ok(a < b, `locked ${a} < open ${b}`);
+test('T6 locked evolution: stat cards carry no evolution hints, stirs or weights (flow v2 retired the recipe nudge)', () => {
+  for (const set of [new Set(), OPEN()]) {
+    const pool = buildPool(ctx([wolf({})], set));
+    for (const p of pool.filter((x) => x.card.kind === 'stat')) {
+      assert.equal(p.w, 1);
+      assert.equal(p.card.evoHints, undefined);
+      assert.equal(p.card.stirs, undefined);
+    }
+  }
 });
 
 test('T7 unlocked evolution: gold card returns', () => {
-  assert.deepEqual(availableEvolutions(maxed(), gd, OPEN()), ['phantom_stampede']);
-  assert.deepEqual(goldCards(ctx([maxed()], OPEN())).map((c) => c.evoId), ['phantom_stampede']);
+  assert.deepEqual(availableEvolutions(maxed(), gd, OPEN()).sort(), ['dire_alpha', 'howling_legion', 'phantom_stampede']);
+  assert.deepEqual(goldCards(ctx([maxed()], OPEN())).map((c) => c.evoId).sort(), ['dire_alpha', 'howling_legion', 'phantom_stampede']);
 });
 
 test('T8 availableEvolutions without a set is fail-closed; ungated stay open', () => {
-  assert.deepEqual(availableEvolutions(maxed(), gd), []);
-  assert.deepEqual(availableEvolutions(maxed(), base), ['phantom_stampede']);
+  assert.deepEqual(availableEvolutions(maxed(), gd).sort(), ['dire_alpha', 'howling_legion']);
+  assert.deepEqual(availableEvolutions(maxed(), base).sort(), ['dire_alpha', 'howling_legion', 'phantom_stampede']);
   assert.equal(evoOpen({ treeGate: true }, 'x', null), false);
   assert.equal(evoOpen({}, 'x'), true);
 });
@@ -90,7 +88,7 @@ test('T9 respec keeps unlock nodes and refunds the rest', () => {
   assert.deepEqual(save.tree, { g_ps: 1 });
   assert.equal(refund.gold, 10);
   assert.equal(save.gold, 700);
-  assert.deepEqual(respec(save, d), { gold: 0, shards: 0 });
+  assert.deepEqual(respec(save, d), { gold: 0, shards: 0, glass: 0 });
   assert.deepEqual(aggregateMods(save.tree, d, gd).unlocks.evolutions, ['phantom_stampede']);
 });
 
@@ -106,22 +104,24 @@ test('T10 bad grant evo / weapon / ranks are ignored (no crash)', () => {
   assert.doesNotThrow(() => s.result());
 });
 
-test('T15 forged gate node is dropped; save.unlocks and prototype keys never unlock anything', () => {
+test('T15 an owned gate is kept even if its condition is unmet (M1); save.unlocks and prototype keys never unlock anything', () => {
   const d = comp([gate('g_ps', { unlock: { t: 'evolveWeapon', id: 'ghost_wolves', n: 1 } })]);
-  assert.deepEqual(sanitizeTree({ g_ps: 1 }, {}, d, gd), {}, 'unmet condition');
+  assert.deepEqual(sanitizeTree({ g_ps: 1 }, {}, d, gd), { g_ps: 1 }, 'unmet condition: kept (conditions gate buying only)');
   assert.deepEqual(sanitizeTree({ g_ps: 1 }, { evolved: { phantom_stampede: 1 } }, d, gd), { g_ps: 1 }, 'met condition');
   assert.deepEqual(sanitizeTree(JSON.parse('{"__proto__":{"g_ps":1},"constructor":1}'), {}, d, gd), {});
   const forged = sanitize({ ...defaultSave(), unlocks: { phantom_stampede: true, raven_flock: true }, tree: { g_ps: 1 } });
-  assert.deepEqual(aggregateMods(sanitizeTree(forged.tree, forged.stats, d, gd), d, gd).unlocks.evolutions, [], 'save.unlocks is not a gate source');
-  const sim = new Sim({ data: gd, seed: 1, tree: aggregateMods(sanitizeTree(forged.tree, forged.stats, d, gd), d, gd) });
+  const noGate = sanitize({ ...defaultSave(), unlocks: { phantom_stampede: true, raven_flock: true } });
+  assert.deepEqual(aggregateMods(sanitizeTree(noGate.tree, noGate.stats, d, gd), d, gd).unlocks.evolutions, [], 'save.unlocks is not a gate source');
+  const sim = new Sim({ data: gd, seed: 1, tree: aggregateMods(sanitizeTree(noGate.tree, noGate.stats, d, gd), d, gd) });
   assert.equal(sim.unlockedEvolutions.size, 0);
+  void forged;
 });
 
-test('T16 v2 save with owned nodes loads unchanged after G1a', () => {
+test('T16 owned nodes in the in-memory save survive sanitize unchanged (save v3)', () => {
   const owned = { su_key: 1, sp_reroll1: 1 };
   const clean = sanitizeTree(owned, defaultSave().stats, realDef, base);
   const out = sanitize(JSON.parse(JSON.stringify({ ...defaultSave(), gold: 5, tree: owned })));
-  assert.equal(out.version, 2);
+  assert.equal(out.version, 3);
   assert.deepEqual(out.tree, clean);
   assert.ok(Object.keys(clean).length >= 1);
 });

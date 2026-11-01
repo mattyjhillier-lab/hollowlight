@@ -22,6 +22,13 @@
   --flame: #ffab3a;
   --frost: #dff1fa;
   --frost-d: #8fb6c9;
+  /* Lantern Glass roles (U1); mirrored in palette.js CSS_VARS */
+  --lg-evo: #ffd36b;
+  --lg-ember: #996829;
+  --lg-wick-dark: #3a2d24;
+  --lg-danger: #d9534f;
+  --lg-glass-solid: #1c1714;
+  --lg-text: #fff3dc;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #07070d; }
@@ -42,29 +49,69 @@
   --glow-gold: rgba(255, 211, 107, 0.5);
 }
 
+/* UI IDENTITY v1 / U1 (docs/design/ui-identity-v1.md): self-hosted OFL fonts (docs/CREDITS.md). Latin subset woff2 from src/assets/fonts;
+   Vite inlines them as data URIs so the single-file build and the PWA offline cache carry them. No CDN. */
+@font-face { font-family: "Hollowlight Chancery"; src: url("./assets/fonts/hollowlight-chancery.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Hollowlight Chancery"; src: url("./assets/fonts/hollowlight-chancery-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("./assets/fonts/alegreya-sans-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("./assets/fonts/alegreya-sans-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* Lantern Glass type + role tokens. Additive: --font-head/--font-ui and every token above keep working (HUD A is unchanged).
+   Display = headings/names only (one weight; its digits are old-style, so ALL numerals use the body face, .ty-big included). Body = labels/descriptions/numerals. Whisper = flavour lines only. */
+:root {
+  --font-display: "Hollowlight Chancery", "Alegreya Sans", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; /* Fondamento subset, renamed (Reserved Font Name); one weight, so no faux bold; arrows fall through to Alegreya Sans */
+  --font-body: "Alegreya Sans", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-whisper: "Hollowlight Chancery", "Alegreya Sans", Georgia, serif; /* used with font-style: italic */
+  --fw-display: 400; --fw-display-soft: 400; --fw-display-strong: 400; /* Fondamento has a single weight */
+  --fw-body: 400; --fw-body-strong: 700; --fw-body-bold: 700; --fw-whisper: 400;
+  /* Scale (16 px rem base). Floors: small >= 12 px, body >= 13 px (14 px portrait; Alegreya Sans runs small and narrow), whisper >= 15 px, so nothing drops below legibility on phones. */
+  --fs-wordmark: clamp(2.6rem, 1.2rem + 5vw, 5rem);
+  --fs-title: clamp(1.5rem, 1rem + 1.6vw, 2.2rem);
+  --fs-big: clamp(1.7rem, 1.1rem + 2vw, 2.5rem);
+  --fs-card: clamp(1.1rem, .9rem + .6vw, 1.3rem);
+  --fs-body: max(13px, 1.06rem);
+  --fs-small: max(12px, .84rem);
+  --fs-whisper: max(15px, 1.05rem);
+  --lh-tight: 1.1; --lh-body: 1.4;
+  --ls-caps: .14em; --ls-title: .04em;
+  --num: "tnum" 1, "lnum" 1;
+  /* Lantern Glass roles (extend the HUD A plate/brass/cream/thread/flame tokens; gold stays evolution only). */
+  --lg-glass: rgba(28, 23, 20, .78);
+  --lg-hairline: rgba(216, 178, 106, .45);
+  --lg-leak: rgba(255, 171, 58, .14);
+  --lg-text-dim: rgba(255, 243, 220, .68);
+}
+@media (orientation: portrait) { :root { --fs-body: max(14px, 1.06rem); } }
+
+/* Type roles (specimen now; screens adopt them in U2+). */
+.ty-wordmark { font: var(--fw-display-strong) var(--fs-wordmark)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
+.ty-title { font: var(--fw-display) var(--fs-title)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
+.ty-card { font: var(--fw-display) var(--fs-card)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-title); }
+.ty-big { font: var(--fw-body-bold) var(--fs-big)/var(--lh-tight) var(--font-body); font-feature-settings: var(--num); }
+.ty-body { font: var(--fw-body) var(--fs-body)/var(--lh-body) var(--font-body); font-feature-settings: var(--num); }
+.ty-label { font: var(--fw-body-strong) var(--fs-body)/var(--lh-body) var(--font-body); font-feature-settings: var(--num); }
+.ty-small { font: var(--fw-body) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: .02em; font-feature-settings: var(--num); }
+.ty-kicker { font: var(--fw-body-strong) var(--fs-small)/var(--lh-body) var(--font-body); letter-spacing: var(--ls-caps); text-transform: uppercase; }
+.ty-whisper { font: italic var(--fw-whisper) var(--fs-whisper)/1.2 var(--font-whisper); }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
 body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 
-#app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 0 16px; }
+/* DESKTOP A1 (docs/design/desktop-v1.md): the stage fills every window edge to edge (phones already did, PHONE-A). The camera (zoomFor) crops/extends the world to any
+   shape; on ultrawide screens the HUD and menus stay inside a centred ~2.1:1 safe frame (--fx -> --sa-l/--sa-r, src/ui/desktop.js). Render only, the sim is untouched. */
+#app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 0; }
 #stage {
   position: relative;
-  width: min(100%, calc((100vh) * 16 / 9));
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 100%;
   container-type: inline-size;
   background: var(--ink);
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(94, 230, 255, .16), 0 0 40px rgba(139, 108, 255, .12);
   overflow: hidden;
-}
-/* Portrait screens: the stage fills the screen so the camera zoom can use the full height (docs/research/15 s3). */
-@media (max-aspect-ratio: 1/1) {
-  #app { padding: 0; }
-  #stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
 }
 #game, #ui { position: absolute; inset: 0; }
 #game canvas { display: block; width: 100% !important; height: 100% !important; }
-#ui { pointer-events: none; font-size: clamp(9px, 1.7cqw, 20px); }
+#ui { pointer-events: none; font-size: clamp(9px, calc(1.7cqw / var(--uik, 1)), 20px); }
 #ui button, #ui .card, #ui .charcard { pointer-events: auto; }
 #ui * { user-select: none; -webkit-user-select: none; }
 :focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
@@ -102,25 +149,11 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .keys { margin-top: 1.2em; color: var(--muted); }
 .keys b { color: var(--text); border: 1px solid rgba(94, 230, 255, .35); border-radius: .4em; padding: 0 .4em; margin: 0 .1em; background: rgba(94, 230, 255, .06); }
 
-  box-shadow: 0 0 1.2em var(--glow), 0 .6em 1.4em rgba(0, 0, 0, .45); transition: transform .2s cubic-bezier(.2, .9, .3, 1.35), box-shadow .2s; animation: cardIn .35s cubic-bezier(.2, .9, .3, 1.2) backwards; animation-delay: calc(var(--i, 0) * 70ms); }
 
-.endstats { display: grid; grid-template-columns: auto auto; gap: .25em 1.8em; text-align: left; margin: .6em 0 1em; padding: 1em 1.6em; border-radius: 1em; background: var(--glass); }
-.endstats dt { color: var(--muted); }
-.endstats dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
 .note { color: var(--muted); font-size: .85em; margin-top: 1em; }
 
 /* ---------- settings, results, version ---------- */
 .overlay.settings { z-index: 5; background: rgba(7, 7, 13, .95); }
-.setgrid { display: grid; grid-template-columns: 12em 12em; gap: .7em 1.2em; align-items: center; text-align: left; margin-bottom: 1em; }
-.setgrid input[type="range"], .setgrid select { width: 100%; font: inherit; accent-color: var(--teal); }
-.setgrid input[type="checkbox"] { width: 1.3em; height: 1.3em; justify-self: start; accent-color: var(--teal); }
-.setgrid select { background: var(--glass-solid); color: var(--text); border: 1px solid rgba(94, 230, 255, .35); border-radius: .5em; padding: .3em; }
-.setconfirm { margin-top: .8em; display: flex; gap: .6em; align-items: center; justify-content: center; flex-wrap: wrap; }
-.setconfirm:empty { display: none; }
-.setmsg { min-height: 1.4em; margin-top: .6em; color: var(--good); }
-.setmsg.bad { color: #ff8b95; }
-.newbest { color: var(--gold); font-weight: 700; letter-spacing: .12em; margin: -.3em 0 .5em; text-shadow: 0 0 .7em var(--glow-gold); }
-.newbest:empty { display: none; }
 .note.warn { color: #ff8b95; }
 .note.warn:empty { display: none; }
 .bankline { color: var(--muted); margin: -.8em 0 1em; }
@@ -128,68 +161,19 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { transition: none !important; animation: none !important; }
 
 @container (max-width: 520px) { .bossintro { font-size: 2em; } }
-.bossintro { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; font-family: var(--font-head); font-size: 3.2em; font-weight: 700; letter-spacing: .3em; color: #fff; text-shadow: 0 0 .5em var(--violet), 0 0 1.2em var(--glow-violet), 0 2px 4px #000; }
-.bossintro.on { animation: bossintro 2.6s ease-out; }
+.bossintro { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; font-family: var(--font-head); font-size: 3.2em; font-weight: 700; letter-spacing: .3em; color: var(--cream); -webkit-text-stroke: .07em var(--ink); paint-order: stroke fill; text-shadow: 0 .06em .18em rgba(0, 0, 0, .7); }
+.bossintro.on { animation: bossintro 2.2s ease-out; }
 @keyframes bossintro { 0% { opacity: 0; letter-spacing: .6em; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; letter-spacing: .3em; } }
+/* Elder Treant arrival (boss-treant-v1 (a)): bark-textured title (Husk bark greys, never red) + a quiet italic line; 2.6 s */
+.bossintro.is-bark.on { animation-duration: 2.6s; }
+.bossintro .bi-title { display: block; background: linear-gradient(180deg, #ece8d6 0%, #c8c3ad 38%, #8b846d 70%, #6f6857 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bossintro .bi-sub { display: block; margin-top: .35em; font-size: .36em; letter-spacing: .14em; font-style: italic; font-weight: 400; color: #e9dfc6; -webkit-text-stroke: .05em var(--ink); }
 .perf { position: absolute; right: .6em; top: 6.8em; padding: .3em .5em; background: rgba(7, 7, 13, .7); color: var(--ice); font-size: clamp(7px, 1.3cqw, 15px); white-space: pre; pointer-events: none; z-index: 9; display: none; line-height: 1.35; border-radius: .4em; font-family: ui-monospace, Consolas, monospace; }
 
-/* ---------- skill tree screen (plain placeholder styling; re-skin later) ---------- */
+/* ---------- skill tree screen: see src/ui/treescreen.css (T4 Lantern Trails) ---------- */
 .overlay.layer-tree { padding: 0; justify-content: flex-start; align-items: stretch; text-align: left; z-index: 4; background: rgba(7, 7, 13, .97); }
-.tree-top { display: flex; gap: .6em; align-items: center; padding: .6em .8em; flex-wrap: wrap; }
-.tree-bank { flex: 1; color: var(--gold); min-width: 8em; }
-.tree-zoom { min-width: 2.6em; padding: .5em .7em; }
-.tree-view { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; cursor: grab; outline: none; }
-.tree-view:active { cursor: grabbing; }
-.tree-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.tree-world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
-.tree-hub, .tree-branch { position: absolute; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; }
-.tree-hub { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--ice); display: grid; place-items: center; font-size: 11px; color: var(--ice); background: var(--glass-solid); }
-.tree-branch { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
-.tree-node { --c: var(--muted); position: absolute; width: 46px; height: 46px; padding: 0; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid var(--c); background: var(--glass-solid); color: var(--text); font: inherit; font-size: 11px; cursor: pointer; opacity: .9; transition: box-shadow .35s, filter .35s, opacity .35s; }
-.tree-node .tn-rank { position: relative; }
-.tree-node .tn-label { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; width: 110px; font-size: 11px; line-height: 1.15; text-align: center; color: var(--text); pointer-events: none; }
-.tree-world.far .tn-label { display: none; }
-.tree-node .tn-ring { position: absolute; inset: -6px; border-radius: 50%; background: conic-gradient(var(--c) calc(var(--p, 0) * 1%), transparent 0); -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%); mask: radial-gradient(circle, transparent 60%, #000 62%); opacity: 0; pointer-events: none; }
-.tree-node.st-condition .tn-ring { opacity: .9; }
-.tree-node.st-locked, .tree-node.st-excluded, .tree-node.st-condition, .tree-node.st-teaser { filter: grayscale(1); opacity: .45; }
-.tree-node.st-teaser { border-style: dashed; }
-.tree-node.st-available { background: var(--panel-solid); }
-.tree-node.st-available.afford { box-shadow: 0 0 10px var(--c); }
-.tree-node.st-owned { background: var(--c); color: #071019; filter: brightness(1.15); box-shadow: 0 0 16px var(--c), 0 0 4px #fff inset; }
-.tree-node.partial { box-shadow: 0 0 8px var(--c); }
-.tree-node.key { border-width: 3px; border-radius: 30%; }
-.tree-node.path { box-shadow: 0 0 12px #fff; opacity: 1; }
-.tree-node.sel { outline: 2px solid #fff; outline-offset: 3px; opacity: 1; }
-.tree-node.new { animation: treeNew 1.6s ease-in-out infinite; }
-@keyframes treeNew { 50% { box-shadow: 0 0 22px 4px var(--gold); } }
-.tree-panel { padding: .6em 1em; min-height: 6em; max-height: 32%; overflow: auto; background: var(--glass-solid); border-top: 1px solid var(--line); }
-.tp-title { font-family: var(--font-head); font-size: 1.15em; }
-.tp-meta, .tp-flavour { color: var(--muted); font-size: .85em; }
-.tp-flavour { font-style: italic; }
-.tp-desc { margin: .3em 0; }
-.tp-line.warn { color: #ff8b95; }
-.tp-msg { color: var(--muted); }
-.tp-line.ok, .tp-prog.done { color: var(--good); }
-.tp-prog { margin: .2em 0; font-size: .9em; }
-.tp-bar { height: .4em; background: rgba(255, 255, 255, .12); border-radius: 99px; overflow: hidden; margin-top: .15em; max-width: 22em; }
-.tp-bar i { display: block; height: 100%; background: var(--teal); }
-.tp-buy { margin-top: .4em; }
-.tp-buy.armed { color: var(--gold); }
-.tp-buy:disabled, .tree-top .btn:disabled { opacity: .45; cursor: default; }
-.tree-help { padding: .25em 1em .5em; color: var(--muted); font-size: .75em; background: var(--glass-solid); }
-.endtree { text-align: left; margin: .4em 0; max-width: 34em; }
-.et-head { color: var(--muted); letter-spacing: .1em; text-transform: uppercase; font-size: .8em; margin-top: .5em; }
-.et-head.good { color: var(--gold); }
-.et-row { font-size: .95em; }
-@container (max-width: 520px) { .tree-help { display: none; } .tree-panel { max-height: 45%; } }
-/* G1c: gate wording (plain; reuses tokens) */
-.tree-gatekey { position: absolute; left: .8em; top: .5em; font-size: .75em; letter-spacing: .06em; color: var(--muted); pointer-events: none; max-width: 60%; }
-.tree-node.gate { border-style: double; border-width: 4px; }
-.tree-node.gate .tn-rank { font-size: 8px; letter-spacing: .06em; }
-.tp-line.perm { color: var(--gold); font-size: .85em; }
 .firstrun { color: var(--muted); margin: 0 0 1em; max-width: 36em; text-align: center; }
 .firstrun .btn { margin-top: .5em; }
-.tree-panel { font-size: .85em; }
 
 /* ---------- TOUCH-1: phone controls (PROVISIONAL layout; HUD design sheet #1 will replace it) ---------- */
 html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
@@ -200,7 +184,7 @@ html.touch #ui { font-size: clamp(11px, 1.7cqw, 20px); }
 .touch-zone { position: absolute; left: 0; top: 0; bottom: 0; width: 55%; pointer-events: auto; touch-action: none; }
 .touch-base { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; border: 2px solid rgba(184, 242, 255, .55); background: rgba(14, 22, 44, .35); }
 .touch-knob { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; background: rgba(184, 242, 255, .55); box-shadow: 0 0 12px var(--glow-cyan); }
-.touch-ability { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 16px); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); width: 92px; height: 92px; padding: 0; border: 0; border-radius: 50%; pointer-events: auto; touch-action: none; color: var(--text); font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+.touch-ability { position: absolute; right: calc(var(--sa-r) + 16px); bottom: calc(var(--sa-b) + 16px); width: 92px; height: 92px; padding: 0; border: 0; border-radius: 50%; pointer-events: auto; touch-action: none; color: var(--text); font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   --p: 100; background: conic-gradient(var(--violet) calc(var(--p) * 1%), rgba(14, 22, 44, .85) 0); }
 .touch-ability::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--glass-solid); }
 .touch-ability > span { position: relative; text-align: center; line-height: 1.1; }
@@ -208,22 +192,16 @@ html.touch #ui { font-size: clamp(11px, 1.7cqw, 20px); }
 .touch-ability .ta-state { font-size: 15px; font-weight: 700; color: var(--ice); }
 .touch-ability.ready { box-shadow: 0 0 18px var(--glow-violet); }
 .touch-ability.down { transform: scale(.94); }
-.touch-pause { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 10px); top: calc(env(safe-area-inset-top, 0px) + 10px); width: 48px; height: 48px; padding: 0; border: 1px solid rgba(184, 242, 255, .4); border-radius: 12px; pointer-events: auto; touch-action: none; background: var(--glass); color: var(--text); font: 700 16px var(--font-ui); letter-spacing: 2px; }
-.touchkeys, .orient-hint { display: none; }
+.touch-pause { position: absolute; right: calc(var(--sa-r) + 10px); top: calc(var(--sa-t) + 10px); width: 48px; height: 48px; padding: 0; border: 1px solid rgba(184, 242, 255, .4); border-radius: 12px; pointer-events: auto; touch-action: none; background: var(--glass); color: var(--text); font: 700 16px var(--font-ui); letter-spacing: 2px; }
+.touchkeys { display: none; }
 html.touch .touchkeys { display: block; color: var(--muted); margin-top: 1.2em; }
 html.touch .keys { display: none; }
-@media (orientation: portrait) { html.touch .orient-hint { display: block; color: var(--gold); margin-top: .8em; } }
 /* menus: scroll if tall, 44px hit targets, no hover dependence */
-html.touch .overlay { overflow-y: auto; justify-content: safe center; touch-action: pan-y; padding-left: max(2em, env(safe-area-inset-left)); padding-right: max(2em, env(safe-area-inset-right)); padding-bottom: max(2em, env(safe-area-inset-bottom)); }
+html.touch .overlay { overflow-y: auto; justify-content: safe center; touch-action: pan-y; padding-left: max(2em, var(--sa-l)); padding-right: max(2em, var(--sa-r)); padding-bottom: max(2em, var(--sa-b)); }
 html.touch .overlay.layer-tree { padding: 0; touch-action: none; }
-html.touch .btn, html.touch .tree-zoom { min-height: 44px; min-width: 44px; }
+html.touch .btn { min-height: 44px; min-width: 44px; }
 html.touch .card .ban { min-height: 44px; padding: .25em 1em; }
-html.touch .setgrid { grid-template-columns: minmax(8em, 1fr) minmax(8em, 1fr); }
-html.touch .setgrid select, html.touch .setgrid input[type="range"] { min-height: 44px; }
-html.touch .setgrid input[type="checkbox"] { width: 30px; height: 30px; }
 html.touch .charcard { min-height: 44px; }
-html.touch .tree-view { touch-action: none; }
-html.touch .tree-panel { touch-action: pan-y; }
 @media (max-height: 480px) {
   html.touch .overlay { padding-top: 6px; padding-bottom: 6px; }
   html.touch .overlay h1 { font-size: 1.9em; margin: 0; }

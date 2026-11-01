@@ -1,0 +1,56 @@
+[
+ {
+  "view": "desk",
+  "look": "S7",
+  "totalMean": 87.9,
+  "totalMax": 99.6,
+  "s7Mean": 1.1,
+  "s7Max": 2,
+  "n": 5
+ },
+ {
+  "view": "desk",
+  "look": "today",
+  "totalMean": 84,
+  "totalMax": 90.4,
+  "s7Mean": null,
+  "s7Max": null,
+  "n": 5
+ },
+ {
+  "view": "land",
+  "look": "S7",
+  "totalMean": 87.9,
+  "totalMax": 99.9,
+  "s7Mean": 1,
+  "s7Max": 2.5,
+  "n": 5
+ },
+ {
+  "view": "land",
+  "look": "today",
+  "totalMean": 86.2,
+  "totalMax": 96.7,
+  "s7Mean": null,
+  "s7Max": null,
+  "n": 5
+ },
+ {
+  "view": "port",
+  "look": "S7",
+  "totalMean": 84.5,
+  "totalMax": 91.7,
+  "s7Mean": 0.3,
+  "s7Max": 0.6,
+  "n": 5
+ },
+ {
+  "view": "port",
+  "look": "today",
+  "totalMean": 82.2,
+  "totalMax": 86.7,
+  "s7Mean": null,
+  "s7Max": null,
+  "n": 5
+ }
+]

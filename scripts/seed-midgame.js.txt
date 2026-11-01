@@ -1,0 +1,1 @@
+(async()=>{const a=window.__app;const T=await import('/src/meta/tree.js');const api=a.treeApi();a.save.data.tree=T.presetTree(api.def,'half');a.save.data.gold=2600;a.save.data.shards=7;try{localStorage.setItem('hollowlight:tree:tip','1')}catch(e){}return Object.keys(a.save.data.tree).length})()

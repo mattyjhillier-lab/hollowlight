@@ -4,10 +4,14 @@
 //     lit top-left edge, flat shadow) and sampled NEAREST.
 // All sizes are in world units (the 640x360 logical space); INV[key] = world units per texel.
 import { INV, VIS, DENS } from './style.js';
+import { TILE_DRAW, TILE_GEN, TILE_PX } from './groundtiles.js';
 import { ROLE } from './palette.js';
+import { makeRigTextures } from './rigtex.js';
 
 const TAU = Math.PI * 2;
 const ch = (c, s) => (c >> s) & 255;
+// WL6d: the night eye core is the authored cream pushed 35% toward white (luminance carries the eye for protan viewers: measured 2.96:1 -> above 3:1 on the root crawler)
+const EYE_NIGHT_CORE = (() => { const f = (s) => { const v = (ROLE.eyeCore >> s) & 255; return Math.round(v + (255 - v) * 0.35); }; return (f(16) << 16) | (f(8) << 8) | f(0); })();
 const css = (c, a = 1) => `rgba(${ch(c, 16)},${ch(c, 8)},${ch(c, 0)},${a})`;
 // f<1 darkens, f>1 lightens toward white.
 const sh = (c, f) => {
@@ -152,6 +156,73 @@ const SPRITES = {
       emberEye(c, 8, 9.2, 1.2); emberEye(c, 12.2, 9.2, 1.2);
     },
   },
+  // EN3 flat fallback (atlas not baked yet / ?husks=0): upright stoat, pale bark blowpipe, ONE high ember eye
+  piper: {
+    w: 12, h: 16, shadow: [6, 15, 4.4, 1.3], enemy: 1,
+    draw: (c) => {
+      const F = 0x525c78, B = 0x9aa6bd, M = 0xc8c3ad;
+      line(c, 4, 13, 0.2, 13, 1, 9.6, 1.6, sh(F, 0.8)); // tail
+      ell(c, 6, 10.4, 2.8, 4.4, lg(c, 6, 6, 6, 15, [[0, sh(F, 1.15)], [1, sh(F, 0.7)]])); // body
+      ell(c, 7, 11, 1.2, 3, sh(B, 1)); // pale belly
+      ell(c, 5.6, 5, 2.6, 2.4, sh(F, 1.05)); // head
+      poly(c, [4, 3.4, 4.6, 1.2, 5.6, 3], sh(F, 0.8)); // ear
+      c.beginPath(); c.moveTo(5, 3.6); c.lineTo(11.6, 4.6); c.lineTo(11.6, 5.8); c.lineTo(5.4, 6.6); c.closePath(); c.fillStyle = sh(M, 1); c.fill(); // pipe husk
+      circ(c, 11.4, 5.2, 0.45, '#15121a');
+      emberEye(c, 6.2, 4.4, 0.9);
+    },
+  },
+  // EN4 flat fallback: squat toad, pale spore blister on its back, three tiny ember eyes in a triangle
+  toad: {
+    w: 16, h: 12, shadow: [8, 11, 6, 1.4], enemy: 1,
+    draw: (c) => {
+      const F = 0x64707f, S2 = 0xaab5a5, M = 0xc8c3ad;
+      ell(c, 8, 8.4, 6.4, 3.2, lg(c, 8, 5, 8, 12, [[0, sh(F, 1.1)], [1, sh(F, 0.7)]])); // body
+      ell(c, 6, 4.4, 3.6, 3.2, rg(c, 5, 3.4, 0.3, 3.8, [[0, sh(S2, 1.2)], [1, sh(S2, 0.85)]])); // blister
+      ell(c, 12.8, 7, 2.6, 2.2, sh(M, 1)); // husk
+      emberEye(c, 12.2, 6.4, 0.5); emberEye(c, 13.8, 6.3, 0.45); emberEye(c, 13, 7.8, 0.42);
+    },
+  },
+  // EN5 flat fallback: tall stag on slim legs, dark briar antler lyre, pale skull husk, two high ember eyes
+  hart: {
+    w: 18, h: 22, shadow: [9, 21, 6.5, 1.5], enemy: 1,
+    draw: (c) => {
+      const F = 0x56607a, A2 = 0x6a6672, M = 0xc8c3ad;
+      for (const x of [5, 7, 11.5, 13.2]) { c.fillStyle = sh(F, x < 9 ? 0.75 : 0.9); c.beginPath(); c.roundRect(x, 14, 1.4, 6.6, 0.6); c.fill(); }
+      ell(c, 9, 13.4, 6, 3.4, lg(c, 9, 10, 9, 17, [[0, sh(F, 1.15)], [1, sh(F, 0.7)]])); // body
+      line(c, 13, 12, 14, 10, 14.4, 8.4, 2.6, sh(F, 0.95)); // neck
+      line(c, 13.4, 6.4, 10.6, 3, 11.8, 0.6, 1.3, sh(A2, 1)); line(c, 14.2, 6.2, 16.8, 3.4, 16, 0.6, 1.3, sh(A2, 0.85)); // antlers
+      line(c, 12.2, 3.6, 10.4, 2.6, 9.8, 1.6, 0.9, sh(A2, 1)); line(c, 15.8, 3.4, 17.6, 2.4, 17.8, 1.2, 0.9, sh(A2, 0.85));
+      ell(c, 14.4, 7.6, 2.6, 2.2, sh(F, 1.05)); // head
+      c.beginPath(); c.moveTo(13.4, 6.2); c.lineTo(18, 8); c.lineTo(17.6, 9.2); c.lineTo(13.6, 9.2); c.closePath(); c.fillStyle = sh(M, 1); c.fill(); // skull husk
+      emberEye(c, 14.6, 7.2, 0.6); emberEye(c, 16.4, 7.8, 0.45);
+    },
+  },
+  // EN6 flat fallback (atlas not baked yet / Low): a big slate wolf, pale dead-branch mane, pale husk snout, THREE amber eyes (boss amber)
+  mane: {
+    w: 30, h: 22, shadow: [15, 20.6, 11, 2.2], enemy: 1,
+    draw: (c) => {
+      const F = 0x3c4562, M = 0xd0ccb8, BR = 0xcfcbbb, AM = 0xffb84a;
+      for (const x of [7, 10, 19, 22]) { c.fillStyle = sh(F, x < 15 ? 0.7 : 0.9); c.beginPath(); c.roundRect(x, 15, 2.2, 5.4, 0.8); c.fill(); }
+      line(c, 6, 12, 2, 9, 0.6, 6, 2.6, sh(F, 0.9)); // tail
+      ell(c, 14, 13, 9, 4.6, lg(c, 14, 8, 14, 18, [[0, sh(F, 1.2)], [1, sh(F, 0.7)]])); // body
+      for (const [x0, x1, y1] of [[9, 6, 3], [12, 11, 1.2], [15, 16, 0.6], [18, 21, 2]]) line(c, x0, 9.6, (x0 + x1) / 2, 5, x1, y1, 1.2, sh(BR, 1)); // the branch mane
+      ell(c, 22.4, 9.4, 4.4, 4, sh(F, 1.05)); // head
+      c.beginPath(); c.moveTo(21, 7.4); c.lineTo(29.4, 9.6); c.lineTo(29, 11.2); c.lineTo(21.6, 12.2); c.closePath(); c.fillStyle = sh(M, 1); c.fill(); // old husk snout
+      const am = (x, y, r) => { circ(c, x, y, r * 2.2, rg(c, x, y, 0, r * 2.2, [[0, css(AM, 0.8)], [1, css(AM, 0)]])); circ(c, x, y, r, sh(AM, 1.05)); circ(c, x, y, r * 0.5, sh(ROLE.eyeCore, 1)); };
+      am(23.4, 9.2, 0.75); am(25.8, 9.6, 0.6); am(23.9, 7.4, 0.5);
+    },
+  },
+  // EN8 flat fallback: the Lantern Reliquary (wood box, warm brass bands, peaked roof, warm seam light); the baked art replaces it (reliqtex.js)
+  chest: {
+    w: 14, h: 13, shadow: [7, 12.4, 5.4, 1.1],
+    draw: (c) => {
+      const WD = 0x6e5f58, BRS = 0xb98f4e;
+      c.fillStyle = lg(c, 0, 5, 0, 12, [[0, sh(WD, 1.2)], [1, sh(WD, 0.75)]]); c.beginPath(); c.roundRect(2, 5.6, 10, 6.4, 0.8); c.fill();
+      poly(c, [1.2, 5.8, 7, 1.4, 12.8, 5.8], sh(WD, 1.05)); // roof
+      c.fillStyle = sh(BRS, 1.1); c.fillRect(2.2, 5.6, 1.2, 6.4); c.fillRect(10.6, 5.6, 1.2, 6.4); c.fillRect(6.2, 5.6, 1.6, 2.6); // bands + clasp
+      c.fillStyle = 'rgba(255,217,138,0.95)'; c.fillRect(2, 5.4, 10, 0.7); // seam light
+    },
+  },
   treant: {
     w: 64, h: 72, shadow: [32, 66.5, 23, 5], enemy: 1, big: 1, rim: ROLE.barkRim,
     draw: (c) => {
@@ -193,12 +264,15 @@ const SPRITES = {
     },
   },
   orb: {
-    w: 12, h: 12, pad: 0,
+    // A2: a Holy Orbit light is a small lilac-white FLAME (the locked Elias v2 flame ring), not a ball. Same footprint and centre as before.
+    w: 12, h: 14, pad: 0,
     draw: (c) => {
-      circ(c, 6, 6, 6, rg(c, 6, 6, 1, 6, [[0, css(ROLE.spiritB2, 0.5)], [1, css(ROLE.spiritB2, 0)]]));
-      c.beginPath(); c.arc(6, 6, 4.4, 0, TAU); c.lineWidth = 0.6; c.strokeStyle = css(ROLE.spiritC, 0.8); c.stroke();
-      circ(c, 6, 6, 3.4, rg(c, 5, 5, 0.3, 3.8, [[0, '#ffffff'], [0.5, sh(ROLE.spiritC, 1)], [1, sh(ROLE.spiritA2, 1)]]));
-      circ(c, 4.9, 4.9, 1.1, 'rgba(255,255,255,0.95)');
+      circ(c, 6, 7.6, 6, rg(c, 6, 7.6, 1, 6, [[0, css(ROLE.spiritB2, 0.45)], [1, css(ROLE.spiritB2, 0)]]));
+      const fl = (k, col) => { c.beginPath(); c.moveTo(6, 12.6); c.bezierCurveTo(6 - 3.6 * k, 12, 6 - 3.4 * k, 7, 6 + 0.4 * k, 1.2 + (1 - k) * 6); c.bezierCurveTo(6 + 3.4 * k, 7, 6 + 3.6 * k, 12, 6, 12.6); c.fillStyle = col; c.fill(); };
+      fl(1, sh(ROLE.spiritC, 0.85));
+      c.lineWidth = 0.6; c.strokeStyle = css(ROLE.spiritA2, 0.7); c.stroke();
+      fl(0.74, sh(ROLE.spiritC, 1.2));
+      fl(0.42, '#ffffff');
     },
   },
   gem: {
@@ -277,6 +351,24 @@ const SPRITES = {
     draw: (c) => {
       c.beginPath(); c.ellipse(14, 6, 12, 4.5, 0, 0, TAU); c.lineWidth = 3.2; c.strokeStyle = 'rgba(255,255,255,0.22)'; c.stroke();
       c.beginPath(); c.ellipse(14, 6, 12, 4.5, 0, 0, TAU); c.lineWidth = 1.2; c.strokeStyle = 'rgba(255,255,255,0.95)'; c.stroke();
+    },
+  },
+  // WL6b: the night eye core: a small disc that stays solid to half its radius, so the cream centre carries luminance (colour-blind safe), unlike the soft glow
+  eyedot: {
+    w: 16, h: 16, pad: 0, noPix: 1,
+    draw: (c) => {
+      c.fillStyle = rg(c, 8, 8, 0, 8, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,1)'], [0.8, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]);
+      c.fillRect(0, 0, 16, 16);
+    },
+  },
+  // WL6b: one-image night eye: ember halo under a solid cream core (core diameter = 0.47 of the image), additive, no tint needed
+  eyen: {
+    w: 32, h: 32, pad: 0, noPix: 1,
+    draw: (c) => {
+      c.fillStyle = rg(c, 16, 16, 0, 16, [[0, css(ROLE.eye, 0.95)], [0.45, css(ROLE.eye, 0.55)], [1, css(ROLE.eye, 0)]]);
+      c.fillRect(0, 0, 32, 32);
+      c.fillStyle = rg(c, 16, 16, 0, 7.5, [[0, css(EYE_NIGHT_CORE, 1)], [0.72, css(EYE_NIGHT_CORE, 1)], [1, css(EYE_NIGHT_CORE, 0)]]);
+      c.fillRect(0, 0, 32, 32);
     },
   },
   glow: {
@@ -411,49 +503,6 @@ function rnd(seed) {
   return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-// A: 512-unit seamless tile at 2 texels/unit: soft moss blotches, mist, grain, faint blades.
-function groundA() {
-  const N = 1024;
-  const cv = mkCanvas(N, N);
-  const c = cv.getContext('2d');
-  const r = rnd(7);
-  c.fillStyle = '#1f3042'; c.fillRect(0, 0, N, N);
-  const wrap = (fn) => { for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) fn(dx, dy); };
-  const blot = (n, rmin, rmax, cols, amin, amax) => {
-    for (let i = 0; i < n; i++) {
-      const x = r() * N; const y = r() * N; const rad = rmin + r() * (rmax - rmin);
-      const col = cols[(r() * cols.length) | 0]; const a = amin + r() * (amax - amin);
-      wrap((dx, dy) => {
-        if (x + dx < -rad || x + dx > N + rad || y + dy < -rad || y + dy > N + rad) return;
-        c.fillStyle = rg(c, x + dx, y + dy, 0, rad, [[0, `rgba(${col},${a})`], [1, `rgba(${col},0)`]]);
-        c.fillRect(x + dx - rad, y + dy - rad, rad * 2, rad * 2);
-      });
-    }
-  };
-  blot(46, 90, 220, ['38,56,74', '27,42,58', '16,26,40'], 0.35, 0.7);
-  blot(60, 50, 150, ['56,92,90', '44,84,78', '48,72,92'], 0.16, 0.34);
-  blot(26, 60, 140, ['8,12,22'], 0.25, 0.5);
-  blot(22, 30, 80, ['90,140,150'], 0.06, 0.12);
-  c.lineCap = 'round';
-  for (let i = 0; i < 700; i++) {
-    const x = r() * N; const y = r() * N; const hgt = 6 + r() * 12; const lean = (r() - 0.5) * 8;
-    const col = r() < 0.6 ? '58,92,86' : '84,128,116'; const a = 0.1 + r() * 0.2;
-    wrap((dx, dy) => {
-      if (x + dx < -20 || x + dx > N + 20 || y + dy < -20 || y + dy > N + 20) return;
-      c.strokeStyle = `rgba(${col},${a})`; c.lineWidth = 1.4 + r() * 0.8;
-      c.beginPath(); c.moveTo(x + dx, y + dy); c.quadraticCurveTo(x + dx + lean * 0.3, y + dy - hgt * 0.5, x + dx + lean, y + dy - hgt); c.stroke();
-    });
-  }
-  const id = c.getImageData(0, 0, N, N);
-  const d = id.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const n = (r() - 0.5) * 7;
-    d[i] = d[i] * 1.75 + n; d[i + 1] = d[i + 1] * 1.75 + n; d[i + 2] = d[i + 2] * 1.75 + n * 1.2; // mid-value ground: darkness comes from the lightmap
-  }
-  c.putImageData(id, 0, 0);
-  return cv;
-}
-
 // B: 128-unit tile at 2 texels/unit, hard pixels: noise clusters, stones, grass tufts, moss.
 function groundB() {
   const N = 256;
@@ -496,19 +545,20 @@ function vignette(scene) {
   t.refresh();
 }
 
-// ---- damage-number digits ---------------------------------------------------------------
-// 10 glyph cells, 5x7 units each, drawn into a canvas at k texels per unit.
-function digitsCanvas(style) {
+// ---- damage-number glyphs ---------------------------------------------------------------
+// 15 glyph cells ("0123456789k+-.M"), 5x7 units each, drawn into a canvas at k texels per unit. brass = big-hit font with a brass rim.
+function digitsCanvas(style, brass) {
   const k = 4;
-  const cv = mkCanvas(50 * k, 7 * k);
+  const cv = mkCanvas(75 * k, 7 * k);
   const c = cv.getContext('2d');
   if (style === 'b') {
     const G = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001',
-      '111100111001111', '111100111101111', '111001001001001', '111101111101111', '111101111001111'];
+      '111100111001111', '111100111101111', '111001001001001', '111101111101111', '111101111001111',
+      '101101110101101', '000010111010000', '000000111000000', '000000000010000', '101111111101101'];
     G.forEach((bits, i) => {
       for (let q = 0; q < 15; q++) {
         if (bits[q] !== '1') continue;
-        c.fillStyle = '#07070d'; c.fillRect((i * 5 + 2 + (q % 3)) * k, (1 + Math.floor(q / 3)) * k, k, k);
+        c.fillStyle = brass ? '#8d6c34' : '#07070d'; c.fillRect((i * 5 + 2 + (q % 3)) * k, (1 + Math.floor(q / 3)) * k, k, k);
       }
     });
     G.forEach((bits, i) => {
@@ -519,14 +569,20 @@ function digitsCanvas(style) {
     });
     return { cv, k };
   }
-  c.font = `700 ${6.4 * k}px "Trebuchet MS", "Segoe UI", system-ui, sans-serif`;
+  c.font = `800 ${6.4 * k}px "Trebuchet MS", "Segoe UI", system-ui, sans-serif`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineJoin = 'round';
-  for (let i = 0; i < 10; i++) {
+  const chars = '0123456789k+-.M';
+  for (let i = 0; i < chars.length; i++) {
     const cx = (i * 5 + 2.5) * k;
     const cy = 3.7 * k;
-    c.lineWidth = 1.5 * k; c.strokeStyle = 'rgba(7,7,13,0.92)'; c.strokeText(String(i), cx, cy);
-    c.fillStyle = '#fff'; c.fillText(String(i), cx, cy);
+    if (brass) {
+      c.lineWidth = 1.9 * k; c.strokeStyle = 'rgba(7,7,13,0.92)'; c.strokeText(chars[i], cx, cy);
+      c.lineWidth = 1.15 * k; c.strokeStyle = '#a9823f'; c.strokeText(chars[i], cx, cy);
+    } else {
+      c.lineWidth = 1.5 * k; c.strokeStyle = 'rgba(7,7,13,0.92)'; c.strokeText(chars[i], cx, cy);
+    }
+    c.fillStyle = '#fff'; c.fillText(chars[i], cx, cy);
   }
   return { cv, k };
 }
@@ -540,6 +596,13 @@ export function makeStyleTextures(scene, style) {
     const t = scene.textures.addCanvas(key, cv);
     if (nearest && !def.noPix && key !== 'glow') t.setFilter(1); // Phaser.Textures.FilterMode.NEAREST
     INV[key] = (VIS[key] || 1) / S; // world units per texel, display size included
+    // WL6b: cool outline-only copy of each small enemy (the night rim, drawn behind far enemies on Med/High). Style A only; 1 world unit wide, tinted at draw time.
+    if (def.enemy && !def.big && !nearest) {
+      const rk = `${key}_r`;
+      if (scene.textures.exists(rk)) scene.textures.remove(rk);
+      scene.textures.addCanvas(rk, outlineOf(cv, '#ffffff', Math.max(1, Math.round(S * 1.0 / (VIS[key] || 1)))));
+      INV[rk] = INV[key];
+    }
     if (def.outline) {
       const ok = `${key}_o`;
       if (scene.textures.exists(ok)) scene.textures.remove(ok);
@@ -547,19 +610,71 @@ export function makeStyleTextures(scene, style) {
       INV[ok] = INV[key];
     }
   }
-  const gcv = style === 'b' ? groundB() : groundA();
-  const gt = scene.textures.addCanvas('ground', gcv);
-  if (nearest) gt.setFilter(1);
-  INV.ground = style === 'b' ? 0.5 : 0.5;
+  if (style === 'a') makeRigTextures(scene); // Wren v2 rig atlas + flat Wren/pup (replaces the old hero_wren)
+  // W1 ground: style a = four code-painted daylight tiles (src/gfx/groundtiles.js); style b keeps the old pixel tile.
+  // 'ground' = Hollow A (also the Low tier flat tile), 'groundR' = restored A, 'groundBH'/'groundBR' = Deep Forest Floor Hollow/restored.
+  const setTex = (key, cv) => {
+    if (scene.textures.exists(key)) scene.textures.remove(key);
+    const t = scene.textures.addCanvas(key, cv);
+    if (nearest) t.setFilter(1);
+  };
+  scene.bState = { lazy: null, ready: style === 'b' ? 1 : 0, t: 0 }; // W1b: set B tile readiness (see RunScene.tickGround)
+  if (style === 'b') {
+    const gcv = groundB();
+    for (const key of ['ground', 'groundR', 'groundBH', 'groundBR']) setTex(key, gcv);
+  } else {
+    // Meadow (A) tiles are built now; Deep Forest Floor (B) tiles start as flat-colour placeholders and are painted
+    // later in small slices by makeGroundLazy() (W1b), so the boot has no long stall.
+    for (const [key, name] of [['ground', 'hollowA'], ['groundR', 'restoredA']]) setTex(key, TILE_DRAW[name](mkCanvas(TILE_PX, TILE_PX)));
+    for (const [key, col] of [['groundBH', '#627082'], ['groundBR', '#507c48']]) {
+      // CPU-backed canvas: the lazy painter reads pixels back (grain strips + a flush per slice); on a GPU canvas every read stalled
+      // the GPU and dropped frames for ~2.5 s at the start of a run. Software canvas = cheap reads and a plain memcpy upload.
+      const cv = mkCanvas(TILE_PX, TILE_PX); const g = cv.getContext('2d', { willReadFrequently: true }); g.fillStyle = col; g.fillRect(0, 0, TILE_PX, TILE_PX);
+      setTex(key, cv);
+    }
+  }
+  INV.ground = 0.5;
   vignette(scene);
-  const dg = digitsCanvas(style);
-  const dt = scene.textures.addCanvas('digits', dg.cv);
-  if (nearest) dt.setFilter(1);
-  INV.digits = 1 / dg.k;
+  for (const [key, brass] of [['digits', false], ['digitsB', true]]) {
+    const dg = digitsCanvas(style, brass);
+    if (scene.textures.exists(key)) scene.textures.remove(key);
+    const dt = scene.textures.addCanvas(key, dg.cv);
+    if (nearest) dt.setFilter(1);
+    INV[key] = 1 / dg.k;
+  }
   const dot = mkCanvas(2, 2);
   dot.getContext('2d').fillStyle = '#fff';
   dot.getContext('2d').fillRect(0, 0, 2, 2);
   scene.textures.addCanvas('dot', dot);
   INV.dot = 1;
-  return dg.k;
+  return 1 / INV.digits;
+}
+
+// W1b: paints the B ground tiles into their placeholder canvases in slices. step(ms) runs generator work for at most ~ms,
+// returns true when both tiles are finished and uploaded to the GPU (texture source update). Visual only.
+export function makeGroundLazy(scene) {
+  const jobs = [['groundBH', TILE_GEN.hollowB], ['groundBR', TILE_GEN.restoredB]].map(([key, gen]) => {
+    const tex = scene.textures.get(key);
+    const cv = tex.getSourceImage();
+    return { tex, cx: cv.getContext('2d'), it: gen(cv), done: false };
+  });
+  return {
+    done: false,
+    n: 0, // FIX4: generator slices run so far (the loading bar's progress)
+    step(ms) {
+      for (const j of jobs) if (j.up) { j.up = false; j.tex.source[0].update(); return false; } // each 4 MB GPU upload gets a frame of its own
+      const t0 = performance.now();
+      for (const j of jobs) {
+        while (!j.done && performance.now() - t0 < ms) {
+          const fin = j.it.next().done;
+          this.n++;
+          j.cx.getImageData(0, 0, 1, 1); // forces the canvas to flush this slice now, keeps the cost inside the budget (cheap: CPU canvas)
+          if (fin) { j.done = true; j.up = true; return false; }
+        }
+        if (performance.now() - t0 >= ms) break;
+      }
+      this.done = jobs.every((j) => j.done);
+      return this.done;
+    },
+  };
 }

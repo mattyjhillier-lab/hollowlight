@@ -1,0 +1,26 @@
+part A, seeds 48, live bot random picks unless noted
+elias|fresh|off                                   13% +-5 L23 evo 5:58 e0.7  hurts 38  uses 0.0  dmg 99053
+elias|fresh|on                                    23% +-6 L34 evo 6:02 e0.7  hurts 42  uses 10.2  dmg 126802
+elias|longnight-max|off                            8% +-4 L33 evo 14:03 e0.2  hurts 40  uses 5.7  dmg 181955
+elias|longnight-max|on                            19% +-6 L36 evo 13:03 e0.2  hurts 41  uses 21.8  dmg 206215
+elias|maxed|off                                   85% +-5 L53 evo 10:05 e1  hurts 54  uses 1.7  dmg 287884
+elias|maxed|on                                    83% +-5 L53 evo 10:28 e1  hurts 49  uses 21.8  dmg 278025
+elias|mid|off                                     27% +-6 L41 evo 10:56 e0.4  hurts 51  uses 2.7  dmg 176690
+elias|mid|on                                      31% +-7 L40 evo 11:59 e0.2  hurts 50  uses 13.1  dmg 181407
+wren|fresh|off                                    29% +-7 L45 evo 3:51 e0.9  hurts 39  uses 0.0  dmg 228216
+wren|fresh|on                                     21% +-6 L45 evo 3:58 e0.9  hurts 38  uses 9.3  dmg 206425
+wren|longnight-max|off                             4% +-3 L33 evo 14:03 e0.1  hurts 40  uses 4.8  dmg 167638
+wren|longnight-max|on                              4% +-3 L31 evo 7:05 e0  hurts 38  uses 17.2  dmg 155488
+wren|maxed|off                                    81% +-6 L53 evo 10:20 e1.1  hurts 40  uses 1.5  dmg 285147
+wren|maxed|on                                     79% +-6 L53 evo 10:31 e0.9  hurts 43  uses 20.0  dmg 279472
+wren|mid|off                                      33% +-7 L41 evo 10:40 e0.4  hurts 47  uses 2.5  dmg 186339
+wren|mid|on                                       33% +-7 L43 evo 11:19 e0.4  hurts 47  uses 12.5  dmg 196215
+paired delta (first - second), win points +-SE, and discordant seeds
+wren|fresh|on vs off                             -8.3 +-8.3  (only-first-wins 6, only-second-wins 10)
+wren|mid|on vs off                               +0.0 +-7.3  (only-first-wins 6, only-second-wins 6)
+wren|maxed|on vs off                             -2.1 +-8.1  (only-first-wins 7, only-second-wins 8)
+wren|longnight-max|on vs off                     +0.0 +-4.2  (only-first-wins 2, only-second-wins 2)
+elias|fresh|on vs off                            +10.4 +-7.4  (only-first-wins 9, only-second-wins 4)
+elias|mid|on vs off                              +4.2 +-8.9  (only-first-wins 10, only-second-wins 8)
+elias|maxed|on vs off                            -2.1 +-8.1  (only-first-wins 7, only-second-wins 8)
+elias|longnight-max|on vs off                    +10.4 +-6.8  (only-first-wins 8, only-second-wins 3)

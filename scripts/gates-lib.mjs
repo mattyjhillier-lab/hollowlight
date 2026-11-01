@@ -6,10 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Sim } from '../src/sim/Sim.js';
 import { compileTree, presetTree, aggregateMods, conditionProgress } from '../src/meta/tree.js';
+import { loadTree } from '../src/meta/treefs.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
-export const base = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters', 'tree'].map((n) => [n, load(n)]));
+export const base = Object.fromEntries(['balance', 'weapons', 'evolutions', 'characters', 'enemies', 'chapters'].map((n) => [n, load(n)]));
+base.tree = loadTree(base).live; // fragments in src/data/tree/
 export const treeDef = compileTree(base.tree, base);
 
 // ---- proposed starter kits (pool at run 1). The signature weapon is always owned at start.
@@ -33,6 +35,10 @@ export const GATES = [
   { id: 'soul_lance', kind: 'evo', cond: { t: 'all', of: [{ t: 'bossKill', id: 'elder_treant', n: 2 }, { t: 'evolveWeapon', id: 'spirit_bolts', n: 1 }] } },
   { id: 'static_storm', kind: 'evo', cond: { t: 'evolveWeapon', id: 'any', n: 12 } },
   { id: 'thunder_judgment', kind: 'evo', cond: { t: 'all', of: [{ t: 'clearChapter', id: 'cursed_forest', n: 3 }, { t: 'evolveWeapon', id: 'chain_lightning', n: 1 }] } },
+  { id: 'spearhead', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'raven_flock', n: 3 }, { t: 'killEnemy', id: 'crow', n: 20000 }] } }, // W9: late gate 13 (counts estimated)
+  { id: 'returning_pages', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'spirit_bolts', n: 2 }, { t: 'clearChapter', id: 'cursed_forest', n: 2 }] } }, // W10d: late gate (counts per third-evolutions.md section 7, estimated)
+  { id: 'storm_tether', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'chain_lightning', n: 2 }, { t: 'bossKill', id: 'elder_treant', n: 5 }] } }, // W11d: late gate 15 (counts estimated)
+  { id: 'vesper_tide', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'holy_orbit', n: 3 }, { t: 'useCharacter', id: 'elias', n: 8 }] } }, // W12: late gate 16 (counts estimated)
 ];
 
 export function unlockedAfter(stats) {
@@ -51,42 +57,16 @@ export function gatedData(allowedEvos) {
   return { ...base, weapons, evolutions };
 }
 
-// ---- soft cap (applied to aggregateMods output): total = cap * (1 - exp(-sum/cap)); negatives pass through.
-export const SOFT = {
-  // percent caps per stat category (the asymptote of the positive total)
-  mod_damage: 20, mod_area: 20, mod_cooldown: 15, mod_speed: 10, mod_pickup: 40, mod_xp: 25, mod_gold: 40, mod_abilityCd: 40,
-  maxHp: 20, levelHeal: 6, heart: 100, magnet: 100, heartHeal: 60, abilityDur: 40,
-  w_power: 25, w_other: 20,
-};
-const sc = (s, cap) => (s <= 0 ? s : cap * (1 - Math.exp(-s / cap)));
-export function softCap(agg, caps = SOFT, scale = 1) {
-  if (!agg) return agg;
-  const o = JSON.parse(JSON.stringify(agg));
-  const P = (v, cap) => 1 + sc((v - 1) * 100, cap * scale) / 100;
-  for (const k of ['damage', 'area', 'speed', 'pickup', 'xp', 'gold']) o.mods[k] = P(agg.mods[k], caps[`mod_${k}`]);
-  for (const k of ['cooldown', 'abilityCd']) { const red = (1 - agg.mods[k]) * 100; o.mods[k] = 1 - sc(red, caps[`mod_${k}`] * scale) / 100; }
-  o.player.maxHp = P(agg.player.maxHp, caps.maxHp);
-  o.player.levelHeal = sc(agg.player.levelHeal, caps.levelHeal * scale);
-  for (const k of ['heart', 'magnet', 'heartHeal']) o.drops[k] = P(agg.drops[k], caps[k]);
-  o.ability.dur = P(agg.ability.dur, caps.abilityDur);
-  for (const w of Object.values(o.weaponBonus)) for (const [stat, b] of Object.entries(w)) b.pct = sc(b.pct, (stat === 'power' ? caps.w_power : caps.w_other) * scale);
-  return o;
-}
+// soft cap + strip live in live-tree.mjs (shared with the live-bot probes)
+import { SOFT, softCap, applyStrip } from './live-tree.mjs';
+export { SOFT, softCap };
 
 // spec: { preset:'none'|'half'|'full'|number, soft?:bool, caps?, scale?, noVerbs?:bool }
 export function buildTree(spec) {
   if (!spec || spec.preset === 'none') return null;
   let agg = aggregateMods(presetTree(treeDef, spec.preset), treeDef, base);
   if (spec.soft) agg = softCap(agg, spec.caps || SOFT, spec.scale || 1);
-  for (const g of spec.strip || []) {
-    if (g === 'rerolls') { agg.meta.rerolls = 0; agg.meta.banishes = 0; }
-    if (g === 'revive') agg.player.revive = 0;
-    if (g === 'perks') { agg.rush = null; agg.evoLuck = 1; }
-    if (g === 'auto') agg.ability.autoHp = 0;
-    if (g === 'heal') { agg.player.levelHeal = 0; agg.drops = { heart: 1, magnet: 1, heartHeal: 1 }; }
-    if (g === 'flat') for (const w of Object.values(agg.weaponBonus)) for (const b of Object.values(w)) b.add = 0;
-    if (g === 'ability') { agg.mods.abilityCd = 1; agg.ability.dur = 1; }
-  }
+  applyStrip(agg, spec.strip);
   return agg;
 }
 
@@ -107,7 +87,8 @@ function botInput(sim) {
 }
 function pick(sim, rng, focus) {
   const offer = sim.offer;
-  if (offer.gold.length) return offer.gold[0].key;
+  if (offer.gold.length) return (offer.gold.length > 1 ? offer.gold[Math.floor(rng() * offer.gold.length)] : offer.gold[0]).key; // flow v2: several evolutions are offered at once; the bot picks one at random
+  if (offer.start === 'favour') return offer.cards[0].key; // T6 Favoured Spirit: the bot marks its hero's own weapon (listed first)
   if (sim.banishesLeft > 0) { const f = offer.cards.find((c) => c.kind === 'fallback'); if (f && sim.banish(f.key)) return pick(sim, rng, focus); }
   if (sim.rerollsLeft > 0 && !offer.cards.some((c) => c.kind === 'weapon' || (c.kind === 'stat' && c.rank >= 1)) && sim.reroll()) return pick(sim, rng, focus);
   const cards = offer.cards;
@@ -124,7 +105,7 @@ export function playGated(cfg) {
   const allowed = new Set([...(cfg.kit || KITS[cfg.hero]), ...cfg.weapons]);
   const tree = cfg.tree ? JSON.parse(JSON.stringify(cfg.tree)) : {};
   tree.unlocks = { weapons: [...allowed], heroes: [], abilityUpgrades: [], modifiers: [] };
-  const sim = new Sim({ data, characterId: cfg.hero, seed: cfg.seed, meta: {}, tree });
+  const sim = new Sim({ data, characterId: cfg.hero, seed: cfg.seed, meta: {}, tree, startWeapon: cfg.startWeapon || null });
   let s = cfg.seed * 9301 + 49297;
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;

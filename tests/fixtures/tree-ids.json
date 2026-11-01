@@ -1,0 +1,682 @@
+{
+ "sp_reroll1": [
+  "core",
+  0
+ ],
+ "sp_ban1": [
+  "core",
+  1
+ ],
+ "li_vigor": [
+  "core",
+  2
+ ],
+ "su_bond": [
+  "core",
+  3
+ ],
+ "ma_focus": [
+  "core",
+  4
+ ],
+ "li_reach": [
+  "core",
+  5
+ ],
+ "li_step": [
+  "core",
+  6
+ ],
+ "li_study": [
+  "core",
+  7
+ ],
+ "li_oak": [
+  "core",
+  8
+ ],
+ "sp_cd1": [
+  "core",
+  9
+ ],
+ "sp_reroll2": [
+  "core",
+  10
+ ],
+ "sp_reroll3": [
+  "core",
+  11
+ ],
+ "sp_ban2": [
+  "core",
+  12
+ ],
+ "sp_ban3": [
+  "core",
+  13
+ ],
+ "sp_cd2": [
+  "core",
+  14
+ ],
+ "sp_cd3": [
+  "core",
+  15
+ ],
+ "sp_cd4": [
+  "core",
+  16
+ ],
+ "sp_dur": [
+  "core",
+  17
+ ],
+ "sp_auto": [
+  "core",
+  18
+ ],
+ "li_regen": [
+  "core",
+  19
+ ],
+ "li_hearts": [
+  "core",
+  20
+ ],
+ "li_heal": [
+  "core",
+  21
+ ],
+ "li_magnet": [
+  "core",
+  22
+ ],
+ "li_coin": [
+  "core",
+  23
+ ],
+ "li_scav": [
+  "core",
+  24
+ ],
+ "li_root": [
+  "core",
+  25
+ ],
+ "li_vow": [
+  "core",
+  26
+ ],
+ "li_hoard": [
+  "core",
+  27
+ ],
+ "su_pot": [
+  "core",
+  28
+ ],
+ "su_swift": [
+  "core",
+  29
+ ],
+ "su_rush": [
+  "core",
+  30
+ ],
+ "ma_cast": [
+  "core",
+  31
+ ],
+ "ma_area": [
+  "core",
+  32
+ ],
+ "ma_attune": [
+  "core",
+  33
+ ],
+ "ma_pow3": [
+  "core",
+  34
+ ],
+ "sp_edge": [
+  "core",
+  35
+ ],
+ "su_key": [
+  "core",
+  36
+ ],
+ "ma_key": [
+  "core",
+  37
+ ],
+ "li_lantern": [
+  "core",
+  38
+ ],
+ "li_glass": [
+  "core",
+  39
+ ],
+ "li_last": [
+  "core",
+  40
+ ],
+ "li_elder": [
+  "core",
+  41
+ ],
+ "sp_mastery": [
+  "core",
+  42
+ ],
+ "ma_ascend": [
+  "core",
+  43
+ ],
+ "li_dawn": [
+  "core",
+  44
+ ],
+ "tz_marsh": [
+  "core",
+  45
+ ],
+ "tz_witch": [
+  "core",
+  46
+ ],
+ "tz_crown": [
+  "core",
+  47
+ ],
+ "gt_chain_lightning": [
+  "cl",
+  0
+ ],
+ "gt_thunder_judgment": [
+  "cl",
+  1
+ ],
+ "gt_static_storm": [
+  "cl",
+  2
+ ],
+ "gt_storm_tether": [
+  "cl",
+  3
+ ],
+ "cl_arc": [
+  "cl",
+  4
+ ],
+ "cl_power": [
+  "cl",
+  5
+ ],
+ "cl_spark": [
+  "cl",
+  6
+ ],
+ "cl_reach": [
+  "cl",
+  7
+ ],
+ "cl_storm": [
+  "cl",
+  8
+ ],
+ "cl_quick": [
+  "cl",
+  9
+ ],
+ "cl_crack": [
+  "cl",
+  10
+ ],
+ "cl_hum": [
+  "cl",
+  11
+ ],
+ "cl_ground": [
+  "cl",
+  12
+ ],
+ "cl_kin": [
+  "cl",
+  13
+ ],
+ "cl_crown": [
+  "cl",
+  14
+ ],
+ "gt_phantom_stampede": [
+  "wf",
+  0
+ ],
+ "gt_dire_alpha": [
+  "wf",
+  1
+ ],
+ "su_call": [
+  "wf",
+  2
+ ],
+ "wf_lope": [
+  "wf",
+  3
+ ],
+ "wf_bleed": [
+  "wf",
+  4
+ ],
+ "wf_scent": [
+  "wf",
+  5
+ ],
+ "wf_rend": [
+  "wf",
+  6
+ ],
+ "wf_third": [
+  "wf",
+  7
+ ],
+ "wf_hunt": [
+  "wf",
+  8
+ ],
+ "wf_maul": [
+  "wf",
+  9
+ ],
+ "wf_coat": [
+  "wf",
+  10
+ ],
+ "wf_bite": [
+  "wf",
+  11
+ ],
+ "wf_fang": [
+  "wf",
+  12
+ ],
+ "gt_judgement_wheel": [
+  "or",
+  0
+ ],
+ "gt_vesper_tide": [
+  "or",
+  1
+ ],
+ "or_power": [
+  "or",
+  2
+ ],
+ "or_wick": [
+  "or",
+  3
+ ],
+ "or_kindle": [
+  "or",
+  4
+ ],
+ "or_wide": [
+  "or",
+  5
+ ],
+ "or_seventh": [
+  "or",
+  6
+ ],
+ "or_tide": [
+  "or",
+  7
+ ],
+ "or_ember": [
+  "or",
+  8
+ ],
+ "or_swing": [
+  "or",
+  9
+ ],
+ "or_spin": [
+  "or",
+  10
+ ],
+ "or_bright": [
+  "or",
+  11
+ ],
+ "or_vigil": [
+  "or",
+  12
+ ],
+ "gt_raven_flock": [
+  "rv",
+  0
+ ],
+ "gt_dive_bombers": [
+  "rv",
+  1
+ ],
+ "gt_murder_storm": [
+  "rv",
+  2
+ ],
+ "gt_spearhead": [
+  "rv",
+  3
+ ],
+ "rv_talon": [
+  "rv",
+  4
+ ],
+ "rv_quill": [
+  "rv",
+  5
+ ],
+ "rv_wide": [
+  "rv",
+  6
+ ],
+ "rv_glide": [
+  "rv",
+  7
+ ],
+ "rv_eye": [
+  "rv",
+  8
+ ],
+ "rv_watch": [
+  "rv",
+  9
+ ],
+ "rv_oath": [
+  "rv",
+  10
+ ],
+ "rv_wing": [
+  "rv",
+  11
+ ],
+ "rv_kin": [
+  "rv",
+  12
+ ],
+ "rv_beat": [
+  "rv",
+  13
+ ],
+ "rv_peck": [
+  "rv",
+  14
+ ],
+ "gt_spirit_bolts": [
+  "bo",
+  0
+ ],
+ "gt_spirit_tempest": [
+  "bo",
+  1
+ ],
+ "gt_soul_lance": [
+  "bo",
+  2
+ ],
+ "gt_returning_pages": [
+  "bo",
+  3
+ ],
+ "bo_twin": [
+  "bo",
+  4
+ ],
+ "bo_glyph": [
+  "bo",
+  5
+ ],
+ "bo_pierce": [
+  "bo",
+  6
+ ],
+ "bo_swift": [
+  "bo",
+  7
+ ],
+ "bo_ink": [
+  "bo",
+  8
+ ],
+ "bo_quick": [
+  "bo",
+  9
+ ],
+ "bo_line": [
+  "bo",
+  10
+ ],
+ "bo_page": [
+  "bo",
+  11
+ ],
+ "bo_hand": [
+  "bo",
+  12
+ ],
+ "bo_kin": [
+  "bo",
+  13
+ ],
+ "bo_seal": [
+  "bo",
+  14
+ ],
+ "ch_elias": [
+  "el",
+  0
+ ],
+ "el_wheel": [
+  "el",
+  1
+ ],
+ "el_lamp": [
+  "el",
+  2
+ ],
+ "ch_wren": [
+  "wr",
+  0
+ ],
+ "wr_grip": [
+  "wr",
+  1
+ ],
+ "wr_spark": [
+  "wr",
+  2
+ ],
+ "bs_wolf1": [
+  "bs",
+  0
+ ],
+ "bs_wolf2": [
+  "bs",
+  1
+ ],
+ "bs_wolf3": [
+  "bs",
+  2
+ ],
+ "bs_crow1": [
+  "bs",
+  3
+ ],
+ "bs_crow2": [
+  "bs",
+  4
+ ],
+ "bs_crow3": [
+  "bs",
+  5
+ ],
+ "bs_crawl1": [
+  "bs",
+  6
+ ],
+ "bs_crawl2": [
+  "bs",
+  7
+ ],
+ "bs_crawl3": [
+  "bs",
+  8
+ ],
+ "bs_treant1": [
+  "bs",
+  9
+ ],
+ "bs_treant2": [
+  "bs",
+  10
+ ],
+ "bs_treant3": [
+  "bs",
+  11
+ ],
+ "bs_page": [
+  "bs",
+  12
+ ],
+ "cd_stir": [
+  "cd",
+  0
+ ],
+ "cd_peek": [
+  "cd",
+  1
+ ],
+ "cd_bars": [
+  "cd",
+  2
+ ],
+ "cd_radar": [
+  "cd",
+  3
+ ],
+ "cd_favour": [
+  "cd",
+  4
+ ],
+ "cd_fourth": [
+  "cd",
+  5
+ ],
+ "rs_autoset": [
+  "rs",
+  0
+ ],
+ "rs_start": [
+  "rs",
+  1
+ ],
+ "rs_bless": [
+  "rs",
+  2
+ ],
+ "rs_slot5": [
+  "rs",
+  3
+ ],
+ "gt_cursed_forest_hard": [
+  "df",
+  0
+ ],
+ "gt_cursed_forest_expert": [
+  "df",
+  1
+ ],
+ "df_ward": [
+  "df",
+  2
+ ],
+ "df_vigil": [
+  "df",
+  3
+ ],
+ "df_star": [
+  "df",
+  4
+ ],
+ "co_pull": [
+  "co",
+  0
+ ],
+ "co_call": [
+  "co",
+  1
+ ],
+ "co_glean": [
+  "co",
+  2
+ ],
+ "br_satchel": [
+  "core",
+  48
+ ],
+ "br_almanac": [
+  "core",
+  49
+ ],
+ "br_cardfan": [
+  "core",
+  50
+ ],
+ "br_hearthkey": [
+  "core",
+  51
+ ],
+ "gt_ghost_wolves": [
+  "wf",
+  13
+ ],
+ "gt_holy_orbit": [
+  "or",
+  13
+ ],
+ "br_wardrobe": [
+  "core",
+  52
+ ],
+ "wd_rose": [
+  "wd",
+  0
+ ],
+ "wd_white": [
+  "wd",
+  1
+ ],
+ "wd_ember": [
+  "wd",
+  2
+ ],
+ "wd_petal": [
+  "wd",
+  3
+ ],
+ "wd_lilac": [
+  "wd",
+  4
+ ],
+ "wd_firefly": [
+  "wd",
+  5
+ ],
+ "wd_motes": [
+  "wd",
+  6
+ ]
+}

@@ -11,22 +11,83 @@ import {
   computeStats,
   xpForLevel,
   fallbackCard,
+  previewDraw,
+  offerFromPreview,
+  evoRankMult,
+  startOffer,
+  BURN_RATE,
+  BURN_TIME,
 } from './cards.js';
 import { validateBlessings, blessingCount, blessTotals, healSwap } from './blessings.js';
-import { WEAPON_BEHAVIOURS } from './weapons.js';
+import { resolveTier, bossShardsFor, resolveAssist } from './tiers.js';
+import { rollMark, applyMark, heartAura, updateEmbers, markSeed, EMBER } from './marks.js';
+import { WEAPON_BEHAVIOURS, boltSeek, boltRetarget, pagesStep } from './weapons.js';
+import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
+import { BossFight, validateFight } from './boss.js';
+import { bondDef, bondBonus, keepsakeDef } from '../meta/bond.js';
+import { validateSites, Sites, siteSeed } from './sites.js';
+
+const FIGHT_OK = new WeakSet(); // boss fight blocks already validated (shipped data: validated once per object, not per run)
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// T6 tool clusters (docs/design/difficulty-tiers-economy-v1.md 8.2; all inert without the matching owned lantern):
+// Almanac Tells: a Fell Wolf's lunge tell starts TELL_EARLY s sooner (the boss gets a brighter tell ring, render only, bossview.js).
+export const TELL_EARLY = 0.1;
+export const WOLF_TELL = 0.55;
+// Hearth-key 'Chosen Moment': the auto-fire rules (Settings). crowd25 = 25+ foes within AUTO_NEAR world units of the hero.
+export const AUTO_RULES = ['hp30', 'hp50', 'crowd25', 'off'];
+export const AUTO_NEAR = 140;
+export const AUTO_CROWD = 25;
+// Almanac lore: tree map enemy id -> +% damage against that type (2 at most per type, as aggregateMods clamps it); anything else is dropped.
+function cleanLore(raw, enemies) {
+  const out = Object.create(null);
+  if (!raw || typeof raw !== 'object') return out;
+  for (const k of Object.keys(raw)) if (Object.hasOwn(enemies, k) && Number.isFinite(raw[k]) && raw[k] > 0) out[k] = Math.min(2, raw[k]);
+  return out;
+}
+
+// MARK (W8b): +15% damage taken from ALL sources for 3 s, refresh only (re-marking resets the timer, never stacks), bosses included.
+// TOTAL DAMAGE-AMP CAP (Matt 2026-10-16): the product of every temporary damage amp (Mark, a source amp such as Rally the Pack +50%)
+// is capped at x1.75; applied in exactly one place (Sim.damageAmp, used by Sim.hurt).
+export const MARK_AMP = 0.15;
+export const MARK_TIME = 3;
+export const AMP_CAP = 1.75;
+
+// EXTRAS v1 Endless Dusk knobs (balance.endless), bounded; missing or bad data -> null (the option is simply not offered).
+export function endlessDef(b) {
+  const E = b && b.endless;
+  const ok = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  if (!E || !ok(E.density, 0, 0.5) || !ok(E.goldMul, 0, 1) || !ok(E.goldCap, 0, 2) || !ok(E.swarmEvery, 20, 600) || !ok(E.swarmBase, 0, 80) || !ok(E.swarmGrow, 0, 20)) return null;
+  return Object.freeze({ density: E.density, goldMul: E.goldMul, goldCap: E.goldCap, swarmEvery: E.swarmEvery, swarmBase: E.swarmBase, swarmGrow: E.swarmGrow });
+}
+
 export class Sim {
-  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false }) {
+  constructor({ data, characterId = 'wren', chapterId = 'cursed_forest', seed = 1, meta = {}, tree = null, startTime = 0, godMode = false, tier = 'normal', autoRule = null, startWeapon = null, bond = 0, keepsakes = null, assist = false, sites = false }) {
     this.data = data;
     this.balance = data.balance;
     this.chapterId = chapterId;
     this.chapter = data.chapters[chapterId];
+    // Difficulty tier (src/sim/tiers.js): an unknown or forged id resolves to Twilight (every multiplier 1), so the param can never reach another path.
+    this.tier = resolveTier(data.tiers, chapterId, tier);
+    // EXTRAS v1 Gentle Light: Twilight only (strict true); null = off, and every assist read below is guarded, so off runs are byte-identical
+    this.assist = resolveAssist(data.tiers, this.tier.id, assist);
     this.character = data.characters[characterId];
     this.characterId = characterId;
+    // CHARACTER SYSTEM v2: one shared body (balance.body); the starting spirit is any weapon id (the app only offers tree-unlocked ones; a bad id
+    // falls back to the character's kindred spirit); Bond level is read ONCE here (banked between runs, never changes mid-run).
+    this.startWeapon = typeof startWeapon === 'string' && Object.hasOwn(data.weapons, startWeapon) ? startWeapon : this.character.kindred;
+    this.bondLevel = Number.isInteger(bond) && bond > 0 ? bond : 0;
+    this.bondFx = bondBonus(bondDef(data.balance), this.bondLevel);
+    this.keepDef = keepsakeDef(data.balance);
+    // keepsakes: sleeping characters whose hint is met (the app decides; known ids only). Own RNG stream, so runs without one stay byte-identical.
+    this.keepFor = Array.isArray(keepsakes) ? keepsakes.filter((id) => typeof id === 'string' && Object.hasOwn(data.characters, id) && id !== characterId && data.characters[id].keepsake).slice(0, 16) : [];
+    this.keepRng = createRng((seed ^ 0x6b33) >>> 0);
+    this.keepsake = null; // character id whose keepsake this run found (max one per run)
+    const body = data.balance.body || { hp: 100, speed: 92 };
     this.seed = seed;
     this.rng = createRng(seed);
+    this.markRng = createRng(markSeed(seed)); // DT2 Hollow marks: own stream, only drawn on a tier that lists marks (Twilight never touches it)
     this.godMode = godMode;
 
     this.time = startTime;
@@ -34,14 +95,14 @@ export class Sim {
     this.nextId = 1;
     this.events = [];
     // Preallocated ring of hit/kill records for the renderer (no per-hit allocation). Not part of the sim state.
-    this.hitBuf = Array.from({ length: 64 }, () => ({ x: 0, y: 0, a: 0, id: 0, mx: 0, boss: false, kill: false }));
+    this.hitBuf = Array.from({ length: 64 }, () => ({ x: 0, y: 0, a: 0, id: 0, mx: 0, boss: false, kill: false, src: null })); // src: render-only tag (S7 verb hits), never read by the sim
     this.hitN = 0;
 
     const size = this.balance.worldSize;
     this.player = {
       x: size / 2, y: size / 2, r: 6,
-      hp: this.character.hp, maxHp: this.character.hp,
-      speed: this.character.speed, iframes: 0, faceX: 1,
+      hp: Math.round(body.hp * this.bondFx.hpMul), maxHp: Math.round(body.hp * this.bondFx.hpMul),
+      speed: body.speed * this.bondFx.speedMul, iframes: 0, faceX: 1, hx: 1, hy: 0, // hx/hy: last heading (Pelt Dash)
     };
 
     // Skill-tree effects (src/meta/tree.js aggregate). Absent = a fresh, tree-less run.
@@ -59,17 +120,54 @@ export class Sim {
       autoHp: T.ability?.autoHp || 0,
       evoLuck: T.evoLuck ?? 1,
       rush: T.rush || null, // { pct, secs }: summons surge on level-up
+      // Status power nodes (T3): potency multipliers on the existing Rend / Burn paths, extra Mark seconds. 1 / 0 when absent.
+      bleedMul: 1 + (T.status?.bleed || 0) / 100,
+      burnMul: 1 + (T.status?.burn || 0) / 100,
+      markAdd: T.status?.mark || 0,
+      // Satchel (DT5a): gems fly to you faster / on level-up; seconds taken off the heart and magnet pity timers
+      gemPull: 1 + (T.perks?.gemPull || 0) / 100,
+      gemCall: !!T.perks?.gemCall,
+      heartPity: T.drops?.heartPity || 0,
+      magnetPity: T.drops?.magnetPity || 0,
+      // T6 Almanac / Card Fan
+      lore: cleanLore(T.lore, data.enemies),
+      tells: new Set(Array.isArray(T.tells) ? T.tells.filter((id) => typeof id === 'string' && Object.hasOwn(data.enemies, id)) : []),
+      peek: Array.isArray(T.info) && T.info.includes('peek'),
+      loudStir: Array.isArray(T.info) && T.info.includes('stir'),
+      bars: Array.isArray(T.info) && T.info.includes('bars'), // Hunter's Eye (DT2): render-only health bars + mark names on Hollow-marked foes
     };
+    this.hasLore = Object.keys(this.tfx.lore).length > 0;
+    this.wolfTell = WOLF_TELL + (this.tfx.tells.has('wolf') ? TELL_EARLY : 0);
+    // tier-bought (aggregateMods already drops them below their tier): Fourth Card / Fifth Hook
+    this.offerSize = this.balance.offerSize + clamp(Math.floor(T.perks?.offerSize || 0), 0, 2);
+    this.weaponSlots = this.balance.weaponSlots + clamp(Math.floor(T.perks?.weaponSlot || 0), 0, 2);
+    // Hearth-key 'Chosen Moment': the auto-fire rule replaces Last Whistle's fixed 30% rule (null = not owned)
+    this.autoRule = T.perks?.autoRule ? (AUTO_RULES.includes(autoRule) ? autoRule : 'hp30') : null;
+    this.favour = null; // Card Fan 'Favoured Spirit': the weapon marked at run start
+    this.peekNext = null; // Card Fan 'Second Sight': the next offer, drawn now
     this.reviveLeft = this.tfx.revive > 0 ? 1 : 0;
     this.weaponBonus = T.weaponBonus || {};
     this.unlockedWeapons = new Set(T.unlocks?.weapons || []);
     this.unlockedEvolutions = new Set(T.unlocks?.evolutions || []); // tree-derived only, never from save.unlocks
-    this.buffs = { packHowl: 0, speedBoost: 0, speedMult: 1, rush: 0 };
+    this.buffs = { speedBoost: 0, speedMult: 1, rush: 0 };
     if (T.player?.maxHp && T.player.maxHp !== 1) {
       this.player.maxHp = Math.round(this.player.maxHp * T.player.maxHp);
       this.player.hp = this.player.maxHp;
     }
     this.baseMaxHp = this.player.maxHp;
+    // The tree's own multiplier for each Blessing effect: Blessings are clamped so tree x Blessing stays under the combined cap (blessings.js).
+    this.treeMul = { damage: this.mods.damage, maxHp: T.player?.maxHp ?? 1, speed: this.mods.speed, pickup: this.mods.pickup, gold: this.mods.gold };
+    // Bond (BOND SIZE LOCKED 2026-10-24): damage + milestone perks, applied once AFTER the tree's Blessing-cap reference (Bond is its own row,
+    // outside the tree PE budget). Bond 0 = nothing touched, so ordinary runs stay byte-identical.
+    if (this.bondFx.level > 0) {
+      const B = this.bondFx, pm = (k) => 1 + (B.mods[k] || 0) / 100;
+      this.mods.damage *= B.damageMul;
+      if (B.mods.pickup) this.mods.pickup *= pm('pickup');
+      if (B.mods.xp) this.mods.xp *= pm('xp');
+      if (B.mods.gold) this.mods.gold *= pm('gold');
+      if (B.mods.abilityCd) this.mods.abilityCd *= 1 - B.mods.abilityCd / 100; // the 30 s floor still holds (abilityCooldown)
+      if (B.mods.heartHeal) this.tfx.heartHeal *= pm('heartHeal');
+    }
     // Blessings (run-only). Validated here so absent/tampered data fails closed to "none".
     const bdef = validateBlessings(data.blessings);
     this.blessDef = blessingCount(bdef) ? bdef : null;
@@ -77,8 +175,24 @@ export class Sim {
     this._bless = {};
     this.healSwapReady = 0;
     this.killsByEnemy = {};
+    this.gemsTaken = 0; this.abilityUses = 0; this.blessingsTaken = 0; // counters for the tool-cluster unlock conditions (never read by the sim)
 
     this.enemies = [];
+    // EN3-EN5 telegraph enemies: enemy projectiles (hit the player only), live tells per type (recounted every frame), live count per type
+    // (spawn caps), the view the tells must sit inside (half extents in world units; the scene feeds the real camera view each frame).
+    this.eshots = [];
+    this.embers = []; // DT2 Emberwake rings (marks.js)
+    this.hearts = []; // DT2 live Hollowhearts (rebuilt each frame while any lives)
+    this.markedKills = 0; this.marksMade = 0; this.markedBy = {}; // counters (results / Dawnglass / Hunter's Eye condition; never read by the sim)
+    this.tells = {};
+    this.alive = {};
+    const tv = this.balance.tellView || { hw: 266, hh: 150 };
+    this.view = { hw: tv.hw, hh: tv.hh };
+    this.hurtBy = {}; // damage taken by source (counter only)
+    this.hitsBy = {}; // hits taken by source (counter only; DR4 recap)
+    this.lungeHits = 0; // hits taken from a wolf lunge (counter only)
+    this.lastHit = null; // DR1/DR4: { src, kind, id, t, amt, x, y } of the latest hit that landed (counter only, never read by the sim)
+    this._v = [0, 0];
     this.gems = [];
     this.pickups = [];
     this.sinceHeart = 0;
@@ -96,15 +210,57 @@ export class Sim {
     this.kills = 0;
     this.gold = 0;
     this.shards = 0;
+    this.fallbackShards = 0; // soul-shard fallback cards taken this run (cap balance.fallbackShardMax)
     this.damageDealt = 0;
+    // R2 counters (read-only stats for the results screen; never feed back into the sim).
+    this._src = null;
+    this.fallen = []; // W6: prey felled by the pack, consumed by Howling Legion (empty unless it is owned)
+    this.dmgBy = {};
+    this.dotBy = {}; // damage-over-time by source weapon (counter only, never read by the sim)
+    this.burnBy = {}; // the Burn part of dotBy (counter only)
+    this.srcAmps = {}; // temporary damage amps by SOURCE weapon id (none set since the v2 abilities; kept as the hook); joins Mark in the capped product
+    this.ampBonus = 0; // extra damage dealt because of temporary amps (counter only)
+    this.markBy = {}; // the Mark part of ampBonus by the weapon that applied it (counter only)
+    this.killsBy = {};
     this.boss = null;
     this.bossSpawned = false;
     this.bossKilled = false;
+    // ELDER TREANT fight (src/sim/boss.js): created at chapter.bossAt; spawnHalt then stops every wave and swarm for good.
+    const fdef = this.chapter.bossId && Object.hasOwn(data.enemies, this.chapter.bossId) ? data.enemies[this.chapter.bossId].fight : undefined;
+    if (fdef !== undefined && !FIGHT_OK.has(fdef)) { validateFight(fdef, data.enemies); FIGHT_OK.add(fdef); }
+    this.fightDef = fdef || null;
+    this.fight = null;
+    this.spawnHalt = false;
+    // EXTRAS v1 Endless Dusk ('Stay in the dark', C1-A): null until stayInDark() continues a WON run; nothing below reads it before that,
+    // so every run that never chooses it is byte-identical. { t0: dawn time, gold0: gold at dawn, goldMax, swarmAt, swarmN }
+    this.endless = null;
+    this.endlessDef = endlessDef(data.balance);
+    this.bossDmgBy = {}; // damage dealt to the boss by source weapon (counter only)
+    this._dt = 0;
 
     this.offer = null;
     this.banished = new Set();
     this.rerollsLeft = (meta.rerolls || 0) + (T.meta?.rerolls || 0);
     this.banishesLeft = (meta.banishes || 0) + (T.meta?.banishes || 0);
+
+    // EN6-EN8 miniboss on the run clock (chapter.minis; enemies-v1.md 2.7 A, Branch-Mane #3 at 11:30) + its Lantern Reliquary chest.
+    // Schedule = the locked times + the tier's extra times (an extra one takes the hp/chest odds of the scheduled one before it); fixed hp (no hpScale).
+    this.miniSched = [];
+    const MS = this.chapter.minis;
+    if (MS && Object.hasOwn(data.enemies, MS.id) && data.enemies[MS.id].mini && Array.isArray(MS.at)) {
+      const list = MS.at.map((t, i) => ({ t, hp: MS.hp[i], odds: MS.chest[i] }));
+      for (const t of this.tier.miniExtra) { let prev = list[0]; for (const m of list) if (m.t <= t) prev = m; list.push({ t, hp: prev.hp, odds: prev.odds }); }
+      list.sort((a, b) => a.t - b.t);
+      this.miniSched = list.filter((m) => Number.isFinite(m.t) && m.t >= startTime && Number.isFinite(m.hp) && m.hp > 0);
+    }
+    this.miniWarn = MS && Number.isFinite(MS.warn) ? MS.warn : 30;
+    this.miniNext = 0; // index of the next scheduled miniboss
+    this.mini = null; // the live miniboss (HUD bar), null when none
+    this.miniKills = 0;
+    this.chests = 0; // Lantern Reliquaries opened (counter; tree 'openChest' condition later)
+    this.largeChests = 0; // pity: never two Large chests in one run
+    this.chestLog = []; // tier of each chest dropped (counter only)
+    this.miniLog = []; // { t: arrival, k: kill time | null } per Branch-Mane (counter only: bot time-to-kill)
 
     this.spawnAcc = this.chapter.waves.map(() => 0);
     this.eventsDone = new Set();
@@ -112,6 +268,7 @@ export class Sim {
 
     const ab = this.character.ability;
     this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10 };
+    this.dash = null; // Pelt Dash in flight: { t, vx, vy } (px/s along the heading)
     this.ability.cdLeft = Math.min(this.ability.cdLeft, this.abilityCooldown);
 
     this.patches = [];
@@ -123,15 +280,59 @@ export class Sim {
       });
     }
 
-    this.addWeapon(this.character.weapon);
+    // Map events v1 'Hollow Places' (src/sim/sites.js): opt-in (the game passes sites: true; tests / sweeps default off). Own stream, created
+    // always, drawn only when on, so a run with sites off is byte-identical. Bad chapter data fails closed (no sites).
+    this.siteRng = createRng(siteSeed(seed));
+    this.sites = null;
+    if (sites === true && this.chapter.sites) { const sd = validateSites(this.chapter.sites, data.enemies); if (sd) this.sites = new Sites(this, sd); }
+
+    this.addWeapon(this.startWeapon);
+    // run-start offers (T6): Kindred Start, Favoured Spirit, Lantern Blessing, in that order; the world waits (state 'levelup', offer.start)
+    this.startQueue = [];
+    if (T.perks?.startWeapon) this.startQueue.push('kindred');
+    if (T.perks?.favour) this.startQueue.push('favour');
+    if (T.perks?.startBlessing && this.blessDef) this.startQueue.push('blessing');
+    if (this.startQueue.length) this.nextStartOffer();
+  }
+
+  nextStartOffer() {
+    while (this.startQueue.length) {
+      const kind = this.startQueue.shift();
+      const cards = startOffer(this.cardCtx, this.rng, kind);
+      if (!cards.length) continue;
+      this.state = 'levelup';
+      this.offer = { cards, gold: [], start: kind };
+      return true;
+    }
+    return false;
+  }
+
+  setAutoRule(v) { if (this.autoRule !== null && AUTO_RULES.includes(v)) this.autoRule = v; }
+
+  autoFires() {
+    const r = this.autoRule;
+    if (r === 'off' || this.ability.cdLeft > 0) return false;
+    const p = this.player;
+    if (r === 'hp30') return p.hp < p.maxHp * 0.3;
+    if (r === 'hp50') return p.hp < p.maxHp * 0.5;
+    const R2 = AUTO_NEAR * AUTO_NEAR;
+    let n = 0;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const dx = e.x - p.x, dy = e.y - p.y;
+      if (dx * dx + dy * dy < R2 && ++n >= AUTO_CROWD) return true;
+    }
+    return false;
   }
 
   // ------------------------------------------------------------------ helpers
   get minutes() { return this.time / 60; }
+  // The DISPLAY clock (HUD moon/timer, arc light, AL-6, results): it holds at the boss arrival (14:00) until the fight ends; sim.time keeps counting.
+  get clock() { return this.fightDef ? Math.min(this.time, this.chapter.bossAt) : this.time; }
   pushEvent(type, extra) { this.events.push({ type, ...extra }); }
   addFx(fx) { this.fx.push(fx); }
   get cardCtx() {
-    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions };
+    return { weapons: this.weapons, data: this.data, banished: this.banished, blessings: this.blessDef, blessRanks: this.blessRanks, treeMul: this.treeMul, evoLuck: this.tfx.evoLuck, weaponBonus: this.weaponBonus, unlockedWeapons: this.unlockedWeapons, unlockedEvolutions: this.unlockedEvolutions, offerSize: this.offerSize, weaponSlots: this.weaponSlots, favour: this.favour, evoEarly: this.tfx.loudStir, fallbackShards: this.fallbackShards };
   }
 
   // Ability cooldown after tree reductions; never below the design floor (balance.abilityCdFloor, 30s).
@@ -142,16 +343,13 @@ export class Sim {
   }
 
   // Read-time clamped Blessing multipliers (separate from this.mods, which stay untouched).
-  get bless() { return blessTotals(this.blessDef, this.blessRanks, this._bless); }
+  get bless() { return blessTotals(this.blessDef, this.blessRanks, this._bless, this.treeMul); }
 
   dmgMult(w) {
     let m = this.mods.damage;
     if (this.data.weapons[w.id].type === 'summon') m *= this.bless.damage;
     if (this.buffs.rush > 0 && this.data.weapons[w.id].type === 'summon') m *= 1 + this.tfx.rush.pct / 100;
-    for (const tag of this.data.weapons[w.id].tags) {
-      const t = this.character.traits[`${tag}Damage`];
-      if (t) m *= t;
-    }
+    if (w.evo) m *= evoRankMult(this.data, w); // flow v2: every rank counts toward every evolution
     return m;
   }
 
@@ -180,24 +378,63 @@ export class Sim {
     return false;
   }
 
+  // Product of the temporary damage amps on this hit (Mark on the target x the source's own amp), clamped to AMP_CAP.
+  damageAmp(e) {
+    let a = 1;
+    if (e.markT > 0) a *= 1 + MARK_AMP;
+    const sa = this._src ? this.srcAmps[this._src] : 0;
+    if (sa > 1) a *= sa;
+    return a > AMP_CAP ? AMP_CAP : a;
+  }
+
+  // Apply Mark to a foe (owner = the weapon currently acting). Refresh only: no stacking, no stronger version.
+  mark(e) {
+    if (e.dead) return;
+    e.markT = MARK_TIME + this.tfx.markAdd; // Raven's Eye adds uptime only; the amp stays 15% and inside the x1.75 cap
+    e.markSrc = this._src;
+  }
+
   hurt(e, amount, opts = {}) {
     if (e.dead || amount <= 0) return 0;
+    if (e.immuneT > 0) return 0; // the boss while rising / staggering at a phase change
+    if (e.boss && this._src) { const bx = this.data.weapons[this._src]?.boss; if (bx) amount *= bx; } // RT3 (Matt 2026-10-26): a weapon's boss rule (weapons.json <id>.boss; Spirit Bolts 2x), every form incl. its burns
+    if (this.hasLore) { const l = this.tfx.lore[e.type]; if (l) amount *= 1 + l / 100; } // Almanac Habits / Weakness: +1-2% against that type
+    const amp = this.damageAmp(e);
+    if (amp !== 1) {
+      const extra = amount * (amp - 1);
+      amount += extra;
+      this.ampBonus += extra;
+      if (e.markT > 0 && e.markSrc) this.markBy[e.markSrc] = (this.markBy[e.markSrc] || 0) + extra;
+    }
+    if (e.floorHp > 0 && e.hp - amount < e.floorHp) amount = Math.max(0, e.hp - e.floorHp); // a boss phase is never skipped by one big hit
     e.hp -= amount;
     this.damageDealt += amount;
+    if (this.fight) { if (e.boss) { this.fight.dmgBoss += amount; if (this._src) this.bossDmgBy[this._src] = (this.bossDmgBy[this._src] || 0) + amount; } else this.fight.dmgAdds += amount; }
+    if (this._src) this.dmgBy[this._src] = (this.dmgBy[this._src] || 0) + amount;
     if (!opts.silent) { e.flash = 0.08; this.logHit(e, amount, false); }
-    if (e.hp <= 0) e.dead = true;
+    if (e.hp <= 0) { e.dead = true; e.killer = this._src; }
     return amount;
   }
 
   logHit(e, a, kill) {
     const h = this.hitBuf[this.hitN < 64 ? this.hitN++ : 63];
-    h.x = e.x; h.y = e.y; h.a = a; h.id = e.id; h.mx = e.maxHp; h.boss = e.boss; h.kill = kill;
+    h.x = e.x; h.y = e.y; h.a = a; h.id = e.id; h.mx = e.maxHp; h.boss = e.boss; h.kill = kill; h.src = this._src;
   }
 
   bleed(e, dps, dur) {
     if (e.dead) return;
-    e.bleedDps = Math.max(e.bleedDps, dps);
+    e.bleedSrc = this._src;
+    e.bleedDps = Math.max(e.bleedDps, dps * this.tfx.bleedMul);
     e.bleedT = Math.max(e.bleedT, dur);
+  }
+
+  // Burn (Elias, Holy Orbit hits only): 20% of the triggering hit per second for 2 s. One instance per enemy:
+  // potency = strongest, time refreshes to 2 s, potency ends with the burn. Sim-only state (never saved).
+  burn(e, hit) {
+    if (e.dead || !(hit > 0)) return;
+    e.burnSrc = this._src;
+    e.burnDps = Math.max(e.burnDps, hit * BURN_RATE * this.tfx.burnMul);
+    e.burnT = Math.max(e.burnT, BURN_TIME);
   }
 
   nearestEnemy(x, y, maxR, pred) {
@@ -230,7 +467,7 @@ export class Sim {
     return list.slice(0, n).map((x2) => x2[1]);
   }
 
-  toughestEnemy(x, y, maxR) {
+  toughestEnemy(x, y, maxR, filter) {
     let best = null;
     let bestHp = -1;
     const r2 = maxR * maxR;
@@ -238,7 +475,7 @@ export class Sim {
       if (e.dead) continue;
       const dx = e.x - x;
       const dy = e.y - y;
-      if (dx * dx + dy * dy < r2 && e.hp > bestHp) {
+      if (dx * dx + dy * dy < r2 && e.hp > bestHp && (!filter || filter(e))) {
         bestHp = e.hp;
         best = e;
       }
@@ -251,12 +488,23 @@ export class Sim {
     p.hp = Math.min(p.maxHp, p.hp + amount);
   }
 
-  damagePlayer(amount) {
+  // src = what hurt the hero (enemy type id; counter only, never read by the sim: bot/sweep damage-by-source readout)
+  // meta (optional, counters + render only): { kind: contact|lunge|charge|slam|burst|thorn, id: attacker id, x, y: attacker position (thorn: its origin side), dx, dy: thorn travel direction }
+  damagePlayer(amount, src = 'contact', meta = null) {
     const p = this.player;
     if (p.iframes > 0 || this.state !== 'running') return;
+    if (this.assist) amount *= this.assist.enemyDmg; // Gentle Light: every foe hit (contact, shots, bursts, embers, the boss) lands softer
+    if (this.bondFx.ward > 0) amount *= 1 - this.bondFx.ward; // Bond ward (banked between runs; 0 at Bond 0, so untouched runs are byte-identical)
+    this.hurtBy[src] = (this.hurtBy[src] || 0) + amount;
+    this.hitsBy[src] = (this.hitsBy[src] || 0) + 1;
+    const kind = meta && meta.kind ? meta.kind : 'contact';
+    if (kind === 'lunge') this.lungeHits += 1;
+    const ax = meta && Number.isFinite(meta.x) ? meta.x : p.x, ay = meta && Number.isFinite(meta.y) ? meta.y : p.y;
+    const id = meta && Number.isFinite(meta.id) ? meta.id : -1;
+    this.lastHit = { src, kind, id, t: this.time, amt: amount, x: ax, y: ay };
     if (!this.godMode) p.hp -= amount;
     p.iframes = this.balance.playerIframes;
-    if (!this.godMode) this.pushEvent('hurt');
+    if (!this.godMode) this.pushEvent('hurt', { src, kind, id, amt: amount, x: ax, y: ay, dx: meta && Number.isFinite(meta.dx) ? meta.dx : 0, dy: meta && Number.isFinite(meta.dy) ? meta.dy : 0 });
     if (p.hp <= 0) {
       if (this.reviveLeft > 0) {
         this.reviveLeft -= 1;
@@ -270,25 +518,26 @@ export class Sim {
     }
   }
 
-  spawnBolt({ x, y, ang, speed, dmg, pierce, r, homing, explode, life, target, color }) {
+  spawnBolt({ x, y, ang, speed, dmg, pierce, r, homing, explode, life, target, color, turn = 5, ...extra }) {
     this.projectiles.push({
       id: this.nextId++, kind: 'bolt', x, y,
       vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-      ang, speed, dmg, pierce, r, homing, explode, life, target, color, hit: new Set(),
+      ang, speed, dmg, pierce, r, homing, explode, life, turn, target, color, hit: new Set(), src: this._src, ...extra,
     });
   }
 
   spawnZone(z) {
-    this.zones.push({ id: this.nextId++, tick: 0, ...z });
+    this.zones.push({ id: this.nextId++, tick: 0, src: this._src, ...z });
   }
 
   // ------------------------------------------------------------------ enemies
-  spawnEnemy(typeId, x, y) {
+  spawnEnemy(typeId, x, y, rng = this.rng) { // rng: map-event foes pass the sites stream so the main stream never shifts
     const d = this.data.enemies[typeId];
     const hs = this.balance.hpScale;
-    const m = this.minutes;
-    const hpMul = d.boss ? 1 : 1 + hs.linear * m + hs.quad * m * m;
-    const dmgMul = 1 + this.balance.dmgScale.linear * m;
+    const m = this.fight ? this.fightDef.scaleMin : this.minutes; // boss-fight adds use a frozen run minute (no hidden ramp while the clock holds)
+    // fixed = the boss and its own adds (pods, saplings): data numbers x the tier only (tier enemyDmg applies to the boss too: LOCKED tiers row)
+    const hpMul = (d.boss || d.fixed || d.mini ? 1 : 1 + hs.linear * m + hs.quad * m * m) * (d.boss ? this.tier.bossHp : this.tier.enemyHp); // tier multipliers are exactly 1 on Twilight; the miniboss has fixed hp (spawnMini) x the tier enemy HP
+    const dmgMul = (d.fixed ? 1 : 1 + this.balance.dmgScale.linear * m) * this.tier.enemyDmg;
     const size = this.balance.worldSize;
     const e = {
       id: this.nextId++, type: typeId,
@@ -296,12 +545,46 @@ export class Sim {
       r: d.r, hp: d.hp * hpMul, maxHp: d.hp * hpMul,
       speed: d.speed, dmg: d.dmg * dmgMul, xp: d.xp, gold: d.gold, mass: d.mass, boss: !!d.boss,
       state: 'run', stT: 0, dx: 0, dy: 0, tele: false,
-      chargeCd: this.rng.range(1, 3.5), slamCd: 5,
-      phase: this.rng.range(0, 6.28), cd: {},
-      bleedT: 0, bleedDps: 0, fearT: 0, flash: 0, dead: false, faceX: 1,
+      chargeCd: rng.range(1, 3.5), slamCd: 5,
+      phase: rng.range(0, 6.28), cd: {},
+      markT: 0, markSrc: null, bleedT: 0, bleedDps: 0, bleedTot: 0, burnT: 0, burnDps: 0, burnTot: 0, burnSrc: null, fearT: 0, flash: 0, dead: false, faceX: 1,
     };
+    if (d.ai) { // EN3-EN5: data-driven telegraph behaviour (src/sim/enemyai.js); the ai block is shared read-only data
+      e.ai = d.ai; e.grace = d.ai.grace ?? 0.8; e.dmgMul = dmgMul; e.aiCd = rng.range(d.ai.firstCd?.[0] ?? 1, d.ai.firstCd?.[1] ?? 2);
+      if (d.ai.chargeDmg) e.cdmg = d.ai.chargeDmg * dmgMul;
+    }
+    if (!d.mini) this.markFoe(e, d, false);
+    this.alive[typeId] = (this.alive[typeId] || 0) + 1;
     this.enemies.push(e);
     return e;
+  }
+
+  // DT2: roll + apply a Hollow mark (separate stream; boss and its adds never; the tier decides kinds, share and start time)
+  markFoe(e, d, mini) {
+    if (this.fight || e.bossAdd) return;
+    const k = rollMark(this.tier, this.markRng, d, this.time, mini);
+    if (k && applyMark(e, k)) { this.marksMade += 1; this.pushEvent('marked', { id: e.id, k }); }
+  }
+
+  // EN6 Branch-Mane: spawned at the view edge (the normal spawn ring) with its scheduled hp; control immune, leashed, never recycled
+  spawnMini(m) {
+    const id = this.chapter.minis.id, pt = this.ringPoint(this.rng.range(0, 6.2832));
+    const e = this.spawnEnemy(id, pt.x, pt.y);
+    e.hp = e.maxHp = m.hp * this.tier.enemyHp;
+    e.mini = true; e.odds = m.odds; e.howlCd = e.ai.howl.first; e.phase2 = false; e.rep = false;
+    this.markFoe(e, this.data.enemies[id], true); // after its scheduled hp: Long Night may give it Ironbark (tiers.json marks.mini)
+    this.mini = e;
+    this.miniLog.push({ t: this.time, k: null });
+    this.pushEvent('mini', { id: e.id, enemy: id, n: this.miniNext });
+    return e;
+  }
+
+  // the HUD countdown chip: seconds until the next miniboss while inside the warning window, else -1
+  get miniSoon() {
+    const m = this.miniSched[this.miniNext];
+    if (!m || this.spawnHalt) return -1;
+    const s = m.t - this.time;
+    return s > 0 && s <= this.miniWarn ? s : -1;
   }
 
   ringPoint(angle, extra = 0) {
@@ -311,16 +594,26 @@ export class Sim {
   }
 
   updateSpawns(dt) {
+    if (this.endless) { this.endlessSpawns(dt); return; }
+    if (this.spawnHalt) return;
     const t = this.time;
+    if (this.fightDef && t >= this.chapter.bossAt) { // 14:00: the Elder Treant wakes (boss.js); nothing else spawns again
+      this.fight = new BossFight(this, this.fightDef, t);
+      this.fight.arrive();
+      return;
+    }
+    for (let ms = this.miniSched[this.miniNext]; ms && t >= ms.t; ms = this.miniSched[this.miniNext]) { this.miniNext += 1; if (t - ms.t < 2) this.spawnMini(ms); } // a time jump (tests, debug) skips a long-past one
     const cap = this.balance.maxEnemies;
     this.chapter.waves.forEach((wave, i) => {
       if (t < wave.from || t > wave.to) return;
       const k = (t - wave.from) / (wave.to - wave.from);
-      const rate = wave.rate0 + (wave.rate1 - wave.rate0) * Math.pow(k, wave.curve || 1);
+      const rate = (wave.rate0 + (wave.rate1 - wave.rate0) * Math.pow(k, wave.curve || 1));
       this.spawnAcc[i] = Math.min(4, this.spawnAcc[i] + rate * dt);
+      // per-type live cap (EN3-EN5 must-react types), optionally raised after a time (maxAliveAfter: { t, n })
+      const maxA = wave.maxAlive === undefined ? Infinity : (wave.maxAliveAfter && t >= wave.maxAliveAfter.t ? wave.maxAliveAfter.n : wave.maxAlive);
       while (this.spawnAcc[i] >= 1) {
         this.spawnAcc[i] -= 1;
-        if (this.enemies.length >= cap) continue;
+        if (this.enemies.length >= cap || (this.alive[wave.enemy] || 0) >= maxA) continue;
         const pt = this.ringPoint(this.rng.range(0, 6.2832), this.rng.range(0, 40));
         this.spawnEnemy(wave.enemy, pt.x, pt.y);
       }
@@ -346,16 +639,86 @@ export class Sim {
     }
   }
 
+  // EXTRAS v1 Endless Dusk: every chapter wave at its last (dawn) rate x (1 + density per minute in the dark), same per-type live caps;
+  // a swarm every swarmEvery s (wolves / crows by turns, growing). Foe HP keeps the run's own curve (spawnEnemy reads the run minute).
+  endlessSpawns(dt) {
+    const E = this.endless, D = this.endlessDef, t = this.time;
+    const mul = 1 + D.density * ((t - E.t0) / 60);
+    const cap = this.balance.maxEnemies;
+    this.chapter.waves.forEach((wave, i) => {
+      this.spawnAcc[i] = Math.min(4, this.spawnAcc[i] + wave.rate1 * mul * dt);
+      const maxA = wave.maxAlive === undefined ? Infinity : (wave.maxAliveAfter ? wave.maxAliveAfter.n : wave.maxAlive);
+      while (this.spawnAcc[i] >= 1) {
+        this.spawnAcc[i] -= 1;
+        if (this.enemies.length >= cap || (this.alive[wave.enemy] || 0) >= maxA) continue;
+        const pt = this.ringPoint(this.rng.range(0, 6.2832), this.rng.range(0, 40));
+        this.spawnEnemy(wave.enemy, pt.x, pt.y);
+      }
+    });
+    if (t >= E.swarmAt) {
+      const enemy = E.swarmN % 2 === 0 ? 'wolf' : 'crow';
+      const count = Math.min(80, D.swarmBase + D.swarmGrow * E.swarmN);
+      E.swarmN += 1; E.swarmAt += D.swarmEvery;
+      if (Object.hasOwn(this.data.enemies, enemy)) {
+        const base = this.rng.range(0, 6.2832);
+        for (let n = 0; n < count && this.enemies.length < cap; n++) { const pt = this.ringPoint(base + this.rng.range(-0.6, 0.6), this.rng.range(0, 50)); this.spawnEnemy(enemy, pt.x, pt.y); }
+        this.pushEvent('swarm', { enemy, count });
+      }
+    }
+  }
+
+  // EXTRAS v1 'Stay in the dark': only after a dawn won by the boss kill; once per run. The dawn is already earned (result() keeps the
+  // victory), the boss fight is over, waves return. Returns true when the run continues.
+  stayInDark() {
+    if (this.state !== 'victory' || !this.bossKilled || this.endless || !this.fightDef || !this.endlessDef) return false;
+    const D = this.endlessDef;
+    this.endless = { t0: this.time, gold0: this.gold, goldMax: this.gold * (1 + D.goldCap), swarmAt: this.time + D.swarmEvery, swarmN: 0 };
+    this.fight = null; // the ring is gone: recycling, separation and spawns run as before the boss
+    this.spawnHalt = false;
+    this.eshots.length = 0;
+    for (let i = 0; i < this.spawnAcc.length; i++) this.spawnAcc[i] = 0;
+    this.state = 'running';
+    this.pushEvent('endless', { t: this.time });
+    return true;
+  }
+
   updateEnemies(dt) {
     const p = this.player;
     const size = this.balance.worldSize;
+    // live tells per telegraph type (the token cap in enemyai.canTell); recounted so a dead/interrupted teller always frees its token
+    for (const k in this.tells) this.tells[k] = 0;
+    for (const e of this.enemies) if (e.ai && e.state === 'tele' && !e.dead) this.tells[e.type] = (this.tells[e.type] || 0) + 1;
+    if (this.marksMade) { // DT2 Hollowheart aura (no stacking); skipped entirely on Twilight
+      this.hearts.length = 0;
+      for (const e of this.enemies) if (e.hmark === 'hollowheart' && !e.dead) this.hearts.push(e);
+      if (this.hearts.length || this.heartWas) heartAura(this.enemies, this.hearts);
+      this.heartWas = this.hearts.length > 0;
+    }
+    const sz = this.zones.length ? this.zones.find((z) => z.sanctuary && z.slow > 0) : null; // Sanctuary Ring: non-boss foes inside move slower
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.flash = Math.max(0, e.flash - dt);
+      if (e.markT > 0) e.markT = Math.max(0, e.markT - dt);
 
       if (e.bleedT > 0) {
         e.bleedT -= dt;
-        this.hurt(e, e.bleedDps * dt, { silent: true });
+        this._src = e.bleedSrc || null;
+        const dealt = this.hurt(e, e.bleedDps * dt, { silent: true });
+        e.bleedTot += dealt; // running total the renderer batches into small numbers (counter only)
+        if (this._src) this.dotBy[this._src] = (this.dotBy[this._src] || 0) + dealt;
+        this._src = null;
+        if (e.bleedT <= 0) e.bleedDps = 0; // potency ends with the bleed (B3)
+        if (e.dead) continue;
+      }
+
+      if (e.burnT > 0) {
+        e.burnT -= dt;
+        this._src = e.burnSrc || null;
+        const dealt = this.hurt(e, e.burnDps * dt, { silent: true });
+        e.burnTot += dealt; // running total the renderer batches into small numbers (counter only)
+        if (this._src) { this.dotBy[this._src] = (this.dotBy[this._src] || 0) + dealt; this.burnBy[this._src] = (this.burnBy[this._src] || 0) + dealt; }
+        this._src = null;
+        if (e.burnT <= 0) e.burnDps = 0;
         if (e.dead) continue;
       }
 
@@ -367,14 +730,23 @@ export class Sim {
       let vx = 0;
       let vy = 0;
 
+      if (e.ai && (e.ai.immune === e.state || e.ai.immune === 'all')) { e.heldT = 0; e.fearT = 0; } // control-immune state (Bramble Hart charge) / always (Branch-Mane): fear/pin do nothing
+      if (e.fight) { e.heldT = 0; e.fearT = 0; } // bosses ignore fear / pin (locked status ruleset)
       if (e.heldT > 0) {
         e.heldT -= dt;
         e.tele = false;
+        if (e.ai) aiInterrupt(e);
       } else if (e.fearT > 0) {
         e.fearT -= dt;
         vx = -nx * e.speed * 1.3;
         vy = -ny * e.speed * 1.3;
         e.tele = false;
+        if (e.ai) aiInterrupt(e);
+      } else if (e.ai) {
+        aiStep(this, e, dt, nx, ny, dist, this._v);
+        vx = this._v[0];
+        vy = this._v[1];
+        if (e.dead) continue;
       } else if (e.type === 'wolf') {
         if (e.state === 'run') {
           vx = nx * e.speed;
@@ -382,7 +754,7 @@ export class Sim {
           e.chargeCd -= dt;
           if (e.chargeCd <= 0 && dist < 130) {
             e.state = 'tele';
-            e.stT = 0.55;
+            e.stT = e.teleT = this.wolfTell; // teleT: the renderer's chevron grows over the real windup
             e.dx = nx;
             e.dy = ny;
           }
@@ -407,36 +779,20 @@ export class Sim {
         const sway = Math.sin(this.time * 5 + e.phase) * e.speed * 0.9;
         vx = nx * e.speed - ny * sway;
         vy = ny * e.speed + nx * sway;
-      } else if (e.type === 'elder_treant') {
-        if (e.state === 'run') {
-          vx = nx * e.speed;
-          vy = ny * e.speed;
-          e.slamCd -= dt;
-          if (e.slamCd <= 0 && dist < 150) {
-            e.state = 'tele';
-            e.stT = 0.9;
-          }
-        } else if (e.state === 'tele') {
-          e.tele = true;
-          e.stT -= dt;
-          if (e.stT <= 0) {
-            e.tele = false;
-            e.state = 'run';
-            e.slamCd = 6.5;
-            this.addFx({ kind: 'ring', x: e.x, y: e.y, r: 74, ttl: 0.3, color: '#7a4a1b' });
-            this.pushEvent('slam');
-            if (dist < 74 + p.r) this.damagePlayer(e.dmg * 1.4);
-            for (let k = 0; k < 3; k++) {
-              const a = this.rng.range(0, 6.2832);
-              this.spawnEnemy('root_crawler', e.x + Math.cos(a) * 40, e.y + Math.sin(a) * 40);
-            }
-          }
-        }
+      } else if (e.fight && this.fight) {
+        this.fight.step(e, dt, this._v); // boss.js: phases, moves, tells (control-immune)
+        vx = this._v[0];
+        vy = this._v[1];
+      } else if (e.hatchT !== undefined && this.fight) {
+        this.fight.podStep(e, dt); // a Seed Pod: still, hatches into a Sapling Husk
+        if (e.dead) continue;
       } else {
         vx = nx * e.speed;
         vy = ny * e.speed;
       }
 
+      if (sz && !e.boss && !e.fight) { const qx = e.x - sz.x, qy = e.y - sz.y, rr = sz.r + e.r; if (qx * qx + qy * qy < rr * rr) { vx *= 1 - sz.slow; vy *= 1 - sz.slow; } }
+      if (this.assist) { vx *= this.assist.enemySpeed; vy *= this.assist.enemySpeed; } // Gentle Light: foes move a little slower
       e.x = clamp(e.x + vx * dt, 5, size - 5);
       e.y = clamp(e.y + vy * dt, 5, size - 5);
       if (Math.abs(vx) > 1) e.faceX = vx > 0 ? 1 : -1;
@@ -469,16 +825,34 @@ export class Sim {
       });
     }
 
+    if (this.fight) this.arenaClamp(); // the Root Ring: after separation, so nothing is pushed through the wall
+
     // Contact damage: the strongest overlapping enemy lands one hit per i-frame window.
-    let worst = 0;
+    let worst = 0, wsrc = 'contact', wE = null;
     for (const e of this.enemies) {
       if (e.dead) continue;
+      if (e.fight && this.fight.stage !== 'fight') continue; // the boss rising out of the soil does not touch
       const dx = p.x - e.x;
       const dy = p.y - e.y;
-      const rr = p.r + e.r * 0.85;
-      if (dx * dx + dy * dy < rr * rr && e.dmg > worst) worst = e.dmg;
+      const rr = p.r + e.r * (e.fight ? 1 : 0.85); // the boss trunk touches at its full radius (the hero is pushed out to pushOut)
+      const dm = e.cdmg && e.state === 'charge' ? e.cdmg : e.dmg; // a charging Bramble Hart hits harder
+      if (dx * dx + dy * dy < rr * rr && dm > worst) { worst = dm; wsrc = e.type; wE = e; }
     }
-    if (worst > 0) this.damagePlayer(worst);
+    if (worst > 0) {
+      if (wE.fight) this.fight.hitHero(worst, 'contact', wE.x, wE.y); // boss contact keeps the >= hitGap rule between boss hits
+      else this.damagePlayer(worst, wsrc, { kind: wE.state === 'charge' ? (wE.type === 'wolf' ? 'lunge' : 'charge') : 'contact', id: wE.id, x: wE.x, y: wE.y });
+    }
+  }
+
+  // Root Ring: every foe inside the wall (minus its radius); the hero is pushed out of the trunk (pushOut) and kept inside. No damage.
+  arenaClamp() {
+    const F = this.fight, p = this.player, b = this.boss;
+    for (const e of this.enemies) if (!e.dead) F.clampIn(e, e.r);
+    if (b && !b.dead && F.stage === 'fight') {
+      const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy), m = this.fightDef.pushOut;
+      if (d < m) { const ux = d > 1e-6 ? dx / d : 1, uy = d > 1e-6 ? dy / d : 0; p.x = b.x + ux * m; p.y = b.y + uy * m; }
+    }
+    if (F.stage !== 'intro') F.clampIn(p, p.r);
   }
 
   // ------------------------------------------------------------------ the rest of the frame
@@ -488,40 +862,59 @@ export class Sim {
     let my = input.y || 0;
     const len = Math.hypot(mx, my);
     if (len > 1) { mx /= len; my /= len; }
-    let spd = p.speed * (this.character.traits.moveSpeed || 1) * this.mods.speed * this.bless.speed;
+    if (len > 0.1) { const l = Math.hypot(mx, my); p.hx = mx / l; p.hy = my / l; } // heading = the last real move direction (Pelt Dash)
+    let spd = p.speed * this.mods.speed * this.bless.speed;
     if (this.buffs.speedBoost > 0) spd *= this.buffs.speedMult;
+    let slow = 1;
     for (const pt of this.patches) {
+      if (pt.off) continue;
       const dx = p.x - pt.x;
       const dy = p.y - pt.y;
-      if (dx * dx + dy * dy < pt.r * pt.r) { spd *= 0.65; break; }
+      if (dx * dx + dy * dy < pt.r * pt.r) { slow = 0.65; break; }
     }
+    if (this.fight && slow === 1 && this.fight.brush.length) slow = this.fight.slowAt(p.x, p.y, p.r); // lane roots / slam spikes: slowing brush, never solid
+    spd *= slow;
     const size = this.balance.worldSize;
-    p.x = clamp(p.x + mx * spd * dt, p.r, size - p.r);
-    p.y = clamp(p.y + my * spd * dt, p.r, size - p.r);
+    let ox = mx * spd * dt, oy = my * spd * dt;
+    if (this.dash) { const D = this.dash, s = Math.min(dt, D.t); ox += D.vx * s; oy += D.vy * s; D.t -= dt; this.dashShove(); if (D.t <= 0) this.dash = null; } // Pelt Dash: slows and roots do not drag the dart itself
+    p.x = clamp(p.x + ox, p.r, size - p.r);
+    p.y = clamp(p.y + oy, p.r, size - p.r);
+    if (this.fight) {
+      const F = this.fight, A = F.arena, ddx = p.x - A.cx, ddy = p.y - A.cy, d = Math.hypot(ddx, ddy), lim = A.r - p.r;
+      if (d > lim) { // the wall: during the arrival beat a hero left outside (world-edge clamp) is walked in; afterwards it is a hard stop
+        if (F.stage === 'intro') { const step = Math.min(d - lim, this.fightDef.arena.pull * dt); p.x -= (ddx / d) * step; p.y -= (ddy / d) * step; }
+        else F.clampIn(p, p.r);
+      }
+    }
     if (Math.abs(mx) > 0.1) p.faceX = mx > 0 ? 1 : -1;
     p.iframes = Math.max(0, p.iframes - dt);
     if (this.tfx.regen > 0) this.healPlayer(this.tfx.regen * dt);
     this.buffs.rush = Math.max(0, this.buffs.rush - dt);
-    this.buffs.packHowl = Math.max(0, this.buffs.packHowl - dt);
     this.buffs.speedBoost = Math.max(0, this.buffs.speedBoost - dt);
   }
 
   updateWeapons(dt) {
-    for (const w of this.weapons) WEAPON_BEHAVIOURS[w.id].update(this, w, dt);
+    for (const w of this.weapons) {
+      this._src = w.id;
+      WEAPON_BEHAVIOURS[w.id].update(this, w, dt);
+    }
+    this._src = null;
   }
 
   updateProjectiles(dt) {
     const size = this.balance.worldSize;
     for (const b of this.projectiles) {
       if (b.dead) continue;
+      if (b.pages) { pagesStep(this, b, dt); continue; } // W10d Returning Pages: out and home again, own movement and hit set
+      if (b.seek > 0) { b.seek -= dt; if (b.seek <= 0) boltSeek(this, b); } // W10b: burst phase over, take your own prey
       if (b.homing) {
-        if (!b.target || b.target.dead) b.target = this.nearestEnemy(b.x, b.y, 180);
+        if (!b.target || b.target.dead) b.target = b.vol ? boltRetarget(this, b) : this.nearestEnemy(b.x, b.y, 180);
         if (b.target) {
           const want = Math.atan2(b.target.y - b.y, b.target.x - b.x);
           let diff = want - b.ang;
           while (diff > Math.PI) diff -= 2 * Math.PI;
           while (diff < -Math.PI) diff += 2 * Math.PI;
-          b.ang += clamp(diff, -5 * dt, 5 * dt);
+          b.ang += clamp(diff, -b.turn * dt, b.turn * dt);
           b.vx = Math.cos(b.ang) * b.speed;
           b.vy = Math.sin(b.ang) * b.speed;
         }
@@ -535,8 +928,11 @@ export class Sim {
         const dy = e.y - b.y;
         const rr = e.r + b.r;
         if (dx * dx + dy * dy < rr * rr) {
+          this._src = b.src || null;
           this.hurt(e, b.dmg);
+          this._src = null;
           b.hit.add(e.id);
+          if (b.explode && b.blastEach && b.pierce > 0) this.explodeBolt(b);
           if (b.pierce <= 0) {
             b.dead = true;
             if (b.explode) this.explodeBolt(b);
@@ -546,19 +942,20 @@ export class Sim {
         }
       }
       if (!b.dead && (b.life <= 0 || b.x < 0 || b.y < 0 || b.x > size || b.y > size)) {
-        b.dead = true;
-        if (b.explode && b.life <= 0) this.explodeBolt(b);
+        b.dead = true; // W10b: a blast needs a hit; a glyph that fades in empty air just fades
       }
     }
     this.projectiles = this.projectiles.filter((b) => !b.dead);
   }
 
   explodeBolt(b) {
+    this._src = b.src || null;
     for (const e of this.enemies) {
       if (e.dead) continue;
-      if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + 22) this.hurt(e, b.dmg * 0.6);
+      if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + (b.blastR ?? 22)) this.hurt(e, b.dmg * (b.blast ?? 0.6));
     }
-    this.addFx({ kind: 'ring', x: b.x, y: b.y, r: 22, ttl: 0.18, color: '#7ff0ff' });
+    this._src = null;
+    if (this.fx.length < 48) this.addFx({ kind: 'ring', x: b.x, y: b.y, r: b.blastR ?? 22, ttl: 0.18, color: '#7ff0ff' });
   }
 
   updateZones(dt) {
@@ -566,11 +963,12 @@ export class Sim {
     for (const z of this.zones) {
       z.ttl -= dt;
       z.tick -= dt;
+      if (z.wheel) z.age += dt;
       if (z.tick <= 0) {
         z.tick = 0.25;
-        for (const e of this.enemies) {
+        if (z.dps > 0) for (const e of this.enemies) {
           if (e.dead) continue;
-          if (Math.hypot(e.x - z.x, e.y - z.y) < z.r + e.r) this.hurt(e, z.dps * 0.25, { silent: true });
+          if (Math.hypot(e.x - z.x, e.y - z.y) < z.r + e.r) { this._src = z.src || null; this.hurt(e, z.dps * 0.25, { silent: true }); this._src = null; }
         }
       }
       if (z.heal && Math.hypot(p.x - z.x, p.y - z.y) < z.r) this.healPlayer(z.heal * dt);
@@ -591,16 +989,18 @@ export class Sim {
     const pick = this.balance.pickupRadius * this.mods.pickup * this.bless.pickup;
     const keep = [];
     for (const g of this.gems) {
+      if (g.hold > 0) { g.hold -= dt; keep.push(g); continue; } // EN8 chest gems: they hang in the spilled light for a beat, then fly in
       const dx = p.x - g.x;
       const dy = p.y - g.y;
       const d = Math.hypot(dx, dy) || 0.001;
       if (d < pick) g.mag = true;
       if (g.mag) {
-        const step = Math.min(d, this.balance.magnetSpeed * dt);
+        const step = Math.min(d, this.balance.magnetSpeed * this.tfx.gemPull * dt);
         g.x += (dx / d) * step;
         g.y += (dy / d) * step;
       }
       if (d < 5) {
+        this.gemsTaken += 1;
         this.xp += g.v * this.mods.xp;
       } else {
         keep.push(g);
@@ -613,20 +1013,70 @@ export class Sim {
     const b = this.balance.drops;
     const p = this.player;
     const low = p.hp < p.maxHp * 0.5 ? 2 : 1;
+    if (e.mini) { // EN6/EN8: a heart + the Lantern Reliquary (tier rolled now from this miniboss's odds)
+      this.addPickup('heart', e.x - 14, e.y + 4);
+      this.dropChest(e);
+      return;
+    }
     if (e.boss) {
       this.addPickup('heart', e.x - 12, e.y);
       this.addPickup('magnet', e.x + 12, e.y);
       return;
     }
-    const heartP = b.heart * this.tfx.heart * low * (1 + this.sinceHeart / b.pityHeart);
-    const magnetP = b.magnet * this.tfx.magnet * (1 + this.sinceMagnet / b.pityMagnet);
-    const forced = this.sinceHeart >= (b.pityHeartForce || Infinity) && p.hp < p.maxHp * 0.8; // guaranteed heart after a long dry spell
+    let pityH = Math.max(10, b.pityHeart + this.tfx.heartPity) * this.tier.heartPity;
+    const forceAt = this.assist ? (b.pityHeartForce || Infinity) / this.assist.heartSooner : (b.pityHeartForce || Infinity);
+    if (this.assist) pityH /= this.assist.heartSooner; // Gentle Light: hearts come sooner
+    const pityM = Math.max(10, b.pityMagnet + this.tfx.magnetPity); // Kinder Hearts / Lodestar shorten the timers; Long Night stretches the heart timer
+    const heartP = b.heart * this.tfx.heart * low * (1 + this.sinceHeart / pityH);
+    const magnetP = b.magnet * this.tfx.magnet * (1 + this.sinceMagnet / pityM);
+    const forced = this.sinceHeart >= forceAt && p.hp < p.maxHp * 0.8; // guaranteed heart after a long dry spell
     if (p.hp < p.maxHp && (forced || this.rng.chance(heartP))) { this.addPickup('heart', e.x, e.y); this.sinceHeart = 0; }
     else if (this.gems.length > (b.magnetGems ?? 12) && this.rng.chance(magnetP)) { this.addPickup('magnet', e.x, e.y); this.sinceMagnet = 0; }
   }
 
   addPickup(type, x, y) {
-    this.pickups.push({ id: this.nextId++, type, x, y, ttl: this.balance.drops.ttl });
+    const k = { id: this.nextId++, type, x, y, ttl: this.balance.drops.ttl };
+    this.pickups.push(k);
+    return k;
+  }
+
+  // EN8 Lantern Reliquary tier: 0 small / 1 medium / 2 large from [small, medium, large] odds (%); the tier's Large bonus is taken from Small first,
+  // then Medium; pity: never two Large chests in one run (a second Large becomes Medium).
+  chestTier(odds) {
+    let [s, m, l] = Array.isArray(odds) && odds.length === 3 && odds.every((v) => Number.isFinite(v) && v >= 0) ? odds : [100, 0, 0];
+    let add = this.tier.chestLarge;
+    const fromS = Math.min(s, add); s -= fromS; add -= fromS; const fromM = Math.min(m, add); m -= fromM; l += fromS + fromM;
+    const r = this.rng.next() * (s + m + l || 1);
+    let t = r < s ? 0 : r < s + m ? 1 : 2;
+    if (t === 2 && this.largeChests >= 1) t = 1;
+    if (t === 2) this.largeChests += 1;
+    return t;
+  }
+
+  dropChest(e) {
+    const tier = this.chestTier(e.odds);
+    const k = this.addPickup('chest', e.x + 10, e.y);
+    k.tier = tier; k.ttl = Infinity; // a chest waits for you (no blink-out)
+    this.chestLog.push(tier);
+    this.pushEvent('chestDrop', { id: k.id, tier, x: k.x, y: k.y });
+    return k;
+  }
+
+  // Opened by walking onto it: the floor (XP burst + heal + gold) always; Medium adds a Blessing choice (1 of 3), Large adds a Blessing choice + one
+  // free stat rank (1 of 3 owned-weapon stats; never names an evolution). The choices reuse the run-start offer screen (pending level-ups untouched).
+  openChest(k) {
+    const C = this.balance.chest, p = this.player;
+    this.chests += 1;
+    this.rollKeepsake('chest', k.x, k.y);
+    this.healPlayer(p.maxHp * C.heal);
+    // the XP burst pours out as six gems that fly to the hero (the opening beat shows before any level-up screen)
+    const xp = Math.ceil(this.xpNeeded * C.xpLevel), n = 6;
+    for (let i = 0; i < n; i++) { const a = (i / n) * 6.2832; this.addGem(k.x + Math.cos(a) * 14, k.y - 10 + Math.sin(a) * 8, xp / n); const g = this.gems[this.gems.length - 1]; g.mag = true; g.hold = 0.6 + i * 0.05; }
+    this.gold += C.gold;
+    this.pushEvent('chest', { id: k.id, tier: k.tier, x: k.x, y: k.y });
+    if (k.tier >= 1 && this.blessDef) this.startQueue.push('chestBless');
+    if (k.tier >= 2) this.startQueue.push('chestStat');
+    if (this.startQueue.length) this.nextStartOffer(); // an empty choice (every Blessing capped / every stat maxed) is skipped: the floor stays
   }
 
   updatePickups(dt) {
@@ -640,6 +1090,11 @@ export class Sim {
       const dx = p.x - k.x;
       const dy = p.y - k.y;
       const d = Math.hypot(dx, dy) || 0.001;
+      if (k.type === 'chest') { // never pulled; opens when you walk onto it (waits out a live boss tell or the arrival beat)
+        if (d < this.balance.chest.reach + p.r && this.state === 'running' && !(this.fight && (this.fight.stage === 'intro' || this.fight.move))) { this.openChest(k); continue; }
+        keep.push(k);
+        continue;
+      }
       if (d < this.balance.pickupRadius * this.mods.pickup * this.bless.pickup * 0.6) {
         const step = Math.min(d, this.balance.magnetSpeed * dt);
         k.x += (dx / d) * step;
@@ -665,48 +1120,88 @@ export class Sim {
     if (a.cdLeft > 0 || this.state !== 'running') return false;
     const p = this.player;
     a.cdLeft = this.abilityCooldown;
-    const dur = 6 * this.tfx.abilityDur;
-    if (a.id === 'pack_howl') {
-      this.buffs.packHowl = dur;
-      this.addSpeedBoost(1.25, dur);
-      for (const e of this.enemies) {
-        if (!e.dead && !e.boss && Math.hypot(e.x - p.x, e.y - p.y) < 130) e.fearT = Math.max(e.fearT, 2);
-      }
-      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 130, ttl: 0.35, color: '#9fd8ff' });
-      this.pushEvent('howl');
-    } else if (a.id === 'sanctuary') {
-      const holy = this.character.traits.holyDamage || 1;
-      this.spawnZone({ x: p.x, y: p.y, r: 70, ttl: dur, dps: 14 * this.mods.damage * holy, heal: 3, color: '#fff3b0' });
+    this.abilityUses += 1;
+    const d = this.character.ability;
+    if (a.id === 'pelt_dash') {
+      // Pelt Dash (Wren, LOCKED 2026-10-24): dart `dist` px along the heading over `dashT` s with the pup; untouchable for `secs` (x tree ability
+      // duration); non-boss foes in the way are knocked aside (no damage). Weapon-agnostic: it moves the hero, never a spirit.
+      const T = d.dashT ?? 0.2, v = (d.dist ?? 130) / T;
+      this.dash = { t: T, vx: p.hx * v, vy: p.hy * v, hit: new Set() };
+      p.iframes = Math.max(p.iframes, (d.secs ?? 0.5) * this.tfx.abilityDur);
+      this.addFx({ kind: 'ring', x: p.x, y: p.y, r: 22, ttl: 0.3, color: '#ffcf7a' });
+      this.pushEvent('dash', { x: p.x, y: p.y, dx: p.hx, dy: p.hy });
+    } else if (a.id === 'sanctuary_ring') {
+      // Sanctuary Ring (Elias, LOCKED 2026-10-24): a planted ring of candles. He heals while he stands inside; non-boss foes inside are slowed
+      // (no damage). The zone keeps the `wheel` flag only for the renderer, Elias's pose and the boss's ground-move pick (no weapon reads it).
+      const dur = (d.secs ?? 6) * this.tfx.abilityDur;
+      this.zones = this.zones.filter((z) => !z.wheel);
+      this.spawnZone({ wheel: true, sanctuary: true, x: p.x, y: p.y, r: d.radius ?? 80, ttl: dur, dur, age: 0, dps: 0, heal: d.heal ?? 1.5, slow: Math.max(0, Math.min(0.8, d.slow ?? 0.4)), color: '#fff3b0' });
       this.pushEvent('sanctuary');
     }
     return true;
   }
 
+  // Pelt Dash: each non-boss foe touched during the dart is shoved once to the side it is already on (no damage; control-immune states ignore it).
+  dashShove() {
+    const D = this.dash, p = this.player, sh = this.character.ability.shove ?? 26;
+    for (const e of this.enemies) {
+      if (e.dead || e.boss || e.fight || e.knot || D.hit.has(e.id) || (e.ai && (e.ai.immune === e.state || e.ai.immune === 'all'))) continue;
+      const dx = e.x - p.x, dy = e.y - p.y, rr = p.r + e.r + 10;
+      if (dx * dx + dy * dy > rr * rr) continue;
+      D.hit.add(e.id);
+      const sv = Math.hypot(D.vx, D.vy) || 1, ux = D.vx / sv, uy = D.vy / sv;
+      const side = dx * -uy + dy * ux >= 0 ? 1 : -1; // which side of the dash line the foe is on
+      e.x += -uy * side * sh; e.y += ux * side * sh;
+    }
+  }
+
   cleanupDead() {
     let any = false;
     for (const e of this.enemies) {
-      if (!e.dead) continue;
+      if (!e.dead || e.counted) continue;
       any = true;
+      this.alive[e.type] -= 1;
+      if (e.vanish) continue; // a hatched pod / an add crumbling at the boss's death: no kill, gem, gold or drops
+      if (e.burst) { this.addGem(e.x, e.y, e.xp); this.logHit(e, 0, true); continue; } // EN4 Puffback Toad burst: spent, XP only (no kill credit/gold/drops)
+      if (e.ai && e.ai.kind === 'fuse' && e.state === 'tele' && this.fx.length < 48) this.addFx({ kind: 'fizzle', x: e.x, y: e.y, r: 12, ttl: 0.35, color: '#9aa39a' }); // killed during the fuse: it only fizzles
       this.kills += 1;
+      if (e.hmark) { // DT2: counters + the Emberwake ring (a burst / vanish never reaches here); boss adds (Long Night Ironbark saplings) never count
+        if (!e.bossAdd) { this.markedKills += 1; this.markedBy[e.hmark] = (this.markedBy[e.hmark] || 0) + 1; }
+        if (e.hmark === 'emberwake' && this.embers.length < EMBER.cap && e.dmg > 0) { this.embers.push({ id: this.nextId++, x: e.x, y: e.y, t: 0, next: 0, dmg: e.dmg, src: e.type }); }
+      }
       this.killsByEnemy[e.type] = (this.killsByEnemy[e.type] || 0) + 1;
+      if (e.killer) this.killsBy[e.killer] = (this.killsBy[e.killer] || 0) + 1;
       this.logHit(e, 0, true);
-      this.gold += e.gold * this.mods.gold * this.bless.gold;
-      this.addGem(e.x, e.y, e.xp);
+      if (e.killer === 'ghost_wolves' && !e.boss && !e.mini && !e.echoKill && this.fallen.length < 16 && this.weapons.some((w) => w.evo === 'howling_legion')) this.fallen.push({ x: e.x, y: e.y });
+      if (this.endless) this.gold = Math.min(this.endless.goldMax, this.gold + e.gold * this.mods.gold * this.bless.gold * this.endlessDef.goldMul); // Endless Dusk: a quarter of the gold, capped at +50% of the dawn's
+      else this.gold += e.gold * this.mods.gold * this.bless.gold;
+      if (e.bossAdd) { // boss-made adds: gems only (no hearts / magnets), at most addGems gems per fight (no farming without a timer)
+        if (this.fight.addGems < this.fightDef.addGems) { this.fight.addGems += 1; this.addGem(e.x, e.y, e.xp); }
+        continue;
+      }
+      if (e.xp > 0) this.addGem(e.x, e.y, e.xp); // the Branch-Mane drops no gem: its Lantern Reliquary carries the XP
       this.rollDrops(e);
+      if (e.mini) { this.miniKills += 1; for (const L of this.miniLog) if (L.k === null) { L.k = this.time; break; } if (this.mini === e) this.mini = null; this.pushEvent('miniDead', { id: e.id, x: e.x, y: e.y }); }
       if (e.boss) {
         this.bossKilled = true;
-        this.shards += this.chapter.bossShards;
-        this.pushEvent('bossDead');
+        this.shards += bossShardsFor(this.chapter.bossShards, this.tier.id, this.tier); // 5 / 7 / 10 by night
+        this.rollKeepsake('boss', e.x, e.y);
+        if (this.fight) { this.fight.over(); this.state = 'victory'; } // victory = the boss dies; the sim stops at the killing blow
+        this.pushEvent('bossDead', { x: e.x, y: e.y });
       }
     }
     if (any) this.enemies = this.enemies.filter((e) => !e.dead);
     this.units = this.units.filter((u) => !u.dead);
 
+    if (this.fight) { // recycle is off inside the ring; the adds that crumbled at the boss's death (already uncounted) leave too
+      if (this.fight.stage === 'over' && this.enemies.length) this.enemies = this.enemies.filter((e) => !e.dead);
+      return;
+    }
     // Recycle enemies that have been left far behind so the horde keeps finding you.
     const p = this.player;
     const far = this.balance.despawnDistance;
     for (const e of this.enemies) {
-      if (e.boss) continue;
+      if (e.boss || e.mini || e.knot) continue; // a Hollow Knot never moves; the Branch-Mane is leashed instead (enemyai alpha): it lopes back, never despawns
       const dx = e.x - p.x;
       const dy = e.y - p.y;
       if (dx * dx + dy * dy > far * far) {
@@ -730,18 +1225,25 @@ export class Sim {
       this.level += 1;
       this.pending += 1;
       if (this.tfx.rush) this.buffs.rush = this.tfx.rush.secs;
+      if (this.tfx.gemCall) { // Lantern Call: gems within twice your pickup range fly to you
+        const reach = this.balance.pickupRadius * this.mods.pickup * this.bless.pickup * 2;
+        for (const g of this.gems) if (!g.mag && Math.hypot(this.player.x - g.x, this.player.y - g.y) < reach) g.mag = true;
+      }
       if (this.tfx.levelHeal > 0) this.healPlayer((this.player.maxHp * this.tfx.levelHeal) / 100);
       this.pushEvent('levelup');
     }
-    if (this.pending > 0 && this.state === 'running') this.beginLevelUp();
+    if (this.pending > 0 && this.state === 'running' && !(this.fight && this.fight.holdLevel(this._dt))) this.beginLevelUp(); // boss fight: the offer waits out a live tell (max 3 s) and the arrival beat
   }
 
   beginLevelUp() {
     this.state = 'levelup';
-    this.offer = this.withHealSwap(generateOffer(this.cardCtx, this.rng));
+    const ctx = this.cardCtx;
+    this.offer = this.withHealSwap(this.peekNext ? offerFromPreview(ctx, this.rng, this.peekNext) : generateOffer(ctx, this.rng));
+    if (this.tfx.peek) this.peekNext = previewDraw(ctx, this.rng); // Second Sight: shown dimmed under this offer
   }
 
   withHealSwap(offer) {
+    if (this.fight && this.fight.live) return offer; // no heal-card swap while the boss lives (hearts come from the phase changes)
     const cards = healSwap(offer.cards, this.cardCtx, this.player.hp, this.player.maxHp, this.time, this.healSwapReady, () => fallbackCard('heal', this.data));
     return cards === offer.cards ? offer : { ...offer, cards };
   }
@@ -761,8 +1263,8 @@ export class Sim {
     return true;
   }
 
-  canReroll() { return this.state === 'levelup' && this.rerollsLeft > 0; }
-  canBanish() { return this.state === 'levelup' && this.banishesLeft > 0; }
+  canReroll() { return this.state === 'levelup' && this.rerollsLeft > 0 && !(this.offer && this.offer.start); }
+  canBanish() { return this.state === 'levelup' && this.banishesLeft > 0 && !(this.offer && this.offer.start); }
 
   reroll() {
     if (!this.canReroll()) return false;
@@ -783,12 +1285,23 @@ export class Sim {
     if (this.state !== 'levelup' || !this.offer) return false;
     const card = this.offer.cards.concat(this.offer.gold).find((c) => c.key === key);
     if (!card) return false;
+    if (this.offer.start) { // a run-start offer (T6): not a level-up, pending is untouched
+      if (card.kind === 'favour') this.favour = card.weaponId;
+      else if (card.kind === 'blessing') { this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1); this.blessingsTaken += 1; }
+      else if (card.kind === 'weapon' || card.kind === 'stat') applyCard(this.cardCtx, card); // stat = the Large chest's free rank
+      this.offer = null;
+      if (this.nextStartOffer()) return true;
+      if (this.pending > 0) this.beginLevelUp();
+      else this.state = 'running';
+      return true;
+    }
     if (card.kind === 'fallback') {
       if (card.fallback === 'heal') { this.healPlayer(this.player.maxHp * 0.35); if (card.swapped) this.healSwapReady = this.time + this.blessDef.heal.cooldown; }
       else if (card.fallback === 'gold') this.gold += 25;
-      else if (card.fallback === 'xp') this.xp += Math.ceil(this.xpNeeded * 0.5);
+      else if (card.fallback === 'shard' && this.fallbackShards < (this.balance.fallbackShardMax ?? 2)) { this.fallbackShards += 1; this.shards += 1; }
     } else if (card.kind === 'blessing') {
       this.setBlessRank(card.blessId, (this.blessRanks[card.blessId] || 0) + 1);
+      this.blessingsTaken += 1;
     } else {
       if (card.kind === 'evolution') {
         for (const u of this.units) if (u.owner === card.weaponId) u.dead = true;
@@ -804,35 +1317,53 @@ export class Sim {
   }
 
   checkEnd() {
-    if (this.state === 'running' && this.time >= this.balance.runSeconds) this.state = 'victory';
+    // With a boss fight, victory is the kill (cleanupDead); surviving to a time no longer wins. A chapter without one keeps the timed dawn.
+    if (!this.fightDef && this.state === 'running' && this.time >= this.balance.runSeconds) this.state = 'victory';
   }
 
   step(dt, input = {}) {
     if (this.state !== 'running') return;
     dt = Math.min(dt, 0.05);
     this.time += dt;
+    this._dt = dt;
+    if (this.fight && this.fight.pre(dt)) { this.updateGems(dt); this.updateFx(dt); this.checkLevelUp(); return; } // the 1.2 s arrival freeze ('bossIntro'): the world holds, gems still fly in
     this.updatePlayer(dt, input);
     this.updateSpawns(dt);
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
+    if (this.eshots.length) { updateEnemyShots(this, dt); if (this.state !== 'running') return; }
+    if (this.embers.length) { updateEmbers(this, dt); if (this.state !== 'running') return; }
     this.updateWeapons(dt);
     this.updateProjectiles(dt);
     this.updateZones(dt);
     this.ability.cdLeft = Math.max(0, this.ability.cdLeft - dt);
     if (input.ability) this.useAbility();
+    else if (this.autoRule !== null) { if (this.autoFires()) this.useAbility(); }
     else if (this.tfx.autoHp > 0 && this.player.hp < this.player.maxHp * this.tfx.autoHp) this.useAbility();
     this.cleanupDead();
     this.updateGems(dt);
     this.updatePickups(dt);
+    if (this.sites) this.sites.step(dt);
     this.updateFx(dt);
     this.checkLevelUp();
     this.checkEnd();
   }
 
   // ------------------------------------------------------------------ results & debug helpers
+  // Keepsakes (CHARACTER SYSTEM v2): a chest or the boss may hold the keepsake of a sleeping character whose hint is met (keepFor, from the app).
+  // At most one per run; own RNG stream (keepRng), never drawn when keepFor is empty, so ordinary runs and sweeps stay byte-identical.
+  rollKeepsake(src, x, y) {
+    if (this.keepsake || !this.keepFor.length || !this.keepDef) return;
+    if (!this.keepRng.chance(src === 'boss' ? this.keepDef.boss : this.keepDef.chest)) return;
+    this.keepsake = this.keepFor[Math.floor(this.keepRng.next() * this.keepFor.length) % this.keepFor.length];
+    this.pushEvent('keepsake', { id: this.keepsake, x, y });
+  }
+
   result() {
     return {
-      outcome: this.state === 'victory' ? 'victory' : 'defeat',
+      startWeapon: this.startWeapon, bond: this.bondLevel, keepsake: this.keepsake, // CHARACTER SYSTEM v2 (banked at results only)
+      outcome: this.state === 'victory' || this.endless ? 'victory' : 'defeat', // Endless Dusk: a death in the dark is never a defeat (the dawn stays)
+      endless: this.endless ? { dark: Math.max(0, this.time - this.endless.t0), dawn: this.endless.t0, gold0: Math.floor(this.endless.gold0) } : null, // EXTRAS v1
       time: this.time,
       level: this.level,
       kills: this.kills,
@@ -843,7 +1374,20 @@ export class Sim {
       character: this.characterId,
       killsByEnemy: { ...this.killsByEnemy },
       bossId: this.bossKilled ? this.chapter.bossId : null,
-      weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks } })),
+      weapons: this.weapons.map((w) => ({ id: w.id, evo: w.evo, ranks: { ...w.ranks }, damage: this.dmgBy[w.id] || 0, kills: this.killsBy[w.id] || 0 })),
+      damageDealt: this.damageDealt,
+      tier: this.tier.id,
+      assist: !!this.assist, // EXTRAS v1 Gentle Light (stars and best times rest at bank time)
+      marked: this.markedKills, markedBy: { ...this.markedBy }, // DT2 Hollow marks (Dawnglass is capped at bank time)
+      gems: this.gemsTaken,
+      abilityUses: this.abilityUses,
+      blessings: this.blessingsTaken,
+      sites: this.sites ? this.sites.summary() : null, // map events v1 (counters only; gold and the capped shard are already in gold / shards)
+      minis: this.miniKills, chests: this.chests, chestTiers: this.chestLog.slice(), miniLog: this.miniLog.map((L) => ({ ...L })), // EN6-EN8 counters
+      hurt: { by: { ...this.hurtBy }, hits: { ...this.hitsBy }, lunge: this.lungeHits, last: this.lastHit ? { src: this.lastHit.src, kind: this.lastHit.kind, t: this.lastHit.t } : null }, // DR4 recap (counters only)
+      clock: this.clock,
+      // the boss fight (null if it never began): arrival time, fight start, fight length, the boss's HP left and its phase (DR4 'N into the fight')
+      fight: this.fight ? { at: this.fight.t0, start: this.fight.t0 + this.fightDef.intro.beat, time: this.fight.fightT, hpFrac: this.boss ? Math.max(0, this.boss.hp / this.boss.maxHp) : 1, phase: this.fight.phase, phaseId: this.fight.P.id } : null,
     };
   }
 

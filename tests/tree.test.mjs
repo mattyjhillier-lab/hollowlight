@@ -14,6 +14,8 @@ const DT = 1 / 60;
 const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
 const richSave = (extra = {}) => ({ ...defaultSave(), gold: 1e7, shards: 100, ...extra });
 const E = (id, i = 0) => def.nodes[id].effects[i];
+const soft = (S, C) => C * (1 - Math.exp(-S / C)); // the budget soft cap: total = C(1 - e^(-S/C))
+const chain = (id) => def.order.filter((x) => x !== id && pathToHub(def, id).ids.has(x)); // every node on the way to `id`, parents first
 const ownedPath = (save, ids) => { for (const id of ids) { const r = buy(save, id, def, data); assert.ok(r.ok, `${id}: ${r.reason}`); } };
 
 // ---- minimal synthetic trees for validation tests
@@ -23,7 +25,7 @@ const raw = (nodes) => ({ ...B, nodes });
 const bad = (nodes, re) => assert.throws(() => compileTree(raw(nodes), udata), re);
 
 test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes', () => {
-  assert.ok(def.list.length >= 60 && def.list.length <= 90, `nodes ${def.list.length}`);
+  assert.ok(def.list.length >= 120 && def.list.length <= 200, `nodes ${def.list.length}`);
   assert.deepEqual(Object.keys(def.branches).sort(), ['light', 'magic', 'spirit', 'summoner']);
   const locked = def.list.filter((i) => def.nodes[i].unlock && !def.nodes[i].teaser);
   assert.ok(locked.length >= 12, `locked ${locked.length}`);
@@ -33,7 +35,8 @@ test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes
   const condTypes = new Set();
   const walk = (c) => { if (c.of) c.of.forEach(walk); else condTypes.add(c.t); };
   for (const i of locked) walk(def.nodes[i].unlock);
-  for (const t of ['killEnemy', 'clearChapter', 'surviveTime', 'evolveWeapon', 'useCharacter', 'bossKill', 'totalGold', 'bestLevel']) assert.ok(condTypes.has(t), t);
+  for (const t of ['killEnemy', 'clearChapter', 'surviveTime', 'evolveWeapon', 'startWeapon', 'bossKill', 'totalGold', 'bestLevel']) assert.ok(condTypes.has(t), t);
+  assert.ok(!condTypes.has('useCharacter'), 'v2: hero-in-condition became weapon-in-condition (the tree is character-agnostic)');
 });
 
 test('validation rejects duplicate ids, unknown/self prerequisites, cycles, bad costs, overlaps', () => {
@@ -73,12 +76,12 @@ test('validation rejects duplicate ids, unknown/self prerequisites, cycles, bad 
 test('costs: rank scaling, totals recomputed from nodes', () => {
   const n = node('a', { maxRank: 3, cost: { gold: 100, shards: 1 }, rankCost: 2 });
   const d = compileTree(raw([n]), udata);
-  assert.deepEqual(costFor(d.nodes.a, 1), { gold: 100, shards: 1 });
-  assert.deepEqual(costFor(d.nodes.a, 3), { gold: 400, shards: 1 });
-  assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2 });
-  assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3 }); // junk ids ignored, rank clamped to the node max
+  assert.deepEqual(costFor(d.nodes.a, 1), { gold: 100, shards: 1, glass: 0 });
+  assert.deepEqual(costFor(d.nodes.a, 3), { gold: 400, shards: 1, glass: 0 });
+  assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2, glass: 0 });
+  assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3, glass: 0 }); // junk ids ignored, rank clamped to the node max
   const t = totalCost(def);
-  assert.ok(t.gold > 40000 && t.gold < 120000, `total gold ${t.gold}`);
+  assert.ok(t.gold > 40000 && t.gold < 125000, `total gold ${t.gold}`); // includes the Wardrobe's 24,250 zero-power gold sink (EXTRAS v1)
   assert.ok(t.shards >= 20 && t.shards <= 60, `total shards ${t.shards}`);
 });
 
@@ -96,13 +99,13 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
   assert.equal(s.tree.sp_reroll1, 1);
   assert.equal(s.gold, 1000 - r.cost.gold);
   assert.equal(buy(s, 'sp_reroll1', def, data).ok, false, 'max rank 1 already owned');
-  // multi-rank
+  // multi-rank (no shipped node has more than one rank since the v2 rescale: a synthetic tree proves the rank path)
+  const md = compileTree(raw([node('a', { maxRank: 2, cost: { gold: 10 }, rankCost: 2 })]), udata);
   const m = richSave();
-  m.tree.gt_raven_flock = 1; // gate owned (G1e: gated-weapon nodes need the unlock)
-  ownedPath(m, ['su_bond', 'su_pot', 'rv_talon']);
-  assert.equal(buy(m, 'rv_wide', def, data).rank, 1);
-  assert.equal(buy(m, 'rv_wide', def, data).rank, 2);
-  assert.equal(buy(m, 'rv_wide', def, data).ok, false);
+  assert.equal(buy(m, 'a', md, data).rank, 1);
+  assert.equal(buy(m, 'a', md, data).rank, 2);
+  assert.equal(buy(m, 'a', md, data).ok, false);
+  assert.equal(m.gold, 1e7 - 10 - 20);
   // shards
   const sh = richSave({ shards: 0 });
   ownedPath(sh, ['su_bond', 'su_rush']);
@@ -114,11 +117,12 @@ test('buy: root nodes, gold/shard checks, prerequisites, ranks, atomic failure',
 
 test('unlock conditions gate buying; teasers never buyable', () => {
   const s = richSave();
-  ownedPath(s, ['su_bond', 'su_call', 'wf_fang']);
-  ownedPath(s, ['wf_bleed']);
+  s.stats.runs = 2; // the Wolves heart (v2) asks for 2 runs
+  s.stats.killsByEnemy.wolf = 3000; // enough for the path (Red Thread needs 2500) but not for the chin lantern (4000)
+  ownedPath(s, chain('wf_third'));
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'condition');
   assert.equal(buy(s, 'wf_third', def, data).ok, false);
-  s.stats.killsByEnemy.wolf = 1000;
+  s.stats.killsByEnemy.wolf = 4000;
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'available');
   assert.ok(buy(s, 'wf_third', def, data).ok);
   assert.equal(nodeStatus(def, s, 'tz_marsh', data).state, 'teaser');
@@ -138,13 +142,15 @@ test('respec refunds everything for free and clears the tree', () => {
   const s = defaultSave();
   s.gold = 5000; s.shards = 3;
   ownedPath(s, ['sp_reroll1', 'sp_ban1', 'su_bond', 'su_pot']);
-  const spent = spentOf(s.tree, def);
+  const spent = spentOf(s.tree, def, s.creep); // rising price: what was actually paid
+  assert.ok(spent.gold > spentOf(s.tree, def).gold, 'su_pot was bought after su_bond in the Summoner ring, so it cost one rising-price step more');
   const goldAfter = s.gold;
   const out = respec(s, def);
   assert.deepEqual(out, spent);
   assert.equal(s.gold, goldAfter + spent.gold);
   assert.equal(s.gold, 5000);
   assert.deepEqual(s.tree, {});
+  assert.deepEqual(s.creep, {}, 'price steps cleared with the tree');
   respec(s, def);
   assert.equal(s.gold, 5000, 'second respec refunds nothing');
 });
@@ -159,10 +165,12 @@ test('sanitizeTree: unknown ids, junk, huge/negative ranks, prerequisite and con
   assert.equal(t.su_bond, undefined, 'string rank dropped');
   assert.equal(t.li_vigor, 1, 'fractional floored');
   assert.equal(t.nope, undefined);
-  assert.equal(t.sp_cd1, undefined, 'needs sp_ban1 too, which was negative');
-  assert.equal(t.sp_cd3, undefined, 'missing prerequisite sp_cd2');
-  assert.equal(t.wf_third, undefined, 'missing prereqs and unmet kill condition');
-  assert.equal(t.li_last, undefined, 'chapter not cleared');
+  // connected-unlock rule (2026-10-21): links and conditions gate BUYING only; an owned lantern is never dropped for them
+  assert.equal(t.sp_cd1, 1, 'kept: links gate buying, not owning');
+  assert.equal(t.sp_cd3, 1, 'kept although sp_cd2 is not owned');
+  assert.equal(t.wf_third, undefined, 'v2: dropped (refunded) without the Wolves heart, its gate');
+  assert.equal(sanitizeTree({ ...evil, gt_ghost_wolves: 1 }, stats, def, data).wf_third, 1, 'kept once the heart is owned');
+  assert.equal(t.li_last, 1, 'kept: conditions gate buying only');
   assert.equal(t.tz_marsh, undefined, 'teaser');
   assert.equal(t.ma_focus, 1, 'huge rank clamped to max');
   assert.equal(Object.getPrototypeOf(t), Object.prototype);
@@ -180,7 +188,7 @@ test('edited stats cannot be abused beyond clamps; stored totals are not trusted
   assert.equal(st.killsByEnemy.crow, 0);
   assert.equal(st.killsByEnemy.root_crawler, undefined);
   assert.equal(Object.hasOwn(st.killsByEnemy, '__proto__'), false);
-  assert.ok(Object.keys(st.killsByEnemy).length <= 64);
+  assert.ok(Object.keys(st.killsByEnemy).length <= 128);
   assert.equal(st.chapters.cursed_forest.clears, 1e9);
   assert.equal(st.chapters.cursed_forest.bestTime, 0);
   assert.equal(st.chapters.cursed_forest.runs, 0);
@@ -200,14 +208,16 @@ test('migration v1 -> v2: carries gold/stats/settings, resets placeholder tree, 
   assert.equal(r.save.shards, 4);
   assert.equal(r.save.stats.kills, 99);
   assert.equal(r.save.settings.quality, 'low');
-  assert.deepEqual(r.save.tree, {}, 'v1 tree was a placeholder');
+  assert.deepEqual(r.save.tree, { gt_ghost_wolves: 1, gt_holy_orbit: 1 }, 'v1 tree was a placeholder; a played pre-v2 save keeps the old run-1 pool (both launch hearts)');
   assert.deepEqual(r.save.stats.killsByEnemy, {});
   assert.deepEqual(r.save.seen, {});
   // an older save that never had these fields at all
   assert.ok(parseSave('{"version":1}').ok);
-  // a v2 save keeps a valid tree
+  // a v2 save goes through the v3 Regrowth: non-permanent nodes are refunded at their old price (150 + 150), unknown ids vanish
   const v2 = parseSave(JSON.stringify({ ...v1, version: 2, tree: { sp_reroll1: 1, sp_ban1: 1, junk: 7 } }));
-  assert.deepEqual(v2.save.tree, { sp_reroll1: 1, sp_ban1: 1 });
+  assert.deepEqual(v2.save.tree, { gt_ghost_wolves: 1, gt_holy_orbit: 1 }, 'v2 legacy profile: the old run-1 pool hearts');
+  assert.equal(v2.save.gold, 321 + 300);
+  assert.deepEqual(v2.save.notes, { regrowth: { gold: 300, shards: 0, nodes: 2 }, starter: { hero: 'wren', weapon: 'ghost_wolves' } });
 });
 
 test('seen flags are sanitised', () => {
@@ -227,7 +237,7 @@ test('every condition type: progress, text and completion', () => {
   };
   const P = (c) => conditionProgress(c, stats, def, data);
   assert.equal(P({ t: 'killEnemy', id: 'wolf', n: 1000 }).frac, 0.34);
-  assert.equal(P({ t: 'killEnemy', id: 'wolf', n: 1000 }).lines[0].text, 'Slay 1000 Forest Wolf');
+  assert.equal(P({ t: 'killEnemy', id: 'wolf', n: 1000 }).lines[0].text, 'Slay 1000 Fell Wolf');
   assert.equal(P({ t: 'killEnemy', id: 'crow', n: 10 }).done, false);
   assert.equal(P({ t: 'clearChapter', id: 'cursed_forest' }).done, true);
   assert.equal(P({ t: 'clearChapter', id: 'cursed_forest', n: 2 }).frac, 0.5);
@@ -273,17 +283,17 @@ test('closestUnlocks ranks by progress; newly-met conditions come from a banked 
   const st = new SaveStore(mem());
   st.load();
   const ctx = { def, data };
-  const b1 = st.bankRun({ outcome: 'defeat', time: 300, level: 12, kills: 400, gold: 500, shards: 0, killsByEnemy: { wolf: 400, crow: 100 }, character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: null }] }, ctx);
+  const b1 = st.bankRun({ outcome: 'defeat', time: 240, level: 12, kills: 400, gold: 500, shards: 0, killsByEnemy: { wolf: 400, crow: 100 }, character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: null }] }, ctx);
   assert.deepEqual(b1.newlyMet, []);
   const c = closestUnlocks(def, st.data, data, 3);
   assert.equal(c.length, 3);
   assert.ok(c[0].frac >= c[1].frac && c[1].frac >= c[2].frac);
   assert.ok(c.every((x) => /\d+\/\d+/.test(x.text)));
-  const b2 = st.bankRun({ outcome: 'victory', time: 900, level: 50, kills: 3000, gold: 2000, shards: 5, killsByEnemy: { wolf: 700, crow: 1400, root_crawler: 50 }, bossKilled: true, bossId: 'elder_treant', character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: 'phantom_stampede' }] }, ctx);
+  const b2 = st.bankRun({ outcome: 'victory', time: 900, level: 50, kills: 3000, gold: 2000, shards: 5, killsByEnemy: { wolf: 3700, crow: 8000, root_crawler: 50 }, bossKilled: true, bossId: 'elder_treant', character: 'wren', chapter: 'cursed_forest', weapons: [{ id: 'ghost_wolves', evo: 'phantom_stampede' }] }, ctx);
   for (const id of ['wf_third', 'rv_oath', 'li_last', 'li_elder', 'li_dawn', 'li_vow', 'li_scav']) assert.ok(b2.newlyMet.includes(id), id);
   assert.ok(!b2.newlyMet.includes('wf_fang'), 'nodes without a condition never appear');
   const s = st.data.stats;
-  assert.equal(s.killsByEnemy.wolf, 1100);
+  assert.equal(s.killsByEnemy.wolf, 4100);
   assert.equal(s.chapters.cursed_forest.clears, 1);
   assert.equal(s.chapters.cursed_forest.runs, 2);
   assert.equal(s.chapters.cursed_forest.bestTime, 900);
@@ -324,16 +334,18 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   const none = aggregateMods({}, def, data);
   assert.deepEqual(none, emptyEffects());
   const a = aggregateMods({ sp_edge: 1, sp_cd1: 1, sp_cd2: 1, sp_cd3: 1, sp_cd4: 1, ma_cast: 1, ma_area: 1, su_bond: 1, ma_focus: 1, li_vigor: 1, li_regen: 1 }, def, data);
-  assert.ok(Math.abs(a.mods.damage - (1 + E('sp_edge').pct / 100)) < 1e-9);
+  // every capped effect passes through the soft cap total = C(1 - e^(-S/C)) (docs/design/skill-tree-v2.md section 8)
+  assert.ok(Math.abs(a.mods.damage - (1 + soft(E('sp_edge').pct, def.rule.categories.dmg.cap) / 100)) < 1e-9);
   assert.ok(Math.abs(a.mods.abilityCd - 0.55) < 1e-9, `abilityCd ${a.mods.abilityCd}`);
-  assert.ok(Math.abs(a.mods.cooldown - (1 + E('ma_cast').pct / 100)) < 1e-9);
-  assert.ok(Math.abs(a.mods.area - (1 + E('ma_area').pct / 100)) < 1e-9);
-  assert.ok(Math.abs(a.player.maxHp - (1 + E('li_vigor').pct / 100)) < 1e-9);
-  assert.equal(a.player.levelHeal, E('li_regen').pct);
-  assert.equal(a.weaponBonus.ghost_wolves.power.pct, E('su_bond').pct, 'summon tag expands to wolves');
-  assert.equal(a.weaponBonus.raven_flock.power.pct, E('su_bond').pct);
-  assert.equal(a.weaponBonus.spirit_bolts.power.pct, E('ma_focus').pct, 'magic tag expands to bolts');
-  assert.equal(a.weaponBonus.holy_orbit.power.pct, E('ma_focus').pct);
+  assert.ok(Math.abs(a.mods.cooldown - (1 + soft(-E('ma_cast').pct, def.rule.categories.cast.cap) / -100)) < 1e-9);
+  assert.ok(Math.abs(a.mods.area - (1 + soft(E('ma_area').pct, 8) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.maxHp - (1 + soft(E('li_vigor').pct, 12) / 100)) < 1e-9);
+  assert.ok(Math.abs(a.player.levelHeal - soft(E('li_regen').pct, 3)) < 1e-9);
+  const tagS = soft(E('su_bond').pct, def.rule.categories.tagS.cap), tagM = soft(E('ma_focus').pct, def.rule.categories.tagM.cap);
+  assert.ok(Math.abs(a.weaponBonus.ghost_wolves.power.pct - tagS) < 1e-9, 'summon tag expands to wolves');
+  assert.ok(Math.abs(a.weaponBonus.raven_flock.power.pct - tagS) < 1e-9);
+  assert.ok(Math.abs(a.weaponBonus.spirit_bolts.power.pct - tagM) < 1e-9, 'magic tag expands to bolts');
+  assert.ok(Math.abs(a.weaponBonus.holy_orbit.power.pct - tagM) < 1e-9);
   assert.equal(a.weaponBonus.ghost_wolves.speed, undefined);
   // reroll / banish / auto / revive / rush
   const v = aggregateMods({ sp_reroll1: 1, sp_reroll2: 1, sp_reroll3: 1, sp_ban1: 1, sp_auto: 1, li_last: 1, su_rush: 1, ma_attune: 1 }, def, data);
@@ -341,12 +353,13 @@ test('aggregateMods math: sums per rank, clamps, tag expansion', () => {
   assert.equal(v.meta.banishes, 1);
   assert.equal(v.ability.autoHp, 0.3);
   assert.equal(v.player.revive, E('li_last').frac);
-  assert.deepEqual(v.rush, { pct: 25, secs: 6 });
+  assert.equal(v.rush.secs, 4);
+  assert.ok(v.rush.pct < 10 && v.rush.pct > 8, `rush ${v.rush.pct} (10% before the tag cap)`);
   assert.equal(v.evoLuck, 1.5);
   // keystone trade-off
   const k = aggregateMods({ su_key: 1 }, def, data);
-  assert.equal(k.weaponBonus.ghost_wolves.power.pct, E('su_key', 0).pct);
-  assert.equal(k.weaponBonus.spirit_bolts.power.pct, E('su_key', 1).pct);
+  assert.ok(Math.abs(k.weaponBonus.ghost_wolves.power.pct - soft(E('su_key', 0).pct, def.rule.categories.tagS.cap)) < 1e-9);
+  assert.equal(k.weaponBonus.spirit_bolts.power.pct, E('su_key', 1).pct, 'penalties pass through the cap unscaled');
   assert.ok(E('su_key', 0).pct > 0 && E('su_key', 1).pct < 0, 'keystone trades one side for the other');
   // hostile ranks cannot push values out of bounds
   const h = aggregateMods({ sp_cd1: 1e9, li_vigor: 1e9, sp_reroll1: 1e9 }, def, data);
@@ -376,8 +389,8 @@ test('layout: coordinates are finite, virtualised queries return only nearby nod
   assert.ok(near.length < 12 && near.length > 0);
   for (const id of near) assert.ok(Math.abs(def.nodes[id].x) <= 150 && Math.abs(def.nodes[id].y) <= 150);
   const p = pathToHub(def, 'wf_third');
-  assert.ok(p.ids.has('su_bond') && p.ids.has('wf_third'));
-  assert.ok(p.edges.has('hub>su_bond'));
+  assert.ok(p.ids.has('wf_third') && p.ids.size >= 6, 'the chin lantern is reached along the wolf thread');
+  assert.ok([...p.edges].some((e) => e.startsWith('hub>')), 'a starter constellation hangs off the hub');
 });
 
 test('scalability: a generated 600-node tree compiles and queries quickly', () => {
@@ -403,11 +416,16 @@ const run = (sim, secs, input = { x: 0, y: 0 }) => {
 };
 const fx = (owned) => aggregateMods(owned, def, data);
 
-test('effects: damage nodes raise damage dealt (same seed)', () => {
-  const a = new Sim({ data, seed: 11, godMode: true });
-  const b = new Sim({ data, seed: 11, godMode: true, tree: fx({ sp_edge: 1, su_bond: 1, su_pot: 1, wf_fang: 1, ch_wren: 1 }) });
-  run(a, 90); run(b, 90);
-  assert.ok(b.damageDealt > a.damageDealt * 1.02, `${b.damageDealt} vs ${a.damageDealt}`);
+test('effects: damage nodes raise damage dealt (summed over 6 seeds: one seed is chaotic)', () => {
+  let da = 0;
+  let db = 0;
+  for (let seed = 11; seed < 17; seed++) {
+    const a = new Sim({ data, seed, godMode: true });
+    const b = new Sim({ data, seed, godMode: true, tree: fx({ sp_edge: 1, su_bond: 1, su_pot: 1, wf_fang: 1, ch_wren: 1 }) });
+    run(a, 25); run(b, 25);
+    da += a.damageDealt; db += b.damageDealt;
+  }
+  assert.ok(db > da * 1.01, `${db} vs ${da}`);
 });
 
 test('effects: weapon bonuses change real weapon stats (count, power, pierce)', () => {
@@ -417,7 +435,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   assert.equal(w.s.count, 3);
   assert.ok(Math.abs(w.s.power - 7 * 1.1) < 1e-9, `power ${w.s.power}`);
   const real = new Sim({ data, seed: 1, tree: fx({ su_bond: 1, wf_fang: 1 }) });
-  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (E('su_bond').pct + E('wf_fang').pct) / 100)) < 1e-9);
+  assert.ok(Math.abs(real.weapons[0].s.power - 7 * (1 + (soft(E('su_bond').pct, def.rule.categories.tagS.cap) + soft(E('wf_fang').pct, def.rule.perWeapon.cap)) / 100)) < 1e-9);
   sim.debugGrant('ghost_wolves', { count: 2, power: 1 });
   assert.equal(sim.weapons[0].s.count, 5, 'bonus persists through rank-ups and debug grants');
   run(sim, 5);
@@ -425,7 +443,7 @@ test('effects: weapon bonuses change real weapon stats (count, power, pierce)', 
   const s2 = new Sim({ data, seed: 1, characterId: 'elias', tree: fx({ ma_cast: 1, bo_pierce: 1 }) });
   s2.addWeapon('spirit_bolts');
   assert.equal(s2.weapons[1].s.pierce, 1);
-  assert.ok(Math.abs(s2.mods.cooldown - (1 + E('ma_cast').pct / 100)) < 1e-9);
+  assert.ok(Math.abs(s2.mods.cooldown - (1 - soft(-E('ma_cast').pct, def.rule.categories.cast.cap) / 100)) < 1e-9);
 });
 
 test('effects: reroll and banish are unavailable at the start and unlocked by the tree', () => {
@@ -462,16 +480,16 @@ test('effects: ability duration, auto-activate at low health', () => {
   sim.player.hp = sim.player.maxHp * 0.2;
   sim.step(DT, {});
   assert.ok(sim.ability.cdLeft > 0, 'auto-activated');
-  assert.ok(Math.abs(sim.buffs.packHowl - 7.5) < 0.1, `howl ${sim.buffs.packHowl}`);
+  assert.ok(Math.abs(sim.player.iframes - 0.5 * 1.15) < 0.02, `Pelt Dash untouchable ${sim.player.iframes} (0.5 s x 1.15)`);
 });
 
 test('effects: max health, regeneration, hearts', () => {
   const sim = new Sim({ data, seed: 1, godMode: true, tree: fx({ li_vigor: 1, li_regen: 1 }) });
-  assert.equal(sim.player.maxHp, Math.round(60 * (1 + E('li_vigor').pct / 100)));
+  assert.equal(sim.player.maxHp, Math.round(data.balance.body.hp * (1 + soft(E('li_vigor').pct, 12) / 100)));
   sim.player.hp = 10;
   sim.xp = sim.xpNeeded + 1;
   sim.checkLevelUp();
-  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * E('li_regen').pct / 100)) < 1e-9, `hp ${sim.player.hp}`);
+  assert.ok(Math.abs(sim.player.hp - (10 + sim.player.maxHp * soft(E('li_regen').pct, 3) / 100)) < 1e-9, `hp ${sim.player.hp}`);
   const reg = new Sim({ data, seed: 1, godMode: true, tree: { player: { regen: 1 } } });
   reg.player.hp = 10;
   reg.weapons.length = 0;
@@ -481,7 +499,7 @@ test('effects: max health, regeneration, hearts', () => {
   heal.player.hp = 1;
   heal.pickups.push({ id: 99, type: 'heart', x: heal.player.x, y: heal.player.y, ttl: 5 });
   heal.step(DT, {});
-  assert.ok(heal.player.hp > 1 + 60 * 0.3 * 1.9, `hp ${heal.player.hp}`);
+  assert.ok(heal.player.hp > 1 + data.balance.body.hp * 0.3 * 1.9, `hp ${heal.player.hp}`);
 });
 
 test('effects: Last Light revives once; level-up rush buffs summons; attunement raises pair-card weight', () => {
@@ -489,7 +507,7 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
   sim.player.hp = 1;
   sim.damagePlayer(999);
   assert.equal(sim.state, 'running');
-  assert.equal(Math.round(sim.player.hp), 24);
+  assert.equal(Math.round(sim.player.hp), Math.round(data.balance.body.hp * 0.4));
   assert.ok(sim.player.iframes > 1);
   sim.player.iframes = 0;
   sim.damagePlayer(999);
@@ -500,18 +518,18 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
   const base = r.dmgMult(w);
   r.xp = r.xpNeeded + 1;
   r.checkLevelUp();
-  assert.ok(r.buffs.rush > 5);
-  assert.ok(Math.abs(r.dmgMult(w) - base * 1.25) < 1e-9);
+  assert.ok(r.buffs.rush > 3);
+  assert.ok(Math.abs(r.dmgMult(w) - base * (1 + r.tfx.rush.pct / 100)) < 1e-9);
   assert.equal(new Sim({ data, seed: 2 }).dmgMult(w), base);
 
   const luck = new Sim({ data, seed: 2, tree: fx({ ma_attune: 1 }) });
   assert.equal(luck.cardCtx.evoLuck, 1.5);
 });
 
-test('unlock schema: weapon gate and hero gate work with data that opts in (G1b: shipped gates are exactly 3 weapons; heroes stay open)', () => {
-  // Rewritten in G1b: the old line pinned 'no weapon is gated'. Progression design now gates exactly these three.
-  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'raven_flock', 'spirit_bolts']);
-  assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no existing hero is gated');
+test('unlock schema: weapon gate and hero gate work with data that opts in (v2: every shipped weapon is gated; heroes wake by keepsakes)', () => {
+  // G1b gated three weapons; CHARACTER SYSTEM v2 (2026-10-24) gates all five (the starter set grants one heart).
+  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
+  assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no hero is a tree gate');
   const gated = { ...udata, weapons: { ...udata.weapons, ghost_wolves: { ...udata.weapons.ghost_wolves, treeGate: true } } };
   const d = compileTree(raw([node('uw', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }, { unlock: 'abilityUpgrade', id: 'long_howl' }, { unlock: 'modifier', id: 'hard_dusk' }] })]), gated);
   const off = new Sim({ data: gated, characterId: 'elias', seed: 4 });
@@ -582,7 +600,7 @@ test('G1e: no non-gate node text names a locked weapon or evolution (data-driven
   const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate);
   const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
   const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
-  assert.ok(lockedW.length === 3 && lockedE.length === 9);
+  assert.ok(lockedW.length === 5 && lockedE.length === 13);
   for (const id of def.list) {
     const n = def.nodes[id];
     if (n.permanent || n.gateAnc.some((g) => def.nodes[g].effects.some((e) => e.unlock === 'weapon'))) continue; // gate nodes and locked-weapon nodes may name their weapon
@@ -593,11 +611,11 @@ test('G1e: no non-gate node text names a locked weapon or evolution (data-driven
 
 test('G1e: old saves that own gated-weapon nodes without the gate are repaired with a full refund', () => {
   const paid = (ids) => spentOf(Object.fromEntries(ids.map((i) => [i, 1])), def);
-  const raw0 = { ...defaultSave(), gold: 100, shards: 2, tree: { su_bond: 1, su_pot: 1, rv_talon: 1, rv_wide: 2, ma_focus: 1, ma_cast: 1, bo_pierce: 1, bo_swift: 1, cl_arc: 1 } };
+  const raw0 = { ...defaultSave(), gold: 100, shards: 2, tree: { su_bond: 1, su_pot: 1, rv_talon: 1, rv_quill: 1, ma_focus: 1, ma_cast: 1, cl_arc: 1, cl_power: 1 } };
   raw0.stats.killsByEnemy = {};
   const fixed = sanitize(raw0);
   assert.deepEqual(Object.keys(fixed.tree).sort(), ['ma_cast', 'ma_focus', 'su_bond', 'su_pot']);
-  const exp = spentOf({ rv_talon: 1, rv_wide: 2, bo_pierce: 1, bo_swift: 1 }, def);
+  const exp = spentOf({ rv_talon: 1, rv_quill: 1, cl_arc: 1, cl_power: 1 }, def);
   assert.equal(fixed.gold, 100 + exp.gold, 'spent gold refunded, not silently deleted');
   assert.equal(fixed.shards, 2 + exp.shards);
   // idempotent: a repaired save refunds nothing more

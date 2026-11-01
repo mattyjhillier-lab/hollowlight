@@ -1,0 +1,154 @@
+DIV||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|hud|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+svg||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+defs||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+linearGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+radialGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+radialGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+radialGradient||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+stop||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-frost|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-lantern|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-plate|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-lamp|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+svg||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-hp|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+B|h-num h-hpnum|"Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif|27.9552px|900|0.279552px|rgb(255, 243, 220)|27.9552px
+SPAN|h-hpmax|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|14px|700|normal|rgb(159, 179, 200)|normal
+DIV|h-thread|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-rail|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-tfill|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-notches|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-bead|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-knot|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+B|h-num h-knotnum|"Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif|19.968px|900|0.19968px|rgb(255, 243, 220)|19.968px
+DIV|h-strip|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-tile|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+svg||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+ellipse||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+ellipse||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+rect||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-tile empty|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-tile empty|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-tile empty|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-moon|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-arc|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+svg||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-timeplate|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+B|h-num h-timetxt|"Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif|24.96px|900|1.4976px|rgb(255, 243, 220)|24.96px
+I|h-track|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-trackdot|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-tracksun|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-boss|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-bossname|"Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif|19.968px|800|normal|rgb(255, 243, 220)|normal
+DIV|h-bbar|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-bfill|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-bnotch n1|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+I|h-bnotch n2|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+DIV|h-coin|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+SPAN|h-coinicon|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+svg||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+B|h-num h-goldnum|"Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif|20.9664px|900|0.209664px|rgb(255, 243, 220)|20.9664px
+BUTTON|h-pause|Arial|0px|400|normal|rgba(0, 0, 0, 0)|normal
+DIV|h-ability active|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+svg||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+g||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+ellipse||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+circle||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+ellipse||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+path||"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal
+B|h-num h-absec|"Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif|20.9664px|900|0.209664px|rgb(255, 243, 220)|20.9664px
+SPAN|h-abkey|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|14px|700|1.12px|rgb(255, 243, 220)|normal
+DIV|toast show|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(255, 243, 220)|normal
+DIV|bossintro|"Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif|64px|700|19.2px|rgb(255, 243, 220)|normal
+DIV|hurtflash|"Trebuchet MS", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif|20px|400|normal|rgb(232, 224, 255)|normal

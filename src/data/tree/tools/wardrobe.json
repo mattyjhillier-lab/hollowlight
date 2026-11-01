@@ -1,0 +1,204 @@
+{
+ "kind": "tool",
+ "tool": "wardrobe",
+ "prefix": "wd",
+ "slot": "far3",
+ "name": "The Wardrobe",
+ "blurb": "Dress your lantern: flames and trails that change how your light looks, never how strong it is.",
+ "nodes": [
+  {
+   "id": "wd_rose",
+   "idx": 0,
+   "kind": "ring",
+   "name": "Dawn Rose",
+   "desc": "A rose-pink lantern flame. Looks only: the light stays as bright.",
+   "cost": {
+    "glass": 5
+   },
+   "effects": [
+    {
+     "cosm": "flame",
+     "id": "dawn_rose"
+    }
+   ],
+   "branch": "light",
+   "place": {
+    "at": [
+     -70,
+     -40
+    ]
+   },
+   "requires": [
+    "br_wardrobe"
+   ]
+  },
+  {
+   "id": "wd_white",
+   "idx": 1,
+   "kind": "ring",
+   "name": "Candle White",
+   "desc": "A clean candle-white lantern flame. Looks only: the light stays as bright.",
+   "cost": {
+    "glass": 5
+   },
+   "effects": [
+    {
+     "cosm": "flame",
+     "id": "candle_white"
+    }
+   ],
+   "branch": "light",
+   "place": {
+    "at": [
+     0,
+     -75
+    ]
+   },
+   "requires": [
+    "br_wardrobe"
+   ]
+  },
+  {
+   "id": "wd_ember",
+   "idx": 2,
+   "kind": "ring",
+   "name": "Ember",
+   "desc": "A deep ember lantern flame. Looks only: the light stays as bright.",
+   "cost": {
+    "glass": 5
+   },
+   "effects": [
+    {
+     "cosm": "flame",
+     "id": "ember"
+    }
+   ],
+   "branch": "light",
+   "place": {
+    "at": [
+     70,
+     -40
+    ]
+   },
+   "requires": [
+    "br_wardrobe"
+   ]
+  },
+  {
+   "id": "wd_petal",
+   "idx": 3,
+   "kind": "ring",
+   "name": "Petal Drift",
+   "desc": "Your lantern trail sheds soft petals. Looks only.",
+   "cost": {},
+   "effects": [
+    {
+     "cosm": "trail",
+     "id": "petal"
+    }
+   ],
+   "branch": "light",
+   "unlock": {
+    "t": "stars",
+    "chapter": "cursed_forest",
+    "n": 2
+   },
+   "place": {
+    "at": [
+     -75,
+     30
+    ]
+   },
+   "requires": [
+    "br_wardrobe"
+   ]
+  },
+  {
+   "id": "wd_lilac",
+   "idx": 4,
+   "kind": "ring",
+   "name": "Lilac Hush",
+   "desc": "A hushed lilac lantern flame, for a web fully lit. Looks only.",
+   "cost": {
+    "gold": 6000
+   },
+   "effects": [
+    {
+     "cosm": "flame",
+     "id": "lilac_hush"
+    }
+   ],
+   "branch": "light",
+   "unlock": {
+    "t": "webLit"
+   },
+   "place": {
+    "at": [
+     0,
+     -145
+    ]
+   },
+   "requires": [
+    "wd_white"
+   ]
+  },
+  {
+   "id": "wd_firefly",
+   "idx": 5,
+   "kind": "ring",
+   "name": "Firefly Dots",
+   "desc": "Your lantern trail becomes a drift of firefly dots. Looks only.",
+   "cost": {
+    "gold": 9000
+   },
+   "effects": [
+    {
+     "cosm": "trail",
+     "id": "firefly"
+    }
+   ],
+   "branch": "light",
+   "unlock": {
+    "t": "webLit"
+   },
+   "place": {
+    "at": [
+     75,
+     30
+    ]
+   },
+   "requires": [
+    "br_wardrobe"
+   ]
+  },
+  {
+   "id": "wd_motes",
+   "idx": 6,
+   "kind": "ring",
+   "name": "Ember Motes",
+   "desc": "Your lantern trail scatters warm ember motes. Looks only.",
+   "cost": {
+    "gold": 9000
+   },
+   "effects": [
+    {
+     "cosm": "trail",
+     "id": "motes"
+    }
+   ],
+   "branch": "light",
+   "unlock": {
+    "t": "webLit"
+   },
+   "place": {
+    "at": [
+     130,
+     85
+    ]
+   },
+   "requires": [
+    "wd_firefly"
+   ]
+  }
+ ]
+}

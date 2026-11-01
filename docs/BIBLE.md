@@ -62,6 +62,8 @@ Builds on: CLAUDE.md (locked design), docs/IDENTITY.md (The Hollow, life map), s
 
 ## 3. Heroes
 
+**Character rules (CHARACTER SYSTEM v2, LOCKED 2026-10-24; overrides the hero/weapon pairings and stat lines below):** every hero has the SAME body (HP, speed, ward); heroes differ only by their action skill and their look. No hero owns a weapon: the run starts with any spirit already awake in the Lantern Web, and the weapon named in each heading below is only the hero's *kindred spirit* (the suggested start, no bonus). Heroes grow by Bond (levels 1-25, earned by playing them, banked only after a night) and wake by their own keepsakes, not by the tree. Launch skills: Wren = Pelt Dash (a quick dart with her pup), Elias = Sanctuary Ring (a planted ring of candles); the older Pack Howl / Sanctuary wheel lines below describe the look, not the rules.
+
 **Role-colour scheme for hero accents** (each hero owns exactly ONE accent, used on one prop or cloth piece; the rest of the hero is warm-neutral cloth, leather, skin):
 | Role family | Heroes | Accent family |
 |---|---|---|
@@ -231,7 +233,7 @@ Rule: each base weapon has its own light colour and trail shape. Evolutions keep
 ### Evolutions (all 11, names from evolutions.json)
 | Evolution (parent) | Visual signature | Light | Trail | Impact | Sound-feel |
 |---|---|---|---|---|---|
-| Pouncing Pack (Wolves) | Wolves become muscular and lower; leap in a clear arc with a shadow below, then pin | Moon blue + gold rim | Long leap-arc streak, then a ring stamped where they land | Pin: the enemy is pressed flat, pale claws cross over it | Leap, thud, maul |
+| Pouncing Pack (Wolves; REMOVED 2026-10-16, replaced by Light Trails, see LOCKED) | Wolves become muscular and lower; leap in a clear arc with a shadow below, then pin | Moon blue + gold rim | Long leap-arc streak, then a ring stamped where they land | Pin: the enemy is pressed flat, pale claws cross over it | Leap, thud, maul |
 | Howling Legion (Wolves) | A pack too big to count, lighter and more transparent; heads up when howling | Moon blue + gold rim | Wide band of overlapping paw prints like a river | Howl ripples: rings of sound visible on the ground | Chorus, rumble, rush |
 | Dire Alpha (Wolves) | One huge wolf, 3x size, mane of drifting light, amber eyes (a Wren touch) | Moon blue body, gold mane tips | Deep claw gouges that glow | Cleave = wide crescent slash across 3-4 enemies | Growl, crunch, quake |
 | Murder Storm (Ravens) | A tornado of ravens around the hero, wall-like | Violet + gold flecks | Spiral of feathers on the ground, slowly rotating | Enemies hit are flung outward, scattering paper | Roar, rustle, gale |
@@ -352,7 +354,7 @@ The word is lettered half grey, half lit: "Hollow" in flat grey, "light" warm. A
 7. **Boss phase change.** A one-second freeze frame, a crack of light through the treant's bark, the music shifts down a key.
 8. **Low HP.** Edges of the screen frost grey, colour drains from the ground around the hero, the hero's lantern flame flickers smaller, and the heartbeat is the only sound under the music.
 9. **Dawn victory.** The sun crests the screen edge; a wave of full colour rolls across the whole map, grey enemies crumble to ash and blow away, and the hero sits down on the grass with their spirits around them.
-10. **Defeat.** The hero's lantern goes out; the screen goes fully grey; the spirits stay, standing guard over the hero, and fade slowly. Results appear on a grey card: "The night is long. Try again."
+10. **Defeat.** The hero's lantern dims, not out (Matt, 2026-10-16: reopened, see LOCKED Reopened list): a small flame still burns in a dim amber pool; the screen goes quiet and grey-warm; the spirits stay, standing guard over the hero, and fade slowly. Results appear on a lantern-glass card: "The light dwindles. The night is long. The lantern still burns, a little."
 11. **New hero unlock.** A grey silhouette on the hero select screen fills with colour from the bottom up, and their tell (scarf, bell, book) lights first.
 12. **Chapter clear (map).** On the world map, the cleared chapter's region floods with colour and stays that way forever; a thin light-path draws to the next grey region.
 

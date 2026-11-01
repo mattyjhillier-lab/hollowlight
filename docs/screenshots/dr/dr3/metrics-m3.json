@@ -1,0 +1,56 @@
+[
+ {
+  "name": "m3-hart-6m20",
+  "view": "desk",
+  "tag": "hit",
+  "src": "bramble_hart",
+  "kind": "charge",
+  "id": 4,
+  "am": 17.32,
+  "n40": 10,
+  "n80": 18,
+  "t": 380.7500999999999
+ },
+ {
+  "name": "m3-hart-6m20",
+  "view": "desk",
+  "tag": "hit-30ms",
+  "redPct": 0,
+  "lightRedPx": 0,
+  "occluders": 1,
+  "tellsLive": 2,
+  "hurtNum": true,
+  "numsNearHurt": 6,
+  "heroHitA": 1,
+  "hfT": 0.03,
+  "hfN": 1
+ },
+ {
+  "name": "m3-hart-6m20",
+  "view": "desk",
+  "tag": "hit-120ms",
+  "redPct": 0,
+  "lightRedPx": 0,
+  "occluders": 1,
+  "tellsLive": 2,
+  "hurtNum": true,
+  "numsNearHurt": 6,
+  "heroHitA": 1,
+  "hfT": 0.12,
+  "hfN": 1
+ },
+ {
+  "name": "m3-hart-6m20",
+  "view": "desk",
+  "tag": "hit-300ms",
+  "redPct": 0,
+  "lightRedPx": 0,
+  "occluders": 0,
+  "tellsLive": 2,
+  "hurtNum": true,
+  "numsNearHurt": 6,
+  "heroHitA": 0,
+  "hfT": 0.3,
+  "hfN": 1
+ }
+]

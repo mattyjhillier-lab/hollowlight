@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Damage Readability Options</title>
+<style>
+  :root { --bg:#15120f; --fg:#fff3dc; --mut:#b9ad97; --line:#5a4a33; --rec:#e0b765; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.4 system-ui, sans-serif; }
+  header { padding: 16px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0 0 4px; font-size: 22px; } h2 { margin: 24px 16px 6px; font-size: 18px; }
+  p { margin: 4px 16px; color: var(--mut); max-width: 70em; }
+  .tabs { margin: 8px 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .tabs button { background: #2a221a; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { border-color: var(--rec); color: var(--rec); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; padding: 0 16px; }
+  figure { margin: 0; background: #1e1914; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  figure.rec { border-color: var(--rec); }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { padding: 6px 10px; font-size: 13px; color: var(--mut); } figcaption b { color: var(--fg); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Damage + crowd readability: before vs options</h1>
+  <p>Real build frames, sim frozen on a real hit; options painted on the same frame. Recommended option outlined in brass. Design: docs/design/damage-readability-v1.md.</p>
+</header>
+<div class="tabs" role="group" aria-label="Frame size">
+  <button data-v="desk-crop2x" aria-pressed="true">Desktop crop 2x</button>
+  <button data-v="desk" aria-pressed="false">Desktop 1280x720</button>
+  <button data-v="land" aria-pressed="false">Phone landscape</button>
+  <button data-v="port" aria-pressed="false">Phone portrait</button>
+</div>
+<div id="out"></div>
+<script>
+  // Static gallery: the file list is fixed here (no user input reaches the DOM except the four fixed tab values).
+  const SECTIONS = [
+    ['(i) Hit feedback on the hero', 'hit', [['before', 'Today'], ['hitA', 'A hurt rim + lantern flinch + number above head', 1], ['hitB', 'B white silhouette + feet ring + edge glow'], ['hitC', 'C HUD-led']]],
+    ['(ii) Direction / source (shown with hit A)', 'hit', [['before', 'Today'], ['dirA', 'A attacker lifted + outline + crescent', 1], ['dirB', 'B compass arc + badge'], ['dirC', 'C source-tagged number']]],
+    ['(iii) Enemy tells (4:00, thorn hit)', 'thorn', [['before', 'Today'], ['tellA', 'A one threat-first language + thorn floor', 1], ['tellB', 'B body-first'], ['tellC', 'C hero radar ring']]],
+    ['(v) Crowd readability (350 enemies, 11:30)', 'crowd', [['before', 'Today'], ['crowdA', 'A threat hierarchy + clarity rule', 1], ['crowdB', 'B lantern pocket'], ['crowdC', 'C High clarity (A + B)']]],
+  ];
+  const HAS = { thorn: ['desk-crop2x', 'desk', 'port'] };
+  const out = document.getElementById('out');
+  function render(v) {
+    out.textContent = '';
+    for (const [title, sc, opts] of SECTIONS) {
+      const h = document.createElement('h2'); h.textContent = title; out.appendChild(h);
+      const g = document.createElement('div'); g.className = 'grid';
+      const view = (HAS[sc] && !HAS[sc].includes(v)) ? 'desk-crop2x' : v;
+      for (const [tag, cap, rec] of opts) {
+        const f = document.createElement('figure'); if (rec) f.className = 'rec';
+        const img = document.createElement('img'); img.loading = 'lazy'; img.alt = cap;
+        img.src = `options/${sc}-${tag}-${view}.${view.endsWith('crop2x') ? 'png' : 'jpg'}`;
+        const c = document.createElement('figcaption'); const b = document.createElement('b'); b.textContent = cap; c.appendChild(b);
+        if (rec) c.append(' (recommended)');
+        f.append(img, c); g.appendChild(f);
+      }
+      out.appendChild(g);
+    }
+    const h = document.createElement('h2'); h.textContent = '(iv) Death recap'; out.appendChild(h);
+    const g = document.createElement('div'); g.className = 'grid';
+    const rv = v === 'desk-crop2x' ? 'desk' : v;
+    for (const [o, cap] of [['A', 'A struck-down line + What hurt you bars'], ['B', 'B last five hits'], ['C', 'C one plain-words tip']]) {
+      const f = document.createElement('figure'); if (o === 'A') f.className = 'rec';
+      const img = document.createElement('img'); img.loading = 'lazy'; img.alt = cap; img.src = `options/recap-${o}-${rv}.png`;
+      const c = document.createElement('figcaption'); const b = document.createElement('b'); b.textContent = cap; c.appendChild(b);
+      f.append(img, c); g.appendChild(f);
+    }
+    out.appendChild(g);
+  }
+  for (const b of document.querySelectorAll('.tabs button')) b.addEventListener('click', () => {
+    for (const x of document.querySelectorAll('.tabs button')) x.setAttribute('aria-pressed', String(x === b));
+    render(b.dataset.v);
+  });
+  render('desk-crop2x');
+</script>
+</body>
+</html>

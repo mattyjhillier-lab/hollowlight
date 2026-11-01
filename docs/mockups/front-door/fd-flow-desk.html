@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Front door flow</title><style>
+@font-face{font-family:HLC;src:url(../../../src/assets/fonts/hollowlight-chancery.woff2) format('woff2')}
+@font-face{font-family:HLCI;src:url(../../../src/assets/fonts/hollowlight-chancery-italic.woff2) format('woff2')}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-700.woff2) format('woff2');font-weight:700}
+:root{--ink:#140f0c;--brass:#d8b26a;--brassD:#8d6c34;--cream:#fff3dc;--dim:rgba(255,243,220,.82);--mute:#a8b0c4;--teal:#6fd3c5;--gold:#ffd36b;--lock:#6b7490;
+ --glassA:#303c56;--glassB:#161c2a;--night:#0c1220;--twi:#ffb867;--deep:#9aa8ff;--long:#d4ccff;--dawn1:#ffd0b0;--dawn2:#bfeaf0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;color:var(--cream);font-family:AS,"Segoe UI",sans-serif;font-size:16px}
+body{background:radial-gradient(ellipse 70% 60% at 50% 35%,#2a3550 0%,#141b2b 55%,#0a0f1a 100%)}
+h1,h2,h3,.disp{font-family:HLC,Georgia,serif;font-weight:400}
+.wh{font-family:HLCI,Georgia,serif}
+.gl{width:1em;height:1em;vertical-align:-.14em;display:inline-block}
+.lan{width:1.6em;height:2.1em}
+.coin,.shard,.glass{display:inline-block;vertical-align:-.12em;margin-right:.25em}
+.coin{width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b0,#d8b26a 60%,#8d6c34);box-shadow:0 0 0 1.5px var(--ink)}
+.shard{width:.72em;height:.9em;background:linear-gradient(135deg,#e9ddff,#9d86ff);clip-path:polygon(50% 0,100% 40%,70% 100%,30% 100%,0 40%)}
+.glass{width:.72em;height:.95em;background:linear-gradient(160deg,#fff7ee 0%,var(--dawn1) 45%,var(--dawn2) 100%);clip-path:polygon(50% 0,92% 34%,74% 100%,26% 100%,8% 34%)}
+.pill{display:inline-flex;align-items:center;gap:.25em;padding:.2em .75em;border-radius:99px;border:1.5px solid var(--brassD);background:rgba(12,9,8,.6);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.new{display:inline-block;background:var(--teal);color:#06231f;font-weight:700;font-size:12px;letter-spacing:.1em;padding:2px 10px 2px 8px;clip-path:polygon(0 0,100% 0,90% 50%,100% 100%,0 100%)}
+.panel{background:linear-gradient(180deg,var(--glassA),var(--glassB));border:2px solid var(--brass);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 8px 30px rgba(0,0,0,.45)}
+.btn{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 22px;border-radius:99px;font-family:HLC,Georgia,serif;font-size:21px;border:2px solid var(--brass);color:var(--cream);background:linear-gradient(180deg,#2e3a55,#18203a);box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 4px 14px rgba(0,0,0,.4);white-space:nowrap}
+.btn.pri{background:linear-gradient(180deg,#ffcf7a,#f19a3a);color:#2a1606;border-color:#ffe2a6;box-shadow:0 0 22px rgba(255,180,90,.45),inset 0 1px 0 #fff3cf}
+.btn.q{background:transparent;border-color:var(--brassD);font-size:18px}
+.btn .sub{display:block;font-family:HLCI,Georgia,serif;font-size:15px;opacity:.85}
+.kb{display:inline-block;min-width:26px;padding:1px 7px;border-radius:7px;font:700 12px AS,sans-serif;border:1.5px solid currentColor;opacity:.8;text-align:center}
+.focus{outline:3px solid var(--cream);outline-offset:4px}
+.thread{height:0;border-top:2px dashed rgba(216,178,106,.6)}
+.st{color:#8a93b0}.st.on{color:var(--gold)}.st:not(.on) path{fill:none;stroke:currentColor;stroke-width:1.8}
+.note{position:fixed;left:50%;top:2px;transform:translateX(-50%);font-size:11px;color:var(--mute);opacity:.55;white-space:nowrap}
+.touch .kb{display:none}
+@media (max-height:480px){.btn{min-height:44px;font-size:18px;padding:0 16px}.btn .sub{font-size:13px}}
+
+.wrap{position:absolute;inset:0;padding:20px 26px}
+h2{font-size:34px;margin-bottom:6px}.wrap>p{color:var(--dim);font-size:15px}
+svg.f{position:absolute;left:0;top:0;width:100%;height:100%}
+.n{position:absolute;padding:8px 10px;border-radius:12px;border:2px solid var(--brass);background:linear-gradient(180deg,var(--glassA),var(--glassB));font-size:13px;color:var(--dim);line-height:1.25;text-align:center}
+.n b{display:block;font-family:HLC,Georgia,serif;font-weight:400;font-size:20px;color:var(--cream)}
+.n.opt{border-style:dashed}.n.run{border-color:var(--gold)}
+.lg{position:absolute;left:26px;bottom:18px;font-size:13px;color:var(--mute)}
+</style><script>if(matchMedia('(pointer:coarse)').matches||innerWidth<900)document.documentElement.classList.add('touch')</script></head><body class=""><div class="wrap"><h2>Front door flow (A + A + A)</h2><p>Dashed = shown only when needed. Esc always goes back one step; Esc on the title does nothing.</p>
+<svg class="f" viewBox="0 0 1280 720"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#d8b26a"/></marker></defs>
+<g stroke="#d8b26a" stroke-width="2" fill="none" marker-end="url(#a)">
+<path d="M250 250 H330"/><path d="M520 250 H600"/><path d="M790 250 H870"/><path d="M1040 290 V380"/><path d="M960 470 H850"/><path d="M660 470 H560"/>
+<path d="M150 300 V390"/><path d="M200 210 C240 120 380 120 420 210" stroke-dasharray="6 5"/>
+<path d="M790 430 C830 340 950 340 1000 386" stroke-dasharray="6 5"/><path d="M400 470 C250 470 170 380 170 300" stroke-dasharray="6 5"/>
+</g></svg>
+<div class="n " style="left:60px;top:210px;width:190px"><b>Title</b>Continue · Tree · Settings · New game · lantern chip</div>
+<div class="n opt" style="left:340px;top:210px;width:180px"><b>Whose lantern?</b>only with 2+ lanterns, or Switch / New game</div>
+<div class="n " style="left:610px;top:210px;width:180px"><b>Hero select</b>as built (U3). Primary: Next, or Walk with Wren while there is no night choice</div>
+<div class="n opt" style="left:880px;top:210px;width:200px"><b>Map + night</b>appears once a 2nd night or chapter exists; remembers last pick</div>
+<div class="n run" style="left:960px;top:390px;width:200px"><b>Run</b>15 minutes; pause: Resume · Settings · Main menu</div>
+<div class="n " style="left:670px;top:430px;width:180px"><b>Results</b>badge · Dawnglass · first dawn · stars · Main menu = Title</div>
+<div class="n " style="left:400px;top:430px;width:160px"><b>Skill Tree</b>Back = where you came from; Night Gate lanterns</div>
+<div class="n " style="left:60px;top:400px;width:180px"><b>Settings</b>per device: audio, touch, motion; saves tools</div>
+<div style="position:absolute;left:820px;top:322px;font-size:12px;color:var(--mute);width:180px">Again (R) = same hero + night</div>
+<div style="position:absolute;left:150px;top:160px;font-size:12px;color:var(--mute);width:220px;left:250px">Switch lantern</div>
+<div class="lg">Taps to a run: first time 2 (Begin, Walk with Wren) · returning one lantern 3 (Continue, Next, Begin) · after a run 1 (Again)</div></div><div class="note">MOCK-UP · front-door-v1 · not game code</div></body></html>

@@ -1,12 +1,14 @@
 /* ---------- HUD-1: Lantern & Thread (docs/mockups/hud-sheet, Direction A) ---------- */
 /* One unit --hu = 1 sheet pixel. Desktop sheet = 1280 wide; phones use 1px (their own sheet layouts). No backdrop-filter, no CSS filter. */
 .hud { position: absolute; inset: 0; --hu: clamp(.7px, .08cqw, 1.5px);
-  --ml: max(calc(20 * var(--hu)), env(safe-area-inset-left, 0px)); --mr: max(calc(20 * var(--hu)), env(safe-area-inset-right, 0px));
-  --mt: max(calc(16 * var(--hu)), env(safe-area-inset-top, 0px)); --mb: max(calc(20 * var(--hu)), env(safe-area-inset-bottom, 0px));
+  --ml: max(calc(20 * var(--hu)), var(--sa-l)); --mr: max(calc(20 * var(--hu)), var(--sa-r));
+  --mt: max(calc(16 * var(--hu)), var(--sa-t)); --mb: max(calc(20 * var(--hu)), var(--sa-b));
   --font-num: "Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif; }
 .hud svg { overflow: visible; display: block; }
 .h-num { font-family: var(--font-num); font-weight: 900; color: var(--cream); font-variant-numeric: tabular-nums; line-height: 1; -webkit-text-stroke: calc(3.4 * var(--hu)) var(--ink); paint-order: stroke fill; letter-spacing: .01em; }
 .h-frost { position: absolute; inset: 0; opacity: 0; background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none; transition: opacity .8s ease-out; }
+.h-frost.on { animation: h-frostpulse 2.4s ease-in-out infinite; }
+@keyframes h-frostpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 .h-lantern { position: absolute; left: var(--ml); top: var(--mt); width: calc(250 * var(--hu)); height: calc(70 * var(--hu)); }
 .h-plate { position: absolute; inset: 0; border-radius: calc(18 * var(--hu)); background: linear-gradient(rgba(45, 37, 32, .82), rgba(23, 18, 15, .82)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4), inset 0 calc(2 * var(--hu)) 0 rgba(255, 255, 255, .1); }
 .h-lamp { position: absolute; left: calc(5 * var(--hu)); top: calc(-10 * var(--hu)); width: calc(62 * var(--hu)); height: calc(84 * var(--hu)); }
@@ -30,6 +32,8 @@
 
 .h-strip { position: absolute; left: var(--ml); bottom: var(--mb); display: flex; gap: calc(8 * var(--hu)); pointer-events: auto; transition: opacity .8s ease-out; padding: calc(6 * var(--hu)); margin: calc(-6 * var(--hu)); }
 .h-strip.low { opacity: .4; }
+/* own compositor layer from the start: the first fade used to rasterize the whole strip (SVG frames) mid-play, a ~100 ms GPU hitch */
+.h-strip { will-change: opacity; }
 .h-tile { position: relative; width: calc(56 * var(--hu)); height: calc(56 * var(--hu)); border-radius: calc(14.5 * var(--hu)); background: linear-gradient(rgba(45, 37, 32, .86), rgba(23, 18, 15, .86)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(5 * var(--hu)) rgba(0, 0, 0, .4); }
 .h-tile svg { position: absolute; left: calc(-2 * var(--hu)); top: calc(-2 * var(--hu)); width: calc(56 * var(--hu)); height: calc(56 * var(--hu)); overflow: visible; }
 .h-tile.evo { border-color: var(--gold); border-width: calc(3 * var(--hu)); box-shadow: 0 0 calc(8 * var(--hu)) rgba(255, 211, 107, .35), 0 calc(2 * var(--hu)) calc(5 * var(--hu)) rgba(0, 0, 0, .4); }
@@ -39,6 +43,8 @@
 .h-arc svg { width: 100%; height: auto; }
 .h-timeplate { position: absolute; left: calc(39 * var(--hu)); top: calc(46 * var(--hu)); width: calc(112 * var(--hu)); height: calc(36 * var(--hu)); border-radius: 999px; background: linear-gradient(rgba(45, 37, 32, .78), rgba(23, 18, 15, .78)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); display: flex; align-items: center; justify-content: center; }
 .h-timetxt { font-size: calc(25 * var(--hu)); letter-spacing: .06em; }
+.h-moon.is-held .h-timetxt { color: #ffd98a; letter-spacing: .14em; } /* boss fight: the clock holds at 14:00 (boss-treant-v1 (a)) */
+.h-moon.is-held .h-timeplate { border-color: rgba(255, 206, 120, .95); box-shadow: 0 0 calc(8 * var(--hu)) rgba(255, 190, 90, .45), 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); }
 .h-track, .h-trackdot, .h-tracksun { display: none; }
 .h-boss { position: absolute; left: 50%; top: calc(var(--mt) + 68 * var(--hu)); width: calc(460 * var(--hu)); transform: translateX(-50%); display: none; text-align: center; }
 .h-boss.on { display: block; }
@@ -47,6 +53,9 @@
 .h-bfill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #8f2a1d, #d9482f 60%, #ff8a5a); box-shadow: inset 0 calc(4 * var(--hu)) 0 rgba(255, 255, 255, .26); transition: width .22s linear; }
 .h-bnotch { position: absolute; top: 0; bottom: 0; width: calc(8 * var(--hu)); margin-left: calc(-4 * var(--hu)); background: var(--cream); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
 .h-bnotch.n1 { left: 66%; } .h-bnotch.n2 { left: 33%; }
+/* EN7 Branch-Mane: one phase notch at 50%; the 30 s countdown chip = the name line alone, quieter (no bar) */
+.h-boss.is-mini .h-bnotch.n1 { left: 50%; } .h-boss.is-mini .h-bnotch.n2 { display: none; }
+.h-boss.is-chip .h-bbar { display: none; } .h-boss.is-chip .h-bossname { font-size: .8em; font-style: italic; opacity: .9; }
 
 .h-coin { position: absolute; right: calc(var(--mr) + 58 * var(--hu)); top: calc(var(--mt) + 2 * var(--hu)); width: calc(138 * var(--hu)); height: calc(40 * var(--hu)); border-radius: 999px; background: linear-gradient(rgba(45, 37, 32, .8), rgba(23, 18, 15, .8)); border: calc(2 * var(--hu)) solid rgba(216, 178, 106, .85); box-shadow: 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); display: flex; align-items: center; gap: calc(9 * var(--hu)); padding-left: calc(10 * var(--hu)); }
 .h-coinicon { width: calc(25 * var(--hu)); height: calc(25 * var(--hu)); flex: none; }
@@ -67,15 +76,15 @@
 .h-ability:not(.ready) > svg > g:last-child { opacity: .4; }
 .h-absec { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-size: calc(21 * var(--hu)); -webkit-text-stroke-width: calc(3.6 * var(--hu)); }
 .h-abkey { position: absolute; left: 50%; top: 100%; transform: translate(-50%, calc(4 * var(--hu))); padding: calc(3 * var(--hu)) calc(14 * var(--hu)); border-radius: 999px; font: 700 max(14px, calc(14 * var(--hu))) var(--font-ui); letter-spacing: .08em; color: var(--cream); background: linear-gradient(rgba(45, 37, 32, .9), rgba(23, 18, 15, .9)); border: calc(1.6 * var(--hu)) solid var(--brass-d); white-space: nowrap; }
-.hud .toast { position: absolute; top: calc(var(--mt) + 122 * var(--hu)); left: 50%; transform: translateX(-50%) translateY(-.4em); padding: .45em 1.2em; background: rgba(23, 18, 15, .85); border: 1px solid var(--brass-d); border-radius: 999px; color: var(--cream); opacity: 0; transition: opacity .25s, transform .25s; white-space: nowrap; font-size: max(14px, 1em); }
+.hud .toast { position: absolute; top: calc(var(--mt) + 122 * var(--hu)); left: 50%; transform: translateX(-50%) translateY(-.4em); padding: .45em 1.2em; background: rgba(23, 18, 15, .85); border: 1px solid var(--brass-d); border-radius: 999px; color: var(--cream); opacity: 0; transition: opacity .25s, transform .25s; white-space: normal; width: max-content; max-width: min(92%, 34em); text-align: center; line-height: 1.25; border-radius: 18px; font-size: max(14px, 1em); } /* wraps on narrow phones (fit audit) */
 .hud .toast.show { opacity: 1; transform: translateX(-50%); }
-.hurtflash { position: absolute; inset: 0; box-shadow: inset 0 0 6em 1.5em rgba(217, 83, 79, .6); opacity: 0; transition: opacity .35s; pointer-events: none; }
+.hurtflash { position: absolute; inset: 0; box-shadow: inset 0 0 6em 1.5em rgba(255, 128, 120, .55); opacity: 0; transition: opacity .35s; pointer-events: none; }
 .hurtflash.on { opacity: 1; transition: none; }
-@media (prefers-reduced-motion: reduce) { .h-strip, .h-frost, .h-tfill, .h-bfill { transition: none; } .h-knot.flare, .h-ability.ready::before, .h-lantern.low .h-lamp { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .h-strip, .h-frost, .h-tfill, .h-bfill { transition: none; } .h-frost.on { animation: none; } .h-knot.flare, .h-ability.ready::before, .h-lantern.low .h-lamp { animation: none; } }
 
 /* compact landscape (phones and small windows): the sheet's phone-landscape layout at 1px per unit */
 @container (max-width: 899px) {
-  .hud { --hu: 1px; --ml: max(12px, env(safe-area-inset-left, 0px)); --mr: max(12px, env(safe-area-inset-right, 0px)); --mt: max(10px, env(safe-area-inset-top, 0px)); --mb: max(12px, env(safe-area-inset-bottom, 0px)); }
+  .hud { --hu: 1px; --ml: max(12px, var(--sa-l)); --mr: max(12px, var(--sa-r)); --mt: max(10px, var(--sa-t)); --mb: max(12px, var(--sa-b)); }
   .h-lantern { width: 210px; height: 60px; }
   .h-lamp { left: 10px; top: -2px; width: 41px; height: 56px; }
   .h-hp { left: 58px; top: 6px; } .h-hpnum { font-size: 22px; }
@@ -83,7 +92,7 @@
   .h-knot { left: 194px; top: 14px; width: 32px; height: 32px; } .h-knotnum { font-size: 16px; }
   .h-strip { left: calc(var(--ml) + 2px); top: calc(var(--mt) + 68px); bottom: auto; gap: 6px; }
   .h-tile { width: 32px; height: 32px; border-radius: 9px; } .h-tile svg { width: 32px; height: 32px; left: -2px; top: -2px; }
-  .h-moon { width: 150px; top: calc(var(--mt) - 17px); }
+  .h-moon { width: 150px; top: max(0px, calc(var(--mt) - 17px)); } /* final QA: on phones (no letterbox) the arc started 7 px above the screen */
   .h-timeplate { left: 19px; top: 41px; width: 112px; height: 32px; } .h-timetxt { font-size: 22px; }
   .h-boss { top: calc(var(--mt) + 66px); width: 300px; } .h-bossname { font-size: 17px; } .h-bbar { height: 14px; }
   .h-coin { right: calc(var(--mr) + 56px); top: calc(var(--mt) + 10px); width: 112px; height: 34px; } .h-goldnum { font-size: 18px; } .h-coinicon { width: 21px; height: 21px; }
@@ -93,7 +102,7 @@
 }
 /* portrait phones: lantern + moon-pill + pause on one row, full-width thread, strip + coin chip under it */
 @media (max-aspect-ratio: 1/1) {
-  .hud { --hu: 1px; --ml: max(12px, env(safe-area-inset-left, 0px)); --mr: max(12px, env(safe-area-inset-right, 0px)); --mt: max(16px, env(safe-area-inset-top, 0px)); --mb: max(12px, env(safe-area-inset-bottom, 0px)); }
+  .hud { --hu: 1px; --ml: max(12px, var(--sa-l)); --mr: max(12px, var(--sa-r)); --mt: max(16px, var(--sa-t)); --mb: max(12px, var(--sa-b)); }
   .h-lantern { top: calc(var(--mt) + 6px); width: 132px; height: 54px; }
   .h-lamp { left: 8px; top: -2px; width: 40px; height: 54px; } .h-hp { left: 56px; top: 8px; } .h-hpnum { font-size: 24px; } .h-hpmax { display: none; }
   .h-thread { left: 32px; top: 66px; width: calc(100cqw - var(--ml) - var(--mr) - 32px); height: 8px; }
@@ -126,3 +135,37 @@ html.touch .h-ability, html.touch .h-pause, html.touch .h-abkey { display: none;
 .touch-ability .ta-state { position: absolute; font-family: var(--font-num, system-ui); font-weight: 900; font-size: 20px; color: var(--cream); -webkit-text-stroke: 3.4px var(--ink); paint-order: stroke fill; }
 .touch-ability.ready .ta-state { display: none; }
 .touch-ability.ready { box-shadow: 0 0 18px rgba(255, 178, 58, .6); }
+
+/* ---------- HUD-3: pickup feedback + states (one-shot, transform/opacity/box-shadow only; off under reduced motion) ---------- */
+.h-thread.pulse .h-rail { animation: hthr .38s ease-out; }
+@keyframes hthr { 0% { box-shadow: 0 0 calc(12 * var(--hu)) calc(2 * var(--hu)) rgba(255, 224, 160, .95); } 100% { box-shadow: 0 0 0 0 rgba(255, 224, 160, 0); } }
+.h-lamp::after { content: ""; position: absolute; inset: -22%; border-radius: 50%; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255, 171, 58, .8), rgba(255, 171, 58, 0) 66%); }
+.h-lamp.flare::after { animation: hlampg .7s ease-out; }
+@keyframes hlampg { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
+.h-lamp.hurt svg { transform-origin: 50% 85%; animation: hlamphurt .3s ease-out; }
+@keyframes hlamphurt { 0% { transform: scale(.82); opacity: .55; filter: drop-shadow(0 0 calc(7 * var(--hu)) rgba(255, 128, 120, .95)); } 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0 rgba(255, 128, 120, 0)); } }
+@keyframes hlamphurtc { 0% { opacity: .55; filter: drop-shadow(0 0 calc(7 * var(--hu)) rgba(255, 128, 120, .95)); } 100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(255, 128, 120, 0)); } }
+.reduced-motion .h-lamp.hurt svg { animation-name: hlamphurtc; }
+@media (prefers-reduced-motion: reduce) { .h-lamp.hurt svg { animation-name: hlamphurtc; } }
+.h-coin.tick { animation: hcoin .26s ease-out; }
+@keyframes hcoin { 0% { transform: scale(1.07); box-shadow: 0 0 calc(10 * var(--hu)) rgba(216, 178, 106, .85), 0 calc(2 * var(--hu)) calc(6 * var(--hu)) rgba(0, 0, 0, .4); } 100% { transform: scale(1); } }
+.h-knot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(2.4 * var(--hu)) solid rgba(255, 224, 160, .9); opacity: 0; pointer-events: none; }
+.h-knot.flare::after { animation: hknotring .6s ease-out; }
+@keyframes hknotring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.8); } }
+.h-ability::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(3 * var(--hu)) solid rgba(255, 178, 58, .85); opacity: 0; pointer-events: none; }
+.h-ability.ping::after { animation: habring .9s ease-out; }
+@keyframes habring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.55); } }
+.h-ability.active::before { opacity: .8; }
+.h-boss.enter { animation: hbossin .55s cubic-bezier(.2, .8, .2, 1); }
+@keyframes hbossin { 0% { opacity: 0; transform: translateX(-50%) translateY(calc(-16 * var(--hu))); } 100% { opacity: 1; transform: translateX(-50%); } }
+.h-boss.enter .h-bfill { animation: hbfill 1.4s ease-out; }
+@keyframes hbfill { 0% { clip-path: inset(0 100% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
+.reduced-motion .h-thread.pulse .h-rail, .reduced-motion .h-lamp.flare::after, .reduced-motion .h-coin.tick, .reduced-motion .h-knot.flare, .reduced-motion .h-knot.flare::after,
+.reduced-motion .h-ability.ping::after, .reduced-motion .h-ability.ready::before, .reduced-motion .h-boss.enter, .reduced-motion .h-boss.enter .h-bfill { animation: none; }
+@media (prefers-reduced-motion: reduce) { .h-thread.pulse .h-rail, .h-lamp.flare::after, .h-coin.tick, .h-knot.flare::after, .h-ability.ping::after, .h-boss.enter, .h-boss.enter .h-bfill { animation: none; } }
+
+/* fit audit: short landscape phones: the SPACE key pill sits above the ability, not below the screen edge; larger text keeps the clock inside its plate */
+@media (max-height: 520px) { .h-abkey { top: auto; bottom: 100%; transform: translate(-50%, calc(-4 * var(--hu))); } }
+:root:is([data-text="large"], [data-text="larger"]) .h-timetxt { letter-spacing: 0; }
+:root[data-text="larger"] .h-timetxt { font-size: calc(19 * var(--hu)); line-height: 1; }
+:root[data-text="large"] .h-timetxt { font-size: calc(22 * var(--hu)); line-height: 1; } /* desktop audit: the clock stuck out of its plate by 1-3px at Large */

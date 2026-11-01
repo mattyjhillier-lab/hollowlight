@@ -8,11 +8,55 @@ const fmtTime = (s) => {
 };
 
 import { TreeScreen } from './treescreen.js';
+import './treescreen.css';
 import { Hud } from './hud.js';
 import { OfferView } from './cardsui.js';
+import { orderOffer } from './cardview.js';
 import '../cards.css';
+import { deskKeyAction, NUMBER_SCREENS } from './deskkeys.js';
 import { mountInstallCard, fullscreenEntry, updateNotice } from '../pwa/card.js';
+import './kit.css';
+import { EvoPlate, plateModel } from './evoplate.js';
+import './evoplate.css';
+import './title.css';
+import { buildTitle, buildHeroSelect, buildSpiritSelect } from './title.js';
+import { buildCharacters } from './charsui.js';
+import './charsui.css';
+import { buildLanternScreen } from './lanternsui.js';
+import './lanterns.css';
+import { buildNightSelect } from './nightsui.js';
+import { buildWear } from './wearui.js';
+import { buildDarkChoice } from './darkui.js';
+import './darkui.css';
+import { WEAR } from './wearcopy.js';
+import './wear.css';
+import './nights.css';
+import { heroView, LOADOUT, SPIRIT_LINES } from './titlecopy.js';
+import { buildPause } from './pause.js';
+import { buildSettings } from './settings.js';
+import { pauseView } from './u4copy.js';
+import { buildResults } from './results.js';
+import { resultsView } from './resultscopy.js';
+import './results.css';
+import './u4.css';
+import wrenPortrait from '../assets/heroes/wren.webp';
+import eliasPortrait from '../assets/heroes/elias.webp';
+const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+const SPIRIT_LINE = (id, data) => (SPIRIT_LINES[id] || (data.weapons[id] && typeof data.weapons[id].desc === 'string' ? data.weapons[id].desc.split('.')[0] : ''));
+const HERO_NEXT = 'Next';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
+import { WhisperPlate } from './whisperplate.js';
+import './whispers.css';
+import { cardModel } from './cardview.js';
+import { buildAlmanac } from './codexui.js';
+import './codex.css';
+import './a11y.css';
+import './menunav.css';
+import { buildMenuNav } from './menunav.js';
+import { buildCelebration } from './celebrateui.js';
+import './celebrate.css';
+import { buildIntro } from './introui.js';
+import './introui.css';
 
 export class UI {
   constructor(root, data) {
@@ -25,10 +69,29 @@ export class UI {
     this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
     this.tree = new TreeScreen(this);
     this.buildHud();
+    this.nav = null;
+    if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }
     window.addEventListener('keydown', (e) => this.onKey(e));
+    window.addEventListener('keydown', (e) => this.onDeskKey(e)); // DESKTOP D5: 1-6 tabs, F full screen (through the key map)
   }
 
   setHandlers(h) { this.handlers = h; }
+
+  /** DESKTOP D5: menu-only shortcuts (src/ui/deskkeys.js). Never in a run; yields to remapping, modals and typing. */
+  onDeskKey(e) {
+    const on = (n) => !!(this.layers[n] && this.layers[n].style.display !== 'none');
+    const menu = !!(this.nav && this.nav.root.style.display !== 'none');
+    const pause = on('pause');
+    const blocked = this.celActive() || !!(this.codexView && this.codexView.isSheet && this.codexView.isSheet()) || !!(this.tree.isOpen && this.tree.sheetOpen) || !!document.querySelector('.a3-key.is-waiting');
+    const r = deskKeyAction(e, { menu, pause, active: menu ? this.navActive() : null, blocked });
+    if (!r) return;
+    e.preventDefault();
+    if (r.type === 'tab') this.navTo(r.id);
+    else if (this.pwa && this.pwa.canFullscreen && this.pwa.canFullscreen()) this.pwa.toggleFullscreen();
+  }
+
+  /** AU6: a UI / tree sound (no-op until the audio engine is set by main.js). */
+  sound(id) { if (this.audio) this.audio.play(id); }
 
   layer(name) {
     if (!this.layers[name]) {
@@ -41,16 +104,68 @@ export class UI {
     return this.layers[name];
   }
 
-  show(name, html) {
+  show(name) {
     const el = this.layer(name);
-    if (html !== undefined) el.innerHTML = html;
     el.style.display = name === 'hud' ? 'block' : 'flex';
     el.style.pointerEvents = name === 'hud' ? 'none' : 'auto';
+    this.syncNav();
     return el;
   }
 
   hide(name) {
+    if (name === 'end' && this.endView) { this.endView.destroy(); this.endView = null; }
     if (this.layers[name]) this.layers[name].style.display = 'none';
+    this.syncNav();
+  }
+
+  // ------------------------------------------------------------------ persistent menu tab bar (never over a run)
+  navActive() {
+    const on = (n) => !!(this.layers[n] && this.layers[n].style.display !== 'none');
+    if (on('settings')) return 'settings';
+    if (on('codex')) return 'almanac';
+    if (on('tree')) return this.tree && this.tree.panelMode === 'goals' ? 'goals' : 'tree';
+    if (on('hero')) return this.layers.hero.querySelector('.ld-step-chars') ? 'character' : null;
+    if (on('lanterns') || on('nights')) return null;
+    if (on('start')) return 'home';
+    return null;
+  }
+
+  syncNav() {
+    if (!this.nav) return;
+    const on = (n) => !!(this.layers[n] && this.layers[n].style.display !== 'none');
+    const menu = ['start', 'hero', 'lanterns', 'nights', 'settings', 'codex', 'tree'].some(on);
+    const inRun = ['hud', 'pause', 'end', 'levelup', 'dark'].some(on);
+    const show = menu && !inRun;
+    const act = show ? this.navActive() : null;
+    const purse = this.nav.set(show, act, NUMBER_SCREENS.includes(act)); // D5: tab number badges only where the digits are free
+    this.root.classList.toggle('has-purse', !!purse);
+    this.root.classList.toggle('has-mnav', show);
+  }
+
+  /** Jump to another menu screen from any menu screen: close what is open WITHOUT its back-side-effects, then open the target. */
+  navTo(dest) {
+    const active = this.navActive();
+    if (dest === active && dest !== 'goals') return;
+    if (dest === 'goals' && active === 'goals') return;
+    if (this.sound) this.sound('ui_step');
+    if (this.settingsOpen) {
+      this.settingsOpen = false;
+      if (this.settingsView && this.settingsView.remap) this.settingsView.remap.stop(false);
+      this.settingsView = null;
+    }
+    if (this.codexView) { this.codexView = null; this.codexFrom = null; if (this.layers.codex) this.layers.codex.replaceChildren(); }
+    if (dest === 'goals' && this.tree.isOpen) { this.tree.toggleGoals(true); this.syncNav(); return; }
+    if (this.tree.isOpen) { if (this.tree.api) this.tree.api.onClose = null; this.tree.close(); }
+    this.hideAll();
+    for (const n of Object.keys(this.layers)) if (this.layers[n]) this.layers[n].removeAttribute('inert');
+    const h = this.handlers;
+    if (dest === 'home') this.showStart(this.onPick);
+    else if (dest === 'character') this.showCharacters();
+    else if (dest === 'tree' && h.openTree) h.openTree();
+    else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
+    else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }
+    else if (dest === 'settings') { this.showStart(this.onPick); this.showSettings(); }
+    this.syncNav();
   }
 
   // ------------------------------------------------------------------ HUD (HUD-1: src/ui/hud.js, display only)
@@ -61,6 +176,7 @@ export class UI {
       bossName: (type) => this.data.enemies[type].name,
     });
     this.hud = { toast: this.hudView.toast, bossIntro: this.hudView.bossIntro, flash: this.hudView.flash };
+    this.evoPlate = null; // E9: one pooled evolution name plate, built on the first evolution (keeps the HUD DOM identical until then)
   }
 
   showHud() { this.show('hud'); this.hudCache = {}; this.hudView.reset(); }
@@ -70,12 +186,39 @@ export class UI {
   // Touch: a tap that lands on the weapon strip wakes it (the touch layer covers it).
   hudTapAt(x, y) { this.hudView.tapAt(x, y); }
 
-  toast(text) {
+  // whisper: FM1 pickup line (once per lantern), drawn under the toast text in the whisper voice (textContent only)
+  toast(text, whisper = '') {
     const t = this.hud.toast;
     t.textContent = text;
+    t.classList.toggle('has-w', !!whisper);
+    if (whisper) { const w = document.createElement('span'); w.className = 'fm-tw'; w.textContent = whisper; t.appendChild(w); }
     t.classList.add('show');
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    this.toastTimer = setTimeout(() => t.classList.remove('show'), whisper ? 4000 : 2600);
+  }
+
+  // FM1: is something already speaking at the top of the screen (toast, boss banner, evolution plate)? The next whisper waits.
+  busy() {
+    const on = (n, c) => !!(n && n.classList && n.classList.contains(c));
+    return on(this.hud.toast, 'show') || on(this.hud.bossIntro, 'on') || !!(this.evoPlate && this.evoPlate.root && on(this.evoPlate.root, 'on'));
+  }
+
+  // FM1: draw (or hide) the whisper plate. rings: the ability button(s) that get one gold ring while the ability plate is up.
+  whisper(plate, frac, calm, rings) {
+    if (!this.wPlate) {
+      if (!plate) return;
+      this.wPlate = new WhisperPlate(document, { onHide: () => { if (this.handlers.hideWhisper) this.handlers.hideWhisper(); } });
+    }
+    this.wPlate.show(plate, frac, calm, rings);
+  }
+  whisperOn() { return !!(this.wPlate && this.wPlate.cur); }
+
+  // E9: name + codex line (+ the recipe on the first ever take). Replaces the old 'Evolved: X' toast.
+  evolvePlate(evoId, first, calm) {
+    const m = plateModel(evoId, this.data, first);
+    if (!m) return;
+    if (!this.evoPlate) this.evoPlate = new EvoPlate(this.layer('hud'));
+    this.evoPlate.show(m, calm);
   }
 
   bossIntro(name, animate) {
@@ -88,57 +231,215 @@ export class UI {
 
   hurt() {
     const f = this.hud.flash;
+    if (this.hudView && this.hudView.hurtDip) this.hudView.hurtDip();
     f.classList.add('on');
     requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
   }
 
-  // ------------------------------------------------------------------ menus
+  // ------------------------------------------------------------------ menus (U3: title and hero select are two screens)
+  // Title: wordmark + Begin/Continue, Skill Tree, Settings. Begin opens hero select; Start there runs onPick(heroId).
   showStart(onPick) {
-    const chars = Object.entries(this.data.characters).filter(([id]) => !this.handlers.heroUnlocked || this.handlers.heroUnlocked(id));
-    const cards = chars.map(([id, c]) => `
-      <div class="charcard" data-id="${id}" tabindex="0" role="button">
-        <h3><span class="swatch" style="background:${c.color};color:${c.color}"></span>${c.name}</h3>
-        <div class="blurb">${c.blurb}</div>
-        <dl>
-          <dt>Health</dt><dd>${c.hp}</dd>
-          <dt>Speed</dt><dd>${c.speed}</dd>
-          <dt>Trait</dt><dd>${c.traitText}</dd>
-          <dt>Weapon</dt><dd>${this.data.weapons[c.weapon].name}</dd>
-          <dt>Ability</dt><dd>${c.ability.name} (${c.ability.cooldown}s)</dd>
-        </dl>
-      </div>`).join('');
-    const el = this.show('start', `
-      <h1>Hollowlight</h1>
-      <div class="sub">Spirits of the Dusk · Chapter 1: Cursed Forest · prototype</div>
-      <div class="bankline"></div>
-      <div class="firstrun" style="display:none"><span class="frtext"></span> <button class="btn" data-act="frtree">See the Skill Tree</button></div>
-      <div class="row">${cards}</div>
-      <div class="touchkeys">Left thumb: move · weapons fire on their own · right button: ability · II: pause · tap cards to pick</div>
-      <div class="orient-hint">Landscape recommended</div>
-      <div class="keys"><b>W</b><b>A</b><b>S</b><b>D</b> or arrows to move · weapons fire on their own · <b>Space</b> ability · <b>Esc</b> pause · <b>1</b>-<b>4</b> pick cards</div>
-      <p>Survive 15 minutes. The Elder Treant wakes at 10:00.</p>
-      <div class="row"><button class="btn" data-act="tree">Skill Tree</button><button class="btn" data-act="settings">Settings</button></div>
-      <div class="vlabel"></div>`);
-    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
-    el.querySelector('.vlabel').textContent = typeof __APP_VERSION__ !== 'undefined' ? `v${__APP_VERSION__}` : '';
-    const bank = this.handlers.getBank ? this.handlers.getBank() : null;
-    if (bank) el.querySelector('.bankline').textContent = `Bank: ${bank.gold} gold · ${bank.shards} soul shards`;
-    el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
-    if (this.pwa) { mountInstallCard(document, this.pwa, el, el.querySelector('.bankline')); el.append(updateNotice(document, this.pwa)); }
-    if (this.handlers.isFirstRun && this.handlers.isFirstRun()) {
-      el.querySelector('.firstrun').style.display = '';
-      el.querySelector('.frtext').textContent = FIRST_RUN_HINT;
-      el.querySelector('[data-act="frtree"]').addEventListener('click', () => this.handlers.openTree());
-    }
-    el.querySelectorAll('.charcard').forEach((c) => {
-      c.addEventListener('click', () => onPick(c.dataset.id));
-      c.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onPick(c.dataset.id); } });
+    this.onPick = onPick;
+    const h = this.handlers;
+    const fd = h.frontDoor ? h.frontDoor(this.lastHero) : null; // FD2: lantern chip, purses, Continue whisper, tree dot, New game
+    const t = buildTitle({
+      hasProgress: !!(h.hasProgress && h.hasProgress()),
+      firstRun: !!(h.isFirstRun && h.isFirstRun()),
+      bank: h.getBank ? h.getBank() : null,
+      note: h.loadNote ? h.loadNote() : '',
+      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
+      lantern: fd ? fd.lantern : null,
+      purses: fd ? fd.purses : null,
+      whisper: fd ? fd.whisper : '',
+      treeDot: !!(fd && fd.treeDot),
+      treeLine: fd ? fd.treeLine : null,
+      newGame: fd ? fd.newGame : null,
+      almanac: fd ? fd.almanac : null,
+      bands: fd ? fd.bands : 0,
+      onAlmanac: () => this.showAlmanac('title'),
+      chars: fd && fd.chars ? fd.chars : null,
+      nudge: h.backupNudge && !(this.pwa && this.pwa.shouldShowCard && this.pwa.shouldShowCard()) && h.backupNudge() ? { onExport: () => (h.exportBackup ? h.exportBackup() : false), onLater: () => { if (h.dismissNudge) h.dismissNudge(); } } : null, // A1: one title card at a time (the install card first)
+      onChars: () => this.showCharacters(),
+      onBegin: () => this.beginLoadout(),
+      onTree: () => h.openTree(),
+      onSettings: () => h.openSettings(),
+      onSwitch: () => this.showLanterns('pick'),
+      onNew: () => this.showLanterns(fd && fd.newGame && fd.newGame.free > 0 ? 'new' : 'replace'),
     });
-    const firstCard = el.querySelector('.charcard');
-    if (firstCard) firstCard.focus({ preventScroll: true });
+    const el = this.layer('start');
+    el.className = 'overlay layer-start u3';
+    el.replaceChildren(t.root);
+    this.hide('hero');
+    this.hide('lanterns');
+    this.hide('nights');
+    this.show('start');
+    if (this.pwa) {
+      mountInstallCard(document, this.pwa, t.side, t.menu);
+      const link = t.side.querySelector('.pwa-link');
+      if (link) t.foot.appendChild(link);
+      t.side.append(updateNotice(document, this.pwa));
+    }
+    this.screen = { id: 'title', title: t };
+    t.begin.focus({ preventScroll: true });
+    if (h.titleCelebrations) { const q = h.titleCelebrations(); if (q && q.length) this.celebrate(q, { away: true, after: () => { if (this.screen && this.screen.id === 'title') this.screen.title.begin.focus({ preventScroll: true }); } }); } // CX5: big moments held back by a defeat
   }
 
-  hideStart() { this.hide('start'); }
+  // FD3: "Whose lantern?" (mode pick | new | replace). The app supplies the cards and does every store change; this only draws and forwards.
+  showLanterns(mode = 'pick', status = null) {
+    const h = this.handlers;
+    if (!h.lanternScreen) return;
+    const m = h.lanternScreen();
+    const back = () => this.showStart(this.onPick);
+    const after = (r, msg) => { if (r && r.ok) this.showLanterns('pick', msg); return r; };
+    const v = buildLanternScreen({
+      mode, cards: m.cards, canCreate: m.canCreate, locked: m.locked, note: m.note, status, portraits: PORTRAITS,
+      onLight: (id) => { const r = h.lightLantern(id); if (r && r.ok) back(); },
+      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) this.beginLoadout(); return r; },
+      onRename: (id, name) => after(h.renameLantern(id, name)),
+      onExport: (id) => { const r = h.exportLantern(id); this.showLanterns(mode === 'replace' ? 'replace' : 'pick', { text: r.message }); },
+      onDelete: (id) => { const r = h.deleteLantern(id); return after(r, r && r.ok ? { text: r.message, undo: !!r.undo } : null); },
+      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) this.beginLoadout(); return r; },
+      onUndo: () => { const r = h.undoDelete(); this.showLanterns('pick', { text: r.message }); },
+      onBack: back,
+    });
+    const el = this.layer('lanterns');
+    el.className = 'overlay layer-lanterns u3 fd';
+    el.replaceChildren(v.root);
+    this.hide('start');
+    this.hide('hero');
+    this.show('lanterns');
+    this.screen = { id: 'lanterns', lanterns: v };
+    v.focusFirst();
+  }
+
+  // CHARACTER SYSTEM v2 loadout (LOCKED 2026-10-24): THREE separate steps, map -> character -> starting spirit (the map step only once there is a
+  // night choice, FD4 skip rule). A NEW profile first picks its starter set (one hero + one spirit from the data-driven offer), then walks straight in.
+  beginLoadout() {
+    const h = this.handlers;
+    this.pickTier = null;
+    if (h.needsStarter && h.needsStarter()) { this.showStarterHero(); return; }
+    if (h.nightChoice && h.nightChoice()) this.showNights(this.lastHero); else this.showHeroSelect();
+  }
+
+  heroCards(ids) {
+    const h = this.handlers;
+    return ids.map((id) => {
+      const c = this.data.characters[id];
+      const lvl = h.bondLevel ? h.bondLevel(id) : 0;
+      return { ...heroView(id, c, ''), pips: null, badge: lvl > 0 ? LOADOUT.bond(lvl) : null };
+    });
+  }
+
+  mountLoadout(view, name) {
+    const el = this.layer('hero');
+    this.hide('lanterns'); this.hide('nights'); this.hide('start');
+    el.className = `overlay layer-hero u3${name ? ` ${name}` : ''}`;
+    el.replaceChildren(view.root);
+    this.show('hero');
+    this.screen = { id: 'hero', hero: view };
+    view.focusSelected();
+  }
+
+  // CH5: the Characters page ("Kindred"): Bond, skill, gifts of the awake heroes; keepsakes of the sleeping ones. Read-only. Esc back to the title.
+  showCharacters(sel = null) {
+    const h = this.handlers;
+    if (!h.charsView) return;
+    const v = buildCharacters({ view: h.charsView(), portraits: PORTRAITS, selected: sel || this.lastHero, onBack: () => this.showStart(this.onPick) });
+    this.mountLoadout(v, 'ld-step-chars');
+  }
+
+  // Step 2: the character (awake heroes only; Bond badge; same body so no Health / Speed pips).
+  showHeroSelect() {
+    const h = this.handlers;
+    const ids = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id));
+    const choice = !!(h.nightChoice && h.nightChoice());
+    const hs = buildHeroSelect({
+      heroes: this.heroCards(ids), portraits: PORTRAITS, selected: this.lastHero || (h.lastLoadout && h.lastLoadout().hero), nextLabel: HERO_NEXT,
+      copy: { title: LOADOUT.heroTitle, whisper: LOADOUT.heroWhisper },
+      onStart: (id) => { this.lastHero = id; this.showSpiritSelect(id); },
+      onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.showStart(this.onPick); },
+      onWear: h.wearView ? (id) => { this.lastHero = id; this.showWear(id); } : null, wearLabel: WEAR.open,
+    });
+    this.mountLoadout(hs, 'ld-step-hero');
+  }
+
+  // EXTRAS v1: the Lantern Wardrobe drawer (flame / trail / hero look). Back returns to the hero step with the same hero chosen.
+  showWear(heroId) {
+    const h = this.handlers;
+    if (!h.wearView) return;
+    const v = buildWear({
+      view: h.wearView(heroId), viewFor: (sel) => h.wearView(heroId, sel),
+      onWear: (sel) => { if (h.setWear) h.setWear(heroId, sel); },
+      onBack: () => this.showHeroSelect(),
+    });
+    v.focusSelected = v.focusFirst;
+    this.mountLoadout(v, 'ld-step-wear');
+  }
+
+  // Step 3: the starting spirit (any weapon awake in the Lantern Web; sleeping ones shown dim). Starts the run.
+  showSpiritSelect(heroId) {
+    const h = this.handlers;
+    const c = this.data.characters[heroId];
+    const spirits = h.spiritChoices ? h.spiritChoices(heroId) : [];
+    const vs = buildSpiritSelect({
+      spirits, heroName: heroView(heroId, c, '').name, selected: h.lastLoadout ? h.lastLoadout(heroId).weapon : null,
+      onStart: (wid) => { if (this.onPick) this.onPick(heroId, this.pickTier || undefined, wid); },
+      onBack: () => this.showHeroSelect(),
+    });
+    this.mountLoadout(vs, 'ld-step-spirit');
+  }
+
+  // New profile: the starter set (LOCKED: one hero + one weapon; everything else starts locked). The offer comes from balance.starter.
+  showStarterHero() {
+    const h = this.handlers;
+    const pool = h.starterPool ? h.starterPool() : { heroes: Object.keys(this.data.characters), weapons: [] };
+    const hs = buildHeroSelect({
+      heroes: this.heroCards(pool.heroes), portraits: PORTRAITS, selected: this.starterHero, nextLabel: HERO_NEXT,
+      copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterHeroTitle, whisper: LOADOUT.starterHeroWhisper },
+      onStart: (id) => { this.starterHero = id; this.showStarterSpirit(id); },
+      onBack: () => this.showStart(this.onPick),
+    });
+    this.mountLoadout(hs, 'ld-step-hero ld-starter');
+  }
+
+  showStarterSpirit(heroId) {
+    const h = this.handlers;
+    const pool = h.starterPool ? h.starterPool() : { weapons: [] };
+    const c = this.data.characters[heroId];
+    const spirits = pool.weapons.map((id) => ({ id, name: this.data.weapons[id].name, line: SPIRIT_LINE(id, this.data), open: true }));
+    const vs = buildSpiritSelect({
+      spirits, heroName: heroView(heroId, c, '').name, selected: null,
+      copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterSpiritTitle, whisper: LOADOUT.starterSpiritWhisper, walk: LOADOUT.starterBegin },
+      onStart: (wid) => { if (h.chooseStarter && h.chooseStarter(heroId, wid) && this.onPick) this.onPick(heroId, undefined, wid); },
+      onBack: () => this.showStarterHero(),
+    });
+    this.mountLoadout(vs, 'ld-step-spirit ld-starter');
+  }
+
+  // Step 1 (FD4 = DT7): "Choose your night" (only once there is a night choice). Next goes on to the character step.
+  showNights(heroId, tier = null) {
+    const h = this.handlers;
+    if (!h.nightView) { this.showHeroSelect(); return; }
+    const v = buildNightSelect({
+      view: h.nightView(heroId, tier),
+      viewFor: (tid) => h.nightView(heroId, tid),
+      purses: h.frontDoor ? (h.frontDoor(heroId) || {}).purses : null,
+      onPick: (tid) => { if (h.pickNight) h.pickNight(tid); },
+      gentle: h.getSettings && h.setSetting ? { get: () => h.getSettings().gentleLight === true, set: (on) => h.setSetting({ gentleLight: on === true }) } : null, // EXTRAS v1 Gentle Light
+      onBegin: (tid) => { this.pickTier = tid; this.showHeroSelect(); },
+      onBack: () => this.showStart(this.onPick),
+      onTree: (gateId) => { if (h.openTree) h.openTree(gateId, () => this.showNights(heroId, this.screen && this.screen.nights ? this.screen.nights.current() : tier)); },
+    });
+    const el = this.layer('nights');
+    el.className = 'overlay layer-nights u3 fd fdm';
+    el.replaceChildren(v.root);
+    this.hide('start'); this.hide('hero'); this.hide('lanterns');
+    this.show('nights');
+    this.screen = { id: 'nights', nights: v };
+    v.focusSelected();
+  }
+
+  hideStart() { this.hide('start'); this.hide('hero'); this.hide('lanterns'); this.hide('nights'); this.screen = null; }
 
   // ------------------------------------------------------------------ level-up (HUD-2: src/ui/cardsui.js, presentation only)
   showLevelUp(sim) {
@@ -150,214 +451,119 @@ export class UI {
         banish: (k) => this.handlers.banish(k),
       });
     }
-    this.offerView.render(sim, this.data);
+    // The 'Unlocked in the Skill Tree' hint is a whisper line inside this screen (a HUD toast sat hidden under the veil and collided with the title on phones).
+    const all = sim.offer ? orderOffer(sim.offer).all : [];
+    const fresh = toastWeapons(all, this.data, this.toastedWeapons);
+    // FM2: one teaching line per level-up screen (kept across reroll / banish re-renders until the screen closes)
+    if (this.luTeach === undefined) {
+      let teach = null;
+      if (this.handlers.offerTeach && sim.offer) {
+        const mr = sim.balance.maxRank;
+        const classes = all.map((c) => { try { return cardModel(c, this.data, mr).cls; } catch { return ''; } });
+        teach = this.handlers.offerTeach({
+          start: !!sim.offer.start, classes, weaponCard: all.some((c) => c && c.kind === 'weapon'),
+          full: Array.isArray(sim.weapons) && sim.weapons.length >= (sim.weaponSlots | 0), rerolls: sim.rerollsLeft | 0, banishes: sim.banishesLeft | 0,
+        });
+      }
+      this.luTeach = teach;
+    }
+    this.offerView.render(sim, this.data, fresh.length ? NEW_CARD_TOAST : '', this.luTeach);
     this.show('levelup');
     this.currentCards = this.offerView.cards;
-    const fresh = toastWeapons(this.currentCards, this.data, this.toastedWeapons);
-    if (fresh.length) { fresh.forEach((w) => this.toastedWeapons.add(w)); this.toast(NEW_CARD_TOAST); }
+    fresh.forEach((w) => this.toastedWeapons.add(w));
+    if (this.layers.hud) this.layers.hud.inert = true; // Tab must not reach the HUD buttons under the offer
   }
 
-  hideLevelUp() { this.hide('levelup'); this.currentCards = null; }
+  hideLevelUp() { this.hide('levelup'); this.currentCards = null; this.luTeach = undefined; if (this.layers.hud) this.layers.hud.inert = false; }
 
   // ------------------------------------------------------------------ pause / end
-  showPause() {
-    const el = this.show('pause', `
-      <h2>Paused</h2>
-      <div class="orient-hint">Landscape recommended</div>
-      <div class="row"><button class="btn big" data-act="resume">Resume (Esc)</button><button class="btn big" data-act="settings">Settings</button><button class="btn big" data-act="menu">Quit to menu</button></div>`);
-    el.querySelector('[data-act="settings"]').addEventListener('click', () => this.handlers.openSettings());
-    el.querySelector('[data-act="resume"]').addEventListener('click', () => this.handlers.togglePause());
-    el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
+  // U4: lantern-glass pause panel over the frozen game (src/ui/pause.js; DOM built with the kit, textContent only).
+  showPause(sim) {
+    const h = this.handlers;
+    const extras = [];
     if (this.pwa) {
-      const fe = fullscreenEntry(document, this.pwa, 'btn big');
-      if (fe) el.insertBefore(fe, el.querySelector('.row'));
-      el.append(updateNotice(document, this.pwa));
+      const fe = fullscreenEntry(document, this.pwa, 'btn');
+      if (fe) extras.push(fe);
+      extras.push(updateNotice(document, this.pwa));
     }
+    this.pauseView = buildPause({
+      view: sim ? pauseView(sim, this.data) : undefined,
+      onResume: () => h.togglePause(),
+      onSettings: () => h.openSettings(),
+      onQuit: () => h.menu(),
+      onAlmanac: h.almanacView ? () => this.showAlmanac('pause') : null,
+      extras,
+    });
+    const el = this.layer('pause');
+    el.className = 'overlay layer-pause u4 u4-pausescreen';
+    el.replaceChildren(this.pauseView.root);
+    this.show('pause');
+    this.pauseView.focusResume();
   }
 
-  hidePause() { this.hide('pause'); }
+  hidePause() { this.hide('pause'); this.pauseView = null; }
 
+  // EXTRAS v1 Endless Dusk: the dawn choice (Enter = see the dawn, S = stay in the dark)
+  showDarkChoice({ onDawn, onStay }) {
+    const v = buildDarkChoice({ onDawn, onStay });
+    const el = this.layer('dark');
+    el.className = 'overlay layer-dark';
+    el.replaceChildren(v.root);
+    this.show('dark');
+    this.darkView = v;
+    v.focus();
+  }
+  hideDarkChoice() { this.hide('dark'); this.darkView = null; }
+
+  // U6: results in Lantern Glass, Lit (src/ui/results.js). One screen, no scrolling; Again R/Enter, Main menu Esc, Tree T. Keys are handled in onKey below.
   showEnd(sim, bank) {
-    const r = sim.result();
-    const d = this.data;
-    const won = r.outcome === 'victory';
-    const evos = r.weapons.filter((w) => w.evo).map((w) => d.evolutions[w.evo].name);
-    const el = this.show('end', `
-      <h2 style="color:${won ? 'var(--good)' : 'var(--hp)'}">${won ? 'You survived the night' : 'You were overrun'}</h2>
-      <div class="newbest"></div>
-      <dl class="endstats">
-        <dt>Time survived</dt><dd>${fmtTime(r.time)}</dd>
-        <dt>Level reached</dt><dd>${r.level}</dd>
-        <dt>Enemies slain</dt><dd>${r.kills}</dd>
-        <dt>Gold earned</dt><dd class="g"></dd>
-        <dt>Soul shards</dt><dd class="sh"></dd>
-        <dt>Best time</dt><dd class="bt"></dd>
-        <dt>Evolutions</dt><dd>${evos.length ? evos.join(', ') : 'none this run'}</dd>
-      </dl>
-      <div class="note warn"></div>
-      <div class="endtree"></div>
-      <div class="row"><button class="btn big" data-act="again">Play again</button><button class="btn big" data-act="tree">Spend gold</button><button class="btn big" data-act="menu">Main menu</button></div>`);
-    el.querySelector('[data-act="tree"]').addEventListener('click', () => this.handlers.openTree());
-    this.fillEndTree(el.querySelector('.endtree'), bank);
-    const set = (sel, t) => { el.querySelector(sel).textContent = t; };
-    if (bank) {
-      set('.g', `+${r.gold} (bank ${bank.gold})`);
-      set('.sh', `+${r.shards} (bank ${bank.shards})${r.bossKilled ? ' · Elder Treant slain' : ''}`);
-      set('.bt', fmtTime(bank.bestTime));
-      if (bank.newBest) set('.newbest', 'New best!');
-      if (bank.note) set('.warn', bank.note);
-    } else {
-      set('.g', String(r.gold));
-      set('.sh', String(r.shards));
-      set('.bt', '-');
-      set('.warn', 'Debug run: not saved.');
-    }
-    el.querySelector('[data-act="again"]').addEventListener('click', () => this.handlers.again());
-    el.querySelector('[data-act="menu"]').addEventListener('click', () => this.handlers.menu());
-  }
-
-  // Accomplishment feedback: newly unlocked nodes and the closest locked ones (textContent only).
-  fillEndTree(box, bank) {
-    if (!bank) return;
-    const mkEl = (cls, text) => { const n = document.createElement('div'); n.className = cls; n.textContent = text; return n; };
-    if (bank.newly && bank.newly.length) {
-      box.append(mkEl('et-head good', 'New in the Skill Tree'));
-      for (const line of bank.newly.slice(0, 6)) box.append(mkEl('et-row', line));
-    }
-    if (bank.closest && bank.closest.length) {
-      box.append(mkEl('et-head', 'Closest unlocks'));
-      for (const c of bank.closest) box.append(mkEl('et-row', `${c.gate ? 'Gate: ' : ''}${c.name} · ${c.text} (${Math.floor(c.frac * 100)}%)`));
-    }
+    const h = this.handlers;
+    this.endView?.destroy();
+    const view = resultsView(sim.result(), bank, this.data);
+    this.sound(sim.state === 'victory' ? 'results_win' : 'results_lose');
+    const reduced = document.documentElement.classList.contains('reduced-motion') || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const cel = bank && bank.cel ? bank.cel : null; // CX4: what this run wrote in the Almanac
+    this.endView = buildResults({ view, reduced, ledger: cel ? cel.ledger : null, onAlmanac: cel && cel.any && h.almanacView ? () => this.showAlmanac('results') : null, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
+    const el = this.layer('end');
+    el.className = `overlay layer-end u6 ${view.won ? 'u6-won' : 'u6-lost'}`;
+    el.replaceChildren(this.endView.root);
+    this.show('end');
+    this.endView.mounted();
+    if (cel && cel.cards && cel.cards.length) { const ev = this.endView; this.celebrate(cel.cards, { after: () => { if (this.endView === ev) { ev.setShownAt(performance.now()); const f = ev.again; if (f && f.focus) f.focus({ preventScroll: true }); } } }); }
   }
 
   // ------------------------------------------------------------------ settings
-  // Built with DOM APIs and textContent only. Values come from the sanitised save.
-  showSettings(message) {
+  // U4: tabs (Sound, Picture, Controls, Saves) of wick toggles, thread sliders and segmented choices (src/ui/settings.js). Values come from the sanitised save.
+  showSettings(message, tab) {
     const h = this.handlers;
-    const st = h.getSettings();
     const el = this.layer('settings');
-    el.classList.add('settings');
-    el.replaceChildren();
+    el.className = 'overlay layer-settings settings u4 u4-settingsscreen';
+    if (!this.settingsOpen) this.settingsFrom = this.pauseView && this.layers.pause && this.layers.pause.style.display !== 'none' ? 'pause' : 'title';
     this.settingsOpen = true;
-    const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
-    const grid = mk('div', 'setgrid');
-    const row = (label, ctl) => { grid.append(mk('label', '', label), ctl); };
-    const slider = (key) => {
-      const i = mk('input');
-      i.type = 'range'; i.min = '0'; i.max = '100'; i.step = '5'; i.value = String(Math.round(st[key] * 100));
-      i.addEventListener('input', () => h.setSetting({ [key]: Number(i.value) / 100 }));
-      return i;
-    };
-    const check = (key) => {
-      const i = mk('input');
-      i.type = 'checkbox'; i.checked = !!st[key];
-      i.addEventListener('change', () => h.setSetting({ [key]: i.checked }));
-      return i;
-    };
-    row('Music volume', slider('musicVol'));
-    row('Sound effects volume', slider('sfxVol'));
-    row('Screen shake', check('screenShake'));
-    row('Reduced motion', check('reducedMotion'));
-    row('Damage numbers', check('damageNumbers'));
-    const sel = mk('select');
-    for (const [v, t] of [['auto', 'Auto'], ['low', 'Low'], ['med', 'Medium'], ['high', 'High']]) {
-      const o = mk('option', '', t);
-      o.value = v;
-      if (st.quality === v) o.selected = true;
-      sel.append(o);
-    }
-    sel.addEventListener('change', () => h.setSetting({ quality: sel.value }));
-    row('Quality', sel);
-    const choice = (key, opts) => {
-      const s = mk('select');
-      for (const [v, t] of opts) {
-        const o = mk('option', '', t);
-        o.value = v;
-        if (st[key] === v) o.selected = true;
-        s.append(o);
-      }
-      s.addEventListener('change', () => h.setSetting({ [key]: s.value }));
-      return s;
-    };
-    row('Touch controls', choice('touchMode', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]));
-    row('Joystick size', choice('stickSize', [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']]));
-
-    const msg = mk('div', 'setmsg', message || '');
-    const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
-    const actions = mk('div', 'row');
-    const bExp = mk('button', 'btn', 'Export save');
-    const bImp = mk('button', 'btn', 'Import save');
-    const bRes = mk('button', 'btn', 'Reset save');
-    const bClose = mk('button', 'btn big', 'Back (Esc)');
-    const file = mk('input');
-    file.type = 'file'; file.accept = '.json,application/json'; file.style.display = 'none';
-    const confirmBox = mk('div', 'setconfirm');
-    const clearConfirm = () => { confirmBox.replaceChildren(); };
-    const ask = (text, yesLabel, onYes) => {
-      clearConfirm();
-      const y = mk('button', 'btn', yesLabel);
-      const n = mk('button', 'btn', 'Cancel');
-      y.addEventListener('click', () => { clearConfirm(); onYes(); });
-      n.addEventListener('click', () => { clearConfirm(); say(''); });
-      confirmBox.append(mk('span', '', text), y, n);
-    };
-    bExp.addEventListener('click', () => {
-      try {
-        const url = URL.createObjectURL(new Blob([h.exportSave()], { type: 'application/json' }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'hollowlight-save.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        say('Save exported.');
-      } catch { say('Could not export the save.', true); }
+    for (const n of ['start', 'hero', 'pause', 'lanterns', 'nights']) if (this.layers[n]) this.layers[n].setAttribute('inert', ''); // keep Tab inside settings
+    const s = buildSettings({
+      settings: h.getSettings(), message: message || '', tab: tab || 'sound', pwa: this.pwa || null,
+      storageNote: h.storageNote ? h.storageNote() : null,
+      api: { setSetting: h.setSetting, exportSave: h.exportSave, maxSaveBytes: h.maxSaveBytes, checkImport: h.checkImport, applyImport: h.applyImport, resetSave: h.resetSave, hasAutoRule: h.hasAutoRule, resetTips: h.resetTips, damagedText: h.damagedText },
+      onBack: () => this.hideSettings(),
+      onRebuild: (m, t) => this.showSettings(m, t),
     });
-    bImp.addEventListener('click', () => { clearConfirm(); file.value = ''; file.click(); });
-    file.addEventListener('change', async () => {
-      const f = file.files && file.files[0];
-      if (!f) return;
-      if (f.size > h.maxSaveBytes) { say('Save file is too large.', true); return; }
-      let text;
-      try { text = await f.text(); } catch { say('Could not read that file.', true); return; }
-      const res = h.checkImport(text);
-      if (!res.ok) { say(res.error, true); return; }
-      say('');
-      ask('Replace your current save with this file?', 'Replace save', () => { h.applyImport(res.save); this.showSettings('Save imported.'); });
-    });
-    let armed = false;
-    let armTimer = null;
-    bRes.addEventListener('click', () => {
-      if (!armed) {
-        armed = true;
-        bRes.textContent = 'Really reset? Click again';
-        armTimer = setTimeout(() => { armed = false; bRes.textContent = 'Reset save'; }, 4000);
-        return;
-      }
-      clearTimeout(armTimer);
-      armed = false;
-      bRes.textContent = 'Reset save';
-      ask('This erases all gold, shards and stats. It cannot be undone.', 'Erase everything', () => { h.resetSave(); this.showSettings('Save reset.'); });
-    });
-    bClose.addEventListener('click', () => this.hideSettings());
-    actions.append(bExp, bImp, bRes);
-    const back = mk('div', 'row');
-    back.append(bClose);
-    el.append(mk('h2', '', 'Settings'), grid, actions, confirmBox, msg, back, file);
-    const fe = this.pwa ? fullscreenEntry(document, this.pwa, 'btn') : null;
-    if (fe) el.insertBefore(fe, actions);
-    const note = h.storageNote ? h.storageNote() : null;
-    if (note) el.append(mk('div', 'note', note));
+    el.replaceChildren(s.root);
     this.show('settings');
-    bClose.focus();
+    this.settingsView = s;
+    if (message) s.buttons.reset.focus(); else s.focusFirst();
   }
 
   hideSettings() {
     if (!this.settingsOpen) return;
     this.settingsOpen = false;
+    if (this.settingsView && this.settingsView.remap) this.settingsView.remap.stop(false); // A3: never leave a key capture listening
+    this.settingsView = null;
     this.hide('settings');
-    if (this.handlers.closeSettings) this.handlers.closeSettings();
+    for (const n of ['start', 'hero', 'pause', 'lanterns', 'nights']) if (this.layers[n]) this.layers[n].removeAttribute('inert');
+    if (this.handlers.closeSettings) this.handlers.closeSettings(); // title: rebuilds the menu (Continue state may have changed)
+    if (this.settingsFrom === 'pause' && this.pauseView) this.pauseView.focusSettings();
+    else if (this.screen && this.screen.id === 'title') this.screen.title.settings.focus({ preventScroll: true });
   }
 
   hideEnd() { this.hide('end'); }
@@ -367,11 +573,123 @@ export class UI {
   }
 
   // ------------------------------------------------------------------ keys
+  // The game captures Space (and arrows) with preventDefault, which stops a focused button, switch or radio from activating on Space. In the pause and
+  // settings screens Space must work like on any web control, so activate it here and swallow the matching keyup so it cannot fire a second click.
+  spaceActivate(e) {
+    if (e.key !== ' ' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
+    const a = document.activeElement;
+    if (!a || !a.closest || !a.closest('.overlay.u4, .layer-levelup, .layer-end, .layer-lanterns, .layer-nights, .layer-codex') || !a.matches('button, [role="radio"], [role="switch"], [role="tab"], .layer-levelup .card[role="button"]')) return false;
+    e.preventDefault();
+    // only THIS press's keyup: if it never arrives (focus lost), the swallow must not linger and eat a later gameplay keyup (CTL1)
+    const t0 = performance.now();
+    const off = () => { window.removeEventListener('keyup', swallow, true); window.removeEventListener('blur', off); };
+    const swallow = (k) => { if (k.key !== ' ') return; off(); if (performance.now() - t0 < 2000) k.preventDefault(); };
+    window.addEventListener('keyup', swallow, true);
+    window.addEventListener('blur', off);
+    a.click();
+    return true;
+  }
+
+  // ------------------------------------------------------------------ CX2/CX3 the Almanac (title J, pause read-only, results link, tree heart link)
+  // Opens over the current screen; Esc / Back returns to it (front-door rule). The app supplies the view model and stores read marks / titles.
+  showAlmanac(from = 'title', tab = null) {
+    const h = this.handlers;
+    if (!h.almanacView || this.codexView) return;
+    const v = h.almanacView();
+    if (!v) return;
+    const prev = document.activeElement;
+    const calm = !!(v.calm || document.documentElement.classList.contains('reduced-motion'));
+    this.codexView = buildAlmanac({ book: v.book, from, tab, heroPortraits: PORTRAITS, calm, titles: v.titles,
+      onRead: (keys) => { if (h.almanacRead) h.almanacRead(keys); },
+      onPickTitle: (id) => { if (h.pickTitle) h.pickTitle(id); },
+      onHelp: h.introReplay ? () => h.introReplay() : null,
+      onBack: () => this.hideAlmanac() });
+    this.codexFrom = { from, prev };
+    const el = this.layer('codex');
+    el.className = 'overlay layer-codex';
+    el.replaceChildren(this.codexView.root);
+    for (const n of Object.keys(this.layers)) if (n !== 'codex' && n !== 'cel' && this.layers[n]) this.layers[n].setAttribute('inert', '');
+    this.show('codex');
+    this.sound('ui_step');
+    this.codexView.focusFirst();
+  }
+
+  hideAlmanac() {
+    if (!this.codexView) return;
+    this.codexView = null;
+    this.escAt = performance.now();
+    this.hide('codex');
+    if (this.layers.codex) this.layers.codex.replaceChildren();
+    for (const n of Object.keys(this.layers)) if (this.layers[n] && !(n === 'start' && this.settingsOpen)) this.layers[n].removeAttribute('inert');
+    const f = this.codexFrom;
+    this.codexFrom = null;
+    if (f && f.from === 'title' && this.handlers.closeAlmanac) this.handlers.closeAlmanac(); // title: the NEW dot / bands may have changed
+    else if (f && f.prev && f.prev.isConnected && f.prev.focus) f.prev.focus({ preventScroll: true });
+  }
+
+  // ------------------------------------------------------------------ FIX3 new-feature card (full screen, first time only; src/ui/introui.js)
+  showIntro(card, { pos = null, onDone = null } = {}) {
+    this.hideIntro();
+    const el = this.layer('intro');
+    el.className = 'overlay layer-intro';
+    const calm = document.documentElement.classList.contains('reduced-motion');
+    const v = buildIntro({ card, pos, calm, onDone: () => { if (onDone) onDone(); } });
+    this.introView = v;
+    el.replaceChildren(v.root);
+    this.show('intro');
+    this.sound('ui_step');
+    v.focus();
+    return v;
+  }
+  hideIntro() {
+    if (this.introView) { this.introView.destroy(); this.introView = null; }
+    if (this.layers.intro) { this.layers.intro.replaceChildren(); this.hide('intro'); }
+  }
+  introActive() { return !!(this.introView && !this.introView.isDone()); }
+
+  // ------------------------------------------------------------------ CX4/CX5 celebrations: big -> medium cards, any key / tap continues, Esc skips all
+  celebrate(items, { away = false, after = null } = {}) {
+    if (!items || !items.length) return;
+    if (this.celView && !this.celView.isDone()) this.celView.finish();
+    const calm = document.documentElement.classList.contains('reduced-motion');
+    const el = this.layer('cel');
+    el.className = 'overlay layer-cel';
+    const v = buildCelebration(items, { calm, away, sound: (id) => this.sound(id), onDone: () => { if (this.celView === v) { this.celView = null; this.hide('cel'); el.replaceChildren(); } if (after) after(); } });
+    this.celView = v;
+    el.replaceChildren(v.root);
+    this.show('cel');
+    v.start();
+  }
+  celActive() { return !!(this.celView && !this.celView.isDone()); }
+
   onKey(e) {
+    if (this.celActive()) { this.celView.onKey(e); return; }
+    if (this.codexView) { if (!this.spaceActivate(e)) this.codexView.onKey(e); return; }
     if (this.tree.isOpen) return; // the tree screen handles its own keys
+    if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !this.settingsOpen && this.whisperOn()) { e.preventDefault(); if (this.handlers.hideWhisper) this.handlers.hideWhisper(); return; } // FM1: Tab hides the whisper (only while one is up mid-run)
+    if (this.spaceActivate(e)) return;
     if (this.settingsOpen) {
       if (e.key === 'Escape') { this.escAt = performance.now(); this.hideSettings(); }
       return;
+    }
+    if (this.darkView && this.layers.dark && this.layers.dark.style.display !== 'none') { this.darkView.onKey(e); return; } // EXTRAS v1 dawn choice
+    if (this.endView && this.layers.end && this.layers.end.style.display !== 'none') { this.endView.onKey(e); return; }
+    const pv = this.pauseView;
+    if (pv && e.key === 'Escape' && this.layers.pause && this.layers.pause.style.display !== 'none' && pv.cancelConfirm()) { this.escAt = performance.now(); return; } // Esc backs out of "Leave this run?"
+    if (pv && (e.key === 'j' || e.key === 'J') && pv.almanac && !pv.isConfirming() && this.layers.pause && this.layers.pause.style.display !== 'none' && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); pv.almanac.click(); return; } // CX3
+    const sc = this.screen;
+    if (sc) {
+      const vis = (n) => this.layers[n] && this.layers[n].style.display !== 'none';
+      if (sc.id === 'hero' && vis('hero')) { sc.hero.onKey(e); return; }
+      if (sc.id === 'lanterns' && vis('lanterns')) { sc.lanterns.onKey(e); return; }
+      if (sc.id === 'nights' && vis('nights')) { sc.nights.onKey(e); return; }
+      if (sc.id === 'title' && vis('start') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const a = document.activeElement;
+        const onBtn = a && a.closest && a.closest('.lg-btn');
+        const t = sc.title;
+        if (e.key === 'Enter' && !onBtn) { e.preventDefault(); t.begin.click(); } else if ((e.key === 'j' || e.key === 'J') && t.almanac) { e.preventDefault(); t.almanac.click(); } else if (e.key === 't' || e.key === 'T') { e.preventDefault(); t.tree.click(); } else if (e.key === 's' || e.key === 'S') { e.preventDefault(); t.settings.click(); } else if ((e.key === 'n' || e.key === 'N') && t.newGame) { e.preventDefault(); t.newGame.click(); } else if ((e.key === 'c' || e.key === 'C') && t.chars) { e.preventDefault(); t.chars.click(); }
+        return;
+      }
     }
     const lu = this.layers.levelup;
     if (lu && lu.style.display !== 'none' && this.currentCards && this.offerView) this.offerView.onKey(e);

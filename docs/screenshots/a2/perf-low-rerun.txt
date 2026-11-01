@@ -1,0 +1,2 @@
+{"inj":0,"tier":"low","fps":59.4,"ms":16.86,"work":3.2,"sprites":77,"calls":8}
+{"inj":350,"tier":"low","fps":60,"ms":16.67,"work":5.59,"sprites":433,"calls":8}

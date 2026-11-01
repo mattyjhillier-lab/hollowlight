@@ -93,10 +93,10 @@ test('fullscreen: feature detection and enter/exit with a fake document', async 
 const manifest = JSON.parse(readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
 test('manifest: required fields, relative paths, icons exist, maskable present', () => {
   for (const k of ['id', 'name', 'short_name', 'start_url', 'scope', 'display', 'orientation', 'background_color', 'theme_color', 'icons']) assert.ok(manifest[k], k);
-  assert.equal(manifest.name, 'Hollowlight: Spirits of the Dusk');
-  assert.equal(manifest.short_name, 'Hollowlight');
+  assert.equal(manifest.name, 'Wispwick: Spirits of the Dusk');
+  assert.equal(manifest.short_name, 'Wispwick');
   assert.equal(manifest.display, 'fullscreen');
-  assert.deepEqual(manifest.display_override, ['fullscreen', 'standalone', 'minimal-ui']);
+  assert.deepEqual(manifest.display_override, ['fullscreen', 'standalone', 'minimal-ui']); // DESKTOP C1: desktop Chrome/Edge take WCO, phones skip it
   assert.ok(manifest.categories.includes('games'));
   for (const v of [manifest.id, manifest.start_url, manifest.scope]) assert.match(v, /^\.\/?$/);
   assert.match(manifest.theme_color, /^#[0-9a-f]{6}$/i);
@@ -115,12 +115,13 @@ test('index.html links manifest and iOS tags with relative paths, keeps viewport
 });
 
 const sw = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
-test('sw.js: skipWaiting only inside the message handler, same-origin GET only, version placeholder', () => {
+test('sw.js: skipWaiting on install (BLANK-FIX) and on the old message, same-origin GET only, version placeholder', () => {
   const calls = [...sw.matchAll(/skipWaiting\(/g)];
-  assert.equal(calls.length, 1);
-  const msg = sw.indexOf("addEventListener('message'");
-  const end = sw.indexOf('});', msg);
-  assert.ok(calls[0].index > msg && calls[0].index < end);
+  assert.equal(calls.length, 2);
+  const ins = sw.indexOf("addEventListener('install'"), msg = sw.indexOf("addEventListener('message'");
+  assert.ok(calls[0].index > ins && calls[0].index < sw.indexOf('});', ins), 'install never waits');
+  assert.ok(calls[1].index > msg && calls[1].index < sw.indexOf('});', msg), 'older pages can still send SKIP_WAITING');
+  assert.ok(sw.includes("'__BUILD_ID__'"));
   assert.ok(sw.includes("req.method !== 'GET'") && sw.includes('url.origin !== self.location.origin') && sw.includes("headers.has('range')"));
   assert.ok(sw.includes("'__SW_VERSION__'"));
   assert.ok(!/importScripts|XMLHttpRequest/.test(sw));

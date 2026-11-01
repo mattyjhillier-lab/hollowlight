@@ -1,0 +1,367 @@
+{
+ "kind": "cluster",
+ "weapon": "chain_lightning",
+ "prefix": "cl",
+ "emblem": "chain",
+ "slot": "sky4",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "hero": null,
+ "heart": "gt_chain_lightning",
+ "starterEvo": null,
+ "sockets": {
+  "a": {
+   "evo": "thunder_judgment",
+   "gate": "gt_thunder_judgment"
+  },
+  "b": {
+   "evo": "static_storm",
+   "gate": "gt_static_storm"
+  },
+  "c": {
+   "evo": "storm_tether",
+   "gate": "gt_storm_tether"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_chain_lightning",
+   "idx": 0,
+   "kind": "heart",
+   "name": "Chain Lightning",
+   "desc": "Unlocks Chain Lightning: it can then appear in your level-up cards.",
+   "branch": "magic",
+   "cost": {
+    "gold": 500
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "chain_lightning"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "bossKill",
+      "id": "elder_treant",
+      "n": 2
+     },
+     {
+      "t": "killEnemy",
+      "id": "root_crawler",
+      "n": 2500
+     }
+    ]
+   }
+  },
+  {
+   "id": "gt_thunder_judgment",
+   "idx": 1,
+   "kind": "socket",
+   "name": "Thunder Judgment",
+   "desc": "Unlocks the Thunder Judgment evolution for Chain Lightning. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "thunder_judgment"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "clearChapter",
+      "id": "cursed_forest",
+      "n": 3
+     },
+     {
+      "t": "evolveWeapon",
+      "id": "chain_lightning",
+      "n": 1
+     }
+    ]
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_static_storm",
+   "idx": 2,
+   "kind": "socket",
+   "name": "Static Storm",
+   "desc": "Unlocks the Static Storm evolution for Chain Lightning. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "static_storm"
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "any",
+    "n": 12
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_storm_tether",
+   "idx": 3,
+   "kind": "socket",
+   "name": "Storm Tether",
+   "desc": "Unlocks the Storm Tether evolution for Chain Lightning. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "storm_tether"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "chain_lightning",
+      "n": 2
+     },
+     {
+      "t": "bossKill",
+      "id": "elder_treant",
+      "n": 5
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "outline": [
+  {
+   "id": "cl_arc",
+   "idx": 4,
+   "kind": "bead",
+   "name": "Forked Arc",
+   "desc": "Chain Lightning jumps +1 time.",
+   "branch": "magic",
+   "cost": {
+    "gold": 210
+   },
+   "requires": [
+    "ma_area",
+    "gt_chain_lightning"
+   ],
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "chains",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "cl_power",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Static Heart",
+   "desc": "Power +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 210
+   },
+   "requires": [
+    "cl_arc"
+   ],
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "cl_spark",
+   "idx": 6,
+   "kind": "knot",
+   "name": "Sparkwood",
+   "desc": "Power +2%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "cl_reach",
+   "idx": 7,
+   "kind": "knot",
+   "name": "Long Reach",
+   "desc": "Arc +2%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "cl_storm",
+   "idx": 8,
+   "kind": "knot",
+   "name": "Storm Mantle",
+   "desc": "Arc +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 570
+   },
+   "requires": [
+    "cl_power"
+   ],
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "cl_quick",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Quick Charge",
+   "desc": "Cooldown +2%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -2
+    }
+   ]
+  },
+  {
+   "id": "cl_crack",
+   "idx": 10,
+   "kind": "knot",
+   "name": "Thunder Crack",
+   "desc": "Power +2%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "cl_hum",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Humming Air",
+   "desc": "Cooldown +2%",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -2
+    }
+   ]
+  },
+  {
+   "id": "cl_ground",
+   "idx": 12,
+   "kind": "knot",
+   "name": "Grounded",
+   "desc": "Arc +2%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "cl_kin",
+   "idx": 13,
+   "kind": "bead",
+   "name": "Storm-Caller",
+   "desc": "Power +2%",
+   "cost": {
+    "gold": 630
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "bossKill",
+    "id": "elder_treant",
+    "n": 3
+   }
+  },
+  {
+   "id": "cl_crown",
+   "idx": 14,
+   "kind": "mastery",
+   "name": "Crown of Sparks",
+   "desc": "Power +2% and Arc +2%",
+   "cost": {
+    "gold": 910,
+    "shards": 1
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 2
+    },
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "chain_lightning",
+    "n": 2
+   }
+  }
+ ]
+}

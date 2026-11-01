@@ -21,6 +21,9 @@ export const PAL = {
   flame: 0xffab3a,
   frost: 0xdff1fa,
   frostDark: 0x8fb6c9,
+  // UI IDENTITY v1 / U1 Lantern Glass roles (docs/design/ui-identity-v1.md). Evolution gold #ffd36b is ROLE.evo; ember = flame at ~55% on plate.
+  ember: 0x996829,
+  wickDark: 0x3a2d24,
 };
 
 // Role tokens (docs/research/15 s2): world art, effects and sprites ask for a ROLE, never a hex, so a palette
@@ -36,10 +39,14 @@ export const ROLE = {
   lantern: 0xffcf7a, lanternCore: 0xfff1c8,
   spiritA: 0x9fe8ff, spiritA2: 0x4ab8e0, spiritB: 0x8a6fe0, spiritB2: 0xc9b8ff, spiritC: 0xb8f2ff, bolt: 0x7ff0ff, lightning: 0xe8f4ff,
   pickup: 0x7dffc4, heart: 0xff6f86, magnet: 0xa98aff,
+  bleed: 0xe5484d, bleedTint: 0xff8a82, // blood red (Matt 2026-10-16): bleed numbers, drips and the enemy tint share it; distinct from heart rose and from the player-hit light red
+  burn: 0xc79bff, burnHot: 0xefdcff, // Elias's Burn: lilac ember light (numbers + flame licks); not red, not gold
+  mark: 0x9b7dff, markTint: 0xc9b8ff, // W8b Mark: raven violet omen chevron + a light violet body tint (shape differs from Burn's rising licks)
   evo: 0xffd36b, evoHot: 0xfff3c4, danger: 0xff4a3a,
   uiA: 0x5ee6ff, uiB: 0x8b6cff, uiText: 0xe8e0ff, uiMuted: 0x9fb3c8,
 };
 
+const ROLE_EVO = ROLE.evo;
 export const hexStr = (n) => `#${n.toString(16).padStart(6, '0')}`;
 
 // CSS variable name -> palette colour. style.css :root must match (tests/palette.test.mjs).
@@ -66,6 +73,12 @@ export const CSS_VARS = {
   '--flame': PAL.flame,
   '--frost': PAL.frost,
   '--frost-d': PAL.frostDark,
+  '--lg-evo': ROLE_EVO,
+  '--lg-ember': PAL.ember,
+  '--lg-wick-dark': PAL.wickDark,
+  '--lg-danger': PAL.danger,
+  '--lg-glass-solid': PAL.plate,
+  '--lg-text': PAL.cream,
 };
 
 export function applyCssPalette(root) {

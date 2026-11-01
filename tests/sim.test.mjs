@@ -86,17 +86,18 @@ test('every evolution runs cleanly against a horde and deals damage', () => {
   }
 });
 
-test('Dire Alpha is a single wolf; Howling Legion makes a bigger pack', () => {
+test('The Alpha is one great wolf plus two ghost shades; Howling Legion keeps the pack size (echoes, no extra live wolves)', () => {
   const sim = mk({ godMode: true });
   sim.weapons.length = 0;
   sim.debugGrant('ghost_wolves', { power: 5, duration: 5 }, 'dire_alpha');
   run(sim, 1);
-  assert.equal(sim.units.filter((u) => u.kind === 'wolf').length, 1);
+  const wolves = sim.units.filter((u) => u.kind === 'wolf');
+  assert.equal(wolves.length, 3); assert.equal(wolves.filter((u) => u.r >= 11).length, 1); // alpha + 2 shades
   const sim2 = mk({ godMode: true });
   sim2.weapons.length = 0;
   sim2.debugGrant('ghost_wolves', { count: 5, duration: 5 }, 'howling_legion');
   run(sim2, 1);
-  assert.ok(sim2.units.filter((u) => u.kind === 'wolf').length >= 8);
+  assert.equal(sim2.units.filter((u) => u.kind === 'wolf').length, sim2.weapons[0].s.count); // W6: exactly the Pack size, no x1.4+1
 });
 
 test('wolf stat ranks change behaviour: more count means more wolves', () => {
@@ -137,12 +138,12 @@ test('a double level-up queues two offers back to back', () => {
 
 test('picking the evolution gold card evolves the weapon and kills the old units (needs the gate node, G1b)', () => {
   const sim = mk({ godMode: true, tree: aggregateMods({ gt_phantom_stampede: 1 }, treeDef, data) });
-  sim.debugGrant('ghost_wolves', { speed: 5, power: 5 });
+  sim.debugGrant('ghost_wolves', { speed: 5, power: 5, duration: 5, count: 1 });
   run(sim, 1);
   sim.xp = sim.xpNeeded + 1;
   sim.step(DT, {});
-  assert.equal(sim.offer.gold.length, 1);
-  sim.pickCard(sim.offer.gold[0].key);
+  assert.equal(sim.offer.gold.length, 2, 'the free evolution and the one the node unlocked');
+  sim.pickCard(sim.offer.gold.find((c) => c.evoId === 'phantom_stampede').key);
   assert.equal(sim.weapons[0].evo, 'phantom_stampede');
   assert.ok(sim.events.some((e) => e.type === 'evolve'));
 });
@@ -161,22 +162,21 @@ test('reroll and banish need to be unlocked (meta) and are consumed', () => {
   assert.ok(!some.offer.cards.some((c) => c.key === key));
 });
 
-test('boss spawns at the scheduled time and awards soul shards when killed', () => {
-  const sim = mk({ godMode: true, startTime: 598 });
-  run(sim, 3, { x: 0, y: 0 });
+test('the boss wakes at the scheduled time (14:00, after the arrival beat) and awards soul shards when killed', () => {
+  const sim = mk({ godMode: true, startTime: data.chapters.cursed_forest.bossAt - 2 });
+  run(sim, 2 + data.enemies.elder_treant.fight.intro.beat + 0.1, { x: 0, y: 0 });
   assert.ok(sim.bossSpawned);
   assert.ok(sim.boss && sim.boss.type === 'elder_treant');
-  sim.hurt(sim.boss, 1e9);
-  sim.step(DT, {});
+  for (let i = 0; i < 6 && !sim.bossKilled; i++) { sim.hurt(sim.boss, 1e9); run(sim, data.enemies.elder_treant.fight.stagger + 0.1); }
   assert.ok(sim.bossKilled);
+  assert.equal(sim.state, 'victory', 'victory = the kill');
   assert.equal(sim.shards, data.chapters.cursed_forest.bossShards);
 });
 
-test('surviving 15 minutes ends in victory; zero HP ends in defeat', () => {
+test('surviving to 15:00 no longer wins (the boss must die); zero HP ends in defeat', () => {
   const win = mk({ godMode: true, startTime: 898 });
   run(win, 4);
-  assert.equal(win.state, 'victory');
-  assert.equal(win.result().outcome, 'victory');
+  assert.notEqual(win.state, 'victory');
 
   const lose = mk({ characterId: 'wren' });
   lose.weapons.length = 0; // no defences
@@ -185,35 +185,19 @@ test('surviving 15 minutes ends in victory; zero HP ends in defeat', () => {
   assert.equal(lose.state, 'defeat');
 });
 
-test('Pack Howl: starts on cooldown, scares nearby enemies, boosts speed, then recharges', () => {
+test('action skill (Pelt Dash): fires off cooldown, no fear, then recharges', () => {
   const sim = mk({ characterId: 'wren', godMode: true });
   sim.chapter = { ...sim.chapter, waves: [], events: [], bossAt: 1e9 };
   sim.spawnAcc = [];
   sim.ability.cdLeft = 0;
   const e = sim.spawnEnemy('wolf', sim.player.x + 40, sim.player.y);
   sim.step(DT, { ability: true });
-  assert.ok(sim.buffs.packHowl > 5);
-  assert.ok(e.fearT > 1);
+  assert.ok(sim.dash && sim.events.some((v) => v.type === 'dash'));
+  assert.ok(!(e.fearT > 0));
   assert.ok(sim.ability.cdLeft > 55);
   const left = sim.ability.cdLeft;
   sim.step(DT, { ability: true });
   assert.ok(sim.ability.cdLeft < left, 'cannot be re-triggered while on cooldown');
-});
-
-test('Sanctuary creates a healing, damaging zone', () => {
-  const sim = mk({ characterId: 'elias', godMode: true });
-  sim.chapter = { ...sim.chapter, waves: [], events: [], bossAt: 1e9 };
-  sim.spawnAcc = [];
-  sim.weapons.length = 0;
-  sim.player.hp = 10;
-  sim.ability.cdLeft = 0;
-  const e = sim.spawnEnemy('root_crawler', sim.player.x + 20, sim.player.y);
-  const hp0 = e.hp;
-  sim.step(DT, { ability: true });
-  assert.equal(sim.zones.length, 1);
-  run(sim, 3, { x: 0, y: 0 });
-  assert.ok(sim.player.hp > 10, 'healed');
-  assert.ok(e.hp < hp0 || e.dead, 'damaged');
 });
 
 test('root patches slow the player', () => {
@@ -262,15 +246,16 @@ test('pacing: expected XP over 15 minutes lands near 38-50 level-ups (docs/resea
   assert.ok(t30 >= 240 && t30 <= 480, `25th level-up at ${t30}s`);
 });
 
-test('pouncing pack: a wolf leaps, pins the enemy and kills it', () => {
+test('lightfoot pack: wolves leave a trail, no leap/pin/maul', () => {
   const sim = mk({ characterId: 'wren', godMode: true });
   sim.debugGrant('ghost_wolves', { speed: 5, power: 5 }, 'phantom_stampede');
   const p = sim.player;
   const e = sim.spawnEnemy('root_crawler', p.x + 80, p.y);
   e.hp = e.maxHp = 400;
-  let held = false;
-  for (let i = 0; i < 240 && !e.dead; i++) { sim.step(DT, {}); if (e.heldT > 0) held = true; }
-  assert.ok(held, 'enemy was pinned');
+  let pinned = false;
+  for (let i = 0; i < 240 && !e.dead; i++) { sim.step(DT, {}); if (e.heldT > 0) pinned = true; }
+  assert.ok(!pinned, 'nothing is pinned');
+  assert.ok(sim.weapons[0].rt.trail.length > 0, 'wolves laid a trail');
 });
 
 test('heart drop heals, magnet drop pulls every gem', () => {

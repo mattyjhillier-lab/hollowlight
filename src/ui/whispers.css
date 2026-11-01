@@ -1,0 +1,43 @@
+/* FM1 whisper plate (docs/mockups/first-minute/fm-move.html is the target look). Fixed above the touch layer (z 31) so a tap hides it;
+   desktop bottom-centre above the weapon strip, phone landscape top-centre under the moon arc, phone portrait under the HUD block. */
+.fm-plate { position: fixed; left: 50%; bottom: 112px; z-index: 31; display: flex; align-items: center; gap: 12px; box-sizing: border-box;
+  width: max-content; max-width: calc(100vw - 32px); min-height: 44px; padding: 10px 18px 12px; border-radius: 14px; pointer-events: auto; cursor: pointer;
+  background: linear-gradient(180deg, rgba(48, 60, 86, .94), rgba(22, 28, 42, .94)); border: 1.5px solid #d8b26a;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .5), 0 0 22px rgba(255, 211, 107, .18); color: #fff3dc; font-family: "Alegreya Sans", "Segoe UI", sans-serif;
+  opacity: 0; visibility: hidden; transform: translate(-50%, 6px); transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
+  touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.fm-plate.on { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition: opacity .35s ease, transform .35s ease, visibility 0s; }
+.fm-plate.calm, .fm-plate.calm.on { transform: translate(-50%, 0); }
+.fm-body { min-width: 0; }
+.fm-t { font-size: 18px; font-weight: 700; line-height: 1.25; }
+.fm-w { font: italic 400 16px/1.25 "Hollowlight Chancery", Georgia, serif; color: rgba(255, 243, 220, .9); margin-top: 1px; }
+.fm-kb { display: inline-block; min-width: 26px; padding: 1px 7px; margin: 0 2px; border-radius: 6px; background: #efe4cc; color: #140f0c; font: 700 14px/1.35 "Alegreya Sans", sans-serif; text-align: center; box-shadow: 0 2px 0 #8d6c34; }
+.fm-skip { font-size: 13px; color: #b9c0d2; white-space: nowrap; }
+.fm-thread { position: absolute; left: 14px; right: 14px; bottom: 5px; height: 2px; border-radius: 2px; background: #ffd36b; transform-origin: left; box-shadow: 0 0 6px rgba(255, 211, 107, .6); }
+.fm-sr { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; left: 0; top: 0; }
+.fm-ghost { position: fixed; left: 9%; bottom: 12%; width: 74px; height: 74px; border-radius: 50%; border: 2px dashed rgba(255, 243, 220, .55); background: rgba(255, 243, 220, .08);
+  z-index: 29; pointer-events: none; opacity: 0; transition: opacity .35s ease; }
+.fm-ghost.on { opacity: 1; }
+/* the ability button's one gold ring while the ability plate is up (HUD button and the touch button) */
+.h-ability.fm-ring::after, .touch-ability.fm-ring::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2.5px solid #ffd36b; box-shadow: 0 0 16px #ffd36b; pointer-events: none; }
+.touch-ability.fm-ring { overflow: visible; }
+
+@media (max-width: 899px) {
+  .fm-plate { padding: 8px 14px 11px; gap: 10px; }
+  .fm-t { font-size: 16px; } .fm-w { font-size: 15px; }
+}
+@media (max-width: 899px) and (orientation: landscape) { .fm-plate { bottom: auto; top: 84px; } }
+@media (orientation: portrait) { .fm-plate { bottom: auto; top: 150px; } }
+@media (prefers-reduced-motion: reduce) { .fm-plate, .fm-plate.on { transform: translate(-50%, 0); } }
+html.reduced-motion .fm-plate, html.reduced-motion .fm-plate.on { transform: translate(-50%, 0); }
+
+/* FM2: the one teaching line on a level-up offer (head) or under one card (stirs / evolution kicker) */
+.lu-teach { margin-top: .35em; text-align: inherit; }
+.lu-teach__t { display: block; color: #ffd36b; font: 400 1.5em/1.1 "Hollowlight Chancery", Georgia, serif; }
+.lu-teach__w { display: block; color: rgba(255, 243, 220, .9); font: italic 400 1.02em/1.25 "Hollowlight Chancery", Georgia, serif; margin-top: .15em; }
+.lu-teach__note { display: block; color: #ffd36b; font-size: .85em; margin-top: .2em; }
+.layer-levelup .card.is-taught { outline: 3px solid rgba(255, 211, 107, .55); outline-offset: 4px; }
+@media (max-width: 899px) { .lu-teach__note { display: none; } }
+/* FM1 pickup whisper line inside the HUD toast */
+.hud .toast .fm-tw { display: block; font: italic 400 .92em/1.2 "Hollowlight Chancery", Georgia, serif; color: rgba(255, 243, 220, .88); white-space: normal; }
+.hud .toast.has-w { border-radius: 16px; text-align: center; white-space: normal; width: max-content; max-width: min(28em, calc(100% - 32px)); }

@@ -1,0 +1,20 @@
+// node candidates.mjs -> candidates.html + candidates.png (contact sheet of every candidate, proof only)
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { F, link } from './fonts.mjs';
+import { chrome } from './lib.mjs';
+const HERE = dirname(fileURLToPath(import.meta.url));
+const disp = ['cormorant','fondamento','almendra','almendrasc','fraunces','uncial','fellsc','fell','fellpica','macondo','macondosw','berkshire','jim','grenze','cinzeld','texturina','sansita','metamorphous','mystery','eagle','gloock','young','marcellus'];
+const body = ['figtree','alegreya','alegreyasans','nunito','quicksand','baloo','fredoka','patrick','lora','spectral','fell','itim'];
+const whis = ['caveat','kalam','gaegu','patrick','itim','mynerve','fondamento','fell','alegreya','jim','aladin'];
+const all = [...new Set([...disp, ...body, ...whis])];
+const row = (k, kind) => { const f = F[k].n; const st = `font-family:'${f}'`;
+  if (kind === 'd') return `<div class="r"><b>${f}</b><div class="big" style="${st}">Hollowlight</div><div class="mid" style="${st}">Who carries the lantern? Pouncing Pack</div><div class="num" style="${st}">Level 7 &nbsp; 12:45 &nbsp; 1,284 &nbsp; +12%</div><div class="sm" style="${st}">WREN THE ORPHAN &middot; Begin the night</div></div>`;
+  if (kind === 'b') return `<div class="r"><b>${f}</b><p style="${st};font-size:14px">Homing orbs seek out the nearest foe. Wider orbit +12%, 50 to 56 reach. 0123456789</p><p style="${st};font-size:12px">Slow to move, and very hard to put out. Heart 120 Stride 3.2 Cooldown 60s</p><p style="${st};font-size:12px;font-weight:700">Reroll x2 &nbsp; Banish x1 &nbsp; 1,284 gold &nbsp; 11:59</p></div>`;
+  return `<div class="r"><b>${f}</b><div style="${st};font-size:17px">The trees remember being green.</div><div style="${st};font-size:15px">Something stirs... one lantern is not enough yet.</div></div>`; };
+const sec = (t, ks, kd) => `<h2>${t}</h2><div class="g">${ks.map((k) => row(k, kd)).join('')}</div>`;
+writeFileSync(join(HERE, 'candidates.html'), `<!doctype html><meta charset=utf-8><title>Font candidates</title>${link(all)}<style>body{background:#1c1714;color:#fff3dc;font:13px sans-serif;margin:20px}h2{color:#d8b26a;margin:24px 0 8px}.g{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.r{border:1px solid #5a4a30;padding:10px;background:#251d18}.r b{color:#d8b26a;font:11px sans-serif;letter-spacing:.1em}.big{font-size:44px;line-height:1.1;color:#ffe0a0}.mid{font-size:22px;margin:4px 0}.num{font-size:22px}.sm{font-size:13px;letter-spacing:.14em}p{margin:4px 0}</style>${sec('DISPLAY candidates', disp, 'd')}${sec('BODY candidates', body, 'b')}${sec('WHISPER candidates', whis, 'w')}`);
+const c = await chrome();
+await c.shot(join(HERE, 'candidates.html'), join(HERE, 'candidates.png'), 1400, 900, 1, true);
+c.close();

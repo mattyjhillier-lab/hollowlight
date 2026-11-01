@@ -4,8 +4,22 @@ import evolutions from './evolutions.json';
 import characters from './characters.json';
 import enemies from './enemies.json';
 import chapters from './chapters.json';
-import tree from './tree.json';
 import blessings from './blessings.json';
+import tiers from './tiers.json';
+import cosmetics from './cosmetics.json';
+import { validateCosmetics } from '../meta/cosmetics.js';
+import { validateTiers } from '../sim/tiers.js';
+import { treeFiles } from './tree/index.js';
+import { composeTree } from '../meta/treedata.js';
 
-export const data = { balance, weapons, evolutions, characters, enemies, chapters, tree, blessings };
+// The skill tree is composed from the fragment files in ./tree/ (core, emblems, clusters, heroes, chapters).
+const composed = composeTree(treeFiles(), { weapons, evolutions, characters, chapters });
+const tree = composed.live;
+// Layout info (constellations, emblems, tool groups, ring radii) for the tree screen's view regions (src/meta/treeview.js).
+export const treeInfo = composed.info;
+
+validateTiers(tiers); // throws at boot on bad tier data (multipliers 1..4, Twilight exactly 1, registered marks)
+validateCosmetics(cosmetics, characters); // EXTRAS v1: colours inside the lantern band, no reserved colours, one default each
+
+export const data = { balance, weapons, evolutions, characters, enemies, chapters, tree, blessings, tiers, cosmetics };
 export default data;

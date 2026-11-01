@@ -1,0 +1,130 @@
+[
+ {
+  "t": 240,
+  "view": "desk",
+  "mode": "off",
+  "groundChroma": 29.34,
+  "groundY": 53.8,
+  "enemyChroma": 36.71
+ },
+ {
+  "t": 240,
+  "view": "desk",
+  "mode": "on",
+  "groundChroma": 25.93,
+  "groundY": 53.8,
+  "enemyChroma": 35.89
+ },
+ {
+  "t": 240,
+  "view": "port",
+  "mode": "off",
+  "groundChroma": 28.57,
+  "groundY": 59,
+  "enemyChroma": 40.73
+ },
+ {
+  "t": 240,
+  "view": "port",
+  "mode": "on",
+  "groundChroma": 24.8,
+  "groundY": 59.1,
+  "enemyChroma": 39
+ },
+ {
+  "t": 480,
+  "view": "desk",
+  "mode": "off",
+  "groundChroma": 30.56,
+  "groundY": 59,
+  "enemyChroma": 35.47
+ },
+ {
+  "t": 480,
+  "view": "desk",
+  "mode": "on",
+  "groundChroma": 28.14,
+  "groundY": 58.6,
+  "enemyChroma": 35.76
+ },
+ {
+  "t": 480,
+  "view": "port",
+  "mode": "off",
+  "groundChroma": 29.49,
+  "groundY": 63.8,
+  "enemyChroma": 40.02
+ },
+ {
+  "t": 480,
+  "view": "port",
+  "mode": "on",
+  "groundChroma": 27.73,
+  "groundY": 65.3,
+  "enemyChroma": 38.47
+ },
+ {
+  "t": 690,
+  "view": "desk",
+  "mode": "off",
+  "groundChroma": 30.55,
+  "groundY": 76.1,
+  "enemyChroma": 33.8
+ },
+ {
+  "t": 690,
+  "view": "desk",
+  "mode": "on",
+  "groundChroma": 29.04,
+  "groundY": 75.6,
+  "enemyChroma": 32.11
+ },
+ {
+  "t": 690,
+  "view": "port",
+  "mode": "off",
+  "groundChroma": 33.59,
+  "groundY": 81.6,
+  "enemyChroma": 37.56
+ },
+ {
+  "t": 690,
+  "view": "port",
+  "mode": "on",
+  "groundChroma": 33.29,
+  "groundY": 81.7,
+  "enemyChroma": 38.15
+ },
+ {
+  "t": 870,
+  "view": "desk",
+  "mode": "off",
+  "groundChroma": 56.47,
+  "groundY": 117.5,
+  "enemyChroma": 37.48
+ },
+ {
+  "t": 870,
+  "view": "desk",
+  "mode": "on",
+  "groundChroma": 62.22,
+  "groundY": 117.4,
+  "enemyChroma": 36.97
+ },
+ {
+  "t": 870,
+  "view": "port",
+  "mode": "off",
+  "groundChroma": 58.04,
+  "groundY": 121.5,
+  "enemyChroma": 35.86
+ },
+ {
+  "t": 870,
+  "view": "port",
+  "mode": "on",
+  "groundChroma": 64.45,
+  "groundY": 121.5,
+  "enemyChroma": 41.23
+ }
+]

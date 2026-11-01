@@ -1,0 +1,23 @@
+{
+ "on-hero": {
+  "mane": 61999,
+  "wolf": 62030,
+  "heroY": 0,
+  "heroOut": 69000,
+  "heroOutVisible": true,
+  "mustOutlines": 4,
+  "maneAlpha": 0.75
+ },
+ "near": {
+  "mane": 66104,
+  "wolf": 62030,
+  "heroY": 0,
+  "heroOut": 69000,
+  "heroOutVisible": true,
+  "mustOutlines": 4,
+  "maneAlpha": 1
+ },
+ "lane": {
+  "teleDepth": 120003
+ }
+}

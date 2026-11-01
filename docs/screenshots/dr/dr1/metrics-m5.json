@@ -1,0 +1,70 @@
+[
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "crowd",
+  "redPct": 3.22,
+  "lightRedPx": 0,
+  "occluders": 63,
+  "tellsLive": 13,
+  "hurtNum": true,
+  "numsNearHurt": 6,
+  "heroHitA": 0,
+  "hfT": 0.42,
+  "hfN": 7
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit",
+  "src": "root_crawler",
+  "kind": "contact",
+  "id": 255,
+  "am": 14.440000000000001,
+  "n40": 246,
+  "n80": 272,
+  "t": 693.8628999999969
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit-30ms",
+  "redPct": 0.94,
+  "lightRedPx": 0,
+  "occluders": 79,
+  "tellsLive": 10,
+  "hurtNum": true,
+  "numsNearHurt": 4,
+  "heroHitA": 1,
+  "hfT": 0.03,
+  "hfN": 13
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit-120ms",
+  "redPct": 0.72,
+  "lightRedPx": 0,
+  "occluders": 79,
+  "tellsLive": 10,
+  "hurtNum": true,
+  "numsNearHurt": 4,
+  "heroHitA": 1,
+  "hfT": 0.12,
+  "hfN": 13
+ },
+ {
+  "name": "m5-elias-11m30",
+  "view": "desk",
+  "tag": "hit-300ms",
+  "redPct": 0.63,
+  "lightRedPx": 0,
+  "occluders": 79,
+  "tellsLive": 10,
+  "hurtNum": true,
+  "numsNearHurt": 4,
+  "heroHitA": 0,
+  "hfT": 0.3,
+  "hfN": 13
+ }
+]

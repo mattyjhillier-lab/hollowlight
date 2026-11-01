@@ -118,13 +118,13 @@ function fakeDoc() {
 const walk = (n, f) => { f(n); n.children.forEach((c) => walk(c, f)); };
 const find = (root, cls) => { let hit = null; walk(root, (n) => { if (!hit && n._cls && n._cls.has(cls)) hit = n; }); return hit; };
 
-const DATA = { weapons: { ghost_wolves: { name: 'Ghost Wolves' }, spirit_bolts: { name: 'Spirit Bolts' } }, evolutions: { pouncing: { name: 'Pouncing Pack' } }, enemies: { elder_treant: { name: 'Elder Treant' } } };
+const DATA = { weapons: { ghost_wolves: { name: 'Ghost Wolves' }, spirit_bolts: { name: 'Spirit Bolts' } }, evolutions: { pouncing: { name: 'Lightfoot Pack' } }, enemies: { elder_treant: { name: 'Elder Treant' } } };
 const mkSim = (o = {}) => ({
   time: 100, xp: 5, xpNeeded: 10, level: 3, gold: 12.9, boss: null,
   player: { hp: 60, maxHp: 120 },
   balance: { runSeconds: 900, weaponSlots: 4, maxRank: 5 },
   weapons: [{ id: 'ghost_wolves', evo: null, ranks: { count: 2, power: 1 }, rt: {} }, { id: 'spirit_bolts', evo: null, ranks: { count: 1 }, rt: { cd: 0.5 } }],
-  ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 30 }, abilityCooldown: 60,
+  ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 30 }, abilityCooldown: 60,
   ...o,
 });
 
@@ -178,15 +178,15 @@ test('HUD-1 Hud fade: fades after 8s idle game time; level-up, weapon gain, abil
   const W3 = mkSim().weapons.concat([{ id: 'spirit_bolts', evo: null, ranks: { a: 1 }, rt: {} }]);
   hud.update(mkSim({ time: 119, level: 4, weapons: W3 }), DATA); // weapon gain
   assert.ok(!strip._cls.has('low'));
-  hud.update(mkSim({ time: 130, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 5 } }), DATA);
+  hud.update(mkSim({ time: 130, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 5 } }), DATA);
   assert.ok(strip._cls.has('low'));
-  hud.update(mkSim({ time: 131, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 60 } }), DATA); // ability used
+  hud.update(mkSim({ time: 131, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 60 } }), DATA); // ability used
   assert.ok(!strip._cls.has('low'));
-  hud.update(mkSim({ time: 145, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 40 } }), DATA);
+  hud.update(mkSim({ time: 145, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 40 } }), DATA);
   assert.ok(strip._cls.has('low'));
   hud.tapAt(50, 20); // inside the (fake) strip box
   assert.ok(!strip._cls.has('low'));
-  hud.update(mkSim({ time: 160, level: 4, weapons: W3, ability: { id: 'pack_howl', name: 'Pack Howl', cdLeft: 30 } }), DATA);
+  hud.update(mkSim({ time: 160, level: 4, weapons: W3, ability: { id: 'rally_pack', name: 'Rally the Pack', cdLeft: 30 } }), DATA);
   assert.ok(strip._cls.has('low'));
   hud.strip.listeners.pointerenter[0](); // hover
   assert.ok(!strip._cls.has('low'));
@@ -202,5 +202,8 @@ test('HUD-1 source: no innerHTML / outerHTML / insertAdjacentHTML in the HUD mod
   }
   const css = readFileSync(new URL('../src/hud.css', import.meta.url), 'utf8');
   assert.ok(!/backdrop-filter/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')), 'no backdrop-filter in the HUD');
-  assert.ok(/env\(safe-area-inset-left/.test(css) && /env\(safe-area-inset-bottom/.test(css) && /env\(safe-area-inset-top/.test(css) && /env\(safe-area-inset-right/.test(css));
+  // PHONE-A A2: the HUD reads the one shared safe-area frame (--sa-*), which src/ui/phone.css defines from env(safe-area-inset-*)
+  assert.ok(/var\(--sa-l\)/.test(css) && /var\(--sa-b\)/.test(css) && /var\(--sa-t\)/.test(css) && /var\(--sa-r\)/.test(css));
+  const phone = readFileSync(new URL('../src/ui/phone.css', import.meta.url), 'utf8');
+  assert.ok(/--sa-l: env\(safe-area-inset-left/.test(phone) && /--sa-b: env\(safe-area-inset-bottom/.test(phone) && /--sa-t: env\(safe-area-inset-top/.test(phone) && /--sa-r: env\(safe-area-inset-right/.test(phone));
 });

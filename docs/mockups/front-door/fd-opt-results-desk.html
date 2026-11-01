@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3 · Results + way back: three ways</title><style>
+@font-face{font-family:HLC;src:url(../../../src/assets/fonts/hollowlight-chancery.woff2) format('woff2')}
+@font-face{font-family:HLCI;src:url(../../../src/assets/fonts/hollowlight-chancery-italic.woff2) format('woff2')}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:AS;src:url(../../../src/assets/fonts/alegreya-sans-700.woff2) format('woff2');font-weight:700}
+:root{--ink:#140f0c;--brass:#d8b26a;--brassD:#8d6c34;--cream:#fff3dc;--dim:rgba(255,243,220,.82);--mute:#a8b0c4;--teal:#6fd3c5;--gold:#ffd36b;--lock:#6b7490;
+ --glassA:#303c56;--glassB:#161c2a;--night:#0c1220;--twi:#ffb867;--deep:#9aa8ff;--long:#d4ccff;--dawn1:#ffd0b0;--dawn2:#bfeaf0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;color:var(--cream);font-family:AS,"Segoe UI",sans-serif;font-size:16px}
+body{background:radial-gradient(ellipse 70% 60% at 50% 35%,#2a3550 0%,#141b2b 55%,#0a0f1a 100%)}
+h1,h2,h3,.disp{font-family:HLC,Georgia,serif;font-weight:400}
+.wh{font-family:HLCI,Georgia,serif}
+.gl{width:1em;height:1em;vertical-align:-.14em;display:inline-block}
+.lan{width:1.6em;height:2.1em}
+.coin,.shard,.glass{display:inline-block;vertical-align:-.12em;margin-right:.25em}
+.coin{width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b0,#d8b26a 60%,#8d6c34);box-shadow:0 0 0 1.5px var(--ink)}
+.shard{width:.72em;height:.9em;background:linear-gradient(135deg,#e9ddff,#9d86ff);clip-path:polygon(50% 0,100% 40%,70% 100%,30% 100%,0 40%)}
+.glass{width:.72em;height:.95em;background:linear-gradient(160deg,#fff7ee 0%,var(--dawn1) 45%,var(--dawn2) 100%);clip-path:polygon(50% 0,92% 34%,74% 100%,26% 100%,8% 34%)}
+.pill{display:inline-flex;align-items:center;gap:.25em;padding:.2em .75em;border-radius:99px;border:1.5px solid var(--brassD);background:rgba(12,9,8,.6);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.new{display:inline-block;background:var(--teal);color:#06231f;font-weight:700;font-size:12px;letter-spacing:.1em;padding:2px 10px 2px 8px;clip-path:polygon(0 0,100% 0,90% 50%,100% 100%,0 100%)}
+.panel{background:linear-gradient(180deg,var(--glassA),var(--glassB));border:2px solid var(--brass);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 8px 30px rgba(0,0,0,.45)}
+.btn{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 22px;border-radius:99px;font-family:HLC,Georgia,serif;font-size:21px;border:2px solid var(--brass);color:var(--cream);background:linear-gradient(180deg,#2e3a55,#18203a);box-shadow:inset 0 1px 0 rgba(255,236,190,.35),0 4px 14px rgba(0,0,0,.4);white-space:nowrap}
+.btn.pri{background:linear-gradient(180deg,#ffcf7a,#f19a3a);color:#2a1606;border-color:#ffe2a6;box-shadow:0 0 22px rgba(255,180,90,.45),inset 0 1px 0 #fff3cf}
+.btn.q{background:transparent;border-color:var(--brassD);font-size:18px}
+.btn .sub{display:block;font-family:HLCI,Georgia,serif;font-size:15px;opacity:.85}
+.kb{display:inline-block;min-width:26px;padding:1px 7px;border-radius:7px;font:700 12px AS,sans-serif;border:1.5px solid currentColor;opacity:.8;text-align:center}
+.focus{outline:3px solid var(--cream);outline-offset:4px}
+.thread{height:0;border-top:2px dashed rgba(216,178,106,.6)}
+.st{color:#8a93b0}.st.on{color:var(--gold)}.st:not(.on) path{fill:none;stroke:currentColor;stroke-width:1.8}
+.note{position:fixed;left:50%;top:2px;transform:translateX(-50%);font-size:11px;color:var(--mute);opacity:.55;white-space:nowrap}
+.touch .kb{display:none}
+@media (max-height:480px){.btn{min-height:44px;font-size:18px;padding:0 16px}.btn .sub{font-size:13px}}
+
+.wrap{position:absolute;inset:0;padding:20px 26px;display:flex;flex-direction:column;gap:12px}
+h2{font-size:34px}.wrap>p{color:var(--dim);font-size:15px;margin-top:-6px}
+.cols{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;min-height:0}
+.opt{padding:14px;display:flex;flex-direction:column;gap:8px}
+.opt.rec{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,211,107,.3),0 8px 30px rgba(0,0,0,.45)}
+.opt h3{font-size:24px}.opt .tag{font-size:12px;letter-spacing:.12em;color:var(--gold);font-weight:700}
+.wf{height:250px;border-radius:12px;background:#0c111d;border:1px solid #2c3550;position:relative;overflow:hidden;flex:none}
+.wf .b{position:absolute;border-radius:7px;border:1.5px solid var(--brassD);background:rgba(48,60,86,.6);font-size:11px;color:var(--dim);display:grid;place-items:center;text-align:center;line-height:1.15;padding:2px}
+.wf .b.p{background:linear-gradient(180deg,#ffcf7a,#f19a3a);color:#2a1606;border-color:#ffe2a6;font-weight:700}
+.wf .b.d{border-style:dashed;background:transparent}
+.wf .b.tw{border-color:var(--twi);color:var(--twi)}.wf .b.dd{border-color:var(--deep);color:var(--deep)}.wf .b.ln{border-color:var(--lock);color:var(--lock);border-style:dashed}
+.wf .t{position:absolute;font-family:HLC,Georgia,serif;color:var(--cream)}
+.opt ul{font-size:13.5px;line-height:1.35;padding-left:16px;color:var(--dim)}.opt li b{color:var(--cream)}
+</style><script>if(matchMedia('(pointer:coarse)').matches||innerWidth<900)document.documentElement.classList.add('touch')</script></head><body class=""><div class="wrap"><h2>3 · Results + way back: three ways</h2><p>Locked: one-screen results, no scroll, Again big primary (R/Enter), Main menu Esc, Tree shortcut with dot; defeat lantern dims, not out.</p><div class="cols"><div class="opt panel rec"><div class="tag">A · RECOMMENDED</div><h3>Badge on the locked card</h3><div class="wf"><div class="b " style="left:4%;top:10%;width:36%;height:60%">lantern · NIGHT BADGE · Dawn</div><div class="b " style="left:44%;top:6%;width:52%;height:70%">time · gold/shards/<b>Dawnglass</b> · first dawn · stars</div><div class="b " style="left:4%;top:82%;width:26%;height:13%">Menu</div><div class="b p" style="left:33%;top:82%;width:34%;height:13%">Again · Deep Dusk</div><div class="b " style="left:70%;top:82%;width:26%;height:13%">Tree •</div></div><ul><li>Adds to U6 only: night badge (shape + name), Dawnglass tile only on Deep Dusk+, first-dawn line, star row on wins</li><li>Death: same layout, dim lantern, "kept" line, ONE next light, no stars</li><li>Again replays the same hero + night; label says which</li></ul></div><div class="opt panel "><div class="tag">B</div><h3>Dawn beat, then ledger</h3><div class="wf"><div class="t" style="left:22%;top:20%;font-size:26px">Dawn breaks</div><div class="b " style="left:25%;top:46%;width:50%;height:12%">stars stamp in, badge glows</div><div class="b d" style="left:30%;top:70%;width:40%;height:12%">tap to continue</div></div><ul><li>Wins get a 2-3 s full-screen ceremony first (colour flood, stars stamp), then the locked card</li><li>Most emotional for first dawns</li><li><b>Slows the retry beat</b>; one more input every win</li></ul></div><div class="opt panel "><div class="tag">C</div><h3>Win leads to the map</h3><div class="wf"><div class="b " style="left:4%;top:10%;width:36%;height:60%">Dawn</div><div class="b " style="left:44%;top:6%;width:52%;height:70%">ledger</div><div class="b " style="left:4%;top:82%;width:26%;height:13%">Menu</div><div class="b p" style="left:33%;top:82%;width:34%;height:13%">Next night ›</div><div class="b " style="left:70%;top:82%;width:26%;height:13%">Again</div></div><ul><li>After a win the big button is "Next night" (opens map select with the new chip lit); after a death it stays Again</li><li>Pushes players upward</li><li><b>Reopens</b> the locked "Again is the big primary"; buttons move = muscle-memory slips</li></ul></div></div></div><div class="note">MOCK-UP · front-door-v1 · not game code</div></body></html>

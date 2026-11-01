@@ -219,7 +219,7 @@ test('seed identical to pre-blessing build until first short offer', () => {
         const o = sim.offer;
         const nreal = real(o.cards).length + o.gold.length;
         if (nreal < 3) { stop.t = sim.time; break; }
-        offers.push(o.gold.concat(o.cards).map((c) => c.key).join(','));
+        offers.push(o.gold.concat(real(o.cards)).map((c) => c.key).join(',')); // real cards only: a blessing may replace a heal filler (designed swap)
         const stats = o.cards.filter((c) => c.kind === 'stat').sort((x, y) => y.rank - x.rank);
         sim.pickCard(o.gold[0]?.key ?? stats[0]?.key ?? o.cards[0].key);
         continue;

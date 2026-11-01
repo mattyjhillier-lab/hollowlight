@@ -1,0 +1,20 @@
+/* E9 evolution plate: kit glass + brass band, gold only on the plate's own rim. Sits where the toast sits; never blocks input. */
+.hud .u9-plate { position: absolute; top: calc(var(--mt) + 122 * var(--hu)); left: 50%; transform: translateX(-50%) translateY(-.5em); z-index: 5;
+  width: max-content; max-width: min(30em, calc(100cqw - 24px)); box-sizing: border-box; padding: .5em 1.3em .6em; text-align: center; pointer-events: none;
+  background: linear-gradient(180deg, var(--lg-glass-a), var(--lg-glass-b)); border: 2px solid var(--brass); border-radius: 18px;
+  box-shadow: var(--lg-rim), 0 0 0 1px rgba(255, 211, 107, .55), 0 0 22px rgba(255, 211, 107, .28), 0 10px 20px rgba(0, 0, 0, .4);
+  opacity: 0; transition: opacity .3s var(--lg-ease), transform .3s var(--lg-ease); }
+.hud .u9-plate.on { opacity: 1; transform: translateX(-50%); }
+.u9-plate__kicker { color: var(--lg-brass-text); }
+.u9-plate__title { color: var(--cream); overflow-wrap: anywhere; }
+.u9-plate__whisper { color: var(--thread); overflow-wrap: anywhere; margin-top: .1em; }
+.u9-plate__recipe { color: var(--lg-dim); margin-top: .25em; }
+.u9-plate [hidden] { display: none; }
+.hud .u9-plate.lg-calm { transform: translateX(-50%); transition-property: opacity; transition-duration: 80ms; box-shadow: var(--lg-rim), 0 0 0 1px rgba(255, 211, 107, .55), 0 10px 20px rgba(0, 0, 0, .4); }
+@media (prefers-reduced-motion: reduce) { .hud .u9-plate { transform: translateX(-50%); transition-property: opacity; transition-duration: 80ms; } }
+.reduced-motion .hud .u9-plate { transform: translateX(-50%); transition-property: opacity; transition-duration: 80ms; }
+@container (max-width: 899px) { .hud .u9-plate { top: calc(var(--mt) + 90px); } }
+@media (max-aspect-ratio: 1/1) { .hud .u9-plate { top: calc(var(--mt) + 160px); } }
+.hud .u9-plate .u9-plate__title { font-size: min(var(--fs-title), 30px); }
+.hud .u9-plate .u9-plate__whisper { font-size: min(var(--fs-whisper), 19px); }
+@container (max-width: 899px) { .hud .u9-plate { padding: .35em 1em .45em; max-width: min(26em, calc(100cqw - 24px)); } .hud .u9-plate .u9-plate__title { font-size: min(var(--fs-title), 24px); } .hud .u9-plate .u9-plate__whisper { font-size: 16px; } }

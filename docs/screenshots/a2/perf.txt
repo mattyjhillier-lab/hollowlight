@@ -1,0 +1,6 @@
+{"inj":0,"tier":"low","fps":59.3,"ms":16.92,"work":3.37,"sprites":78,"calls":7}
+{"inj":0,"tier":"med","fps":60,"ms":16.67,"work":3.87,"sprites":92,"calls":11}
+{"inj":0,"tier":"high","fps":60,"ms":16.68,"work":4.06,"sprites":89,"calls":10}
+{"inj":350,"tier":"low","fps":59.8,"ms":16.71,"work":5.45,"sprites":402,"calls":8}
+{"inj":350,"tier":"med","fps":59.9,"ms":16.69,"work":6.22,"sprites":438,"calls":11}
+{"inj":350,"tier":"high","fps":60,"ms":16.67,"work":6.91,"sprites":471,"calls":11}

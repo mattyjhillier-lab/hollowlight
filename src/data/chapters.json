@@ -2,9 +2,10 @@
   "cursed_forest": {
     "name": "Cursed Forest",
     "bossId": "elder_treant",
-    "bossAt": 600,
+    "bossAt": 840,
     "bossShards": 5,
     "rootPatches": 70,
+    "minis": { "id": "branch_mane", "at": [200, 420, 690], "hp": [700, 1600, 3200], "warn": 30, "chest": [[55, 40, 5], [20, 60, 20], [0, 50, 50]] },
     "waves": [
       {
         "enemy": "wolf",
@@ -29,6 +30,32 @@
         "rate0": 0.12,
         "rate1": 0.6,
         "curve": 0.7
+      },
+      {
+        "enemy": "stoat_piper",
+        "from": 180,
+        "to": 900,
+        "rate0": 0.05,
+        "rate1": 0.35,
+        "curve": 0.8,
+        "maxAlive": 4
+      },
+      {
+        "enemy": "puffback_toad",
+        "from": 270,
+        "to": 900,
+        "rate0": 0.06,
+        "rate1": 0.4,
+        "maxAlive": 10
+      },
+      {
+        "enemy": "bramble_hart",
+        "from": 380,
+        "to": 900,
+        "rate0": 0.025,
+        "rate1": 0.12,
+        "maxAlive": 2,
+        "maxAliveAfter": { "t": 600, "n": 4 }
       }
     ],
     "events": [
@@ -86,6 +113,26 @@
         "count": 40,
         "formation": "arc"
       }
-    ]
+    ],
+    "sites": {
+      "sleepAt": 810, "edge": 250, "gap": 700, "lampGap": 320,
+      "bands": { "near": [600, 1000], "mid": [1000, 1500], "far": [1500, 2100] },
+      "lamps": { "r": 22, "groups": [
+        { "t": 40, "band": "near", "kinds": ["xp", "xp", "gold", "heart"], "xp": 0.18, "gold": 10, "heal": 0.2 },
+        { "t": 260, "band": "mid", "kinds": ["xp", "xp", "gold", "heart"], "xp": 0.25, "gold": 15, "heal": 0.2 },
+        { "t": 620, "band": "far", "kinds": ["xp", "xp", "gold", "heart"], "xp": 0.32, "gold": 20, "heal": 0.25 }
+      ] },
+      "roads": { "r": 26, "cand": 3, "pickAt": 1100, "list": [
+        { "t": 130, "band": "mid", "spacing": 700, "timer": 90, "each": { "xp": 0.15, "gold": 5 }, "set": { "magnet": true, "bless": true, "gold": 25, "xp": 0.5 } },
+        { "t": 480, "band": "mid", "spacing": 900, "timer": 110, "atWake": true, "each": { "xp": 0.15, "gold": 8 }, "set": { "magnet": true, "gold": 60, "xp": 0.9 } }
+      ] },
+      "knots": { "r": 18, "born": "root_crawler", "cells": [[0, 0], [2, 0], [0, 2]], "cand": 3, "pickAt": 1100, "wake": 260, "leash": 420, "regen": 10,
+        "every": 3, "per": 2, "cap": 14, "busy": 200, "pulse": { "every": 6, "tell": 0.8, "r": 90, "dmg": 10 },
+        "list": [
+          { "t": 330, "band": "mid", "hp": 900, "reward": { "bless": true, "xp": 0.6, "gold": 35, "heart": true } },
+          { "t": 560, "band": "far", "hp": 2000, "atWake": true, "reward": { "xp": 0.9, "gold": 90, "heart": true, "shard": 1 } }
+        ] },
+      "tiers": { "hard": { "pulseEvery": 5 }, "expert": { "pulseEvery": 5, "spawnMul": 1.25, "healMul": 0.75 } }
+    }
   }
 }

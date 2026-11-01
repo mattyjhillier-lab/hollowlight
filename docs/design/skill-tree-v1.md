@@ -4,7 +4,7 @@
 
 Layout and feel follow the Spirit Hunters: Infinite Horde reference (Matt's first love): a large radial web around a hub, nodes that light up as you own them, new abilities and options unlocking as you go, and real choices between branches. A research file, `docs/research/19-spirit-hunters-reference.md`, is being written in parallel; this design will be reconciled with it when it lands.
 
-Status: v1 built (version 0.4.0, 66 nodes: 63 real + 3 teasers). Data: `src/data/tree.json`. Logic: `src/meta/tree.js` (pure JS). Screen: `src/ui/treescreen.js`. Tests: `tests/tree.test.mjs`. Budget script: `node scripts/tree-budget.mjs [--table]`.
+Status: v1 built (version 0.4.0, 66 nodes: 63 real + 3 teasers). Data (since T1, 2026-10-18): fragments in `src/data/tree/` (see skill-tree-v2.md Appendix C; the v1 file is frozen in tests/fixtures/tree-v1.json). Logic: `src/meta/tree.js` (pure JS). Screen: `src/ui/treescreen.js`. Tests: `tests/tree.test.mjs`. Budget script: `node scripts/tree-budget.mjs [--table]`.
 
 ## 1. Fit with Hollowlight
 

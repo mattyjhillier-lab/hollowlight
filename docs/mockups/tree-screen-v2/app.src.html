@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lantern Web Options</title>
+<!-- Design-phase OPTIONS mock-up of the skill tree screen (v2 look + usability). Not game code. Built by build.mjs from the real tree data.
+     One source, three options (A Lantern Trails, B Emblem Sky, C Sky Map + Focus) baked per page; ?opt=a|b|c overrides.
+     The screen code never names a weapon, hero or chapter: everything comes from the compiled data (C.1 rule). textContent only. -->
+<style>
+/*FONTS*/
+:root{
+  --night:#0c1220; --glassA:#303c56; --glassB:#161c2a; --brass:#d8b26a; --cream:#fff3dc; --dim:rgba(255,243,220,.88);
+  --mute:#b3bbcf; --teal:#6fd3c5; --lock:#59627a; --wick:#fff6e0; --flame:#ffb35a; --ink:#3a2412;
+  --panel:rgba(16,21,34,.985); --line:rgba(216,178,106,.38); --band:#0b101c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--night);color:var(--cream);font:15px/1.35 AS,system-ui,sans-serif;overflow:hidden;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+#map{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+/* toolbar: a solid band (never floats over map labels) */
+.bar{position:fixed;left:0;right:0;top:0;height:60px;display:flex;align-items:center;gap:8px;padding:8px 12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));
+  background:linear-gradient(var(--band),#0b101cf2);border-bottom:1px solid #d8b26a2a;z-index:6}
+.title{font-family:HLC,serif;font-size:22px;color:var(--cream);margin-right:auto;white-space:nowrap;text-shadow:0 0 12px #ffb35a66;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.purse{display:flex;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:5px;min-height:34px;padding:4px 10px;border-radius:17px;background:linear-gradient(var(--glassA),var(--glassB));border:1px solid var(--line);font-weight:700;font-size:14px;white-space:nowrap}
+.pill i{font-style:normal;width:10px;height:10px;border-radius:50%;display:inline-block}
+.i-gold{background:radial-gradient(circle at 35% 30%,#fff3c4,#e7b34c 60%,#8d6c34)}
+.i-shard{background:radial-gradient(circle at 35% 30%,#f3e6ff,#b9a2ff 60%,#5b3f9a);border-radius:2px!important;transform:rotate(45deg)}
+.i-glass{background:radial-gradient(circle at 35% 30%,#ffe2c8,#ffb89a 45%,#9fe3ff);border-radius:50% 50% 50% 0!important;transform:rotate(-45deg)}
+.btn{min-height:44px;min-width:44px;padding:6px 14px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(var(--glassA),var(--glassB));font-weight:700;font-size:14px;white-space:nowrap}
+.btn.on{border-color:var(--wick);box-shadow:0 0 0 1px var(--wick) inset,0 0 14px #ffb35a55}
+.btn.round{padding:0;width:44px;font-size:18px}
+.badge{min-width:26px;height:26px;border-radius:13px;background:var(--wick);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 10px #ffb35a;padding:0 6px}
+.badge.zero{background:var(--lock);color:var(--cream);box-shadow:none}
+.lightable{display:inline-flex;align-items:center;gap:8px}
+.back{display:none}
+/* side panel / bottom sheet (details, and in option A also goals) */
+.panel{position:fixed;right:12px;top:72px;bottom:12px;width:340px;z-index:7;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 16px 14px;display:none;flex-direction:column;gap:8px;overflow:auto}
+.panel.open{display:flex}
+.tabs{display:none;gap:6px;margin-right:44px}
+.optA .tabs{display:flex}
+.tab{flex:1;min-height:44px;border-radius:12px;border:1px solid transparent;background:none;color:var(--mute);font-weight:700}
+.tab[aria-selected="true"]{color:var(--cream);border-color:var(--line);background:#ffffff0c}
+.kick{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#f5dfae;font-weight:700}
+.panel h2{margin:0;font:26px/1.1 HLC,serif;color:var(--cream)}
+.state{align-self:flex-start;font-size:13px;font-weight:700;padding:3px 10px;border-radius:12px;border:1px solid}
+.st-ready{color:var(--ink);background:var(--wick);border-color:var(--wick);box-shadow:0 0 12px #ffb35a88}
+.st-open{color:#f5dfae;border-color:var(--brass)}
+.st-notyet,.st-fog{color:var(--mute);border-color:var(--lock)}
+.st-lit{color:var(--cream);border-color:var(--cream)}
+.why{font-size:14px;color:var(--wick);display:flex;gap:6px;align-items:center}
+.desc{font-size:16px}
+.flav{font-style:italic;color:var(--mute);font-size:14px}
+.steps{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.steps li{font-size:14px;display:grid;grid-template-columns:22px 1fr;gap:4px}
+.steps li b{width:20px;height:20px;border-radius:10px;border:1px solid var(--lock);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--mute)}
+.steps li.done{color:var(--teal)} .steps li.done b{border-color:var(--teal);color:var(--teal)}
+.meta{font-size:13px;color:var(--mute)}
+.cost{display:flex;gap:6px;flex-wrap:wrap}
+.actions{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap;padding-top:6px}
+.primary{flex:1;min-height:48px;border-radius:24px;border:1px solid var(--wick);background:linear-gradient(#ffe9b8,#e3a64a);color:var(--ink);font-weight:700;font-size:16px}
+.primary[disabled]{background:linear-gradient(var(--glassA),var(--glassB));color:var(--mute);border-color:var(--lock);cursor:default}
+.primary.confirm{background:linear-gradient(#fff6e0,#ffcf7a);box-shadow:0 0 18px #ffb35a}
+.close{position:absolute;right:6px;top:6px;background:none;border:0;font-size:24px;color:var(--mute);min-width:44px;min-height:44px}
+.handle{display:none}
+.bar2{height:6px;border-radius:3px;background:#ffffff18;margin-top:4px;overflow:hidden}
+.bar2 b{display:block;height:100%;background:linear-gradient(90deg,#3aa79a,var(--teal));border-radius:3px}
+.bar2.gold b{background:linear-gradient(90deg,#b98a3a,var(--wick))}
+.goal{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid #ffffff14;padding:8px 2px;min-height:48px}
+.goal .gt{display:flex;justify-content:space-between;gap:6px;font-weight:700;font-size:15px}
+.goal .rw{font-size:14px;color:var(--wick)}
+.goal .gs{font-size:13px;color:var(--mute)}
+.goal .tag{font-size:12px;color:var(--mute);font-weight:700;white-space:nowrap}
+.goal .tag.pin{color:var(--wick)}
+.empty{font-size:14px;color:var(--mute);padding:8px 2px}
+/* option A: calm next-step bar at the bottom */
+.step{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:5;display:none;align-items:center;gap:12px;max-width:min(620px,calc(100vw - 140px));
+  background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:6px 6px 6px 18px;box-shadow:0 6px 24px #0008}
+.optA .step{display:flex}
+.step .st{font-size:15px;line-height:1.25;min-width:0}
+.step .st b{color:var(--wick)}
+.step .st small{display:block;color:var(--mute);font-size:13px}
+.step .btn{flex:none}
+body.sel .step,body.pan .step{display:none}
+/* option B: guide wisp bubble (anchored to the best-next lantern) + goal strip */
+.wisp{position:fixed;z-index:5;display:none;max-width:260px;background:var(--panel);border:1px solid var(--wick);border-radius:14px;padding:8px 12px;font-size:14px;box-shadow:0 0 18px #ffb35a55;pointer-events:auto}
+.wisp b{color:var(--wick)}
+.wisp small{display:block;color:var(--mute);font-size:13px}
+.wisp.show{display:block}
+.gstrip{position:fixed;left:0;right:0;top:60px;z-index:5;display:none;gap:8px;padding:6px 12px;background:var(--band);border-bottom:1px solid #d8b26a2a;overflow:hidden;padding-left:max(12px,env(safe-area-inset-left))}
+.optB .gstrip{display:flex}
+.chip{display:flex;flex-direction:column;justify-content:center;min-height:44px;min-width:0;flex:1 1 0;max-width:300px;text-align:left;border:1px solid var(--line);border-radius:12px;background:linear-gradient(var(--glassA),var(--glassB));padding:4px 10px}
+.chip .ct{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .ct span{color:var(--mute);font-weight:400}
+.chip .bar2{margin-top:3px;height:4px}
+.chip.more{flex:none;min-width:44px;align-items:center;font-weight:700}
+.gdrop{position:fixed;left:12px;right:12px;top:118px;z-index:8;display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 12px}
+.gdrop.open{display:block}
+/* option C: sky overview checklist + focus footer */
+.todo{position:fixed;left:12px;top:72px;width:300px;z-index:5;display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.optC.over .todo{display:block}
+.todo h3{margin:0 0 4px;font:20px HLC,serif}
+.todo .goal .gt{font-size:14px}
+.todo .num{display:inline-flex;width:22px;height:22px;border-radius:11px;background:var(--wick);color:var(--ink);align-items:center;justify-content:center;font-size:13px;margin-right:6px}
+.todo .num.c{background:none;border:1px solid var(--teal);color:var(--teal)}
+.ffoot{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:5;display:none;align-items:center;gap:10px;max-width:calc(100vw - 140px);background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:4px 4px 4px 14px;font-size:14px}
+.optC.focus .ffoot{display:flex}
+body.sel .ffoot{display:none}
+.optC.focus .back{display:inline-flex;align-items:center;justify-content:center;font-size:30px;line-height:1}
+.optC.over .zoom{display:none}
+.optC.focus .title{font-size:20px}
+/* zoom + edge arrow */
+.zoom{position:fixed;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px;z-index:4}
+body.sel .zoom{right:364px}
+.edge{position:fixed;z-index:4;display:none;align-items:center;gap:6px;min-height:44px;padding:4px 12px;border-radius:22px;border:1px solid var(--wick);background:var(--panel);color:var(--wick);font-weight:700;font-size:13px;transform:translate(-50%,-50%)}
+.edge.show{display:inline-flex}
+.edge i{font-style:normal;display:inline-block}
+/* sheets */
+.sheet{position:fixed;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,94vw);max-height:86vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:none}
+.sheet.open{display:block}
+.sheet h3{margin:0 0 8px;font:22px HLC,serif}
+.idx-row{display:flex;width:100%;align-items:center;gap:10px;background:none;border:0;border-top:1px solid #ffffff14;padding:8px 2px;min-height:48px;text-align:left}
+.idx-row .sw{width:14px;height:14px;border-radius:50%;flex:none}
+.idx-row .nm{flex:1;font-weight:700}
+.idx-row .ct{color:var(--mute);font-size:13px}
+.drawer label{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;border-top:1px solid #ffffff14}
+.drawer select{min-height:44px;background:var(--glassB);color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:0 8px;font:inherit;max-width:60%}
+.row{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0}
+.legend{display:grid;grid-template-columns:44px 1fr;gap:8px 10px;align-items:center;font-size:15px}
+.legend canvas{width:44px;height:44px}
+.legend small{display:block;color:var(--mute);font-size:13px}
+.scrim{position:fixed;inset:0;background:#0009;z-index:8;display:none}
+.scrim.open{display:block}
+.toast{position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:10;background:var(--panel);border:1px solid var(--wick);border-radius:14px;padding:10px 16px;font:18px HLC,serif;color:var(--wick);display:none;text-align:center;max-width:90vw}
+.toast.open{display:block}
+/* first-visit coach (fades) */
+.coach{position:fixed;z-index:9;left:50%;bottom:84px;transform:translateX(-50%);width:min(440px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--wick);border-radius:16px;padding:14px 16px;box-shadow:0 0 30px #ffb35a44;display:none;transition:opacity .8s}
+.coach.open{display:block}
+.coach.fade{opacity:0}
+.coach h4{margin:0 0 6px;font:20px HLC,serif;color:var(--wick)}
+.coach p{margin:0 0 6px;font-size:15px}
+.coach .row{justify-content:flex-end;padding:4px 0 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ph-only{display:none}
+/* ---------- phone landscape ---------- */
+@media (max-height:500px) and (orientation:landscape){
+  .bar{height:52px;padding-top:4px;padding-bottom:4px;gap:6px}
+  .title{font-size:18px}
+  .pill{min-height:30px;padding:2px 8px;font-size:13px}
+  .btn{font-size:13px;padding:4px 10px}
+  .panel{top:58px;bottom:6px;right:max(6px,env(safe-area-inset-right));width:44vw;padding:8px 12px;gap:6px}
+  .panel h2{font-size:21px}
+  .desc{font-size:15px}
+  body.sel .zoom{right:calc(44vw + 14px)}
+  .zoom{bottom:6px}
+  .zoom .zx{display:none}
+  .step{bottom:6px;max-width:calc(100vw - 130px)}
+  .gstrip{top:52px;padding-top:4px;padding-bottom:4px}
+  .gdrop{top:106px;left:auto;width:360px}
+  .chip{max-width:none}
+  .todo{top:60px;bottom:6px;width:250px;overflow:auto;padding:6px 10px}
+  .todo h3{font-size:17px}
+  .ffoot{bottom:6px}
+  .coach{bottom:64px}
+  .hide-ls{display:none}
+}
+/* ---------- phone portrait ---------- */
+@media (max-width:600px) and (orientation:portrait){
+  .bar{height:104px;flex-wrap:wrap;align-content:center;row-gap:6px;padding-top:max(8px,env(safe-area-inset-top))}
+  .title{font-size:19px;flex:1 0 40%}
+  .panel{left:0;right:0;bottom:0;top:auto;width:auto;max-height:56vh;border-radius:18px 18px 0 0;padding:6px 16px calc(12px + env(safe-area-inset-bottom))}
+  .handle{display:block;width:44px;height:5px;border-radius:3px;background:#ffffff40;margin:2px auto 4px}
+  .tabs{margin-right:40px}
+  body.sel .zoom{display:none}
+  .zoom .zx{display:none}
+  .zoom{bottom:calc(84px + env(safe-area-inset-bottom))}
+  .step{left:12px;right:12px;transform:none;max-width:none;bottom:calc(12px + env(safe-area-inset-bottom))}
+  .gstrip{top:104px}
+  .gdrop{top:162px}
+  .todo{left:0;right:0;bottom:0;top:auto;width:auto;max-height:42vh;overflow:auto;border-radius:18px 18px 0 0;padding:8px 14px calc(8px + env(safe-area-inset-bottom))}
+  .ffoot{left:12px;right:12px;transform:none;max-width:none;bottom:calc(12px + env(safe-area-inset-bottom))}
+  .coach{bottom:calc(84px + env(safe-area-inset-bottom))}
+  .hide-pp{display:none}
+  .lightable{order:5}
+  .bar .btn{padding:4px 12px}
+  .ph-only{display:inline}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="map" aria-hidden="true"></canvas>
+<div class="bar" role="toolbar" aria-label="Skill tree">
+  <button class="btn round back" id="backBtn" aria-label="Back to the sky map">&#8249;</button>
+  <div class="title" id="title">The Lantern Web</div>
+  <div class="purse" aria-label="Your purse">
+    <span class="pill" title="Gold"><i class="i-gold"></i><span id="gold">0</span></span>
+    <span class="pill" title="Soul shards"><i class="i-shard"></i><span id="shards">0</span></span>
+    <span class="pill" id="glassPill" title="Dawnglass"><i class="i-glass"></i><span id="glass">0</span></span>
+  </div>
+  <button class="btn lightable" id="nextBtn" title="Show the best lantern to light next (N)"><span class="badge" id="lightN">0</span><span>can light</span></button>
+  <button class="btn" id="goalsBtn" title="Goals">Goals</button>
+  <button class="btn hide-pp" id="idxBtn" title="All spirits and groups">Spirits</button>
+  <button class="btn round" id="helpBtn" title="What the lanterns mean (?)" aria-label="What the lanterns mean">?</button>
+  <button class="btn round" id="protoBtn" title="Prototype controls" aria-label="Prototype controls">&#9881;</button>
+</div>
+<div class="gstrip" id="gstrip" aria-label="Goals"></div>
+<div class="gdrop" id="gdrop" aria-label="All goals"></div>
+<section class="todo" id="todo" aria-label="Next steps"><h3>Next steps</h3><div id="todoList"></div></section>
+<aside class="panel" id="panel" aria-live="polite" aria-label="Lantern details">
+  <div class="handle"></div>
+  <div class="tabs" role="tablist"><button class="tab" id="tabD" role="tab" aria-selected="true">Lantern</button><button class="tab" id="tabG" role="tab" aria-selected="false">Goals</button></div>
+  <button class="close" id="closeBtn" aria-label="Close">&times;</button>
+  <div id="detail" style="display:flex;flex-direction:column;gap:8px;flex:1">
+    <div class="kick" id="pKick"></div>
+    <h2 id="pName"></h2>
+    <div class="state" id="pState"></div>
+    <div class="why" id="pWhy"></div>
+    <div class="desc" id="pDesc"></div>
+    <div class="flav" id="pFlav"></div>
+    <ol class="steps" id="pSteps"></ol>
+    <div class="meta" id="pMeta"></div>
+    <div class="cost" id="pCost"></div>
+    <div class="actions"><button class="primary" id="buyBtn">Light it</button><button class="btn" id="pinBtn">Pin goal</button></div>
+  </div>
+  <div id="goalPane" style="display:none"><div id="goalList"></div><p class="meta">Pin up to 3 goals from any lantern. Suggestions fill the rest: the best buy first, then what is closest to waking.</p></div>
+</aside>
+<div class="step" id="step" role="status"><div class="st" id="stepText"></div><button class="btn" id="stepBtn">Show me</button></div>
+<div class="wisp" id="wisp" role="status"></div>
+<div class="ffoot" id="ffoot"><span id="ffootText"></span><button class="btn" id="ffootPrev" aria-label="Previous group">&#8249;</button><button class="btn" id="ffootNext" aria-label="Next group">&#8250;</button></div>
+<button class="edge" id="edge" aria-label="Go to the best next lantern"><i id="edgeArrow">&#10148;</i><span>Best next</span></button>
+<div class="zoom"><button class="btn round zx" id="zin" aria-label="Zoom in">+</button><button class="btn round zx" id="zout" aria-label="Zoom out">&minus;</button><button class="btn round" id="zhome" aria-label="Whole web">&#8962;</button></div>
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="idxSheet" aria-label="Spirits and groups"><h3>Spirits and groups</h3><div id="idxList"></div></section>
+<section class="sheet" id="helpSheet" aria-label="What the lanterns mean"><h3>What the lanterns mean</h3><div class="legend" id="legend"></div>
+  <div class="row"><button class="btn" id="onlyBtn" aria-pressed="false">Show only what I can light</button><button class="btn" id="coachBtn">Show the tips again</button></div></section>
+<section class="sheet drawer" id="protoSheet" aria-label="Prototype controls">
+  <h3>Prototype controls</h3>
+  <label>Option <select id="optSel"><option value="a">A Lantern Trails</option><option value="b">B Emblem Sky</option><option value="c">C Sky Map + Focus</option></select></label>
+  <label>Save <select id="presetSel"></select></label>
+  <label>Tree data <select id="dataSel"></select></label>
+  <div class="row"><button class="btn" id="bankWin">Bank a won run</button><button class="btn" id="bankLoss">Bank a lost run</button><button class="btn" id="resetBtn">Reset save</button></div>
+  <label>Reduced motion <input type="checkbox" id="rmChk"></label>
+  <p class="meta">Saves come from the progression timeline simulation. Buying uses the real tree rules. Nothing is saved to the game.</p>
+</section>
+<div class="coach" id="coach" role="dialog" aria-label="Tips"><h4 id="coachH"></h4><p id="coachP"></p><div class="row"><button class="btn" id="coachOk">Got it</button></div></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="sr" id="sr" aria-live="polite"></div>
+
+<script type="application/json" id="payload">/*DATA*/</script>
+<script>/*TREELIB*/</script>
+<script>
+'use strict';
+(() => {
+const P = JSON.parse(document.getElementById('payload').textContent);
+const $ = (id) => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+let OPT = (Q.get('opt') || '/*OPT*/').toLowerCase(); if (!['a', 'b', 'c'].includes(OPT)) OPT = 'a';
+const cv = $('map'); let ctx = cv.getContext('2d');
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } } };
+const mqRM = window.matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = mqRM.matches;
+const KIND_R = { knot: 7, ring: 8, hero: 9, verb: 9, kin: 10, status: 10, bead: 10, mastery: 12, socket: 15, key: 14, gate: 15, heart: 19, teaser: 9 };
+const KIND_LABEL = { knot: 'Lantern', ring: 'Lantern', hero: 'Hero lantern', verb: 'Lantern', kin: 'Kin lantern', status: 'Status lantern', bead: 'Lantern', mastery: 'Mastery', socket: 'Evolution seal', key: 'Keystone', gate: 'Night gate', heart: 'Spirit heart', teaser: 'Far lantern' };
+const GOALKIND = new Set(['heart', 'socket', 'mastery', 'gate']);
+// FEW STATES: lit / can light / open (not enough yet) / not yet. Player words merge locked + asleep + condition into "Not yet" (+ a numbered checklist).
+const SAY = { lit: 'Lit', ready: 'Can light now', open: 'Not enough yet', challenge: 'Challenge', notyet: 'Not yet reachable', fog: 'Beyond the fog' };
+const LOD = { far: 0.32, near: 0.95 };
+const CONNECTED = Q.get('conn') !== '0'; // connected-unlock proposal on by default; ?conn=0 = today's rules
+const LINK_FAR = 350; // a prerequisite further away than this is never drawn as a line across the web (shown on select instead)
+
+let DSI = 0, T, data, def, live, regionOf, regions, regionByKey, grid, save, cache, pins, parents, selected = null, onlyLight = false, confirmT = 0, anims = [], best = null;
+let panelMode = null; // null | 'detail' | 'goals'
+let focusKey = null;  // option C: the group shown in focus view (null = sky overview)
+const cam = { x: 0, y: 0, z: 0.6 };
+let W = 0, H = 0, DPR = 1;
+
+// ---------------------------------------------------------------- data
+function loadDataset(i) {
+  DSI = i; T = P.trees[i]; data = P.data[i];
+  def = HLT.compileTree(T.raw, data);
+  live = new Set(T.live); regionOf = T.regionOf; regions = T.regions; regionByKey = Object.fromEntries(regions.map((r) => [r.key, r]));
+  grid = new Map(); parents = new Map();
+  for (const id of def.list) { const n = def.nodes[id]; const k = `${Math.floor(n.x / 240)},${Math.floor(n.y / 240)}`; (grid.get(k) || grid.set(k, []).get(k)).push(id); }
+  for (const e of def.edges) (parents.get(e.to) || parents.set(e.to, []).get(e.to)).push(e.from);
+  for (const r of regions) {
+    r.ids = def.list.filter((id) => regionOf[id] === r.key && !def.nodes[id].teaser);
+    if (r.silhouette) { try { r.path = new Path2D(r.silhouette); } catch { r.path = null; } }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const id of r.ids) { const n = def.nodes[id]; x0 = Math.min(x0, n.x); y0 = Math.min(y0, n.y); x1 = Math.max(x1, n.x); y1 = Math.max(y1, n.y); }
+    r.box = r.ids.length ? [x0 - 60, y0 - 80, x1 + 60, y1 + 60] : [r.x - r.r, r.y - r.r, r.x + r.r, r.y + r.r];
+  }
+  selected = null; focusKey = null;
+}
+const newSave = () => ({ gold: 0, shards: 0, dawnglass: 0, tree: {}, stats: { kills: 0, runs: 0, bestLevel: 0, totalGold: 0, killsByEnemy: {}, bossKills: {}, chapters: {}, evolved: {}, charsUsed: {}, tiers: {}, markedKills: 0, chests: 0, gems: 0, abilityUses: 0, blessingsTaken: 0 } });
+function loadPreset(k) {
+  const p = P.presets[k];
+  save = p ? JSON.parse(JSON.stringify({ gold: p.gold, shards: p.shards, dawnglass: p.dawnglass, tree: p.tree, stats: p.stats })) : newSave();
+  const t = {}; for (const [id, r] of Object.entries(save.tree || {})) if (Object.hasOwn(def.nodes, id)) t[id] = Math.max(0, Math.min(def.nodes[id].maxRank, r | 0)); save.tree = t; // untrusted preset: known ids only
+  recompute(); updateAll(); focusStart();
+}
+const owned = (id) => (save.tree[id] || 0) >= def.nodes[id].maxRank;
+const anyRank = (id) => (save.tree[id] || 0) >= 1;
+const regionAwake = (r) => !r.heart || anyRank(r.heart);
+const isNew = () => (save.stats.runs || 0) === 0 && !Object.keys(save.tree).length;
+
+function recompute() {
+  cache = Object.create(null);
+  let ownN = 0, total = 0;
+  for (const id of def.list) {
+    const n = def.nodes[id];
+    const d = HLT.describeNode(def, save, id, data);
+    let v, s;
+    if (d.state === 'owned') { v = 'owned'; s = 'lit'; }
+    else if (d.state === 'teaser') { v = 'fog'; s = 'fog'; }
+    else if (d.state === 'excluded') { v = 'closed'; s = 'notyet'; }
+    else if (d.state === 'available') { v = d.affordable ? 'afford' : 'short'; s = d.affordable ? 'ready' : 'open'; }
+    else if (d.state === 'condition') { v = 'cond'; s = 'challenge'; }
+    else { const r = regionByKey[regionOf[id]]; v = r && r.kind === 'cluster' && !regionAwake(r) && id !== r.heart ? 'dormant' : 'locked'; s = 'notyet'; }
+    cache[id] = { v, s, d, frac: d.cond ? d.cond.frac : 0, ready: (n.kind === 'socket' || n.kind === 'heart' || n.kind === 'gate') && d.state === 'available' && (save.tree[id] || 0) === 0 };
+    if (!n.teaser) { total++; if (anyRank(id)) ownN++; }
+  }
+  // CONNECTED-UNLOCK RULE (Matt 2026-10-21, PROPOSAL shown in the mock-up only; real rules unchanged): a lantern the rules would sell is
+  // buyable only if it touches something you own. Counted so the options sheet can report how many lanterns the rule holds back.
+  for (const r of regions) r.lit = r.ids.filter(anyRank).length;
+  let held = 0; const heldIds = [];
+  if (CONNECTED) for (const id of def.list) { const ce = cache[id]; if ((ce.s === 'ready' || ce.s === 'open' || ce.s === 'challenge') && !connected(id)) { ce.s = 'notyet'; ce.v = 'unreached'; held++; heldIds.push(id); } }
+  cache.__held = held; cache.__heldIds = heldIds;
+  for (const r of regions) { r.lit = r.ids.filter(anyRank).length; r.light = r.ids.filter((id) => cache[id].s === 'ready').length; r.done = r.ids.length > 0 && r.lit === r.ids.length; }
+  cache.__progress = total ? ownN / total : 0;
+  best = bestNext();
+}
+// connected = one of its links comes from something lit (the hub counts as lit). Exceptions as PROPOSED (Matt decides):
+//  - a hub link into a constellation starts at its heart: connected when the heart is lit (starter hearts are always lit);
+//  - a hub link into a tool group / ring lantern is a link from the hub lantern itself (always lit) -> group roots stay reachable;
+//  - a lantern with NO links at all (weapon hearts, evolution seals, night gates: requires [] by the locked permanent-gate rule) is treated as
+//    hanging from its own group: its constellation heart is lit (seals), or something in its group is lit / it is the group's first lantern.
+const wickLit = () => def.list.some((x) => { const n = def.nodes[x]; const d = Math.hypot(n.x, n.y); return regionOf[x] === 'r:rings' && d > T.rings.hearth + 60 && d <= T.rings.wick + 60 && anyRank(x); });
+function connected(id) {
+  const ps = parents.get(id) || []; const rg = regionByKey[regionOf[id]];
+  for (const p of ps) {
+    if (p === 'hub') {
+      if (rg && rg.kind === 'cluster' && rg.heartAt && rg.heart !== id) { if (regionAwake(rg)) return true; continue; }
+      const n = def.nodes[id]; const d = Math.hypot(n.x, n.y);
+      if (d <= T.rings.wick + 60 || (rg && rg.kind === 'cluster')) return true; // next to the hub, or a weapon heart (proposed exception)
+      // far group roots (tool groups, hero lanterns, far ring lanterns) hang from 'hub' in today's data: PROPOSED bridge = they open once a
+      // Wick-ring lantern (the outer hub ring) is lit; the real fix is a bridge lantern in the data (Matt decides)
+      if (wickLit()) return true; continue;
+    }
+    else if (anyRank(p)) return true;
+  }
+  if (ps.length) return false;
+  if (!rg) return true;
+  if (rg.kind === 'cluster') return rg.heart === id || regionAwake(rg);
+  return true; // a parentless lantern in a group / the rings hangs from the hub
+}
+const affordList = () => def.list.filter((id) => cache[id].s === 'ready');
+const costOf = (id) => (cache[id].d.next ? cache[id].d.next.gold || 0 : 0);
+
+// ---------------------------------------------------------------- BEST NEXT (review finding 1): one marker, a fixed priority order, one "why" line
+function ancestors(id) { const out = new Set(); const st = [id]; while (st.length) { const x = st.pop(); for (const p of parents.get(x) || []) if (p !== 'hub' && !out.has(p)) { out.add(p); st.push(p); } } return out; }
+function whyOf(id, tier) {
+  const n = def.nodes[id]; const r = regionByKey[regionOf[id]]; const fx = n.effects || [];
+  if (tier === 0) return 'On the way to your pinned goal';
+  if (n.kind === 'heart') return 'Wakes a new spirit for your runs';
+  if (n.kind === 'socket') return 'Opens a new evolution';
+  if (n.kind === 'gate') return 'Opens a harder night with better rewards';
+  if (n.kind === 'key') return 'A keystone: changes how your runs play';
+  if (fx.some((e) => e.unlock === 'rerolls')) return 'Lets you reroll level-up cards';
+  if (fx.some((e) => e.unlock === 'banishes')) return 'Lets you banish a card you never want';
+  if (fx.some((e) => e.unlock)) return 'Unlocks a new option';
+  if (n.kind === 'hero') return 'A new trick for your hero';
+  if (n.kind === 'bead' || n.kind === 'verb' || n.kind === 'status' || n.kind === 'kin') return 'Changes what your spirits do';
+  if (tier === 2 && r) return `Nearly completes ${r.name}`;
+  return 'The cheapest step forward';
+}
+function bestNext() {
+  const a = affordList(); if (!a.length) return null;
+  const pinAnc = new Set(); for (const p of pins || []) if (Object.hasOwn(def.nodes, p) && !owned(p)) { pinAnc.add(p); for (const x of ancestors(p)) pinAnc.add(x); }
+  const OPTK = new Set(['heart', 'socket', 'gate', 'key', 'hero', 'bead', 'verb', 'status', 'kin']);
+  const tierOf = (id) => {
+    const n = def.nodes[id]; const r = regionByKey[regionOf[id]];
+    if (pinAnc.has(id)) return 0;
+    if (OPTK.has(n.kind) || (n.effects || []).some((e) => e.unlock)) return 1;
+    if (r && r.ids.length && r.lit >= r.ids.length - 2) return 2;
+    return 3;
+  };
+  let bi = null, bt = 9, bc = Infinity;
+  for (const id of a) { const t = tierOf(id), c = costOf(id); if (t < bt || (t === bt && c < bc)) { bi = id; bt = t; bc = c; } }
+  return { id: bi, tier: bt, why: whyOf(bi, bt) };
+}
+
+// ---------------------------------------------------------------- camera
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); dirty(); }
+const toS = (x, y) => [(x - cam.x) * cam.z + W / 2, (y - cam.y) * cam.z + H / 2];
+const toW = (sx, sy) => [(sx - W / 2) / cam.z + cam.x, (sy - H / 2) / cam.z + cam.y];
+const clampZ = (z) => Math.max(0.03, Math.min(2.6, z));
+const portrait = () => matchMedia('(max-width:600px) and (orientation:portrait)').matches;
+const landscapePh = () => matchMedia('(max-height:500px) and (orientation:landscape)').matches;
+// the part of the screen the map really has (not under the toolbar, strip, panel, checklist or step bar)
+function freeRect() {
+  let x0 = 0, y0 = $('title').parentElement.getBoundingClientRect().bottom, x1 = W, y1 = H;
+  const gs = $('gstrip'); if (getComputedStyle(gs).display !== 'none') y0 = gs.getBoundingClientRect().bottom;
+  const cover = (el) => { if (getComputedStyle(el).display === 'none') return; const b = el.getBoundingClientRect(); if (b.width > W * 0.8) y1 = Math.min(y1, b.top); else if (b.left > W / 2) x1 = Math.min(x1, b.left); else x0 = Math.max(x0, b.right); };
+  cover($('panel')); cover($('todo'));
+  for (const id of ['step', 'ffoot']) { const el = $(id); if (getComputedStyle(el).display !== 'none') y1 = Math.min(y1, el.getBoundingClientRect().top); }
+  return [x0, y0, x1, y1];
+}
+let fly = null;
+function flyTo(x, y, z) {
+  const [x0, y0, x1, y1] = freeRect(); const fx = (x0 + x1) / 2, fy = (y0 + y1) / 2;
+  const tz = clampZ(z ?? cam.z);
+  const tx = x - (fx - W / 2) / tz, ty = y - (fy - H / 2) / tz;
+  if (reduced) { cam.x = tx; cam.y = ty; cam.z = tz; dirty(); return; }
+  fly = { t0: performance.now(), from: { ...cam }, to: { x: tx, y: ty, z: tz } }; dirty();
+}
+function fitBox(b, pad = 1.08, zmax = 1.4) { const [x0, y0, x1, y1] = freeRect(); const z = Math.min(zmax, Math.min((x1 - x0) / ((b[2] - b[0]) * pad), (y1 - y0) / ((b[3] - b[1]) * pad))); flyTo((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, z); }
+function webBox() { let r = 0; for (const id of def.list) { const n = def.nodes[id]; r = Math.max(r, Math.hypot(n.x, n.y)); } if (OPT !== 'c') r = Math.max(r, T.rings.far + 200); else r += 120; return [-r, -r, r, r]; }
+function fitAll() { fitBox(webBox(), 1.02, 2); }
+function focusStart() {
+  if (OPT === 'c') { setFocus(null, true); return; }
+  if (best) { const n = def.nodes[best.id]; const [x0, y0, x1, y1] = freeRect(); cam.z = Math.max(0.55, Math.min(x1 - x0, y1 - y0) / 900); cam.x = n.x - ((x0 + x1) / 2 - W / 2) / cam.z; cam.y = n.y - ((y0 + y1) / 2 - H / 2) / cam.z; }
+  else { const [x0, y0, x1, y1] = freeRect(); cam.z = Math.min(x1 - x0, y1 - y0) / 1100; cam.x = -((x0 + x1) / 2 - W / 2) / cam.z; cam.y = -((y0 + y1) / 2 - H / 2) / cam.z; }
+  dirty();
+}
+
+// ---------------------------------------------------------------- option C: sky overview <-> focus
+function setFocus(key, instant) {
+  focusKey = key; selected = null; panelMode = null; syncPanel();
+  document.body.classList.toggle('focus', !!key); document.body.classList.toggle('over', !key);
+  const r = key && regionByKey[key];
+  $('title').textContent = r ? r.name : 'The Lantern Web';
+  if (r) renderFoot();
+  const was = reduced; if (instant) reduced = true;
+  requestAnimationFrame(() => {}); // layout of the checklist/footer is known synchronously below
+  if (r) fitBox(r.box, 1.1, 1.6); else fitBox(webBox(), 1.0, 2);
+  reduced = was;
+  renderTodo(); dirty();
+}
+const KORD = { rings: 0, cluster: 1, tool: 2 };
+function regionOrder() { return regions.filter((r) => r.ids.length).sort((a, b) => (KORD[a.kind] - KORD[b.kind]) || (Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x))); }
+function stepFocus(d) { const o = regionOrder(); const i = o.findIndex((r) => r.key === focusKey); setFocus(o[(i + d + o.length) % o.length].key); }
+function renderFoot() {
+  const r = regionByKey[focusKey]; if (!r) return;
+  const here = r.ids.filter((id) => cache[id].s === 'ready');
+  $('ffootText').textContent = `${r.lit}/${r.ids.length} lit` + (here.length ? ` · ${here.length} can light here` : r.light === 0 && best ? ` · best next is in ${regionByKey[regionOf[best.id]].name}` : '');
+}
+
+// ---------------------------------------------------------------- drawing
+let raf = 0;
+function dirty() { if (!raf) raf = requestAnimationFrame(frame); }
+function frame(t) {
+  raf = 0;
+  if (fly) {
+    const k = Math.min(1, (t - fly.t0) / 420); const e = 1 - Math.pow(1 - k, 3);
+    cam.x = fly.from.x + (fly.to.x - fly.from.x) * e; cam.y = fly.from.y + (fly.to.y - fly.from.y) * e;
+    cam.z = Math.exp(Math.log(fly.from.z) + (Math.log(fly.to.z) - Math.log(fly.from.z)) * e);
+    if (k >= 1) fly = null;
+  }
+  draw(t); placeOverlays();
+  if (fly || anims.length || (!reduced && document.visibilityState === 'visible')) raf = requestAnimationFrame(frame);
+}
+const hexA = (hex, a) => { const v = parseInt(hex.slice(1), 16); return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; };
+function colorOf(id) { const r = regionByKey[regionOf[id]]; return r && r.kind === 'cluster' ? r.color : '#ffd9a0'; }
+const inFocus = (id) => OPT !== 'c' || regionOf[id] === focusKey;
+let lodNow = 'mid';
+
+function draw(t) {
+  const c = ctx; c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const p = cache.__progress || 0; const z = cam.z;
+  const lod = lodNow = z < LOD.far ? 'far' : z < LOD.near ? 'mid' : 'near';
+  // background: plain dusk, warmer as the tree fills (The Hollow remembers). NO guide rings, NO grid, NO band circles.
+  const g = c.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.hypot(W, H) / 1.5);
+  g.addColorStop(0, `rgb(${18 + 14 * p},${24 + 10 * p},${38 + 4 * p})`); g.addColorStop(1, `rgb(${8 + 6 * p},${11 + 5 * p},${19 + 3 * p})`);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const pulse = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 420);
+  if (OPT === 'c' && !focusKey) { drawSkyMap(t, pulse); return; }
+  const [hx, hy] = toS(0, 0);
+  if (OPT !== 'c' || focusKey === 'r:rings') {
+    const R = (240 + 260 * p) * z + 20; const pool = c.createRadialGradient(hx, hy, 0, hx, hy, R);
+    pool.addColorStop(0, `rgba(255,179,90,${0.16 + 0.26 * p})`); pool.addColorStop(1, 'rgba(255,154,58,0)');
+    c.fillStyle = pool; c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
+  }
+  if (OPT !== 'c') drawFarSlots(lod);
+  drawRegions(lod);
+  const vx0 = cam.x - W / 2 / z - 80, vx1 = cam.x + W / 2 / z + 80, vy0 = cam.y - H / 2 / z - 80, vy1 = cam.y + H / 2 / z + 80;
+  const inV = (n) => n.x >= vx0 && n.x <= vx1 && n.y >= vy0 && n.y <= vy1;
+  drawLinks(lod, inV);
+  if (selected) drawChain(selected, lod);
+  // display sockets (starter evolutions)
+  for (const r of regions) { if (OPT === 'c' && r.key !== focusKey) continue; for (const s of r.display || []) { const [sx, sy] = toS(s.x, s.y); seal(sx, sy, Math.max(lod === 'far' ? 2.5 : 6, 15 * z), 'gold'); } }
+  // nodes
+  const labels = [];
+  for (const id of def.list) {
+    const n = def.nodes[id]; if (!inV(n) || !inFocus(id)) continue;
+    const ce = cache[id]; const s = ce.s;
+    if (s === 'fog' && lod !== 'near') continue;
+    const [sx, sy] = toS(n.x, n.y);
+    let r = Math.max(lod === 'far' ? 2.2 : 4.5, (KIND_R[n.kind] || 8) * z * 1.15);
+    if (lod === 'far' && s === 'challenge') { c.fillStyle = '#6fd3c5'; c.beginPath(); c.arc(sx, sy, 2.4, 0, 7); c.fill(); continue; }
+    if (lod === 'far' && s === 'notyet') { c.fillStyle = 'rgba(150,160,190,.30)'; c.beginPath(); c.arc(sx, sy, 1.4, 0, 7); c.fill(); continue; }
+    const dimmed = onlyLight && s !== 'ready';
+    c.globalAlpha = dimmed ? 0.2 : 1;
+    if (s === 'ready') affordMark(sx, sy, r, pulse, lod === 'far', best && best.id === id);
+    nodeShape(n, sx, sy, r, s, ce, id, lod);
+    if (ce.ready && lod !== 'far') newFlag(sx, sy - r - 9);
+    if (selected === id) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(sx, sy, r + 10, 0, 7); c.stroke(); c.setLineDash([]); }
+    c.globalAlpha = 1;
+    labels.push({ id, x: sx, y: sy, r, s });
+  }
+  drawLabels(labels, lod);
+  drawRegionNames(lod);
+  // hub lantern
+  if (OPT !== 'c' || focusKey === 'r:rings') {
+    const lr = Math.max(8, 26 * z);
+    const hl = c.createRadialGradient(hx, hy - lr * 0.2, 0, hx, hy, lr * 1.8);
+    hl.addColorStop(0, `rgba(255,244,208,${0.6 + 0.4 * p})`); hl.addColorStop(0.5, `rgba(255,199,102,${0.35 + 0.5 * p})`); hl.addColorStop(1, 'rgba(255,154,46,0)');
+    c.fillStyle = hl; c.beginPath(); c.arc(hx, hy, lr * 1.8, 0, 7); c.fill();
+    c.strokeStyle = '#d8b26a'; c.lineWidth = Math.max(1.5, 3 * z); c.beginPath(); c.arc(hx, hy, lr * 0.75, 0, 7); c.stroke();
+    if (lod === 'far' && !lastRB.some((b) => b.x0 < hx + 90 && b.x1 > hx - 90 && b.y0 < hy + (T.rings.wick + 50) * z + 16 && b.y1 > hy + (T.rings.wick + 50) * z)) { c.font = '13px AS'; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(`The Hollow remembers: ${Math.round(p * 100)}%`, hx, hy + (T.rings.wick + 50) * z); }
+  }
+  if (best && inFocus(best.id)) drawBestMarker(t, lod);
+  const now = performance.now();
+  anims = anims.filter((a) => now - a.t0 < 650);
+  for (const a of anims) { const k = (now - a.t0) / 650; const [sx, sy] = toS(a.x, a.y); c.strokeStyle = `rgba(255,246,224,${1 - k})`; c.lineWidth = 3; c.beginPath(); c.arc(sx, sy, 10 + 50 * k, 0, 7); c.stroke(); }
+}
+
+// reserved far slots + the unreached band: a soft mist with one "?" (no dashed circles, no ring lines, no fog annulus)
+function drawFarSlots(lod) {
+  const c = ctx; const z = cam.z;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  for (const [x, y] of T.farFree) {
+    const [sx, sy] = toS(x, y); const r = Math.max(16, 90 * z);
+    const m = c.createRadialGradient(sx, sy, 0, sx, sy, r); m.addColorStop(0, 'rgba(163,172,194,.10)'); m.addColorStop(1, 'rgba(163,172,194,0)');
+    c.fillStyle = m; c.beginPath(); c.arc(sx, sy, r, 0, 7); c.fill();
+    c.fillStyle = 'rgba(179,187,207,.55)'; c.font = `${Math.max(13, 34 * z)}px HLC`; c.fillText('?', sx, sy);
+  }
+  if (lod === 'far') {
+    const [lx, ly] = toS(0, -(T.rings.bandR0 + T.rings.bandW * 0.35));
+    if (ly > 70 && ly < H - 20) { c.font = '14px AS'; c.fillStyle = 'rgba(179,187,207,.85)'; c.fillText('Beyond: parts of the Hollow you have not reached', lx, ly); }
+  }
+}
+function drawRegions(lod) {
+  const c = ctx; const z = cam.z;
+  for (const r of regions) {
+    if (OPT === 'c' && r.key !== focusKey) continue;
+    const [sx, sy] = toS(r.x, r.y);
+    if (sx < -r.r * z * 2 || sx > W + r.r * z * 2 || sy < -r.r * z * 2 || sy > H + r.r * z * 2) continue;
+    const frac = r.ids.length ? r.lit / r.ids.length : 0; const awake = regionAwake(r);
+    if (r.path) {
+      c.save(); c.translate(sx, sy); c.scale(z, z);
+      if (OPT === 'b') {
+        // B: the emblem IS the picture: stronger fill, a role-colour outline that brightens as it fills (no lines between lanterns)
+        c.fillStyle = r.done ? hexA(r.color, 0.34) : awake ? hexA(r.color, 0.09 + 0.22 * frac) : 'rgba(120,128,150,.09)';
+        c.fill(r.path);
+        if (awake || r.done) { c.lineWidth = 2.5 / z; c.strokeStyle = hexA(r.color, r.done ? 0.95 : 0.3 + 0.55 * frac); if (r.done && !reduced) { c.shadowColor = r.color; c.shadowBlur = 18; } c.stroke(r.path); }
+      } else {
+        // A / C focus: a soft watermark; its outline only appears when the constellation is complete (completion lighting)
+        c.fillStyle = r.done ? hexA(r.color, 0.30) : awake ? hexA(r.color, 0.05 + 0.16 * frac) : 'rgba(120,128,150,.06)';
+        c.fill(r.path);
+        if (r.done) { c.lineWidth = 2 / z; c.strokeStyle = hexA(r.color, 0.9); if (!reduced) { c.shadowColor = r.color; c.shadowBlur = 18; } c.stroke(r.path); }
+      }
+      c.restore();
+    } else if (r.kind === 'tool') {
+      const R = r.r * z; const m = c.createRadialGradient(sx, sy, 0, sx, sy, R);
+      m.addColorStop(0, `rgba(243,220,174,${0.04 + 0.08 * frac})`); m.addColorStop(1, 'rgba(243,220,174,0)');
+      c.fillStyle = m; c.beginPath(); c.arc(sx, sy, R, 0, 7); c.fill();
+    }
+  }
+}
+// LINKS
+//  A: lit trails between lit lanterns + a short fading spark from a lit lantern toward each open/can-light one; everything else hidden.
+//     Lanterns around the hub get a straight ray from the hub (radial: never crosses). Far prerequisites are never drawn (shown on select).
+//  B: no links at all (the emblem carries the shape; select shows the path).
+//  C: inside the focused group only, every link as a gentle curve in three weights; links leaving the group end in a short stub.
+function drawLinks(lod, inV) {
+  if (OPT === 'b' || lod === 'far') return;
+  const c = ctx; const z = cam.z; c.lineCap = 'round';
+  const nearHub = (n) => Math.hypot(n.x, n.y) <= T.rings.wick + 60;
+  for (const e of def.edges) {
+    const b = def.nodes[e.to]; if (!inFocus(e.to)) continue;
+    const sb = cache[e.to].s;
+    let a, aLit;
+    if (e.from === 'hub') {
+      const r = regionByKey[regionOf[e.to]];
+      if (r && r.kind === 'cluster' && r.heartAt) { if (r.heart === e.to) continue; a = { x: r.heartAt[0], y: r.heartAt[1] }; aLit = regionAwake(r); }
+      else if (r && r.kind === 'tool') { a = { x: r.x, y: r.y }; aLit = true; }
+      else if (nearHub(b)) { a = { x: 0, y: 0 }; aLit = true; }
+      else continue;
+    } else { a = def.nodes[e.from]; aLit = anyRank(e.from); }
+    if (!inV(a) && !inV(b)) continue;
+    const len = Math.hypot(a.x - b.x, a.y - b.y);
+    const [ax, ay] = toS(a.x, a.y), [bx, by] = toS(b.x, b.y);
+    const bLit = anyRank(e.to);
+    if (OPT === 'a') {
+      if (len > LINK_FAR) continue;
+      if (e.from !== 'hub' && nearHub(a) && nearHub(b)) { // hub area: draw radial rays from the hub instead of criss-cross ring threads
+        continue;
+      }
+      if (aLit && bLit) trail(ax, ay, bx, by, colorOf(e.to), z);
+      else if (aLit && (sb === 'ready' || sb === 'open' || sb === 'challenge')) spark(ax, ay, bx, by, sb === 'ready' ? 'rgba(255,246,224,.85)' : sb === 'open' ? 'rgba(216,178,106,.7)' : 'rgba(111,211,197,.7)', z);
+    } else { // C
+      const other = e.from !== 'hub' && regionOf[e.from] !== focusKey;
+      if (other) { stub(bx, by, ax, ay, regionByKey[regionOf[e.from]], lod); continue; }
+      if (aLit && bLit) trail(ax, ay, bx, by, colorOf(e.to), z, true);
+      else { c.setLineDash(sb === 'notyet' || sb === 'fog' ? [3, 5] : []); c.strokeStyle = sb === 'ready' ? 'rgba(255,246,224,.75)' : sb === 'open' ? 'rgba(216,178,106,.6)' : 'rgba(150,160,190,.30)'; c.lineWidth = sb === 'notyet' ? 1 : 1.6; curve(ax, ay, bx, by); c.stroke(); c.setLineDash([]); }
+    }
+  }
+  if (OPT === 'a' || focusKey === 'r:rings') { // hub rays for lit lanterns around the hub
+    for (const id of def.list) {
+      const n = def.nodes[id]; if (!nearHub(n) || !inFocus(id) || regionOf[id] !== 'r:rings') continue;
+      const s = cache[id].s; if (s !== 'lit' && s !== 'ready' && s !== 'open') continue;
+      const [hx, hy] = toS(0, 0), [bx, by] = toS(n.x, n.y); const k = 30 * z / Math.max(1, Math.hypot(bx - hx, by - hy));
+      const ax = hx + (bx - hx) * k, ay = hy + (by - hy) * k;
+      if (s === 'lit') trail(ax, ay, bx, by, '#ffd9a0', z); else spark(ax, ay, bx, by, s === 'ready' ? 'rgba(255,246,224,.7)' : 'rgba(216,178,106,.55)', z);
+    }
+  }
+}
+function curve(ax, ay, bx, by) { const c = ctx; const mx = (ax + bx) / 2, my = (ay + by) / 2; const dx = bx - ax, dy = by - ay; c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(mx - dy * 0.12, my + dx * 0.12, bx, by); }
+function trail(ax, ay, bx, by, col, z, curved) {
+  const c = ctx;
+  c.strokeStyle = hexA(col, 0.35); c.lineWidth = Math.max(3, 7 * z); if (curved) curve(ax, ay, bx, by); else { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); } c.stroke();
+  c.strokeStyle = 'rgba(255,240,205,.92)'; c.lineWidth = Math.max(1.4, 2.2 * z); c.stroke();
+}
+function spark(ax, ay, bx, by, col, z) { // a short lit stub that fades out: "the light reaches toward this one"
+  const c = ctx; const ex = ax + (bx - ax) * 0.62, ey = ay + (by - ay) * 0.62;
+  const g = c.createLinearGradient(ax, ay, ex, ey); g.addColorStop(0, col); g.addColorStop(1, col.replace(/[\d.]+\)$/, '0)'));
+  c.strokeStyle = g; c.lineWidth = Math.max(1.4, 2 * z); c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke();
+}
+function stub(bx, by, ax, ay, r, lod) { // C: a link to another group = a short arrow + the group's name
+  const c = ctx; const d = Math.hypot(ax - bx, ay - by) || 1; const ux = (ax - bx) / d, uy = (ay - by) / d; const L = 34;
+  c.strokeStyle = 'rgba(216,178,106,.7)'; c.lineWidth = 1.5; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + ux * L, by + uy * L); c.stroke(); c.setLineDash([]);
+  if (lod !== 'far' && r) { c.font = '12px AS'; c.fillStyle = 'rgba(245,223,174,.95)'; c.textAlign = ux > 0 ? 'left' : 'right'; c.textBaseline = 'middle'; c.fillText(`from ${r.name}`, bx + ux * (L + 4), by + uy * (L + 4)); }
+}
+// On select (A, B, C): the route from what you own to this lantern lights up as a dotted brass path, including far prerequisites.
+function drawChain(id, lod) {
+  const c = ctx; const seen = new Set(); const st = [id]; let k = 0;
+  c.setLineDash([2, 5]); c.lineWidth = 2; c.strokeStyle = 'rgba(245,223,174,.85)';
+  while (st.length && k++ < 40) {
+    const x = st.pop(); if (seen.has(x)) continue; seen.add(x);
+    for (const pid of parents.get(x) || []) {
+      if (pid === 'hub') continue;
+      const a = def.nodes[pid], b = def.nodes[x]; const [ax, ay] = toS(a.x, a.y), [bx, by] = toS(b.x, b.y);
+      curve(ax, ay, bx, by); c.stroke();
+      if (!anyRank(pid)) st.push(pid);
+    }
+  }
+  c.setLineDash([]);
+}
+// CAN LIGHT NOW (locked): candle-white ring + 8 rays on every affordable lantern; the warm halo is reserved for the ONE best-next lantern
+function affordMark(x, y, r, pulse, far, isBest) {
+  const c = ctx;
+  if (isBest || far) { const R = r + (far ? 6 : 12); const h = c.createRadialGradient(x, y, r * 0.6, x, y, R + 8 * pulse); h.addColorStop(0, 'rgba(255,179,90,.6)'); h.addColorStop(1, 'rgba(255,179,90,0)'); c.fillStyle = h; c.beginPath(); c.arc(x, y, R + 8 * pulse, 0, 7); c.fill(); }
+  if (far) return;
+  c.strokeStyle = '#fff6e0'; c.lineWidth = 2;
+  for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; const r0 = r + 4, r1 = r + 8 + 2 * pulse; c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); c.stroke(); }
+}
+function newFlag(x, y) { const c = ctx; c.font = 'bold 11px AS'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#6fd3c5'; c.beginPath(); c.roundRect ? c.roundRect(x - 17, y - 7, 34, 14, 7) : c.rect(x - 17, y - 7, 34, 14); c.fill(); c.fillStyle = '#0c1220'; c.fillText('NEW', x, y + 0.5); }
+function seal(x, y, r, mode) {
+  const c = ctx; c.beginPath();
+  for (let i = 0; i <= 24; i++) { const a = (i / 24) * Math.PI * 2; const rr = r * (i % 2 ? 0.9 : 1); c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  c.closePath();
+  const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r);
+  if (mode === 'gold') { g.addColorStop(0, '#fff2b8'); g.addColorStop(0.55, '#ffcf5a'); g.addColorStop(1, '#b47c1e'); c.fillStyle = g; c.fill(); c.fillStyle = '#7a4f12'; star(x, y, r * 0.45, 5); c.fill(); }
+  else { g.addColorStop(0, '#6e768b'); g.addColorStop(1, '#2e3342'); c.fillStyle = g; c.fill(); }
+}
+function star(x, y, r, k) { const c = ctx; c.beginPath(); for (let i = 0; i < k * 2; i++) { const a = -Math.PI / 2 + (i * Math.PI) / k; const rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); }
+function bodyPath(n, x, y, r) {
+  const c = ctx; c.beginPath();
+  if (n.kind === 'mastery') star(x, y, r * 1.15, 5);
+  else if (n.kind === 'key') { c.moveTo(x, y - r * 1.2); c.quadraticCurveTo(x + r, y - r * 0.1, x, y + r); c.quadraticCurveTo(x - r, y - r * 0.1, x, y - r * 1.2); }
+  else if (n.kind === 'gate') { for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + (i * Math.PI) / 3; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); }
+  else c.arc(x, y, r, 0, 7);
+}
+function progressArc(x, y, r, f) { const c = ctx; c.strokeStyle = 'rgba(111,211,197,.22)'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); if (f > 0) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2.6; c.beginPath(); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); c.stroke(); } }
+// NODE SHAPES: same silhouette per kind in every option; the state look differs per option.
+function nodeShape(n, x, y, r, s, ce, id, lod) {
+  const c = ctx; const col = colorOf(id); const small = r < 6;
+  if (s === 'fog') { bodyPath(n, x, y, r * 0.8); c.fillStyle = 'rgba(20,26,40,.6)'; c.fill(); c.fillStyle = 'rgba(179,187,207,.85)'; c.font = `${Math.max(11, r)}px HLC`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', x, y + 1); return; }
+  if (n.kind === 'socket') {
+    if (s === 'lit') { seal(x, y, r, 'gold'); return; }
+    seal(x, y, s === 'notyet' ? r * 0.75 : r, 'wax');
+    if (s === 'notyet') { if (OPT === 'c' && r >= 8) glyph(x, y, r * 0.75, s); return; }
+    if (s === 'challenge') { progressArc(x, y, r + 3, ce.frac); if (ce.d.masked && r > 8) { c.fillStyle = '#c8cee0'; c.font = `bold ${Math.max(10, r * 0.7)}px AS`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', x, y + 1); } }
+    else { c.strokeStyle = s === 'ready' ? '#fff6e0' : '#d8b26a'; c.lineWidth = 2.5; c.beginPath(); c.arc(x, y, r + 2, 0, 7); c.stroke(); }
+    if (OPT === 'c' && r >= 8) glyph(x, y, r, s);
+    return;
+  }
+  if (s === 'lit') {
+    bodyPath(n, x, y, r);
+    if (small) c.fillStyle = col; else { const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r * 1.2); g.addColorStop(0, '#fffaf0'); g.addColorStop(0.5, col); g.addColorStop(1, hexA(col, 0.7)); c.fillStyle = g; }
+    if (!reduced && lod === 'near') { c.shadowColor = col; c.shadowBlur = 12; } c.fill(); c.shadowBlur = 0;
+    c.strokeStyle = '#fff3dc'; c.lineWidth = 1.2; c.stroke();
+    if (OPT === 'c' && r >= 8) glyph(x, y, r, s);
+    return;
+  }
+  if (s === 'challenge') { // CHALLENGE: connected, waiting on a condition: full size, teal progress ring (pinnable goal)
+    bodyPath(n, x, y, r);
+    if (OPT === 'b') { c.strokeStyle = 'rgba(111,211,197,.7)'; c.lineWidth = 1.4; c.stroke(); }
+    else { c.fillStyle = '#16252c'; c.fill(); c.strokeStyle = 'rgba(111,211,197,.55)'; c.lineWidth = 1.2; c.stroke(); }
+    progressArc(x, y, r + 3, ce.frac);
+    if (n.kind === 'heart') { c.strokeStyle = hexA(col, 0.6); c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, r * 0.62, 0, 7); c.stroke(); }
+    if (OPT === 'c' && r >= 8) glyph(x, y, r, s);
+    ranks(n, id, x, y, r);
+    return;
+  }
+  if (s === 'notyet') {
+    const goal = false;
+    if (OPT === 'a') { // A: a small quiet bead; goal lanterns keep full size + teal progress
+      const rr = goal ? r : Math.max(3, r * 0.6);
+      bodyPath(n, x, y, rr); c.fillStyle = '#1a2131'; c.fill(); c.strokeStyle = 'rgba(130,140,165,.6)'; c.lineWidth = 1; c.stroke();
+      if (goal) progressArc(x, y, rr + 3, ce.frac);
+    } else if (OPT === 'b') { // B: a hollow outline only
+      const rr = goal ? r : Math.max(3, r * 0.75);
+      bodyPath(n, x, y, rr); c.strokeStyle = 'rgba(150,160,190,.45)'; c.lineWidth = 1.2; c.stroke();
+      if (goal) progressArc(x, y, rr + 3, ce.frac);
+    } else { // C: full size, dark, with a moon glyph
+      bodyPath(n, x, y, r); c.fillStyle = '#1a2131'; c.fill(); c.strokeStyle = 'rgba(130,140,165,.7)'; c.lineWidth = 1.2; c.stroke();
+      if (goal) progressArc(x, y, r + 3, ce.frac);
+      if (r >= 8) glyph(x, y, r, s);
+    }
+    ranks(n, id, x, y, r);
+    return;
+  }
+  // ready / open: dark glass body
+  bodyPath(n, x, y, r);
+  if (small) c.fillStyle = '#222b3e'; else { const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r); g.addColorStop(0, '#3a4866'); g.addColorStop(1, '#141a28'); c.fillStyle = g; }
+  if (OPT === 'b' && s === 'open') { c.strokeStyle = 'rgba(150,160,190,.6)'; c.lineWidth = 1.4; c.stroke(); coinPip(x + r * 0.75, y - r * 0.75, Math.max(3, r * 0.32)); ranks(n, id, x, y, r); return; }
+  c.fill();
+  c.strokeStyle = s === 'ready' ? '#fff6e0' : '#d8b26a'; c.lineWidth = s === 'ready' ? 2.6 : 1.8; c.stroke();
+  if (n.kind === 'heart') { c.strokeStyle = hexA(col, 0.7); c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, r * 0.62, 0, 7); c.stroke(); }
+  if (OPT === 'c' && r >= 8) glyph(x, y, r, s);
+  ranks(n, id, x, y, r);
+}
+function ranks(n, id, x, y, r) { if (n.maxRank <= 1 || cam.z <= 0.5) return; const c = ctx; const rk = save.tree[id] || 0; for (let i = 0; i < n.maxRank; i++) { const a = -Math.PI / 2 + ((i - (n.maxRank - 1) / 2) * 0.5); c.fillStyle = i < rk ? '#fff3dc' : 'rgba(163,172,194,.5)'; c.beginPath(); c.arc(x + Math.cos(a) * (r + 5), y + Math.sin(a) * (r + 5), 2, 0, 7); c.fill(); } }
+function coinPip(x, y, r) { const c = ctx; c.fillStyle = '#d8b26a'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.strokeStyle = '#5a3f14'; c.lineWidth = 1; c.stroke(); }
+// C: an icon inside every lantern so the state never relies on colour (tick / flame / coin / moon)
+function glyph(x, y, r, s) {
+  const c = ctx; const k = r * 0.45; c.lineWidth = Math.max(1.4, r * 0.14); c.lineCap = 'round';
+  if (s === 'lit') { c.strokeStyle = '#2a1608'; c.beginPath(); c.moveTo(x - k, y); c.lineTo(x - k * 0.25, y + k * 0.7); c.lineTo(x + k, y - k * 0.6); c.stroke(); }
+  else if (s === 'ready') { c.fillStyle = '#ffcf7a'; c.beginPath(); c.moveTo(x, y - k * 1.2); c.quadraticCurveTo(x + k, y, x, y + k); c.quadraticCurveTo(x - k, y, x, y - k * 1.2); c.fill(); }
+  else if (s === 'open') { c.fillStyle = '#d8b26a'; c.beginPath(); c.arc(x, y, k * 0.75, 0, 7); c.fill(); c.strokeStyle = '#5a3f14'; c.lineWidth = 1; c.stroke(); }
+  else if (s === 'challenge') { c.strokeStyle = '#6fd3c5'; c.lineWidth = Math.max(1.2, r * 0.1); c.beginPath(); c.moveTo(x - k * 0.6, y + k); c.lineTo(x - k * 0.6, y - k); c.stroke(); c.fillStyle = '#6fd3c5'; c.beginPath(); c.moveTo(x - k * 0.6, y - k); c.lineTo(x + k, y - k * 0.5); c.lineTo(x - k * 0.6, y); c.closePath(); c.fill(); }
+  else { c.fillStyle = 'rgba(179,187,207,.8)'; c.beginPath(); c.arc(x, y, k * 0.8, 0, 7); c.fill(); c.fillStyle = '#1a2131'; c.beginPath(); c.arc(x + k * 0.35, y - k * 0.2, k * 0.7, 0, 7); c.fill(); }
+}
+// BEST NEXT marker
+function drawBestMarker(t, lod) {
+  const n = def.nodes[best.id]; const [x, y] = toS(n.x, n.y); const c = ctx;
+  if (x < 0 || x > W || y < 0 || y > H) return;
+  const r = Math.max(lod === 'far' ? 2.2 : 4.5, (KIND_R[n.kind] || 8) * cam.z * 1.15);
+  const bob = reduced ? 0 : Math.sin(t / 380) * 3;
+  if (OPT === 'a') { // a lantern pin hovering over the node
+    const py = y - r - 16 + bob;
+    c.fillStyle = '#fff6e0'; c.beginPath(); c.moveTo(x, py + 12); c.quadraticCurveTo(x - 10, py, x - 9, py - 6); c.arc(x, py - 6, 9, Math.PI, 0); c.quadraticCurveTo(x + 10, py, x, py + 12); c.fill();
+    c.fillStyle = '#e3842a'; c.beginPath(); c.moveTo(x, py - 12); c.quadraticCurveTo(x + 5, py - 5, x, py - 1); c.quadraticCurveTo(x - 5, py - 5, x, py - 12); c.fill();
+  } else if (OPT === 'b') { // the guide wisp circles the lantern
+    const a = reduced ? -0.8 : t / 600; const wx = x + Math.cos(a) * (r + 16), wy = y + Math.sin(a) * (r + 16) * 0.8;
+    for (let i = 4; i >= 0; i--) { const aa = a - i * 0.18; const tx = x + Math.cos(aa) * (r + 16), ty = y + Math.sin(aa) * (r + 16) * 0.8; c.fillStyle = `rgba(255,214,150,${0.12 * (5 - i) / 5})`; c.beginPath(); c.arc(tx, ty, 5 - i * 0.6, 0, 7); c.fill(); }
+    const g = c.createRadialGradient(wx, wy, 0, wx, wy, 12); g.addColorStop(0, '#fffbe8'); g.addColorStop(0.4, 'rgba(255,214,150,.8)'); g.addColorStop(1, 'rgba(255,179,90,0)'); c.fillStyle = g; c.beginPath(); c.arc(wx, wy, 12, 0, 7); c.fill();
+  } else { // C: a numbered "1" badge (matches the checklist)
+    const bx = x + r + 6, by = y - r - 6; c.fillStyle = '#fff6e0'; c.beginPath(); c.arc(bx, by, 10, 0, 7); c.fill(); c.fillStyle = '#3a2412'; c.font = 'bold 13px AS'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('1', bx, by + 1);
+  }
+}
+// LABELS (declutter)
+//  A: far = no lantern names; mid = only the selected, best-next and can-light lanterns; near = all, with a collision pass that also avoids lanterns.
+//  B: names only for the selected / best-next / hovered lantern (any zoom except far).
+//  C: focus view = every name (one group on screen), with collision.
+let hoverId = null; let lastRB = [];
+function drawLabels(list, lod) {
+  const c = ctx; if (lod === 'far') return;
+  let pick;
+  if (OPT === 'a') pick = lod === 'near' ? list.filter((L) => L.s !== 'notyet' || L.id === selected) : list.filter((L) => L.id === selected || (best && L.id === best.id) || L.s === 'ready');
+  else if (OPT === 'b') pick = list.filter((L) => L.id === selected || (best && L.id === best.id) || L.id === hoverId);
+  else pick = list;
+  if (onlyLight) pick = pick.filter((L) => L.s === 'ready' || L.id === selected);
+  const pri = (L) => (L.id === selected ? 0 : best && L.id === best.id ? 1 : L.s === 'ready' ? 2 : L.s === 'open' ? 3 : L.s === 'challenge' ? 4 : L.s === 'lit' ? 5 : 6);
+  pick.sort((a, b) => pri(a) - pri(b));
+  // collision boxes in a 64 px screen grid (labels avoid other labels AND lanterns; linear cost at 1000+ nodes)
+  const G = new Map(); const cells = (b) => { const o = []; for (let i = Math.floor(b.x0 / 64); i <= Math.floor(b.x1 / 64); i++) for (let j = Math.floor(b.y0 / 64); j <= Math.floor(b.y1 / 64); j++) o.push(`${i},${j}`); return o; };
+  const addBox = (b) => { for (const k of cells(b)) (G.get(k) || G.set(k, []).get(k)).push(b); };
+  const hits = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0));
+  for (const L of list) addBox({ x0: L.x - L.r - 3, x1: L.x + L.r + 3, y0: L.y - L.r - 3, y1: L.y + L.r + 3, id: L.id });
+  c.font = '13px AS'; c.textAlign = 'center'; c.textBaseline = 'top';
+  for (const L of pick) {
+    const d = cache[L.id].d; const txt = d.name; const w = c.measureText(txt).width + 8;
+    const y0 = L.y + L.r + (L.s === 'ready' ? 10 : 5);
+    const bx = { x0: L.x - w / 2, x1: L.x + w / 2, y0, y1: y0 + 17 };
+    if (hits(bx, L.id)) continue;
+    addBox(bx);
+    c.fillStyle = 'rgba(10,14,24,.78)'; c.fillRect(bx.x0, bx.y0, w, 17);
+    c.fillStyle = L.s === 'ready' ? '#fff6e0' : L.s === 'lit' ? '#fff3dc' : L.s === 'open' ? '#f5dfae' : L.s === 'challenge' ? '#9fe6dc' : '#b3bbcf';
+    c.fillText(txt, L.x, y0 + 1);
+  }
+}
+function drawRegionNames(lod) {
+  const c = ctx; const z = cam.z; c.textBaseline = 'middle';
+  if (OPT === 'c') return; // the focus title sits in the toolbar
+  const rboxes = lastRB = [];
+  const byNear = [...regions].sort((a, b) => Math.hypot(a.x - cam.x, a.y - cam.y) - Math.hypot(b.x - cam.x, b.y - cam.y));
+  for (const r of byNear) {
+    if (lod === 'near') continue;
+    if (r.kind === 'rings') continue; // the hub needs no name: it is the lantern
+    if (r.r * z < 26) continue; // too small on screen (e.g. a 1000-node web zoomed out): no name, the glow is enough; zoom in to read
+    if (OPT === 'b' && lod === 'mid' && r.kind !== 'cluster') continue;
+    const [sx, sy] = toS(r.x, r.y - (r.kind === 'cluster' ? r.r + 26 : lod === 'far' ? r.r * 0.8 : 0)); // mid: a tool group's name sits in its empty middle
+    if (sx < -100 || sx > W + 100 || sy < -40 || sy > H + 40) continue;
+    const fs = Math.max(14, Math.min(22, 70 * z));
+    c.font = `${fs}px HLC`; c.textAlign = 'center';
+    const name = r.done ? `${r.name} ✓` : r.name; const nw = c.measureText(name).width;
+    const badge = OPT === 'a' && r.light > 0; const bw = badge ? 24 : 0;
+    const rb = { x0: sx - nw / 2 - 6, x1: sx + nw / 2 + 6 + bw, y0: sy - fs / 2 - 3, y1: sy + fs / 2 + 3 };
+    if (rboxes.some((b) => b.x0 < rb.x1 && b.x1 > rb.x0 && b.y0 < rb.y1 && b.y1 > rb.y0)) continue;
+    rboxes.push(rb);
+    const awake = r.kind !== 'cluster' || regionAwake(r);
+    c.fillStyle = r.done ? '#ffe39a' : awake ? 'rgba(255,243,220,.95)' : 'rgba(179,187,207,.85)';
+    c.fillText(name, sx, sy);
+    if (badge) { const bx = sx + nw / 2 + 14; c.fillStyle = '#fff6e0'; c.beginPath(); c.arc(bx, sy, 10, 0, 7); c.fill(); c.fillStyle = '#3a2412'; c.font = 'bold 12px AS'; c.fillText(String(r.light), bx, sy + 1); }
+  }
+}
+// C overview: one medallion per group, at its place in the web (tap to focus)
+function medR() { return portrait() ? 24 : landscapePh() ? 22 : 30; }
+function drawSkyMap(t, pulse) {
+  const c = ctx; const R = medR(); const p = cache.__progress || 0;
+  const [fx0, fy0, fx1, fy1] = freeRect(); const cxm = (fx0 + fx1) / 2, cym = (fy0 + fy1) / 2 + 4;
+  const stx = Math.max(R * 2.6, ((fx1 - fx0) / 2 - R * 2.6) / 2), sty = Math.max(R * 2.6, ((fy1 - fy0) / 2 - R - 44) / 2);
+  const place = (x, y) => { const d = Math.hypot(x, y); if (d < 200) return [cxm, cym]; const k = d < 900 ? 1 : 2; const a = Math.atan2(y, x); return [cxm + Math.cos(a) * k * stx, cym + Math.sin(a) * k * sty]; };
+  // phones: a tidy grid (hub first, then spirits, then groups, then one 'more to find' tile) so nothing overlaps
+  const grid = portrait() || landscapePh(); const order = regionOrder(); const cols = landscapePh() ? 4 : 3; const nT = order.length + 1; const rows = Math.ceil(nT / cols);
+  const cw = (fx1 - fx0) / cols, ch = (fy1 - fy0 - 8) / rows;
+  const gridAt = (i) => [fx0 + cw * (i % cols + 0.5), fy0 + 8 + ch * (Math.floor(i / cols) + 0.5) - 14];
+  const [hx, hy] = grid ? gridAt(0) : [cxm, cym];
+  const pool = c.createRadialGradient(hx, hy, 0, hx, hy, R * 5); pool.addColorStop(0, `rgba(255,179,90,${0.14 + 0.2 * p})`); pool.addColorStop(1, 'rgba(255,154,58,0)'); c.fillStyle = pool; c.beginPath(); c.arc(hx, hy, R * 5, 0, 7); c.fill();
+  for (const [x, y] of grid ? [[NaN, NaN]] : T.farFree) { const [sx, sy] = grid ? gridAt(order.length) : place(x, y); c.fillStyle = 'rgba(30,37,54,.7)'; c.beginPath(); c.arc(sx, sy, R * 0.7, 0, 7); c.fill(); c.fillStyle = 'rgba(179,187,207,.7)'; c.font = `${R * 0.9}px HLC`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', sx, sy + 1); if (grid) { c.font = `bold ${portrait() ? 12 : 13}px AS`; c.textBaseline = 'top'; c.fillStyle = '#b3bbcf'; c.fillText('More to find', sx, sy + R + 6); } }
+  for (const r of regions) {
+    if (!r.ids.length) continue;
+    const [sx, sy] = grid ? gridAt(order.indexOf(r)) : place(r.x, r.y); const awake = regionAwake(r); const frac = r.lit / r.ids.length;
+    const rr = r.kind === 'rings' ? R * 1.2 : R;
+    if (best && regionOf[best.id] === r.key) { const h = c.createRadialGradient(sx, sy, rr, sx, sy, rr + 14 + 6 * pulse); h.addColorStop(0, 'rgba(255,179,90,.55)'); h.addColorStop(1, 'rgba(255,179,90,0)'); c.fillStyle = h; c.beginPath(); c.arc(sx, sy, rr + 14 + 6 * pulse, 0, 7); c.fill(); }
+    const g = c.createRadialGradient(sx - rr * 0.3, sy - rr * 0.4, 0, sx, sy, rr); g.addColorStop(0, '#3a4866'); g.addColorStop(1, '#141a28'); c.fillStyle = g; c.beginPath(); c.arc(sx, sy, rr, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(216,178,106,.5)'; c.lineWidth = 1.5; c.stroke();
+    if (r.path) { c.save(); c.beginPath(); c.arc(sx, sy, rr - 3, 0, 7); c.clip(); c.translate(sx, sy); const k = (rr * 0.85) / 170; c.scale(k, k); c.fillStyle = awake ? hexA(r.color, 0.35 + 0.5 * frac) : 'rgba(140,148,170,.35)'; c.fill(r.path); c.restore(); }
+    else if (r.kind === 'rings') { const lg = c.createRadialGradient(sx, sy - 3, 0, sx, sy, rr * 0.7); lg.addColorStop(0, '#fff4d0'); lg.addColorStop(0.5, `rgba(255,199,102,${0.5 + 0.5 * p})`); lg.addColorStop(1, 'rgba(255,154,46,0)'); c.fillStyle = lg; c.beginPath(); c.arc(sx, sy, rr * 0.7, 0, 7); c.fill(); }
+    else { c.fillStyle = 'rgba(243,220,174,.85)'; c.font = `${rr * 0.8}px HLC`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.name.replace(/^The /, '').charAt(0), sx, sy + 1); }
+    // progress ring
+    c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,.08)'; c.beginPath(); c.arc(sx, sy, rr + 5, 0, 7); c.stroke();
+    if (frac > 0) { c.strokeStyle = r.done ? '#ffe39a' : r.kind === 'cluster' ? r.color : '#ffd9a0'; c.beginPath(); c.arc(sx, sy, rr + 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac); c.stroke(); }
+    // name + count
+    c.textAlign = 'center'; c.textBaseline = 'top'; c.font = `bold ${portrait() ? 12 : 13}px AS`;
+    c.fillStyle = awake ? '#fff3dc' : '#b3bbcf'; c.fillText(r.done ? `${r.name} ✓` : r.name, sx, sy + rr + 10);
+    c.font = `${portrait() ? 11 : 12}px AS`; c.fillStyle = '#b3bbcf'; c.fillText(awake ? `${r.lit}/${r.ids.length}` : 'Not yet woken', sx, sy + rr + 26);
+    if (r.light) { const bx = sx + rr * 0.8, by = sy - rr * 0.8; c.fillStyle = '#fff6e0'; c.beginPath(); c.arc(bx, by, 11, 0, 7); c.fill(); c.fillStyle = '#3a2412'; c.font = 'bold 12px AS'; c.textBaseline = 'middle'; c.fillText(String(r.light), bx, by + 1); }
+    r.med = [sx, sy, rr];
+  }
+  c.textBaseline = 'top'; c.font = '13px AS'; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center';
+}
+
+// ---------------------------------------------------------------- DOM overlays that follow the map (edge arrow, B wisp bubble)
+function placeOverlays() {
+  const edge = $('edge'), wisp = $('wisp');
+  const showEdge = best && OPT !== 'c' && !selected;
+  if (!showEdge) { edge.classList.remove('show'); wisp.classList.remove('show'); return; }
+  const n = def.nodes[best.id]; const [x, y] = toS(n.x, n.y);
+  const [x0, y0, x1, y1] = freeRect();
+  const on = x > x0 + 20 && x < x1 - 20 && y > y0 + 20 && y < y1 - 20;
+  if (OPT === 'b' && on && !isNew()) {
+    edge.classList.remove('show'); wisp.classList.add('show');
+    const bw = wisp.offsetWidth, bh = wisp.offsetHeight;
+    let left = x + 28, top = y - bh - 18; if (left + bw > x1 - 8) left = x - bw - 28; if (top < y0 + 8) top = y + 26; if (left < x0 + 8) left = x0 + 8;
+    wisp.style.left = `${Math.round(left)}px`; wisp.style.top = `${Math.round(top)}px`;
+    return;
+  }
+  wisp.classList.remove('show');
+  if (on || isNew()) { edge.classList.remove('show'); return; }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; const dx = x - cx, dy = y - cy;
+  const s = Math.min(Math.abs(((x1 - x0) / 2 - 70) / (dx || 1e-6)), Math.abs(((y1 - y0) / 2 - 30) / (dy || 1e-6)));
+  edge.style.left = `${Math.round(cx + dx * s)}px`; edge.style.top = `${Math.round(cy + dy * s)}px`;
+  $('edgeArrow').style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+  edge.classList.add('show');
+}
+
+// ---------------------------------------------------------------- text helpers (textContent only)
+const fmtN = (n) => Math.round(n).toLocaleString('en-GB');
+function shortText(id) {
+  const s = cache[id].d; if (!s.next) return '';
+  const parts = [];
+  if (s.next.gold > save.gold) parts.push(`${fmtN(s.next.gold - save.gold)} gold`);
+  if (s.next.shards > save.shards) parts.push(`${s.next.shards - save.shards} shard${s.next.shards - save.shards > 1 ? 's' : ''}`);
+  if (s.next.glass > save.dawnglass) parts.push(`${s.next.glass - save.dawnglass} Dawnglass`);
+  return parts.length ? `${parts.join(' + ')} short` : '';
+}
+function costText(id) { const s = cache[id].d.next; if (!s) return ''; const p = []; if (s.gold) p.push(`${fmtN(s.gold)} gold`); if (s.shards) p.push(`${s.shards} shards`); if (s.glass) p.push(`${s.glass} Dawnglass`); return p.join(' + '); }
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; }
+const regionName = (id) => { const r = regionByKey[regionOf[id]]; return r ? r.name : ''; };
+function rewardText(id) { const n = def.nodes[id]; const k = whyOf(id, 9); return k === 'The cheapest step forward' ? (cache[id].d.masked ? 'Something new' : n.desc) : k; }
+
+// ---------------------------------------------------------------- panel (details + A's goals tab)
+function syncPanel() {
+  const open = !!panelMode;
+  $('panel').classList.toggle('open', open); document.body.classList.toggle('sel', open);
+  $('detail').style.display = panelMode === 'goals' ? 'none' : 'flex'; $('goalPane').style.display = panelMode === 'goals' ? 'block' : 'none';
+  $('tabD').setAttribute('aria-selected', String(panelMode !== 'goals')); $('tabG').setAttribute('aria-selected', String(panelMode === 'goals'));
+  $('tabD').disabled = !selected;
+  $('goalsBtn').classList.toggle('on', panelMode === 'goals');
+}
+function select(id, fly_ = true) {
+  selected = id; confirmT = 0;
+  panelMode = id ? 'detail' : panelMode === 'goals' && OPT === 'a' ? 'goals' : null; syncPanel();
+  if (id) { renderPanel(); if (fly_) { const n = def.nodes[id]; flyTo(n.x, n.y, Math.max(cam.z, OPT === 'c' ? cam.z : 0.9)); } const ce = cache[id]; $('sr').textContent = `${ce.d.name}, ${SAY[ce.s]}. ${ce.d.desc}`; }
+  if (id) dismissCoach();
+  dirty();
+}
+function renderPanel() {
+  const id = selected; if (!id) return; const n = def.nodes[id]; const ce = cache[id]; const d = ce.d; const s = ce.s;
+  $('pKick').textContent = `${KIND_LABEL[n.kind] || 'Lantern'} · ${regionName(id)}`;
+  $('pName').textContent = d.name;
+  const stEl = $('pState'); stEl.className = `state st-${s}`;
+  let st = SAY[s];
+  if (s === 'open') st = shortText(id) || st;
+  if (s === 'challenge') st = `Challenge: ${Math.round(ce.frac * 100)}% done`;
+  if (ce.v === 'closed') st = 'Closed by its rival';
+  if (ce.v === 'unreached') st = 'Not yet reachable: light a lantern linked to it first';
+  if (s === 'lit' && n.maxRank > 1) st = `Lit ${save.tree[id]}/${n.maxRank}`;
+  if (s !== 'lit' && n.maxRank > 1 && (save.tree[id] || 0) > 0) st += ` · rank ${save.tree[id]}/${n.maxRank}`;
+  stEl.textContent = st;
+  const w = $('pWhy'); w.textContent = best && best.id === id ? `Best next: ${best.why}` : ''; w.style.display = best && best.id === id ? '' : 'none';
+  $('pDesc').textContent = d.desc; $('pFlav').textContent = d.flavour || '';
+  // ONE numbered checklist instead of "Locked" + "To wake it" (review finding 7b)
+  const ol = $('pSteps'); ol.replaceChildren();
+  const steps = [];
+  if (s !== 'lit' && s !== 'fog') {
+    for (const r of n.requires || []) steps.push({ t: `Light ${cache[r].d.name}`, done: anyRank(r) });
+    if (n.requiresAny) steps.push({ t: `Light one of: ${n.requiresAny.map((r) => cache[r].d.name).join(' or ')}`, done: n.requiresAny.some(anyRank) });
+    const rg = regionByKey[regionOf[id]];
+    if (rg && rg.kind === 'cluster' && rg.heart && rg.heart !== id && !anyRank(rg.heart) && !(n.requires || []).includes(rg.heart)) steps.push({ t: `Wake ${rg.name} (its heart lantern)`, done: false });
+    if (d.condLines && d.condLines.length) for (const L of d.condLines) steps.push({ t: d.masked ? L.text : `${L.text}: ${fmtN(L.cur)} / ${fmtN(L.goal)}`, done: L.done, bar: d.masked ? null : Math.min(1, L.cur / L.goal) });
+    if (d.next && (d.next.gold || d.next.shards || d.next.glass)) steps.push({ t: `Have ${costText(id)}`, done: ce.v === 'afford' });
+  }
+  steps.forEach((S, i) => { const li = el('li', S.done ? 'done' : ''); li.append(el('b', '', S.done ? '✓' : String(i + 1))); const sp = el('span', '', S.t); if (S.bar != null && !S.done) { const b = el('div', 'bar2'); const ib = el('b'); ib.style.width = `${Math.round(S.bar * 100)}%`; b.append(ib); sp.append(b); } li.append(sp); ol.append(li); });
+  if (ce.v === 'closed') ol.append(el('li', '', d.reason || 'Its rival is lit.'));
+  const meta = [];
+  const pace = paceHint(d); if (pace && s === 'challenge') meta.push(pace);
+  if (n.permanent) meta.push('Permanent: kept on respec.');
+  if (!live.has(id)) meta.push(DSI === 0 ? 'Planned lantern (its game hook is not built yet).' : 'Synthetic test lantern.');
+  const far = (parents.get(id) || []).filter((p) => p !== 'hub' && Math.hypot(def.nodes[p].x - n.x, def.nodes[p].y - n.y) > LINK_FAR);
+  if (far.length) meta.push(`Follows on from ${far.map((p) => cache[p].d.name).join(', ')} in ${regionName(far[0]) || 'the hub'} (the dotted path shows the way).`);
+  $('pMeta').textContent = meta.join(' ');
+  const cost = $('pCost'); cost.replaceChildren();
+  if (d.next && s !== 'lit' && s !== 'fog') {
+    const add = (cls, val, have) => { const p = el('span', 'pill'); p.append(el('i', cls)); p.append(document.createTextNode(` ${fmtN(val)}`)); if (have < val) p.style.borderColor = '#59627a'; cost.append(p); };
+    if (d.next.gold) add('i-gold', d.next.gold, save.gold); if (d.next.shards) add('i-shard', d.next.shards, save.shards); if (d.next.glass) add('i-glass', d.next.glass, save.dawnglass);
+  }
+  const b = $('buyBtn'); const verb = n.kind === 'heart' || n.kind === 'socket' || n.kind === 'gate' ? 'Wake it' : 'Light it';
+  b.disabled = s !== 'ready'; b.classList.remove('confirm');
+  b.textContent = s === 'lit' ? 'Lit' : s === 'ready' ? `${verb} · ${costText(id)}` : s === 'open' ? 'Not enough yet' : 'Not yet';
+  $('pinBtn').textContent = pins.includes(id) ? 'Unpin' : 'Pin goal'; $('pinBtn').disabled = s === 'lit' || s === 'fog';
+}
+function paceHint(d) {
+  const runs = save.stats.runs || 0; if (runs < 3 || !d.condLines || d.masked) return '';
+  let worst = 0;
+  for (const L of d.condLines) { if (L.done) continue; const per = L.cur / runs; if (per <= 0) return ''; worst = Math.max(worst, (L.goal - L.cur) / per); }
+  if (!worst) return '';
+  return worst > 60 ? 'A long road at your pace.' : `About ${Math.max(1, Math.ceil(worst))} more run${Math.ceil(worst) > 1 ? 's' : ''} at your pace.`;
+}
+function doBuy() {
+  if (!selected || cache[selected].s !== 'ready') return;
+  const now = performance.now();
+  if (!confirmT || now - confirmT > 3000) { confirmT = now; const b = $('buyBtn'); b.classList.add('confirm'); b.textContent = 'Tap again to confirm'; return; }
+  const res = HLT.buy(save, selected, def, data); confirmT = 0;
+  if (!res.ok) { $('sr').textContent = res.reason; renderPanel(); return; }
+  const n = def.nodes[selected]; if (!reduced) anims.push({ x: n.x, y: n.y, t0: performance.now() });
+  const before = regions.map((r) => r.done);
+  recompute(); updateAll();
+  regions.forEach((r, i) => { if (r.done && !before[i]) toast(`${r.name} is whole again${r.title ? `. Title earned: ${r.title}` : ''}`); });
+  if (owned(selected)) { pins = pins.filter((p) => p !== selected); store.set('hl-proto2-pins', pins); }
+  renderPanel();
+}
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('open'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('open'), 3200); }
+
+// ---------------------------------------------------------------- goals: pinned + suggested (1 gold goal = best next or nearest buy, then conditions by runs left); show the REWARD
+function goalRows() {
+  if (isNew()) return [];
+  const rows = []; const have = new Set();
+  for (const id of pins) if (Object.hasOwn(def.nodes, id) && !owned(id)) { rows.push({ id, pin: true }); have.add(id); }
+  const gold = best ? best.id : def.list.filter((id) => cache[id].s === 'open').sort((a, b) => costOf(a) - costOf(b))[0];
+  if (gold && !have.has(gold) && rows.length < 3) { rows.push({ id: gold }); have.add(gold); }
+  const conds = HLT.closestUnlocks(def, save, data, 12).map((c) => c.id).filter((id) => cache[id] && cache[id].v === 'cond' && !have.has(id));
+  for (const id of conds) { if (rows.length >= 3) break; rows.push({ id }); have.add(id); }
+  return rows;
+}
+function goalInfo(r) {
+  const ce = cache[r.id]; const d = ce.d; let frac = 0, txt = '', gold = false;
+  if (ce.v === 'cond') { frac = ce.frac; const open = (d.condLines || []).filter((l) => !l.done); txt = d.masked ? 'Keep playing to find out' : open.map((l) => `${l.text}: ${fmtN(l.cur)}/${fmtN(l.goal)}`).join(' + '); const pc = paceHint(d); if (pc) txt += ` · ${pc}`; }
+  else if (ce.s === 'open' || ce.s === 'ready') { gold = true; frac = Math.min(1, save.gold / Math.max(1, costOf(r.id))); txt = ce.s === 'ready' ? `You can light it now (${costText(r.id)})` : shortText(r.id); }
+  else txt = d.reason || 'Not yet';
+  return { name: d.name, reward: rewardText(r.id), txt, frac, gold, pin: r.pin };
+}
+function goalButton(r, cls = 'goal', num) {
+  const g = goalInfo(r); const b = el('button', cls); b.type = 'button';
+  const top = el('div', 'gt'); const nm = el('span', '', ''); if (num) nm.append(el('span', `num${g.gold ? '' : ' c'}`, String(num))); nm.append(document.createTextNode(g.name)); top.append(nm); top.append(el('span', `tag${g.pin ? ' pin' : ''}`, g.pin ? '★ pinned' : g.gold ? 'gold' : 'by playing'));
+  b.append(top); b.append(el('div', 'rw', g.reward)); b.append(el('div', 'gs', g.txt));
+  const bar = el('div', `bar2${g.gold ? ' gold' : ''}`); const i = el('b'); i.style.width = `${Math.round(g.frac * 100)}%`; bar.append(i); b.append(bar);
+  b.addEventListener('click', () => { if (OPT === 'c') { setFocus(regionOf[r.id]); setTimeout(() => select(r.id), reduced ? 0 : 440); } else select(r.id); $('gdrop').classList.remove('open'); });
+  return b;
+}
+function renderGoals() {
+  const rows = goalRows();
+  // A: in the panel's Goals tab
+  const list = $('goalList'); list.replaceChildren();
+  if (!rows.length) list.append(el('div', 'empty', isNew() ? 'Finish your first run to earn gold. Your goals will appear here.' : 'Everything in reach is lit. Play to wake more.'));
+  for (const r of rows) list.append(goalButton(r));
+  // B: the slim strip (desktop shows all 3 chips; phones show one chip + a "more" button that drops the full list)
+  const gs = $('gstrip'); gs.replaceChildren();
+  if (!rows.length) gs.append(el('div', 'chip', isNew() ? 'Goals appear after your first run' : 'Everything in reach is lit'));
+  const narrow = portrait() || landscapePh();
+  rows.slice(0, narrow ? 1 : 3).forEach((r) => { const g = goalInfo(r); const b = el('button', 'chip'); b.type = 'button'; const ct = el('div', 'ct', `${g.pin ? '★ ' : ''}${g.name} `); ct.append(el('span', '', `· ${g.reward}`)); b.append(ct); const bar = el('div', `bar2${g.gold ? ' gold' : ''}`); const i = el('b'); i.style.width = `${Math.round(g.frac * 100)}%`; bar.append(i); b.append(bar); b.addEventListener('click', () => select(r.id)); gs.append(b); });
+  if (narrow && rows.length > 1) { const m = el('button', 'chip more', `+${rows.length - 1}`); m.type = 'button'; m.setAttribute('aria-label', 'All goals'); m.addEventListener('click', () => $('gdrop').classList.toggle('open')); gs.append(m); }
+  const gd = $('gdrop'); gd.replaceChildren(); for (const r of rows) gd.append(goalButton(r));
+}
+// C: the checklist on the sky map: 1 = best buy, then goals
+function renderTodo() {
+  if (OPT !== 'c') return;
+  const L = $('todoList'); L.replaceChildren();
+  if (isNew()) { L.append(el('div', 'empty', 'Play your first run to earn gold. Then come back: the Hearth and Wick (the warm lantern in the middle) is where you start.')); return; }
+  const rows = goalRows(); if (!rows.length) L.append(el('div', 'empty', 'Everything in reach is lit. Play to wake more.'));
+  rows.forEach((r, i) => L.append(goalButton(r, 'goal', i + 1)));
+}
+
+// ---------------------------------------------------------------- next step (A bar, B wisp bubble) + first-visit coach
+function stepText() {
+  if (isNew()) return { h: 'Finish a run to earn gold', s: 'Then come back here and light your first lantern.', btn: null };
+  if (best) { const d = cache[best.id].d; return { h: `Light ${d.name}`, s: `${best.why} · ${costText(best.id)}`, btn: 'Show me' }; }
+  const sh = def.list.filter((id) => cache[id].s === 'open').sort((a, b) => costOf(a) - costOf(b))[0];
+  if (sh) return { h: `Next: ${cache[sh].d.name}`, s: `${shortText(sh)}. Play a run to earn it.`, btn: 'Show me', id: sh };
+  return { h: 'Play to wake more spirits', s: 'Your goals show what is closest.', btn: 'Goals', goals: true };
+}
+function renderStep() {
+  const s = stepText();
+  const st = $('stepText'); st.replaceChildren(); st.append(el('b', '', s.h)); st.append(el('small', '', s.s));
+  $('stepBtn').style.display = s.btn ? '' : 'none'; $('stepBtn').textContent = s.btn || '';
+  $('stepBtn').onclick = () => { if (s.goals) openGoals(); else { const id = s.id || (best && best.id); if (id) select(id); } };
+  const w = $('wisp'); w.replaceChildren(); w.append(el('b', '', s.h)); w.append(el('small', '', s.s));
+}
+const COACH = {
+  a: ['Your Lantern Web', 'Lanterns with rays can be lit now. The pin marks the best one. Tap it, then Light it. The ? button explains every look.'],
+  b: ['Follow the wisp', 'The little wisp waits by the best lantern to light next. Tap any lantern to see what it does. The ? button explains every look.'],
+  c: ['The sky map', 'Each circle is a spirit or a group of lanterns. Tap one to step inside. The list shows your next steps in order.'],
+};
+const COACH_NEW = ['Welcome to the Lantern Web', 'Lanterns are lit with gold you bring back from runs. Finish your first run, then come back to light one.'];
+function showCoach(force) {
+  if (!force && store.get('hl-proto2-coach')) return;
+  const [h, p] = isNew() ? COACH_NEW : COACH[OPT]; $('coachH').textContent = h; $('coachP').textContent = p;
+  const co = $('coach'); co.classList.remove('fade'); co.classList.add('open');
+  clearTimeout(showCoach.h); if (Q.get('coach') !== '1') showCoach.h = setTimeout(dismissCoach, 9000);
+}
+function dismissCoach() { const co = $('coach'); if (!co.classList.contains('open')) return; store.set('hl-proto2-coach', 1); if (reduced) { co.classList.remove('open'); return; } co.classList.add('fade'); setTimeout(() => co.classList.remove('open', 'fade'), 800); }
+
+function renderIndex() {
+  const list = $('idxList'); list.replaceChildren();
+  for (const r of regionOrder()) {
+    const b = el('button', 'idx-row'); b.type = 'button';
+    const sw = el('span', 'sw'); sw.style.background = r.kind === 'cluster' && !regionAwake(r) ? '#59627a' : r.color; b.append(sw);
+    b.append(el('span', 'nm', r.done ? `${r.name} ✓` : r.name));
+    if (r.light) b.append(el('span', 'badge', String(r.light)));
+    b.append(el('span', 'ct', `${r.lit}/${r.ids.length}`));
+    b.addEventListener('click', () => { closeSheets(); if (OPT === 'c') setFocus(r.key); else { select(null); fitBox(r.box, 1.15, 1.2); } });
+    list.append(b);
+  }
+}
+function legend() {
+  const L = $('legend'); L.replaceChildren();
+  const items = [['ready', 'Can light now', 'Rays around it. You have the gold.'], ['open', 'Not enough yet', OPT === 'b' ? 'Open, with a small coin: you need more gold.' : 'Brass ring: open, you need more gold.'], ['challenge', 'Challenge', 'Linked to your lanterns, but asks you to do something in a run first. The teal ring fills as you go. Pin it as a goal.'], ['notyet', 'Not yet reachable', 'Light a lantern linked to it first.'], ['lit', 'Lit', 'Yours. It glows in its spirit\'s colour.'], ['best', 'Best next', OPT === 'a' ? 'The pin: the one we suggest lighting next.' : OPT === 'b' ? 'The wisp waits by the one we suggest.' : 'Number 1 on your list.']];
+  for (const [v, h, s] of items) {
+    const c2 = document.createElement('canvas'); c2.width = 88; c2.height = 88;
+    const k = c2.getContext('2d'); k.scale(2, 2); k.fillStyle = '#0c1220'; k.fillRect(0, 0, 44, 44);
+    const main = ctx; const sv = { ...cam }; ctx = k;
+    try {
+      if (v === 'best') { const keep = best; best = { id: def.list[0], why: '' }; const n0 = def.nodes[def.list[0]]; cam.z = 1; cam.x = n0.x; cam.y = n0.y - 4; const WW = W, HH = H; W = 44; H = 44; affordMark(22, 26, 7, 0.5, false, true); nodeShape({ kind: 'ring', maxRank: 1 }, 22, 26, 7, 'ready', { frac: 0, d: { masked: false } }, def.list[0], 'near'); drawBestMarker(0, 'near'); W = WW; H = HH; best = keep; }
+      else { if (v === 'ready') affordMark(22, 22, 8, 0.5, false, false); nodeShape({ kind: 'ring', maxRank: 1 }, 22, 22, 8, v, { frac: 0.6, d: { masked: false } }, def.list[0], 'near');  }
+    } finally { ctx = main; Object.assign(cam, sv); }
+    const t = el('div', '', h); t.append(el('small', '', s)); L.append(c2, t);
+  }
+}
+function closeSheets() { for (const s of ['idxSheet', 'protoSheet', 'helpSheet', 'scrim']) $(s).classList.remove('open'); }
+function openSheet(id) { closeSheets(); $(id).classList.add('open'); $('scrim').classList.add('open'); if (id === 'idxSheet') renderIndex(); if (id === 'helpSheet') legend(); dismissCoach(); }
+function openGoals() {
+  if (OPT === 'a') { panelMode = panelMode === 'goals' ? (selected ? 'detail' : null) : 'goals'; syncPanel(); renderGoals(); dirty(); }
+  else if (OPT === 'b') $('gdrop').classList.toggle('open');
+  else setFocus(null);
+}
+function updateAll() {
+  $('gold').textContent = fmtN(save.gold); $('shards').textContent = fmtN(save.shards); $('glass').textContent = fmtN(save.dawnglass);
+  $('glassPill').style.display = save.dawnglass > 0 ? '' : 'none';
+  const a = affordList().length; const bd = $('lightN'); bd.textContent = a; bd.classList.toggle('zero', !a);
+  renderGoals(); renderStep(); renderTodo(); if (focusKey) renderFoot(); if (selected) renderPanel(); dirty();
+}
+function nextAfford() {
+  if (!best) { toast('Nothing to light yet. Your goals show what is closest.'); return; }
+  if (OPT === 'c') { setFocus(regionOf[best.id]); setTimeout(() => select(best.id, false), reduced ? 0 : 440); return; }
+  select(best.id);
+}
+
+// ---------------------------------------------------------------- input
+const ptrs = new Map(); let drag = null; let pinch = null;
+cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); fly = null;
+  if (ptrs.size === 1) drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, t: performance.now(), moved: false };
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: cam.z, w: toW((a.x + b.x) / 2, (a.y + b.y) / 2) }; drag = null; } });
+cv.addEventListener('pointermove', (e) => {
+  if (!ptrs.has(e.pointerId)) { if (OPT === 'b' && e.pointerType === 'mouse') { const h = hitNode(e.clientX, e.clientY); if (h !== hoverId) { hoverId = h; dirty(); } } return; }
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (OPT === 'c' && !focusKey) return; // the sky map does not pan
+  if (pinch && ptrs.size >= 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); cam.z = clampZ(pinch.z * d / Math.max(1, pinch.d)); const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; cam.x = pinch.w[0] - (mx - W / 2) / cam.z; cam.y = pinch.w[1] - (my - H / 2) / cam.z; dirty(); return; }
+  if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.hypot(dx, dy) > 8) { drag.moved = true; document.body.classList.add('pan'); } if (drag.moved) { cam.x = drag.cx - dx / cam.z; cam.y = drag.cy - dy / cam.z; dirty(); } } });
+const up = (e) => { if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
+  if (drag && !drag.moved && performance.now() - drag.t < 400) tap(e.clientX, e.clientY);
+  if (ptrs.size < 2) pinch = null; if (!ptrs.size) { drag = null; document.body.classList.remove('pan'); } };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+function hitNode(sx, sy) {
+  const [wx, wy] = toW(sx, sy); let bestId = null, bd = Infinity;
+  const cx = Math.floor(wx / 240), cy = Math.floor(wy / 240);
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const id of grid.get(`${cx + i},${cy + j}`) || []) { if (!inFocus(id)) continue; const n = def.nodes[id]; const d = Math.hypot(n.x - wx, n.y - wy) * cam.z; if (d < bd) { bd = d; bestId = id; } }
+  const hit = Math.max(22, (KIND_R[bestId && def.nodes[bestId].kind] || 8) * cam.z * 1.3);
+  return bestId && bd <= hit ? bestId : null;
+}
+let lastTap = 0;
+function tap(sx, sy) {
+  const now = performance.now(); dismissCoach();
+  if (OPT === 'c' && !focusKey) { let hitR = null, bd = Infinity; for (const r of regions) if (r.med) { const d = Math.hypot(r.med[0] - sx, r.med[1] - sy); if (d < Math.max(r.med[2] + 10, 30) && d < bd) { bd = d; hitR = r; } } if (hitR) setFocus(hitR.key); return; }
+  const [wx, wy] = toW(sx, sy);
+  if (cam.z < LOD.far) { let br = null, bd = Infinity; for (const r of regions) { const d = Math.hypot(r.x - wx, r.y - wy); if (d < r.r * 1.3 && d < bd) { bd = d; br = r; } } if (br) { select(null); fitBox(br.box, 1.15, 1.2); return; } }
+  // two lanterns inside one finger: zoom in on them instead of guessing (review finding 10)
+  const near = []; const cx = Math.floor(wx / 240), cy = Math.floor(wy / 240);
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const id of grid.get(`${cx + i},${cy + j}`) || []) { if (!inFocus(id)) continue; const n = def.nodes[id]; if (Math.hypot(n.x - wx, n.y - wy) * cam.z <= 22) near.push(id); }
+  if (near.length >= 2 && cam.z < 1.2) { const n0 = def.nodes[near[0]], n1 = def.nodes[near[1]]; if (Math.hypot(n0.x - n1.x, n0.y - n1.y) * cam.z < 26) { flyTo(wx, wy, Math.min(2.2, cam.z * 2)); return; } }
+  const id = hitNode(sx, sy);
+  if (id) select(id, false);
+  else if (now - lastTap < 300) { zoomAt(sx, sy, 1.8); }
+  else select(null);
+  lastTap = now;
+}
+function zoomAt(sx, sy, f) { if (OPT === 'c' && !focusKey) return; const [wx, wy] = toW(sx, sy); cam.z = clampZ(cam.z * f); cam.x = wx - (sx - W / 2) / cam.z; cam.y = wy - (sy - H / 2) / cam.z; dirty(); }
+cv.addEventListener('wheel', (e) => { e.preventDefault(); fly = null; zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+window.addEventListener('keydown', (e) => {
+  if (e.target && (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT')) return;
+  const step = 80 / cam.z;
+  if (e.key === 'ArrowLeft') cam.x -= step; else if (e.key === 'ArrowRight') cam.x += step; else if (e.key === 'ArrowUp') cam.y -= step; else if (e.key === 'ArrowDown') cam.y += step;
+  else if (e.key === '+' || e.key === '=') zoomAt(W / 2, H / 2, 1.3); else if (e.key === '-' || e.key === '_') zoomAt(W / 2, H / 2, 1 / 1.3);
+  else if (e.key === 'Home') home(); else if (e.key === 'n' || e.key === 'N') nextAfford(); else if (e.key === '?') openSheet('helpSheet');
+  else if (e.key === 'Escape') { closeSheets(); if (selected || panelMode) select(null); else if (OPT === 'c' && focusKey) setFocus(null); }
+  else if (OPT === 'c' && focusKey && (e.key === ']' || e.key === '[')) stepFocus(e.key === ']' ? 1 : -1);
+  else if (e.key === 'Enter' && selected) doBuy();
+  else return;
+  e.preventDefault(); dirty();
+});
+function home() { if (OPT === 'c') setFocus(null); else { select(null); fitAll(); } }
+
+// ---------------------------------------------------------------- prototype controls
+function bankRun(win) {
+  const st = save.stats; const t = win ? 900 : 480; const f = Math.pow(t / 900, 1.4);
+  const ch = Object.keys(data.chapters)[0]; const chd = data.chapters[ch];
+  const goldGain = Math.round(2017 * f); save.gold += goldGain; st.totalGold += goldGain;
+  const killsFull = Object.fromEntries(Object.keys(data.enemies).filter((k) => !data.enemies[k].boss && k !== chd.bossId).slice(0, 3).map((k, i) => [k, [680, 765, 160][i]]));
+  for (const [k, v] of Object.entries(killsFull)) { const n = Math.round(v * f); st.killsByEnemy[k] = (st.killsByEnemy[k] || 0) + n; st.kills += n; }
+  if (win) { st.bossKills[chd.bossId] = (st.bossKills[chd.bossId] || 0) + 1; save.shards += chd.bossShards || 5; }
+  const C = (st.chapters[ch] ||= { runs: 0, clears: 0, bestTime: 0 }); C.runs++; if (win) C.clears++; C.bestTime = Math.max(C.bestTime, t);
+  const heroes = Object.keys(data.characters); const hero = heroes[(st.runs || 0) % heroes.length]; st.charsUsed[hero] = (st.charsUsed[hero] || 0) + 1;
+  st.runs++; st.bestLevel = Math.max(st.bestLevel, win ? 50 : 30); st.gems += 1500; st.abilityUses += Math.floor(t / 60); st.chests += Math.floor(t / 300); st.blessingsTaken += win ? 5 : 2;
+  recompute(); updateAll(); toast(`Run banked: +${fmtN(goldGain)} gold${win ? `, +${chd.bossShards || 5} shards` : ''}`);
+}
+function init() {
+  document.body.classList.add(`opt${OPT.toUpperCase()}`);
+  if (OPT === 'c') { document.body.classList.add('over'); $('idxBtn').style.display = 'none'; $('goalsBtn').style.display = 'none'; }
+  if (OPT === 'b') $('goalsBtn').style.display = 'none';
+  pins = (store.get('hl-proto2-pins') || []).filter((x) => typeof x === 'string' && /^[a-z0-9_]{1,40}$/.test(x)).slice(0, 3);
+  const ps = $('presetSel'); P.presets.forEach((p, i) => { const o = el('option', '', p.label); o.value = String(i); ps.append(o); });
+  const ds = $('dataSel'); P.trees.forEach((t, i) => { const o = el('option', '', t.label); o.value = String(i); ds.append(o); });
+  $('optSel').value = OPT;
+  loadDataset(0);
+  const pi = Math.max(0, Math.min(P.presets.length - 1, parseInt(Q.get('preset') || '2', 10) || 0));
+  const dq = parseInt(Q.get('data') || '0', 10); if (dq > 0 && dq < P.trees.length) { ds.value = String(dq); loadDataset(dq); }
+  if (Q.get('rm') === '1') reduced = true;
+  ps.value = String(pi);
+  resize(); loadPreset(pi);
+  if (Q.get('only') === '1') { onlyLight = true; $('onlyBtn').classList.add('on'); $('onlyBtn').setAttribute('aria-pressed', 'true'); }
+  if (Q.get('far') === '1') { if (OPT === 'c') setFocus(null, true); else { const was = reduced; reduced = true; fitAll(); reduced = was; } }
+  const fk = Q.get('focus'); if (OPT === 'c' && fk && Object.hasOwn(regionByKey, fk)) { const was = reduced; reduced = true; setFocus(fk, true); reduced = was; }
+  const sel = Q.get('sel');
+  if (sel && /^[a-z0-9_]{1,40}$/.test(sel) && Object.hasOwn(def.nodes, sel)) {
+    const was = reduced; reduced = true;
+    if (OPT === 'c' && focusKey !== regionOf[sel]) setFocus(regionOf[sel], true);
+    select(sel, false); const n = def.nodes[sel]; if (OPT !== 'c') flyTo(n.x, n.y, 1.15); else flyTo(n.x, n.y, cam.z);
+    reduced = was;
+  }
+  if (Q.get('goals') === '1') { if (OPT === 'a') { panelMode = 'goals'; syncPanel(); } else if (OPT === 'b') $('gdrop').classList.add('open'); }
+  if (Q.get('help') === '1') openSheet('helpSheet');
+  if (Q.get('index') === '1') openSheet('idxSheet');
+  if (Q.get('coach') === '1') showCoach(true); else if (!sel && Q.get('coach') !== '0') showCoach(false);
+  if (Q.get('focus') === null && OPT === 'c' && !sel) setFocus(null, true);
+  $('rmChk').checked = reduced;
+  $('optSel').addEventListener('change', () => { const u = new URL(location.href); u.searchParams.set('opt', $('optSel').value); location.href = u.href; });
+  ps.addEventListener('change', () => { select(null); loadPreset(Number(ps.value)); });
+  ds.addEventListener('change', () => { loadDataset(Number(ds.value)); loadPreset(Number(ps.value)); if (OPT !== 'c') fitAll(); });
+  $('bankWin').addEventListener('click', () => bankRun(true)); $('bankLoss').addEventListener('click', () => bankRun(false));
+  $('resetBtn').addEventListener('click', () => { select(null); loadPreset(Number(ps.value)); });
+  $('rmChk').addEventListener('change', () => { reduced = $('rmChk').checked; dirty(); });
+  mqRM.addEventListener && mqRM.addEventListener('change', () => { reduced = mqRM.matches; dirty(); });
+  $('nextBtn').addEventListener('click', nextAfford);
+  $('goalsBtn').addEventListener('click', openGoals);
+  $('tabD').addEventListener('click', () => { if (selected) { panelMode = 'detail'; syncPanel(); renderPanel(); } });
+  $('tabG').addEventListener('click', () => { panelMode = 'goals'; syncPanel(); renderGoals(); });
+  $('onlyBtn').addEventListener('click', () => { onlyLight = !onlyLight; $('onlyBtn').classList.toggle('on', onlyLight); $('onlyBtn').setAttribute('aria-pressed', String(onlyLight)); dirty(); });
+  $('coachBtn').addEventListener('click', () => { closeSheets(); showCoach(true); });
+  $('idxBtn').addEventListener('click', () => openSheet('idxSheet')); $('protoBtn').addEventListener('click', () => openSheet('protoSheet')); $('helpBtn').addEventListener('click', () => openSheet('helpSheet'));
+  $('scrim').addEventListener('click', closeSheets);
+  $('closeBtn').addEventListener('click', () => { selected = null; panelMode = null; syncPanel(); dirty(); });
+  $('buyBtn').addEventListener('click', doBuy);
+  $('pinBtn').addEventListener('click', () => { if (!selected) return; if (pins.includes(selected)) pins = pins.filter((p) => p !== selected); else { pins.push(selected); if (pins.length > 3) pins.shift(); } store.set('hl-proto2-pins', pins); recompute(); updateAll(); });
+  $('coachOk').addEventListener('click', dismissCoach);
+  $('backBtn').addEventListener('click', () => setFocus(null));
+  $('ffootPrev').addEventListener('click', () => stepFocus(-1)); $('ffootNext').addEventListener('click', () => stepFocus(1));
+  $('edge').addEventListener('click', () => best && select(best.id));
+  $('wisp').addEventListener('click', () => best && select(best.id));
+  $('zin').addEventListener('click', () => zoomAt(W / 2, H / 2, 1.4)); $('zout').addEventListener('click', () => zoomAt(W / 2, H / 2, 1 / 1.4)); $('zhome').addEventListener('click', home);
+  window.addEventListener('resize', () => { resize(); renderGoals(); });
+  document.addEventListener('visibilitychange', dirty);
+  window.__proto = { held: () => cache.__heldIds, frontier: () => { const k = { ready: 0, open: 0, challenge: 0 }; const ch = []; for (const id of def.list) { const s = cache[id].s; if (s in k) k[s]++; if (s === 'challenge') { const kids = def.edges.filter((e) => e.from === id).length; ch.push(`${id}(${kids})`); } } k.challengeIds = ch; return k; }, get def() { return def; }, get save() { return save; }, get best() { return best; }, select, cam, nextAfford, setFocus, perf: () => { const t0 = performance.now(); for (let i = 0; i < 20; i++) draw(t0); return (performance.now() - t0) / 20; } };
+}
+init();
+})();
+</script>
+</body>
+</html>

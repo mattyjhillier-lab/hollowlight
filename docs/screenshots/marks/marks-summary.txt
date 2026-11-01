@@ -1,0 +1,19 @@
+DT2 marks contrast cells: 435; pass (peak >= 3:1 OR |dL*| >= 6 vs what is under it; bright fill OR dark outline >= 3:1): 432/435; depth fails: 0
+  type=ironbark: 72/72
+  type=swiftshade: 72/72
+  type=emberwake: 72/72
+  type=hollowheart: 72/75
+  type=ring: 144/144
+  ground=corrupt: 216/216
+  ground=hollow: 216/219
+  cb=none: 144/145
+  cb=protan: 144/145
+  cb=deutan: 144/145
+  tier=high: 216/219
+  tier=low: 216/216
+  view=desk: 144/147
+  view=land: 144/144
+  view=port: 144/144
+  t=240: 216/219
+  t=690: 216/216
+misses: desk/4m00/high/hollow/none/hollowheart(CR undefined/undefined, dL undefined, NO MASK); desk/4m00/high/hollow/protan/hollowheart(CR undefined/undefined, dL undefined, NO MASK); desk/4m00/high/hollow/deutan/hollowheart(CR undefined/undefined, dL undefined, NO MASK)
