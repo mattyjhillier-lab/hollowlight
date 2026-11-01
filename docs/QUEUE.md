@@ -424,3 +424,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - BUILT 2026-11-01 (dev, hidden: unreleased flag): EW1 Ember Breath data+sim (wip/ember-breath 4ee31a0), 1330 tests, sweep-all byte-identical to before. RELEASE SWITCH = add ember_breath to balance.starter.weapons + delete unreleased flag in weapons.json + EW7 cluster (heart gt_ember_breath + first socket gate). Open for EW7: Burn potency nodes home; helpers allOpen can draw Ember in tests. NEXT: EW2 art + sound.
 
 - NAMES LOCKED 2026-11-01: hero Lucinda, pet Ophimber (ids stay hearthwarden). Use in characters.json name, charcopy, Almanac, results, codex lines.
+
+- NOW: design sheet v2 for Dragonfire Meteor (+ Wildfire, Cinder Wyrm evolutions, third evolution = 3 options) and Lucinda ability (Ophimber three fire rings), docs only. Ember Breath paused (hidden on wip/ember-breath + dev, unreleased flag).
