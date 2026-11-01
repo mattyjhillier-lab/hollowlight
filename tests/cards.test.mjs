@@ -249,3 +249,16 @@ test('EV1 a focused player readies a first evolution after roughly 15-30 level-u
   console.log('median level-ups to ready an evolution:', median);
   assert.ok(median >= 15 && median <= 30, `median ${median}`);
 });
+
+test('The Alpha: the Pack size card says what it does for the evolved wolf; other wolves keep the plain text', () => {
+  const alpha = mkOpen('ghost_wolves');
+  alpha.weapons[0].evo = 'dire_alpha';
+  const a = buildPool(alpha).map((x) => x.card).find((c) => c.key === 's:ghost_wolves:count');
+  assert.ok(a, 'Pack size card is still offered to the Alpha');
+  assert.match(a.title, /Alpha might/);
+  assert.match(a.desc, /bigger and bites harder/);
+  const plain = mkOpen('ghost_wolves');
+  const p = buildPool(plain).map((x) => x.card).find((c) => c.key === 's:ghost_wolves:count');
+  assert.match(p.title, /Pack size/);
+  assert.match(p.desc, /wolf joins/);
+});

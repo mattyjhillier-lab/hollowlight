@@ -638,6 +638,7 @@ export const app = {
       if (this.touch) {
         const a = sim.ability;
         const cd = sim.abilityCooldown;
+        if (this.abFaceId !== a.id) { this.abFaceId = a.id; this.touch.setFace(abilityEmblem(globalThis.document, a.id)); } // the phone ability button shows the hero's emblem
         this.touch.setAbility(a.name, a.cdLeft <= 0, a.cdLeft <= 0 ? 1 : 1 - a.cdLeft / cd, Math.ceil(a.cdLeft));
       }
     }
@@ -868,6 +869,7 @@ export const app = {
       if (this.scene && this.scene.held) this.scene.held.setDirs(dirMap(km));
       if (this.ui && this.ui.hudView && this.ui.hudView.refreshKeys) this.ui.hudView.refreshKeys();
     });
+    step('battery saver', ['batterySaver'], () => { if (this.applyPower) this.applyPower(); }); // PHONE HEAT
     step('sound', ['masterVol', 'musicVol', 'sfxVol', 'muted'], (s) => { if (this.audio) this.audio.configure(s); });
     step('touch', ['touchMode', 'stickSize'], (s) => {
       if (!this.touch) return;

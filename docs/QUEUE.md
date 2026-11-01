@@ -397,3 +397,18 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - PREPPED 2026-11-01 (on dev, not live): absolute og/twitter/canonical URLs -> wispwick.pages.dev; moved/index.html + deploy.yml now publishes ONLY the moved page to the old GitHub Pages address (takes effect on merge to main). Old hollowlight Cloudflare project builds main = would serve the full game at its old address; Matt to delete or repoint it at launch. Saves do not carry between addresses (browser storage is per-address): decide at launch whether to tell testers.
 
 - LOCKED 2026-11-01 (Matt one-tap): launch order = exploit + feel pass first, then fixes, then Matt final yes, then merge. NOW: exploit + feel pass (agent, branch wip/exploit-pass).
+
+- LAUNCHED 2026-11-01: dev merged to main (PRs 9 + 10). Live: wispwick.pages.dev. Old GitHub address = moved page. Tests 1299, audit 0. Tree snapshot v4 (160 ids) recorded. OPEN: old hollowlight Cloudflare project (Matt to delete/repoint); tell testers saves start fresh; Dependabot alerts should close; exploit + feel pass finishing on wip/exploit-pass (agent a5971e2acf4540ff5) -> first patch; Tempest feel parked; Matt checks first minute on live.
+
+- NOW: exploit pass CONFIRM run (realistic builds, proper kite bot) on wip/exploit-pass; then tune only confirmed flags (Matt decides). Icon fix ff5462a is on dev, NOT on main yet: waiting Matt yes (or batch with first patch).
+
+- DATA POINT (Matt, 2026-11-01): cleared a full run on his FIRST go with Spirit Bolts (fresh target win 15-30%; one run = anecdote, add to exploit confirm run; asked hero/night/evolution/lowest HP/feel).
+- Matt detail: Elias, Twilight, Spirit Bolts, evolved ~halfway (first unlocked evo), lowest ~35/130 HP, easy early + right after evolving, then harder, had to think about movement. Sent to the confirm run as a matching arm.
+- FEEL FLAG (Matt, 2026-11-01): The Alpha (dire_alpha) "doesnt feel good, confused what it is meant to do". Design = pack merges into 1 big wolf (bite x3.4, cleave 0.6, bleed x1.5, 2 shades). Fix order: clearer text/look + tune first, replace last. Alpha vs base wolves check added to confirm run. Asked Matt: weaker, or just unclear?
+
+- RULE (Matt 2026-11-01): new maps/characters/weapons ship WITH their skill tree content (CLAUDE.md standing rule; LOCKED).
+
+- NOW: evo tune chunk (Phantom Stampede up, Alpha modest boost) on wip/evo-tune, then re-measure; ships in the patch release with icon fix + Alpha text (needs Matt yes). Spirit Tempest feel: not confirmed, no change.
+
+- NOW: PHONE HEAT build (60 fps cap on phones + Battery saver setting), render/UI only, on dev. Need Matt phone model + refresh rate to tune (asked).
+- BUILT 2026-11-01 (dev): PHONE HEAT. Phones capped at 60 fps (limit 62 so 60 Hz stays 60), Settings > Picture > Battery saver (phone only): 30 fps (limit 32), canvas dpr cap 1.25, Low quality forced; live toggle verified (limit 62<->32, canvas 750x1624<->469x1015). Low-quality switch only unit-tested (page hidden in preview). Matt to test on real phone: 10 min with saver on, still warm? src/sim+data 0 diff.

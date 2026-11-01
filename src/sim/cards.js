@@ -131,8 +131,8 @@ function statCard(w, statKey, data) {
     kind: 'stat',
     weaponId: w.id,
     stat: statKey,
-    title: `${def.name}: ${s.name}`,
-    desc: hintText(def, statKey, rank),
+    title: `${def.name}: ${s.evoName?.[w.evo] || s.name}`, // an evolved weapon can rename a stat whose job changed (The Alpha's Pack size)
+    desc: s.evoHint?.[w.evo] || hintText(def, statKey, rank),
     rank,
     nextRank: rank + 1,
     maxRank: data.balance.maxRank,

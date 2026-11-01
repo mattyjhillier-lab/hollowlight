@@ -74,6 +74,7 @@ function wickToggle({ label: text, help, checked, onChange }) {
 }
 
 const deskOnly = (row) => { row.classList.add('u4-row--desk'); return row; };
+const phoneOnly = (row) => { row.classList.add('u4-row--phone'); return row; }; // PHONE HEAT: hidden on desktop
 
 function fullscreenRow(pwa) {
   if (!pwa) return null;
@@ -118,7 +119,8 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     deskOnly(choice({ ...UI_SCALE_COPY, options: UI_SCALE_COPY.opts, value: cleanUiScale(st.uiScale), onChange: (v) => set({ uiScale: v }) })), // DESKTOP D1 (hidden on phones, which always use 1x)
     wickToggle({ ...SET.screenShake, checked: st.screenShake, onChange: (v) => set({ screenShake: v }) }),
     wickToggle({ ...SET.reducedMotion, checked: st.reducedMotion, onChange: (v) => set({ reducedMotion: v }) }),
-    wickToggle({ ...SET.damageNumbers, checked: st.damageNumbers, onChange: (v) => set({ damageNumbers: v }) }));
+    wickToggle({ ...SET.damageNumbers, checked: st.damageNumbers, onChange: (v) => set({ damageNumbers: v }) }),
+    phoneOnly(wickToggle({ ...SET.batterySaver, checked: !!st.batterySaver, onChange: (v) => set({ batterySaver: v }) })));
   const remap = buildKeyRemap({ keys: st.keys, onChange: (map) => set({ keys: map }) }); // A3 (replaces the fixed key list)
   const keys = add(el('div', 'u4-row u4-row--keys'), remap.root);
   // FM1: Tips toggle + 'Show tips again' (resets this lantern's whispers); FM5: Vibration (device setting)

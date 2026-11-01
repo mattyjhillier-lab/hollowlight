@@ -21,6 +21,7 @@ import { createAudio } from './audio/index.js';
 import { Vibe } from './gfx/feel.js';
 import { pickPrebakeMode } from './gfx/prebake.js';
 import { LOWMEM, LOWMEM_DPR } from './gfx/memprofile.js';
+import { fpsLimitFor, dprCapFor, setLoopLimit } from './gfx/power.js'; // PHONE HEAT (LOCKED 2026-11-01)
 
 // BLANK-FIX: every optional boot stage is guarded. A stage that throws is noted for the boot guard (window.__boot.errors, shown in its
 // panel and Copy details) and the boot carries on without it, so one odd setting or device quirk never leaves a blank window.
@@ -73,7 +74,7 @@ optional('probe', () => initProbe()); // C0: ?probe=1 viewport overlay (debug on
 const stage = document.getElementById('stage');
 const renderSize = () => {
   const r = stage.getBoundingClientRect();
-  const d = Math.min(parseDpr(window.devicePixelRatio), LOWMEM ? LOWMEM_DPR : 2);
+  const d = Math.min(parseDpr(window.devicePixelRatio), LOWMEM ? LOWMEM_DPR : 2, dprCapFor({ phone: app.isPhone(), saver: !!app.save.data.settings.batterySaver }));
   return { w: Math.max(320, Math.round(r.width * d)), h: Math.max(180, Math.round(r.height * d)) };
 };
 const first = renderSize();
@@ -88,7 +89,7 @@ const game = new Phaser.Game({
   render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
   // Raw vsync-aligned rAF deltas: Phaser's 10-frame delta smoothing made a dropped frame play as a slow-motion hiccup
   // followed by a catch-up (world speed wobble); raw deltas keep on-screen speed true to the clock (RunScene still clamps 100 ms).
-  fps: { smoothStep: false },
+  fps: { smoothStep: false, limit: fpsLimitFor({ phone: app.isPhone(), saver: !!app.save.data.settings.batterySaver }) }, // PHONE HEAT: phones never draw more than 60 (Battery saver 30); desktops unlimited
   scale: { mode: Phaser.Scale.NONE, zoom: 1 },
   scene: [RunScene],
   audio: { noAudio: true }, // AU0: one AudioContext, ours (src/audio), made on the first gesture
@@ -103,6 +104,12 @@ const onResize = () => {
 };
 optional('resize observer', () => { if (typeof ResizeObserver !== 'undefined') new ResizeObserver(onResize).observe(stage); });
 window.addEventListener('resize', onResize);
+// PHONE HEAT: the Battery saver toggle takes effect at once (frame limit retuned, canvas resized to the new sharpness; quality follows in RunScene).
+app.applyPower = () => {
+  const saver = !!app.save.data.settings.batterySaver;
+  setLoopLimit(game.loop, fpsLimitFor({ phone: app.isPhone(), saver }));
+  onResize();
+};
 
 window.addEventListener('pagehide', () => app.save.flush());
 // PWA-FIX: the pre-bake is optional; it must never stop the title from showing (a throw here left the bare world canvas: a blank blue-grey window).
