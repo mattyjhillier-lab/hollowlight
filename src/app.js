@@ -698,7 +698,10 @@ export const app = {
     const d = this.data;
     if (this.audio) this.audio.event(ev); // AU4-AU6: every sim event's cue (render/audio only)
     if (this.scene.bossView && ev.type.startsWith('boss')) this.scene.bossView.onEvent(ev);
-    if (ev.type === 'siteWake' && (ev.kind === 'lamp' || ev.kind === 'road' || ev.kind === 'knot')) this.introAsk(ev.kind);
+    if (ev.type === 'siteWake' && (ev.kind === 'lamp' || ev.kind === 'road' || ev.kind === 'knot')) {
+      this.introAsk(ev.kind);
+      if (this.sim) { if (!this.siteWoke || this.siteWoke.sim !== this.sim) this.siteWoke = { sim: this.sim, lamp: 0, road: 0, knot: 0 }; this.siteWoke[ev.kind] += 1; } // E7 Places: wakes counted in memory, banked once at results
+    }
     if (ev.type === 'bossWake') { this.ui.hudView.bossBanner('The Elder Treant wakes', 'the oldest mask in the forest', !this.save.data.settings.reducedMotion); return; }
     if (ev.type === 'hurt') { this.scene.shake(); this.ui.hurt(); this.scene.hurtFx(ev); this.buzz('hurt'); const p = this.sim && this.sim.player; if (p && p.maxHp > 0 && p.hp > 0 && p.hp / p.maxHp < 0.3) this.scene.stop(0.03); } // FM5: a hit under 30% HP gets the existing hit-stop (cap, cooldown, Calm off) // DR1: the edge flash + lantern dip are opacity-only, so they stay under Calm motion (shake does not)
     else if (ev.type === 'boss') {
@@ -824,7 +827,7 @@ export const app = {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
     this.adoptCodex(); // CX1: an old save's progress counts as told BEFORE this run is banked
-    const b = this.save.bankRun(sim.result(), { def: treeDef, data, unlockedTiers: this.openTiers(this.save.data) });
+    const b = this.save.bankRun({ ...sim.result(), ...(this.siteWoke && this.siteWoke.sim === sim ? { siteWoke: { lamp: this.siteWoke.lamp, road: this.siteWoke.road, knot: this.siteWoke.knot } } : {}) }, { def: treeDef, data, unlockedTiers: this.openTiers(this.save.data) });
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
     b.night = this.nightResult(b.tier, sim.result());

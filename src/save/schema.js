@@ -77,6 +77,17 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const num = (v, def, min = 0, max = MAX_NUM) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def);
 const int = (v, def, min = 0, max = MAX_NUM) => Math.floor(num(v, def, min, max));
 
+// E7 Places: lifetime map-event counters, written once per run at results. Optional: absent = all 0 (no migration), and a save with every
+// counter 0 gets no `sites` key at all, so an old save re-saves byte-identically. Fixed key list only; anything else is dropped.
+export const SITE_KEYS = Object.freeze(['lamps', 'roads', 'knots', 'wLamps', 'wRoads', 'wKnots']); // done lamps / roads / knots, then how many woke
+export function cleanSites(v) {
+  if (!isObj(v)) return null;
+  const out = {};
+  let any = false;
+  for (const k of SITE_KEYS) { const n = Object.hasOwn(v, k) ? int(v[k], 0, 0, 1e9) : 0; out[k] = n; if (n > 0) any = true; }
+  return any ? out : null;
+}
+
 // FIX3: added inside v3 (older saves read as 0, like the Almanac bitsets). A lantern with finished runs and no intros field yet already knows
 // its own ability, so that card is marked seen; everything else shows once. A bad type -> 0.
 function cleanIntrosField(raw, stats) {
@@ -229,6 +240,7 @@ export function sanitize(raw, now = Date.now()) {
     startWeapon: countMap(s.startWeapon, 32), // CHARACTER SYSTEM v2: runs started with each spirit (tree 'startWeapon' condition)
     recentRuns: recentRuns(s.recentRuns),
     markedKills: int(s.markedKills, 0, 0, 1e9), chests: int(s.chests, 0, 0, 1e9), gems: int(s.gems, 0, 0, 1e9), abilityUses: int(s.abilityUses, 0, 0, 1e9), blessingsTaken: int(s.blessingsTaken, 0, 0, 1e9),
+    ...(cleanSites(s.sites) ? { sites: cleanSites(s.sites) } : {}), // E7 Places counters (optional; see cleanSites)
     tiers: TREE_DATA ? tierRecords(s.tiers, TREE_DATA, SANITIZE_WARNINGS) : {}, // unknown chapter / tier / hero ids are dropped (and counted)
   };
   // Owned stat nodes whose weapon gate is not owned (pre-G1e saves) are dropped WITH a full refund.

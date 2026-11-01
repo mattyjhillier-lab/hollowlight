@@ -5,14 +5,14 @@
 import { conditionProgress, describeNode } from './tree.js';
 import { evoTrigger } from '../sim/cards.js';
 import { TIER_IDS, MARK_IDS, resolveTier } from '../sim/tiers.js';
-import { FOE, PAGE, PAGE_LABEL, MARK_LINE, LORE, RIDDLE, TITLES, UNMET } from '../ui/codexcopy.js';
+import { CX, PLACE, PLACE_IDS, FOE, PAGE, PAGE_LABEL, MARK_LINE, LORE, RIDDLE, TITLES, UNMET } from '../ui/codexcopy.js';
 
 const own = (o, k) => o !== null && typeof o === 'object' && Object.hasOwn(o, k);
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const n0 = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
 // APPEND-ONLY: bit i of the codex bitsets is ENTRY_KEYS[i]. Never reorder or remove (a retired key keeps its slot); new content appends.
-// f: foe, fp: foe page, e: evolution, h: hero, n: night, l: lore page, c: a completion (weapon page / tab / book; celebrated, not a page).
+// f: foe, fp: foe page, s: place, sp: place page, e: evolution, h: hero, n: night, l: lore page, c: a completion (weapon page / tab / book; celebrated, not a page).
 export const ENTRY_KEYS = Object.freeze([
   'f:wolf', 'f:crow', 'f:root_crawler', 'f:stoat_piper', 'f:puffback_toad', 'f:bramble_hart', 'f:branch_mane', 'f:elder_treant', 'f:treant_pod', 'f:treant_sapling', 'f:marks',
   'fp:wolf:habits', 'fp:wolf:weakness', 'fp:wolf:tells', 'fp:crow:habits', 'fp:crow:weakness', 'fp:crow:tells',
@@ -23,6 +23,7 @@ export const ENTRY_KEYS = Object.freeze([
   'n:cursed_forest:normal', 'n:cursed_forest:hard', 'n:cursed_forest:expert',
   'l:1', 'l:2', 'l:3', 'l:4',
   'c:ghost_wolves', 'c:raven_flock', 'c:spirit_bolts', 'c:chain_lightning', 'c:holy_orbit', 'c:foes', 'c:spirits', 'c:nights', 'c:book',
+  's:lamp', 's:road', 's:knot', 'sp:lamp:tells', 'sp:road:tells', 'sp:knot:tells', 'c:places', // E7 Places (appended; s: a place, sp: its Tells page)
 ]);
 export const MAX_BITS_HEX = 64; // 256 entries before the field must grow (a save test checks the list fits)
 const KEY_INDEX = new Map(ENTRY_KEYS.map((k, i) => [k, i]));
@@ -253,6 +254,21 @@ export function almanac(save, data, def, opts = {}) {
   const loreOpen = [n0(st.runs) > 0, n0(st.wins) > 0, clearsOf('hard') > 0, clearsOf('expert') > 0];
   const lore = LORE.map((p, i) => { const key = `l:${i + 1}`; live.add(key); if (loreOpen[i]) unlocked.add(key); return { key, i: i + 1, open: loreOpen[i], title: loreOpen[i] ? p.title : '', text: loreOpen[i] ? p.text : '', cond: p.cond }; });
 
+  // ---- places (E7). Found = the place has woken in a run; Tells open at a completion count. NOT in `live`, so the "book is whole" rule is unchanged.
+  const si = isObj(st.sites) ? st.sites : {};
+  const sc = (k) => (Object.hasOwn(si, k) ? Math.min(1e9, n0(si[k])) : 0);
+  const sCounts = { lamp: [sc('wLamps'), sc('lamps')], road: [sc('wRoads'), sc('roads')], knot: [sc('wKnots'), sc('knots')] };
+  const times = placeTimes(data.chapters && data.chapters[cid] && data.chapters[cid].sites);
+  const places = PLACE_IDS.map((id) => {
+    const P = PLACE[id], [woke, done] = sCounts[id];
+    const known = woke > 0 || done > 0, key = `s:${id}`, tk = `sp:${id}:tells`;
+    if (known) unlocked.add(key);
+    const open = known && done >= P.at && !!times;
+    if (open) unlocked.add(tk);
+    return { key, id, kind: 'place', known, name: known ? P.name : '', woke, done, doneText: P.done(done), where: chName, line: known ? P.line : '', gift: known ? P.gift : '', hint: CX.placeHint(chName),
+      tells: { key: tk, label: CX.placeTells, at: P.at, cur: done, what: P.what, open, text: open && times ? P.tells(times) : '' } };
+  });
+
   // ---- counts + completions
   const foesFound = foes.filter((f) => f.known).length;
   const evoTotal = spirits.reduce((a, w) => a + w.evos.length, 0);
@@ -262,6 +278,7 @@ export function almanac(save, data, def, opts = {}) {
     { id: 'spirits', found: evoFound, total: evoTotal },
     { id: 'heroes', found: heroes.filter((h) => h.walked).length, total: heroes.length },
     { id: 'nights', found: nights.filter((n) => n.walked).length, total: nights.length },
+    { id: 'places', found: places.filter((p) => p.known).length + places.filter((p) => p.tells.open).length, total: places.length * 2 }, // E7: 3 entries + 3 Tells
   ];
   const complete = new Set();
   for (const w of spirits) if (w.evos.length && w.found === w.evos.length) complete.add(`c:${w.id}`);
@@ -269,16 +286,28 @@ export function almanac(save, data, def, opts = {}) {
   if (foesWhole) complete.add('c:foes');
   if (evoTotal > 0 && evoFound === evoTotal) complete.add('c:spirits');
   if (nights.every((n) => n.walked) && lore.every((l) => l.open)) complete.add('c:nights');
+  if (places.every((p) => p.known && p.tells.open)) complete.add('c:places'); // separate from the book (c:book counts `live` pages only)
   const pageKeys = [...live];
   const pagesFound = pageKeys.filter((k) => unlocked.has(k)).length;
   if (pagesFound === pageKeys.length && pageKeys.length > 0 && ownsFullAlmanac(s)) complete.add('c:book'); // the book is whole only with the Full Almanac lantern (codex perk)
   for (const c of complete) unlocked.add(c);
   for (const t of tabs) t.fresh = [...unlocked].some((k) => isNew(k) && tabOfKey(k) === t.id);
   const earned = TITLE_IDS.filter((t) => { const d = TITLES[t]; return d.weapon ? complete.has(`c:${d.weapon}`) : d.tab ? complete.has(`c:${d.tab}`) : d.book ? complete.has('c:book') : false; });
-  return { tabs, pages: { found: pagesFound, total: pageKeys.length }, foes, spirits, heroes, nights, lore, unlocked, complete, earned, riddles, read, isNew, chapter: chName };
+  return { tabs, pages: { found: pagesFound, total: pageKeys.length }, foes, spirits, heroes, nights, places, lore, unlocked, complete, earned, riddles, read, isNew, chapter: chName };
+}
+
+// 'm:ss' wake times for the Tells, read from the chapter's own sites data (null when the data is missing or malformed: the Tells then stay blank)
+const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+export function placeTimes(S) {
+  try {
+    const t = (v) => { if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1e5) throw new Error('t'); return mmss(v); };
+    const out = { lamp: S.lamps.groups.map((g) => t(g.t)), road: S.roads.list.map((r) => t(r.t)), knot: S.knots.list.map((k) => t(k.t)), roadTimer: S.roads.list.map((r) => Math.floor(Number(r.timer)) || 0) };
+    return out.lamp.length >= 3 && out.road.length >= 2 && out.knot.length >= 2 ? out : null;
+  } catch { return null; }
 }
 
 export function tabOfKey(k) {
+  if (k.startsWith('s:') || k.startsWith('sp:') || k === 'c:places') return 'places';
   if (k.startsWith('f:') || k.startsWith('fp:')) return 'foes';
   if (k.startsWith('e:')) return 'spirits';
   if (k.startsWith('h:')) return 'heroes';

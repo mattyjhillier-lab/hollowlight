@@ -28,7 +28,9 @@
 .cx-body { flex: 1; display: flex; gap: 14px; padding: 12px 14px 14px; min-height: 0; border-top: 1px solid rgba(216, 178, 106, .25); }
 .cx-list { flex: 0 0 46%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-content: start; overflow-y: auto; min-height: 0; padding: 2px; }
 .cx-list--spirits, .cx-list--nights { flex: 0 0 200px; grid-template-columns: 1fr; }
-.cx-list--heroes { grid-template-columns: repeat(3, 1fr); }
+.cx-list--heroes, .cx-list--places { grid-template-columns: repeat(3, 1fr); }
+.cx-sil--place { width: 56px; height: 56px; }
+.cx-epic .cx-sil--place { width: 84px; height: 84px; }
 .cx-item { position: relative; border-radius: 12px; background: rgba(10, 14, 24, .55); border: 1px solid rgba(168, 176, 196, .25); padding: 6px 4px; display: flex; flex-direction: column;
   align-items: center; gap: 2px; min-height: 96px; color: var(--cx-cream); font: inherit; cursor: pointer; }
 .cx-item.is-sel { border: 2px solid var(--cx-brass); box-shadow: 0 0 14px rgba(216, 178, 106, .35); }
@@ -102,7 +104,8 @@
   .cx-body { padding: 8px; gap: 8px; }
   .cx-list { grid-template-columns: repeat(4, 1fr); gap: 5px; flex-basis: 44%; }
   .cx-list--spirits, .cx-list--nights { flex-basis: 150px; grid-template-columns: 1fr; }
-  .cx-list--heroes { grid-template-columns: repeat(2, 1fr); }
+  .cx-list--heroes, .cx-list--places { grid-template-columns: repeat(2, 1fr); }
+  .cx-epic .cx-sil--place { width: 56px; height: 56px; }
   .cx-item { min-height: 72px; padding: 3px; }
   .cx-pic { height: 38px; }
   .cx-nm { font-size: 12px; }
@@ -127,6 +130,8 @@
 @media (orientation: portrait) and (max-width: 899px) {
   .cx-tot { display: none; }
   .cx-tabn { display: none; }
+  .cx-tabs { gap: 3px; padding: 4px 6px 0; } /* E7: five tabs must fit a 375 px phone without scrolling */
+  .cx-tab { padding: 0 7px; gap: 5px; font-size: 14px; min-width: 44px; justify-content: center; flex: none; } /* 320 px: the strip scrolls a little; the open tab is scrolled into view */
   .cx-hide-land { display: inline; }
   .cx-body { flex-direction: column; }
   .cx-list, .cx-list--spirits, .cx-list--nights { flex: 1 1 auto; grid-template-columns: repeat(3, 1fr); }

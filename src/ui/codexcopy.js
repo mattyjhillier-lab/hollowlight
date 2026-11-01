@@ -6,7 +6,7 @@ export const CX = Object.freeze({
   sub: 'What you have learned of the Hollow',
   back: 'Back',
   readOnly: 'Read only while the night waits',
-  tabs: Object.freeze({ foes: 'Foes', spirits: 'Spirits', heroes: 'Wickbearers', nights: 'Nights' }),
+  tabs: Object.freeze({ foes: 'Foes', spirits: 'Spirits', heroes: 'Wickbearers', nights: 'Nights', places: 'Places' }),
   pages: (a, b) => `${a} / ${b} pages`,
   unknown: '?????',
   notMet: 'not met',
@@ -50,10 +50,38 @@ export const CX = Object.freeze({
   boss: 'Elder Treant waits at the end of the night',
   lore: 'Lore',
   loreLocked: 'A page not yet written',
+  // places (E7; docs/design/events-almanac-v1.md option A). No riddles: rewards are shown in the world before you commit.
+  placeUnknown: 'Not yet woken',
+  placeHint: (where) => `Somewhere in the ${where}. Keep walking.`,
+  placeWhere: (where) => `${where} · a place in the dark`,
+  placeWoke: (n) => `Woke ${n} time${n === 1 ? '' : 's'}`,
+  placeKeys: 'places',
+  placeSeen: 'Seen',
+  placeGift: 'Gift',
+  placeTells: 'Tells',
+  placeTellsNext: (what, at, cur) => `Tells open at ${at} ${what} (${cur})`,
+  placeTellsSealed: 'Sealed until you have walked it a few more times.',
+  placeLabel: (name, count) => `${name}, ${count}`,
+  placeLabelNew: 'Unknown place, not yet woken',
   // results / title links
   open: 'Almanac',
   openHint: 'J',
   written: 'written in the Almanac',
+});
+
+// E7 Places: one line per place (the intro card's own sentence, shortened), what it gives (as shown in the world), and the staged Tells.
+// `at` = how many completions open the Tells page. Times in the Tells come from chapters.json sites (codex.js placeTimes), never typed here.
+export const PLACE_IDS = Object.freeze(['lamp', 'road', 'knot']);
+export const PLACE = Object.freeze({
+  lamp: { name: 'Lamp Posts', line: 'Old lamps wake in the dark. Walk up to one to light it.', done: (n) => `${n} lit`, what: 'lamps lit', at: 8,
+    gift: 'Each lamp shows its gift before you go: glowing gems, gold or a heart.',
+    tells: (t) => `Lamps wake in three waves: the near ones at ${t.lamp[0]}, farther ones at ${t.lamp[1]}, the farthest at ${t.lamp[2]}.` },
+  road: { name: 'Lantern Road', line: 'Three old lanterns glow in a line. Light all three before they fade.', done: (n) => `${n} relit`, what: 'roads relit', at: 3,
+    gift: 'Each lantern gives gems and gold. All three give a big prize with a Soul Magnet, and the first road offers a Blessing too.',
+    tells: (t) => `A road wakes at ${t.road[0]} and again at ${t.road[1]}. Once the first lantern is lit you have ${t.roadTimer[0]} seconds on the first road and ${t.roadTimer[1]} on the second.` },
+  knot: { name: 'Hollow Knot', line: 'A knot of dark roots wakes. Burn it out with your spirits.', done: (n) => `${n} burned out`, what: 'knots burned out', at: 3,
+    gift: 'Burning it out gives gems, gold and a heart. The first knot offers a Blessing; the second leaves a soul shard.',
+    tells: (t) => `A knot wakes at ${t.knot[0]} and again at ${t.knot[1]}. It wakes when you come near. Step out of its ring when it glows.` },
 });
 
 // first-kill line per foe (the entry quote), a hint while unmet, and the staged pages
@@ -146,9 +174,10 @@ export const CEL = Object.freeze({
     foes: 'You know every mask in the forest by its name.',
     spirits: 'Every spirit has shown you all it can be.',
     nights: 'Every night here has been walked, and remembered.',
+    places: 'Every lamp is lit, every road walked, every knot burned out.',
     book: 'The whole Almanac is written. The Hollow remembers you.',
   }),
-  tabWhole: Object.freeze({ foes: 'The bestiary is whole', spirits: 'The spirits are whole', nights: 'The nights are whole', book: 'The Almanac is whole' }),
+  tabWhole: Object.freeze({ foes: 'The bestiary is whole', spirits: 'The spirits are whole', nights: 'The nights are whole', places: 'The places are whole', book: 'The Almanac is whole' }),
   titlePill: (t) => `Title: ${t}`,
   ornPill: (o) => `Lantern ornament: ${o}`,
   constWhole: (name) => `${name} is whole again`,
