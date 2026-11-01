@@ -64,6 +64,17 @@ Whatever is added or designed (feature, creature, weapon, evolution, UI, effect,
 ## Standing rule: new content ships with its skill tree (set by Matt, 2026-11-01)
 Every new map/chapter, character, weapon or other content that the tree gates or rewards is designed, built and verified TOGETHER with its skill-tree content (unlock nodes, stat nodes, gates, codex entries, progress hints), never added later. A chunk is not done until the tree side matches what was added: `node scripts/tree-validate.mjs`, the soft-cap budget, the pace and economy checks (`gates-pace.mjs`, `gates-softcap.mjs`), and tests/treerelease.test.mjs all pass. Tree ids that have shipped never change price or effect without a `core.version` bump and a migration step (tree release snapshot, v4 recorded 2026-11-01); new ids are free to add. Content guide: docs/CONTENT-GUIDE.md. EXTENSION (Matt, 2026-11-01): every new weapon, hero or map GROWS the tree with its own nodes; each new map is harder than the last and has its own gated nodes that reward clearing it; every such addition re-runs the full balance check (fresh / mid-tree / maxed bands, soft-cap budget, pace), because it shifts the bands.
 
+## Standing rule: the new-content playbook, for ALL future content (set by Matt, 2026-11-01)
+Everything added from now on (weapons, evolutions, heroes, maps/chapters, nights, enemies, bosses, power-ups) goes through the same path, in small chunks:
+1. Design first: research, then THREE options for each new piece, recommended first; Matt picks; record in docs/LOCKED.md. Reopen a locked pick only with a recorded reason.
+2. Data first, then sim, then art/sound, then tree, then balance, then release. Hidden behind an `unreleased` flag until the release switch; releasing needs Matt's yes.
+3. It ships WITH its skill-tree content and the tree grows with it (budget may grow with the roster; re-check every time). New maps are harder (x1.1 per chapter, compounding: enemy HP + damage, rewards by the same factor; nights stack on top; tune by measurement), have their own gated nodes that reward clearing them, and each night of each map states what it pays and what it unlocks.
+4. Every new weapon/hero must be balanced AS A STARTER (a new profile can start with any hero and any weapon): fresh-start win 15-30%, hero gap small, before it enters the starter pick.
+5. Rebalance EVERY time: the full definition-of-done sweeps against the bands (fresh / mid / maxed, soft-cap budget, pace, evolutions 1.8-2.3x with the 3x cap), plus the hero level / Bond cap review when a map or night raises difficulty. A band that breaks comes to Matt with numbers before anything changes.
+6. Exploit + feel pass (stand, camp, kite, ability spam) and the fix order (tune first, limit second, replace last).
+7. Saves are append-only and validated; hostile-save tests; old saves must load byte-identical (golden fixtures). Phone checks (heat, fit-audit down to 320 px) for anything visual.
+8. Fit check + Security check lines on every report.
+
 ## Standing rule: token conservation (set by Matt)
 Use the cheapest model/effort that does the job well; save the most powerful model for work that truly needs it.
 - Agents: set `model` explicitly. haiku = file lookups, formatting, simple edits, running scripts and reporting. sonnet = research, routine coding, tests, balance sweeps. opus (or stronger) only for hard architecture/design decisions, tricky bugs, or security-critical review.
