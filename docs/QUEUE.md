@@ -422,3 +422,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 
 - LOCKED 2026-11-01: Ember Breath + Hearth-Warden hero (name TBD by Matt) + Hushbell Hamlet chapter. Order proposal: 1) weapon + its tree cluster, 2) hero + pet, 3) Chapter 2 (C0-C8). Matt go needed. Open: tree budget for 6th weapon cluster.
 - BUILT 2026-11-01 (dev, hidden: unreleased flag): EW1 Ember Breath data+sim (wip/ember-breath 4ee31a0), 1330 tests, sweep-all byte-identical to before. RELEASE SWITCH = add ember_breath to balance.starter.weapons + delete unreleased flag in weapons.json + EW7 cluster (heart gt_ember_breath + first socket gate). Open for EW7: Burn potency nodes home; helpers allOpen can draw Ember in tests. NEXT: EW2 art + sound.
+
+- NAMES LOCKED 2026-11-01: hero Lucinda, pet Ophimber (ids stay hearthwarden). Use in characters.json name, charcopy, Almanac, results, codex lines.
