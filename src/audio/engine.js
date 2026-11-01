@@ -26,7 +26,7 @@ export const CUES = {
   ...MORE_CUES,
 };
 // weapon id (the sim hit log's src tag) -> its verb cue
-export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare' };
+export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare', ember_breath: 'candle_flare' };
 
 export class AudioEngine {
   constructor(win) {

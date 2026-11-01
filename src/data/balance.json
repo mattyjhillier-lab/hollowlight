@@ -90,9 +90,13 @@
       "*"
     ],
     "weapons": [
-      "*"
+      "ghost_wolves",
+      "raven_flock",
+      "spirit_bolts",
+      "chain_lightning",
+      "holy_orbit"
     ],
-    "_note": "CHARACTER SYSTEM v2: what a NEW profile may pick as its starter set ('*' = all; Matt decides which starting weapons to offer)"
+    "_note": "RELEASE SWITCH for new weapons: add the id here (and drop its unreleased flag in weapons.json). CHARACTER SYSTEM v2: what a NEW profile may pick as its starter set ('*' = all; Matt decides which starting weapons to offer)"
   },
   "weaponSlots": 4,
   "xp": {
