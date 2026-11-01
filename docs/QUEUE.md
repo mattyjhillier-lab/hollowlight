@@ -432,3 +432,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - NOW: build DM1-DM2 (data + sim) for Dragonfire Meteor on wip/dragonfire-meteor (replaces wip/ember-breath), then DM3 art. Release (DM10) needs Matt yes; tree budget decision at DM8.
 
 - DM8 tree budget: PRE-APPROVED to grow (Matt 2026-11-01); still re-run bands each time.
+
+- DESIGN INPUT for Chapter 2 build: chapter multiplier x1.1 per chapter (enemy HP+damage, rewards same factor), stacks with nights; tune by measurement.
