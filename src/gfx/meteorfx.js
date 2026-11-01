@@ -94,8 +94,8 @@ export function bakeAtlas(c) { // c = a 2D context 288 x 160
   for (let i = 0; i < 6; i++) { const [tx, ty] = at('tongue' + i); drawTongue(c, tx + 12, ty + 38, L[i][0], L[i][1]); }
   [x, y] = at('poolLow'); // Low: ONE flat sprite (no additive): tint + glow + rim + 5 tongues
   c.fillStyle = rg(c, x + 48, y + 48, 48, BLOOM); c.fillRect(x, y, 96, 96);
-  c.fillStyle = rg(c, x + 48, y + 48, 44, [[0, 'rgba(255,214,140,0.5)'], [0.5, 'rgba(255,179,92,0.3)'], [0.9, 'rgba(224,122,107,0.12)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 96, 96);
-  c.strokeStyle = 'rgba(224,122,107,0.4)'; c.lineWidth = 1.6; c.beginPath(); c.arc(x + 48, y + 48, 42, 0, 6.2832); c.stroke();
+  c.fillStyle = rg(c, x + 48, y + 48, 44, [[0, 'rgba(255,226,160,0.6)'], [0.5, 'rgba(255,179,92,0.4)'], [0.9, 'rgba(224,122,107,0.28)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 96, 96);
+  c.strokeStyle = 'rgba(240,140,100,0.55)'; c.lineWidth = 1.8; c.beginPath(); c.arc(x + 48, y + 48, 42, 0, 6.2832); c.stroke();
   for (let i = 0; i < 5; i++) { const a = i * 2.399 + 0.4, rr = 12 + (i % 3) * 8; drawTongue(c, x + 48 + Math.cos(a) * rr * 1.3, y + 50 + Math.sin(a) * rr * 1.2, L[i][0], L[i][1], 0.42, 0.9); }
 }
 
@@ -159,7 +159,7 @@ export class MeteorLayer {
     const fx = caps.add ? this.sFx : this.sFxN;
 
     // ---- fireballs in the air
-    const arc = METEOR.arc, ps = this.pose;
+    const arc = METEOR.arc, ps = this.pose; let punched = false;
     for (const f of w.rt.fly) {
       let r = this.fly.get(f);
       if (!r) { r = { ox: p.x, oy: p.y - 4, x: f.x, y: f.y, r: f.r, fr }; this.fly.set(f, r); c.cue('meteor_launch'); }
@@ -183,7 +183,7 @@ export class MeteorLayer {
     if (this.fly.size) for (const [f, r] of this.fly) if (r.fr !== fr) { // gone from the sim list = it landed
       this.fly.delete(f);
       if (this.imp.length < 12) this.imp.push({ x: r.x, y: r.y, r: r.r, t: 0, s: poolSeed(r.x, r.y) });
-      if (inV(r.x, r.y)) c.cue('meteor_impact');
+      if (inV(r.x, r.y)) { c.cue('meteor_impact'); if (caps.pop && !caps.flat && c.shake && !punched) { punched = true; c.shake(60, caps.tier === 'high' ? 0.0045 : 0.003); } } // 3 px (High) / 2 px (Med) kick; RunScene.shake obeys Calm + the Screen shake setting + its 0.4 s gate
     }
 
     // ---- impacts: flash + expanding tongues + sparks
@@ -222,6 +222,9 @@ export class MeteorLayer {
         pm.delete(ok);
       }
       const env = this.env;
+      let nv = 0, newest = null, nb = -1;
+      for (const [q, r] of pm) { if (r.gone < 0 || !r.cap) { nv++; } if (r.gone < 0 && r.born >= nb) { nb = r.born; newest = q; } }
+      const ov = 1 / (1 + 0.8 * Math.max(0, nv - 1)); // overlap damping: 5 stacked pools share ~0.4 of a single pool's add-blend light
       for (const [q, r] of pm) {
         poolEnv(r.rem, T, r.born, r.gone, r.cap, env);
         if (r.gone >= 0 && (T - r.gone) > (r.cap ? CAP_FADE_T : LINGER_T)) { pm.delete(q); continue; }
@@ -233,9 +236,9 @@ export class MeteorLayer {
           continue;
         }
         const pulse = caps.flicker ? 0.06 * Math.sin(T * 3.1 + r.s * 6.2832) : 0;
-        this.sTint.put('bloom', px, py, dG + 2, rad * 1.15 / 16, rad * 1.15 / 16, 0.42 * env.aIn * env.tint);
-        if (env.glow > 0.01) this.sGlow.put('glow', px, py, dG + 3, rad * 1.25 / 16, rad * 1.25 / 16, Math.max(0, (0.2 + pulse * 0.5) * env.glow * env.aIn), 0, 0xffc880);
-        const ra = 0.34 * env.aIn * (0.3 + 0.7 * env.glow) * (r.gone >= 0 ? env.tint : 1);
+        this.sTint.put('bloom', px, py, dG + 2, rad * 1.15 / 16, rad * 1.15 / 16, 0.42 * env.aIn * env.tint * (0.45 + 0.55 * ov));
+        if (env.glow > 0.01) this.sGlow.put('glow', px, py, dG + 3, rad * 1.25 / 16, rad * 1.25 / 16, Math.max(0, (0.17 + pulse * 0.5) * env.glow * env.aIn * ov), 0, 0xffc880);
+        const ra = (q === newest ? 0.4 : 0.13) * env.aIn * (0.3 + 0.7 * env.glow) * (r.gone >= 0 ? env.tint : 1); // the newest pool keeps a clear damage edge, older ones a faint one
         if (ra > 0.01) this.sNorm.put('ring', px, py, dG + 4, rad / 15.2, rad / 15.2, ra);
         if (env.flame > 0.02) {
           const nT = Math.min(caps.tongueMax, caps.tongues + Math.max(0, Math.floor((rad - 35) / 15))), base = (rad / 35 < 0.8 ? 0.8 : rad / 35 > 1.2 ? 1.2 : rad / 35) * 0.62;
@@ -243,14 +246,14 @@ export class MeteorLayer {
             const th = r.s * 6.2832 + i * 2.399, rho = rad * (0.2 + 0.5 * frac(i * 0.618 + r.s)), tx = px + Math.cos(th) * rho, ty = py + Math.sin(th) * rho * 0.9;
             const fi = caps.flicker ? ((Math.floor(T * 7 + i * 1.7 + r.s * 6)) % 6 + 6) % 6 : (i + Math.floor(r.s * 6)) % 6;
             const wob = caps.flicker ? 1 + 0.12 * Math.sin(T * 9 + i * 2 + r.s * 20) : 1, s = base * env.flame * wob;
-            this.sTongue.put('tongue' + fi, tx, ty, dL + ty - 0.5, s, s, 0.75 * env.aIn * env.flame);
+            this.sTongue.put('tongue' + fi, tx, ty, dG + 7, s, s, 0.75 * env.aIn * env.flame);
           }
           for (let j = 0; j < caps.embers; j++) {
             const ph = frac(T * 0.6 + r.s * 3 + j / 3), ex = px + (frac(r.s * 7 + j * 0.37) - 0.5) * rad * 1.2, ey = py + (frac(r.s * 5 + j * 0.21) - 0.5) * rad * 0.8 - ph * 22;
             this.sFx.put('ember', ex, ey, dF - 14, 0.7 * (1 - 0.4 * ph), 0.7 * (1 - 0.4 * ph), Math.sin(Math.PI * ph) * 0.85 * env.flame * env.aIn);
           }
         }
-        if (lm && env.glow > 0.02) lm.add(px, py, rad * 1.7, COL.amber, 0.2 * env.glow * env.aIn);
+        if (lm && env.glow > 0.02) lm.add(px, py, rad * 1.7, COL.amber, 0.2 * env.glow * env.aIn * ov);
       }
       // a quiet crackle tick while a pool burns in view (loop-free: one short cue per ~0.55 s of run time)
       this.crack -= dt;

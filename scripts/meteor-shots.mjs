@@ -63,7 +63,7 @@ const wep = "window.__app.sim.weapons.find(w=>w.id==='dragonfire_meteor')";
 // freeze the game loop on the frame the condition holds (the last rendered frame stays on screen), shoot, wake
 const freezeWhen = (c, expr, ms = 25000) => c.ev(`new Promise((res)=>{const t0=performance.now();const f=()=>{let ok=false;try{ok=!!(${expr})}catch(e){}if(ok){window.__app.scene.game.loop.sleep();res(true)}else if(performance.now()-t0>${ms})res(false);else requestAnimationFrame(f)};requestAnimationFrame(f)})`);
 const wake = (c) => c.ev('window.__app.scene.game.loop.wake(); true');
-const shot = async (c, file, clip) => { const r = await c.send('Page.captureScreenshot', clip ? { format: 'png', clip: { ...clip, scale: 2 } } : { format: 'png' }); writeFileSync(file, Buffer.from(r.data, 'base64')); };
+const shot = async (c, file, clip) => { const r = await c.send('Page.captureScreenshot', clip ? { format: 'jpeg', quality: 72, clip: { ...clip, scale: 2 } } : { format: 'jpeg', quality: 72 }); writeFileSync(file, Buffer.from(r.data, 'base64')); };
 const around = (c, wx, wy, w, h) => c.ev(`(()=>{const sc=window.__app.scene,cv=sc.game.canvas,r=cv.getBoundingClientRect(),wv=sc.cameras.main.worldView,k=r.width/wv.width;return {x:Math.max(0,r.left+(${wx}-wv.x)*k-${w}/2),y:Math.max(0,r.top+(${wy}-wv.y)*k-${h}/2),width:${w},height:${h}}})()`);
 const STATES = {
   flight: `(()=>{const w=${wep};return w&&w.rt.fly&&w.rt.fly.some(f=>f.t<0.2&&f.t>0.08)})()`,
@@ -80,9 +80,9 @@ async function one(c, out, view, tier, calm, rank, state, n = 22, t = 60, tag = 
   const ok = await freezeWhen(c, STATES[state]);
   const name = `${view}-${tier}${calm ? '-calm' : ''}-r${rank}-${state}${tag}`;
   if (!ok) { console.log(name, 'STATE NOT REACHED'); await wake(c); return; }
-  await shot(c, join(out, name + '.png'));
+  await shot(c, join(out, name + '.jpg'));
   const f = await focus(c, state);
-  if (f) { const clip = await around(c, f[0], f[1], view === 'desk' ? 330 : 180, view === 'desk' ? 190 : 150); await shot(c, join(out, name + '-zoom.png'), clip); }
+  if (f) { const clip = await around(c, f[0], f[1], view === 'desk' ? 330 : 180, view === 'desk' ? 190 : 150); await shot(c, join(out, name + '-zoom.jpg'), clip); }
   console.log(name, JSON.stringify(await c.ev('({sprites:window.__app.scene.meteor.sprites})')));
   await wake(c);
 }
@@ -93,7 +93,7 @@ async function shots(out) {
     for (const [view, tier, calm, rank, state, n, t, tag] of [
       ['desk', 'high', 0, 1, 'flight'], ['desk', 'high', 0, 1, 'impact'], ['desk', 'high', 0, 1, 'pool'],
       ['desk', 'high', 0, 5, 'flight'], ['desk', 'high', 0, 5, 'impact'], ['desk', 'high', 0, 5, 'pool'], ['desk', 'high', 0, 5, 'crowd'],
-      ['desk', 'high', 0, 5, 'crowd', 22, 700, '-night'], ['desk', 'high', 0, 5, 'pool', 4, 60, '-sparse'], ['desk', 'high', 0, 1, 'pool', 4, 60, '-sparse'], ['desk', 'high', 0, 5, 'pool', 4, 700, '-sparse-night'],
+      ['desk', 'high', 0, 5, 'crowd', 22, 700, '-night'], ['desk', 'high', 0, 5, 'pool', 4, 60, '-sparse'], ['desk', 'high', 0, 1, 'pool', 4, 60, '-sparse'], ['desk', 'high', 0, 5, 'pool', 4, 700, '-sparse-night'], ['desk', 'low', 0, 5, 'pool', 4, 60, '-sparse'], ['phone', 'high', 0, 5, 'pool', 4, 60, '-sparse'],
       ['desk', 'med', 0, 5, 'pool'], ['desk', 'med', 0, 5, 'crowd'],
       ['desk', 'low', 0, 5, 'flight'], ['desk', 'low', 0, 5, 'pool'], ['desk', 'low', 0, 5, 'crowd'],
       ['desk', 'high', 1, 5, 'flight'], ['desk', 'high', 1, 5, 'pool'],

@@ -226,7 +226,7 @@ export class RunScene extends Phaser.Scene {
     this.ribSet = new RibbonSet(1000, 12, 64); // W2 trails (+ W7b Lightfoot trail segments) (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
     this.meteor = new MeteorLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM3: lazy-baked on the first Meteor
-    this.meteorCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, cue: (id) => { if (app.audio) app.audio.play(id); }, vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
+    this.meteorCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, cue: (id) => { if (app.audio) app.audio.play(id); }, shake: (ms, k) => this.shake(ms, k), vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
     this.pawLayer = this.sumAtlas ? new PawLayer(this, SUM_KEY, RIBBON_DEPTH + 1, 300) : null; // S2: pawprints over the soft trail ribbon, under every creature/halo/pickup/number
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
