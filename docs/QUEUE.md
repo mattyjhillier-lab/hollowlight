@@ -403,3 +403,4 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - NOW: exploit pass CONFIRM run (realistic builds, proper kite bot) on wip/exploit-pass; then tune only confirmed flags (Matt decides). Icon fix ff5462a is on dev, NOT on main yet: waiting Matt yes (or batch with first patch).
 
 - DATA POINT (Matt, 2026-11-01): cleared a full run on his FIRST go with Spirit Bolts (fresh target win 15-30%; one run = anecdote, add to exploit confirm run; asked hero/night/evolution/lowest HP/feel).
+- Matt detail: Elias, Twilight, Spirit Bolts, evolved ~halfway (first unlocked evo), lowest ~35/130 HP, easy early + right after evolving, then harder, had to think about movement. Sent to the confirm run as a matching arm.
