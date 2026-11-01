@@ -176,7 +176,7 @@ const ghostWolves = {
     // packPow: the alpha is the pack gathered into one: its bites grow with Pack size as (count / max count)^packPow (1.0 at max Pack size, weaker while the pack is small)
     const cs = sim.data.weapons.ghost_wolves.stats.count;
     const packF = evo === 'dire_alpha' ? (s.count / (cs.base + cs.perRank * sim.balance.maxRank)) ** tune(sim, w, 'packPow', 1.25) : 1;
-    const alphaHit = evo === 'dire_alpha' ? dmg * tune(sim, w, 'dmg', 3.4) * packF : 0;
+    const alphaHit = evo === 'dire_alpha' ? dmg * tune(sim, w, 'dmg', 4.6) * packF : 0;
     const alphaSide = evo === 'dire_alpha' ? dmg * tune(sim, w, 'side', 0.6) * packF : 0;
     const bleedDps = dmg * s.duration; // Rend: share of a bite per second
     const rate = rateMult(sim.data.weapons.ghost_wolves, 'speed', w.ranks.speed || 0); // W7rem: +4% bite rate per Wolf speed rank
