@@ -391,3 +391,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - PARKED (Matt, 2026-11-01): Spirit Tempest "stand and do nothing" feel. Probe (wip/tempest-standstill, docs/design/fv-data/tempest-standstill.md) shows no stand-and-win; best evolution to stand near, halves damage taken. Revisit in the EXPLOIT + FEEL PASS (needs his night/chapter/tree/other-weapons detail for a matched rerun). No number changed.
 
 - LOCKED 2026-11-01: launch hosting = new wispwick Cloudflare project + "moved" page on old address, no domain. Do at launch with Matt.
+
+- DONE 2026-11-01: Cloudflare project wispwick created (main -> wispwick.pages.dev, old build; dev -> dev.wispwick.pages.dev, live, new build). Old hollowlight project untouched. TODO: absolute og/twitter URLs + moved page on old address (after merge), move testers to dev.wispwick.pages.dev.
