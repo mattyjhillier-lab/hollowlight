@@ -407,3 +407,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - FEEL FLAG (Matt, 2026-11-01): The Alpha (dire_alpha) "doesnt feel good, confused what it is meant to do". Design = pack merges into 1 big wolf (bite x3.4, cleave 0.6, bleed x1.5, 2 shades). Fix order: clearer text/look + tune first, replace last. Alpha vs base wolves check added to confirm run. Asked Matt: weaker, or just unclear?
 
 - RULE (Matt 2026-11-01): new maps/characters/weapons ship WITH their skill tree content (CLAUDE.md standing rule; LOCKED).
+
+- NOW: evo tune chunk (Phantom Stampede up, Alpha modest boost) on wip/evo-tune, then re-measure; ships in the patch release with icon fix + Alpha text (needs Matt yes). Spirit Tempest feel: not confirmed, no change.
