@@ -395,3 +395,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - DONE 2026-11-01: Cloudflare project wispwick created (main -> wispwick.pages.dev, old build; dev -> dev.wispwick.pages.dev, live, new build). Old hollowlight project untouched. TODO: absolute og/twitter URLs + moved page on old address (after merge), move testers to dev.wispwick.pages.dev.
 
 - PREPPED 2026-11-01 (on dev, not live): absolute og/twitter/canonical URLs -> wispwick.pages.dev; moved/index.html + deploy.yml now publishes ONLY the moved page to the old GitHub Pages address (takes effect on merge to main). Old hollowlight Cloudflare project builds main = would serve the full game at its old address; Matt to delete or repoint it at launch. Saves do not carry between addresses (browser storage is per-address): decide at launch whether to tell testers.
+
+- LOCKED 2026-11-01 (Matt one-tap): launch order = exploit + feel pass first, then fixes, then Matt final yes, then merge. NOW: exploit + feel pass (agent, branch wip/exploit-pass).
