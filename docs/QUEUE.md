@@ -417,3 +417,5 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 - MINIMAP LOOK APPROVED (Matt, 2026-11-01, "Looks good"); on dev, not yet on main (batch with Places tab release, needs his yes). NOW: Almanac Places tab E7 (save schema touch, own security pass).
 
 - NOW: DESIGN for next hero (female dragon-kin + small dragon pet, fire weapon) and Chapter 2, docs only (wip/design-weapon-hero, wip/design-chapter2). Then Matt one-tap picks, then build in small chunks, each with its tree group.
+
+- LOCKED 2026-11-01: Chapter 2 = Hushbell Hamlet (A), tolls never damage. Hero/weapon design in progress; then build order decided with Matt.
