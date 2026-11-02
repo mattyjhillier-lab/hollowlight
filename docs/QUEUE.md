@@ -452,3 +452,6 @@ Summons stop being weapons; each hero gets a companion (Lucinda/Ophimber model).
 
 ## LATER (back of the list): Visuals review (Matt, 2026-11-02)
 Are we using the correct visuals? Discussion first, nothing built. Art style is LOCKED (polished chunky 2D cartoon, P1 Warm Lantern); reopening it is Matt's call. Start by asking what feels off (characters, enemies, ground, effects, UI), pick reference games, take true-size and phone screenshots, collect friends' one-word reactions. Prefer fixes inside the current style over a restyle.
+
+## LATER: Skill tree "wow" review (Matt, 2026-11-02)
+Matt looked at the tree properly for the first time and it did not give the wow he wanted. Discussion first, nothing built. Ask: what did it feel like (flat, small, menu-like, nothing exciting to unlock) and what would the wow be. Ideas to evaluate: open-up camera pull-out and node-light pulses, tree as the restored Hollow (colour returns per branch), silhouettes of far big unlocks, fewer/bigger nodes, unlock sound + flourish. Check against LOCKED meta-progression principle and progression-gates-v1; tree tied to Companions/Lucinda/Chapter 2 growth, so review before that content lands if possible.
