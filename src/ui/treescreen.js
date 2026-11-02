@@ -8,6 +8,7 @@
 import { TreeModel, SAY, KIND_LABEL, sanitizePins, fmtN, MAX_PINS } from './treemodel.js';
 import { computeTierSizes, screenDiameter, tierShown, TIER_SIZE } from '../meta/treetier.js';
 import { TreeBackdrop, ringLitFractions } from '../gfx/treebg.js';
+import { MedallionAtlas, emblemFor, safeTint, mix } from '../gfx/medallions.js';
 import { probe } from '../gfx/probe.js';
 import { RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
 import { CEL } from './codexcopy.js';
@@ -46,6 +47,7 @@ const ICON_SPIRITS = [['path', { d: 'M5 17l5-8 4 5 5-9' }], ['circle', { cx: 5, 
 const ICON_MORE = [['path', { d: 'M6 15l6-6 6 6' }]];
 const hexA = (hex, a) => { const v = parseInt(String(hex).slice(1), 16) || 0; return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lodFar = (z, L) => clamp(0.78 + (z - L.far) / 0.5, 0.78, 1); // label size factor: 0.78 at the FAR limit and below, 1 from about 0.31 up
 
 // DESKTOP D3: the tree's keys, shown as a quiet hint strip while the keyboard was the last input (these keys are fixed in onKey)
 const TREE_KEYS = [['Arrows', 'pan'], ['+ -', 'zoom'], ['N', 'next lantern'], ['G', 'goals'], ['Enter', 'light'], ['Esc', 'back']];
@@ -88,7 +90,8 @@ export class TreeScreen {
     this.celN = 0;
     this.tiers = computeTierSizes(this.def); // Q1a: node tier + medallion draw diameter (display only)
     this.bg = new TreeBackdrop((w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // baked once, see gfx/treebg.js
-    this.ringLit = []; this.tints = [];
+    this.atlas = new MedallionAtlas((w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // R2: medallion pictures, each baked once, max 4 per frame
+    this.ringLit = []; this.tints = []; this.lblSprites = new Map(); this.mwCache = new Map(); this.toolLm = null;
     this.perf = { n: 0, sum: 0, max: 0 };
     this.paths = new Map();
     for (const r of this.view.regions) if (r.silhouette) { try { this.paths.set(r.key, new Path2D(r.silhouette)); } catch { /* bad path: no emblem */ } }
@@ -334,7 +337,9 @@ export class TreeScreen {
     this.ringLit = ringLitFractions(this.def, (id) => m.cache[id] && m.cache[id].s === 'lit', this.view.ringR);
     this.tints = this.view.regions.filter((r) => r.ids.length).map((r) => {
       const col = r.kind === 'cluster' ? r.color : '#ffd9a0';
-      return { x: r.x, y: r.y, r: Math.max(r.r * 1.7, 200), frac: r.kind === 'rings' ? 0 : r.lit / r.ids.length, color0: hexA(col, 0.22), color1: hexA(col, 0) };
+      const f = r.kind === 'rings' ? 0 : r.lit / r.ids.length;
+      const awake = r.kind === 'cluster' ? m.awake(r) : r.lit > 0;
+      return { x: r.x, y: r.y, r: Math.max(r.r * 2.1, 260), frac: awake ? 0.45 + 0.55 * f : 0, color0: hexA(col, 0.5), color1: hexA(col, 0) }; // R3: a woken region is tinted at once and saturates as it fills; unwoken stone stays grey-blue
     });
   }
 
@@ -420,18 +425,12 @@ export class TreeScreen {
 
   focusStart() {
     const [x0, y0, x1, y1] = this.freeRect();
-    const best = this.model.best;
     const c = this.cam;
-    if (best) {
-      const n = this.def.nodes[best.id];
-      c.z = Math.max(0.55, Math.min(x1 - x0, y1 - y0) / 900);
-      c.x = n.x - ((x0 + x1) / 2 - this.W / 2) / c.z;
-      c.y = n.y - ((y0 + y1) / 2 - this.H / 2) / c.z;
-    } else {
-      c.z = Math.min(x1 - x0, y1 - y0) / 1100;
-      c.x = -((x0 + x1) / 2 - this.W / 2) / c.z;
-      c.y = -((y0 + y1) / 2 - this.H / 2) / c.z;
-    }
+    // R2: the tree opens on the OVERVIEW (the hearth in the middle, every spirit's medallion round it), like docs/mockups/tree-v3/R2-web-zoomed-*.png;
+    // the best-next pin and the edge arrow still point at what to light. Zoom in to see the constellations.
+    c.z = this.clampZ(Math.min((y1 - y0) / 2500, (x1 - x0) / 2150, 0.42));
+    c.x = -((x0 + x1) / 2 - this.W / 2) / c.z;
+    c.y = -((y0 + y1) / 2 - this.H / 2) / c.z;
     this.dirty();
   }
 
@@ -482,10 +481,19 @@ export class TreeScreen {
   /** DESKTOP polish: Menu size (--uik, the CSS zoom of #ui) does not scale canvas pixels, so lanterns, labels and hit areas multiply by it here. 1 on phones. */
   ukNow() { const v = Number(document.documentElement.style.getPropertyValue('--uik')); return v >= 1 && v <= 1.6 ? v : 1; }
   /** Q1a: on-screen radius of a lantern = half its tier diameter (scaled to its neighbours, see meta/treetier.js) x zoom, never under the tier floor. */
-  radiusOf(id, lod) { const t = this.tiers.tier[id] || 'dot'; const d = this.tiers.d[id]; return screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1) / 2; }
+  radiusOf(id, lod) {
+    const t = this.tiers.tier[id] || 'dot'; const d = this.tiers.d[id];
+    let D = screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1);
+    if (t === 'landmark') D = Math.max(D, this.presence(id) * (this.uk || 1) * this.boost()); // R2: landmarks keep their presence when zoomed out (overlaps collapse, see collapseFar)
+    return D / 2;
+  }
+  /** R2: zoomed-out landmark medallion diameter in px by kind (hearts biggest), and how much of it applies at this zoom (full at 0.3 and below, none at NEAR). */
+  presence(id) { const k = this.def.nodes[id].kind; return clamp(0.5 + this.cam.z / 0.6, 0.66, 1) * (this.small ? 62 : 92) * (k === 'heart' ? 1 : k === 'gate' ? 0.8 : k === 'teaser' ? 0.55 : 0.66); }
+  boost() { return clamp((this.view.lod.near - this.cam.z) / (this.view.lod.near - 0.3), 0, 1); }
   /** FAR only: greedy collapse of landmarks that would overlap on screen. Returns Map id -> leader id (leaders map to themselves); this.farCount = leader -> how many hidden behind it. */
   collapseFar(ids) {
     const pri = { ready: 0, open: 1, challenge: 2, lit: 3, notyet: 4, fog: 5 };
+    const kr = { heart: 0, gate: 1, key: 2, socket: 3 }; // R2: a spirit's heart keeps its coin before its seals do
     const best = this.model.best && this.model.best.id;
     const L = [];
     for (const id of ids) {
@@ -494,12 +502,12 @@ export class TreeScreen {
       if (s === 'fog') continue;
       const n = this.def.nodes[id]; const [x, y] = this.toS(n.x, n.y);
       if (x < -30 || x > this.W + 30 || y < -30 || y > this.H + 30) continue;
-      L.push({ id, x, y, r: this.radiusOf(id, 'far'), k: id === this.selected ? -2 : id === best ? -1 : pri[s] ?? 6 });
+      L.push({ id, x, y, r: this.radiusOf(id, 'far'), k: id === this.selected ? -2 : id === best ? -1 : (kr[n.kind] ?? 4) * 10 + (pri[s] ?? 6) });
     }
     L.sort((a, b) => a.k - b.k || (a.id < b.id ? -1 : 1));
     const map = new Map(); this.farCount = new Map(); const leaders = [];
     for (const a of L) {
-      const lead = leaders.find((b) => Math.hypot(a.x - b.x, a.y - b.y) < (a.r + b.r) * 1.05);
+      const lead = leaders.find((b) => Math.hypot(a.x - b.x, a.y - b.y) < (a.r + b.r) * 1.12 + 10);
       if (lead) { map.set(a.id, lead.id); this.farCount.set(lead.id, (this.farCount.get(lead.id) || 0) + 1); } else { map.set(a.id, a.id); leaders.push(a); this.farCount.set(a.id, 0); }
     }
     return map;
@@ -510,7 +518,7 @@ export class TreeScreen {
   }
   tierOfId(id) { return this.tiers.tier[id] || 'dot'; }
   /** Drawn (and tappable) at this zoom? FAR = landmarks, plus any lantern you can light now (a small glowing dot). */
-  shownAt(id, lod) { if (lod === 'far' && this.farMerged && this.farMerged.has(id) && this.farMerged.get(id) !== id && id !== this.selected) return false; return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
+  shownAt(id, lod) { if (lod !== 'near' && this.farMerged && this.farMerged.has(id) && this.farMerged.get(id) !== id && id !== this.selected) return false; return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
 
   draw(t) {
     const c = this.ctx;
@@ -536,15 +544,19 @@ export class TreeScreen {
     if (this.bg) { this.bg.drawWorld(c, cam, W, H, this.view.ringR, this.ringLit, this.tints); this.bg.drawScreen(c, W, H); } // stone wall (baked) + lit rings + haze/vignette
     const pulse = this.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 420);
     const [hx, hy] = this.toS(0, 0);
-    const R = (240 + 260 * p) * z + 20;
+    const R = (1100 + 700 * p) * z + 40;
     const pool = c.createRadialGradient(hx, hy, 0, hx, hy, R);
     const ga = this.small ? 0.6 : 1; // C3: the hub wash is calmer on small screens
-    pool.addColorStop(0, `rgba(255,179,90,${(0.16 + 0.26 * p) * ga * 0.55})`); // Q1a: glows toned down
+    pool.addColorStop(0, `rgba(255,179,90,${(0.14 + 0.3 * p) * ga * 0.8})`); // R3: the hearth's warm pool is wide, so colour returns across the screen as the Hollow is restored
     pool.addColorStop(1, 'rgba(255,154,58,0)');
     c.fillStyle = pool;
     c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
+    this.atlas.beginFrame();
+    this.hubR = clamp(150 * z * 1.0, 15, 50) * this.uk;
     this.drawFarSlots(lod);
     this.drawRegions();
+    this.drawToolCoins(lod);
+    this.drawThreads(lod);
     const vx0 = cam.x - W / 2 / z - 80, vx1 = cam.x + W / 2 / z + 80, vy0 = cam.y - H / 2 / z - 80, vy1 = cam.y + H / 2 / z + 80;
     const inV = (n) => n.x >= vx0 && n.x <= vx1 && n.y >= vy0 && n.y <= vy1;
     this.drawLinks(lod, inV);
@@ -555,12 +567,13 @@ export class TreeScreen {
     const best = m.best;
     const far = lod === 'far';
     const batches = new Map();
+    const coins = [];
     const hw = W / 2, hh = H / 2, cx0 = cam.x, cy0 = cam.y;
     const selR = this.selected ? m.region(this.selected) : null; // C3: while a lantern is selected, other constellations step back
     const DIMA = [1, 0.2, 0.35, 0.55];
     const dot = (style, dim, x, y, r) => { const k = dim ? `D${dim}${style}` : style; let pa = batches.get(k); if (!pa) { pa = new Path2D(); batches.set(k, pa); } pa.moveTo(x + r, y); pa.arc(x, y, r, 0, 6.2832); };
     const ids = this.idsIn(vx0, vy0, vx1, vy1);
-    const merged = this.farMerged = far ? this.collapseFar(ids) : new Map(); // FAR: landmarks closer than their drawn size collapse into one badge with a count
+    const merged = this.farMerged = lod !== 'near' ? this.collapseFar(ids) : new Map(); // FAR and MID: landmarks closer than their drawn size collapse into one badge with a count
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
       const n = this.def.nodes[id];
@@ -568,24 +581,32 @@ export class TreeScreen {
       if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30) continue;
       const ce = m.cache[id];
       const s = ce.s;
-      if (s === 'fog' && lod !== 'near') continue;
+      if (s === 'fog' && lod === 'far') continue;
       const dim = this.onlyLight && s !== 'ready' ? 1 : selR && s !== 'ready' && m.region(id) !== selR ? 2 : far && !this.selected && s === 'notyet' ? 3 : 0;
       const tier = this.tierOfId(id);
-      if (far && merged.has(id) && merged.get(id) !== id) continue;
+      if (lod !== 'near' && merged.has(id) && merged.get(id) !== id) continue;
       if (far && tier !== 'landmark') { // FAR shows landmarks only; a lantern you can light now is a small glowing dot (batched)
         if (s === 'ready') { const r = 3 * this.uk; dot('rgba(255,179,90,.14)', false, sx, sy, r + 5 + 5 * pulse); dot('#fff6e0', false, sx, sy, r); this.animNeeded = true; }
         continue;
       }
       const r = this.radiusOf(id, lod);
+      if (tier === 'landmark') { coins.push({ id, n, x: sx, y: sy, r, s, ce, dim, tier }); labels.push({ id, x: sx, y: sy, r, s }); continue; } // R2: medallions are drawn after the small lanterns, on top of their threads
       c.globalAlpha = DIMA[dim];
       if (s === 'ready') { this.affordMark(c, sx, sy, r, pulse, false, best && best.id === id); this.animNeeded = true; }
       this.nodeShape(c, n, sx, sy, r, s, ce, id, lod);
-      if (far && merged.get(id) === id && this.farCount.get(id) > 0) this.countBadge(c, sx + r * 0.75, sy - r * 0.75, this.farCount.get(id));
-      if (tier === 'landmark' && s !== 'fog' && s !== 'notyet') { c.strokeStyle = s === 'lit' ? '#e6b955' : 'rgba(216,178,106,.55)'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, r + 3.5, 0, 7); c.stroke(); } // medallion rim
       if (ce.fresh) this.newFlag(c, sx, sy - r - 9);
       if (this.selected === id) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(sx, sy, r + 10, 0, 7); c.stroke(); c.setLineDash([]); }
       c.globalAlpha = 1;
       labels.push({ id, x: sx, y: sy, r, s });
+    }
+    for (const q of coins) { // R2: medallions (landmark tier): picture coin + gold rim + progress ring + glow; the can-light rays and the NEW flag stay
+      c.globalAlpha = DIMA[q.dim];
+      if (q.s === 'ready') { this.affordMark(c, q.x, q.y, q.r, pulse, false, best && best.id === q.id); this.animNeeded = true; }
+      this.drawCoin(c, q, best && best.id === q.id);
+      if (lod !== 'near' && merged.get(q.id) === q.id && this.farCount.get(q.id) > 0) this.countBadge(c, q.x + q.r * 0.78, q.y + q.r * 0.7, this.farCount.get(q.id));
+      if (q.ce.fresh) this.newFlag(c, q.x, q.y - q.r - 9);
+      if (this.selected === q.id) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(q.x, q.y, q.r + 12, 0, 7); c.stroke(); c.setLineDash([]); }
+      c.globalAlpha = 1;
     }
     if (far) {
       const halo = batches.get('rgba(255,179,90,.14)'); // halos first, under the dots
@@ -596,24 +617,24 @@ export class TreeScreen {
     }
     this.drawLabels(labels, lod);
     this.drawRegionNames(lod);
-    // hub lantern: brightens with total progress
-    const lr = Math.max(8, 26 * z);
-    const hl = c.createRadialGradient(hx, hy - lr * 0.2, 0, hx, hy, lr * 1.8);
-    hl.addColorStop(0, `rgba(255,244,208,${(0.6 + 0.4 * p) * (this.small ? 0.8 : 1)})`);
-    hl.addColorStop(0.5, `rgba(255,199,102,${(0.35 + 0.5 * p) * ga})`);
+    // hub lantern (R2): a gold-rimmed lantern-glass coin with the hearth lantern inside; its glow grows with total progress
+    const hr = this.hubR;
+    const hl = c.createRadialGradient(hx, hy, hr * 0.7, hx, hy, hr * 2.6);
+    hl.addColorStop(0, `rgba(255,214,140,${(0.3 + 0.4 * p) * (this.small ? 0.8 : 1)})`);
     hl.addColorStop(1, 'rgba(255,154,46,0)');
     c.fillStyle = hl;
-    c.beginPath(); c.arc(hx, hy, lr * 1.8, 0, 7); c.fill();
-    c.strokeStyle = '#d8b26a'; c.lineWidth = Math.max(1.5, 3 * z);
-    c.beginPath(); c.arc(hx, hy, lr * 0.75, 0, 7); c.stroke();
+    c.beginPath(); c.arc(hx, hy, hr * 2.6, 0, 7); c.fill();
+    this.coinBody(c, 'hub', '#ffd27a', 'lit', hx, hy, hr);
+    this.rim(c, hx, hy, hr, 'lit');
     if (lod === 'far') {
       const ty = 10 * (this.uk || 1); // docked at the top of the map, never among the landmarks
-      if (!this.lastRB.some((b) => b.x0 < W / 2 + 100 && b.x1 > W / 2 - 100 && b.y0 < ty + 18 && b.y1 > ty)) {
+      if (!this.lastRB.concat(this.lblBoxes || []).some((b) => b.x0 < W / 2 + 100 && b.x1 > W / 2 - 100 && b.y0 < ty + 18 && b.y1 > ty)) {
         c.font = `${13 * (this.uk || 1)}px ${FONT_UI}`; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center'; c.textBaseline = 'top';
         c.fillText(`The Hollow remembers: ${Math.round(p * 100)}%`, W / 2, ty);
       }
     }
     if (best) this.drawBestMarker(c, t, lod);
+    if (this.atlas.pending) this.dirty(); // over the 4-bakes-per-frame budget: the rest comes next frame
     const now = performance.now();
     this.anims = this.anims.filter((a) => now - a.t0 < 650);
     for (const a of this.anims) {
@@ -661,6 +682,186 @@ export class TreeScreen {
     if (lod === 'far') {
       const [lx, ly] = this.toS(0, -this.view.beyondR);
       if (ly > 70 && ly < this.H - 20) { c.font = `14px ${FONT_UI}`; c.fillStyle = 'rgba(179,187,207,.85)'; c.fillText('Beyond: parts of the Hollow you have not reached', lx, ly); }
+    }
+  }
+
+
+  // ------------------------------------------------------------------ R2 medallions: coin (baked picture) + per-frame rim, progress ring, padlock, glow
+  coinBody(c, art, tint, variant, x, y, r) {
+    const sp = this.atlas.get(art, tint, variant);
+    if (sp) { c.imageSmoothingEnabled = true; c.drawImage(sp, x - r, y - r, 2 * r, 2 * r); return; }
+    c.fillStyle = '#1a2040'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); // over the bake budget this frame: a plain glass coin, the picture follows next frame
+  }
+  /** Gold rim: lit = bright double ring, open = brass, dim = dashed grey (state is shape + brightness, not colour alone). */
+  rim(c, x, y, r, state) {
+    const lw = Math.max(2, r * 0.06);
+    if (state === 'dim') { c.strokeStyle = 'rgba(165,175,206,.7)'; c.lineWidth = lw; c.setLineDash([Math.max(3, r * 0.1), Math.max(3, r * 0.08)]); c.beginPath(); c.arc(x, y, r + 2, 0, 7); c.stroke(); c.setLineDash([]); return; }
+    c.strokeStyle = state === 'lit' ? '#f4cd62' : '#c9a55f'; c.lineWidth = lw; c.beginPath(); c.arc(x, y, r + 2, 0, 7); c.stroke();
+    c.strokeStyle = state === 'lit' ? 'rgba(244,205,98,.5)' : 'rgba(201,165,95,.4)'; c.lineWidth = 1; c.beginPath(); c.arc(x, y, r + 6 + lw * 0.5, 0, 7); c.stroke();
+  }
+  coinProgress(c, x, y, rr, f, col) {
+    c.lineCap = 'round'; c.lineWidth = 3.2;
+    c.strokeStyle = 'rgba(120,130,165,.32)'; c.beginPath(); c.arc(x, y, rr, 0, 7); c.stroke();
+    if (f > 0) { c.strokeStyle = col; c.beginPath(); c.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, f)); c.stroke(); }
+    c.lineCap = 'butt';
+  }
+  padlock(c, x, y, r) {
+    const u = Math.max(5, r * 0.2);
+    c.fillStyle = 'rgba(14,18,38,.92)'; c.beginPath(); c.arc(x, y, u * 1.45, 0, 7); c.fill();
+    c.strokeStyle = '#d8c08a'; c.lineWidth = Math.max(1.4, u * 0.28); c.beginPath(); c.arc(x, y - u * 0.25, u * 0.52, Math.PI, 0); c.stroke();
+    c.fillStyle = '#d8c08a'; c.fillRect(x - u * 0.8, y - u * 0.1, u * 1.6, u * 1.05);
+  }
+  drawCoin(c, q, isBest) {
+    const { id, n, x, y, r, s, ce } = q; const m = this.model; const reg = m.region(id);
+    const masked = !!ce.d.masked;
+    const art = emblemFor(n, masked, reg && reg.art);
+    const base = n.kind === 'gate' ? '#cdd8ff' : n.kind === 'teaser' ? '#aab4d8' : reg && reg.kind === 'cluster' ? reg.color : '#ffd9a0';
+    const tint = safeTint(base);
+    const lit = s === 'lit';
+    const state = lit ? 'lit' : (s === 'ready' || s === 'open') && !masked ? 'open' : 'dim';
+    const ga = c.globalAlpha;
+    if (s === 'fog') c.globalAlpha = ga * 0.6;
+    if (lit || s === 'ready' || isBest) { // glow: the brightest things are goals, lit hearts and the best next
+      const warm = lit ? tint : '#ffd78a';
+      const g = c.createRadialGradient(x, y, r * 0.85, x, y, r * (lit ? 1.9 : 2.1));
+      g.addColorStop(0, hexA(warm, lit ? (n.kind === 'heart' ? 0.42 : 0.3) : 0.34)); g.addColorStop(1, hexA(warm, 0));
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r * (lit ? 1.9 : 2.1), 0, 7); c.fill();
+    }
+    this.coinBody(c, art, tint, state, x, y, r);
+    this.rim(c, x, y, r, state);
+    let f = -1, col = '#6fd3c5';
+    if (n.kind === 'heart' && reg && m.awake(reg) && reg.ids.length) { f = reg.lit / reg.ids.length; col = lit ? mix(tint, '#fff3c0', 0.35) : tint; }
+    else if (s === 'challenge' && !masked) f = ce.frac;
+    if (f >= 0 && r >= 16) this.coinProgress(c, x, y, r + 10, f, col);
+    if (state === 'dim' && !masked && s !== 'fog' && r >= 18) this.padlock(c, x + r * 0.72, y - r * 0.72, r);
+    c.globalAlpha = ga;
+  }
+  /** Tool groups with no landmark of their own (Almanac, Satchel, ...) show their picture coin behind their lanterns while zoomed out. */
+  drawToolCoins(lod) {
+    this.toolBoxes = [];
+    const bo = this.boost(); if (bo <= 0.05) return;
+    const c = this.ctx;
+    if (!this.toolLm) this.toolLm = new Map();
+    for (const r of this.view.regions) {
+      if (r.kind !== 'tool' || !r.ids.length) continue;
+      if (!this.toolLm.has(r.key)) this.toolLm.set(r.key, r.ids.some((id) => this.tierOfId(id) === 'landmark'));
+      if (this.toolLm.get(r.key)) continue;
+      const R = this.toolR(bo);
+      const [x, y] = this.toS(r.x, r.y);
+      if (x < -R - 40 || x > this.W + R + 40 || y < -R - 40 || y > this.H + R + 40) continue;
+      const lit = r.lit > 0;
+      this.toolBoxes.push({ x, y, r: R + 12 });
+      c.globalAlpha = Math.min(1, bo * 1.7);
+      if (lit) { const g = c.createRadialGradient(x, y, R * 0.8, x, y, R * 1.9); g.addColorStop(0, 'rgba(243,220,174,.28)'); g.addColorStop(1, 'rgba(243,220,174,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, R * 1.9, 0, 7); c.fill(); }
+      this.coinBody(c, r.art, '#f3dcae', lit ? 'lit' : 'open', x, y, R);
+      this.rim(c, x, y, R, lit ? 'lit' : 'open');
+      this.coinProgress(c, x, y, R + 9, r.lit / r.ids.length, '#f3dcae');
+      c.globalAlpha = 1;
+    }
+    if (this.atlas.pending) this.dirty();
+  }
+  toolR(bo) { return (this.small ? 24 : 38) * (this.uk || 1) * (0.6 + 0.4 * bo); }
+  /** Threads of light from the hearth to each woken constellation / tool group (branch colour, glowing, with small light motes; static, so Calm needs nothing). */
+  drawThreads(lod) {
+    const c = this.ctx; const m = this.model; const [hx, hy] = this.toS(0, 0); const hr = this.hubR;
+    const small = this.small; const uk = this.uk || 1;
+    for (const r of this.view.regions) {
+      if (r.kind === 'rings' || !r.ids.length) continue;
+      let tx, ty, lit, col;
+      if (r.kind === 'cluster' && r.heartAt) { tx = r.heartAt[0]; ty = r.heartAt[1]; lit = m.awake(r); col = r.color; }
+      else if (r.kind === 'tool') { tx = r.x; ty = r.y; lit = r.lit > 0; col = '#f3dcae'; }
+      else continue;
+      const [ex, ey] = this.toS(tx, ty);
+      if (Math.max(hx, ex) < -20 || Math.min(hx, ex) > this.W + 20 || Math.max(hy, ey) < -20 || Math.min(hy, ey) > this.H + 20) continue;
+      const dx = ex - hx, dy = ey - hy, L = Math.hypot(dx, dy);
+      if (L < hr + 12) continue;
+      const ux = dx / L, uy = dy / L, ax = hx + ux * (hr + 3), ay = hy + uy * (hr + 3);
+      c.lineCap = 'round';
+      if (lit) {
+        c.strokeStyle = hexA(col, 0.26); c.lineWidth = small ? 5 : 7; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke();
+        c.strokeStyle = mix(col, '#fff8e6', 0.3); c.lineWidth = small ? 1.4 : 1.8; c.stroke();
+        c.fillStyle = '#fffaf0'; const step = 30 * uk; const path = new Path2D();
+        for (let d = hr + 30 * uk; d < L - 34; d += step) { path.moveTo(hx + ux * d + 2.2, hy + uy * d); path.arc(hx + ux * d, hy + uy * d, 2.2, 0, 6.2832); }
+        c.fill(path);
+      } else {
+        c.strokeStyle = 'rgba(150,165,205,.28)'; c.lineWidth = 2; c.setLineDash([3, 8]); c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
+      }
+    }
+  }
+  costText(nx) {
+    if (!nx) return '';
+    const p = [];
+    if (nx.gold) p.push(`${fmtN(nx.gold)} gold`);
+    if (nx.shards) p.push(`${fmtN(nx.shards)} shards`);
+    if (nx.glass) p.push(`${fmtN(nx.glass)} Dawnglass`);
+    return p.join(' + ');
+  }
+  /** One status line and an optional 'To wake' pill for a landmark label. Existing text only (state, cost, condition line); a veiled seal gets neither. */
+  statusOf(id) {
+    const m = this.model; const ce = m.cache[id]; const n = this.def.nodes[id]; const r = m.region(id); const d = ce.d;
+    if (d.masked) return { line: '', pill: '' };
+    if (ce.s === 'lit') return { line: n.kind === 'heart' && r ? (r.lit <= 1 ? 'Awake' : `${r.lit} of ${r.ids.length} lit`) : n.kind === 'gate' ? 'Night awake' : n.kind === 'socket' ? 'Evolution awake' : 'Lit', pill: '' };
+    if (ce.s === 'ready' || ce.s === 'open') return { line: `${n.kind === 'heart' || n.kind === 'gate' ? 'Wake' : 'Light'}: ${this.costText(d.next)}`, pill: '' };
+    if (ce.s === 'challenge') {
+      const L = (d.condLines || [])[0];
+      const t = L && L.text ? `${L.text}${L.goal > 1 && !L.done ? ` ${fmtN(L.cur)}/${fmtN(L.goal)}` : ''}` : '';
+      return { line: n.kind === 'socket' ? 'Evolution' : 'Asleep', pill: t ? `To wake: ${t}` : '' };
+    }
+    return { line: '', pill: '' };
+  }
+  /** Text width with a small cache (measureText per label per frame was the biggest part of the label cost). */
+  mw(c, font, text) {
+    if (!this.mwCache) this.mwCache = new Map();
+    const k = `${font}|${text}`; let w = this.mwCache.get(k);
+    if (w === undefined) { c.font = font; w = c.measureText(text).width; if (this.mwCache.size > 600) this.mwCache.clear(); this.mwCache.set(k, w); }
+    return w;
+  }
+  landmarkLabel(c, L, uk, hits, addBox) {
+    const m = this.model; const ce = m.cache[L.id]; if (ce.d.masked || L.s === 'fog') return;
+    const { line, pill } = this.statusOf(L.id);
+    const fz = lodFar(this.cam.z, this.view.lod); // R2: names shrink a little when the whole web is in view, so neighbours do not run together
+    const fs = Math.round((this.small ? 15 : 21) * uk * fz), sf = Math.round(12.5 * uk * Math.max(fz, 0.9)), pf = Math.round(12 * uk * Math.max(fz, 0.9));
+    const nm = this.def.nodes[L.id].kind === 'socket' ? ce.d.name.replace(/\s*\([^)]*\)\s*$/, '') : ce.d.name; const nw = this.mw(c, `${fs}px ${FONT_HEAD}`, nm);
+    const lw = line ? this.mw(c, `${sf}px ${FONT_UI}`, line) : 0;
+    const pt = pill.length > 40 ? `${pill.slice(0, 39)}…` : pill;
+    const pw = pt ? this.mw(c, `${pf}px ${FONT_UI}`, pt) + 18 * uk : 0;
+    const y0 = L.y + L.r + (L.s === 'ready' ? 13 : 6);
+    const rows = [[fs + 2, nw + 8], [sf + 3, lw + 6], [pf + 12, pw]];
+    const wAll = Math.max(rows[0][1], rows[1][1], rows[2][1]);
+    const cx = clamp(L.x, wAll / 2 + 6, Math.max(wAll / 2 + 6, this.W - wAll / 2 - 6)); // a name and its pill are never cut off by the screen edge
+    const make = (k) => { let h = 0, w = 0; for (let i = 0; i < k; i++) { h += rows[i][0]; w = Math.max(w, rows[i][1]); } return { x0: cx - w / 2, x1: cx + w / 2, y0, y1: y0 + h, id: L.id }; };
+    let k = pt ? 3 : line ? 2 : 1;
+    for (; k > 1; k--) if (!hits(make(k), L.id)) break;
+    const bx = make(k); if (k === 1 && hits(bx, L.id)) return;
+    bx.lm = true; addBox(bx); this.lblBoxes.push(bx);
+    // the finished label is painted once into a small sprite and drawn as one image per frame (text stroking every frame was the biggest cost of the overview)
+    const pad = 5, w2 = Math.ceil(bx.x1 - bx.x0) + pad * 2, h2 = Math.ceil(bx.y1 - bx.y0) + pad * 2;
+    if (!this.lblSprites) this.lblSprites = new Map();
+    const key = `${this.DPR}|${w2}|${fs}|${sf}|${pf}|${nm}|${k >= 2 ? line : ''}|${k >= 3 ? pt : ''}|${L.s}`;
+    let sp = this.lblSprites.get(key);
+    if (!sp) {
+      sp = document.createElement('canvas'); sp.width = Math.ceil(w2 * this.DPR); sp.height = Math.ceil(h2 * this.DPR);
+      const g = sp.getContext('2d');
+      if (g) { g.scale(this.DPR, this.DPR); this.paintLabel(g, w2 / 2, pad, { fs, sf, pf, nm, line: k >= 2 ? line : '', pt: k >= 3 ? pt : '', pw, s: L.s }); }
+      if (this.lblSprites.size > 80) this.lblSprites.clear();
+      this.lblSprites.set(key, sp);
+    }
+    c.drawImage(sp, cx - w2 / 2, y0 - pad, w2, h2);
+  }
+  paintLabel(g, cx, y0, p) {
+    const { fs, sf, pf, nm, line, pt, pw } = p;
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.lineJoin = 'round';
+    const dimmed = p.s === 'notyet' || p.s === 'challenge';
+    g.font = `${fs}px ${FONT_HEAD}`; g.lineWidth = 4; g.strokeStyle = 'rgba(8,10,24,.92)'; g.strokeText(nm, cx, y0); g.fillStyle = dimmed ? '#d4daf0' : p.s === 'lit' ? '#fff0c8' : '#fff6e0'; g.fillText(nm, cx, y0);
+    let y = y0 + fs + 2;
+    if (line) {
+      g.font = `${sf}px ${FONT_UI}`; g.lineWidth = 3; g.strokeStyle = 'rgba(8,10,24,.9)'; g.strokeText(line, cx, y);
+      g.fillStyle = p.s === 'lit' ? '#ffe39a' : p.s === 'ready' ? '#ffe08a' : p.s === 'open' ? '#f5dfae' : '#b9c2dc'; g.fillText(line, cx, y); y += sf + 3;
+    }
+    if (pt) {
+      const h = pf + 9; g.fillStyle = 'rgba(14,18,40,.9)'; g.strokeStyle = 'rgba(190,200,230,.35)'; g.lineWidth = 1;
+      g.beginPath(); g.roundRect(cx - pw / 2, y + 1, pw, h, h / 2); g.fill(); g.stroke();
+      g.font = `${pf}px ${FONT_UI}`; g.fillStyle = '#e4e9fb'; g.textBaseline = 'middle'; g.fillText(pt, cx, y + 1 + h / 2 + 0.5); g.textBaseline = 'top';
     }
   }
 
@@ -732,9 +933,9 @@ export class TreeScreen {
 
   curve(c, ax, ay, bx, by) { const mx = (ax + bx) / 2, my = (ay + by) / 2; const dx = bx - ax, dy = by - ay; c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(mx - dy * 0.12, my + dx * 0.12, bx, by); }
   trail(c, ax, ay, bx, by, col, z) {
-    c.strokeStyle = hexA(col, 0.35); c.lineWidth = Math.max(3, 7 * z);
+    c.strokeStyle = hexA(col, 0.42); c.lineWidth = Math.max(3, 8 * z); // R3: the lit trail glows in the spirit's own colour, its core is that colour lifted toward candle-white
     c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
-    c.strokeStyle = 'rgba(255,240,205,.92)'; c.lineWidth = Math.max(1.4, 2.2 * z); c.stroke();
+    c.strokeStyle = mix(col, '#fff8e6', 0.62); c.lineWidth = Math.max(1.4, 2.2 * z); c.stroke();
   }
   spark(c, ax, ay, bx, by, col, z) { // a short lit stub that fades out: "the light reaches toward this one"
     const ex = ax + (bx - ax) * 0.62, ey = ay + (by - ay) * 0.62;
@@ -868,22 +1069,30 @@ export class TreeScreen {
       : lod === 'mid' ? list.filter((L) => quiet(L) || (tr(L) !== 'dot' && L.s !== 'notyet'))
         : list.filter((L) => L.s !== 'notyet' || L.id === this.selected); // NEAR as before (the sheet's tier table says dots carry no name; its zoom table says NEAR shows all names: kept readable)
     if (this.onlyLight) pick = pick.filter((L) => L.s === 'ready' || L.id === this.selected);
+    const lms = list.filter((L) => tr(L) === 'landmark' && !(this.farMerged && this.farMerged.has(L.id) && this.farMerged.get(L.id) !== L.id && L.id !== this.selected) && (lod !== 'far' || L.s !== 'notyet') && (!this.onlyLight || L.s === 'ready' || L.id === this.selected));
+    pick = pick.filter((L) => tr(L) !== 'landmark');
     const pri = (L) => (L.id === this.selected ? 0 : best && L.id === best.id ? 1 : L.s === 'ready' ? 2 : L.s === 'open' ? 3 : L.s === 'challenge' ? 4 : L.s === 'lit' ? 5 : 6);
     pick.sort((a, b) => pri(a) - pri(b));
     const G = new Map();
     const cells = (b) => { const o = []; for (let i = Math.floor(b.x0 / 64); i <= Math.floor(b.x1 / 64); i++) for (let j = Math.floor(b.y0 / 64); j <= Math.floor(b.y1 / 64); j++) o.push(`${i},${j}`); return o; };
     const addBox = (b) => { for (const k of cells(b)) { if (!G.has(k)) G.set(k, []); G.get(k).push(b); } };
     const hits = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0));
-    for (const L of list) addBox({ x0: L.x - L.r - 3, x1: L.x + L.r + 3, y0: L.y - L.r - 3, y1: L.y + L.r + 3, id: L.id });
+    for (const L of list) addBox({ x0: L.x - L.r - 3, x1: L.x + L.r + 3, y0: L.y - L.r - 3, y1: L.y + L.r + 3, id: L.id, lm: tr(L) === 'landmark' });
+    for (const t of this.toolBoxes || []) addBox({ x0: t.x - t.r, x1: t.x + t.r, y0: t.y - t.r, y1: t.y + t.r, id: 'tool' }); // names keep off the tool coins
+    const hitsLm = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.lm && b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0)); // a medallion name only yields to other medallions and their names
+    this.lblBoxes = [];
     const uk = this.uk || 1; const lh = Math.round(17 * uk);
     c.font = `${13 * uk}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top';
+    const rank = (L) => (L.id === this.selected ? 0 : best && L.id === best.id ? 1 : this.def.nodes[L.id].kind === 'heart' ? 2 : 3);
+    for (const L of lms.sort((a, b) => rank(a) - rank(b))) this.landmarkLabel(c, L, uk, hitsLm, addBox);
+    c.font = `${13 * uk}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top';
     for (const L of pick) {
-      const txt = m.cache[L.id].d.name; const w = c.measureText(txt).width + 8;
+      const txt = m.cache[L.id].d.name; const w = this.mw(c, `${13 * uk}px ${FONT_UI}`, txt) + 8;
       const y0 = L.y + L.r + (L.s === 'ready' ? 10 : 5);
       const bx = { x0: L.x - w / 2, x1: L.x + w / 2, y0, y1: y0 + lh };
       if (hits(bx, L.id)) continue;
       addBox(bx);
-      c.fillStyle = 'rgba(10,14,24,.78)'; c.fillRect(bx.x0, bx.y0, w, lh);
+      c.fillStyle = 'rgba(10,14,28,.55)'; c.fillRect(bx.x0 + 2, bx.y0 + 1, w - 4, lh - 2); // R2: a light plate (outlined text for every small name cost too much per frame)
       c.fillStyle = L.s === 'ready' ? '#fff6e0' : L.s === 'lit' ? '#fff3dc' : L.s === 'open' ? '#f5dfae' : L.s === 'challenge' ? '#9fe6dc' : '#b3bbcf';
       c.fillText(txt, L.x, y0 + 1);
     }
@@ -896,8 +1105,11 @@ export class TreeScreen {
     const byNear = [...this.view.regions].sort((a, b) => Math.hypot(a.x - this.cam.x, a.y - this.cam.y) - Math.hypot(b.x - this.cam.x, b.y - this.cam.y));
     for (const r of byNear) {
       if (r.kind === 'rings' || !r.ids.length) continue; // the hub needs no name: it is the lantern
-      if (r.r * z < 26) continue; // too small on screen: no name, zoom in to read
-      let [sx, sy] = this.toS(r.x, r.y - (r.kind === 'cluster' ? r.r + 26 : lod === 'far' ? r.r * 0.8 : 0));
+      if (r.kind === 'cluster') continue; // R2: a spirit's name is the label of its heart medallion (landmarkLabel), not a second title above the constellation
+      const coinTool = r.kind === 'tool' && this.toolLm && this.toolLm.get(r.key) === false; // a tool group shown as a picture coin: its name sits under the coin
+      if (r.kind === 'tool' && !coinTool) continue; // tool groups whose own landmarks carry the names
+      let [sx, sy] = this.toS(r.x, r.y);
+      if (coinTool) sy += this.toolR(this.boost()) + 20 * (this.uk || 1);
       const [fx0, fy0, fx1, fy1] = this.freeRect();
       if (sx < fx0 || sx > fx1 || sy < fy0 || sy > fy1) continue; // only the constellations in view
       const uk = this.uk || 1; const fs = Math.max(11, Math.min(this.small ? 13 : 18, 70 * z)) * uk;

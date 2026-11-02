@@ -8,7 +8,7 @@ const SPARE = ['#ffd9b0', '#b8f0c8', '#9fe8ff', '#b9a2ff', '#e2ccff'];
 export const RING_TINT = '#ffd9a0';
 export const TOOL_TINT = '#f3dcae';
 // Zoom levels where the screen changes detail (semantic zoom): below far = groups only, from near = every name.
-export const LOD = { far: 0.32, near: 0.95 };
+export const LOD = { far: 0.2, near: 0.95 }; // R2: the 'overview' look (big medallions, names, status lines) starts at about 0.3, so MID begins lower than before
 const CLUSTER_R = 170; // emblem half-size used for the region glow and tap area (emblem box 200 + lanterns)
 const TOOL_R = 190;
 
@@ -50,16 +50,17 @@ export function buildTreeView(info, def, data) {
       heartAt: cl.heart && info.positions && info.positions[cl.heart] ? [info.positions[cl.heart][0], info.positions[cl.heart][1]] : em.heart ? [cx + em.heart[0] * sc, cy + em.heart[1] * sc] : null,
       display,
       title: `${w ? w.name.split(' ').pop() : 'Spirit'}-warden`,
+      art: typeof cl.medallion === 'string' ? cl.medallion : typeof cl.emblem === 'string' ? cl.emblem : '', // R2: art id, allow-listed in gfx/medallions.js (unknown ids fall back to the tier emblem)
     });
   }
   for (const [tid, t] of Object.entries(info.tools || {})) {
     const c = info.toolCentres && info.toolCentres[tid];
     if (!c) continue;
-    regions.push({ key: `t:${tid}`, kind: 'tool', name: t.name || tid, blurb: t.blurb || '', x: c[0], y: c[1], r: TOOL_R * (Number.isFinite(info.toolScale) && info.toolScale > 0 ? info.toolScale : 1), color: TOOL_TINT });
+    regions.push({ key: `t:${tid}`, kind: 'tool', name: t.name || tid, blurb: t.blurb || '', art: typeof t.medallion === 'string' ? t.medallion : String(tid), x: c[0], y: c[1], r: TOOL_R * (Number.isFinite(info.toolScale) && info.toolScale > 0 ? info.toolScale : 1), color: TOOL_TINT });
   }
   const R = (info.core && info.core.rings) || {};
   const rr = (k, d) => (R[k] && Number.isFinite(R[k].r) ? R[k].r : d);
-  regions.push({ key: 'r:rings', kind: 'rings', name: 'Hearth and Wick', x: 0, y: 0, r: rr('wick', 300) + 30, color: RING_TINT });
+  regions.push({ key: 'r:rings', kind: 'rings', name: 'Hearth and Wick', art: 'hub', x: 0, y: 0, r: rr('wick', 300) + 30, color: RING_TINT });
   // reserved far slots nobody uses yet: drawn as a faint "?" (more to find)
   const usedFar = new Set([...Object.values(info.clusters || {}), ...Object.values(info.tools || {})].map((x) => x.slot));
   const farFree = [];
