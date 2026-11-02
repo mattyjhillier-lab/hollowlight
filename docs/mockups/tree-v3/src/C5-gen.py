@@ -33,11 +33,12 @@ SZ = {
 
 class T(b2.S):
     def __init__(s):
-        super().__init__(); s.glows = []; s.defs = []; s.n_id = 0; s.top = []; s.rects = []
+        super().__init__(); s.glows = []; s.defs = []; s.n_id = 0; s.top = []; s.rects = []; s.reg = []; s.polys = []
 
     # ---- tiers: tiny dot / diamond ----
-    def dot(s, p, col, lit=True, r=6.5, ghost=False, avail=False):
+    def dot(s, p, col, lit=True, r=6.5, ghost=False, avail=False, leaf=False):
         x, y = p
+        if not ghost: s.reg.append(dict(p=p, k='dot', lit=lit, leaf=leaf))
         if ghost:
             s.nodes.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke="{GREY}" stroke-width="1.1" stroke-dasharray="2 3" opacity=".55"/>'); return
         if avail:
@@ -49,8 +50,9 @@ class T(b2.S):
         else:
             s.nodes.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{GREYF}" stroke="{GREY}" stroke-width="{max(1, r/3.2):.1f}" opacity=".95"/>')
 
-    def dia(s, p, col, lit=True, r=8, ghost=False, avail=False):
+    def dia(s, p, col, lit=True, r=8, ghost=False, avail=False, leaf=False):
         x, y = p; q = r * 1.4
+        if not ghost: s.reg.append(dict(p=p, k='dia', lit=lit, leaf=leaf))
         pts = f'{x:.1f},{y-q:.1f} {x+q:.1f},{y:.1f} {x:.1f},{y+q:.1f} {x-q:.1f},{y:.1f}'
         if ghost:
             s.nodes.append(f'<polygon points="{pts}" fill="none" stroke="{GREY}" stroke-width="1.1" stroke-dasharray="2 3" opacity=".55"/>'); return
@@ -64,6 +66,7 @@ class T(b2.S):
             s.nodes.append(f'<polygon points="{pts}" fill="{GREYF}" stroke="{GREY}" stroke-width="{max(1.2, r/3.4):.1f}" stroke-linejoin="round"/><circle cx="{x:.1f}" cy="{y:.1f}" r="{r*.3:.1f}" fill="{GREY}" opacity=".8"/>')
 
     def path(s, P, col, lit=True, w=2.2, op=None, ghost=False, glow=True):
+        s.polys.append(([P[0], P[1]] if len(P) == 2 else [b2.bez(list(P), i / 40) for i in range(41)], False))
         if len(P) == 2: d = 'M%.1f %.1f L%.1f %.1f' % (*P[0], *P[1])
         else: d = 'M%.1f %.1f %s ' % (*P[0], 'Q' if len(P) == 3 else 'C') + ' '.join('%.1f %.1f' % p for p in P[1:])
         if ghost or not lit:
@@ -79,8 +82,9 @@ class T(b2.S):
         s.lines.append(f'<path d="{d}" fill="none" stroke="{col}" stroke-opacity=".95" stroke-width="{w:.1f}" stroke-linecap="round" stroke-linejoin="round"/>')
 
     # ---- medallion: picture coin (gold-rimmed lantern glass) ----
-    def med(s, p, r, kind, col, lit=True, veiled=False, state=None, prog=None, face=None, hot=False, pips=None):
+    def med(s, p, r, kind, col, lit=True, veiled=False, state=None, prog=None, face=None, hot=False, pips=None, role='coin'):
         x, y = p
+        s.reg.append(dict(p=p, k='med', role=role, lit=lit, leaf=False))
         st = state or ('veiled' if veiled else ('lit' if lit else 'dim'))
         if st == 'veiled':
             s.nodes.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="#141b30" stroke="#8d9ab8" stroke-width="{max(1.6, r/10):.1f}" stroke-dasharray="5 4" opacity=".95"/><text x="{x:.1f}" y="{y+r*.36:.1f}" font-size="{max(13, r*1.05):.0f}" text-anchor="middle" fill="#a3b0cc" font-family="Georgia,serif">?</text>'); return
@@ -142,6 +146,12 @@ class T(b2.S):
         if sub:
             s.text.append(f'<text x="{x:.1f}" y="{y+ssize+4:.1f}" text-anchor="{anchor}" class="sb" font-size="{ssize}" fill="{subcol or (col if not dim else "#98a6c6")}">{sub}</text>')
 
+    def thread(s, a, b, sag_to=None, k=0.5, op=0.42, w=1.0):
+        m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        c = m if sag_to is None else (m[0] + (sag_to[0] - m[0]) * k, m[1] + (sag_to[1] - m[1]) * k)
+        s.polys.append(([b2.bez([a, c, b], i / 24) for i in range(25)], False))
+        super().thread(a, b, sag_to, k, op, w)
+
     def chip(s, p, txt, col=GOLD):
         w = len(txt) * 6.9 + 22
         s.top.append(f'<rect x="{p[0]-w/2:.1f}" y="{p[1]-11:.1f}" width="{w:.1f}" height="22" rx="11" fill="#12172c" fill-opacity=".94" stroke="{col}" stroke-width="1.6"/><text x="{p[0]:.1f}" y="{p[1]+4.6:.1f}" text-anchor="middle" class="sb" font-size="13" fill="#fff3dc" style="stroke:none">{txt}</text>')
@@ -154,6 +164,41 @@ class T(b2.S):
 
     def svg(s):
         return '<defs>' + ''.join(s.defs) + '</defs>' + ''.join(s.back) + ''.join(s.glows) + ''.join(s.lines) + ''.join(s.nodes) + ''.join(s.text) + ''.join(s.top)
+
+
+
+def seg_proj(p, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]; l2 = dx * dx + dy * dy
+    if l2 == 0: return math.dist(p, a), 0.0
+    t_ = max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2))
+    return math.dist(p, (a[0] + t_ * dx, a[1] + t_ * dy)), t_ * math.sqrt(l2)
+
+
+def compute_deg(s, tol=3.6):
+    N = len(s.reg); deg = [0] * N; sets = [set() for _ in range(N)]
+    for pi, (pts, closed) in enumerate(s.polys):
+        xs = [q[0] for q in pts]; ys = [q[1] for q in pts]
+        x0, x1, y0, y1 = min(xs) - tol, max(xs) + tol, min(ys) - tol, max(ys) + tol
+        cum = [0.0]
+        for a, b in zip(pts, pts[1:]): cum.append(cum[-1] + math.dist(a, b))
+        L = cum[-1]
+        for i, n in enumerate(s.reg):
+            x, y = n['p']
+            if x < x0 or x > x1 or y < y0 or y > y1: continue
+            best = (1e9, 0)
+            for k in range(len(pts) - 1):
+                d, sp = seg_proj((x, y), pts[k], pts[k + 1])
+                if d < best[0]: best = (d, cum[k] + sp)
+            if best[0] < tol:
+                deg[i] += 2 if (closed or 5 < best[1] < L - 5) else 1; sets[i].add(pi)
+    return deg, sets
+
+
+def seg_hits_rect(a, b, rects):
+    for k in range(1, 8):
+        x = a[0] + (b[0] - a[0]) * k / 8; y = a[1] + (b[1] - a[1]) * k / 8
+        if any(r[0] < x < r[2] and r[1] < y < r[3] for r in rects): return True
+    return False
 
 
 def u(a, b):
@@ -218,7 +263,7 @@ def garden2(s, emb, C, sc, P, heart='lit', seals=None, lead=None, forkl=None, se
                 for i2, d in enumerate(fd):
                     p = fc.at(d)
                     if i2 < 2: s.dot(p, col, i2 < cnt, r=P['fr'], avail=(i2 == cnt and k in sealk.get('forknext', '')))
-                    else: s.dia(p, col, i2 < cnt, r=P['fq'], avail=(i2 == cnt and k in sealk.get('forknext', '')))
+                    else: s.dia(p, col, i2 < cnt, r=P['fq'], avail=(i2 == cnt and k in sealk.get('forknext', '')), leaf=True)
                 occ += fc.pts; av.append(u(sk[k], fc.at(30))[0])
             for i in range(9):  # satellites round the small hub
                 a = math.radians(360 / 9 * i + 12); v = (math.cos(a), math.sin(a))
@@ -240,20 +285,20 @@ def garden2(s, emb, C, sc, P, heart='lit', seals=None, lead=None, forkl=None, se
             else: s.nodes.append(f'<circle cx="{p[0]:.1f}" cy="{p[1]:.1f}" r="{P["dr"]*.7:.1f}" fill="#222b47" stroke="{GREY}" stroke-width="1" opacity=".6"/>')
     if heart == 'dim' and awake == 'starter':
         s.glows.append(f'<circle cx="{Hh[0]:.1f}" cy="{Hh[1]:.1f}" r="{hr*1.9:.1f}" fill="{GOLD}" opacity=".5" filter="url(#gl2)"/>')
-    s.med(Hh, hr, emb['kind'], col, state=heart, prog=info.get('prog'))
+    s.med(Hh, hr, emb['kind'], col, state=heart, prog=info.get('prog'), role='heart')
     for k in 'abc':
-        s.med(sk[k], sr, sealk.get('kind', 'sigil') if isinstance(sealk.get('kind'), str) else 'sigil', col, state=seals[k])
+        s.med(sk[k], sr, sealk.get('kind', 'sigil') if isinstance(sealk.get('kind'), str) else 'sigil', col, state=seals[k], role='seal')
     return info
 
 
 # ------------------------------------------------------------------ world
 HUBW = (0, 0)
 W_POS = dict(
-    orbit=(-310, -50), bolt=(300, 95), chain=(900, -60), meteor=(880, 420),
-    wren=(-520, 120), wolves=(-420, 255), mara=(-70, -235), ravens=(115, -262), elias=(-105, 195), lucinda=(-630, -320),
-    almanac=(60, -150), wardrobe=(-630, -150), satchel=(640, 330), cardfan=(120, 330),
-    twilight=(-130, 330), dusk=(-430, 385), longnight=(-640, 385),
-    hush=(420, -212), far3=(700, -560), future=(-300, -650),
+    orbit=(-310, -50), bolt=(300, 95), chain=(820, -60), meteor=(800, 380),
+    wren=(-520, 120), wolves=(-420, 255), mara=(-70, -235), ravens=(110, -228), elias=(-105, 195), lucinda=(-540, -290),
+    almanac=(60, -150), wardrobe=(-490, -150), satchel=(560, 240), cardfan=(120, 300),
+    twilight=(-130, 330), dusk=(-420, 400), longnight=(-640, 360),
+    hush=(400, -200), far3=(620, -470), future=(-300, -650),
 )
 
 
@@ -289,7 +334,7 @@ def scene(state, z, cam, S0, lod, vis=(262, 0, 1280, 720), hover=None, ctx='desk
     emb = {k: dict(EMB[k], col=RC[k]) for k in ('orbit', 'bolt', 'chain')}
     gsc = {'orbit': 1.45, 'bolt': 1.55, 'chain': 1.5}
     # ---- far fog regions + engraved names + dim dot rows (edges) ----
-    far_rows = [((-1080, 300), 1, 1), ((-1080, 350), 1, 1), ((860, 560), -1, -1), ((900, 510), -1, -1), ((-860, -520), 1, 1), ((520, -560), 1, 1)] if far else [((-760, 380), 1, 1), ((520, 330), 1, 1), ((470, 395), 1, 1)]
+    far_rows = []
     for (w0, dx, dy) in far_rows:
         p0 = C(w0)
         n = 9 if far else 8
@@ -305,6 +350,7 @@ def scene(state, z, cam, S0, lod, vis=(262, 0, 1280, 720), hover=None, ctx='desk
     ringr = {'mid': 62, 'far': 33, 'phone': 56}[lod]
     ring = [(hub[0] + ringr * math.cos(math.radians(360 / 10 * i - 90)), hub[1] + ringr * math.sin(math.radians(360 / 10 * i - 90))) for i in range(10)]
     lit_ring = 3 if first else 7
+    s.polys.append((ring + [ring[0]], True))
     s.lines.append('<path d="M' + ' L'.join('%.1f %.1f' % q for q in ring) + 'Z" fill="none" stroke="%s" stroke-opacity=".4" stroke-width="1.2"/>' % GREY)
     for i, p in enumerate(ring):
         if i in (3, 8): s.dia(p, GOLD, i < lit_ring, r=P['qr'] * .8, avail=(first and i == 3))
@@ -425,11 +471,12 @@ def scene(state, z, cam, S0, lod, vis=(262, 0, 1280, 720), hover=None, ctx='desk
     # ---- backbone: every landmark is REACHED by a chain of lanterns; chains continue onward (spine) ----
     ra = {'mid': 70, 'far': 38, 'phone': 62}[lod]
     qd, dd_ = P['dr'] * .85, P['qr'] * .85
-    chip_pos = []; diamonds = []; obst = []
+    chip_pos = []; diamonds = []; obst = []; chain_pairs = []
     CHIPS = ('Holy Orbit', 'Spirit Bolts') if first else (('Chain Lightning',) if far else ('Chain Lightning', 'Hushbell Hamlet'))
     def heart_of(key): return regs[key]['heart'] if key in regs else C(key)
     def kinds(n): return ['d' if ((i + 1) % 4 == 0 or i == n - 1) else 'o' for i in range(n)]
     def chain_path(a, b, n, lit, col, bend=.05, ra_=0, rb_=0, w=1.6, nxt=True, name=None, chipf=None):
+        chain_pairs.append((a, b))
         cv = Curve([a, bowed(a, b, hub, bend), b])
         d0 = ra_ + 12; d1 = cv.L - rb_ - 12; st_ = (d1 - d0) / max(n - 1, 1)
         s.curve(cv, col, False, w=w)
@@ -601,6 +648,91 @@ def scene(state, z, cam, S0, lod, vis=(262, 0, 1280, 720), hover=None, ctx='desk
     s.glows.append(f'<circle cx="{hub[0]:.0f}" cy="{hub[1]:.0f}" r="{150*hs*(1 if not far else 2.2):.0f}" fill="url(#hubg)"/>')
     s.nodes.append(lantern(hub[0], hub[1], hs))
     for key, p in (('wren', wren_p), ('elias', elias_p), ('mara', mara_p)): pass
+    # ================= ONE GRAPH: cross-chains between neighbouring medallions, then repair so every node has 2+ threads =================
+    _c0 = (len(s.glows), len(s.lines), len(s.nodes))
+    Mx = {}; DBG = []
+    def addm(nm_, p, lit, ports=None, rim=None):
+        if p is not None: Mx[nm_] = dict(p=p, lit=lit, ports=ports or [p], rim=rim or (CR + 6))
+    addm('hub', hub, True, [hub], ra)
+    for key in regs: addm(key, regs[key]['heart'], (not first) if key != 'chain' else False, list(regs[key]['seals'].values()), P['sr'] + 7)
+    for key_, lit_ in (('wren', True), ('elias', False), ('mara', False), ('lucinda', False), ('hush', False), ('twilight', True), ('dusk', False), ('longnight', False),
+                       ('far3', False), ('meteor', False), ('almanac', True), ('wardrobe', not first), ('satchel', False), ('cardfan', False)):
+        pp_ = C(key_)
+        if key_ in ('almanac', 'wardrobe', 'satchel', 'cardfan'): addm(key_, pp_, lit_, None, CR * .62 + 8)
+        elif key_ == 'meteor': addm(key_, pp_, lit_, None, P['sr'] * 1.1 + 6)
+        else: addm(key_, pp_, lit_, None, CR + 8)
+    addm('wolves', C('wolves'), not first, None, 20 if lod != 'far' else 12)
+    addm('ravens', C('ravens'), not first, None, 20 if lod != 'far' else 12)
+    def pd_(a, b): return min(((math.dist(x, y), x, y) for x in Mx[a]['ports'] for y in Mx[b]['ports']), key=lambda t_: t_[0])
+    names_ = list(Mx); pairs_ = set()
+    Dmax = {'mid': 400, 'far': 330, 'phone': 300}[lod]
+    for a in names_:
+        for d_, b in sorted((pd_(a, b)[0], b) for b in names_ if b != a)[:4]:
+            if d_ < Dmax: pairs_.add(tuple(sorted((a, b))))
+    def chained(a, b):
+        pa, pb = Mx[a]['p'], Mx[b]['p']
+        return any((math.dist(x, pa) < 3 and math.dist(y, pb) < 3) or (math.dist(x, pb) < 3 and math.dist(y, pa) < 3) for x, y in chain_pairs)
+    for a, b in sorted(pairs_):
+        d_, pa, pb = pd_(a, b)
+        if chained(a, b) or not (inview(pa, -2) or inview(pb, -2)):
+            DBG.append((a, b, 'chained/off')); continue
+        v, L_ = u(pa, pb); ra_, rb_ = Mx[a]['rim'], Mx[b]['rim']
+        if L_ < ra_ + rb_ + 20: continue
+        e0 = (pa[0] + v[0] * ra_, pa[1] + v[1] * ra_); e1 = (pb[0] - v[0] * rb_, pb[1] - v[1] * rb_)
+        blocked = False
+        for k in range(2, 9):
+            q = (e0[0] + (e1[0] - e0[0]) * k / 10, e0[1] + (e1[1] - e0[1]) * k / 10)
+            for oc, orad in obst:
+                if math.dist(oc, pa) < orad + 4 or math.dist(oc, pb) < orad + 4: continue
+                if math.dist(q, oc) < orad * .9: blocked = True
+        if blocked:
+            DBG.append((a, b, 'blocked')); continue
+        DBG.append((a, b, 'drawn'))
+        lit_x = Mx[a]['lit'] and Mx[b]['lit']
+        cvx = Curve([e0, bowed(e0, e1, hub, .05 if (len(names_) + ord(a[0])) % 2 else -.05), e1])
+        n_ = max(1, int(cvx.L / (fs * 1.5)) - 1)
+        s.polys.append(([b2.bez(cvx.P, i / 40) for i in range(41)], False))
+        dcol = '#e8d7a8' if lit_x else GREY
+        s.lines.append(f'<path d="M{e0[0]:.1f} {e0[1]:.1f} Q{cvx.P[1][0]:.1f} {cvx.P[1][1]:.1f} {e1[0]:.1f} {e1[1]:.1f}" fill="none" stroke="{dcol}" stroke-opacity="{.6 if lit_x else .48}" stroke-width="1.3" stroke-linecap="round"/>')
+        for i in range(n_):
+            q = cvx.at(cvx.L * (i + 1) / (n_ + 1))
+            if (i + 1) % 4 == 0: s.dia(q, '#ffe2a0', lit_x, r=P['dr'] * 1.15)
+            else: s.dot(q, '#ffe2a0', lit_x, r=P['dr'] * .9)
+    # repair: every non-leaf node gets 2+ threads (medallions 4, diamonds 3): link to nearest unattached neighbours
+    deg, sets = compute_deg(s)
+    tgt = lambda n: 1 if n.get('leaf') else ((4 if n.get('role') != 'seal' else 2) if n['k'] == 'med' else (3 if n['k'] == 'dia' else 2))
+    linked = set(); N_ = len(s.reg)
+    for i in sorted(range(N_), key=lambda i_: deg[i_]):
+        n = s.reg[i]
+        if not (inview(n['p'], 4)): continue
+        guard = 0
+        while deg[i] < tgt(n) and guard < 4:
+            guard += 1
+            maxd = (7.5 if n['k'] == 'med' else 4.8) * fs
+            cands = []
+            for j, m in enumerate(s.reg):
+                if j == i: continue
+                d_ = math.dist(n['p'], m['p'])
+                if d_ < fs * 1.15 or d_ > maxd or (sets[i] & sets[j]) or (min(i, j), max(i, j)) in linked: continue
+                cands.append((d_ * (.8 if deg[j] < tgt(m) else 1.1), j))
+            cands.sort()
+            pick = None
+            for sc_, j in cands[:8]:
+                if not seg_hits_rect(n['p'], s.reg[j]['p'], s.rects): pick = j; break
+            if pick is None and cands and n['k'] == 'med': pick = cands[0][1]
+            if pick is None: break
+            m = s.reg[pick]; a, b = n['p'], m['p']; d_ = math.dist(a, b)
+            nx, ny = -(b[1] - a[1]) / d_, (b[0] - a[0]) / d_; sg = 1 if (i + pick) % 2 else -1
+            c_ = ((a[0] + b[0]) / 2 + nx * sg * d_ * .12, (a[1] + b[1]) / 2 + ny * sg * d_ * .12)
+            both = n['lit'] and m['lit']
+            s.lines.append(f'<path d="M{a[0]:.1f} {a[1]:.1f} Q{c_[0]:.1f} {c_[1]:.1f} {b[0]:.1f} {b[1]:.1f}" fill="none" stroke="{"#e8d7a8" if both else GREY}" stroke-opacity="{.55 if both else .42}" stroke-width="1.1" stroke-linecap="round"/>')
+            deg[i] += 1; deg[pick] += 1; linked.add((min(i, pick), max(i, pick)))
+    for nm_, L_ in (('glows', s.glows), ('lines', s.lines), ('nodes', s.nodes)):
+        i0 = _c0[('glows', 'lines', 'nodes').index(nm_)]
+        seg = L_[i0:]; del L_[i0:]
+        L_.append('<g opacity=".85">' + ''.join(seg) + '</g>')
+    s.dbg = DBG
+    s.audit = [(n['k'], n.get('role', ''), round(n['p'][0]), round(n['p'][1]), deg[i]) for i, n in enumerate(s.reg) if inview(n['p'], -2) and not n.get('leaf') and deg[i] < (2 if n['k'] != 'med' or n.get('role') == 'seal' else 3)]
     s.regs = regs; s.wren_p = wren_p
     s.pos = dict(hub=hub, hush=hush_p, orbit=C('orbit'), bolt=C('bolt'), regs=regs)
     return s, lit_pts, C
@@ -718,17 +850,23 @@ def phone():
     # pointer to Spirit Bolts off the right edge
     web += ('<g transform="translate(246,520)"><rect x="0" y="-17" width="132" height="34" rx="17" fill="#12172c" fill-opacity=".94" stroke="#ffd27a" stroke-width="2"/>'
             '<circle cx="16" cy="0" r="6" fill="#ff9b52"/><text x="28" y="5" class="sb" font-size="14" fill="#fff3dc" style="stroke:none">Spirit Bolts</text></g><path d="M384,520 l-8,-8 M384,520 l-8,8" stroke="#ffd27a" stroke-width="2.5" stroke-linecap="round"/>')
+    global PHONE_AUD
+    PHONE_AUD = s.audit
     html = pager(sk, web, over, 390, 844, css, 0, 0)
     return html
 
 
 if __name__ == '__main__':
     out = {}
-    out['C5-first-open'] = desk('first')[0]
-    out['C5-midgame'] = desk('mid')[0]
-    out['C5-banner-hover'] = banner_view()
-    out['C5-far-overview'] = desk('mid', zoom_far=True)[0]
-    out['C5-phone-390x844'] = phone()
+    AUD = {}
+    def _d(name, f):
+        r = f(); out[name] = r[0] if isinstance(r, tuple) else r
+    h, s_, C_ = desk('first'); out['C5-first-open'] = h; AUD['first'] = s_.audit
+    h, s_, C_ = desk('mid'); out['C5-midgame'] = h; AUD['mid'] = s_.audit; out['C5-banner-hover'] = banner_view()
+    h, s_, C_ = desk('mid', zoom_far=True); out['C5-far-overview'] = h; AUD['far'] = s_.audit
+    out['C5-phone-390x844'] = phone(); AUD['phone'] = PHONE_AUD
+    print(s_.dbg)
+    for k_, v_ in AUD.items(): print(k_, 'nodes with <2 threads (or medallion <3):', len(v_), v_[:12])
     for n, h in out.items():
         open(os.path.join(D, n + '.html'), 'w', encoding='utf-8').write(h)
     print('ok')
