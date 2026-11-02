@@ -482,3 +482,4 @@ REQUIREMENT for the tree design sheet (Matt, 2026-11-02): the tree will be expan
 
 ## PAUSED for the night (Matt, 2026-11-02)
 NOW: skill tree rework design. Round 3 mockups (R3-*.png: two backgrounds, hero+companion panel, zoom levels) were still rendering in one background agent (writes only docs/mockups/tree-v3/, uncommitted: commit them on resume). Resume: show Matt the R3 images, he picks a background, then design sheet (three options incl. medallion art approach, pacing chart, scale/zoom, first-buys cadence), independent review, LOCK, build in small chunks. Then Lucinda DM5-DM10, Chapter 2, Companions (docs/design/companions-v1.md), Visuals review, starting-synergy idea, Almanac silhouettes/kill counts.
+Matt picked CARVED STONE background (2026-11-02), spacing medallions out more. Next: tree design sheet docs/design/skill-tree-rework-v1.md, then independent review, then Matt locks.
