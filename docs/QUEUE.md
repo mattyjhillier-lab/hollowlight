@@ -461,3 +461,6 @@ Skill tree "wow" rework = big job. Needs real time first: research of other skil
 
 ## ORDER UPDATE (Matt, 2026-11-02): skill tree rework FIRST
 Matt agreed: do the skill tree rework before the rest of Lucinda (DM5-DM10 incl. her tree cluster DM8) so new nodes are not built on a tree that is being reworked. Order: tree research (docs/research/33-skill-tree-designs.md) -> three options -> review -> Matt picks -> LOCK -> build; then Lucinda DM5-DM10, Chapter 2, Companions, Visuals review. Nothing built yet.
+
+## Skill tree research done (Matt, 2026-11-02)
+docs/research/33-skill-tree-designs.md. Matt's feedback: tree felt flat and dark, not somewhere he wants to spend time looking; felt disconnected inside the tree. Recommendation D5 hybrid (Restore the Hollow sky + landmark-first + juice + early option landmarks). Awaiting Matt's picks (first-buy style, direction). Nothing built.
