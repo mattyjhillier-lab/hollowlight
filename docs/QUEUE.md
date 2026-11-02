@@ -467,3 +467,8 @@ docs/research/33-skill-tree-designs.md. Matt's feedback: tree felt flat and dark
 
 ## Tree lessons from Matt's Spirit Hunters photos (2026-11-02; inspiration only, never copy; photos NOT stored in repo)
 The web unlocks game content directly: heroes, maps and abilities are big illustrated medallions (this corrects docs/research/34, which had heroes/maps as separate). Three node tiers (medallion / diamond / tiny dot). Name banner + cost/condition tile on selection. Hero portrait + Play/Codex/Back beside the web so the tree is part of home. Bright and colourful from the start. Central emblem hub. Applying to D5 in tree-v3 round 2 mockups (R2-*.png). Plan: heroes, chapters and nights become tree landmarks (ties to Lucinda DM8 and Chapter 2).
+
+## More reference lessons from Matt's Spirit Hunters photos (2026-11-02; inspiration only, never copy; photos not in repo)
+- Character select: hero row + big hero card (name/title, Challenge stars, SPD/HP) + STARTING WEAPON grid with a named "Starting Synergy" bonus for the hero's pairing. Idea for Wispwick: small named bonus when a hero starts with their signature weapon (new content: three options; fits "any hero can start with any weapon" rule).
+- Bestiary: tab per map, grid with BLACK SILHOUETTES for unmet enemies, detail panel (portrait, text, base HP, attack, lifetime kills, maps+difficulties). Idea: Almanac silhouettes + kill counts; tree condition tiles show the same enemy picture and count so tree and Almanac agree.
+- One shared frame and one menu (Play, Almanac, Ledger, Back) across tree, bestiary, hero select = the "connected" feeling. Feed into the tree rework front-door/home decision (research 33 Q4).
