@@ -70,6 +70,20 @@ try {
         }
       }
     }
+    // hover banner on a landmark (desktop, mid-game save, NEAR)
+    await openTree(D, 4);
+    const hs = await ev(`(() => { const t = ${T}; return t.def.list.filter((i) => t.def.nodes[i].kind === 'heart' && t.model.cache[i].s !== 'notyet').slice(0, 2); })()`);
+    for (let k = 0; k < hs.length; k++) {
+      const pos = await ev(`(() => { const t = ${T}; const n = t.def.nodes['${hs[k]}']; t.fly = null; t.cam.x = n.x; t.cam.y = n.y; t.cam.z = 1.0; t.camSig = ''; t.dirty(); return true; })()`);
+      await sleep(600);
+      const xy = await ev(`(() => { const t = ${T}; const n = t.def.nodes['${hs[k]}']; const r = t.mapEl.getBoundingClientRect(); const [x, y] = t.toS(n.x, n.y); return [r.left + x, r.top + y]; })()`);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: xy[0] - 6, y: xy[1] - 6, pointerType: 'mouse' });
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: xy[0], y: xy[1], pointerType: 'mouse' });
+      await sleep(500);
+      const r = await send('Page.captureScreenshot', { format: 'jpeg', quality: 72 });
+      writeFileSync(join(OUT, `desk-mid-hover-${k + 1}.jpg`), Buffer.from(r.data, 'base64'));
+      console.log('hover shot', hs[k]);
+    }
   } else {
     for (const [pn, preset] of [['fresh', 0], ['mid', 4], ['late', 5]]) {
       await openTree(D, preset);

@@ -483,9 +483,34 @@ export class TreeScreen {
   ukNow() { const v = Number(document.documentElement.style.getPropertyValue('--uik')); return v >= 1 && v <= 1.6 ? v : 1; }
   /** Q1a: on-screen radius of a lantern = half its tier diameter (scaled to its neighbours, see meta/treetier.js) x zoom, never under the tier floor. */
   radiusOf(id, lod) { const t = this.tiers.tier[id] || 'dot'; const d = this.tiers.d[id]; return screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1) / 2; }
+  /** FAR only: greedy collapse of landmarks that would overlap on screen. Returns Map id -> leader id (leaders map to themselves); this.farCount = leader -> how many hidden behind it. */
+  collapseFar(ids) {
+    const pri = { ready: 0, open: 1, challenge: 2, lit: 3, notyet: 4, fog: 5 };
+    const best = this.model.best && this.model.best.id;
+    const L = [];
+    for (const id of ids) {
+      if (this.tierOfId(id) !== 'landmark') continue;
+      const s = this.model.cache[id].s;
+      if (s === 'fog') continue;
+      const n = this.def.nodes[id]; const [x, y] = this.toS(n.x, n.y);
+      if (x < -30 || x > this.W + 30 || y < -30 || y > this.H + 30) continue;
+      L.push({ id, x, y, r: this.radiusOf(id, 'far'), k: id === this.selected ? -2 : id === best ? -1 : pri[s] ?? 6 });
+    }
+    L.sort((a, b) => a.k - b.k || (a.id < b.id ? -1 : 1));
+    const map = new Map(); this.farCount = new Map(); const leaders = [];
+    for (const a of L) {
+      const lead = leaders.find((b) => Math.hypot(a.x - b.x, a.y - b.y) < (a.r + b.r) * 1.05);
+      if (lead) { map.set(a.id, lead.id); this.farCount.set(lead.id, (this.farCount.get(lead.id) || 0) + 1); } else { map.set(a.id, a.id); leaders.push(a); this.farCount.set(a.id, 0); }
+    }
+    return map;
+  }
+  countBadge(c, x, y, n) {
+    c.fillStyle = '#fff6e0'; c.beginPath(); c.arc(x, y, 8 * (this.uk || 1), 0, 7); c.fill();
+    c.fillStyle = '#3a2412'; c.font = `bold ${10 * (this.uk || 1)}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(`+${n}`, x, y + 0.5);
+  }
   tierOfId(id) { return this.tiers.tier[id] || 'dot'; }
   /** Drawn (and tappable) at this zoom? FAR = landmarks, plus any lantern you can light now (a small glowing dot). */
-  shownAt(id, lod) { return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
+  shownAt(id, lod) { if (lod === 'far' && this.farMerged && this.farMerged.has(id) && this.farMerged.get(id) !== id && id !== this.selected) return false; return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
 
   draw(t) {
     const c = this.ctx;
@@ -535,6 +560,7 @@ export class TreeScreen {
     const DIMA = [1, 0.2, 0.35, 0.55];
     const dot = (style, dim, x, y, r) => { const k = dim ? `D${dim}${style}` : style; let pa = batches.get(k); if (!pa) { pa = new Path2D(); batches.set(k, pa); } pa.moveTo(x + r, y); pa.arc(x, y, r, 0, 6.2832); };
     const ids = this.idsIn(vx0, vy0, vx1, vy1);
+    const merged = this.farMerged = far ? this.collapseFar(ids) : new Map(); // FAR: landmarks closer than their drawn size collapse into one badge with a count
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
       const n = this.def.nodes[id];
@@ -545,6 +571,7 @@ export class TreeScreen {
       if (s === 'fog' && lod !== 'near') continue;
       const dim = this.onlyLight && s !== 'ready' ? 1 : selR && s !== 'ready' && m.region(id) !== selR ? 2 : far && !this.selected && s === 'notyet' ? 3 : 0;
       const tier = this.tierOfId(id);
+      if (far && merged.has(id) && merged.get(id) !== id) continue;
       if (far && tier !== 'landmark') { // FAR shows landmarks only; a lantern you can light now is a small glowing dot (batched)
         if (s === 'ready') { const r = 3 * this.uk; dot('rgba(255,179,90,.14)', false, sx, sy, r + 5 + 5 * pulse); dot('#fff6e0', false, sx, sy, r); this.animNeeded = true; }
         continue;
@@ -553,6 +580,7 @@ export class TreeScreen {
       c.globalAlpha = DIMA[dim];
       if (s === 'ready') { this.affordMark(c, sx, sy, r, pulse, false, best && best.id === id); this.animNeeded = true; }
       this.nodeShape(c, n, sx, sy, r, s, ce, id, lod);
+      if (far && merged.get(id) === id && this.farCount.get(id) > 0) this.countBadge(c, sx + r * 0.75, sy - r * 0.75, this.farCount.get(id));
       if (tier === 'landmark' && s !== 'fog' && s !== 'notyet') { c.strokeStyle = s === 'lit' ? '#e6b955' : 'rgba(216,178,106,.55)'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, r + 3.5, 0, 7); c.stroke(); } // medallion rim
       if (ce.fresh) this.newFlag(c, sx, sy - r - 9);
       if (this.selected === id) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(sx, sy, r + 10, 0, 7); c.stroke(); c.setLineDash([]); }
@@ -579,10 +607,10 @@ export class TreeScreen {
     c.strokeStyle = '#d8b26a'; c.lineWidth = Math.max(1.5, 3 * z);
     c.beginPath(); c.arc(hx, hy, lr * 0.75, 0, 7); c.stroke();
     if (lod === 'far') {
-      const ty = hy + (this.view.nearHub - 10) * z;
-      if (!this.lastRB.some((b) => b.x0 < hx + 90 && b.x1 > hx - 90 && b.y0 < ty + 16 && b.y1 > ty)) {
+      const ty = 10 * (this.uk || 1); // docked at the top of the map, never among the landmarks
+      if (!this.lastRB.some((b) => b.x0 < W / 2 + 100 && b.x1 > W / 2 - 100 && b.y0 < ty + 18 && b.y1 > ty)) {
         c.font = `${13 * (this.uk || 1)}px ${FONT_UI}`; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center'; c.textBaseline = 'top';
-        c.fillText(`The Hollow remembers: ${Math.round(p * 100)}%`, hx, ty);
+        c.fillText(`The Hollow remembers: ${Math.round(p * 100)}%`, W / 2, ty);
       }
     }
     if (best) this.drawBestMarker(c, t, lod);

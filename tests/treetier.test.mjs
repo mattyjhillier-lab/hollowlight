@@ -122,6 +122,8 @@ test('source: the screen bakes in resize() only; draw() never calls a bake; no i
   const src = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
   assert.equal((src.match(/ensureWorld\(/g) || []).length, 1);
   assert.equal((src.match(/ensureScreen\(/g) || []).length, 1);
+  assert.ok(src.includes('collapseFar(') && src.includes('countBadge('), 'FAR landmark pile-ups collapse into one badge');
+  assert.ok(!src.includes('(this.view.nearHub - 10) * z'), 'remembers line is docked, not under the hub');
   const resize = src.slice(src.indexOf('  resize() {'), src.indexOf('  toS(x, y)'));
   assert.ok(resize.includes('ensureWorld(') && resize.includes('ensureScreen('));
   const bgSrc = readFileSync(new URL('../src/gfx/treebg.js', import.meta.url), 'utf8') + readFileSync(new URL('../src/meta/treetier.js', import.meta.url), 'utf8');

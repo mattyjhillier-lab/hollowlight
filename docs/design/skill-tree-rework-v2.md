@@ -97,3 +97,11 @@ Security check: docs only. Planned: one new hint bit (HINT_COUNT 14) via sanitiz
 - Draw diameter at zoom 1 = min(76 / 26 / 9, 0.9 x distance to nearest same-or-higher-tier neighbour); a second pass shrinks the bigger medallion beside a closer smaller one (down to what leaves the small one its floor). Measured: no pair overlaps; 13 of 27 landmarks are scaled below 76 (smallest 31). On screen x zoom, never under 22 / 10 / 4 px.
 - Zoom: FAR = landmarks (+ lanterns you can light now as small glowing dots); MID = all tiers (dots stay as 4 px specks so trails never dangle: a deliberate deviation from 'MID + diamonds only'); NEAR = all. Names: FAR lit/next landmarks, MID landmark+diamond+can-light, NEAR as before (dots included).
 - Backdrop (src/gfx/treebg.js): world layer baked once per size class (desktop 0.42x, phone 0.26x, no speckle), screen layer (moon haze, vignette) at half res; per frame one drawImage each + additive region washes + gold ring arcs (lit fraction per ring band). No animation.
+
+### Q1a tables reconciled (AUTHORITATIVE over v1 2.1; fixes in the same chunk)
+| Tier | FAR | MID | NEAR | Name |
+|---|---|---|---|---|
+| Landmark | drawn; landmarks closer than their drawn size collapse into the leader (ready > best > open > lit) with a '+N' badge; name for lit / open / can-light / best only | drawn | drawn | lit/next only at FAR; all but not-yet at MID and NEAR |
+| Diamond | hidden (unless you can light it now: small glowing dot) | drawn | drawn | MID and NEAR (not-yet ones unnamed) |
+| Dot | hidden (same exception) | drawn as a faint 4 px speck (DELIBERATE CHOICE, Matt to confirm: so trails never dangle; the alternative is hiding them, which breaks links) | drawn | NEAR only (v1 tier table said 'never named', zoom table said NEAR names all: the zoom table is what shipped); never named at FAR or MID; select or hover shows the banner |
+Also: 'The Hollow remembers: N%' is docked at the top of the map at FAR (it used to sit under the hub and collided with landmarks).
