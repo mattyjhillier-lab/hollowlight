@@ -117,26 +117,25 @@ def garden(s, emb, C, sc, ns, states, lead, name_seals=None, sil=0.06, ghosts=0,
     return dict(M=M, heart=Hh, seals=seals, lead=leadpos)
 
 
-# ---------------- 1. refined wolves garden (near zoom) ----------------
-def wolves():
-    s = S(); emb = EMB['wolf']; rng = random.Random(5)
-    s.label((28, 40), 'Ghost Wolves  -  refined satellite garden', 24, GOLD, 'start', 700)
-    s.label((28, 64), 'Layout generated from the wolf emblem (heart, eye/nose sockets, fork targets): S-curved spokes, petal forks, satellite rings, heart petals, ghost dots.', 13, '#b9c5e4', 'start', 500)
-    g = garden(s, emb, (640, 402), 2.62, 1.0, dict(a='lit', b='lit', c='veiled'), dict(a=4, b=4, c=2), SEALS_WOLF, sil=0.055, ghosts=44, rng=rng)
+# ---------------- 1. refined Holy Orbit garden (near zoom; magic weapons get the full garden) ----------------
+def orbit_garden():
+    s = S(); emb = EMB['orbit']; rng = random.Random(5)
+    s.label((28, 40), 'Holy Orbit  -  refined satellite garden on the ring emblem', 24, GOLD, 'start', 700)
+    s.label((28, 64), 'Placement from the emblem (heart in the centre, seal sockets on the inner ring, fork targets on the outer ring); styling by the garden curve pass.', 13, '#b9c5e4', 'start', 500)
+    g = garden(s, emb, (640, 388), 2.5, 1.0, dict(a='lit', b='lit', c='veiled'), dict(a=4, b=4, c=2), None, sil=0.055, ghosts=40, rng=rng)
     sa, sb, sc_ = g['seals']['a'], g['seals']['b'], g['seals']['c']
-    # visual-only cross-threads between seals (never from fork leaves)
-    s.thread(sa, sb, g['heart'], 0.55, 0.45); s.thread(sa, sc_, g['heart'], 0.12, 0.3); s.thread(sb, sc_, g['heart'], 0.12, 0.3)
-    s.cap((g['heart'][0], g['heart'][1] - 52), 'HEART', GOLD, 11.5)
-    s.cap((sa[0] - 150, sa[1] + 108), 'Howling Legion', GOLD, 13, 'end'); s.label((sa[0] - 150, sa[1] + 124), 'lit landmark (zero power)', 11, '#aebbd8', 'end')
-    s.cap((sb[0] + 150, sb[1] + 108), 'Lightfoot Pack (lit)', GOLD, 13, 'start'); s.label((sb[0] + 150, sb[1] + 124), 'seal bought, both forks open', 11, '#aebbd8', 'start')
+    s.thread(sa, sb, g['heart'], 0.5, 0.4); s.thread(sa, sc_, g['heart'], 0.15, 0.3); s.thread(sb, sc_, g['heart'], 0.15, 0.3)
+    s.cap((g['heart'][0], g['heart'][1] + 46), 'HEART: Holy Orbit', GOLD, 11.5)
+    s.cap((sa[0] - 130, sa[1] + 100), 'Starter landmark', GOLD, 13, 'end'); s.label((sa[0] - 130, sa[1] + 116), 'free evolution, zero power', 11, '#aebbd8', 'end')
+    s.cap((sb[0] + 130, sb[1] + 100), 'Judgement Wheel (lit)', GOLD, 13, 'start'); s.label((sb[0] + 130, sb[1] + 116), 'seal bought, both forks open', 11, '#aebbd8', 'start')
     s.cap((sc_[0] + 56, sc_[1] + 4), '?  veiled seal', '#aebbd8', 13, 'start'); s.label((sc_[0] + 56, sc_[1] + 20), 'no forks until it is lit', 11, '#aebbd8', 'start')
     s.label((640, 712), 'Dim dots and hairlines are texture, not nodes. Real nodes stay connected; forks are dead-end leaves.', 12, '#b9c5e4', 'middle', 600)
-    return s.html('B3 wolves garden')
+    return s.html('B3 orbit garden')
 
 
 # ---------------- 2. unlock sequence (4 frames, one spoke) ----------------
 def seq():
-    s = S(); col = EMB['wolf']['col']
+    s = S(); col = EMB['orbit']['col']
     PW, PH = 640, 360
     titles = ['1  Fresh: quiet ghost shapes', '2  Lead-in lit: the seal is about to wake', '3  Seal lit: the forks unfurl', '4  Forks bought: the garden glows']
     notes = ['static. Seal is a veiled "?"; only fog where forks will be (no node shapes shown).\nCalm motion: identical (nothing moves).',
@@ -149,7 +148,7 @@ def seq():
         wash = f'<rect x="{ox+10}" y="{oy+10}" width="{PW-20}" height="{PH-20}" rx="14" fill="#0c1426" fill-opacity=".45" stroke="{GOLD}" stroke-opacity=".35" stroke-width="1.5"/>'
         s.back.append(wash)
         if st == 4:
-            s.back.append(f'<ellipse cx="{ox+330}" cy="{oy+190}" rx="300" ry="150" fill="{col}" fill-opacity=".13" filter="url(#glow)"/><ellipse cx="{ox+330}" cy="{oy+190}" rx="190" ry="90" fill="{GOLD}" fill-opacity=".08" filter="url(#glow)"/>')
+            s.back.append(f'<ellipse cx="{ox+330}" cy="{oy+190}" rx="250" ry="118" fill="{col}" fill-opacity=".12" filter="url(#glow)"/><ellipse cx="{ox+330}" cy="{oy+190}" rx="160" ry="70" fill="{GOLD}" fill-opacity=".08" filter="url(#glow)"/>')
         if st <= 2:
             s.back.append(f'<rect x="{ox+10}" y="{oy+10}" width="{PW-20}" height="{PH-20}" rx="14" fill="#05080f" fill-opacity=".30"/>')
         s.label((ox + 28, oy + 36), titles[idx], 14, GOLD, 'start', 700)
@@ -164,14 +163,14 @@ def seq():
             a = math.radians(30 + 60 * i); v = (math.cos(a), math.sin(a))
             if v[0] > .55: continue
             tip = add(H, v, 56 * ns); petal_k(s, add(H, v, 28 * ns), tip, add(add(H, v, 40 * ns), (-v[1], v[0]), 16), GOLD, True)
-        s.med(H, 26 * ns, 'wolf', col, True)
+        s.med(H, 26 * ns, 'orbit', col, True)
         # forks
         for j, Tp in enumerate(T):
             fc, pc = fork_curve(Sk, Tp, H)
             if st == 1:
                 petal_k(s, Sk, Tp, pc, '#8d9ab8', False, 0.9, .7)  # fog only
             elif st == 3:
-                k = 0.62 if j == 0 else 0.40
+                k = 0.78 if j == 0 else 0.52
                 petal_k(s, Sk, Tp, pc, col, True, k, .8)
                 pts = [fc.at(fc.L * k * i / 40) for i in range(41)]
                 poly(s, pts, col, 2.2 * ns ** .3)
@@ -192,23 +191,23 @@ def seq():
             av = [unit(Sk, H)[0]] + [unit(Sk, fork_curve(Sk, Tp, H)[0].at(26))[0] for Tp in T]
             satellites(s, Sk, col, True, ns, 24 * ns, av)
         # the seal
-        if st == 1: s.med(Sk, 24 * ns, 'paw', col, False, veiled=True)
+        if st == 1: s.med(Sk, 24 * ns, 'sigil', col, False, veiled=True)
         elif st == 2:
             for r_, o_ in ((24 * ns + 12, .22), (24 * ns + 24, .12)):
                 s.nodes.append(f'<circle cx="{Sk[0]}" cy="{Sk[1]}" r="{r_:.1f}" fill="none" stroke="{GOLD}" stroke-opacity="{o_}" stroke-width="2"/>')
-            s.med(Sk, 24 * ns, 'paw', col, False, veiled=True)
+            s.med(Sk, 24 * ns, 'sigil', col, False, veiled=True)
             for q in range(5):
                 a = math.radians(-70 + q * 35); p = add(Sk, (math.cos(a), math.sin(a)), 24 * ns + 18 + q % 2 * 8)
                 s.nodes.append(f'<polygon points="{p[0]:.1f},{p[1]-4:.1f} {p[0]+2:.1f},{p[1]:.1f} {p[0]:.1f},{p[1]+4:.1f} {p[0]-2:.1f},{p[1]:.1f}" fill="{GOLD}" opacity=".85"/>')
-            s.label((Sk[0], Sk[1] + 56), 'next light: Lightfoot seal', 11, GOLD, 'middle', 600)
+            s.label((Sk[0], Sk[1] + 56), 'next light: Judgement Wheel seal', 11, GOLD, 'middle', 600)
         else:
             if st == 3: s.nodes.append(f'<circle cx="{Sk[0]}" cy="{Sk[1]}" r="{24*ns+10:.1f}" fill="none" stroke="#fff6dc" stroke-opacity=".6" stroke-width="2.5" filter="url(#glow)"/>')
-            s.med(Sk, 24 * ns, 'paw', col, True)
+            s.med(Sk, 24 * ns, 'sigil', col, True)
         if st == 3:  # hover card on the first new dot
-            p = fork_curve(Sk, T[0], H)[0].at(24 * ns + 15 * ns); bx, by = p[0] + 24, p[1] - 76
+            p = fork_curve(Sk, T[0], H)[0].at(24 * ns + 15 * ns); bx, by = p[0] - 250, p[1] - 118
             s.nodes.append(f'<rect x="{bx:.0f}" y="{by:.0f}" width="150" height="58" rx="8" fill="#101a30" stroke="{GOLD}" stroke-opacity=".7"/>')
-            s.nodes.append(f'<line x1="{p[0]+7:.0f}" y1="{p[1]-6:.0f}" x2="{bx+10:.0f}" y2="{by+58:.0f}" stroke="{GOLD}" stroke-opacity=".7"/>')
-            s.text.append(f'<text x="{bx+10:.0f}" y="{by+20:.0f}" font-size="12.5" fill="{GOLD}" font-weight="700">Light Paws</text><text x="{bx+10:.0f}" y="{by+36:.0f}" font-size="11" fill="{INK}">+1% Wolf speed</text><text x="{bx+10:.0f}" y="{by+51:.0f}" font-size="11" fill="#9fd8ff">140 gold  -  can light</text>')
+            s.nodes.append(f'<line x1="{p[0]-4:.0f}" y1="{p[1]-8:.0f}" x2="{bx+150:.0f}" y2="{by+58:.0f}" stroke="{GOLD}" stroke-opacity=".7"/>')
+            s.text.append(f'<text x="{bx+10:.0f}" y="{by+20:.0f}" font-size="12.5" fill="{GOLD}" font-weight="700">Wide Halo</text><text x="{bx+10:.0f}" y="{by+36:.0f}" font-size="11" fill="{INK}">+1% Orbit size</text><text x="{bx+10:.0f}" y="{by+51:.0f}" font-size="11" fill="#9fd8ff">140 gold  -  can light</text>')
         s.label((ox + 28, oy + PH - 38), notes[idx], 10.5, '#aebbd8', 'start', 500)
     s.label((640, 18), '', 1)
     return s.html('B3 unlock sequence')
@@ -253,6 +252,6 @@ def whole():
 
 
 if __name__ == '__main__':
-    for n, f in [('B3-wolves-garden', wolves), ('B3-unlock-sequence', seq), ('B3-whole-web-garden', whole)]:
+    for n, f in [('B3-orbit-garden', orbit_garden), ('B3-unlock-sequence', seq), ('B3-whole-web-garden', whole)]:
         open(os.path.join(D, n + '.html'), 'w', encoding='utf-8').write(f())
     print('ok')
