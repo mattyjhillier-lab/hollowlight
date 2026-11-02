@@ -1,0 +1,87 @@
+# Tree branches v1: short chains, then a landmark, then themed follow-ups
+
+Status: DESIGN + MOCKUP only (2026-11-02). Nothing built. Pictures: docs/mockups/tree-v3/B1-*.png (source src/B1-gen.py, B1-shot.mjs). Names and numbers in pictures are invented.
+Matt's rule: "a few little nodes, then the evolution node, then a few more nodes relating to that."
+
+## 1. Reference structure analysis (read from the reference photos; counts are approximate, one screen)
+Photos used: ff14a21b, 01b5ee88, 21963a28, f313d5f5, b2797ad2, 0ef1879e, d99cdcd3, cce8345f, 93125f9c, 6c226447 (others are repeats). Inspiration for rhythm only, no art/frame/names copied.
+- Chains: a run of tiny dots is **2-4 long (mode 3)** before a diamond or a hub. Dot:diamond is about **3:1** (about 120-150 dots, 35-45 diamonds on a full screen).
+- Diamonds: framed diamonds are the mid-size choices. About **4 diamonds sit within one hop of each big medallion** (1-2 feeding it, 1-2 beyond). Diamonds cluster where chains meet.
+- Medallions: about **10 big medallions per screen**, ratio about **1 per 4 diamonds, 1 per 12-15 dots**. 7-8 sit isolated near the edge of the web as the END of a branch; 2-3 sit inside the web as hubs at a junction with threads on all sides. Each medallion is flanked by **2 small gold bells** and has a few diamonds in front of it.
+- Hub and satellites: a framed-square hub in the middle has a **sunburst of 4-6 spokes**, each spoke = **2-4 dots then a diamond** (d99cdcd3 centre). Little clusters of **3-6 dots hang off a diamond** (short branches, rings of 6-8 dots, hooks). Spokes end in a gold bell or a diamond: the end of a chain is marked.
+- Threads: dot chains are straight thin lines; **cobweb cross-links** (many fine threads) join neighbouring diamonds and medallions, so the web is dense and lopsided, not a clean tree.
+- Outer region: a **central emblem with symmetrical wings** (ff14a21b, 6c226447): about 6-7 rows per side of **10-16 grey dots** with a diamond near the emblem end of each row, plus webbing. Dim and quiet: long dot-paths that lead toward something.
+- Node types by icon: tiny teal dots (stats), framed diamonds with an icon (choices/abilities), gold bells (small bonuses), big framed medallions (heroes/maps/boss unlocks).
+- Density and zoom: one zoom level shows everything; medallions read as landmarks, diamonds as icons, dots as texture. Nothing needs zooming to understand it.
+
+### Where Wispwick deliberately differs
+- Warm Lantern look: gold ring medallions, blue wolf light, carved stone; no frame, no skulls, no cobweb texture (we keep clean thin threads, plus at most a few cross-links).
+- Our medallions are evolution seals that are VEILED (dashed ring, "?") until their condition is met; the reference shows every medallion.
+- We have no bells: the flanking job is done by the follow-ups after the seal. (Open to a tiny gold "keepsake" dot later.)
+- Three branches per weapon (we have 3 evolutions), not 4-6 spokes; chains 3-4 dots long (reference mode 3, we add the diamond as the 4th).
+- Our dots carry real 1-2% stats under the soft cap, so the lead-in must stay neutral (hidden recipes).
+
+## 2. How Ghost Wolves is built today
+- 14 nodes: heart `gt_ghost_wolves` (150 gold, 2 runs), 2 seals (`gt_phantom_stampede` b, `gt_dire_alpha` c), 11 outline nodes = 7 knots + 3 beads + 1 mastery. Evolution a (`howling_legion`) is the STARTER evolution: no gate node, no seal.
+- Requires graph is generated from the emblem outline order (treedata.js), not hand-written: heart -> `wf_fang` -> bite -> coat -> maul -> hunt -> **wf_third** (apex, requiresAny) <- rend <- scent <- bleed <- lope <- `su_call` <- heart. So two 5-node chains leave the heart and meet at one mastery. The `requires` typed in the JSON for outline nodes is ignored.
+- Seals have NO requires. They are gated only by unlock conditions (evolveWeapon n, wolf kills). No knot has to be bought first, and no node follows a seal.
+- Knots: Wolf speed +2 (su_call, lope, hunt), Bite power +2/+4 (scent, maul, bite, fang), beads: bleed +3 (bleed, rend), power +4 (coat); mastery power+speed +2. Per-weapon face sum = **24** (power 16, speed 8; bleed 6 counts in the shared status pool). Nothing is themed to an evolution: the count/duration pair of Howling Legion has no node at all.
+- Other weapon (Holy Orbit, same shape): 14 nodes, outline is orb power / orbit speed / halo size / burn chains meeting at the mastery `or_seventh`; 2 seals, starter a seal-less; face 24; seals are also unconnected to the knots. Chain Lightning/Raven/Bolts have 3 seals (15 nodes), face 22-24.
+- Budget: per-weapon pool cap 17.2, weight 0.08 per weapon (refWeapons 5, total 5 x 1.376 at cap). Wolves today: soft(24) = 12.94, PE 1.035 = 75% of its asymptote. The at-cap ceiling (30.99 of 31) is a rule, so adding nodes cannot break it; what moves is real power, so every option needs the sweep.
+
+## 3. Three branch structures (Ghost Wolves worked example)
+Common rules: knot = dot (+1-2%), bead/mastery = diamond (+3-4%, status or stat), seal gets `requires: [last lead-in diamond]` (a seal now needs its lead-in bought, plus its unlock condition), follow-ups require the seal and appear only once it is lit. **Hidden-recipe safety**: lead-ins are neutral (mixed stats, generic wolf names, never the pair); follow-ups are themed to the evolution's VERB, not its stat pair: each follow-up trio uses one pair stat, one off-pair stat and one status/other, so no stat shows up as "the pair". Seals stay veiled; follow-ups never name a recipe. Estimates use the real soft formula (treebudget.js: C 17.2, w 0.08); the budget code was not run on these options because they are not data yet.
+
+### A. Three spokes (picture B1-wolves-option-a.png)
+Per evolution: 3 dots + 1 diamond -> seal -> 2 dots + 1 diamond. The heart has 3 rays toward the emblem sockets.
+- Nodes: **24** (14 today + **10 new**: 2 lead-in knots, 8 follow-ups). Reparented ids (requires changed): all 11 outline ids (L: fang, bite, scent, coat; R: su_call, lope, hunt, bleed; D: maul, 2 new, rend); `wf_third` becomes the Alpha's closing diamond; both seals get a requires.
+- New follow-ups (invented): Legion "Echo Howl" Rend +2, "Kindred Shade" bleed +3, "Pack Memory" Bite +2; Lightfoot "Light Paws" speed +2, "Bright Wake" bleed +3, "Trailblazer" Rend +2; Alpha "Great Jaw" power +2, "Heavy Rend" duration +2, (wf_third reused).
+- Power: face 24 -> about 38 (+14, all 1-2% steps); PE per weapon 1.035 -> about 1.225 (+0.19), five weapons about +0.95 of 16.9. Can be made neutral by trimming `wf_maul`/`wf_coat` 4% to 2% (-4).
+- Hidden-recipe: lead-ins neutral, follow-ups hidden until the seal lights. Safe.
+- Reads: FAR = 3 spokes with a medallion at each end (a wolf with three arms). MID = chain of dots, diamond, medallion with a tuft. NEAR = node names and follow-up trio.
+- Template score: best (see section 5).
+
+### B. Shared trunk, three seals in a row (B1-wolves-option-b.png)
+One trunk of 5 dots + diamond -> fork -> three seals stacked -> 3 follow-ups each.
+- Nodes: **18** (14 + **4 new**). Reparent: 6 trunk (su_call, lope, fang, bite, scent, coat), 5 old become follow-ups (bleed, rend, hunt, maul, third); the 4 new are the rest of the 9 follow-ups.
+- Power: face +8 -> 32, PE +0.125 per weapon (+0.6 total). Least new content, but follow-ups are mostly old generic nodes, so the "themed" feeling is weakest.
+- Hidden-recipe: the trunk is shared, so it is the safest; the three seals sit side by side, so seal order can hint at unlock order.
+- Reads: FAR = a tree with a trunk and three fruits; the weapon's silhouette is lost (all seals on one side). MID = one long line. NEAR = fork reads well.
+- Lowest value: you walk one road to reach any seal, so there is no "which branch" choice.
+
+### C. Ring and spokes (B1-wolves-option-c.png)
+Hexagon ring of 6 dots round the heart; every other ring dot starts a spoke of 2 dots + diamond to a seal; 3-4 follow-ups hang beyond.
+- Nodes: **27** (14 + **13 new**). Reparent: 6 ring (fang, bite, scent, hunt, su_call, lope), 5 spoke (maul, bleed, rend, coat, third); new 4 spoke nodes + 9 follow-ups.
+- Power: face about +20 -> 44, PE +0.24 per weapon (+1.2 total); 95% of its asymptote, so the extra is mostly wasted by the soft cap.
+- Hidden-recipe: ring neutral; same follow-up rule. Safe.
+- Reads: FAR = a ring with three tails (looks like the reference's closed dot rings and sunburst). MID = busiest, most "web". NEAR = ring is a decoration, few real choices.
+- Highest density and closest to the reference sunburst, but most nodes, most budget and hardest to extend.
+
+## 4. Save and migration (all options)
+`requires` of released ids changes (11 per weapon, 55 total) and effects may change: needs core.version 4 -> 5 and the already-approved refund-everything reset (Regrowth-style, never lose spent currency, snapshot, announced). New ids are append-only in tests/fixtures/tree-ids.json. The seal-requires change also needs the connected-unlock rule retested. No change to unlock effects (weapon/evolution gates stay permanent, never refunded).
+
+## 5. Template for future content (Matt's rule: data only, laid out automatically)
+A branch becomes a template inside the weapon fragment (illustrative, not final):
+`"branches":[{"socket":"b","evo":"phantom_stampede","lead":{"len":3,"ids":["su_call","wf_lope","wf_hunt"],"diamond":"wf_bleed"},"seal":"gt_phantom_stampede","follow":{"theme":"trails","ids":["wf_wake","wf_paws","wf_blaze"]}}]`.
+Layout needs NO coordinates: the ray = heart -> emblem socket point, lead step, seal distance and follow-up fan are constants of the template. The theme tag is read from evolutions.json (the verb), never typed twice. The same template serves a hero keepsake chain (lead 3 -> landmark -> follow 2) and a chapter/companion landmark (landmark kind replaces seal).
+| | A spokes | B trunk + fork | C ring + spokes |
+|---|---|---|---|
+| Template is per branch | yes, fully independent | trunk shared, fork shared | ring shared |
+| Add 4th evolution to a weapon | new socket point + one branch entry; siblings do not move (each owns its ray) | needs a 4th fork slot; arc has room for 4-5 only if reserved | ring of 6 supports 3 spokes; a 4th means a ring of 8, so siblings move |
+| New weapon / hero / chapter | fragment data only | data only | data only, but ring size is another field |
+| Synthetic --extra test (TREE-GEN1) | still passes if the validator derives counts from the template (today it hard-codes 11 outline nodes and exactly sockets a,b,c) | same | same |
+Validator changes needed for A: replace CLUSTER_OUTLINE=11 and "exactly 3 sockets" (treedata.js lines 78-85, 273-286) with counts derived from `branches`; layout rays in treelayout.js; keep the emblem socket points as the ray definition (a 4th evolution adds one point).
+
+## 6. Recommendation: A, with power held neutral
+A keeps three self-contained, reusable branches, gives the "dots, evolution, relating nodes" rhythm at reference ratios (dot:diamond about 2.5:1, 3-dot lead-in, seal as branch end, a short follow-up tuft), keeps the wolf-head silhouette on FAR zoom, and is the only option where a 4th evolution does not move its siblings. Trim two 4% nodes so net face is about +10 instead of +14, re-run `rt-matrix.mjs` and `bless-sweep.mjs`.
+Effort: about 3 chunks (schema + compose + validator; layout rays + R1 re-run; content for 15 evolutions x 2-3 follow-ups = about 40 new nodes with names/sweeps). Risk: medium (touches compose and ids, needs the reset); balance risk low-medium (+0.95 PE of 16.9 before trim).
+
+## 7. Effect on the rework chunk plan
+- R1 re-layout must be re-run on the branch structure: constellation becomes a heart with 3 rays and larger footprint (about 2.2x radius of today's 11-slot outline); do the template/schema chunk first, then R1.
+- The refund-everything reset (v4 -> v5) ships with this layout, as already approved for Q4.
+- Evolution medallion art (R2) now has 3 seal glyphs per weapon.
+
+## 8. Open questions for Matt (max 3)
+1. Howling Legion has no seal node (starter evolution). Add a free, zero-power "landmark" node that lights with the heart so the Legion branch has a medallion (recommended), or hang its follow-ups straight off the last lead-in diamond?
+2. Seals must now be preceded by their lead-in diamond (a seal cannot be bought until its chain is). Yes (recommended), or keep seals gold/condition only?
+3. Hold weapon power neutral (trim two 4% nodes, recommended) or let the tree get about +5% stronger and retune?
