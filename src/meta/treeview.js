@@ -87,5 +87,7 @@ export function buildTreeView(info, def, data) {
     beyondR: R.bands && Number.isFinite(R.bands.r0) ? R.bands.r0 + (R.bands.width || 0) * 0.35 : rr('far', 1280) + 300,
     webR: Math.max(reach + 120, rr('far', 1280) + 200),
     lod: { ...LOD },
+    // Q1a: radii of the engraved runic rings of the stone backdrop (the core rings that have a radius, inner to outer; display only)
+    ringR: Object.values(R).map((x) => (x && Number.isFinite(x.r) && !Number.isFinite(x.width) ? x.r : 0)).filter((r) => r > 0).sort((a, b) => a - b),
   };
 }

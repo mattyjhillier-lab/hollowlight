@@ -5,7 +5,10 @@
 // lantern buttons (role tree, at most 120 at once) for keyboard and screen readers.
 // Rules: the screen reads ONLY the compiled tree + view regions + the real tree rules (no weapon/hero/chapter id here; grep test);
 // every string from data goes through textContent / setAttribute, never innerHTML.
-import { TreeModel, SAY, KIND_R, KIND_LABEL, sanitizePins, fmtN, MAX_PINS } from './treemodel.js';
+import { TreeModel, SAY, KIND_LABEL, sanitizePins, fmtN, MAX_PINS } from './treemodel.js';
+import { computeTierSizes, screenDiameter, tierShown, TIER_SIZE } from '../meta/treetier.js';
+import { TreeBackdrop, ringLitFractions } from '../gfx/treebg.js';
+import { probe } from '../gfx/probe.js';
 import { RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
 import { CEL } from './codexcopy.js';
 
@@ -83,6 +86,10 @@ export class TreeScreen {
     this.camSig = '';
     this.open_ = true;
     this.celN = 0;
+    this.tiers = computeTierSizes(this.def); // Q1a: node tier + medallion draw diameter (display only)
+    this.bg = new TreeBackdrop((w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // baked once, see gfx/treebg.js
+    this.ringLit = []; this.tints = [];
+    this.perf = { n: 0, sum: 0, max: 0 };
     this.paths = new Map();
     for (const r of this.view.regions) if (r.silhouette) { try { this.paths.set(r.key, new Path2D(r.silhouette)); } catch { /* bad path: no emblem */ } }
     const root = this.host.layer('tree');
@@ -316,7 +323,19 @@ export class TreeScreen {
     const s = this.api.save();
     this.model.recompute(s, this.pins);
     this.mapEl.style.background = this.skyFor(this.model.progress);
+    this.backdropState();
     this.updateAll();
+  }
+
+  // Q1a: what the stone backdrop shows (recomputed on state change only, never per frame): gold per ring = lit fraction of the lanterns on it,
+  // colour wash per region = its lit fraction (grey-blue stone -> region accent as it fills)
+  backdropState() {
+    const m = this.model;
+    this.ringLit = ringLitFractions(this.def, (id) => m.cache[id] && m.cache[id].s === 'lit', this.view.ringR);
+    this.tints = this.view.regions.filter((r) => r.ids.length).map((r) => {
+      const col = r.kind === 'cluster' ? r.color : '#ffd9a0';
+      return { x: r.x, y: r.y, r: Math.max(r.r * 1.7, 200), frac: r.kind === 'rings' ? 0 : r.lit / r.ids.length, color0: hexA(col, 0.22), color1: hexA(col, 0) };
+    });
   }
 
   updateAll() {
@@ -350,6 +369,7 @@ export class TreeScreen {
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
     this.canvas.width = Math.round(this.W * this.DPR);
     this.canvas.height = Math.round(this.H * this.DPR);
+    if (this.bg) { this.bg.ensureWorld(this.view.webR, this.view.ringR, this.small); this.bg.ensureScreen(this.W, this.H, this.small); } // no-ops unless the size class changed
     this.camSig = '';
     this.fr = null;
     this.dirty();
@@ -461,11 +481,24 @@ export class TreeScreen {
   colorOf(id) { const r = this.model.region(id); return r && r.kind === 'cluster' ? r.color : '#ffd9a0'; }
   /** DESKTOP polish: Menu size (--uik, the CSS zoom of #ui) does not scale canvas pixels, so lanterns, labels and hit areas multiply by it here. 1 on phones. */
   ukNow() { const v = Number(document.documentElement.style.getPropertyValue('--uik')); return v >= 1 && v <= 1.6 ? v : 1; }
-  radiusOf(n, lod) { const k = this.uk || 1; return Math.max((lod === 'far' ? 2.2 : 4.5) * k, (KIND_R[n.kind] || 8) * this.cam.z * 1.15 * k); }
+  /** Q1a: on-screen radius of a lantern = half its tier diameter (scaled to its neighbours, see meta/treetier.js) x zoom, never under the tier floor. */
+  radiusOf(id, lod) { const t = this.tiers.tier[id] || 'dot'; const d = this.tiers.d[id]; return screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1) / 2; }
+  tierOfId(id) { return this.tiers.tier[id] || 'dot'; }
+  /** Drawn (and tappable) at this zoom? FAR = landmarks, plus any lantern you can light now (a small glowing dot). */
+  shownAt(id, lod) { return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
 
   draw(t) {
     const c = this.ctx;
     if (!c) return;
+    const t0 = performance.now();
+    this.drawFrame(t);
+    const ms = performance.now() - t0; // Q1a perf probe: draw ms of the tree frame (?perf=1 shows it as window.__treePerf and tags the long-frame list)
+    const P = this.perf; P.n++; P.sum += ms; if (ms > P.max) P.max = ms;
+    if (probe.on) { globalThis.__treePerf = P; if (ms > 12) probe.tag('tree:draw', ms); }
+  }
+
+  drawFrame(t) {
+    const c = this.ctx;
     const { W, H, cam } = this;
     this.uk = this.ukNow();
     const m = this.model;
@@ -475,12 +508,13 @@ export class TreeScreen {
     const lod = this.lodNow = this.lod();
     // the plain dusk sky is the map element's CSS background (skyFor), so a frame only clears the canvas
     c.clearRect(0, 0, W, H);
+    if (this.bg) { this.bg.drawWorld(c, cam, W, H, this.view.ringR, this.ringLit, this.tints); this.bg.drawScreen(c, W, H); } // stone wall (baked) + lit rings + haze/vignette
     const pulse = this.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 420);
     const [hx, hy] = this.toS(0, 0);
     const R = (240 + 260 * p) * z + 20;
     const pool = c.createRadialGradient(hx, hy, 0, hx, hy, R);
     const ga = this.small ? 0.6 : 1; // C3: the hub wash is calmer on small screens
-    pool.addColorStop(0, `rgba(255,179,90,${(0.16 + 0.26 * p) * ga})`);
+    pool.addColorStop(0, `rgba(255,179,90,${(0.16 + 0.26 * p) * ga * 0.55})`); // Q1a: glows toned down
     pool.addColorStop(1, 'rgba(255,154,58,0)');
     c.fillStyle = pool;
     c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
@@ -510,32 +544,27 @@ export class TreeScreen {
       const s = ce.s;
       if (s === 'fog' && lod !== 'near') continue;
       const dim = this.onlyLight && s !== 'ready' ? 1 : selR && s !== 'ready' && m.region(id) !== selR ? 2 : far && !this.selected && s === 'notyet' ? 3 : 0;
-      if (far) {
-        if (s === 'notyet') dot('rgba(150,160,190,.30)', dim, sx, sy, 1.4);
-        else if (s === 'challenge') dot('#6fd3c5', dim, sx, sy, 2.4);
-        else {
-          const r = this.radiusOf(n, lod);
-          if (s === 'lit') dot(n.kind === 'socket' ? '#ffcf5a' : this.colorOf(id), dim, sx, sy, r);
-          else if (s === 'ready') { dot('rgba(255,179,90,.22)', false, sx, sy, r + 6 + 6 * pulse); dot('#fff6e0', false, sx, sy, r); this.animNeeded = true; }
-          else if (s === 'open') dot('#d8b26a', dim, sx, sy, r * 0.8);
-        }
+      const tier = this.tierOfId(id);
+      if (far && tier !== 'landmark') { // FAR shows landmarks only; a lantern you can light now is a small glowing dot (batched)
+        if (s === 'ready') { const r = 3 * this.uk; dot('rgba(255,179,90,.14)', false, sx, sy, r + 5 + 5 * pulse); dot('#fff6e0', false, sx, sy, r); this.animNeeded = true; }
         continue;
       }
-      const r = this.radiusOf(n, lod);
+      const r = this.radiusOf(id, lod);
       c.globalAlpha = DIMA[dim];
       if (s === 'ready') { this.affordMark(c, sx, sy, r, pulse, false, best && best.id === id); this.animNeeded = true; }
       this.nodeShape(c, n, sx, sy, r, s, ce, id, lod);
+      if (tier === 'landmark' && s !== 'fog' && s !== 'notyet') { c.strokeStyle = s === 'lit' ? '#e6b955' : 'rgba(216,178,106,.55)'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, r + 3.5, 0, 7); c.stroke(); } // medallion rim
       if (ce.fresh) this.newFlag(c, sx, sy - r - 9);
       if (this.selected === id) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(sx, sy, r + 10, 0, 7); c.stroke(); c.setLineDash([]); }
       c.globalAlpha = 1;
       labels.push({ id, x: sx, y: sy, r, s });
     }
     if (far) {
-      const halo = batches.get('rgba(255,179,90,.22)'); // halos first, under the dots
-      if (halo) { c.fillStyle = 'rgba(255,179,90,.22)'; c.fill(halo); batches.delete('rgba(255,179,90,.22)'); }
+      const halo = batches.get('rgba(255,179,90,.14)'); // halos first, under the dots
+      if (halo) { c.fillStyle = 'rgba(255,179,90,.14)'; c.fill(halo); batches.delete('rgba(255,179,90,.14)'); }
       for (const [k, pa] of batches) { const d = k[0] === 'D'; c.globalAlpha = d ? DIMA[Number(k[1])] : 1; c.fillStyle = d ? k.slice(2) : k; c.fill(pa); }
       c.globalAlpha = 1;
-      if (this.selected) { const n = this.def.nodes[this.selected]; const [sx, sy] = this.toS(n.x, n.y); c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, 8, 0, 7); c.stroke(); }
+      if (this.selected && this.tierOfId(this.selected) !== 'landmark') { const n = this.def.nodes[this.selected]; const [sx, sy] = this.toS(n.x, n.y); c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, 8, 0, 7); c.stroke(); }
     }
     this.drawLabels(labels, lod);
     this.drawRegionNames(lod);
@@ -619,9 +648,9 @@ export class TreeScreen {
       if (r.r * z < 14 && !r.done) continue; // an emblem smaller than a fingertip adds nothing the dots do not show
       if (path) {
         c.save(); c.translate(sx, sy); c.scale(z, z);
-        c.fillStyle = r.done ? hexA(r.color, 0.30) : awake ? hexA(r.color, 0.05 + 0.16 * frac) : 'rgba(120,128,150,.06)';
+        c.fillStyle = r.done ? hexA(r.color, 0.20) : awake ? hexA(r.color, 0.04 + 0.10 * frac) : 'rgba(120,128,150,.06)';
         c.fill(path);
-        if (r.done) { c.lineWidth = 2 / z; c.strokeStyle = hexA(r.color, 0.9); if (!this.reduced) { c.shadowColor = r.color; c.shadowBlur = 18; } c.stroke(path); c.shadowBlur = 0; }
+        if (r.done) { c.lineWidth = 2 / z; c.strokeStyle = hexA(r.color, 0.9); if (!this.reduced) { c.shadowColor = r.color; c.shadowBlur = 8; } c.stroke(path); c.shadowBlur = 0; }
         c.restore();
       } else if (r.kind === 'tool') {
         const RR = r.r * z; const m = c.createRadialGradient(sx, sy, 0, sx, sy, RR);
@@ -706,7 +735,7 @@ export class TreeScreen {
   affordMark(c, x, y, r, pulse, far, isBest) {
     if (isBest || far) {
       const RR = r + (far ? 6 : 12); const h = c.createRadialGradient(x, y, r * 0.6, x, y, RR + 8 * pulse);
-      h.addColorStop(0, 'rgba(255,179,90,.6)'); h.addColorStop(1, 'rgba(255,179,90,0)');
+      h.addColorStop(0, 'rgba(255,179,90,.32)'); h.addColorStop(1, 'rgba(255,179,90,0)');
       c.fillStyle = h; c.beginPath(); c.arc(x, y, RR + 8 * pulse, 0, 7); c.fill();
     }
     if (far) return;
@@ -753,7 +782,7 @@ export class TreeScreen {
     if (s === 'lit') {
       this.bodyPath(c, n, x, y, r);
       if (small) c.fillStyle = col; else { const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r * 1.2); g.addColorStop(0, '#fffaf0'); g.addColorStop(0.5, col); g.addColorStop(1, hexA(col, 0.7)); c.fillStyle = g; }
-      if (!this.reduced && lod === 'near') { c.shadowColor = col; c.shadowBlur = 12; }
+      if (!this.reduced && lod === 'near') { c.shadowColor = col; c.shadowBlur = 5; }
       c.fill(); c.shadowBlur = 0;
       c.strokeStyle = '#fff3dc'; c.lineWidth = 1.2; c.stroke();
       this.ranks(c, n, id, x, y, r);
@@ -793,7 +822,7 @@ export class TreeScreen {
     const n = this.def.nodes[this.model.best.id]; const [x, y] = this.toS(n.x, n.y);
     if (x < 0 || x > this.W || y < 0 || y > this.H) return;
     this.animNeeded = true;
-    const r = this.radiusOf(n, lod);
+    const r = this.radiusOf(this.model.best.id, lod);
     const bob = this.reduced ? 0 : Math.sin(t / 380) * 3;
     this.pinShape(c, x, y - r - 16 + bob);
   }
@@ -801,9 +830,14 @@ export class TreeScreen {
   // LABELS: far = no lantern names; mid = only the selected, best-next and can-light lanterns; near = all but not-yet beads;
   // a collision pass keeps names off other names and lanterns (64 px screen grid: linear cost at 1000+ nodes).
   drawLabels(list, lod) {
-    if (lod === 'far') return;
     const c = this.ctx; const m = this.model; const best = m.best;
-    let pick = lod === 'near' ? list.filter((L) => L.s !== 'notyet' || L.id === this.selected) : list.filter((L) => L.id === this.selected || (best && L.id === best.id) || L.s === 'ready');
+    const tr = (L) => this.tierOfId(L.id);
+    const quiet = (L) => L.id === this.selected || (best && L.id === best.id) || L.s === 'ready';
+    // Q1a names: FAR = landmarks that are lit or next (lit / can light / open); MID = landmark and diamond names; NEAR = every name but beads that are not yet
+    // reachable; dots are named at NEAR only
+    let pick = lod === 'far' ? list.filter((L) => quiet(L) || (tr(L) === 'landmark' && (L.s === 'lit' || L.s === 'open')))
+      : lod === 'mid' ? list.filter((L) => quiet(L) || (tr(L) !== 'dot' && L.s !== 'notyet'))
+        : list.filter((L) => L.s !== 'notyet' || L.id === this.selected); // NEAR as before (the sheet's tier table says dots carry no name; its zoom table says NEAR shows all names: kept readable)
     if (this.onlyLight) pick = pick.filter((L) => L.s === 'ready' || L.id === this.selected);
     const pri = (L) => (L.id === this.selected ? 0 : best && L.id === best.id ? 1 : L.s === 'ready' ? 2 : L.s === 'open' ? 3 : L.s === 'challenge' ? 4 : L.s === 'lit' ? 5 : 6);
     pick.sort((a, b) => pri(a) - pri(b));
@@ -895,7 +929,7 @@ export class TreeScreen {
         this.itemsEl.append(b);
       }
       const [sx, sy] = this.toS(n.x, n.y);
-      const r = Math.max(22, this.radiusOf(n, lod) + 4);
+      const r = Math.max(22, this.radiusOf(id, lod) + 4);
       const tr = `translate(${(sx - r).toFixed(1)}px,${(sy - r).toFixed(1)}px)`;
       if (b._tr !== tr) { b._tr = tr; b.style.transform = tr; }
       const sz = `${(r * 2).toFixed(0)}px`;
@@ -1323,14 +1357,16 @@ export class TreeScreen {
     const [wx, wy] = this.toW(sx, sy);
     const reach = 60 / this.cam.z;
     let bestId = null, bd = Infinity;
+    const lodH = this.lodNow || this.lod();
     for (const [cx, cy] of this.cellsIn(wx - reach, wy - reach, wx + reach, wy + reach)) {
       for (const id of this.def.cells.get(`${cx},${cy}`) || []) {
+        if (!this.shownAt(id, lodH)) continue; // a lantern that is not drawn at this zoom cannot be hit by accident
         const n = this.def.nodes[id]; const d = Math.hypot(n.x - wx, n.y - wy) * this.cam.z;
         if (d < bd) { bd = d; bestId = id; }
       }
     }
     if (!bestId) return null;
-    const hit = Math.max(22, (KIND_R[this.def.nodes[bestId].kind] || 8) * this.cam.z * 1.3) * (this.uk || 1); // 44 px touch target at least
+    const hit = Math.max(22 * (this.uk || 1), this.radiusOf(bestId, lodH) * 1.15); // 44 px touch target at least (invisible padding around small medallions)
     return bd <= hit ? bestId : null;
   }
 
