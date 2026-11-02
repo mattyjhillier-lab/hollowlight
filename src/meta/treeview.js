@@ -82,6 +82,10 @@ export function buildTreeView(info, def, data) {
   const wick = rr('wick', 300);
   return {
     regions,
+    threads: (info.regions || []).filter((r) => r.thread).map((r) => { // engraved backbone grooves: from the hub rim (90 out) to the region's near edge
+      const [tx, ty] = r.thread.to, d = Math.hypot(tx, ty) || 1, k = 90 / d;
+      return d > 140 ? [Math.round(tx * k), Math.round(ty * k), tx, ty] : [0, 0, 0, 0];
+    }).filter((t) => t[2] !== 0 || t[3] !== 0),
     regionRecords: info.regions || [], // R1: data-only region records (name, centre, accent, backbone thread to the hub)
     regionOf,
     farFree,

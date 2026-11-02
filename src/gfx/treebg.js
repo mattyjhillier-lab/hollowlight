@@ -20,10 +20,11 @@ export class TreeBackdrop {
   }
 
   /** Bake the world layer if the web size / size class changed. radii = engraved ring radii (world units). Returns true when it baked. */
-  ensureWorld(webR, radii, small) {
+  ensureWorld(webR, radii, small, threads) {
     const E = Math.ceil((Number(webR) || 1500) + 500);
     const scale = small ? 0.26 : 0.42;
-    const key = `${E}|${scale}|${(radii || []).join(',')}`;
+    const th = Array.isArray(threads) ? threads.filter((t) => Array.isArray(t) && t.length === 4 && t.every(Number.isFinite)) : [];
+    const key = `${E}|${scale}|${(radii || []).join(',')}|${th.join(',')}`;
     if (this.world && key === this.worldKey) return false;
     this.worldKey = key; this.E = E; this.scale = scale;
     const px = Math.round(2 * E * scale);
@@ -65,6 +66,14 @@ export class TreeBackdrop {
         for (let k = 0; k < 3; k++) { g.moveTo((rnd() - 0.5) * 12, (rnd() - 0.5) * 18); g.lineTo((rnd() - 0.5) * 12, (rnd() - 0.5) * 18); }
         g.stroke(); g.restore();
       }
+    }
+    // R1 backbone threads: a faint engraved groove from the hub to each region (hub -> constellation / tool cluster); the lit trails are drawn per frame
+    g.lineCap = 'round';
+    for (const t of th) {
+      const [x0, y0, x1, y1] = t;
+      g.lineWidth = 6; g.strokeStyle = 'rgba(3,6,12,.5)'; g.setLineDash([22, 18]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.lineWidth = 2; g.strokeStyle = 'rgba(170,186,222,.10)'; g.beginPath(); g.moveTo(x0 + 3, y0 + 3); g.lineTo(x1 + 3, y1 + 3); g.stroke();
+      g.setLineDash([]);
     }
     // the wall fades into the dusk sky at the web edge
     g.globalCompositeOperation = 'destination-in';

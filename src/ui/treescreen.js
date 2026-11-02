@@ -369,7 +369,7 @@ export class TreeScreen {
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
     this.canvas.width = Math.round(this.W * this.DPR);
     this.canvas.height = Math.round(this.H * this.DPR);
-    if (this.bg) { this.bg.ensureWorld(this.view.webR, this.view.ringR, this.small); this.bg.ensureScreen(this.W, this.H, this.small); } // no-ops unless the size class changed
+    if (this.bg) { this.bg.ensureWorld(this.view.webR, this.view.ringR, this.small, this.view.threads); this.bg.ensureScreen(this.W, this.H, this.small); } // no-ops unless the size class changed
     this.camSig = '';
     this.fr = null;
     this.dirty();
