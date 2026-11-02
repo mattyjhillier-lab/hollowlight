@@ -449,3 +449,6 @@ Matt feels wolves/ravens do not read as real summons. Direction picked: STANDING
 
 ## LATER: Companions (Matt, 2026-11-02; supersedes "standing allies" note above)
 Summons stop being weapons; each hero gets a companion (Lucinda/Ophimber model). Circle back after Lucinda + Chapter 2. Doc: docs/design/companions-v1.md. First step then: three options for Wren's wolf, prototype hidden.
+
+## LATER (back of the list): Visuals review (Matt, 2026-11-02)
+Are we using the correct visuals? Discussion first, nothing built. Art style is LOCKED (polished chunky 2D cartoon, P1 Warm Lantern); reopening it is Matt's call. Start by asking what feels off (characters, enemies, ground, effects, UI), pick reference games, take true-size and phone screenshots, collect friends' one-word reactions. Prefer fixes inside the current style over a restyle.
