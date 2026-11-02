@@ -497,3 +497,6 @@ Tree branches picked (Matt, 2026-11-02): Option A three spokes, lead-in diamond 
 Branch amendment (Matt, 2026-11-02): TWO separate forks out of each seal, each to a small diamond (LOCKED 'TREE BRANCH AMENDMENT'). Option A mockups being re-rendered with forks.
 Branch amendment 2 (Matt, 2026-11-02): the two forks out of each seal are LEAF branches ending at their diamond (connect to nothing else); EVERYTHING ELSE is connected into one web (hub, hearts, lead-ins, seals, tools, heroes, regions) with visual cross-link threads between neighbouring constellations (not gating; requires stay minimal); connectIssues validates no orphans except forks.
 Gating (Matt, 2026-11-02): decide LATER at Q7 (landmark/gate step, after the Q0 pacing chart). Until then new fork nodes are gold-only and existing conditions stay as they are.
+
+## LATER (idea, Matt 2026-11-02): "login screen" with actual pictures
+Matt wants to think up ideas for a proper picture-based first screen (calls it the login screen; the game has no accounts, so this means the title / front door with real key art, plus the lantern/profile pick). Discuss ideas first (three options with mockups), fits the UI alignment pass and the visuals review; nothing built. Check docs/design/front-door-v1.md and LOCKED front-door rows first.
