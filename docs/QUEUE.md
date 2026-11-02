@@ -458,3 +458,6 @@ Matt looked at the tree properly for the first time and it did not give the wow 
 
 ## ORDER NOTE (Matt, 2026-11-02): skill tree rework goes BEFORE companions
 Skill tree "wow" rework = big job. Needs real time first: research of other skill-tree designs (Path of Exile passive tree, Spirit Hunters, Vampire Survivors/Brotato-style meta, Hades Mirror, Slay the Spire-style, Diablo 4 paragon, etc.), a research file, then three design options, independent review, Matt picks, LOCK, build in small chunks. Order: Lucinda (DM5-DM10) -> Chapter 2 only if it does not add tree nodes first (otherwise review order with Matt) -> SKILL TREE REWORK -> Companions -> Visuals review (back of list). Rework must keep saves safe (tree-released.json snapshot, append-only) and keep balance bands.
+
+## ORDER UPDATE (Matt, 2026-11-02): skill tree rework FIRST
+Matt agreed: do the skill tree rework before the rest of Lucinda (DM5-DM10 incl. her tree cluster DM8) so new nodes are not built on a tree that is being reworked. Order: tree research (docs/research/33-skill-tree-designs.md) -> three options -> review -> Matt picks -> LOCK -> build; then Lucinda DM5-DM10, Chapter 2, Companions, Visuals review. Nothing built yet.
