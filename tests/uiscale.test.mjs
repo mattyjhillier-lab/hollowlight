@@ -115,7 +115,7 @@ test('DESKTOP polish: Lantern Web scales lanterns, labels and hit areas by Menu 
   const src = css('ui/treescreen.js');
   assert.match(src, /ukNow\(\)/);
   assert.match(src, /--uik/);
-  assert.match(src, /screenDiameter\([^)]*this\.uk \|\| 1\)/); // Q1a: the tier diameter takes the Menu size factor
+  assert.match(src, /screenDiameter\([^\n]*this\.uk \|\| 1\)/); // Q1a: the tier diameter takes the Menu size factor
   assert.match(src, /13 \* uk/);
   assert.match(src, /\* \(this\.uk \|\| 1\)/);
   assert.match(src, /\$\{this\.uk \|\| 1\}/); // in both cache signatures, so a Menu size change redraws
