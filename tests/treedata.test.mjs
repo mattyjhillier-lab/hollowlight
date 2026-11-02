@@ -365,12 +365,13 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   const c = compose(fs, d);
   const def = compileTree(c.v2, d);
   assert.equal(def.list.length, real.info.nodes.length + 15 + 3);
-  assert.deepEqual(c.info.centres.lantern_wisps, [1217.4, 395.5]); // far1 (the tool clusters hold far2/4/6/8/10)
-  assert.deepEqual(c.info.positions.gt_lantern_wisps, [1217.4, 459.5]);
-  assert.deepEqual(c.info.positions.lw_beacon, [1217.4, 255.5]);
-  assert.deepEqual(c.info.positions.gt_wisp_choir, [1217.4, 203.5]);
-  assert.deepEqual(c.info.positions.gt_beacon_line, [1067.4, 299.5]);
-  assert.deepEqual(c.info.positions.th_b, [428, 139]);
+  // R1: positions follow the layout keys (far ring radius, clusterScale, gap relaxation) instead of fixed numbers
+  const far = c.info.core.rings.far, fa = (far.ang0 * Math.PI) / 180, ctr = c.info.centres.lantern_wisps;
+  assert.deepEqual(ctr, [Math.round(far.r * Math.cos(fa) * 10) / 10, Math.round(far.r * Math.sin(fa) * 10) / 10]); // far1 (the tool clusters hold far2/4/6/8/10)
+  const em = c.info.emblems[c.info.clusters.lantern_wisps.emblem], reach = Math.max(...[...Object.values(em.slots), ...Object.values(em.sockets)].map((p) => Math.hypot(p[0], p[1]))) * c.info.scale;
+  for (const n of c.info.nodes.filter((x) => x.cluster === 'lantern_wisps' && x.role !== 'hero')) assert.ok(Math.hypot(c.info.positions[n.id][0] - ctr[0], c.info.positions[n.id][1] - ctr[1]) <= reach + 80, `${n.id} stays inside the constellation`);
+  assert.deepEqual(compose(fs, d).info.positions, c.info.positions, 'same layout every time');
+  assert.ok(Math.abs(Math.hypot(...c.info.positions.th_b) - c.info.core.rings.heroes.r) < 1, 'hero lantern on the hero ring');
   assert.deepEqual(layoutIssues(c.info, def), []);
   assert.deepEqual(def.nodes.lw_beacon.requiresAny, ['lw_halo', 'lw_hood'].length ? def.nodes.lw_beacon.requiresAny : []);
   assert.deepEqual(def.nodes.lw_wick.requires, ['gt_lantern_wisps']);

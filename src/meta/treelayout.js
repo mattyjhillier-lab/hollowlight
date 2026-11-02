@@ -2,20 +2,57 @@
 // layoutIssues(info, v2def) -> string[]; an empty list means the computed layout is sound. Used by `npm test` and tree-validate.
 // (Label-collision checks per zoom level belong to the screen chunk T4; the node overlap check lives in compileTree.)
 
+import { tierOf } from './treetier.js';
+
 const EXTRA = 22; // a node's hit radius counts towards its cluster's footprint
 
-export function clusterRadius(emblem) {
+// scale = core.layout.clusterScale (R1: the emblem points are spread by it)
+export function clusterRadius(emblem, scale = 1) {
   let m = 0;
   const pts = [emblem.heart, ...Object.values(emblem.slots), ...Object.values(emblem.sockets)];
   for (const p of pts) m = Math.max(m, Math.hypot(p[0], p[1]));
+  return m * scale + EXTRA;
+}
+
+// a constellation's footprint = its farthest lantern or starter-evolution seal from its centre (R1: the gap relaxation can push a lantern past the
+// scaled emblem), never less than the scaled emblem itself
+function footprint(info, id, c) {
+  const ctr = info.centres[id];
+  let m = clusterRadius(info.emblems[c.emblem], info.scale || 1) - EXTRA;
+  for (const n of info.nodes) if (n.cluster === id && n.role !== 'hero') m = Math.max(m, Math.hypot(info.positions[n.id][0] - ctr[0], info.positions[n.id][1] - ctr[1]));
+  for (const p of Object.values((info.sealPos && info.sealPos[id]) || {})) m = Math.max(m, Math.hypot(p[0] - ctr[0], p[1] - ctr[1]));
   return m + EXTRA;
+}
+
+// R1 GAPS: no two lanterns closer than the gap of their tiers (landmark 76 px medallion, diamond 26, dot 9: treetier.js). core.layout.gapLandmark /
+// gapDiamond / gapDot are the same-tier centre distances; a mixed pair needs the mean of its two. Keys missing = not checked. Grid-based, O(n).
+export function gapIssues(info) {
+  const issues = [];
+  const L = (info.core && info.core.layout) || {};
+  const g = { landmark: L.gapLandmark, diamond: L.gapDiamond, dot: L.gapDot ?? L.v2MinGap };
+  if (![g.landmark, g.diamond, g.dot].every((v) => Number.isFinite(v))) return issues;
+  const need = (a, b) => (a === b ? g[a] : (g[a] + g[b]) / 2);
+  const C = Math.max(g.landmark, 1);
+  const cell = new Map();
+  const items = info.nodes.map((n) => ({ id: n.id, t: tierOf(n), p: info.positions[n.id] }));
+  const key = (i, j) => `${i},${j}`;
+  for (const it of items) { const k = key(Math.floor(it.p[0] / C), Math.floor(it.p[1] / C)); if (!cell.has(k)) cell.set(k, []); cell.get(k).push(it); }
+  for (const a of items) {
+    const ci = Math.floor(a.p[0] / C), cj = Math.floor(a.p[1] / C);
+    for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) for (const b of cell.get(key(i, j)) || []) {
+      if (b.id <= a.id) continue;
+      const d = Math.hypot(a.p[0] - b.p[0], a.p[1] - b.p[1]);
+      if (d < need(a.t, b.t)) issues.push(`${a.id} (${a.t}) and ${b.id} (${b.t}) are ${Math.round(d)} apart, need ${Math.round(need(a.t, b.t))}`);
+    }
+  }
+  return issues;
 }
 
 export function layoutIssues(info, def) {
   const issues = [];
   const core = info.core;
   const R = core.rings;
-  const cl = Object.entries(info.clusters).map(([id, c]) => ({ id, c: info.centres[id], r: clusterRadius(info.emblems[c.emblem]), slot: c.slot }));
+  const cl = Object.entries(info.clusters).map(([id, c]) => ({ id, c: info.centres[id], r: footprint(info, id, c), slot: c.slot }));
   // tool clusters (Satchel, Card Fan, Almanac, Hearth-key, Night Gate): footprint = farthest lantern placed in them (own nodes AND moved global lanterns)
   for (const [id, t] of Object.entries(info.tools || {})) {
     const c = info.toolCentres[id];
@@ -36,6 +73,7 @@ export function layoutIssues(info, def) {
       if (Math.hypot(a.c[0] - b.c[0], a.c[1] - b.c[1]) < a.r + b.r) issues.push(`clusters ${a.id} and ${b.id} overlap`);
     }
   }
+  issues.push(...gapIssues(info));
   if (def) {
     // a node may only require nodes that are never in a LATER chapter band; a gated item has exactly one gate node
     const chap = (id) => (def.nodes[id].scope ? def.nodes[id].scope.minChapter : 1);
@@ -66,10 +104,11 @@ export function layoutIssues(info, def) {
 //  3. no group whose only ways in are challenges (every challenge lantern needs a gold-only sibling route), and no bridge that leads only to
 //     challenges (250 gold spent into nothing)
 export const NEAR_HUB = 360; // hearth (150) + wick (300) rings + 60
-export const LINK_FAR = 350;
+export const LINK_FAR = 350; // default; core.layout.linkFar overrides (R1: 420)
 const isBridge = (id) => id.startsWith('br_');
 export function connectIssues(info, def) {
   const issues = [];
+  const linkFar = Number.isFinite(info.core.layout.linkFar) ? info.core.layout.linkFar : LINK_FAR; // R1: a constellation spread by clusterScale has longer links
   const toolOf = Object.create(null);
   for (const n of info.nodes) if (n.tool) toolOf[n.id] = n.tool;
   const groupOf = (id) => toolOf[id] || (def.nodes[id].cluster ? `cluster:${def.nodes[id].cluster}` : 'rings');
@@ -84,7 +123,7 @@ export function connectIssues(info, def) {
     if (e.from === 'hub' || isBridge(e.from) || isBridge(e.to) || def.nodes[e.to].teaser) continue;
     const a = def.nodes[e.from], b = def.nodes[e.to];
     const d = Math.hypot(a.x - b.x, a.y - b.y);
-    if (d > LINK_FAR) issues.push(`${e.from} -> ${e.to} is a far link (${Math.round(d)} > ${LINK_FAR}): move the lantern beside its parent`);
+    if (d > linkFar) issues.push(`${e.from} -> ${e.to} is a far link (${Math.round(d)} > ${linkFar}): move the lantern beside its parent`);
   }
   const entries = Object.create(null);
   for (const id of def.list) {

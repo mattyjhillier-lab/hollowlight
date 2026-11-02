@@ -675,10 +675,11 @@ export class TreeScreen {
       const path = this.paths.get(r.key);
       if (r.r * z < 14 && !r.done) continue; // an emblem smaller than a fingertip adds nothing the dots do not show
       if (path) {
-        c.save(); c.translate(sx, sy); c.scale(z, z);
+        const zs = z * (r.scale || 1); // R1: the emblem is spread by the constellation scale (core.layout.clusterScale)
+        c.save(); c.translate(sx, sy); c.scale(zs, zs);
         c.fillStyle = r.done ? hexA(r.color, 0.20) : awake ? hexA(r.color, 0.04 + 0.10 * frac) : 'rgba(120,128,150,.06)';
         c.fill(path);
-        if (r.done) { c.lineWidth = 2 / z; c.strokeStyle = hexA(r.color, 0.9); if (!this.reduced) { c.shadowColor = r.color; c.shadowBlur = 8; } c.stroke(path); c.shadowBlur = 0; }
+        if (r.done) { c.lineWidth = 2 / zs; c.strokeStyle = hexA(r.color, 0.9); if (!this.reduced) { c.shadowColor = r.color; c.shadowBlur = 8; } c.stroke(path); c.shadowBlur = 0; }
         c.restore();
       } else if (r.kind === 'tool') {
         const RR = r.r * z; const m = c.createRadialGradient(sx, sy, 0, sx, sy, RR);

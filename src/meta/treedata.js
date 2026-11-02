@@ -15,6 +15,7 @@
 //   v2   = the FULL tree (live + inert nodes) used by the budget, layout and reachability checks.
 //   info = validated structures for tools (cores, clusters, emblems, heroes, chapters, positions).
 import { STATUSES } from './status.js';
+import { tierOf } from './treetier.js';
 
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const ID_RE = /^[a-z0-9_]{1,40}$/;
@@ -60,6 +61,31 @@ export function clusterCentre(core, slot) {
   return fail(`unknown slot ${slot}`);
 }
 
+// R1 GAP RELAXATION: inside one constellation, push apart any two lanterns closer than the gap of their tiers (core.layout.gapLandmark /
+// gapDiamond / gapDot; a mixed pair needs the mean). Small emblems (the Bolt, the Raven) pack their landmarks tighter than any one scale can fix, so
+// the cheap tier (dots) gives way first: share of a push = mobility / (sum of both mobilities). Deterministic: fixed pair order, fixed pass count.
+const MOBILITY = { landmark: 1, diamond: 2, dot: 3 };
+export function relaxGaps(items, gaps) {
+  const need = (a, b) => (a === b ? gaps[a] : (gaps[a] + gaps[b]) / 2);
+  for (let pass = 0; pass < 400; pass++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const a = items[i], b = items[j];
+      let dx = b.p[0] - a.p[0], dy = b.p[1] - a.p[1], d = Math.hypot(dx, dy);
+      const req = need(a.t, b.t);
+      if (d >= req) continue;
+      if (d < 1e-6) { dx = 1; dy = 0; d = 1; }
+      const push = (req - d) * 1.02 + 0.05, ma = MOBILITY[a.t], mb = MOBILITY[b.t];
+      const sa = ma / (ma + mb), sb = mb / (ma + mb);
+      a.p = [a.p[0] - (dx / d) * push * sa, a.p[1] - (dy / d) * push * sa];
+      b.p = [b.p[0] + (dx / d) * push * sb, b.p[1] + (dy / d) * push * sb];
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  return items;
+}
+
 function ringPos(core, place) {
   const ring = core.rings[place.ring];
   ensure(isObj(ring) && ring.r !== undefined, `unknown ring ${place.ring}`);
@@ -98,8 +124,13 @@ function checkCore(c) {
   ensure(c.schema === 2, 'core.json: schema must be 2');
   ensure(Number.isInteger(c.version) && c.version >= 3 && c.version <= 99, 'core.json: version');
   ensure(isObj(c.layout) && isObj(c.branches) && Array.isArray(c.nodes), 'core.json: layout/branches/nodes');
+  // R1 layout keys (all optional; a missing key keeps the pre-R1 geometry): constellation / tool-cluster scale, landmark / diamond / dot gaps,
+  // hero spacing in degrees, and the rings that get an engraved runic circle on the stone backdrop
+  const L = c.layout;
+  for (const [k, lo, hi] of [['clusterScale', 0.5, 6], ['toolScale', 0.5, 6], ['gapLandmark', 0, 1000], ['gapDiamond', 0, 1000], ['gapDot', 0, 1000], ['linkFar', 50, 2000], ['heroStep', 1, 90], ['heroSibling', 1, 180]]) if (L[k] !== undefined) num(L[k], lo, hi, `layout.${k}`);
   const R = c.rings;
   ensure(isObj(R), 'core.json: rings');
+  if (L.runeRings !== undefined) ensure(Array.isArray(L.runeRings) && L.runeRings.length <= 12 && L.runeRings.every((k) => typeof k === 'string' && isObj(R[k]) && fin(R[k].r)), 'layout.runeRings must name rings');
   const order = ['hearth', 'wick', 'heroes', 'sky', 'dusk', 'fog', 'far'];
   let last = 0;
   for (const k of order) { ensure(isObj(R[k]), `core.json: ring ${k}`); num(R[k].r, 1, 1e5, `rings.${k}.r`); ensure(R[k].r > last, 'core.json: ring radii must strictly increase'); last = R[k].r; }
@@ -381,6 +412,9 @@ export function composeTree(files, data = null) {
 
   // ---- positions
   const positions = Object.create(null); // id -> [x, y] (v2 view)
+  const SC = fin(core.layout.clusterScale) ? core.layout.clusterScale : 1; // R1: a constellation's emblem points are spread by this factor
+  const TS = fin(core.layout.toolScale) ? core.layout.toolScale : 1; // R1: so are a tool cluster's local offsets
+  const HSTEP = fin(core.layout.heroStep) ? core.layout.heroStep : 8, HSIB = fin(core.layout.heroSibling) ? core.layout.heroSibling : 26;
   const centreOf = Object.create(null);
   for (const [wid, c] of Object.entries(clusterInfo)) centreOf[wid] = clusterCentre(core, c.slot);
   const toolCentres = Object.create(null);
@@ -397,9 +431,9 @@ export function composeTree(files, data = null) {
     const s = a.spec;
     let p;
     if (a.near) continue; // resolved below, once its parent has a position
-    if (a.ownerKind === 'core' && s.place.tool) { const [cx, cy] = clusterCentre(core, tools[s.place.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
+    if (a.ownerKind === 'core' && s.place.tool) { const [cx, cy] = clusterCentre(core, tools[s.place.tool].slot); p = [r1(cx + s.place.at[0] * TS), r1(cy + s.place.at[1] * TS)]; }
     else if (a.ownerKind === 'core') p = ringPos(core, s.place);
-    else if (a.ownerKind === 'tool') { const [cx, cy] = clusterCentre(core, tools[a.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
+    else if (a.ownerKind === 'tool') { const [cx, cy] = clusterCentre(core, tools[a.tool].slot); p = [r1(cx + s.place.at[0] * TS), r1(cy + s.place.at[1] * TS)]; }
     else if (a.ownerKind === 'cluster') {
       const c = clusterInfo[a.cluster];
       const em = emblems[c.emblem];
@@ -408,13 +442,29 @@ export function composeTree(files, data = null) {
       if (a.role === 'outline') local = em.slots[em.outline[a.slotIndex]];
       else if (a.role === 'heart') local = em.heart;
       else { const k = Object.keys(c.sockets).find((x) => c.sockets[x].gate === s.id); local = em.sockets[k]; }
-      p = [r1(cx + local[0]), r1(cy + local[1])];
-    } else if (a.ownerKind === 'hero') p = polar(core.rings.heroes.r, slotAngle(a.cluster) + (a.slotIndex - 1) * 8 + (sigRank[a.owner] || 0) * 26); // a 2nd hero on the same signature weapon sits beside the 1st
+      p = [r1(cx + local[0] * SC), r1(cy + local[1] * SC)];
+    } else if (a.ownerKind === 'hero') p = polar(core.rings.heroes.r, slotAngle(a.cluster) + (a.slotIndex - 1) * HSTEP + (sigRank[a.owner] || 0) * HSIB); // a 2nd hero on the same signature weapon sits beside the 1st
     else {
       const b = core.rings.bands;
       p = polar(b.r0 + b.width * (a.chapterOrder - 2) + 40, ((s.place.band + 0.5) * 360) / b.slots);
     }
     positions[s.id] = p;
+  }
+  // R1: spread each constellation's lanterns (and its seals of starter evolutions) to the tier gaps; sealPos[wid][socketKey] = [x, y] for every socket
+  const lay = core.layout;
+  const gaps = { landmark: lay.gapLandmark, diamond: lay.gapDiamond, dot: lay.gapDot ?? lay.v2MinGap };
+  const sealPos = Object.create(null);
+  for (const [wid, c] of Object.entries(clusterInfo)) {
+    const em = emblems[c.emblem];
+    const [cx, cy] = centreOf[wid];
+    const items = allNodes.filter((a) => a.ownerKind === 'cluster' && a.cluster === wid).map((a) => ({ id: a.spec.id, t: tierOf(a.spec), p: positions[a.spec.id] }));
+    const seals = [];
+    for (const [k, sk] of Object.entries(c.sockets)) if (!sk.gate) { const it = { id: `seal:${k}`, t: 'landmark', p: [cx + em.sockets[k][0] * SC, cy + em.sockets[k][1] * SC] }; seals.push([k, it]); items.push(it); }
+    if (Object.values(gaps).every(fin)) relaxGaps(items, gaps);
+    for (const it of items) if (!it.id.startsWith('seal:')) positions[it.id] = [r1(it.p[0]), r1(it.p[1])];
+    sealPos[wid] = Object.create(null);
+    for (const [k, it] of seals) sealPos[wid][k] = [r1(it.p[0]), r1(it.p[1])];
+    for (const [k, sk] of Object.entries(c.sockets)) if (sk.gate) sealPos[wid][k] = positions[sk.gate];
   }
   // 'near' lanterns: a parent may itself be near-placed (a short chain); each pass places every lantern whose parent is placed, so a cycle or
   // an unresolvable parent fails instead of looping
@@ -497,9 +547,31 @@ export function composeTree(files, data = null) {
     ],
   };
 
+  // R1 REGION RECORDS (data only; the screen draws the names it already draws): the hub, each constellation, each tool cluster, the hero ring,
+  // each chapter band and the far fog. Derived, so a new fragment gets its region (and its backbone thread to the hub) automatically.
+  // accent = a key of core.branches (the screen maps it to a colour); thread = the backbone line from the hub rim to the region's edge.
+  const regions = [{ id: 'hub', kind: 'hub', name: 'The Hearth', centre: [0, 0], r: core.rings.wick.r + 30, accent: 'light', thread: null }];
+  const threadTo = (c, r) => { const d = Math.hypot(c[0], c[1]) || 1; return { from: [0, 0], to: [r1(c[0] * (1 - r / d)), r1(c[1] * (1 - r / d))] }; };
+  for (const [wid, c] of Object.entries(clusterInfo)) {
+    const r = Math.round(Math.max(0, ...[c.heart, ...c.outline.map((o) => o.id)].filter(Boolean).map((id) => Math.hypot(positions[id][0] - centreOf[wid][0], positions[id][1] - centreOf[wid][1]))) + 22);
+    regions.push({ id: `c:${wid}`, kind: 'weapon', name: weapons && own(weapons, wid) && weapons[wid].name ? weapons[wid].name : wid, centre: centreOf[wid], r, accent: tagBranch(wid), thread: threadTo(centreOf[wid], r) });
+  }
+  for (const [tid, t] of Object.entries(toolInfo)) {
+    const ns = allNodes.filter((a) => a.tool === tid);
+    const r = Math.round(Math.max(0, ...ns.map((a) => Math.hypot(positions[a.spec.id][0] - toolCentres[tid][0], positions[a.spec.id][1] - toolCentres[tid][1]))) + 22);
+    const br = ns.length && ns[0].spec.branch;
+    regions.push({ id: `t:${tid}`, kind: 'tool', name: t.name, centre: toolCentres[tid], r, accent: br && own(core.branches, br) ? br : 'light', thread: threadTo(toolCentres[tid], r) });
+  }
+  if (heroInfo && Object.keys(heroInfo).length) regions.push({ id: 'heroes', kind: 'heroes', name: 'The Lantern-bearers', centre: [0, 0], r: core.rings.heroes.r, accent: 'spirit', thread: null });
+  regions.push({ id: 'fog', kind: 'fog', name: 'The Far Hollow', centre: [0, 0], r: core.rings.fog.r, accent: 'spirit', thread: null });
+  for (const [cid, ch] of Object.entries(chapterInfo)) if (ch.order >= 2) {
+    const b = core.rings.bands;
+    regions.push({ id: `b:${cid}`, kind: 'chapter', name: data && data.chapters && own(data.chapters, cid) && data.chapters[cid].name ? data.chapters[cid].name : cid, centre: [0, 0], r: b.r0 + b.width * (ch.order - 2) + b.width / 2, accent: 'spirit', thread: null });
+  }
+
   return {
     live, v2,
-    info: { core, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres, nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, tool: a.tool, region: a.region, inert: !!a.spec.inert })) },
+    info: { core, regions, scale: SC, toolScale: TS, sealPos, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres, nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, tool: a.tool, region: a.region, inert: !!a.spec.inert })) },
   };
 }
 
