@@ -29,3 +29,10 @@ The tree becomes a sky that goes from grey to colour as you play. Five big landm
 - Illustrative only: every name, cost, count, % and condition (Lucinda, Hushbell, nights, Far Hollow), the Elias/Lucinda unlock rules, node positions, and which nodes are tiny filler vs diamonds. Weapon role colours follow src/data/weapons.json for wolves/ravens; bolts/chain/orbit colours are guesses. Static code-drawn art, no pan/zoom; icons are rough placeholders.
 - Learned from Matt's reference (inspiration only): landmarks must dominate the eye; heroes and maps belong in the tree; one-line name banner plus a cost/condition tile; filler dots read as a path to something; a dim far region shows there is more to reach; the hero beside the web.
 - NOT copied: their frame, skulls, spiderweb threads, red torn banner, art, text, names or layout. Ours stays lantern-lit sky, threads of light, brass-cream banner.
+
+## Round 3 (2026-11-02, illustrative only)
+- R3-bgA-misty-forest-dusk.png: darker dusk base, forest silhouette layers, mist, moon haze, vignette.
+- R3-bgB-carved-stone-night.png: carved stone wall with runic rings that glow gold where lit, moon haze, vignette.
+- R3-hero-panel-variants.png: left panel as (A) Wren + spirit wolf, (B) Lucinda + Ophimber, (C) interim hero-only with an empty glow spot; hero swap row under each.
+- R3-scale-zoom-levels.png: the same grown web (~300 nodes) at FAR (landmarks + region names), MID, NEAR zoom.
+- Caveats: placeholder art; names, costs, conditions invented; backgrounds are code-drawn, a real build would refine them.
