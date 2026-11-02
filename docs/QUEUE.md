@@ -464,3 +464,6 @@ Matt agreed: do the skill tree rework before the rest of Lucinda (DM5-DM10 incl.
 
 ## Skill tree research done (Matt, 2026-11-02)
 docs/research/33-skill-tree-designs.md. Matt's feedback: tree felt flat and dark, not somewhere he wants to spend time looking; felt disconnected inside the tree. Recommendation D5 hybrid (Restore the Hollow sky + landmark-first + juice + early option landmarks). Awaiting Matt's picks (first-buy style, direction). Nothing built.
+
+## Tree lessons from Matt's Spirit Hunters photos (2026-11-02; inspiration only, never copy; photos NOT stored in repo)
+The web unlocks game content directly: heroes, maps and abilities are big illustrated medallions (this corrects docs/research/34, which had heroes/maps as separate). Three node tiers (medallion / diamond / tiny dot). Name banner + cost/condition tile on selection. Hero portrait + Play/Codex/Back beside the web so the tree is part of home. Bright and colourful from the start. Central emblem hub. Applying to D5 in tree-v3 round 2 mockups (R2-*.png). Plan: heroes, chapters and nights become tree landmarks (ties to Lucinda DM8 and Chapter 2).
