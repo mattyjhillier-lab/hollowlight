@@ -446,3 +446,6 @@ UPDATE 2026-10-28 final verification (docs/design/final-verification-v1.md, 96 s
 
 ## Parked design direction: summons feel (Matt, 2026-11-02)
 Matt feels wolves/ravens do not read as real summons. Direction picked: STANDING ALLIES (spirits stay on the field, have health, fight beside you, can be lost and re-summoned). NOT locked, NOT built. Needs research -> three options per weapon -> review -> Matt picks -> LOCK. Must check docs/LOCKED.md (weapons = summons and magic only; 15 evolutions; balance targets). Also parked from Matt's "like all these ideas": daily seed, run history, evolution card preview, damage recap, kill juice, colour-wave on boss death, run-end mural, boss entrances, trailer GIF.
+
+## LATER: Companions (Matt, 2026-11-02; supersedes "standing allies" note above)
+Summons stop being weapons; each hero gets a companion (Lucinda/Ophimber model). Circle back after Lucinda + Chapter 2. Doc: docs/design/companions-v1.md. First step then: three options for Wren's wolf, prototype hidden.
