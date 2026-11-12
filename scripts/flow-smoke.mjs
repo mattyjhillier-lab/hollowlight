@@ -35,8 +35,8 @@ try {
     ok('the first-visit tour is up (no finished run)', await visible('.ts-tour.open'));
     await key('Escape'); await sleep(300);
     ok('Esc skips the tour first, the tree stays', (await c.ev('__app.ui.tree.isOpen')) && !(await visible('.ts-tour.open')));
-    if (w >= 860) {
-      await click('.ts-hplay'); await sleep(900);
+    {
+      await click(w >= 860 ? '.ts-hplay' : '.ts-playbtn'); await sleep(900);
       ok('Play on the tree runs the loadout (character step)', (await visible('.layer-hero')) && !(await visible('.layer-hero.ld-starter')) && !(await c.ev('__app.ui.tree.isOpen')));
       await click('.layer-hero .lg-btn--secondary'); await sleep(900);
       ok('Back from the loadout returns to the tree', await c.ev('__app.ui.tree.isOpen'));

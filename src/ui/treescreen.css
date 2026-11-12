@@ -178,13 +178,13 @@
 .ts-hl { font: 17px var(--font-display); color: #cdbf95; }
 .ts-hcv { width: 200px; height: 215px; margin-top: -4px; border-radius: 16px; }
 .ts-swap { display: flex; gap: 8px; margin-top: -4px; }
-.ts-swapb { width: 40px; height: 40px; min-width: 40px; min-height: 40px; padding: 0; border-radius: 50%; border: 2px solid #3b4670; background: #171d3c; overflow: hidden; position: relative; }
+.ts-swapb { width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; border: 2px solid #3b4670; background: #171d3c; overflow: hidden; position: relative; }
 .ts-swapb.on { border-color: #ffd27a; box-shadow: 0 0 10px rgba(255, 210, 122, .5); }
 .ts-swapb.asleep { opacity: .7; cursor: default; }
 .ts-swapb canvas { width: 100%; height: 100%; display: block; }
 .ts-hname { font: 36px/1 var(--font-display); color: #fff1cf; }
 .ts-hsub { font-size: 13px; color: #d6b36a; margin-bottom: 4px; }
-.ts-hbtn { width: 100%; padding: 9px 0; min-height: 40px; border-radius: 11px; border: 1px solid rgba(255, 210, 122, .3); background: linear-gradient(#232b52, #161c3b); font-weight: 600; font-size: 14px; }
+.ts-hbtn { width: 100%; padding: 9px 0; min-height: 44px; border-radius: 11px; border: 1px solid rgba(255, 210, 122, .3); background: linear-gradient(#232b52, #161c3b); font-weight: 600; font-size: 14px; }
 .ts-hbtn.ts-hplay { background: linear-gradient(#ffd98a, #f1a94d); color: #3a2308; font: 24px var(--font-display); padding: 6px 0; border-color: #ffe6ae; }
 .ts-hcoins { margin-top: auto; display: flex; justify-content: space-around; width: 100%; padding: 9px 6px; border-radius: 14px; border: 1px solid var(--ts-line); background: rgba(8, 12, 28, .7); font-weight: 700; }
 .ts-hc { display: inline-flex; align-items: center; gap: 6px; }
@@ -215,7 +215,7 @@
 .ts-ctext { flex: 1; min-width: 0; font-size: 14px; }
 .ts-ctext b { display: block; font-weight: 700; }
 .ts-ctext span { color: #cfd7f3; font-size: 13px; }
-.ts-clink { min-height: 36px; padding: 4px 10px; font-size: 13px; }
+.ts-clink { min-height: 44px; padding: 4px 12px; font-size: 13px; }
 .ts-tour { position: absolute; z-index: 12; left: 50%; bottom: 96px; transform: translateX(-50%); width: min(460px, calc(100% - 24px)); background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 16px; padding: 14px 16px; box-shadow: 0 0 34px #ffb35a66; display: none; }
 .ts-tour.open { display: block; }
 .ts-tourh { font: 22px var(--font-display); color: var(--ts-wick); margin-bottom: 4px; }
@@ -227,3 +227,7 @@
 .ts.ts-calm .ts-tourhl { animation: none; }
 @keyframes ts-tourpulse { 50% { outline-color: #fff1c4; } }
 .ts.ts-port .ts-tour, .ts.ts-short .ts-tour { bottom: 84px; }
+
+/* Play on small screens (the hero panel, with its own Play, is desktop only) */
+.ts-playbtn { display: none; }
+.ts:not(.ts-hero-on) .ts-playbtn { display: flex; align-items: center; justify-content: center; position: absolute; left: calc(10px + var(--sa-l, 0px)); top: 10px; z-index: 6; flex: none; min-width: 92px; min-height: 44px; padding: 4px 22px; font: 22px var(--font-display); box-shadow: 0 0 18px #ffb35a66; }

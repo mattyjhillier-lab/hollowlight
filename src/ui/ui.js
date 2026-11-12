@@ -83,7 +83,7 @@ export class UI {
     this.tree = new TreeScreen(this, portraitImage, enemyPortrait);
     this.buildHud();
     this.nav = null;
-    if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }
+    if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.insertBefore(this.nav.root, root.firstChild || null); } // first in the page: the tab row is the first thing a keyboard or screen-reader user meets, as it is the first thing on screen
     window.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('keydown', (e) => this.onDeskKey(e)); // DESKTOP D5: 1-6 tabs, F full screen (through the key map)
   }

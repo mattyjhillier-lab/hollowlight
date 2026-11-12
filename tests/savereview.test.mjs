@@ -355,6 +355,21 @@ test('L7 never writes an empty tree when the tree data is not registered', () =>
   assert.equal(mem.getItem(SAVE_KEY), good);
 });
 
+test('L8b two tabs opened in the same millisecond on an empty store: still no overwrite (the default copy carries no stamp)', () => {
+  const real = Date.now; const t0 = real();
+  try {
+    let clock = t0; Date.now = () => clock;
+    const mem = memStorage();
+    const a = new SaveStore(mem); a.load();
+    clock = t0 + 1; // tab b opens one millisecond later ...
+    const b = new SaveStore(mem); b.load();
+    a.data.gold = 500; // ... and tab a saves within that same millisecond (the old race: a's stamp tied with b's default copy)
+    assert.equal(a.saveNow(), true);
+    b.data.gold = 7; assert.equal(b.saveNow(), false, 'b started before it saw a save: it adopts, never overwrites');
+    assert.equal(b.data.gold, 500);
+  } finally { Date.now = real; }
+});
+
 test('L8 two tabs: the second tab refuses to overwrite a newer write and adopts it', () => {
   const mem = memStorage();
   const a = new SaveStore(mem); a.load();

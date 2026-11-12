@@ -126,7 +126,7 @@ export class TreeScreen {
     this.resetNotice();
     this.pulseStart(api.pulseIds);
     if (!this.tourStart() && !(this.pulseSet && this.pulseSet.size)) this.showTip(false); // coming back from a run: the moved lanterns are the message, no welcome card
-    this.mapEl.focus({ preventScroll: true });
+    if (!this.tourOpen) this.mapEl.focus({ preventScroll: true }); // the tour's Next button keeps the focus while the tour is up (keyboard users press Enter)
   }
 
   close() {
@@ -316,6 +316,8 @@ export class TreeScreen {
     this.toastEl.setAttribute('role', 'status');
     this.noticeEl = el('div', 'ts-notice'); // the one-time 'the web was rewoven' notice (S1 restart); filled by resetNotice()
     this.noticeEl.setAttribute('role', 'status');
+    this.sumEl = el('div', 'ts-sr'); // the state of the web in one line for screen readers (re-read only when it changes)
+    this.sumEl.setAttribute('role', 'status'); this.sumEl.setAttribute('aria-live', 'polite');
     this.srEl = el('div', 'ts-sr');
     this.srEl.setAttribute('aria-live', 'polite');
 
@@ -337,8 +339,10 @@ export class TreeScreen {
     const nl = el('div', 'ts-nl'); nl.append(el('span', null, 'Next'), el('span', null, 'lights'));
     this.nextList = el('div', 'ts-nlist');
     this.nextEl.append(nl, this.nextList);
-    root.append(this.buildHeroPanel(), this.nextEl);
-    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.noticeEl, this.tourEl, this.srEl, this.hoverEl, keys);
+    this.playBtn = btn('ts-primary ts-playbtn', 'Play'); // phones and narrow windows have no hero panel: Play is a pill at the top left (same loadout flow)
+    this.playBtn.addEventListener('click', () => { if (this.host.sound) this.host.sound('ui_step'); this.host.navTo('play'); });
+    root.append(this.buildHeroPanel(), this.playBtn);
+    root.append(map, panel, this.nextEl, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.noticeEl, this.tourEl, this.sumEl, this.srEl, this.hoverEl, keys);
     layer.append(root);
     this.bindInput(map);
   }
@@ -388,6 +392,7 @@ export class TreeScreen {
     this.glassEl.p.style.display = (s.dawnglass || 0) > 0 ? '' : 'none';
     const a = this.model.readyList().length;
     this.lightN.textContent = String(a);
+    this.sumLine(a);
     this.lightN.classList.toggle('zero', !a);
     this.nextBtn.setAttribute('aria-label', `${a} lantern${a === 1 ? '' : 's'} you can light now. Show the best one`);
     this.respecBtn.disabled = !Object.keys(s.tree || {}).some((id) => this.def.nodes[id] && !this.def.nodes[id].permanent);
@@ -398,6 +403,15 @@ export class TreeScreen {
     if (this.selected) this.renderPanel();
     this.itemSig = '';
     this.dirty();
+  }
+
+  /** 'N lanterns lit of T, M can light now': one polite line, only re-announced when the numbers change. */
+  sumLine(ready) {
+    const m = this.model; let lit = 0, tot = 0;
+    for (const id of this.def.list) { if (this.def.nodes[id].teaser) continue; tot++; if (m.lit(id)) lit++; }
+    const txt = `${fmtN(lit)} of ${fmtN(tot)} lanterns lit, ${fmtN(ready)} can light now.`;
+    if (txt !== this.sumTxt) { this.sumTxt = txt; this.sumEl.textContent = txt; }
+    this.mapEl.setAttribute('aria-describedby', 'ts-sum-line'); this.sumEl.id = 'ts-sum-line';
   }
 
   // ------------------------------------------------------------------ camera
