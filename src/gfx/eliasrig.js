@@ -4,6 +4,7 @@
 import { DU, FEET, TEX } from './wrenart.js';
 import { E_ANCHOR, E_EXPR, E_FLAT, E_FLAT_TEXEL } from './eliasart.js';
 import * as M from './rigmath.js';
+import { kindleCue } from './kindlecue.js'; // Kindling Start: the candle crown flares while the starter spirit is kindled
 import { iframeFlick, FLICK_ALPHA } from './hitfx.js';
 
 export const ELIAS_ATLAS = 'elias_rig';
@@ -180,7 +181,7 @@ export class EliasRig {
       this.staffF.setPosition(this._x, this._y).setRotation(sRot).setScale(K * sx, K * sy).setFlipX(fl).setDepth(dBase + 0.005);
       // candle crown glow: a soft gold halo around the six candles; flares when the Candle Wheel is planted
       this.atStaff(fx, fy, E_ANCHOR.crown[0], E_ANCHOR.crown[1], th, ca, sa, sx, sy, bob);
-      this.cGlow.setPosition(this._x, this._y).setScale(0.62 * this.glowInv * flicker * M.wheelFlare(wheel)).setAlpha(0.3 * dim).setVisible(true);
+      this.cGlow.setPosition(this._x, this._y).setScale(0.62 * this.glowInv * flicker * M.wheelFlare(wheel) * (sim.kindle ? kindleCue(sim.kindleLeft(), reduced, sim.time).flare : 1)).setAlpha(0.3 * dim).setVisible(true);
     }
   }
 }

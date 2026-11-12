@@ -1150,5 +1150,25 @@
  "co_seek6": [
   "co",
   12
+ ],
+ "wf_kindling": [
+  "wf",
+  20
+ ],
+ "or_kindling": [
+  "or",
+  37
+ ],
+ "rv_kindling": [
+  "rv",
+  20
+ ],
+ "bo_kindling": [
+  "bo",
+  37
+ ],
+ "cl_kindling": [
+  "cl",
+  41
  ]
 }

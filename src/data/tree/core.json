@@ -876,7 +876,7 @@
    "idx": 21,
    "kind": "ring",
    "name": "Mending Light",
-   "desc": "Hearts heal +5%",
+   "desc": "Hearts heal +2.5%",
    "branch": "light",
    "cost": {
     "gold": 900
@@ -887,7 +887,7 @@
    "effects": [
     {
      "drop": "heartHeal",
-     "pct": 5
+     "pct": 2.5
     }
    ],
    "place": {

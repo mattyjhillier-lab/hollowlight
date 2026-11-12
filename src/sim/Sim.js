@@ -288,6 +288,10 @@ export class Sim {
     if (sites === true && this.chapter.sites) { const sd = validateSites(this.chapter.sites, data.enemies); if (sd) this.sites = new Sites(this, sd); }
 
     this.addWeapon(this.startWeapon);
+    // KINDLING START (tree, LOCKED 2026-11-12): the STARTER weapon's clock runs pct% faster at the start, fading linearly to nothing over secs.
+    // Pure and deterministic (no RNG); null when the node for this starter is not owned, so a run without it is byte-identical.
+    const K = T.kindle && typeof T.kindle === 'object' && Object.hasOwn(T.kindle, this.startWeapon) ? T.kindle[this.startWeapon] : null;
+    this.kindle = K && Number.isFinite(K.pct) && Number.isFinite(K.secs) && K.pct > 0 && K.secs > 0 ? { w: this.startWeapon, pct: clamp(K.pct, 0, 50), secs: clamp(K.secs, 1, 120), t0: this.time } : null;
     // run-start offers (T6): Kindred Start, Favoured Spirit, Lantern Blessing, in that order; the world waits (state 'levelup', offer.start)
     this.startQueue = [];
     if (T.perks?.startWeapon) this.startQueue.push('kindred');
@@ -894,10 +898,20 @@ export class Sim {
     this.buffs.speedBoost = Math.max(0, this.buffs.speedBoost - dt);
   }
 
+  /** Kindling Start: 1 at the run start, 0 once its seconds have passed (or no node); the render reads this for the hero cue. */
+  kindleLeft() {
+    const K = this.kindle;
+    if (!K) return 0;
+    return clamp(1 - (this.time - K.t0) / K.secs, 0, 1);
+  }
+  /** The starter weapon's clock multiplier: 1 + pct% x kindleLeft (exactly 1 for every other weapon and after the window). */
+  kindleMul(w) { return this.kindle && w.id === this.kindle.w ? 1 + (this.kindle.pct / 100) * this.kindleLeft() : 1; }
+
   updateWeapons(dt) {
     for (const w of this.weapons) {
       this._src = w.id;
-      WEAPON_BEHAVIOURS[w.id].update(this, w, dt);
+      const k = this.kindle ? this.kindleMul(w) : 1;
+      WEAPON_BEHAVIOURS[w.id].update(this, w, k === 1 ? dt : dt * k);
     }
     this._src = null;
   }

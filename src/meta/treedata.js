@@ -436,6 +436,12 @@ export function composeTree(files, data = null) {
     c.gates.forEach((g) => addSpec(g, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: g.id === heartGate ? 'heart' : branchInfo ? 'seal' : 'socket', ...(roleOf[g.id] ? { garden: roleOf[g.id] } : {}) }));
     if (garden) c.nodes.forEach((s) => addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: roleOf[s.id] ? roleOf[s.id].role : 'node', garden: roleOf[s.id] }));
     else c.outline.forEach((s, i) => addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: 'outline', slotIndex: i }));
+    // KINDLING START (LOCKED 2026-11-12): optional weapon-specific diamonds hung just outside the constellation (role 'extra'), each lit from the heart
+    ensure(c.extras === undefined || (Array.isArray(c.extras) && c.extras.length <= 3), `cluster ${wid}: extras (at most 3)`);
+    (c.extras || []).forEach((s, i) => {
+      ensure(isObj(s) && s.place === undefined && tierOf(s) === 'diamond' && typeof heartGate === 'string' && Array.isArray(s.requires) && s.requires.length === 1 && s.requires[0] === heartGate && s.requiresAny === undefined, `cluster ${wid}: extra ${isObj(s) ? s.id : '?'} must be a diamond with requires [heart] and no place`);
+      addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: 'extra', slotIndex: i });
+    });
     // template kinds + option share for any region but the grandfathered launch constellations
     if (!garden && c.region !== 'launch') {
       c.outline.forEach((s, i) => {
@@ -619,7 +625,7 @@ export function composeTree(files, data = null) {
     const em = emblems[c.emblem];
     const items = [];
     for (const a of allNodes) {
-      if (a.ownerKind !== 'cluster' || a.cluster !== wid) continue;
+      if (a.ownerKind !== 'cluster' || a.cluster !== wid || a.role === 'extra') continue;
       let local;
       if (a.role === 'outline') local = em.slots[em.outline[a.slotIndex]];
       else if (a.role === 'heart') local = em.heart;
@@ -632,6 +638,13 @@ export function composeTree(files, data = null) {
     for (const it of items) if (!it.id.startsWith('seal:')) positions[it.id] = [r1(it.p[0]), r1(it.p[1])];
     for (const [k, it] of seals) sealPos[wid][k] = [r1(it.p[0]), r1(it.p[1])];
     for (const [k, sk] of Object.entries(c.sockets)) if (sk.gate) sealPos[wid][k] = positions[sk.gate];
+  }
+  // 3b. cluster extras (Kindling Start): beside the heart on the side away from the hub, a short link (never a far link), fanned by slot
+  for (const a of allNodes) {
+    if (a.role !== 'extra') continue;
+    const hp = positions[clusterInfo[a.cluster].heart], ctr = centreOf[a.cluster];
+    const out = ((dirTo([0, 0], ctr) + 50 + a.slotIndex * 25) * Math.PI) / 180, R = Math.min(170, (fin(lay.linkFar) ? lay.linkFar : 440) - 60);
+    positions[a.spec.id] = [r1(hp[0] + Math.cos(out) * R), r1(hp[1] + Math.sin(out) * R)];
   }
   // 4. tool groups (+ anchored lanterns on their own spot, lanterns hung beside another one, core lanterns placed in a group)
   for (const a of allNodes) {

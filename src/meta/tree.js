@@ -540,6 +540,11 @@ function checkEffect(e, data, where) {
     else if (e.perk === 'rush') { num('pct', 0, 300); num('secs', 1, 30); }
     else if (e.perk === 'gemPull') num('pct', 0, 100); // gems fly to you faster (balance.magnetSpeed x (1 + pct))
     else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') num('n', 1, 2);
+    else if (e.perk === 'kindle') { // Kindling Start: the run's STARTER weapon runs faster for the first secs, fading to nothing; priced in sustain/verb
+      if (typeof e.weapon !== 'string' || !ID_RE.test(e.weapon) || !(data && data.weapons && own(data.weapons, e.weapon))) fail(`${where}: kindle needs a known weapon`);
+      num('pct', 1, 50); num('secs', 10, 120); num('pe', 0.001, 0.5);
+      if (keys.some((k) => !['perk', 'weapon', 'pct', 'secs', 'pe'].includes(k))) fail(`${where}: kindle has unknown fields`);
+    }
     else if (['gemCall', 'favour', 'startWeapon', 'startBlessing', 'autoRule', 'blessChoice'].includes(e.perk)) { /* flag perks */ } else fail(`${where}: unknown perk`);
   } else if (e.lore !== undefined) {
     // Almanac: +pct damage against ONE enemy type (id must exist)
@@ -812,6 +817,7 @@ export function emptyEffects() {
     evoLuck: 1,
     rush: null,
     weaponBonus: {},
+    kindle: {}, // Kindling Start: weapon id -> { pct, secs } (the sim uses only the run's starter weapon)
     unlocks: { weapons: [], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [], tiers: [] },
   };
 }
@@ -886,6 +892,7 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.perk === 'evoLuck') add('evoLuck', e.pct * r);
       else if (e.perk === 'gemPull') out.perks.gemPull += e.pct * r;
       else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') out.perks[e.perk] += e.n * r;
+      else if (e.perk === 'kindle') { if (own(data.weapons, e.weapon)) out.kindle[e.weapon] = { pct: Math.min(50, e.pct), secs: Math.min(120, e.secs) }; }
       else if (e.perk && own(out.perks, e.perk)) out.perks[e.perk] = true;
       else if (e.lore) out.lore[e.lore] = Math.min(2, (out.lore[e.lore] || 0) + e.pct * r);
       else if (e.info) { if (!out.info.includes(e.info)) out.info.push(e.info); if (e.info === 'tells' && e.enemy && !out.tells.includes(e.enemy)) out.tells.push(e.enemy); }

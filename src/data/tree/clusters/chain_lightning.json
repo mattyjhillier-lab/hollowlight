@@ -896,5 +896,35 @@
     }
    ]
   }
+ ],
+ "extras": [
+  {
+   "id": "cl_kindling",
+   "idx": 41,
+   "kind": "verb",
+   "name": "Kindling Start",
+   "desc": "When you start a run with Chain Lightning, the lightning strikes 25% faster for the first minute, fading to nothing.",
+   "flavour": "The first spark of the night catches quickly.",
+   "cost": {
+    "gold": 2200
+   },
+   "requires": [
+    "gt_chain_lightning"
+   ],
+   "effects": [
+    {
+     "perk": "kindle",
+     "weapon": "chain_lightning",
+     "pct": 25,
+     "secs": 60,
+     "pe": 0.1
+    }
+   ],
+   "unlock": {
+    "t": "clearChapter",
+    "id": "cursed_forest",
+    "n": 16
+   }
+  }
  ]
 }

@@ -155,7 +155,7 @@ test('T3a the live tree compiles from the SAME composed data as the budget view 
   // T6: the Card Fan / Almanac / Hearth-key lanterns are live, so the lore + choice reserve is reclaimed at exactly the faces the design tree carries
   // (lore is clamped at 2% per type at run time, choice perks are discrete: neither is soft-capped, so cap = face sum keeps the budget honest)
   const faces = { lore: 0, choice: 0 };
-  for (const n of c.v2.nodes) for (const e of n.effects || []) { if (e.lore) faces.lore += e.pct * d1.rule.loreShare; else if ((e.perk || e.info) && e.pe > 0 && !(n.scope && n.scope.minTier)) faces.choice += e.pe; }
+  for (const n of c.v2.nodes) for (const e of n.effects || []) { if (e.lore) faces.lore += e.pct * d1.rule.loreShare; else if ((e.perk || e.info) && e.perk !== 'kindle' && e.pe > 0 && !(n.scope && n.scope.minTier)) faces.choice += e.pe; /* Kindling Start is paid from sustain/verb, not choice */ }
   assert.ok(Math.abs(d1.rule.categories.lore.cap - faces.lore) < 1e-9, `lore cap ${d1.rule.categories.lore.cap} = lore faces ${faces.lore}`);
   assert.ok(Math.abs(d1.rule.categories.choice.cap - faces.choice) < 1e-9, `choice cap ${d1.rule.categories.choice.cap} = choice faces ${faces.choice}`);
 });

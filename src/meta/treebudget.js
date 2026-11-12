@@ -20,6 +20,7 @@ export function effectTerms(e, rule, ctx = {}) {
     const base = effectTerms(e, rule, {});
     return base.some((t) => (t.pool === 'combat' || t.pool === 'sustain') && t.face > 0) ? [T('tierunest', 0, 'tier')] : base.map((t) => ({ ...t, pool: 'none' }));
   }
+  if (e.perk === 'kindle') return [T('kindle', e.pe > 0 ? e.pe : 0, 'sustain')]; // Kindling Start: a verb, paid from the sustain/verb ceiling at its estimated PE
   if (e.weapon !== undefined) {
     if (e.weapon === '@summon') return [e.stat === 'power' ? T('tagS', e.pct ?? 0) : T('summonSpeed', e.pct ?? 0, 'util')];
     if (e.weapon === '@magic') return [e.stat === 'power' ? T('tagM', e.pct ?? 0) : T('magicSpeed', e.pct ?? 0, 'util')];
@@ -106,7 +107,7 @@ export function budgetOf(def, rule, W, opts = {}) {
   const tierOf = (id) => (def.nodes[id].scope && def.nodes[id].scope.minTier) || 0;
   const evaluate = (chosen, chapter) => {
     const S = Object.create(null);
-    const sus = { reroll: 0, banish: 0, revive: 0, heartDrop: 0, heartHeal: 0, heartPity: 0 };
+    const sus = { reroll: 0, banish: 0, revive: 0, heartDrop: 0, heartHeal: 0, heartPity: 0, kindle: 0 };
     const util = Object.create(null);
     const reviveFracs = [];
     for (const id of chosen) {
@@ -116,7 +117,9 @@ export function budgetOf(def, rule, W, opts = {}) {
       for (const t of termCache.get(id)) {
         if (t.pool === 'combat') S[t.cat] = (S[t.cat] || 0) + Math.max(0, t.face);
         else if (t.pool === 'sustain') {
-          if (t.cat === 'revive') { sus.revive += 1; reviveFracs.push(t.face); } else sus[t.cat] += Math.max(0, t.face);
+          if (t.cat === 'revive') { sus.revive += 1; reviveFracs.push(t.face); }
+          else if (t.cat === 'kindle') sus.kindle = Math.max(sus.kindle, t.face); // only the run's STARTER weapon kindles: the set is worth its largest node
+          else sus[t.cat] += Math.max(0, t.face);
         } else if (t.pool === 'util') util[t.cat] = (util[t.cat] || 0) + t.face;
       }
     }
@@ -131,7 +134,7 @@ export function budgetOf(def, rule, W, opts = {}) {
       rows[cat] = { S: s, C: c.C, w: c.w, soft: sf, pe: sf * c.w, peCap: c.C * c.w };
       pe += sf * c.w;
     }
-    const susPE = (sus.revive ? rule.sustain.revive : 0) + sus.reroll * rule.sustain.perReroll + sus.banish * rule.sustain.perBanish + sus.heartDrop * rule.sustain.heartDrop + sus.heartHeal * rule.sustain.heartHeal + sus.heartPity * (rule.sustain.heartPity || 0);
+    const susPE = (sus.revive ? rule.sustain.revive : 0) + sus.reroll * rule.sustain.perReroll + sus.banish * rule.sustain.perBanish + sus.heartDrop * rule.sustain.heartDrop + sus.heartHeal * rule.sustain.heartHeal + sus.heartPity * (rule.sustain.heartPity || 0) + sus.kindle; // kindle faces are already PE
     return { rows, pe, sus, susPE, util, reviveFracs };
   };
 
@@ -179,7 +182,7 @@ export function budgetOf(def, rule, W, opts = {}) {
     }
     if (n.cluster && n.kind !== undefined && ['knot', 'bead', 'mastery', 'status', 'verb', 'kin'].includes(n.kind) && n.region !== 'heroes') {
       for (const t of termCache.get(id)) {
-        const ok = t.cat === `wpn:${n.cluster}` || (t.cat === 'status' && statusOwnedBy(n, n.cluster)) || t.pool === 'none';
+        const ok = t.cat === `wpn:${n.cluster}` || (t.cat === 'status' && statusOwnedBy(n, n.cluster)) || t.pool === 'none' || (t.cat === 'kindle' && n.effects.every((e) => !isObj(e) || e.perk !== 'kindle' || e.weapon === n.cluster));
         if (!ok) violations.push(`${id}: a cluster node may only add to its own weapon pool or its own status (adds ${t.cat})`);
       }
     }

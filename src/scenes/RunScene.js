@@ -70,6 +70,7 @@ import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTar
 import { HeroLine, OL_RES } from '../gfx/heroline.js'; // OL1: hero outline rebuilt from the hero's own transformed parts
 import { BossView, ADD_SCALE, ADD_ORIGIN } from '../gfx/boss/bossview.js'; // Elder Treant fight: arena, tells, boss art, victory flood
 import { SiteView } from '../gfx/siteview.js'; // map events v1 'Hollow Places' (render only)
+import { KindleCue, kindleTint } from '../gfx/kindlecue.js'; // Kindling Start (tree): starter-weapon ring + Wren pup trail (render only)
 import { MiniView, bakeReliquary } from '../gfx/minibossview.js'; // EN7/EN8 Branch-Mane extras + Lantern Reliquary chest (render only)
 import { POD_KEY, SAP_KEY } from '../gfx/boss/bossart.js';
 import { qualityModeFor } from '../gfx/power.js'; // PHONE HEAT
@@ -277,6 +278,7 @@ export class RunScene extends Phaser.Scene {
 
     this.bossView = new BossView(this, { lit: D_LIT, ground: -395, tele: D_VIG + 3 });
     this.miniView = new MiniView(this, { lit: D_LIT, ground: D_LIT - 95 }, INV.chest, INV.glow);
+    this.kindleCue = new KindleCue();
     this.siteView = new SiteView(this, { ground: D_LIT - 96, prop: D_LIT - 40, badge: D_PART + 3, arrow: D_VIG + 4 }); // map events v1: under the bodies; badges over them; arrows above the vignette
     this.siteRect = { x0: 0, y0: 0, x1: 0, y1: 0 };
     INV[POD_KEY] = INV[SAP_KEY] = ADD_SCALE;
@@ -758,6 +760,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
+  kindleTintOf(sim) { if (this.kindleFor !== sim) { this.kindleFor = sim; this.kindleTint = kindleTint(sim.data, sim.kindle && sim.kindle.w); } return this.kindleTint; }
 
   // EXTRAS v1: what this run wears (resolveCosm view or null). Light colours only: silhouettes, sizes, the pool's brightness and every hit
   // radius are untouched; the pool keeps half the default lantern colour so a tint never reads as a dimmer or brighter light.
@@ -1353,6 +1356,7 @@ export class RunScene extends Phaser.Scene {
     const fx = this.fxG;
     g.clear();
     fx.clear();
+    if (sim.kindle) this.kindleCue.draw(fx, sim, rig ? this.rig : null, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, this.kindleTintOf(sim), ROLE.lantern);
     this.teleG.clear();
     const nl = this.nl;
     const nlOn = !!(app.params.arc && app.params.night);

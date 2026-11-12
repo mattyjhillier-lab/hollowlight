@@ -1,5 +1,5 @@
 {
- "_comment": "S1 rework (tree content version 5, 2026-11-12): every live id whose effect / price / requires changed, and every new id (garden branches, roads). Overlay on the older golden fixtures; generated, then reviewed.",
+ "_comment": "S1 rework (tree content version 5, 2026-11-12): every live id whose effect / price / requires changed, and every new id (garden branches, roads). Overlay on the older golden fixtures; generated, then reviewed. 2026-11-12 Kindling Start budget trim (LOCKED NEW VERB DETAILS): li_heal hearts heal +5% -> +2.5% (-0.10 sustain PE).",
  "br_satchel": {
   "effects": [
    {
@@ -3472,5 +3472,160 @@
   "requiresAny": null,
   "excludes": [],
   "unlock": null
+ },
+ "li_heal": {
+  "effects": [
+   {
+    "drop": "heartHeal",
+    "pct": 2.5
+   }
+  ],
+  "cost": {
+   "gold": 900,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "li_oak"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "wf_kindling": {
+  "effects": [
+   {
+    "perk": "kindle",
+    "weapon": "ghost_wolves",
+    "pct": 25,
+    "secs": 60,
+    "pe": 0.1
+   }
+  ],
+  "cost": {
+   "gold": 1500,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_ghost_wolves"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest",
+   "n": 8
+  }
+ },
+ "or_kindling": {
+  "effects": [
+   {
+    "perk": "kindle",
+    "weapon": "holy_orbit",
+    "pct": 25,
+    "secs": 60,
+    "pe": 0.1
+   }
+  ],
+  "cost": {
+   "gold": 1700,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_holy_orbit"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest",
+   "n": 10
+  }
+ },
+ "rv_kindling": {
+  "effects": [
+   {
+    "perk": "kindle",
+    "weapon": "raven_flock",
+    "pct": 25,
+    "secs": 60,
+    "pe": 0.1
+   }
+  ],
+  "cost": {
+   "gold": 1850,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_raven_flock"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest",
+   "n": 12
+  }
+ },
+ "bo_kindling": {
+  "effects": [
+   {
+    "perk": "kindle",
+    "weapon": "spirit_bolts",
+    "pct": 25,
+    "secs": 60,
+    "pe": 0.1
+   }
+  ],
+  "cost": {
+   "gold": 2000,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_spirit_bolts"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest",
+   "n": 14
+  }
+ },
+ "cl_kindling": {
+  "effects": [
+   {
+    "perk": "kindle",
+    "weapon": "chain_lightning",
+    "pct": 25,
+    "secs": 60,
+    "pe": 0.1
+   }
+  ],
+  "cost": {
+   "gold": 2200,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_chain_lightning"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest",
+   "n": 16
+  }
  }
 }
