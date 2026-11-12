@@ -175,7 +175,7 @@ export class UI {
     if (dest === 'home') this.showStart(this.onPick);
     else if (dest === 'character') this.showCharacters();
     else if (dest === 'tree' && h.openTree) h.openTree();
-    else if (dest === 'play') { this.showStart(this.onPick); this.beginLoadout(); }
+    else if (dest === 'play') { this.showStart(this.onPick); this.loadoutFromTree = true; this.beginLoadout(); }
     else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
     else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }
     else if (dest === 'settings') { this.showStart(this.onPick); this.showSettings(); }
@@ -275,7 +275,7 @@ export class UI {
       chars: fd && fd.chars ? fd.chars : null,
       nudge: h.backupNudge && !(this.pwa && this.pwa.shouldShowCard && this.pwa.shouldShowCard()) && h.backupNudge() ? { onExport: () => (h.exportBackup ? h.exportBackup() : false), onLater: () => { if (h.dismissNudge) h.dismissNudge(); } } : null, // A1: one title card at a time (the install card first)
       onChars: () => this.showCharacters(),
-      onBegin: () => this.beginLoadout(),
+      onBegin: () => h.openTree(), // Q5a: the Lantern Web is the home screen; Play there runs the 3-step loadout
       onTree: () => h.openTree(),
       onSettings: () => h.openSettings(),
       onSwitch: () => this.showLanterns('pick'),
@@ -309,11 +309,11 @@ export class UI {
     const v = buildLanternScreen({
       mode, cards: m.cards, canCreate: m.canCreate, locked: m.locked, note: m.note, status, portraits: PORTRAITS,
       onLight: (id) => { const r = h.lightLantern(id); if (r && r.ok) back(); },
-      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) this.beginLoadout(); return r; },
+      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) h.openTree(); return r; },
       onRename: (id, name) => after(h.renameLantern(id, name)),
       onExport: (id) => { const r = h.exportLantern(id); this.showLanterns(mode === 'replace' ? 'replace' : 'pick', { text: r.message }); },
       onDelete: (id) => { const r = h.deleteLantern(id); return after(r, r && r.ok ? { text: r.message, undo: !!r.undo } : null); },
-      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) this.beginLoadout(); return r; },
+      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) h.openTree(); return r; },
       onUndo: () => { const r = h.undoDelete(); this.showLanterns('pick', { text: r.message }); },
       onBack: back,
     });
@@ -329,6 +329,13 @@ export class UI {
 
   // CHARACTER SYSTEM v2 loadout (LOCKED 2026-10-24): THREE separate steps, map -> character -> starting spirit (the map step only once there is a
   // night choice, FD4 skip rule). A NEW profile first picks its starter set (one hero + one spirit from the data-driven offer), then walks straight in.
+  /** Back out of a loadout step: to the tree when the loadout was started from it (the home screen), else to the title. */
+  leaveLoadout() {
+    if (this.loadoutFromTree) { this.loadoutFromTree = false; this.starterAfter = null; if (this.handlers.openTree) { this.handlers.openTree(); return; } }
+    this.starterAfter = null;
+    this.showStart(this.onPick);
+  }
+
   beginLoadout() {
     const h = this.handlers;
     this.pickTier = null;
@@ -372,7 +379,7 @@ export class UI {
       heroes: this.heroCards(ids), portraits: PORTRAITS, selected: this.lastHero || (h.lastLoadout && h.lastLoadout().hero), nextLabel: HERO_NEXT,
       copy: { title: LOADOUT.heroTitle, whisper: LOADOUT.heroWhisper },
       onStart: (id) => { this.lastHero = id; this.showSpiritSelect(id); },
-      onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.showStart(this.onPick); },
+      onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.leaveLoadout(); },
       onWear: h.wearView ? (id) => { this.lastHero = id; this.showWear(id); } : null, wearLabel: WEAR.open,
     });
     this.mountLoadout(hs, 'ld-step-hero');
@@ -412,7 +419,7 @@ export class UI {
       heroes: this.heroCards(pool.heroes), portraits: PORTRAITS, selected: this.starterHero, nextLabel: HERO_NEXT,
       copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterHeroTitle, whisper: LOADOUT.starterHeroWhisper },
       onStart: (id) => { this.starterHero = id; this.showStarterSpirit(id); },
-      onBack: () => this.showStart(this.onPick),
+      onBack: () => this.leaveLoadout(),
     });
     this.mountLoadout(hs, 'ld-step-hero ld-starter');
   }
@@ -425,7 +432,12 @@ export class UI {
     const vs = buildSpiritSelect({
       spirits, heroName: heroView(heroId, c, '').name, selected: null,
       copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterSpiritTitle, whisper: LOADOUT.starterSpiritWhisper, walk: LOADOUT.starterBegin },
-      onStart: (wid) => { if (h.chooseStarter && h.chooseStarter(heroId, wid) && this.onPick) this.onPick(heroId, undefined, wid); },
+      onStart: (wid) => {
+        if (!(h.chooseStarter && h.chooseStarter(heroId, wid))) return;
+        const after = this.starterAfter; this.starterAfter = null;
+        if (after) after(); // Q5a: picked from the tree home: back to the tree, now with your spirit lit
+        else if (this.onPick) this.onPick(heroId, undefined, wid);
+      },
       onBack: () => this.showStarterHero(),
     });
     this.mountLoadout(vs, 'ld-step-spirit ld-starter');
@@ -442,7 +454,7 @@ export class UI {
       onPick: (tid) => { if (h.pickNight) h.pickNight(tid); },
       gentle: h.getSettings && h.setSetting ? { get: () => h.getSettings().gentleLight === true, set: (on) => h.setSetting({ gentleLight: on === true }) } : null, // EXTRAS v1 Gentle Light
       onBegin: (tid) => { this.pickTier = tid; this.showHeroSelect(); },
-      onBack: () => this.showStart(this.onPick),
+      onBack: () => this.leaveLoadout(),
       onTree: (gateId) => { if (h.openTree) h.openTree(gateId, () => this.showNights(heroId, this.screen && this.screen.nights ? this.screen.nights.current() : tier)); },
     });
     const el = this.layer('nights');

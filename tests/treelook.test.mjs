@@ -103,7 +103,7 @@ test('hero panel + next lights: desktop only, hero data from the api, no innerHT
   assert.ok(src.includes("toggle('ts-hero-on', !this.small && this.W >= 860)"));
   const hp = src.slice(src.indexOf('  buildHeroPanel() {'), src.indexOf('  drawWeb(t) {'));
   assert.ok(!/innerHTML|insertAdjacentHTML/.test(hp));
-  assert.ok(hp.includes("navTo('play')") && hp.includes("navTo('almanac')") && hp.includes('toggleGoals(false)'));
+  assert.ok(hp.includes("navTo('play')") && hp.includes("showAlmanac('tree')") && hp.includes('toggleGoals(false)'));
   const ui = readFileSync(new URL('../src/ui/ui.js', import.meta.url), 'utf8');
   assert.ok(ui.includes("dest === 'play'") && ui.includes('this.beginLoadout()'));
   const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');

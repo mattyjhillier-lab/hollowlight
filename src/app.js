@@ -433,6 +433,8 @@ export const app = {
     this.sim = null;
     this.introClear();
     this.ui.hideAll();
+    // Q5a: a new profile picks its starter (1 hero + 1 of the offered spirits, nothing preselected) before the home screen; the pick comes back here
+    if (this.needsStarter() && this.ui.showStarterHero) { this.ui.starterAfter = () => this.openTree(focusId, back, opts); this.ui.showStarterHero(); return; }
     const api = this.treeApi();
     if (typeof focusId === 'string' && Object.hasOwn(treeDef.nodes, focusId)) api.focusId = focusId;
     if (typeof back === 'function') api.onClose = back;

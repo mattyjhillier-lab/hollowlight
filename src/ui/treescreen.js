@@ -1175,7 +1175,7 @@ export class TreeScreen {
     this.heroSub = el('div', 'ts-hsub');
     const play = btn('ts-hbtn ts-hplay', 'Play');
     play.addEventListener('click', () => { if (this.host.sound) this.host.sound('ui_step'); this.host.navTo('play'); });
-    const alm = this.heroAlm = btn('ts-hbtn', 'Almanac'); alm.addEventListener('click', () => this.host.navTo('almanac'));
+    const alm = this.heroAlm = btn('ts-hbtn', 'Almanac'); alm.addEventListener('click', () => { if (this.host.showAlmanac) this.host.showAlmanac('tree'); }); // opens over the tree: Back returns to it
     this.heroGoals = btn('ts-hbtn', 'Goals'); this.heroGoals.addEventListener('click', () => this.toggleGoals(false));
     const back = btn('ts-hbtn', 'Back'); back.addEventListener('click', () => this.close());
     this.heroGold = el('span'); this.heroShard = el('span');
