@@ -14,6 +14,7 @@ export const TIER_FLOOR = { landmark: 22, diamond: 10, dot: 4 };
 export const TIER_RANK = { dot: 0, diamond: 1, landmark: 2 };
 const own = (o, k) => Object.hasOwn(o, k);
 
+// Q7-A: a node flagged chase (display-only) is DRAWN as a landmark medallion by computeTierSizes; layout keeps tierOf (positions unchanged).
 export const tierOf = (n) => (n && typeof n.kind === 'string' && own(TIER_OF_KIND, n.kind) ? TIER_OF_KIND[n.kind] : 'dot');
 
 /** Draw diameters for every node of a compiled tree: { tier: {id: 'landmark'|..}, d: {id: px at zoom 1} }. Pure and deterministic. */
@@ -23,7 +24,7 @@ export function computeTierSizes(def, opts = {}) {
   const tier = Object.create(null), d = Object.create(null);
   const C = 160, grid = new Map();
   const key = (i, j) => `${i},${j}`;
-  for (const id of ids) { const n = def.nodes[id]; tier[id] = tierOf(n); const k = key(Math.floor(n.x / C), Math.floor(n.y / C)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(id); }
+  for (const id of ids) { const n = def.nodes[id]; tier[id] = n.chase === true ? 'landmark' : tierOf(n); const k = key(Math.floor(n.x / C), Math.floor(n.y / C)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(id); }
   const near = (id, pred) => { // nearest neighbour passing pred, searched in growing rings of cells
     const n = def.nodes[id]; const ci = Math.floor(n.x / C), cj = Math.floor(n.y / C);
     let best = Infinity;

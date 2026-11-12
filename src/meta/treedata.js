@@ -212,7 +212,7 @@ function checkRoads(list, where) {
   return list;
 }
 
-const NODE_KEYS = new Set(['id', 'idx', 'kind', 'name', 'desc', 'flavour', 'branch', 'maxRank', 'rankCost', 'cost', 'requires', 'requiresAny', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone', 'inert', 'place', 'v2', 'scope']);
+const NODE_KEYS = new Set(['id', 'idx', 'kind', 'name', 'desc', 'flavour', 'branch', 'maxRank', 'rankCost', 'cost', 'requires', 'requiresAny', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone', 'inert', 'place', 'v2', 'scope', 'chase']);
 const V2_KEYS = new Set(['name', 'desc', 'effects', 'cost', 'maxRank', 'rankCost', 'unlock', 'requires', 'requiresAny', 'excludes', 'hidden']);
 
 // ---------------------------------------------------------------- compose
@@ -298,6 +298,8 @@ export function composeTree(files, data = null) {
     used.add(spec.idx);
     idxUsed.set(ctx.frag, used);
     ensure(spec.inert === undefined || typeof spec.inert === 'boolean', `${w}: inert must be a boolean`);
+    // Q7-A: display-only 'chase landmark' flag (named medallion + progress chip even when hidden); never read by costs, saves or the budget
+    ensure(spec.chase === undefined || spec.chase === true, `${w}: chase must be true when present`);
     if (spec.v2 !== undefined) {
       ensure(isObj(spec.v2), `${w}: v2 block`);
       for (const k of Object.keys(spec.v2)) ensure(V2_KEYS.has(k), `${w}: unknown v2 field ${k}`);
@@ -709,6 +711,7 @@ export function composeTree(files, data = null) {
     if (m.rankCost) o.rankCost = m.rankCost;
     if (m.unlock) o.unlock = m.unlock;
     if (m.hidden) o.hidden = true;
+    if (s.chase === true) o.chase = true;
     if (m.teaser) o.teaser = true;
     if (m.keystone) o.keystone = true;
     if (m.excludes) o.excludes = m.excludes;

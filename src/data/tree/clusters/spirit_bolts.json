@@ -76,7 +76,8 @@
      }
     ]
    },
-   "hidden": true
+   "hidden": true,
+   "chase": true
   },
   {
    "id": "gt_soul_lance",

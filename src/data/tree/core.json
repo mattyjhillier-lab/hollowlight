@@ -1813,7 +1813,8 @@
    ],
    "place": {
     "entry": "wardrobe"
-   }
+   },
+   "chase": true
   }
  ],
  "atlas": {

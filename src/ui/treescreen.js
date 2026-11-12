@@ -906,8 +906,8 @@ export class TreeScreen {
     if (d.masked) return { line: '', pill: '' };
     if (ce.s === 'lit') return { line: n.kind === 'heart' && r ? (r.lit <= 1 ? 'Awake' : `${r.lit} of ${r.ids.length} lit`) : n.kind === 'gate' ? 'Night awake' : n.kind === 'socket' ? 'Evolution awake' : 'Lit', pill: '' };
     if (ce.s === 'ready' || ce.s === 'open') return { line: `${n.kind === 'heart' || n.kind === 'gate' ? 'Wake' : 'Light'}: ${this.costText(d.next)}`, pill: '' };
-    if (ce.s === 'challenge') {
-      const L = (d.condLines || [])[0];
+    if (ce.s === 'challenge' || (n.chase && ce.s === 'notyet')) { // Q7-A: a chase landmark carries its progress chip even before its spirit wakes
+      const L = (n.chase && (d.condLines || []).find((x) => !x.done)) || (d.condLines || [])[0];
       const t = L && L.text ? `${L.text}${L.goal > 1 && !L.done ? ` ${fmtN(L.cur)}/${fmtN(L.goal)}` : ''}` : '';
       return { line: n.kind === 'socket' ? 'Evolution' : 'Asleep', pill: t ? `To wake: ${t}` : '' };
     }

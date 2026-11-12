@@ -264,7 +264,7 @@ export function compileTree(raw, data) {
       requires: n.requires ? [...n.requires] : [], excludes: n.excludes ? [...n.excludes] : [],
       effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null,
       permanent: false, gateAnc: [],
-      hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true,
+      hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true, chase: n.chase === true,
       x: posGiven ? n.pos[0] : 0, y: posGiven ? n.pos[1] : 0,
       ...extra,
     };
@@ -978,7 +978,8 @@ export function closestUnlocks(def, save, data, count = 3) {
 export function describeNode(def, save, id, data) {
   const n = def.nodes[id];
   const s = nodeStatus(def, save, id, data);
-  let masked = (n.hidden || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
+  // Q7-A: a CHASE landmark (hidden seal promoted, LOCKED 'Q7 GATING = PROMOTE HIDDEN SEALS') shows its name and condition progress from the start
+  let masked = ((n.hidden && !n.chase) || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
   // a node behind an evolution gate (S1: a seal's forks) stays '???' until that seal is LIT (hidden-recipe safety: forks appear only after it)
   if (!masked && s.rank === 0) {
     for (const g of n.gateAnc || []) {

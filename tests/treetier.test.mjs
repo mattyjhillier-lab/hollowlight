@@ -31,7 +31,7 @@ test('draw size: scaled to the nearest same-or-higher neighbour, never overlappi
   const t = computeTierSizes(def);
   for (const id of def.list) {
     assert.ok(Number.isFinite(t.d[id]) && t.d[id] >= 0 && t.d[id] <= TIER_SIZE[t.tier[id]] + 1e-9, id);
-    assert.equal(t.tier[id], tierOf(def.nodes[id]));
+    assert.equal(t.tier[id], def.nodes[id].chase ? 'landmark' : tierOf(def.nodes[id])); // Q7-A: chase nodes are drawn as landmarks
   }
   let landmarks = 0, full = 0;
   for (const id of def.list) if (t.tier[id] === 'landmark') { landmarks++; if (t.d[id] === TIER_SIZE.landmark) full++; assert.ok(t.d[id] >= TIER_FLOOR.landmark * 0.6, `${id} landmark not collapsed`); }

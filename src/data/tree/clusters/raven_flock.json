@@ -99,7 +99,8 @@
      }
     ]
    },
-   "hidden": true
+   "hidden": true,
+   "chase": true
   },
   {
    "id": "gt_spearhead",
