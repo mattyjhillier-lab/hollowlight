@@ -583,7 +583,7 @@ test('G1e: compileTree rejects a node targeting a gated weapon without (transiti
   assert.ok(compileTree(raw([g, stat('rv_a', { requires: ['gt_rf'] }), stat('rv_b', { ring: 3, ang: 80, requires: ['rv_a'] })]), d1), 'transitive is fine');
 });
 
-test('G1e + S1: nodes behind an evolution gate (a seal's forks) show ??? until that gate is LIT (progress alone no longer reveals them)', () => {
+test('G1e + S1: nodes behind an evolution gate (the forks of a seal) show ??? until that gate is LIT (progress alone no longer reveals them)', () => {
   const d1 = ungated(data);
   d1.evolutions.dire_alpha = { ...d1.evolutions.dire_alpha, treeGate: true };
   const g = node('gt_da', { effects: [{ unlock: 'evolution', id: 'dire_alpha' }], unlock: { t: 'totalKills', n: 100 }, hidden: true });
