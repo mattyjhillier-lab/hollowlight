@@ -19,6 +19,7 @@ Later: chapters 3-8, other heroes/weapons, prestige, Android/Windows app, AI art
 Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob.
 
 STATUS wip/tree-q1 2026-11-12: Q7-A BUILT (Murder Storm, Spirit Tempest, Static Storm seals + Wardrobe Path drawn as named chase landmarks with progress chips; display-only `chase` flag, released ids/prices/requires untouched; tests/q7chase.test.mjs; shots docs/screenshots/tree-q7/). Pace re-measure (pace-v2 S1, ~84 min) not re-run yet.
+STATUS wip/tree-q1 2026-11-12: FAR SIGHT BUILT (Satchel landmark co_far, anchored Dusk tier 3 angle 52, 1,800 gold, unlock 'Light 120 lamps' = new condition leaf `lamps` reading the banked stats.sites.lamps; road of 6 gold-only lanterns co_seek1-6 from Eager Gems, 250-600 gold, gem pull / magnet only; effect `info: lamps` = up to 4 edge embers with the reward glyph for awake unlit off-screen lamps within 900 u, never doubling an edge arrow; Calm static; priced 0 PE like Hunter's Eye because the choice category is full; sim byte-identical; tests/farsight.test.mjs). Ranks 2-3 (1,400 / 2,100 u) not built. pace-v2 does not model lamps, so its arrival is not measured.
 
 ## NOW / NEXT / LATER (focus keeper, updated 2026-10-28; the older NOW/NEXT list further down is stale history)
 Game name: Wispwick (LOCKED "NAME LOCKED v2" + "NAME CONFIRMED"). Status and owners: docs/LAUNCH-CHECKLIST.md "STATUS 2026-10-28". Adding content: docs/CONTENT-GUIDE.md.

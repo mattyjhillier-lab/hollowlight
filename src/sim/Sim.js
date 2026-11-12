@@ -134,6 +134,7 @@ export class Sim {
       tells: new Set(Array.isArray(T.tells) ? T.tells.filter((id) => typeof id === 'string' && Object.hasOwn(data.enemies, id)) : []),
       peek: Array.isArray(T.info) && T.info.includes('peek'),
       loudStir: Array.isArray(T.info) && T.info.includes('stir'),
+      farSight: Array.isArray(T.info) && T.info.includes('lamps'), // Far Sight (Satchel): render-only edge embers for unlit lamps; never read by the sim
       bars: Array.isArray(T.info) && T.info.includes('bars'), // Hunter's Eye (DT2): render-only health bars + mark names on Hollow-marked foes
     };
     this.hasLore = Object.keys(this.tfx.lore).length > 0;

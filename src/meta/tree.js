@@ -40,6 +40,7 @@ const LEAF = {
   gems: { need: ['n'] },
   abilityUses: { need: ['n'] },
   blessings: { need: ['n'] },
+  lamps: { need: ['n'] }, // Far Sight (LOCKED 2026-11-12): Lamp Posts lit, banked in stats.sites.lamps (save E7 counters)
   webLit: { need: [] }, // EXTRAS v1 Wardrobe: every lantern of the web lit (cosmetic lanterns and teasers excluded; needs the save's tree)
 };
 
@@ -124,6 +125,7 @@ function leafValue(c, stats, def, tree = null) {
     case 'gems': return stats.gems || 0;
     case 'abilityUses': return stats.abilityUses || 0;
     case 'blessings': return stats.blessingsTaken || 0;
+    case 'lamps': return isObj(stats.sites) && own(stats.sites, 'lamps') && fin(stats.sites.lamps) ? Math.max(0, stats.sites.lamps) : 0;
     case 'webLit': return webLitCount(def, tree);
     default: return 0;
   }
@@ -155,6 +157,7 @@ function leafText(c, data) {
     case 'gems': return `Gather ${n} gems`;
     case 'abilityUses': return `Use your ability ${n} times`;
     case 'blessings': return `Take ${n} Blessings`;
+    case 'lamps': return `Light ${n} lamps`;
     case 'webLit': return 'Light every lantern in the Web';
     default: return '?';
   }
@@ -543,7 +546,7 @@ function checkEffect(e, data, where) {
     if (typeof e.lore !== 'string' || !ID_RE.test(e.lore) || !(data && data.enemies && own(data.enemies, e.lore))) fail(`${where}: lore needs a known enemy id`);
     num('pct', 0.1, 3);
   } else if (e.info !== undefined) {
-    if (!['tells', 'bars', 'compass', 'peek', 'stir', 'codex'].includes(e.info)) fail(`${where}: unknown info effect`);
+    if (!['tells', 'bars', 'compass', 'peek', 'stir', 'codex', 'lamps'].includes(e.info)) fail(`${where}: unknown info effect`);
     if (e.enemy !== undefined && !(typeof e.enemy === 'string' && ID_RE.test(e.enemy) && data && data.enemies && own(data.enemies, e.enemy))) fail(`${where}: info enemy must be a known enemy`);
   } else if (e.weapon !== undefined) {
     const w = e.weapon;

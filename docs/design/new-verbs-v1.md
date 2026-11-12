@@ -23,6 +23,7 @@ Context: Lamp Posts (map events): 12 lamps in 3 wake groups (0:40 near, 4:20 mid
 - Risks: edge arrows can clutter the phone screen (cap 4, edge-pinned, 44 px safe); some players will ignore it; least exciting of the three.
 - Verify with: `scripts/rt-matrix.mjs` with SITES=1 (bot walks to lamps inside the radius), 48 seeds per cell before/after, expect inside noise (+-7 at 96 seeds); unit test that arrows show only awake, unlit, in-range lamps; treebudget test (<= 0.15 PE); `scripts/pace-v2.mjs` re-run for the gap.
 - In-game name: 'Far Sight'.
+- BUILT 2026-11-12 (wip/tree-q1): node `co_far` in the Satchel fragment, anchored at orbit tier 3 (Dusk) angle 52, kind ring + display flag `chase` (drawn as a landmark medallion with its progress chip), 1,800 gold, unlock `{t: 'lamps', n: 120}` (new condition leaf on stats.sites.lamps). Road from co_pull: co_seek1-6 (250 / 300 / 360 / 420 / 500 / 600 gold; gem pull +2% / Soul Magnet +2%, util only). Effect `{info: 'lamps'}`: siteview.js `farSightTargets` (pure) + `drawEmbers`: at most 4 embers, awake unlit off-screen lamps within 900 u, nearest first, never one already arrowed, Calm = static. Budget: 0 PE (info, like Hunter's Eye bars); the choice category is full (cap = face sum, combat 30.99 of 31), so the ~0.1 PE estimate was not tagged. Ranks 2-3 not built (parked). Not in pace-v2 (it does not model map events).
 
 ### Option B: RELIGHT, 'a lit lamp rekindles your spirit action'
 - Fantasy/verb: touching a lamp lights it and flickers your hero's action back to life. Verb: LIGHT to recharge.

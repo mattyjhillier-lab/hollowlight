@@ -83,7 +83,7 @@ test('S1 geometry (supersedes the R1 rings): weapons scattered at varied distanc
 test('S1 region records: hub, constellations, tool groups, the Deep Dusk anchor, display-only heroes, night / reserved / chapter / far records; name, centre, accent, orbit', () => {
   const rg = composed.info.regions;
   const kinds = rg.reduce((a, r) => ((a[r.kind] = (a[r.kind] || 0) + 1), a), {});
-  assert.deepEqual(kinds, { hub: 1, weapon: 5, tool: 6, anchor: 1, hero: Object.keys(data.characters).length, night: 1, reserved: 1, chapter: 1, far: 1 });
+  assert.deepEqual(kinds, { hub: 1, weapon: 5, tool: 6, anchor: 2, hero: Object.keys(data.characters).length, night: 1, reserved: 1, chapter: 1, far: 1 });
   for (const r of rg) {
     assert.ok(typeof r.name === 'string' && r.name.length > 0, r.id);
     assert.ok(Array.isArray(r.centre) && r.centre.every(Number.isFinite), r.id);

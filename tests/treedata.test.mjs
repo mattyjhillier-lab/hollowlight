@@ -127,7 +127,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 274, '163 at v4 + S1: 3 magic gardens x (18 forks + 1 lead-in) + the Candle Ring seal + 53 road lanterns');
+  assert.equal(real.info.nodes.length, 281, '163 at v4 + S1: 3 magic gardens x (18 forks + 1 lead-in) + the Candle Ring seal + 53 road lanterns; + Far Sight (co_far) and its 6-lantern road (2026-11-12)');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);

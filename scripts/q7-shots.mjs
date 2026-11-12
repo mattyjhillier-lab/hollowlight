@@ -71,7 +71,20 @@ try {
     for (const [dn, dev] of [['desk', D], ['phone', P]]) {
       await device(dev);
       await send('Page.navigate', { url: `${BASE}?${params}` });
-      await sleep(1500 + secs * 1000);
+      let t0 = null;
+      for (let i = 0; i < 360; i++) { // wait for the run to start, then `secs` seconds of sim time
+        await sleep(250);
+        const st = await ev('(() => { const s = window.__app && window.__app.sim; return s ? [s.state, s.time] : null; })()').catch(() => null);
+        if (st && st[0] !== 'running') { // a start choice / level-up card: take the first one with the real key
+          for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: '1', code: 'Digit1', windowsVirtualKeyCode: 49, text: type === 'keyDown' ? '1' : undefined });
+          continue;
+        }
+        const t = st ? st[1] : null;
+        if (t === null) continue;
+        if (t0 === null) t0 = t;
+        if (t - t0 >= secs) break;
+      }
+      await sleep(300);
       await shot(`run-${name}-${dn}`);
     }
   }

@@ -16,7 +16,7 @@ const WANT = ['br_wardrobe', 'gt_murder_storm', 'gt_spirit_tempest', 'gt_static_
 const fresh = () => ({ ...defaultSave(), tree: {} });
 
 test('Q7-A exactly the four locked nodes carry the chase flag, and the pace script counts the seals as landmarks', () => {
-  assert.deepEqual(def.list.filter((id) => def.nodes[id].chase).sort(), WANT);
+  assert.deepEqual(def.list.filter((id) => def.nodes[id].chase).sort(), [...WANT, 'co_far'].sort()); // + Far Sight (its own chunk), a chase landmark from birth
   for (const id of CHASE) { assert.ok(LANDMARKS.includes(id), id); assert.ok(!VEILED.includes(id), id); }
   assert.deepEqual([...CHASE].sort(), WANT.filter((id) => id !== 'br_wardrobe'));
 });
