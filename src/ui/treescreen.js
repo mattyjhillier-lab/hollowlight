@@ -10,6 +10,7 @@ import { computeTierSizes, screenDiameter, tierShown, TIER_SIZE } from '../meta/
 import { TreeBackdrop, ringProgress, LOOK } from '../gfx/treebg.js';
 import { MedallionAtlas, emblemFor, safeTint, mix } from '../gfx/medallions.js';
 import { probe } from '../gfx/probe.js';
+import { TOUR } from './whispers.js';
 import { RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
 import { CEL } from './codexcopy.js';
 
@@ -57,8 +58,9 @@ export class TreeScreen {
   // host: UI instance (layer/show/hide). api: app.treeApi() = { def, data, view, save(), buy(id), respec(), markSeen(id), onClose(), clearRegrowth?() }.
   // portraitOf(heroId, redraw): a loaded hero portrait image (built into the bundle, loaded by ui.js) or null; only used for the hub medallion,
   // an unknown hero falls back to a drawn head. The screen never builds an image path itself.
-  constructor(host, portraitOf) {
+  constructor(host, portraitOf, enemyPortrait) {
     this.host = host;
+    this.enemyPortrait = typeof enemyPortrait === 'function' ? enemyPortrait : () => null; // a foe's code-drawn portrait url (ui.js), never built from tree strings
     this.portraitOf = typeof portraitOf === 'function' ? portraitOf : () => null;
     this.open_ = false;
     this.cam = { x: 0, y: 0, z: 0.6 };
@@ -122,7 +124,7 @@ export class TreeScreen {
     if (typeof api.focusId === 'string' && this.def.nodes[api.focusId]) this.select(api.focusId, true); // FD4 'Open in tree': fly to the Night Gate lantern
     this.regrowthNote();
     this.resetNotice();
-    this.showTip(false);
+    if (!this.tourStart()) this.showTip(false);
     this.mapEl.focus({ preventScroll: true });
   }
 
@@ -136,6 +138,7 @@ export class TreeScreen {
     cancelAnimationFrame(this.raf);
     this.raf = 0;
     if (this.noticeShown) this.dismissNotice();
+    if (this.tourOpen) this.tourEnd();
     clearTimeout(this.tipT); clearTimeout(this.toastT); clearTimeout(this.itemT);
     this.host.hide('tree');
     if (this.layer) this.layer.replaceChildren();
@@ -213,6 +216,7 @@ export class TreeScreen {
     this.pEvo = el('div', 'ts-desc ts-evo'); // what the unlocked evolution does (same text as the pick card + Almanac: data.evolutions[id].desc)
     this.pFlav = el('div', 'ts-flav');
     this.pSteps = el('ol', 'ts-steps');
+    this.pTile = el('div', 'ts-ctile'); this.pChips = el('div', 'ts-chips'); // condition tile + path chips (banner)
     this.pMeta = el('div', 'ts-meta');
     this.pCost = el('div', 'ts-cost');
     const actions = el('div', 'ts-actions');
@@ -230,7 +234,7 @@ export class TreeScreen {
     actions.append(this.buyBtn, this.pinBtn, this.moreBtn, this.almBtn);
     this.pMsg = el('div', 'ts-msg');
     this.pMsg.setAttribute('role', 'status');
-    detail.append(this.pKick, this.pName, this.pState, this.pWhy, this.pEvo, this.pDesc, this.pFlav, this.pSteps, this.pMeta, this.pCost, this.pMsg, actions);
+    detail.append(this.pKick, this.pName, this.pState, this.pChips, this.pWhy, this.pEvo, this.pDesc, this.pFlav, this.pTile, this.pSteps, this.pMeta, this.pCost, this.pMsg, actions);
     this.detailEl = detail;
     const goalPane = el('div', 'ts-goalpane');
     this.goalList = el('div', 'ts-goallist');
@@ -319,13 +323,20 @@ export class TreeScreen {
     this.hoverEl.append(this.hoverName, this.hoverState, this.hoverDesc);
     const keys = el('div', 'ts-keyhint'); keys.setAttribute('aria-hidden', 'true');
     for (const [k, t] of TREE_KEYS) { const b = el('span', 'ts-keyhint__i'); b.append(el('kbd', null, k), document.createTextNode(` ${t}`)); keys.append(b); }
+    this.tourEl = el('div', 'ts-tour'); // first-visit tour card (4 short steps)
+    this.tourEl.setAttribute('role', 'dialog'); this.tourEl.setAttribute('aria-label', 'A quick tour of the Lantern Web');
+    this.tourH = el('div', 'ts-tourh'); this.tourP = el('p', 'ts-tourp'); this.tourDots = el('span', 'ts-tourd');
+    this.tourNext = btn('ts-primary ts-tournext', 'Next'); this.tourNext.addEventListener('click', () => { this.tourI++; this.tourStep(); });
+    const tskip = btn('ts-btn ts-tourskip', 'Skip tour'); tskip.addEventListener('click', () => this.tourEnd());
+    const trow = el('div', 'ts-tourrow'); trow.append(this.tourDots, tskip, this.tourNext);
+    this.tourEl.append(this.tourH, this.tourP, trow);
     this.nextEl = el('div', 'ts-next');
     this.nextEl.setAttribute('aria-label', 'Next lights');
     const nl = el('div', 'ts-nl'); nl.append(el('span', null, 'Next'), el('span', null, 'lights'));
     this.nextList = el('div', 'ts-nlist');
     this.nextEl.append(nl, this.nextList);
     root.append(this.buildHeroPanel(), this.nextEl);
-    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.noticeEl, this.srEl, this.hoverEl, keys);
+    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.noticeEl, this.tourEl, this.srEl, this.hoverEl, keys);
     layer.append(root);
     this.bindInput(map);
   }
@@ -1161,7 +1172,7 @@ export class TreeScreen {
     this.heroSub = el('div', 'ts-hsub');
     const play = btn('ts-hbtn ts-hplay', 'Play');
     play.addEventListener('click', () => { if (this.host.sound) this.host.sound('ui_step'); this.host.navTo('play'); });
-    const alm = btn('ts-hbtn', 'Almanac'); alm.addEventListener('click', () => this.host.navTo('almanac'));
+    const alm = this.heroAlm = btn('ts-hbtn', 'Almanac'); alm.addEventListener('click', () => this.host.navTo('almanac'));
     this.heroGoals = btn('ts-hbtn', 'Goals'); this.heroGoals.addEventListener('click', () => this.toggleGoals(false));
     const back = btn('ts-hbtn', 'Back'); back.addEventListener('click', () => this.close());
     this.heroGold = el('span'); this.heroShard = el('span');
@@ -1243,6 +1254,110 @@ export class TreeScreen {
       this.nextList.append(b);
     }
     void total;
+  }
+
+  // ------------------------------------------------------------------ banner extras: condition tile + path chips
+  /** Leaf conditions of a node's unlock in the same order as describeNode's condLines (all/any trees are walked depth first). */
+  condLeaves(c, out = [], depth = 0) {
+    if (!c || typeof c !== 'object' || depth > 5) return out;
+    if ((c.t === 'all' || c.t === 'any') && Array.isArray(c.of)) { for (const k of c.of) this.condLeaves(k, out, depth + 1); return out; }
+    out.push(c); return out;
+  }
+  /** Lanterns still to light (in order) on the shortest chain of real threads from your lit lanterns to `id`, and their gold. Empty when it is lit or unreachable. */
+  pathInfo(id) {
+    const m = this.model;
+    if (!id || !this.adj || m.lit(id)) return { steps: [], gold: 0 };
+    const isLit = (n) => n === 'hub' || m.lit(n);
+    const prev = new Map(), q = [];
+    for (const n of this.adj.keys()) if (isLit(n)) { prev.set(n, null); q.push(n); }
+    for (let h = 0; h < q.length && !prev.has(id); h++) { const u = q[h]; for (const { to } of this.adj.get(u) || []) { if (prev.has(to) || this.veil.has(to)) continue; prev.set(to, u); q.push(to); } }
+    if (!prev.has(id)) return { steps: [], gold: 0 };
+    const steps = []; let u = id; while (u && !isLit(u) && steps.length < 80) { steps.push(u); u = prev.get(u); }
+    steps.reverse();
+    let gold = 0; for (const x of steps) gold += m.costOf(x);
+    return { steps, gold };
+  }
+  /** The condition tile of a locked lantern: one row per leaf condition with its picture (a foe's own portrait), progress ('37 of 50 crows'), a bar and a link into the Almanac. */
+  renderTile(id) {
+    const m = this.model, n = this.def.nodes[id], ce = m.cache[id], d = ce.d, T = this.pTile;
+    T.replaceChildren(); this.tileLink = false;
+    const lines = !d.masked && ce.s !== 'lit' && ce.s !== 'fog' && d.rank === 0 ? d.condLines || [] : [];
+    T.style.display = lines.length ? '' : 'none';
+    if (!lines.length) return;
+    const leaves = this.condLeaves(n.unlock);
+    const E = (this.data && this.data.enemies) || {};
+    lines.forEach((L, i) => {
+      const leaf = leaves[i]; const foe = leaf && (leaf.t === 'killEnemy' || leaf.t === 'bossKill') && typeof leaf.id === 'string' && Object.hasOwn(E, leaf.id) ? leaf.id : null;
+      const row = el('div', `ts-crow${L.done ? ' done' : ''}`);
+      const pic = el('span', 'ts-cpic'); pic.setAttribute('aria-hidden', 'true');
+      const url = foe ? this.enemyPortrait(foe) : null;
+      if (url) { const im = el('img'); im.setAttribute('src', url); im.setAttribute('alt', ''); im.draggable = false; pic.append(im); }
+      else { // no foe: the medallion picture of what is asked (a pine for a chapter, a diamond for an evolution, a head for a hero ...)
+        const art = leaf && /^(clearChapter|surviveTime|clearTier|clearTierHeroes|stars)$/.test(leaf.t) ? 'forest' : leaf && leaf.t === 'evolveWeapon' ? 'evolution' : leaf && leaf.t === 'useCharacter' ? 'hero' : leaf && leaf.t === 'startWeapon' ? 'orbit' : 'key';
+        const sp = this.atlas.get(art, '#ffd9a0', 'open');
+        if (sp) { const cv = el('canvas'); cv.width = 92; cv.height = 92; const g = cv.getContext('2d'); if (g) g.drawImage(sp, 0, 0, 92, 92); pic.append(cv); } else pic.append(el('i', 'ts-cdot'));
+      }
+      const tx = el('div', 'ts-ctext');
+      const nm = foe ? String(E[foe].name || foe).toLowerCase() : '';
+      const prog = foe && leaf.t === 'killEnemy' ? `${fmtN(L.cur)} of ${fmtN(L.goal)} ${nm}${L.goal > 1 && !nm.endsWith('s') ? 's' : ''}` : L.goal > 1 ? `${fmtN(L.cur)} of ${fmtN(L.goal)}` : L.done ? 'Done' : 'Not yet';
+      tx.append(el('b', null, L.text), el('span', null, L.done ? `${prog} ✓` : prog));
+      if (L.goal > 1) { const b = el('div', 'ts-bar2'); const ib = el('b'); ib.style.width = `${Math.round(100 * Math.min(1, L.goal > 0 ? L.cur / L.goal : 0))}%`; b.append(ib); tx.append(b); }
+      row.append(pic, tx);
+      if (foe && this.host.showAlmanac && this.host.handlers && this.host.handlers.almanacView) {
+        const a = btn('ts-btn ts-clink', 'In the Almanac'); a.setAttribute('aria-label', `Open ${E[foe].name || foe} in the Almanac`);
+        a.addEventListener('click', () => this.host.showAlmanac('tree', 'foes', `f:${foe}`));
+        row.append(a); this.tileLink = true;
+      }
+      T.append(row);
+    });
+  }
+  /** Path progress chips in the banner: the road the lantern sits on ('5 of 12 to Spirit Bolts') and the way from your light ('4 to go, about 600 gold'). */
+  renderChips(id) {
+    const m = this.model, C = this.pChips; C.replaceChildren();
+    const ce = m.cache[id];
+    const road = (this.view.roads || []).find((r) => r.ids.includes(id) || r.to === id);
+    if (road && ce.s !== 'fog') {
+      let k = 0; for (const x of road.ids) if (m.lit(x)) k++;
+      const tc = m.cache[road.to];
+      if (this.def.nodes[road.to] && k < road.ids.length && !m.lit(road.to)) C.append(el('span', 'ts-chip', `${k} of ${road.ids.length} to ${tc && !tc.d.masked ? tc.d.name : 'a far lantern'}`));
+    }
+    if (ce.s !== 'lit' && ce.s !== 'fog' && !(ce.d.masked)) {
+      const P = this.pathInfo(id);
+      if (P.steps.length > 1) C.append(el('span', 'ts-chip', `${P.steps.length} to go · ~${fmtN(P.gold)} gold`));
+    }
+    C.style.display = C.childNodes.length ? '' : 'none';
+  }
+
+  // ------------------------------------------------------------------ first-visit tour (whispers.js TOUR; due only for a lantern with no finished run)
+  tourStart() {
+    if (!this.api.tourDue || !this.api.tourDue()) return false;
+    this.tourI = 0; this.tourOpen = true;
+    this.tourEl.classList.add('open');
+    this.tourStep();
+    return true;
+  }
+  tourStep() {
+    const S = TOUR[this.tourI]; if (!S) return this.tourEnd();
+    for (const e of this.root.querySelectorAll('.ts-tourhl')) e.classList.remove('ts-tourhl');
+    this.tourH.textContent = S.t; this.tourP.textContent = S.p;
+    this.tourDots.textContent = `${this.tourI + 1} of ${TOUR.length}`;
+    this.tourNext.textContent = this.tourI === TOUR.length - 1 ? 'Done' : 'Next';
+    let hl = null;
+    if (S.at === 'start' && this.starter && this.def.nodes[this.starter.heart]) { const n = this.def.nodes[this.starter.heart]; this.flyTo(n.x, n.y, Math.max(this.cam.z, 0.5)); }
+    else if (S.at === 'ready' && this.model.best && this.def.nodes[this.model.best.id]) { const n = this.def.nodes[this.model.best.id]; this.flyTo(n.x, n.y, Math.max(this.cam.z, 0.7)); }
+    else if (S.at === 'next') hl = this.root.classList.contains('ts-hero-on') ? this.nextEl : this.stepEl;
+    else if (S.at === 'almanac') hl = this.root.classList.contains('ts-hero-on') ? this.heroAlm : null;
+    if (hl) hl.classList.add('ts-tourhl');
+    this.tourNext.focus({ preventScroll: true });
+    this.dirty();
+  }
+  tourEnd() {
+    if (!this.tourOpen) return;
+    this.tourOpen = false;
+    this.tourEl.classList.remove('open');
+    for (const e of this.root.querySelectorAll('.ts-tourhl')) e.classList.remove('ts-tourhl');
+    if (this.api.tourSeen) this.api.tourSeen();
+    if (this.mapEl) this.mapEl.focus({ preventScroll: true });
   }
 
   drawWeb(t) {
@@ -1625,8 +1740,11 @@ export class TreeScreen {
     this.pEvo.textContent = evoTxt; this.pEvo.style.display = evoTxt ? '' : 'none';
     this.pFlav.textContent = d.flavour || '';
     this.pFlav.style.display = d.flavour ? '' : 'none';
+    this.renderTile(id); this.renderChips(id);
     this.pSteps.replaceChildren();
-    m.steps(id).forEach((S, i) => {
+    const tileOn = this.pTile.style.display !== 'none';
+    const condText = new Set(tileOn ? (d.condLines || []).map((L) => `${L.text}: ${fmtN(L.cur)} / ${fmtN(L.goal)}`) : []); // the tile already shows these
+    m.steps(id).filter((S) => !condText.has(S.t)).forEach((S, i) => {
       const li = el('li', S.done ? 'done' : '');
       li.append(el('b', null, S.done ? '✓' : String(i + 1)));
       const sp = el('span', null, S.t);
@@ -1657,7 +1775,7 @@ export class TreeScreen {
     b.classList.remove('confirm');
     b.textContent = s === 'lit' ? 'Lit' : s === 'ready' ? `${verb} · ${m.costText(id)}` : s === 'open' ? 'Not enough gold yet' : 'Not yet';
     this.pinBtn.textContent = this.pins.includes(id) ? 'Unpin' : 'Pin goal';
-    if (this.almBtn) this.almBtn.hidden = !(this.host.handlers && this.host.handlers.almanacView && (id === 'br_almanac' || /^bs_/.test(id)));
+    if (this.almBtn) this.almBtn.hidden = !(this.host.handlers && this.host.handlers.almanacView && (id === 'br_almanac' || /^bs_/.test(id)) && !this.tileLink); // the tile's own link goes to the foe's entry
     this.pinBtn.disabled = s === 'lit' || s === 'fog';
   }
 
@@ -2015,6 +2133,7 @@ export class TreeScreen {
     if (!this.open_) return;
     if (this.host.codexView || (this.host.celActive && this.host.celActive())) return; // CX3/CX5: the Almanac / a celebration is over the web
     const k = e.key;
+    if (this.tourOpen && k === 'Escape') { e.preventDefault(); this.tourEnd(); return; } // Esc skips the tour first
     if (k === 'Escape') {
       e.preventDefault();
       this.host.escAt = performance.now();

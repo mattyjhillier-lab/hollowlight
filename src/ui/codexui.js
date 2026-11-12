@@ -50,7 +50,7 @@ function bar(frac) {
 function kb(k) { return el('span', 'cx-kb', k); }
 
 /** book: almanac(); from: 'title' | 'pause' | 'results' | 'tree'; heroPortraits: {id: url}; titles: {got, pick}; onPickTitle(id); onRead(keys); onBack(). */
-export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits = {}, calm = false, titles = null, onPickTitle, onRead, onHelp = null, onBack } = {}) {
+export function buildAlmanac({ book, from = 'title', tab = null, focus = null, heroPortraits = {}, calm = false, titles = null, onPickTitle, onRead, onHelp = null, onBack } = {}) {
   const root = kitRoot({ calm });
   root.classList.add('cx');
   const read = new Set();
@@ -327,6 +327,7 @@ export function buildAlmanac({ book, from = 'title', tab = null, heroPortraits =
   }
 
   select(tab && TAB_IDS.includes(tab) ? tab : (book.tabs.find((t) => [...book.unlocked].some((k) => isNew(k) && tabOf(k) === t.id)) || { id: 'foes' }).id, false);
+  if (typeof focus === 'string') { const it = items.find((b) => (b.getAttribute('data-keys') || '').split(' ').includes(focus)); if (it) it.click(); } // open this entry (a link from the Lantern Web)
   return {
     root, back, tabs: tabBtns, list, entry, titleBtn, onKey, select,
     current: () => cur, isSheet: () => sheetOpen,

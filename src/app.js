@@ -23,7 +23,7 @@ import { keepsakeDef } from './meta/bond.js';
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
 import { cardFor, hasIntro, withIntro, introsForOffer, CARDS, INTRO_IDS, cleanIntros } from './ui/introcopy.js';
-import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from './ui/whispers.js';
+import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN, tourDue, withBit } from './ui/whispers.js';
 import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js';
 import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
 import { TITLES } from './ui/codexcopy.js';
@@ -410,6 +410,9 @@ export const app = {
         this.save.saveNow();
         return true;
       },
+      // first-visit tour (whispers.js tourDue/TOUR): due for a lantern with no finished run; the seen bit is the append-only hint bit 'tour'
+      tourDue: () => this.canKeepHints() && tourDue(this.save.data.hints, this.save.data.stats.runs, this.save.data.settings.tips),
+      tourSeen: () => { if (this.canKeepHints()) this.save.setHints(withBit(this.save.data.hints, 'tour')); },
       clearResetNotice: () => {
         if (this.save.data.notes && this.save.data.notes.treeResetNotice) { delete this.save.data.notes.treeResetNotice; this.save.saveNow(); }
       },

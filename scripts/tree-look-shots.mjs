@@ -33,7 +33,7 @@ try {
   await send('Page.enable'); await send('Runtime.enable');
   const T = 'window.__app.ui.tree';
   // lit = how many extra lanterns to light after the starter (breadth first along real edges), weapon = starter weapon id, restart = show the notice
-  const openTree = async (dev, { lit = 0, weapon = 'chain_lightning', hero = 'wren', restart = false } = {}) => {
+  const openTree = async (dev, { lit = 0, weapon = 'chain_lightning', hero = 'wren', restart = false, tour = false } = {}) => {
     const [w, h, dpr, mobile] = dev;
     await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: dpr, mobile });
     await send('Emulation.setTouchEmulationEnabled', mobile ? { enabled: true, maxTouchPoints: 5 } : { enabled: false });
@@ -47,6 +47,7 @@ try {
       s.notes = { ...(s.notes || {}), starter: { hero: '${hero}', weapon: '${weapon}' }, loadout: { hero: '${hero}', weapon: '${weapon}' } };
       s.chars = { ...(s.chars || {}), ${hero}: { xp: 0, keep: 0, woke: true } };
       ${restart ? 's.notes.treeResetNotice = { gold: 12345, shards: 7, glass: 3, nodes: 41 };' : ''}
+      s.hints = ${tour ? 0 : 8192};
       a.openTree();
       const t = ${T}; const st = t.view.starterOf ? t.view.starterOf(s.notes) : null; s.tree = {}; if (st) { if (st.heart) s.tree[st.heart] = 1; if (st.seal) s.tree[st.seal] = 1; }
       let n = ${lit}; const def = t.def; const par = new Map();
@@ -88,6 +89,25 @@ try {
       await openTree(dev, { lit: 5000 });
       await setZoom(Z.far); await shot(`${dn}-full-far`);
       await setZoom(Z.mid); await shot(`${dn}-full-mid`);
+    }
+  }
+  if (want('tour')) {
+    for (const [dn, dev] of [['desk', D], ['phone', P]]) {
+      await openTree(dev, { lit: 0, tour: true });
+      for (let k = 0; k < 4; k++) { await sleep(900); await shot(`${dn}-tour-${k + 1}`); await ev(`(() => { const b = document.querySelector('.ts-tournext'); if (b) b.click(); return true; })()`); }
+    }
+  }
+  if (want('banner')) {
+    for (const [dn, dev] of [['desk', D], ['phone', P]]) {
+      await openTree(dev, { lit: 30 });
+      const id = await ev(`(() => { const t = ${T}; const m = t.model; const ok = (q) => m.cache[q].s === 'challenge' && !m.cache[q].d.masked && (m.cache[q].d.condLines || []).length; const i = t.def.list.find((q) => ok(q) && JSON.stringify(t.def.nodes[q].unlock || {}).includes('killEnemy')) || t.def.list.find(ok); return i || null; })()`);
+      if (!id) { console.log('no challenge node'); continue; }
+      await ev(`(() => { const t = ${T}; t.select('${id}', true); t.setExpanded && t.setExpanded(true); return true; })()`);
+      await sleep(900); await shot(`${dn}-banner-locked`);
+      const fid = await ev(`(() => { const t = ${T}; return t.def.nodes.bs_crow1 ? 'bs_crow1' : null; })()`);
+      if (fid) { await ev(`(() => { const t = ${T}; t.api.save().stats.killsByEnemy = { crow: 37 }; t.recompute(); t.select('${fid}', true); t.setExpanded && t.setExpanded(true); return true; })()`); await sleep(900); await shot(`${dn}-banner-foe`); }
+      const id2 = await ev(`(() => { const t = ${T}; const m = t.model; const i = t.def.list.find((q) => m.cache[q].s === 'ready' && t.tierOfId(q) !== 'landmark'); return i || null; })()`);
+      if (id2) { await ev(`(() => { ${T}.select('${id2}', true); return true; })()`); await sleep(900); await shot(`${dn}-banner-ready`); }
     }
   }
   if (want('hover')) {

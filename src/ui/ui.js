@@ -42,6 +42,8 @@ import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+/** An enemy's code-drawn portrait (the same one the Almanac shows) as a blob url, or null; only our own painters make these. */
+function enemyPortrait(id) { return typeof id === 'string' ? portraitUrl(id) : null; }
 const PORTRAIT_IMGS = new Map(); // hero id -> Image, loaded once from the bundled portrait files (used by the tree's hub medallion)
 function portraitImage(hero, redraw) {
   if (typeof hero !== 'string' || !Object.hasOwn(PORTRAITS, hero)) return null;
@@ -56,6 +58,7 @@ import { WhisperPlate } from './whisperplate.js';
 import './whispers.css';
 import { cardModel } from './cardview.js';
 import { buildAlmanac } from './codexui.js';
+import { portraitUrl } from '../gfx/husk/portrait.js';
 import './codex.css';
 import './a11y.css';
 import './menunav.css';
@@ -74,7 +77,7 @@ export class UI {
     this.handlers = {};
     this.toastTimer = null;
     this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
-    this.tree = new TreeScreen(this, portraitImage);
+    this.tree = new TreeScreen(this, portraitImage, enemyPortrait);
     this.buildHud();
     this.nav = null;
     if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }
@@ -601,14 +604,14 @@ export class UI {
 
   // ------------------------------------------------------------------ CX2/CX3 the Almanac (title J, pause read-only, results link, tree heart link)
   // Opens over the current screen; Esc / Back returns to it (front-door rule). The app supplies the view model and stores read marks / titles.
-  showAlmanac(from = 'title', tab = null) {
+  showAlmanac(from = 'title', tab = null, focus = null) {
     const h = this.handlers;
     if (!h.almanacView || this.codexView) return;
     const v = h.almanacView();
     if (!v) return;
     const prev = document.activeElement;
     const calm = !!(v.calm || document.documentElement.classList.contains('reduced-motion'));
-    this.codexView = buildAlmanac({ book: v.book, from, tab, heroPortraits: PORTRAITS, calm, titles: v.titles,
+    this.codexView = buildAlmanac({ book: v.book, from, tab, focus, heroPortraits: PORTRAITS, calm, titles: v.titles,
       onRead: (keys) => { if (h.almanacRead) h.almanacRead(keys); },
       onPickTitle: (id) => { if (h.pickTitle) h.pickTitle(id); },
       onHelp: h.introReplay ? () => h.introReplay() : null,

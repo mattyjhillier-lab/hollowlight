@@ -195,7 +195,7 @@ test('C3 Lantern Web option A: no second header, right tool rail, compact node s
   assert.match(js, /setExpanded\(on\)/);
   // the rail and tab buttons keep 44px hit areas; the close button too (existing rule)
   assert.match(css, /\.ts-btn \{ min-height: 44px; min-width: 44px;/);
-  assert.match(css, /\.ts\.ts-small \.ts-panel:not\(\.exp\) :is\(\.ts-kick, \.ts-why, \.ts-evo, \.ts-flav, \.ts-steps, \.ts-meta, \.ts-cost\) \{ display: none; \}/);
+  assert.match(css, /\.ts\.ts-small \.ts-panel:not\(\.exp\) :is\(\.ts-kick, \.ts-why, \.ts-evo, \.ts-flav, \.ts-steps, \.ts-meta, \.ts-cost, \.ts-ctile, \.ts-chips\) \{ display: none; \}/);
   assert.match(css, /\.ts:not\(\.ts-small\)\.ts-sel \.ts-zoom \{ right: 364px; \}/, 'desktop: docked card, rail steps left of it');
   assert.ok(!/\.ts-bar \{|\.ts-title \{/.test(css), 'old toolbar rules removed');
 });

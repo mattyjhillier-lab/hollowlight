@@ -3,8 +3,8 @@ import { keyLabel, keyName, activeKeymap } from '../input/keymap.js';
 // the ladder state, triggers, queue, per-lantern bits and the copy. Reads a plain view built from sim state; never touches the sim or its RNG.
 // Bits live in the lantern's save (save.hints, a small integer; unknown bits are dropped by cleanHints).
 
-export const HINT = { started: 0, move: 1, gems: 2, ability: 3, heart: 4, magnet: 5, chest: 6, lowhp: 7, reroll: 8, offer: 9, stirs: 10 /* retired in flow v2; bit kept so saved hint bits keep their meaning */, evolve: 11, full: 12 };
-export const HINT_COUNT = 13;
+export const HINT = { started: 0, move: 1, gems: 2, ability: 3, heart: 4, magnet: 5, chest: 6, lowhp: 7, reroll: 8, offer: 9, stirs: 10 /* retired in flow v2; bit kept so saved hint bits keep their meaning */, evolve: 11, full: 12, tour: 13 /* the Lantern Web first-visit tour (append-only bit) */ };
+export const HINT_COUNT = 14;
 export const HINT_MASK = (1 << HINT_COUNT) - 1;
 /** Validated hint bits from untrusted save data: a non-negative safe integer, masked to the known bits; anything else is 0. */
 export function cleanHints(v) { return Number.isSafeInteger(v) && v >= 0 ? (v & HINT_MASK) : 0; }
@@ -15,7 +15,18 @@ export const TIPS_AGAIN = 1 << HINT.started;
 /** The ladder runs only for a lantern that began fresh after whispers existed (or after Show tips again): veterans are never taught. */
 export const ladderOn = (bits) => hasBit(bits, 'started');
 /** Called at run start: a lantern's very first run switches its ladder on. */
-export function startBits(bits, runs) { const b = cleanHints(bits); return (runs | 0) === 0 && b === 0 ? TIPS_AGAIN : b; }
+export function startBits(bits, runs) { const b = cleanHints(bits); return (runs | 0) === 0 && (b & ~(1 << HINT.tour)) === 0 ? b | TIPS_AGAIN : b; } // the tour bit alone does not stop a fresh lantern's ladder from starting
+
+// ---------------------------------------------------------------- the Lantern Web first-visit tour (LOCKED look port; docs/design/skill-tree-rework-v2.md)
+/** Due only for a lantern with no finished run (a veteran never sees it), with Tips on, that has not seen it. Pure; hostile input is simply not due. */
+export function tourDue(hints, runs, tips) { return tips !== false && Number.isSafeInteger(runs) && runs === 0 && !hasBit(hints, 'tour'); }
+/** Four short steps. `at` names what the screen points at ('start' | 'ready' | 'next' | 'almanac'); plain text, drawn with textContent. */
+export const TOUR = Object.freeze([
+  { at: 'start', t: 'Your spirit is already lit', p: 'The glowing lantern is the spirit you chose. Everything else in the web is dark until you light it.' },
+  { at: 'ready', t: 'Light a lantern', p: 'Lanterns are lit with gold you bring back from runs. When one shines, pick it and press Light it. Press twice to confirm.' },
+  { at: 'next', t: 'Follow the paths', p: 'Threads join the lanterns. Hover or pick one to see the way from your light. Next lights shows the closest goals.' },
+  { at: 'almanac', t: 'Ask the Almanac', p: 'Some lanterns wait for something in a night, like slaying crows. A locked lantern shows what it needs, and the Almanac shows the foe.' },
+]);
 
 // ---------------------------------------------------------------- copy (plain text; the plate draws it with textContent)
 // parts: [{key:'W'} | {text:'...'}]; sr: the line the screen reader hears once.

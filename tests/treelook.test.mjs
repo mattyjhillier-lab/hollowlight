@@ -123,3 +123,74 @@ test('veil + gardens: forks behind an unlit seal are veiled, a lit seal clears i
   for (const f of other.forks) for (const id of f) assert.ok(t.veil.has(id), 'unlit seal: forks veiled');
   assert.ok(t.fogs.length >= 1 && t.fogs.every((f) => Number.isFinite(f.x) && f.r > 0));
 });
+
+// ---------------------------------------------------------------- first-visit tour + banner extras
+import { tourDue, TOUR, HINT, HINT_COUNT, HINT_MASK, cleanHints, withBit, hasBit, startBits, TIPS_AGAIN } from '../src/ui/whispers.js';
+import { parseSave, serializeSave } from '../src/save/schema.js';
+
+test('tour gating: only a lantern with no finished run, Tips on, not seen yet; hostile input is never due', () => {
+  assert.equal(tourDue(0, 0, undefined), true);
+  assert.equal(tourDue(0, 0, true), true);
+  assert.equal(tourDue(0, 0, false), false, 'Tips off');
+  assert.equal(tourDue(0, 1, true), false, 'a veteran never sees it');
+  assert.equal(tourDue(0, 25, true), false);
+  assert.equal(tourDue(withBit(0, 'tour'), 0, true), false, 'seen');
+  for (const bad of [NaN, -1, 0.5, '0', null, undefined, {}, [], Infinity]) assert.equal(tourDue(0, bad, true), false, String(bad));
+  assert.equal(tourDue('junk', 0, true), true, 'garbage hint bits read as 0');
+});
+
+test('tour bit: append-only (bit 13), masked by cleanHints, does not stop a fresh lantern starting its first-minute ladder', () => {
+  assert.equal(HINT.tour, 13); assert.equal(HINT_COUNT, 14); assert.equal(HINT_MASK, (1 << 14) - 1);
+  assert.equal(Object.keys(HINT).length, HINT_COUNT);
+  assert.equal(withBit(0, 'tour'), 1 << 13); assert.equal(hasBit(1 << 13, 'tour'), true);
+  assert.equal(cleanHints(1 << 14), 0, 'a bit beyond the known ones is dropped'); assert.equal(cleanHints(2 ** 53), 0); assert.equal(cleanHints(-1), 0); assert.equal(cleanHints(1.5), 0);
+  assert.equal(cleanHints(0b1111111111111 | (1 << 13)), HINT_MASK);
+  for (const id of Object.keys(HINT)) if (id !== 'tour') assert.equal(HINT[id] < 13, true, 'old bits keep their meaning');
+  assert.equal(startBits(1 << 13, 0) & TIPS_AGAIN, TIPS_AGAIN, 'tour seen, first run: ladder still starts');
+  assert.equal(startBits(1 << 13, 0), (1 << 13) | TIPS_AGAIN);
+  assert.equal(startBits(0, 0), TIPS_AGAIN);
+  assert.equal(startBits(1 << 5, 0), 1 << 5, 'a lantern with other bits already has its ladder state');
+  assert.equal(startBits(1 << 13, 3), 1 << 13, 'a lantern with runs is left alone');
+});
+
+test('tour bit survives a save round trip; hostile hint values are masked, not trusted', () => {
+  const s = defaultSave(); s.hints = withBit(TIPS_AGAIN, 'tour');
+  assert.equal(parseSave(JSON.stringify(serializeSave(s))).save.hints, s.hints);
+  const hostile = JSON.parse(JSON.stringify(serializeSave(s))); hostile.hints = (1 << 20) | (1 << 13);
+  assert.equal(parseSave(JSON.stringify(hostile)).save.hints, 1 << 13);
+  hostile.hints = '8192'; assert.equal(parseSave(JSON.stringify(hostile)).save.hints, 0);
+});
+
+test('tour copy: four short plain steps pointing at known places; the screen draws them with textContent', () => {
+  assert.equal(TOUR.length, 4);
+  for (const S of TOUR) { assert.ok(['start', 'ready', 'next', 'almanac'].includes(S.at)); assert.ok(S.t.length <= 40 && S.p.length <= 170, S.t); assert.ok(!/hollowlight|<|>/i.test(S.t + S.p)); }
+  const src = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
+  const fn = src.slice(src.indexOf('  tourStart() {'), src.indexOf('  drawWeb(t) {'));
+  assert.ok(fn.includes('this.tourH.textContent = S.t') && fn.includes('this.tourP.textContent = S.p') && !/innerHTML/.test(fn));
+  assert.ok(src.includes("if (this.tourOpen && k === 'Escape')"), 'Esc skips the tour');
+  assert.ok(src.includes('if (this.tourOpen) this.tourEnd();'), 'closing the tree ends it (seen)');
+  assert.ok(src.includes('if (!this.tourStart()) this.showTip(false);'), 'the tour replaces the older tip');
+  const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.ok(app.includes("tourDue: () => this.canKeepHints() && tourDue(") && app.includes("withBit(this.save.data.hints, 'tour')"), 'never in debug runs or read-only lanterns');
+});
+
+test('banner: condition leaves follow the condLines order; path info is the chain from your light; lit lantern has none', () => {
+  const s = save({ notes: NOTES, tree: starterTree() });
+  const t = screen(s); t.veil = new Set();
+  const c = { t: 'all', of: [{ t: 'killEnemy', id: 'crow', n: 50 }, { t: 'any', of: [{ t: 'runs', n: 3 }, { t: 'totalKills', n: 9 }] }] };
+  assert.deepEqual(t.condLeaves(c).map((x) => x.t), ['killEnemy', 'runs', 'totalKills']);
+  assert.deepEqual(t.condLeaves(null), []); assert.deepEqual(t.condLeaves('x'), []);
+  const deep = { t: 'all', of: [] }; let cur = deep; for (let i = 0; i < 20; i++) { const n = { t: 'all', of: [] }; cur.of.push(n); cur = n; }
+  assert.ok(t.condLeaves(deep).length === 0);
+  const far = def.list.find((id) => !def.nodes[id].teaser && t.model.cache[id].s === 'notyet' && view.ringOf[id] >= 2);
+  const P = t.pathInfo(far);
+  assert.ok(P.steps.length >= 1 && P.steps.at(-1) === far && P.gold >= 0);
+  assert.ok(!P.steps.some((id) => t.model.lit(id)), 'only lanterns still to light');
+  assert.deepEqual(t.pathInfo(starterNodes(composed.info, 'chain_lightning')[0]), { steps: [], gold: 0 });
+  assert.deepEqual(t.pathInfo('nope'), { steps: [], gold: 0 });
+  const src = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
+  const tile = src.slice(src.indexOf('  renderTile(id) {'), src.indexOf('  renderChips(id) {'));
+  assert.ok(!/innerHTML/.test(tile) && tile.includes("setAttribute('src', url)") && tile.includes('Object.hasOwn(E, leaf.id)'), 'foe art only for known enemy ids, via our own portrait urls');
+  const ui = readFileSync(new URL('../src/ui/ui.js', import.meta.url), 'utf8');
+  assert.ok(ui.includes('function enemyPortrait(id)') && ui.includes("typeof id === 'string' ? portraitUrl(id)"));
+});
