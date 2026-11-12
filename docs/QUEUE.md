@@ -14,7 +14,7 @@ Matt-only chores: real-phone tests; delete old `hollowlight` Cloudflare project;
 
 Next (Claude, no testing needed): pacing v3 chart; LOCKED rows + build chunk per picked verb; Set B slots (companion egg, hero trial lantern) options rounds.
 Big features (Matt's order): Lucinda DM5-DM10, Chapter 2 Hushbell Hamlet, companions (summons stop being weapons), visuals review, UI alignment pass.
-Designs not started: Wardrobe + ring-completion costumes (sandbox first), picture title screen, starter synergy extras, Almanac silhouettes/kill counts, Bond cap review.
+Designs written, awaiting Matt picks: docs/design/wardrobe-v2.md (ring costumes + Dawnbearer; sandbox first), docs/design/title-screen-v1.md (Lantern Vigil recommended). Not started: starter synergy extras, Almanac silhouettes/kill counts, Bond cap review.
 Later: chapters 3-8, other heroes/weapons, prestige, Android/Windows app, AI art pipeline.
 Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob.
 
