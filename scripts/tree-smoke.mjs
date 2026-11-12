@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = process.argv[2] || 'http://127.0.0.1:5301/';
 const CHROME = [process.env.CHROME, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => p && existsSync(p));
-const PORT = 9393;
+const PORT = Number(process.env.CDP_PORT) || 9393;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const D = [1280, 720, 1, false], P = [390, 844, 2, true];
 const profile = mkdtempSync(join(tmpdir(), 'hl-look-'));
@@ -89,7 +89,7 @@ try {
   await sleep(500);
   ok('click selects', (await ev(`${T}.selected`)) === nid);
   const gold0 = await ev(`window.__app.save.data.gold`);
-  const clicked = await ev(`(() => { const b = document.querySelector('.ts-primary'); if (!b || b.disabled) return false; b.click(); b.click(); return true; })()`); // two taps: the second confirms
+  const clicked = await ev(`(() => { const b = window.__app.ui.tree.buyBtn; if (!b || b.disabled) return false; b.click(); b.click(); return true; })()`); // two taps: the second confirms
   await sleep(600);
   ok('buy button present and bought', clicked && (await ev(`window.__app.save.data.tree['${nid}'] >= 1`)) && (await ev(`window.__app.save.data.gold`)) < gold0);
   ok('lit after buy', await ev(`${T}.model.lit('${nid}')`));

@@ -2,7 +2,7 @@
 // Usage: node scripts/a11y-tree-smoke.mjs <baseUrl>      (serve dist first: cd dist && python -m http.server 5301)
 import { launch, sleep } from './u3-lib.mjs';
 const base = process.argv[2] || 'http://127.0.0.1:5301';
-const c = await launch(9396);
+const c = await launch(Number(process.env.CDP_PORT) || 9396);
 let fails = 0;
 const ok = (name, v, extra = '') => { console.log(v ? 'PASS' : 'FAIL', name, v ? '' : extra); if (!v) fails++; };
 const T = '__app.ui.tree';

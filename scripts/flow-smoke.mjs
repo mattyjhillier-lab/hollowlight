@@ -3,7 +3,7 @@
 // Usage: node scripts/flow-smoke.mjs <baseUrl> [outDir]      (serve dist first: cd dist && python -m http.server 5301)
 import { launch, sleep, VIEWS } from './u3-lib.mjs';
 const base = process.argv[2] || 'http://127.0.0.1:5301', out = process.argv[3] || 'docs/screenshots/tree-look';
-const c = await launch(9397);
+const c = await launch(Number(process.env.CDP_PORT) || 9397);
 let fails = 0;
 const ok = (name, v) => { console.log(v ? 'PASS' : 'FAIL', name); if (!v) fails++; };
 const visible = (sel) => c.ev(`(() => { const e = document.querySelector('${sel}'); return !!e && getComputedStyle(e).display !== 'none'; })()`);

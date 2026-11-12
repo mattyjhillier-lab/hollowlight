@@ -543,7 +543,11 @@ export class TreeScreen {
     return screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1) / 2;
   }
   /** Landmark medallion diameter in px: base by kind (heart 1, key / socket / gate / hero / kin 0.74, teaser 0.54) x a gentle zoom factor, same everywhere on the map. */
-  landmarkD(id) { return this.presence(id) * (this.uk || 1) * LOOK.medSize * clamp(0.8 + 0.45 * this.cam.z, 0.9, 1.12); }
+  /** Medallion zoom factor shared by every landmark and the hub coin: 0.64 zoomed right out, 1.12 close in. */
+  zoomK() { return clamp(0.58 + 0.7 * this.cam.z, 0.64, 1.12); }
+  /** Radius of a landmark-sized medallion with this size step (heart 1, others 0.74). */
+  stdR(step) { return ((this.small ? 62 : 92) * step * (this.uk || 1) * LOOK.medSize * this.zoomK()) / 2; }
+  landmarkD(id) { return this.presence(id) * (this.uk || 1) * LOOK.medSize * this.zoomK(); }
   presence(id) { const k = this.def.nodes[id].kind; return (this.small ? 62 : 92) * (k === 'heart' ? 1 : k === 'teaser' ? 0.54 : 0.74); }
   boost() { return clamp((this.view.lod.near - this.cam.z) / (this.view.lod.near - 0.3), 0, 1); }
   /** FAR only: greedy collapse of landmarks that would overlap on screen. Returns Map id -> leader id (leaders map to themselves); this.farCount = leader -> how many hidden behind it. */
@@ -614,7 +618,7 @@ export class TreeScreen {
     c.fillStyle = pool;
     c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
     this.atlas.beginFrame();
-    this.hubR = clamp(150 * z * 1.0, 15, 50) * this.uk;
+    this.hubR = ((this.small ? 62 : 92) * LOOK.medSize * this.zoomK() * 0.56) * this.uk; // the hub coin is the biggest medallion by one clear step (a heart is 0.5 of the base)
     this.drawFarSlots(lod);
     this.drawRegions();
     this.drawToolCoins(lod);
@@ -892,7 +896,7 @@ export class TreeScreen {
     }
     if (this.atlas.pending) this.dirty();
   }
-  toolR(bo) { return (this.small ? 24 : 38) * (this.uk || 1) * (0.6 + 0.4 * bo); }
+  toolR() { return this.stdR(0.74); } // a tool group's picture coin is a plain landmark (same size as a key / socket / gate)
   costText(nx) {
     if (!nx) return '';
     const p = [];
@@ -1056,7 +1060,7 @@ export class TreeScreen {
   drawDisplay(c, lod) {
     if (!this.display || !this.display.length) return;
     const z = this.cam.z, uk = this.uk || 1, s = this.api.save();
-    const r = clamp(34 * z, 19, 80) * LOOK.medSize * uk;
+    const r = this.stdR(0.74); // display medallions (heroes, nights, reserved slots) are plain landmarks too
     for (const d of this.display) {
       const [x, y] = this.toS(d.x, d.y);
       if (x < -r - 60 || x > this.W + r + 60 || y < -r - 40 || y > this.H + r + 60) continue;
