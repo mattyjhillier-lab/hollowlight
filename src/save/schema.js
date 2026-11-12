@@ -104,13 +104,14 @@ export const MIGRATIONS = {
   1: (o) => ({ ...o, version: 2, tree: {}, seen: {} }),
   2: (o) => {
     const to = TREE ? TREE.treeVersion : 3;
-    const r = runTreeSteps(isObj(o.tree) && !isCompact(o.tree) ? o.tree : {}, OLD_TREE_VERSION, to, undefined, { creep: o.creep, def: TREE });
+    const r = runTreeSteps(isObj(o.tree) && !isCompact(o.tree) ? o.tree : {}, OLD_TREE_VERSION, to, undefined, { creep: o.creep, def: TREE, starter: starterWeaponOf(o) });
     return {
       ...o,
       version: 3,
       tree: r.tree,
       gold: Math.min(MAX_NUM, int(o.gold, 0) + r.gold),
       shards: Math.min(MAX_NUM, int(o.shards, 0) + r.shards),
+      ...(r.glass ? { dawnglass: Math.min(MAX_GLASS, int(o.dawnglass, 0, 0, MAX_GLASS) + r.glass) } : {}),
       notes: { ...(isObj(o.notes) ? o.notes : {}), ...r.notes },
     };
   },
@@ -171,10 +172,21 @@ function recentRuns(a) {
   return out;
 }
 
+// The starter weapon of an untrusted raw save (notes.starter.weapon), for the tree restart step: a plain id string or null (the step only
+// accepts ids of its own frozen table).
+function starterWeaponOf(o) {
+  const st = isObj(o) && isObj(o.notes) && isObj(o.notes.starter) ? o.notes.starter.weapon : null;
+  return typeof st === 'string' && ID_KEY.test(st) && !BAD_KEYS.has(st) ? st : null;
+}
+
 // Migration notices from a tree step join any not-yet-shown 'web has regrown' notice (amounts add up).
 function mergeNotes(old, add) {
   const o = { ...(isObj(old) ? old : {}) };
-  for (const [k, v] of Object.entries(add || {})) o[k] = k === 'regrowth' && isObj(o.regrowth) ? { gold: int(o.regrowth.gold, 0) + v.gold, shards: int(o.regrowth.shards, 0) + v.shards, nodes: int(o.regrowth.nodes, 0, 0, 1e4) + v.nodes } : v;
+  for (const [k, v] of Object.entries(add || {})) {
+    if (k === 'regrowth' && isObj(o.regrowth)) o[k] = { gold: int(o.regrowth.gold, 0) + v.gold, shards: int(o.regrowth.shards, 0) + v.shards, nodes: int(o.regrowth.nodes, 0, 0, 1e4) + v.nodes };
+    else if (k === 'treeResetNotice' && isObj(o.treeResetNotice)) { const t = o.treeResetNotice; o[k] = { gold: int(t.gold, 0) + v.gold, shards: int(t.shards, 0) + v.shards, glass: int(t.glass, 0) + v.glass, nodes: int(t.nodes, 0, 0, 1e4) + v.nodes }; }
+    else o[k] = v;
+  }
   return o;
 }
 
@@ -182,6 +194,8 @@ function mergeNotes(old, add) {
 function notesOf(o) {
   const out = {};
   if (isObj(o) && isObj(o.regrowth)) out.regrowth = { gold: int(o.regrowth.gold, 0), shards: int(o.regrowth.shards, 0), nodes: int(o.regrowth.nodes, 0, 0, 1e4) };
+  // S1: the one-time 'the tree has restarted' notice (tree-v5 step; shown once by the tree screen, then deleted). Known keys only, clamped.
+  if (isObj(o) && isObj(o.treeResetNotice)) { const t = o.treeResetNotice; out.treeResetNotice = { gold: int(t.gold, 0), shards: int(t.shards, 0), glass: int(t.glass, 0, 0, MAX_GLASS), nodes: int(t.nodes, 0, 0, 1e4) }; }
   // FD4: the map screen's remembered map + night and the nights whose NEW flag was seen. Known chapter / tier ids only; anything else is dropped.
   if (isObj(o) && isObj(o.night)) {
     const n = o.night;
@@ -338,8 +352,8 @@ export function parseSave(text) {
       if (dec.v !== null && dec.v > TREE.treeVersion) return { ok: false, code: 'future', error: 'This save is from a newer version of the game. Update the game to use it.' };
       const from = dec.v === null ? TREE.treeVersion : Math.max(3, dec.v); // a forged low version can never replay the Regrowth refund
       if (from < TREE.treeVersion) {
-        const r = runTreeSteps(dec.tree, from, TREE.treeVersion, undefined, { creep: cur.creep, def: TREE });
-        cur = { ...cur, tree: r.tree, creep: r.creep, gold: Math.min(MAX_NUM, int(cur.gold, 0) + r.gold), shards: Math.min(MAX_NUM, int(cur.shards, 0) + r.shards), notes: mergeNotes(cur.notes, r.notes) };
+        const r = runTreeSteps(dec.tree, from, TREE.treeVersion, undefined, { creep: cur.creep, def: TREE, starter: starterWeaponOf(cur) });
+        cur = { ...cur, tree: r.tree, creep: r.creep, gold: Math.min(MAX_NUM, int(cur.gold, 0) + r.gold), shards: Math.min(MAX_NUM, int(cur.shards, 0) + r.shards), ...(r.glass ? { dawnglass: Math.min(MAX_GLASS, int(cur.dawnglass, 0, 0, MAX_GLASS) + r.glass) } : {}), notes: mergeNotes(cur.notes, r.notes) };
       }
     }
   } catch { return { ok: false, code: 'migrate', error: 'Save could not be upgraded.' }; }
