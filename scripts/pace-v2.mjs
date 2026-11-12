@@ -86,7 +86,7 @@ async function journey(env, { hero0, weapon, j, maxRuns }) {
       const L = lm[id];
       if (L.own0 || (save().tree[id] | 0) >= 1) continue;
       const st = nodeInfo(id);
-      if (L.met === null && st.cond && st.cond.done) L.met = r;
+      if (L.met === null && (!st.cond || st.cond.done)) L.met = r; // S1: no condition = met (its road is goal-sought)
       if (L.avail === null && st.buyable && st.affordable) L.avail = r;
     }
   };
@@ -173,7 +173,10 @@ export function report(file, cap = 70) {
   const groups = { ALL: rows };
   for (const w of WEAPONS) groups[`start:${w}`] = rows.filter((r) => r.weapon === w);
   for (const h of HEROES) groups[`hero:${h}`] = rows.filter((r) => r.hero0 === h);
-  const times = (r, sel) => LANDMARKS.filter((id) => !r.lm[id][3]).map((id) => r.lm[id][1]).concat(sel(r));
+  // S1: a landmark at the end of a road is often bought in the same run its road completes (never seen 'affordable + unlocked' between two runs):
+  // its time is the earlier of 'affordable + unlocked' and 'bought'
+  const at = (v) => (v[1] == null ? v[2] : v[2] == null ? v[1] : Math.min(v[1], v[2]));
+  const times = (r, sel) => LANDMARKS.filter((id) => !r.lm[id][3]).map((id) => at(r.lm[id])).concat(sel(r));
   for (const [name, rs] of Object.entries(groups)) {
     if (!rs.length) continue;
     P(`\n## ${name}  (${rs.length} journeys, cap ${cap} runs)`);
@@ -181,8 +184,8 @@ export function report(file, cap = 70) {
     for (const id of [...LANDMARKS, ...VEILED]) {
       const use = rs.filter((r) => !r.lm[id][3]);
       if (!use.length) { P(`${id.padEnd(24)} owned at start in all journeys`); continue; }
-      const av = use.map((r) => r.lm[id][1] ?? cap + 1), met = use.map((r) => r.lm[id][0] ?? cap + 1), bt = use.map((r) => r.lm[id][2] ?? cap + 1);
-      P(`${id.padEnd(24)} ${fmt(av).padEnd(12)} ${String(Math.round((100 * use.filter((r) => r.lm[id][1] != null).length) / use.length)).padStart(3)}%   met ${pct(met, 0.5)}  bought ${pct(bt, 0.5)}  n=${use.length}`);
+      const av = use.map((r) => at(r.lm[id]) ?? cap + 1), met = use.map((r) => r.lm[id][0] ?? cap + 1), bt = use.map((r) => r.lm[id][2] ?? cap + 1);
+      P(`${id.padEnd(24)} ${fmt(av).padEnd(12)} ${String(Math.round((100 * use.filter((r) => at(r.lm[id]) != null).length) / use.length)).padStart(3)}%   met ${pct(met, 0.5)}  bought ${pct(bt, 0.5)}  n=${use.length}`);
     }
     const sets = { 'landmarks only': () => [], '+ diamonds (key/mastery bought)': (r) => r.diamonds.filter((d) => DIAMOND_KINDS.includes(d.kind)).map((d) => d.run), '+ wide (socket/bead/key/mastery)': (r) => r.diamonds.map((d) => d.run) };
     for (const [label, sel] of Object.entries(sets)) {
@@ -191,7 +194,7 @@ export function report(file, cap = 70) {
       P(`max gap (${label}): p25/p50/p90 = ${fmt(mx)}, journeys breaking the aim (>5 before run 30, >8 after): ${bad.filter((b) => b.length).length}/${rs.length}`);
     }
   }
-  const med = LANDMARKS.map((id) => ({ id, m: pct(rows.filter((r) => !r.lm[id][3]).map((r) => r.lm[id][1] ?? cap + 1), 0.5) })).filter((x) => x.m != null).sort((a, b) => a.m - b.m);
+  const med = LANDMARKS.map((id) => ({ id, m: pct(rows.filter((r) => !r.lm[id][3]).map((r) => at(r.lm[id]) ?? cap + 1), 0.5) })).filter((x) => x.m != null).sort((a, b) => a.m - b.m);
   P('\n## ALL: landmarks ordered by median affordable+unlocked run, gap to the previous');
   let prev = 0; for (const x of med) { P(`${x.id.padEnd(24)} p50 ${String(x.m).padStart(3)}  gap ${x.m - prev}`); prev = x.m; }
   P('\n## Gold per run (human factor applied, after the tier bonus), mean / p50 [n]');
