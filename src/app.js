@@ -392,6 +392,9 @@ export const app = {
       clearRegrowth: () => {
         if (this.save.data.notes && this.save.data.notes.regrowth) { delete this.save.data.notes.regrowth; this.save.saveNow(); }
       },
+      clearResetNotice: () => {
+        if (this.save.data.notes && this.save.data.notes.treeResetNotice) { delete this.save.data.notes.treeResetNotice; this.save.saveNow(); }
+      },
       onClose: () => this.showMenu(),
     };
   },

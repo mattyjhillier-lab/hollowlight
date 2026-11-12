@@ -191,7 +191,7 @@ test('C3 Lantern Web option A: no second header, right tool rail, compact node s
   assert.match(js, /host\.nav\.setPurse\(purse\)/, 'purse lives in the tab row');
   assert.match(js, /Math\.min\(this\.small \? 13 : 18, 70 \* z\)/, 'region name size capped 13 (small) / 18');
   assert.match(js, /if \(!force && this\.small\) return;/, 'welcome card replaced by the step bar on small screens');
-  assert.match(js, /const DIMA = \[1, 0\.2, 0\.35, 0\.55\]/);
+  assert.match(js, /const DIMA = \[1, 0\.2, 0\.35, 0\.55, 0\.4\]/);
   assert.match(js, /setExpanded\(on\)/);
   // the rail and tab buttons keep 44px hit areas; the close button too (existing rule)
   assert.match(css, /\.ts-btn \{ min-height: 44px; min-width: 44px;/);

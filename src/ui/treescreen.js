@@ -7,7 +7,7 @@
 // every string from data goes through textContent / setAttribute, never innerHTML.
 import { TreeModel, SAY, KIND_LABEL, sanitizePins, fmtN, MAX_PINS } from './treemodel.js';
 import { computeTierSizes, screenDiameter, tierShown, TIER_SIZE } from '../meta/treetier.js';
-import { TreeBackdrop, ringLitFractions } from '../gfx/treebg.js';
+import { TreeBackdrop, ringProgress, LOOK } from '../gfx/treebg.js';
 import { MedallionAtlas, emblemFor, safeTint, mix } from '../gfx/medallions.js';
 import { probe } from '../gfx/probe.js';
 import { RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
@@ -47,14 +47,18 @@ const ICON_SPIRITS = [['path', { d: 'M5 17l5-8 4 5 5-9' }], ['circle', { cx: 5, 
 const ICON_MORE = [['path', { d: 'M6 15l6-6 6 6' }]];
 const hexA = (hex, a) => { const v = parseInt(String(hex).slice(1), 16) || 0; return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const idHash = (id) => { let h = 2166136261; const t = String(id); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }; // stable 0..1 per lantern id
 const lodFar = (z, L) => clamp(0.78 + (z - L.far) / 0.5, 0.78, 1); // label size factor: 0.78 at the FAR limit and below, 1 from about 0.31 up
 
 // DESKTOP D3: the tree's keys, shown as a quiet hint strip while the keyboard was the last input (these keys are fixed in onKey)
 const TREE_KEYS = [['Arrows', 'pan'], ['+ -', 'zoom'], ['N', 'next lantern'], ['G', 'goals'], ['Enter', 'light'], ['Esc', 'back']];
 export class TreeScreen {
   // host: UI instance (layer/show/hide). api: app.treeApi() = { def, data, view, save(), buy(id), respec(), markSeen(id), onClose(), clearRegrowth?() }.
-  constructor(host) {
+  // portraitOf(heroId, redraw): a loaded hero portrait image (built into the bundle, loaded by ui.js) or null; only used for the hub medallion,
+  // an unknown hero falls back to a drawn head. The screen never builds an image path itself.
+  constructor(host, portraitOf) {
     this.host = host;
+    this.portraitOf = typeof portraitOf === 'function' ? portraitOf : () => null;
     this.open_ = false;
     this.cam = { x: 0, y: 0, z: 0.6 };
     this.keyHandler = (e) => this.onKey(e);
@@ -70,6 +74,8 @@ export class TreeScreen {
     this.data = api.data;
     this.view = api.view;
     this.model = new TreeModel(this.def, this.data, this.view);
+    this.hoverFocus = null; this.focus = null; this.threads = []; this.adj = new Map();
+    this.buildThreads(); // the geometry of the web, once (states are read per frame)
     this.pins = sanitizePins(store.get(PIN_KEY), this.def);
     this.selected = null;
     this.panelMode = null; // null | 'detail' | 'goals'
@@ -91,7 +97,7 @@ export class TreeScreen {
     this.tiers = computeTierSizes(this.def); // Q1a: node tier + medallion draw diameter (display only)
     this.bg = new TreeBackdrop((w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // baked once, see gfx/treebg.js
     this.atlas = new MedallionAtlas((w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }); // R2: medallion pictures, each baked once, max 4 per frame
-    this.ringLit = []; this.tints = []; this.lblSprites = new Map(); this.mwCache = new Map(); this.toolLm = null;
+    this.ringFrac = []; this.ringBloom = []; this.ringPrev = []; this.tints = []; this.lblSprites = new Map(); this.mwCache = new Map(); this.toolLm = null;
     this.perf = { n: 0, sum: 0, max: 0 };
     this.paths = new Map();
     for (const r of this.view.regions) if (r.silhouette) { try { this.paths.set(r.key, new Path2D(r.silhouette)); } catch { /* bad path: no emblem */ } }
@@ -114,6 +120,7 @@ export class TreeScreen {
     this.focusStart();
     if (typeof api.focusId === 'string' && this.def.nodes[api.focusId]) this.select(api.focusId, true); // FD4 'Open in tree': fly to the Night Gate lantern
     this.regrowthNote();
+    this.resetNotice();
     this.showTip(false);
     this.mapEl.focus({ preventScroll: true });
   }
@@ -127,6 +134,7 @@ export class TreeScreen {
     if (this.ro) this.ro.disconnect();
     cancelAnimationFrame(this.raf);
     this.raf = 0;
+    if (this.noticeShown) this.dismissNotice();
     clearTimeout(this.tipT); clearTimeout(this.toastT); clearTimeout(this.itemT);
     this.host.hide('tree');
     if (this.layer) this.layer.replaceChildren();
@@ -299,6 +307,8 @@ export class TreeScreen {
     this.tipEl = tip;
     this.toastEl = el('div', 'ts-toast');
     this.toastEl.setAttribute('role', 'status');
+    this.noticeEl = el('div', 'ts-notice'); // the one-time 'the web was rewoven' notice (S1 restart); filled by resetNotice()
+    this.noticeEl.setAttribute('role', 'status');
     this.srEl = el('div', 'ts-sr');
     this.srEl.setAttribute('aria-live', 'polite');
 
@@ -308,7 +318,7 @@ export class TreeScreen {
     this.hoverEl.append(this.hoverName, this.hoverState, this.hoverDesc);
     const keys = el('div', 'ts-keyhint'); keys.setAttribute('aria-hidden', 'true');
     for (const [k, t] of TREE_KEYS) { const b = el('span', 'ts-keyhint__i'); b.append(el('kbd', null, k), document.createTextNode(` ${t}`)); keys.append(b); }
-    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.srEl, this.hoverEl, keys);
+    root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.noticeEl, this.srEl, this.hoverEl, keys);
     layer.append(root);
     this.bindInput(map);
   }
@@ -326,20 +336,26 @@ export class TreeScreen {
     const s = this.api.save();
     this.model.recompute(s, this.pins);
     this.mapEl.style.background = this.skyFor(this.model.progress);
+    this.starter = this.starterInfo(s);
     this.backdropState();
+    this.setFocus();
     this.updateAll();
   }
 
-  // Q1a: what the stone backdrop shows (recomputed on state change only, never per frame): gold per ring = lit fraction of the lanterns on it,
-  // colour wash per region = its lit fraction (grey-blue stone -> region accent as it fills)
+  // Tree look port: what the backdrop shows (recomputed on state change only, never per frame): the progress of each distance ring (owned real
+  // lanterns in the tier / all real lanterns in it; a ring that has just reached 100% blooms once) and a colour wash per woken region.
   backdropState() {
     const m = this.model;
-    this.ringLit = ringLitFractions(this.def, (id) => m.cache[id] && m.cache[id].s === 'lit', this.view.ringR);
+    const nR = this.view.ringTiers.length;
+    const fr = ringProgress(this.def, this.view.ringOf, nR, (id) => !!(m.cache[id] && m.cache[id].s === 'lit'));
+    const now = performance.now();
+    fr.forEach((f, k) => { if (this.ringPrev[k] !== undefined && this.ringPrev[k] < 1 && f >= 1) this.ringBloom[k] = now; this.ringPrev[k] = f; });
+    this.ringFrac = fr;
     this.tints = this.view.regions.filter((r) => r.ids.length).map((r) => {
       const col = r.kind === 'cluster' ? r.color : '#ffd9a0';
       const f = r.kind === 'rings' ? 0 : r.lit / r.ids.length;
       const awake = r.kind === 'cluster' ? m.awake(r) : r.lit > 0;
-      return { x: r.x, y: r.y, r: Math.max(r.r * 2.1, 260), frac: awake ? 0.45 + 0.55 * f : 0, color0: hexA(col, 0.5), color1: hexA(col, 0) }; // R3: a woken region is tinted at once and saturates as it fills; unwoken stone stays grey-blue
+      return { x: r.x, y: r.y, r: Math.max(r.r * 2.1, 260), frac: awake ? 0.45 + 0.55 * f : 0, color0: hexA(col, 0.5), color1: hexA(col, 0) }; // a woken region is tinted at once and saturates as it fills
     });
   }
 
@@ -374,7 +390,7 @@ export class TreeScreen {
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
     this.canvas.width = Math.round(this.W * this.DPR);
     this.canvas.height = Math.round(this.H * this.DPR);
-    if (this.bg) { this.bg.ensureWorld(this.view.webR, this.view.ringR, this.small, this.view.threads); this.bg.ensureScreen(this.W, this.H, this.small); } // no-ops unless the size class changed
+    if (this.bg) { this.bg.ensureSky(this.small); this.bg.ensureScreen(this.W, this.H, this.small); } // no-ops unless the size class changed
     this.camSig = '';
     this.fr = null;
     this.dirty();
@@ -484,7 +500,7 @@ export class TreeScreen {
   radiusOf(id, lod) {
     const t = this.tiers.tier[id] || 'dot'; const d = this.tiers.d[id];
     let D = screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1);
-    if (t === 'landmark') D = Math.max(D, this.presence(id) * (this.uk || 1) * this.boost()); // R2: landmarks keep their presence when zoomed out (overlaps collapse, see collapseFar)
+    if (t === 'landmark') D = Math.max(D, this.presence(id) * (this.uk || 1) * this.boost()) * LOOK.medSize; // R2: landmarks keep their presence when zoomed out (overlaps collapse, see collapseFar); medSize = the locked look scale
     return D / 2;
   }
   /** R2: zoomed-out landmark medallion diameter in px by kind (hearts biggest), and how much of it applies at this zoom (full at 0.3 and below, none at NEAR). */
@@ -541,7 +557,12 @@ export class TreeScreen {
     const lod = this.lodNow = this.lod();
     // the plain dusk sky is the map element's CSS background (skyFor), so a frame only clears the canvas
     c.clearRect(0, 0, W, H);
-    if (this.bg) { this.bg.drawWorld(c, cam, W, H, this.view.ringR, this.ringLit, this.tints); this.bg.drawScreen(c, W, H); } // stone wall (baked) + lit rings + haze/vignette
+    if (this.bg) { // night sky (baked) + moon and vignette (baked) + colour washes + the rune rings
+      this.bg.drawSky(c, cam, W, H); this.bg.drawScreen(c, W, H); this.bg.drawTints(c, cam, W, H, this.tints);
+      const nowMs = performance.now();
+      const rings = this.view.ringTiers.map((q, k) => { const bl = !this.reduced && this.ringBloom[k] ? clamp(1 - (nowMs - this.ringBloom[k]) / 1800, 0, 1) : 0; if (bl > 0) this.animNeeded = true; return { r: q.r, name: q.name, frac: this.ringFrac[k] || 0, bloom: bl }; });
+      this.bg.drawRings(c, cam, W, H, rings, FONT_HEAD);
+    }
     const pulse = this.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 420);
     const [hx, hy] = this.toS(0, 0);
     const R = (1100 + 700 * p) * z + 40;
@@ -556,11 +577,8 @@ export class TreeScreen {
     this.drawFarSlots(lod);
     this.drawRegions();
     this.drawToolCoins(lod);
-    this.drawThreads(lod);
+    this.drawWeb(t);
     const vx0 = cam.x - W / 2 / z - 80, vx1 = cam.x + W / 2 / z + 80, vy0 = cam.y - H / 2 / z - 80, vy1 = cam.y + H / 2 / z + 80;
-    const inV = (n) => n.x >= vx0 && n.x <= vx1 && n.y >= vy0 && n.y <= vy1;
-    this.drawLinks(lod, inV);
-    if (this.selected) this.drawChain(this.selected);
     for (const r of this.view.regions) for (const s of r.display || []) { const [sx, sy] = this.toS(s.x, s.y); if (sx > -40 && sx < W + 40 && sy > -40 && sy < H + 40) this.seal(c, sx, sy, Math.max(lod === 'far' ? 2.5 : 6, 15 * z), 'gold'); }
     // lanterns (culled through the spatial index; at far zoom every lantern is a dot, batched into one path per colour, halos too)
     const labels = [];
@@ -569,8 +587,8 @@ export class TreeScreen {
     const batches = new Map();
     const coins = [];
     const hw = W / 2, hh = H / 2, cx0 = cam.x, cy0 = cam.y;
-    const selR = this.selected ? m.region(this.selected) : null; // C3: while a lantern is selected, other constellations step back
-    const DIMA = [1, 0.2, 0.35, 0.55];
+    const foc = this.focus; // while a lantern is hovered or selected, everything off its path from your lit lanterns steps back
+    const DIMA = [1, 0.2, 0.35, 0.55, 0.4];
     const dot = (style, dim, x, y, r) => { const k = dim ? `D${dim}${style}` : style; let pa = batches.get(k); if (!pa) { pa = new Path2D(); batches.set(k, pa); } pa.moveTo(x + r, y); pa.arc(x, y, r, 0, 6.2832); };
     const ids = this.idsIn(vx0, vy0, vx1, vy1);
     const merged = this.farMerged = lod !== 'near' ? this.collapseFar(ids) : new Map(); // FAR and MID: landmarks closer than their drawn size collapse into one badge with a count
@@ -582,7 +600,7 @@ export class TreeScreen {
       const ce = m.cache[id];
       const s = ce.s;
       if (s === 'fog' && lod === 'far') continue;
-      const dim = this.onlyLight && s !== 'ready' ? 1 : selR && s !== 'ready' && m.region(id) !== selR ? 2 : far && !this.selected && s === 'notyet' ? 3 : 0;
+      const dim = this.onlyLight && s !== 'ready' ? 1 : foc && !foc.nodes.has(id) ? 4 : far && !foc && s === 'notyet' ? 3 : 0;
       const tier = this.tierOfId(id);
       if (lod !== 'near' && merged.has(id) && merged.get(id) !== id) continue;
       if (far && tier !== 'landmark') { // FAR shows landmarks only; a lantern you can light now is a small glowing dot (batched)
@@ -599,10 +617,13 @@ export class TreeScreen {
       c.globalAlpha = 1;
       labels.push({ id, x: sx, y: sy, r, s });
     }
+    this.drawDisplay(c, lod);
     for (const q of coins) { // R2: medallions (landmark tier): picture coin + gold rim + progress ring + glow; the can-light rays and the NEW flag stay
       c.globalAlpha = DIMA[q.dim];
       if (q.s === 'ready') { this.affordMark(c, q.x, q.y, q.r, pulse, false, best && best.id === q.id); this.animNeeded = true; }
+      if (this.starter && q.id === this.starter.heart) this.spiritHalo(c, q, pulse);
       this.drawCoin(c, q, best && best.id === q.id);
+      if (this.starter && q.id === this.starter.heart) this.spiritTag(c, q);
       if (lod !== 'near' && merged.get(q.id) === q.id && this.farCount.get(q.id) > 0) this.countBadge(c, q.x + q.r * 0.78, q.y + q.r * 0.7, this.farCount.get(q.id));
       if (q.ce.fresh) this.newFlag(c, q.x, q.y - q.r - 9);
       if (this.selected === q.id) { c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(q.x, q.y, q.r + 12, 0, 7); c.stroke(); c.setLineDash([]); }
@@ -615,6 +636,8 @@ export class TreeScreen {
       c.globalAlpha = 1;
       if (this.selected && this.tierOfId(this.selected) !== 'landmark') { const n = this.def.nodes[this.selected]; const [sx, sy] = this.toS(n.x, n.y); c.strokeStyle = '#6fd3c5'; c.lineWidth = 2; c.beginPath(); c.arc(sx, sy, 8, 0, 7); c.stroke(); }
     }
+    c.fillStyle = `rgba(4,7,18,${clamp((1 - LOOK.bright) * 0.6, 0, 0.7).toFixed(3)})`; c.fillRect(0, 0, W, H); // the locked 'bright' level: one flat veil under the names
+    this.hubBoxes = this.hubCaptionBoxes(hx, hy, this.hubR);
     this.drawLabels(labels, lod);
     this.drawRegionNames(lod);
     // hub lantern (R2): a gold-rimmed lantern-glass coin with the hearth lantern inside; its glow grows with total progress
@@ -624,13 +647,15 @@ export class TreeScreen {
     hl.addColorStop(1, 'rgba(255,154,46,0)');
     c.fillStyle = hl;
     c.beginPath(); c.arc(hx, hy, hr * 2.6, 0, 7); c.fill();
-    this.coinBody(c, 'hub', '#ffd27a', 'lit', hx, hy, hr);
-    this.rim(c, hx, hy, hr, 'lit');
+    this.drawHub(c, hx, hy, hr);
+    this.hubCaption(c, hx, hy, hr);
     if (lod === 'far') {
       const ty = 10 * (this.uk || 1); // docked at the top of the map, never among the landmarks
       if (!this.lastRB.concat(this.lblBoxes || []).some((b) => b.x0 < W / 2 + 100 && b.x1 > W / 2 - 100 && b.y0 < ty + 18 && b.y1 > ty)) {
         c.font = `${13 * (this.uk || 1)}px ${FONT_UI}`; c.fillStyle = 'rgba(255,217,160,.9)'; c.textAlign = 'center'; c.textBaseline = 'top';
-        c.fillText(`The Hollow remembers: ${Math.round(p * 100)}%`, W / 2, ty);
+        const rt = `The Hollow remembers: ${Math.round(p * 100)}%`, rw = c.measureText(rt).width + 16; // on a plate: it sits over the ring names at the far zoom
+        c.fillStyle = 'rgba(8,11,26,.72)'; c.beginPath(); c.roundRect(W / 2 - rw / 2, ty - 3, rw, 21 * (this.uk || 1), 10); c.fill();
+        c.fillStyle = 'rgba(255,217,160,.95)'; c.fillText(rt, W / 2, ty);
       }
     }
     if (best) this.drawBestMarker(c, t, lod);
@@ -681,7 +706,7 @@ export class TreeScreen {
     }
     if (lod === 'far') {
       const [lx, ly] = this.toS(0, -this.view.beyondR);
-      if (ly > 70 && ly < this.H - 20) { c.font = `14px ${FONT_UI}`; c.fillStyle = 'rgba(179,187,207,.85)'; c.fillText('Beyond: parts of the Hollow you have not reached', lx, ly); }
+      if (ly > 70 && ly < this.H - 20) { c.font = `14px ${FONT_UI}`; const bt = 'Beyond: parts of the Hollow you have not reached', bw = c.measureText(bt).width + 16; c.fillStyle = 'rgba(8,11,26,.72)'; c.beginPath(); c.roundRect(lx - bw / 2, ly - 11, bw, 22, 11); c.fill(); c.fillStyle = 'rgba(190,198,218,.92)'; c.fillText(bt, lx, ly); }
     }
   }
 
@@ -724,7 +749,7 @@ export class TreeScreen {
     if (lit || s === 'ready' || isBest) { // glow: the brightest things are goals, lit hearts and the best next
       const warm = lit ? tint : '#ffd78a';
       const g = c.createRadialGradient(x, y, r * 0.85, x, y, r * (lit ? 1.9 : 2.1));
-      g.addColorStop(0, hexA(warm, lit ? (n.kind === 'heart' ? 0.42 : 0.3) : 0.34)); g.addColorStop(1, hexA(warm, 0));
+      g.addColorStop(0, hexA(warm, (lit ? (n.kind === 'heart' ? 0.42 : 0.3) : 0.34) * LOOK.glow)); g.addColorStop(1, hexA(warm, 0));
       c.fillStyle = g; c.beginPath(); c.arc(x, y, r * (lit ? 1.9 : 2.1), 0, 7); c.fill();
     }
     this.coinBody(c, art, tint, state, x, y, r);
@@ -735,6 +760,68 @@ export class TreeScreen {
     if (f >= 0 && r >= 16) this.coinProgress(c, x, y, r + 10, f, col);
     if (state === 'dim' && !masked && s !== 'fog' && r >= 18) this.padlock(c, x + r * 0.72, y - r * 0.72, r);
     c.globalAlpha = ga;
+  }
+  // ------------------------------------------------------------------ the hub shows who you are (tree look port: 'STARTER HANDLING IN THE TREE')
+  /** { hero, weapon, heart, seal, caption, color, art } from the save's validated starter notes, or null. Names come from the game data. */
+  starterInfo(save) {
+    const st = this.view.starterOf ? this.view.starterOf(save && save.notes) : null;
+    if (!st) return null;
+    const ch = this.data && this.data.characters ? this.data.characters[st.hero] : null, w = this.data && this.data.weapons ? this.data.weapons[st.weapon] : null;
+    const hn = ch && typeof ch.name === 'string' ? ch.name.split(',')[0].slice(0, 24) : '', wn = w && typeof w.name === 'string' ? w.name.slice(0, 32) : '';
+    const reg = this.view.regions.find((r) => r.kind === 'cluster' && r.heart === st.heart);
+    return { ...st, caption: hn && wn ? `${hn} · ${wn}` : hn || wn, color: reg ? reg.color : '#ffd9a0', art: reg ? reg.art : '' };
+  }
+  portraitImg(hero) {
+    const im = this.portraitOf(hero, () => this.dirty());
+    return im && im.complete && im.naturalWidth > 0 ? im : null;
+  }
+  /** The hub coin: the chosen hero's portrait with the starter spirit's emblem as a small badge; the plain hearth lantern when no starter is known. */
+  drawHub(c, x, y, r) {
+    const st = this.starter;
+    if (!st) { this.coinBody(c, 'hub', '#ffd27a', 'lit', x, y, r); this.rim(c, x, y, r, 'lit'); return; }
+    const g = c.createRadialGradient(x - r * 0.3, y - r * 0.4, 0, x, y, r); g.addColorStop(0, '#3b4a86'); g.addColorStop(1, '#171c3a');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+    const im = this.portraitImg(st.hero);
+    if (im) {
+      c.save(); c.beginPath(); c.arc(x, y, r - 1, 0, 7); c.clip();
+      const k = (2 * r) / Math.min(im.naturalWidth, im.naturalHeight * 0.78); // cover the coin with the head and shoulders
+      const w = im.naturalWidth * k, h = im.naturalHeight * k;
+      c.imageSmoothingEnabled = true; c.drawImage(im, x - w / 2, y - r - h * 0.04, w, h);
+      c.restore();
+    } else this.coinBody(c, 'hero', '#ffd9a0', 'lit', x, y, r);
+    this.rim(c, x, y, r, 'lit');
+    const br = r * 0.42, bx = x + r * 0.7, by = y + r * 0.68; // the starter spirit's emblem
+    c.fillStyle = '#10152e'; c.beginPath(); c.arc(bx, by, br + 2, 0, 7); c.fill();
+    this.coinBody(c, emblemFor({ kind: 'heart' }, false, st.art), st.color, 'lit', bx, by, br);
+    c.strokeStyle = safeTint(st.color); c.lineWidth = Math.max(1.5, br * 0.12); c.beginPath(); c.arc(bx, by, br + 1, 0, 7); c.stroke();
+  }
+  hubCaptionBoxes(hx, hy, hr) {
+    const uk = this.uk || 1;
+    const out = [{ x0: hx - hr - 4, x1: hx + hr + 4, y0: hy - hr - 4, y1: hy + hr + 4, id: 'hub', lm: true }];
+    if (this.starter && this.starter.caption) { const w = this.mw(this.ctx, `${13 * uk}px ${FONT_UI}`, this.starter.caption) + 12; out.push({ x0: hx - w / 2, x1: hx + w / 2, y0: hy + hr + 4, y1: hy + hr + 4 + 20 * uk, id: 'hub', lm: true }); }
+    return out;
+  }
+  /** Caption under the hub: 'Wren . Chain Lightning'. */
+  hubCaption(c, hx, hy, hr) {
+    if (!this.starter || !this.starter.caption) return;
+    const uk = this.uk || 1; c.font = `${13 * uk}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineJoin = 'round';
+    const y = hy + hr + 8;
+    c.lineWidth = 4; c.strokeStyle = 'rgba(5,8,20,.9)'; c.strokeText(this.starter.caption, hx, y); c.fillStyle = '#fff1cf'; c.fillText(this.starter.caption, hx, y);
+  }
+  /** The starter spirit's heart: a halo in its own colour that breathes (still with Calm motion). */
+  spiritHalo(c, q, pulse) {
+    const col = safeTint(this.starter.color), rad = Math.max(110 * this.cam.z, 70) * (this.uk || 1);
+    const g = c.createRadialGradient(q.x, q.y, 0, q.x, q.y, rad); g.addColorStop(0, hexA(col, 1)); g.addColorStop(0.25, hexA(col, 0.45)); g.addColorStop(0.6, hexA(col, 0.12)); g.addColorStop(1, hexA(col, 0));
+    c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = (0.4 + 0.2 * pulse) * Math.min(1, LOOK.glow + 0.2); c.fillStyle = g; c.beginPath(); c.arc(q.x, q.y, rad, 0, 7); c.fill(); c.restore();
+    c.strokeStyle = hexA(col, 0.5 + 0.2 * pulse); c.lineWidth = 2; c.beginPath(); c.arc(q.x, q.y, q.r * 1.55, 0, 7); c.stroke();
+  }
+  spiritTag(c, q) {
+    const uk = this.uk || 1; const txt = 'Your spirit'; c.font = `700 ${13 * uk}px ${FONT_UI}`;
+    const w = this.mw(c, c.font, txt) + 22 * uk, h = 22 * uk, x = q.x - w / 2, y = q.y - q.r * 1.55 - 8 - h;
+    if (x + w < 0 || x > this.W || y + h < 0 || y > this.H) return;
+    const col = safeTint(this.starter.color);
+    c.beginPath(); c.roundRect(x, y, w, h, h / 2); c.fillStyle = 'rgba(14,18,40,.92)'; c.fill(); c.strokeStyle = col; c.lineWidth = 1.6; c.stroke();
+    c.fillStyle = mix(col, '#fff8e6', 0.6); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, q.x, y + h / 2 + 1);
   }
   /** Tool groups with no landmark of their own (Almanac, Satchel, ...) show their picture coin behind their lanterns while zoomed out. */
   drawToolCoins(lod) {
@@ -761,33 +848,6 @@ export class TreeScreen {
     if (this.atlas.pending) this.dirty();
   }
   toolR(bo) { return (this.small ? 24 : 38) * (this.uk || 1) * (0.6 + 0.4 * bo); }
-  /** Threads of light from the hearth to each woken constellation / tool group (branch colour, glowing, with small light motes; static, so Calm needs nothing). */
-  drawThreads(lod) {
-    const c = this.ctx; const m = this.model; const [hx, hy] = this.toS(0, 0); const hr = this.hubR;
-    const small = this.small; const uk = this.uk || 1;
-    for (const r of this.view.regions) {
-      if (r.kind === 'rings' || !r.ids.length) continue;
-      let tx, ty, lit, col;
-      if (r.kind === 'cluster' && r.heartAt) { tx = r.heartAt[0]; ty = r.heartAt[1]; lit = m.awake(r); col = r.color; }
-      else if (r.kind === 'tool') { tx = r.x; ty = r.y; lit = r.lit > 0; col = '#f3dcae'; }
-      else continue;
-      const [ex, ey] = this.toS(tx, ty);
-      if (Math.max(hx, ex) < -20 || Math.min(hx, ex) > this.W + 20 || Math.max(hy, ey) < -20 || Math.min(hy, ey) > this.H + 20) continue;
-      const dx = ex - hx, dy = ey - hy, L = Math.hypot(dx, dy);
-      if (L < hr + 12) continue;
-      const ux = dx / L, uy = dy / L, ax = hx + ux * (hr + 3), ay = hy + uy * (hr + 3);
-      c.lineCap = 'round';
-      if (lit) {
-        c.strokeStyle = hexA(col, 0.26); c.lineWidth = small ? 5 : 7; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke();
-        c.strokeStyle = mix(col, '#fff8e6', 0.3); c.lineWidth = small ? 1.4 : 1.8; c.stroke();
-        c.fillStyle = '#fffaf0'; const step = 30 * uk; const path = new Path2D();
-        for (let d = hr + 30 * uk; d < L - 34; d += step) { path.moveTo(hx + ux * d + 2.2, hy + uy * d); path.arc(hx + ux * d, hy + uy * d, 2.2, 0, 6.2832); }
-        c.fill(path);
-      } else {
-        c.strokeStyle = 'rgba(150,165,205,.28)'; c.lineWidth = 2; c.setLineDash([3, 8]); c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
-      }
-    }
-  }
   costText(nx) {
     if (!nx) return '';
     const p = [];
@@ -890,77 +950,127 @@ export class TreeScreen {
     }
   }
 
-  // LINKS: lit trails only between lit lanterns + a short fading spark from a lit lantern toward each open one (links work from either side);
-  // lanterns around the hub get a ray from the hub; far links are never drawn (the dotted path shows them on select).
-  drawLinks(lod, inV) {
-    if (lod === 'far') return;
-    const c = this.ctx; const z = this.cam.z; const m = this.model; const V = this.view;
-    c.lineCap = 'round';
-    const nearHub = (n) => Math.hypot(n.x, n.y) <= V.nearHub;
-    const OPEN = { ready: 'rgba(255,246,224,.85)', open: 'rgba(216,178,106,.7)', challenge: 'rgba(111,211,197,.7)' };
-    for (const e of this.def.edges) {
-      const b = this.def.nodes[e.to];
-      const sb = m.cache[e.to].s;
-      let a, aLit, sa = null;
-      if (e.from === 'hub') {
-        const r = m.region(e.to);
-        if (r && r.kind === 'cluster' && r.heartAt) { if (r.heart === e.to) continue; a = { x: r.heartAt[0], y: r.heartAt[1] }; aLit = m.awake(r); }
-        else if (r && r.kind === 'tool') { a = { x: r.x, y: r.y }; aLit = true; }
-        else if (nearHub(b)) continue; // hub rays below
-        else continue;
-      } else { a = this.def.nodes[e.from]; aLit = m.lit(e.from); sa = m.cache[e.from].s; }
-      if (!inV(a) && !inV(b)) continue;
-      if (Math.hypot(a.x - b.x, a.y - b.y) > V.linkFar) continue;
-      if (e.from !== 'hub' && nearHub(a) && nearHub(b)) continue; // hub area: radial rays instead of criss-cross threads
-      const [ax, ay] = this.toS(a.x, a.y), [bx, by] = this.toS(b.x, b.y);
-      const bLit = m.lit(e.to);
-      if (aLit && bLit) this.trail(c, ax, ay, bx, by, this.colorOf(e.to), z);
-      else if (aLit && OPEN[sb]) this.spark(c, ax, ay, bx, by, OPEN[sb], z);
-      else if (bLit && sa && OPEN[sa]) this.spark(c, bx, by, ax, ay, OPEN[sa], z);
+  // ------------------------------------------------------------------ the web of threads (tree look port, LOCKED from the sandbox)
+  // Every drawn thread is a real link between two real lanterns (a requirement edge, or a render-only cross link between neighbouring regions).
+  // Three states: LIT (both ends lit: bright, glowing, in the spirit's colour), AVAILABLE (one end lit: medium) and LOCKED (neither: faint).
+  // The geometry is built once on open (buildThreads); the state of each thread is read from the model every frame, batched into one path per style.
+  buildThreads() {
+    const def = this.def, V = this.view, m = this.model;
+    const out = [], seen = new Set();
+    const P = (id) => (id === 'hub' ? { x: 0, y: 0 } : def.nodes[id]);
+    const add = (a, b, cross) => {
+      if (a === b) return;
+      const k = a < b ? `${a}|${b}` : `${b}|${a}`;
+      if (seen.has(k)) return;
+      const A = P(a), B = P(b);
+      if (!A || !B || (a !== 'hub' && A.teaser) || B.teaser) return; // teasers are fog, not threads
+      if (!cross && Math.hypot(A.x - B.x, A.y - B.y) > V.linkFar) return; // a requirement longer than a thread can be is shown by the focus path, never across the web (cross links were already picked by distance by the atlas)
+      seen.add(k);
+      out.push({ a, b, ax: A.x, ay: A.y, bx: B.x, by: B.y, cross, col: this.colorOf(cross ? a : b) });
+    };
+    for (const e of def.edges) {
+      let from = e.from;
+      if (from === 'hub') { const r = m.region(e.to); if (r && r.kind === 'cluster' && r.heart && r.heart !== e.to) from = r.heart; } // a far seal hangs from its spirit's heart, not from the hub
+      add(from, e.to, false);
     }
-    const [hx, hy] = this.toS(0, 0);
-    for (const r of V.regions) {
-      if (r.kind !== 'rings') continue;
-      for (const id of r.ids) {
-        const n = this.def.nodes[id]; if (!nearHub(n)) continue;
-        const s = m.cache[id].s; if (s !== 'lit' && s !== 'ready' && s !== 'open') continue;
-        const [bx, by] = this.toS(n.x, n.y); const k = (30 * z) / Math.max(1, Math.hypot(bx - hx, by - hy));
-        const ax = hx + (bx - hx) * k, ay = hy + (by - hy) * k;
-        if (s === 'lit' || m.lit(id)) this.trail(c, ax, ay, bx, by, '#ffd9a0', z); else this.spark(c, ax, ay, bx, by, s === 'ready' ? 'rgba(255,246,224,.7)' : 'rgba(216,178,106,.55)', z);
+    for (const l of V.links) if (def.nodes[l[0]] && def.nodes[l[1]]) add(l[0], l[1], true);
+    this.threads = out;
+    // display-only medallions (a hero's keepsake coin, the Twilight night, reserved and far slots): drawn quietly, never tapped, never counted as progress
+    const KIND_ART = { hero: 'hero', night: 'moon_dusk', reserved: 'fog', chapter: 'forest', far: 'fog' };
+    this.display = (V.regionRecords || []).filter((r) => r && r.display && Array.isArray(r.centre) && r.centre.every(Number.isFinite) && Object.hasOwn(KIND_ART, r.kind))
+      .map((r) => ({ x: r.centre[0], y: r.centre[1], name: String(r.name || '').slice(0, 32), kind: r.kind, hero: r.kind === 'hero' && typeof r.hero === 'string' ? r.hero : '', art: KIND_ART[r.kind], lit: !!r.lit, reserved: !!r.reserved }));
+    this.adj = new Map();
+    out.forEach((th, i) => { if (th.cross) return; for (const [x, y] of [[th.a, th.b], [th.b, th.a]]) { if (!this.adj.has(x)) this.adj.set(x, []); this.adj.get(x).push({ to: y, ti: i }); } });
+  }
+
+  /** Focus = the lantern under the pointer, else the selected one: the shortest chain of real threads from the nearest lit lantern (or the hub) to it. */
+  setFocus() {
+    const id = this.hoverFocus || this.selected;
+    if (!id || !this.model || !this.adj || !this.def.nodes[id]) { this.focus = null; return; }
+    const m = this.model; const isLit = (n) => n === 'hub' || m.lit(n);
+    const nodes = new Set([id]), edges = new Set();
+    if (!isLit(id)) {
+      const prev = new Map(), pe = new Map(), q = [];
+      for (const n of this.adj.keys()) if (isLit(n)) { prev.set(n, null); q.push(n); }
+      for (let h = 0; h < q.length && !prev.has(id); h++) { const u = q[h]; for (const { to, ti } of this.adj.get(u) || []) { if (prev.has(to)) continue; prev.set(to, u); pe.set(to, ti); q.push(to); } }
+      let u = id;
+      while (prev.has(u) && prev.get(u) !== null) { const p = prev.get(u); edges.add(pe.get(u)); nodes.add(p); u = p; }
+      if (prev.has(u) && prev.get(u) === null) nodes.add(u);
+    }
+    this.focus = { id, nodes, edges };
+  }
+
+  /** Display-only medallions of the atlas. A hero shows its portrait (lit once that hero is awake), Twilight is lit, reserved and far slots are dim dashed coins. */
+  drawDisplay(c, lod) {
+    if (!this.display || !this.display.length) return;
+    const z = this.cam.z, uk = this.uk || 1, s = this.api.save();
+    const r = clamp(34 * z, 19, 80) * LOOK.medSize * uk;
+    for (const d of this.display) {
+      const [x, y] = this.toS(d.x, d.y);
+      if (x < -r - 60 || x > this.W + r + 60 || y < -r - 40 || y > this.H + r + 60) continue;
+      const awake = d.kind === 'hero' ? !!(s && s.chars && Object.hasOwn(s.chars, d.hero) && s.chars[d.hero] && s.chars[d.hero].woke) : d.lit;
+      c.globalAlpha = this.focus ? 0.4 : 1;
+      if (awake) { const g = c.createRadialGradient(x, y, r * 0.85, x, y, r * 1.8); g.addColorStop(0, hexA('#ffd9a0', 0.3 * LOOK.glow)); g.addColorStop(1, hexA('#ffd9a0', 0)); c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 1.8, 0, 7); c.fill(); }
+      const im = d.hero ? this.portraitImg(d.hero) : null;
+      if (im) {
+        c.fillStyle = '#1a2040'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.save(); c.beginPath(); c.arc(x, y, r - 1, 0, 7); c.clip(); c.globalAlpha *= awake ? 1 : 0.55;
+        const k = (2 * r) / Math.min(im.naturalWidth, im.naturalHeight * 0.78); c.drawImage(im, x - (im.naturalWidth * k) / 2, y - r - im.naturalHeight * k * 0.04, im.naturalWidth * k, im.naturalHeight * k);
+        c.restore();
+      } else this.coinBody(c, d.art, '#ffd9a0', awake ? 'lit' : 'dim', x, y, r);
+      c.globalAlpha = this.focus ? 0.4 : 1;
+      this.rim(c, x, y, r, awake ? 'lit' : 'dim');
+      if (!awake && !d.reserved) this.padlock(c, x + r * 0.72, y - r * 0.72, r);
+      if (lod !== 'far' && d.name) {
+        const fs = Math.round((this.small ? 15 : 19) * uk); c.font = `${fs}px ${FONT_HEAD}`; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineJoin = 'round';
+        c.lineWidth = 4; c.strokeStyle = 'rgba(8,10,24,.92)'; c.strokeText(d.name, x, y + r + 6); c.fillStyle = awake ? '#fff0c8' : '#d4daf0'; c.fillText(d.name, x, y + r + 6);
       }
+      c.globalAlpha = 1;
     }
   }
 
-  curve(c, ax, ay, bx, by) { const mx = (ax + bx) / 2, my = (ay + by) / 2; const dx = bx - ax, dy = by - ay; c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(mx - dy * 0.12, my + dx * 0.12, bx, by); }
-  trail(c, ax, ay, bx, by, col, z) {
-    c.strokeStyle = hexA(col, 0.42); c.lineWidth = Math.max(3, 8 * z); // R3: the lit trail glows in the spirit's own colour, its core is that colour lifted toward candle-white
-    c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
-    c.strokeStyle = mix(col, '#fff8e6', 0.62); c.lineWidth = Math.max(1.4, 2.2 * z); c.stroke();
-  }
-  spark(c, ax, ay, bx, by, col, z) { // a short lit stub that fades out: "the light reaches toward this one"
-    const ex = ax + (bx - ax) * 0.62, ey = ay + (by - ay) * 0.62;
-    const g = c.createLinearGradient(ax, ay, ex, ey); g.addColorStop(0, col); g.addColorStop(1, col.replace(/[\d.]+\)$/, '0)'));
-    c.strokeStyle = g; c.lineWidth = Math.max(1.4, 2 * z); c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke();
-  }
-  // on select: the route from what you own to this lantern as a dotted brass path, including far prerequisites
-  drawChain(id) {
-    const c = this.ctx; const seen = new Set(); const st = [id]; let k = 0;
-    c.setLineDash([2, 5]); c.lineWidth = 2; c.strokeStyle = 'rgba(245,223,174,.85)';
-    while (st.length && k++ < 40) {
-      const x = st.pop(); if (seen.has(x)) continue; seen.add(x);
-      const nx = this.def.nodes[x];
-      const ps = [...(this.model.parents.get(x) || []), ...(nx.requiresAny || [])].filter((q) => q !== 'hub');
-      if (!this.model.lit(x) && ps.some((q) => this.model.lit(q))) { // one lit neighbour is enough: show only that link
-        const q = ps.find((y) => this.model.lit(y)); const a = this.def.nodes[q]; const [ax, ay] = this.toS(a.x, a.y), [bx, by] = this.toS(nx.x, nx.y); this.curve(c, ax, ay, bx, by); c.stroke(); continue;
-      }
-      for (const pid of ps) {
-        const a = this.def.nodes[pid]; const [ax, ay] = this.toS(a.x, a.y), [bx, by] = this.toS(nx.x, nx.y);
-        this.curve(c, ax, ay, bx, by); c.stroke();
-        if (!this.model.lit(pid)) st.push(pid);
+  drawWeb(t) {
+    const c = this.ctx, z = this.cam.z, cam = this.cam, m = this.model, W = this.W, H = this.H, foc = this.focus;
+    const sm = (x, a, b) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+    const lockA = sm(z, 0.1, 0.2), crossA = sm(z, 0.5, 0.66);
+    const bright = 0.55 + 0.45 * LOOK.bright;
+    const buckets = new Map();
+    const th = this.threads || [];
+    for (let i = 0; i < th.length; i++) {
+      const e = th[i];
+      const ax = (e.ax - cam.x) * z + W / 2, ay = (e.ay - cam.y) * z + H / 2, bx = (e.bx - cam.x) * z + W / 2, by = (e.by - cam.y) * z + H / 2;
+      if ((ax < -40 && bx < -40) || (ax > W + 40 && bx > W + 40) || (ay < -40 && by < -40) || (ay > H + 40 && by > H + 40)) continue;
+      const ao = e.a === 'hub' || m.lit(e.a), bo = m.lit(e.b);
+      const st = ao && bo ? 2 : e.cross ? 0 : ao || bo ? 1 : 0;
+      const al = st > 0 ? 1 : e.cross ? crossA : lockA;
+      if (al < 0.02) continue;
+      const fm = foc ? (foc.edges.has(i) ? 1 : 0.4) : 1;
+      const col = st === 0 ? '#8592c4' : e.col;
+      const key = `${st}|${col}|${e.cross ? 1 : 0}|${(al * fm).toFixed(2)}`;
+      let bk = buckets.get(key); if (!bk) { bk = { st, col, a: al * fm, cross: e.cross, path: new Path2D() }; buckets.set(key, bk); }
+      bk.path.moveTo(ax, ay); bk.path.lineTo(bx, by);
+    }
+    c.lineCap = 'round';
+    for (const bk of [...buckets.values()].sort((p, q) => p.st - q.st)) {
+      if (bk.st === 2) {
+        c.globalAlpha = bk.a; c.strokeStyle = hexA(bk.col, 0.2 * LOOK.glow); c.lineWidth = 5 * Math.min(z, 1.2) + 3; c.stroke(bk.path);
+        c.globalAlpha = bk.a * LOOK.thrLit * bright; c.strokeStyle = mix(bk.col, '#fff6e0', 0.35); c.lineWidth = Math.max(1.5, 2 * z + 0.5); c.stroke(bk.path);
+      } else if (bk.st === 1) {
+        c.globalAlpha = bk.a * LOOK.thrAvail * bright; c.strokeStyle = bk.col; c.lineWidth = Math.max(1.2, 1.5 * z + 0.4); c.stroke(bk.path);
+      } else {
+        c.globalAlpha = bk.a * LOOK.thrLocked * (bk.cross ? 0.8 : 1); c.strokeStyle = bk.col; c.lineWidth = bk.cross ? Math.max(0.8, 0.8 * z) : Math.max(0.9, z); c.stroke(bk.path);
       }
     }
-    c.setLineDash([]);
+    c.globalAlpha = 1;
+    if (foc && foc.edges.size) { // the path from your nearest lit lantern, dashed and bright (it moves unless Calm motion is on)
+      c.save(); c.setLineDash([11, 8]); c.lineDashOffset = this.reduced ? 0 : -t / 45; c.lineWidth = Math.max(2.2, 2.6 * z); c.strokeStyle = '#fff1c4'; c.globalAlpha = 0.96;
+      c.beginPath();
+      for (const i of foc.edges) { const e = th[i]; const [ax, ay] = this.toS(e.ax, e.ay), [bx, by] = this.toS(e.bx, e.by); c.moveTo(ax, ay); c.lineTo(bx, by); }
+      c.stroke(); c.restore();
+      if (!this.reduced) this.animNeeded = true;
+    }
   }
+
   // CAN LIGHT NOW (locked): candle-white ring + 8 rays on every affordable lantern; the warm halo is for the ONE best-next lantern
   affordMark(c, x, y, r, pulse, far, isBest) {
     if (isBest || far) {
@@ -1069,6 +1179,8 @@ export class TreeScreen {
       : lod === 'mid' ? list.filter((L) => quiet(L) || (tr(L) !== 'dot' && L.s !== 'notyet'))
         : list.filter((L) => L.s !== 'notyet' || L.id === this.selected); // NEAR as before (the sheet's tier table says dots carry no name; its zoom table says NEAR shows all names: kept readable)
     if (this.onlyLight) pick = pick.filter((L) => L.s === 'ready' || L.id === this.selected);
+    const fid = this.focus ? this.focus.id : null;
+    pick = pick.filter((L) => quiet(L) || L.id === fid || idHash(L.id) < LOOK.labelDensity); // the locked label density: small names show for a share of lanterns, the ones that matter always
     const lms = list.filter((L) => tr(L) === 'landmark' && !(this.farMerged && this.farMerged.has(L.id) && this.farMerged.get(L.id) !== L.id && L.id !== this.selected) && (lod !== 'far' || L.s !== 'notyet') && (!this.onlyLight || L.s === 'ready' || L.id === this.selected));
     pick = pick.filter((L) => tr(L) !== 'landmark');
     const pri = (L) => (L.id === this.selected ? 0 : best && L.id === best.id ? 1 : L.s === 'ready' ? 2 : L.s === 'open' ? 3 : L.s === 'challenge' ? 4 : L.s === 'lit' ? 5 : 6);
@@ -1079,6 +1191,7 @@ export class TreeScreen {
     const hits = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0));
     for (const L of list) addBox({ x0: L.x - L.r - 3, x1: L.x + L.r + 3, y0: L.y - L.r - 3, y1: L.y + L.r + 3, id: L.id, lm: tr(L) === 'landmark' });
     for (const t of this.toolBoxes || []) addBox({ x0: t.x - t.r, x1: t.x + t.r, y0: t.y - t.r, y1: t.y + t.r, id: 'tool' }); // names keep off the tool coins
+    for (const b of this.hubBoxes || []) addBox(b); // and off the hub coin and its caption
     const hitsLm = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.lm && b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0)); // a medallion name only yields to other medallions and their names
     this.lblBoxes = [];
     const uk = this.uk || 1; const lh = Math.round(17 * uk);
@@ -1249,6 +1362,7 @@ export class TreeScreen {
     const was = this.selected;
     this.selected = id && this.def.nodes[id] ? id : null;
     this.confirmT = 0;
+    this.setFocus();
     if (this.selected && this.selected !== was && this.panelEl) this.setExpanded(false); // a new lantern starts as the compact strip
     this.panelMode = this.selected ? 'detail' : this.panelMode === 'goals' ? 'goals' : null;
     this.syncPanel();
@@ -1450,6 +1564,30 @@ export class TreeScreen {
   }
 
   // one-time notice after the save v3 'Regrowth' refund (skill-tree-v2.md 7b): shown once, then cleared
+  // One-time notice after the v5 restart (notes.treeResetNotice): every lit lantern was returned in full. Numbers are re-validated here, text only via
+  // textContent, dismissable; it is cleared from the save when dismissed or when the tree is closed (so it shows once).
+  resetNotice() {
+    const s = this.api.save();
+    const n = s && s.notes && s.notes.treeResetNotice;
+    if (!n || typeof n !== 'object') return;
+    const q = (v) => { const x = Math.floor(Number(v)); return Number.isFinite(x) && x > 0 ? Math.min(x, 1e9) : 0; };
+    const nodes = q(n.nodes), gold = q(n.gold), shards = q(n.shards), glass = q(n.glass);
+    if (!nodes) { if (this.api.clearResetNotice) this.api.clearResetNotice(); return; }
+    const back = [`${fmtN(gold)} gold`]; if (shards) back.push(`${fmtN(shards)} shards`); if (glass) back.push(`${fmtN(glass)} Dawnglass`);
+    const h = el('div', 'ts-noticeh', 'The Lantern Web was rewoven');
+    const p = el('p', 'ts-noticep', `All ${fmtN(nodes)} of your lit lanterns were put out and paid back in full: ${back.join(', ')}. Your own spirit is still lit. Spend it again as you like.`);
+    const b = btn('ts-btn', 'Got it');
+    b.addEventListener('click', () => this.dismissNotice());
+    this.noticeEl.replaceChildren(h, p, b);
+    this.noticeEl.classList.add('open');
+    this.noticeShown = true;
+  }
+  dismissNotice() {
+    this.noticeEl.classList.remove('open');
+    if (this.noticeShown && this.api && this.api.clearResetNotice) this.api.clearResetNotice();
+    this.noticeShown = false;
+  }
+
   regrowthNote() {
     const s = this.api.save();
     const g = s && s.notes && s.notes.regrowth;
@@ -1572,7 +1710,7 @@ export class TreeScreen {
   /** DESKTOP D3: hover preview. Mouse only; text comes from the model, set as plain text. Positions are real pixels, the layer may be zoomed (Menu size), so divide by --uik. */
   hover(e) {
     if (!this.hoverEl) return;
-    const off = () => { this.hoverEl.classList.remove('on'); this.hoverId = null; if (this.mapEl) this.mapEl.style.cursor = ''; };
+    const off = () => { this.hoverEl.classList.remove('on'); this.hoverId = null; if (this.hoverFocus) { this.hoverFocus = null; this.setFocus(); this.dirty(); } if (this.mapEl) this.mapEl.style.cursor = ''; };
     if (e.pointerType !== 'mouse' || this.ptrs.size || this.sheetOpen || this.cam.z < this.view.lod.far) { off(); return; }
     const [x, y] = this.rel(e);
     const id = this.hitNode(x, y);
@@ -1581,6 +1719,7 @@ export class TreeScreen {
     if (id !== this.hoverId) {
       const ce = this.model.cache[id]; const d = ce.d;
       this.hoverId = id;
+      this.hoverFocus = id; this.setFocus(); this.dirty(); // the path from your nearest lit lantern lights up, the rest steps back
       this.hoverName.textContent = d.name;
       this.hoverState.textContent = this.model.stateText(id);
       this.hoverState.className = `ts-hover__s ts-st-${ce.s}`;

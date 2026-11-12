@@ -42,6 +42,13 @@ import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+const PORTRAIT_IMGS = new Map(); // hero id -> Image, loaded once from the bundled portrait files (used by the tree's hub medallion)
+function portraitImage(hero, redraw) {
+  if (typeof hero !== 'string' || !Object.hasOwn(PORTRAITS, hero)) return null;
+  let im = PORTRAIT_IMGS.get(hero);
+  if (!im) { im = new Image(); PORTRAIT_IMGS.set(hero, im); im.addEventListener('load', () => redraw && redraw()); im.src = PORTRAITS[hero]; }
+  return im;
+}
 const SPIRIT_LINE = (id, data) => (SPIRIT_LINES[id] || (data.weapons[id] && typeof data.weapons[id].desc === 'string' ? data.weapons[id].desc.split('.')[0] : ''));
 const HERO_NEXT = 'Next';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
@@ -67,7 +74,7 @@ export class UI {
     this.handlers = {};
     this.toastTimer = null;
     this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
-    this.tree = new TreeScreen(this);
+    this.tree = new TreeScreen(this, portraitImage);
     this.buildHud();
     this.nav = null;
     if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }

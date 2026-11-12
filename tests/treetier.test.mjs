@@ -7,7 +7,7 @@ import { composeTree } from '../src/meta/treedata.js';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
 import { buildTreeView } from '../src/meta/treeview.js';
 import { tierOf, computeTierSizes, screenDiameter, tierShown, TIER_SIZE, TIER_FLOOR, TIER_OF_KIND } from '../src/meta/treetier.js';
-import { TreeBackdrop, ringLitFractions } from '../src/gfx/treebg.js';
+import { TreeBackdrop, ringProgress, LOOK } from '../src/gfx/treebg.js';
 
 const composed = composeTree(readTreeFiles(), data);
 
@@ -85,47 +85,71 @@ const fake = () => {
   return { made, make };
 };
 
-test('backdrop: baked once per size class, never per frame', () => {
+test('backdrop: sky and screen layer are baked once per size class, never per frame', () => {
+  globalThis.Path2D ??= class { moveTo() {} lineTo() {} arc() {} }; // the rune rings batch their strokes in Path2D (a browser class)
   const f = fake();
   const bg = new TreeBackdrop(f.make);
   const v = buildTreeView(composed.info, def, data);
-  assert.ok(Array.isArray(v.ringR) && v.ringR.length >= 5 && v.ringR.every((r, i, a) => i === 0 || r > a[i - 1]));
-  assert.equal(bg.ensureWorld(v.webR, v.ringR, false), true);
+  assert.ok(Array.isArray(v.ringTiers) && v.ringTiers.length >= 5 && v.ringTiers.every((t, i, a) => i === 0 || t.r > a[i - 1].r));
+  assert.deepEqual(v.ringTiers.map((t) => t.name).slice(0, 5), ['Hearth', 'Wick', 'Dusk', 'Far Hollow', 'Deep Hollow']);
+  assert.equal(bg.ensureSky(false), true);
   assert.equal(bg.ensureScreen(1280, 720, false), true);
   assert.equal(bg.bakes, 2);
-  const ctx = new Proxy({}, { get: (o, k) => (k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : () => {}), set: () => true });
+  const ctx = new Proxy({}, { get: (o, k) => (k === 'createRadialGradient' || k === 'createLinearGradient' ? () => ({ addColorStop() {} }) : k === 'measureText' ? () => ({ width: 6 }) : () => {}), set: () => true });
   const bakeCalls = f.made.map((m) => m.calls.n);
+  const rings = v.ringTiers.map((t, k) => ({ r: t.r, name: t.name, frac: k / 6, bloom: k === 2 ? 0.5 : 0 }));
   for (let i = 0; i < 120; i++) { // 120 frames with identical state: no re-bake, no extra canvas
-    assert.equal(bg.ensureWorld(v.webR, v.ringR, false), false);
+    assert.equal(bg.ensureSky(false), false);
     assert.equal(bg.ensureScreen(1280, 720, false), false);
-    bg.drawWorld(ctx, { x: i, y: -i, z: 0.5 }, 1280, 720, v.ringR, v.ringR.map(() => 0.5), [{ x: 0, y: 0, r: 300, frac: 0.4, color0: 'rgba(1,2,3,.2)', color1: 'rgba(1,2,3,0)' }]);
+    const cam = { x: i, y: -i, z: 0.5 };
+    bg.drawSky(ctx, cam, 1280, 720);
     bg.drawScreen(ctx, 1280, 720);
+    bg.drawTints(ctx, cam, 1280, 720, [{ x: 0, y: 0, r: 300, frac: 0.4, color0: 'rgba(1,2,3,.2)', color1: 'rgba(1,2,3,0)' }]);
+    bg.drawRings(ctx, cam, 1280, 720, rings, 'serif');
   }
   assert.equal(bg.bakes, 2);
   assert.equal(f.made.length, 2);
   assert.deepEqual(f.made.map((m) => m.calls.n), bakeCalls, 'the baked canvases were not drawn on again');
   // a different size class bakes again (phone is a smaller bake of the same look)
-  assert.equal(bg.ensureWorld(v.webR, v.ringR, true), true);
-  assert.ok(f.made.at(-1).width < f.made[0].width, 'phone bake is smaller');
+  assert.equal(bg.ensureSky(true), true);
+  assert.ok(f.made.at(-1).width < f.made[0].width, 'phone sky bake is smaller');
   assert.equal(bg.ensureScreen(390, 844, true), true);
 });
 
-test('backdrop: ring gold follows the lit fraction per band (pure)', () => {
-  const none = ringLitFractions(def, () => false, [150, 300, 450, 600, 960, 1180, 1280]);
+test('backdrop: ring progress = owned real lanterns / real lanterns per ring tier (pure; teasers excluded, bad input safe)', () => {
+  const v = buildTreeView(composed.info, def, data);
+  const n = v.ringTiers.length;
+  const none = ringProgress(def, v.ringOf, n, () => false);
+  assert.equal(none.length, n);
   assert.ok(none.every((x) => x === 0));
-  const all = ringLitFractions(def, () => true, [150, 300, 450, 600, 960, 1180, 1280]);
-  assert.ok(all.some((x) => x === 1) && all.every((x) => x >= 0 && x <= 1));
-  assert.deepEqual(ringLitFractions(def, () => true, []), []);
+  const all = ringProgress(def, v.ringOf, n, () => true);
+  assert.ok(all.every((x) => x === 1 || x === 0), 'every ring with real lanterns is whole when all are owned');
+  assert.ok(all.filter((x) => x === 1).length >= 4);
+  // a teaser never counts: only owning every NON-teaser lantern in a ring completes it
+  const owned = new Set(def.list.filter((id) => !def.nodes[id].teaser));
+  assert.deepEqual(ringProgress(def, v.ringOf, n, (id) => owned.has(id)), all);
+  // one lantern lit moves exactly its own ring
+  const one = def.list.find((id) => !def.nodes[id].teaser && v.ringOf[id] === 1);
+  const p1 = ringProgress(def, v.ringOf, n, (id) => id === one);
+  assert.ok(p1[1] > 0 && p1[1] < 0.1 && p1.filter((x, i) => i !== 1).every((x) => x === 0));
+  assert.deepEqual(ringProgress(def, v.ringOf, 0, () => true), []);
+  assert.deepEqual(ringProgress(def, null, n, () => true), new Array(n).fill(0));
+  assert.deepEqual(ringProgress(def, { [one]: 99, [def.list[0]]: -3 }, n, () => true), new Array(n).fill(0), 'out-of-range ring indices are ignored');
+});
+
+test('look: the locked tune values are exactly the ones Matt chose (frozen)', () => {
+  assert.equal(Object.isFrozen(LOOK), true);
+  assert.deepEqual({ ...LOOK }, { bright: 0.7, glow: 0.91, medSize: 0.92, thrLit: 1, thrAvail: 0.39, thrLocked: 0.29, density: 1, bgDim: 0.3, labelSize: 13, labelDensity: 0.48, ringBright: 1, ringLabels: true, ringArcs: true });
 });
 
 test('source: the screen bakes in resize() only; draw() never calls a bake; no innerHTML from tree data; no new deps', () => {
   const src = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
-  assert.equal((src.match(/ensureWorld\(/g) || []).length, 1);
+  assert.equal((src.match(/ensureSky\(/g) || []).length, 1);
   assert.equal((src.match(/ensureScreen\(/g) || []).length, 1);
   assert.ok(src.includes('collapseFar(') && src.includes('countBadge('), 'FAR landmark pile-ups collapse into one badge');
   assert.ok(!src.includes('(this.view.nearHub - 10) * z'), 'remembers line is docked, not under the hub');
   const resize = src.slice(src.indexOf('  resize() {'), src.indexOf('  toS(x, y)'));
-  assert.ok(resize.includes('ensureWorld(') && resize.includes('ensureScreen('));
+  assert.ok(resize.includes('ensureSky(') && resize.includes('ensureScreen('));
   const bgSrc = readFileSync(new URL('../src/gfx/treebg.js', import.meta.url), 'utf8') + readFileSync(new URL('../src/meta/treetier.js', import.meta.url), 'utf8');
   assert.ok(!/\.innerHTML\s*=|insertAdjacentHTML|eval\(|new Function/.test(src + bgSrc));
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
