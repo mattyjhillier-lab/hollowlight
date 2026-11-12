@@ -979,13 +979,11 @@ export function describeNode(def, save, id, data) {
   const n = def.nodes[id];
   const s = nodeStatus(def, save, id, data);
   let masked = (n.hidden || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
-  // a node behind an evolution gate stays '???' until that gate is owned or has progress
+  // a node behind an evolution gate (S1: a seal's forks) stays '???' until that seal is LIT (hidden-recipe safety: forks appear only after it)
   if (!masked && s.rank === 0) {
     for (const g of n.gateAnc || []) {
       const ge = def.nodes[g].effects.find((x) => x && x.unlock === 'evolution');
-      if (!ge || rankOf(save.tree || {}, g) >= 1) continue;
-      const gc = def.nodes[g].unlock ? conditionProgress(def.nodes[g].unlock, save.stats, def, data, save.tree) : null;
-      if (!gc || gc.frac <= 0) masked = true;
+      if (ge && rankOf(save.tree || {}, g) < 1) masked = true;
     }
   }
   const lines = masked ? [] : (s.cond ? s.cond.lines : []);

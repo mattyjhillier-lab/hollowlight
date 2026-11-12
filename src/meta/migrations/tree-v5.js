@@ -37,7 +37,12 @@ export function frozenCostV4(p, rank, st) {
 // -> { tree, gold, shards, glass, creep: {}, refunded }
 export function restartTree(rawTree, ctx = {}) {
   const out = { tree: {}, gold: 0, shards: 0, glass: 0, creep: {}, refunded: 0 };
-  if (isObj(rawTree) && Object.keys(rawTree).some((id) => !V4_IDS.has(id) && rankIn(rawTree, id, 1e4) > 0)) return { tree: { ...rawTree }, gold: 0, shards: 0, glass: 0, creep: undefined, refunded: 0, replay: true };
+  const isNodeId = (id) => (ctx.def && isObj(ctx.def.nodes) ? Object.hasOwn(ctx.def.nodes, id) : /^[a-z0-9]{1,4}_[a-z0-9_]{1,36}$/.test(id));
+  if (isObj(rawTree) && Object.keys(rawTree).some((id) => !V4_IDS.has(id) && isNodeId(id) && rankIn(rawTree, id, 1e4) > 0)) {
+    const keep = {};
+    for (const id of Object.keys(rawTree)) if (isNodeId(id) || V4_IDS.has(id)) keep[id] = rawTree[id];
+    return { tree: keep, gold: 0, shards: 0, glass: 0, creep: undefined, refunded: 0, replay: true };
+  }
   const starter = typeof ctx.starter === 'string' && Object.hasOwn(STARTER_V5, ctx.starter) ? ctx.starter : null;
   const free = new Set(starter && Object.hasOwn(STARTER_V4, starter) ? STARTER_V4[starter] : []);
   if (starter) for (const id of STARTER_V5[starter]) out.tree[id] = 1;

@@ -16,6 +16,10 @@ export const WEAPONS = ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_li
 // Set-A landmarks in the order of the v2 sheet (section 6). The Long Night expert gate = gt_cursed_forest_expert.
 export const LANDMARKS = ['sp_reroll1', 'gt_holy_orbit', 'gt_spirit_bolts', 'gt_raven_flock', 'gt_chain_lightning', 'gt_cursed_forest_hard', 'sp_auto', 'rs_start', 'rs_bless', 'cd_fourth', 'gt_cursed_forest_expert', 'rs_slot5', 'li_last'];
 export const VEILED = ['gt_phantom_stampede', 'gt_murder_storm'];
+// S1 (env S1=1): + the tool bridges (each opens a tool group at the end of its road) as landmarks, + the magic-garden seals as veiled
+export const S1_LANDMARKS = ['br_satchel', 'br_almanac', 'br_hearthkey', 'br_cardfan', 'br_wardrobe'];
+export const S1_VEILED = ['or_halo', 'gt_judgement_wheel', 'gt_vesper_tide', 'gt_spirit_tempest', 'gt_soul_lance', 'gt_returning_pages', 'gt_thunder_judgment', 'gt_static_storm', 'gt_storm_tether'];
+if (typeof process !== 'undefined' && process.env && process.env.S1 === '1') { LANDMARKS.push(...S1_LANDMARKS); VEILED.push(...S1_VEILED); }
 // diamond-tier rewards (v1 sheet 2.1: keystones / masteries); "wide" adds evolution sockets and unlock-gated beads.
 export const DIAMOND_KINDS = ['key', 'mastery'];
 export const WIDE_KINDS = ['key', 'mastery', 'socket', 'bead'];

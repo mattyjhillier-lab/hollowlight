@@ -583,7 +583,7 @@ test('G1e: compileTree rejects a node targeting a gated weapon without (transiti
   assert.ok(compileTree(raw([g, stat('rv_a', { requires: ['gt_rf'] }), stat('rv_b', { ring: 3, ang: 80, requires: ['rv_a'] })]), d1), 'transitive is fine');
 });
 
-test('G1e: nodes behind an evolution gate show ??? until that gate has progress or is owned', () => {
+test('G1e + S1: nodes behind an evolution gate (a seal's forks) show ??? until that gate is LIT (progress alone no longer reveals them)', () => {
   const d1 = ungated(data);
   d1.evolutions.dire_alpha = { ...d1.evolutions.dire_alpha, treeGate: true };
   const g = node('gt_da', { effects: [{ unlock: 'evolution', id: 'dire_alpha' }], unlock: { t: 'totalKills', n: 100 }, hidden: true });
@@ -595,7 +595,8 @@ test('G1e: nodes behind an evolution gate show ??? until that gate has progress 
   assert.ok(!/Dire|Alpha/i.test(JSON.stringify(m)), 'never names the locked evolution');
   assert.ok(!/Dire|Alpha/i.test(nodeStatus(d, none, 'after', d1).reason), 'reason does not name it either');
   const prog = { ...defaultSave(), tree: {}, stats: { ...defaultSave().stats, kills: 10 } };
-  assert.equal(describeNode(d, prog, 'after', d1).masked, false, 'progress begun -> revealed');
+  assert.equal(describeNode(d, prog, 'after', d1).masked, true, 'S1: progress begun -> still veiled (forks appear only after the seal is lit)');
+  assert.equal(describeNode(d, { ...prog, tree: { gt_da: 1 } }, 'after', d1).masked, false, 'seal lit -> revealed');
 });
 
 test('G1e: no non-gate node text names a locked weapon or evolution (data-driven over tree.json)', () => {
