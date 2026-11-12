@@ -457,6 +457,8 @@ export class TreeScreen {
     const s = this.box(this.stepEl) || this.box(this.nextEl);
     if (s) y1 = Math.min(y1, s.top);
     this.fr = [x0, y0, x1, y1];
+    // the right-hand tools (zoom rail + 'can light' pill): labels must not run under them (cached with fr)
+    this.frObs = [this.box(this.zoomEl), this.box(this.nextBtn)].filter((q) => q && q.width > 0 && q.left > this.W / 2);
     return this.fr;
   }
 
@@ -691,11 +693,14 @@ export class TreeScreen {
     this.drawRegionNames(lod);
     // hub lantern (R2): a gold-rimmed lantern-glass coin with the hearth lantern inside; its glow grows with total progress
     const hr = this.hubR;
-    const hl = c.createRadialGradient(hx, hy, hr * 0.7, hx, hy, hr * 2.6);
+    let gr = hr * 2.6; // the hub glow stops short of the nearest medallion (a lit key beside the hub must not sit inside the wash)
+    for (const q of coins) { const d = Math.hypot(q.x - hx, q.y - hy) - q.r * 1.25; if (d < gr) gr = d; }
+    gr = Math.max(hr * 1.2, gr);
+    const hl = c.createRadialGradient(hx, hy, hr * 0.7, hx, hy, gr);
     hl.addColorStop(0, `rgba(255,214,140,${(0.3 + 0.4 * p) * (this.small ? 0.8 : 1)})`);
     hl.addColorStop(1, 'rgba(255,154,46,0)');
     c.fillStyle = hl;
-    c.beginPath(); c.arc(hx, hy, hr * 2.6, 0, 7); c.fill();
+    c.beginPath(); c.arc(hx, hy, gr, 0, 7); c.fill();
     this.drawHub(c, hx, hy, hr);
     if (lod === 'far') {
       const ty = 10 * (this.uk || 1); // docked at the top of the map, never among the landmarks
@@ -937,9 +942,12 @@ export class TreeScreen {
     const y0 = L.y + L.r + (L.s === 'ready' ? 13 : 6);
     const rows = [[fs + 2, nw + 8], [sf + 3, lw + 6], [pf + 12, pw]];
     const wAll = Math.max(rows[0][1], rows[1][1], rows[2][1]);
-    const fx0 = this.freeRect()[0]; // the left edge of the map that is really visible (the hero panel covers the rest)
+    const fr = this.freeRect(), fx0 = fr[0]; // the left edge of the map that is really visible (the hero panel covers the rest)
     if (L.x + wAll / 2 < fx0 + 4) return;
-    const cx = clamp(L.x, fx0 + wAll / 2 + 6, Math.max(fx0 + wAll / 2 + 6, this.W - wAll / 2 - 6)); // a name and its pill are never cut off by the screen edge or hidden under the panel
+    const hAll = rows[0][0] + rows[1][0] + rows[2][0];
+    let fx1 = Math.min(this.W, fr[2]); // the right edge: the side panel, and the tool rail / pill where the label's rows pass beside them
+    for (const q of this.frObs || []) if (q.top < y0 + hAll && q.bottom > y0) fx1 = Math.min(fx1, q.left);
+    const cx = clamp(L.x, fx0 + wAll / 2 + 6, Math.max(fx0 + wAll / 2 + 6, fx1 - wAll / 2 - 6)); // a name and its pill are never cut off by the screen edge or hidden under the panel / tools
     const make = (k) => { let h = 0, w = 0; for (let i = 0; i < k; i++) { h += rows[i][0]; w = Math.max(w, rows[i][1]); } return { x0: cx - w / 2, x1: cx + w / 2, y0, y1: y0 + h, id: L.id }; };
     let k = pt ? 3 : line ? 2 : 1;
     for (; k > 1; k--) if (!hits(make(k), L.id)) break;

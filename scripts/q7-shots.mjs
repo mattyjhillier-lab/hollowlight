@@ -66,6 +66,19 @@ try {
       for (const [dn, dev, z] of [['desk', D, 0.8], ['phone', P, 0.6]]) { await openTree(dev, preset); await focus(nid, z); await shot(`${MODE === 'chase' ? 'chase' : 'tree'}-${nid}-${dn}`); }
     }
     if (MODE === 'chase') { await openTree(D, preset); await ev(`(() => { const t = ${T}; t.fly = null; t.cam.x = 0; t.cam.y = 0; t.cam.z = 0.2; t.camSig = ''; t.dirty(); return true; })()`); await sleep(700); await shot('chase-overview-desk'); }
+  } else if (MODE === 'far') { // whole web at far zoom (the default home view), desktop + phone: node q7-shots.mjs far <preset> <name>
+    const preset = Number(A1) || 5, name = (A2 || `far-p${preset}`).replace(/[^a-z0-9_-]/gi, '');
+    for (const [dn, dev] of [['desk', D], ['phone', P]]) {
+      await openTree(dev, preset);
+      await ev(`(() => { const t = ${T}; t.select && t.select(null); t.fly = null; t.home ? t.home() : null; t.camSig = ''; t.dirty(); return true; })()`).catch(() => null);
+      await sleep(1500);
+      await shot(`${name}-${dn}`);
+      if (A3 && ID_RE.test(A3) && dn === 'desk') { // the same zoom with that landmark pushed to the top-right corner (label vs the tool rail)
+        await ev(`(() => { const t = ${T}; const n = t.def.nodes['${A3}']; t.fly = null; t.cam.x = n.x - (t.W / 2 - 150) / t.cam.z; t.cam.y = n.y + (t.H / 2 - 150) / t.cam.z; t.camSig = ''; t.fr = null; t.dirty(); return true; })()`);
+        await sleep(900);
+        await shot(`${name}-${dn}-${A3}`);
+      }
+    }
   } else if (MODE === 'run') {
     const params = A1.replace(/[^a-zA-Z0-9_=&:.,-]/g, ''); const name = A2.replace(/[^a-z0-9_-]/gi, '') || 'run'; const secs = Math.max(0, Math.min(120, Number(A3) || 3));
     for (const [dn, dev] of [['desk', D], ['phone', P]]) {
