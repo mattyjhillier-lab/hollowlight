@@ -652,9 +652,9 @@ export function composeTree(files, data = null) {
   { const n = Object.create(null);
     for (const a of allNodes) {
       if (a.ownerKind !== 'hero') continue;
-      const ctr = centreOf[a.cluster], out = (dirTo([0, 0], ctr) * Math.PI) / 180, rank = n[a.owner] === undefined ? (n[a.owner] = Object.keys(n).length - 1) : n[a.owner];
-      const R = placed[`c:${a.cluster}`] ? placeList.find((x) => x.id === `c:${a.cluster}`).foot + 50 + rank * 70 : 300;
-      const ang = out + (a.slotIndex - 1) * (80 / R);
+      const hc = clusterInfo[a.cluster].heart, ctr = hc && own(positions, hc) ? positions[hc] : centreOf[a.cluster], out = (dirTo([0, 0], centreOf[a.cluster]) * Math.PI) / 180, rank = n[a.owner] === undefined ? (n[a.owner] = Object.keys(n).length - 1) : n[a.owner];
+      const R = Math.min(placeList.find((x) => x.id === `c:${a.cluster}`).foot + 50 + rank * 70, (fin(lay.linkFar) ? lay.linkFar : 440) - 60); // never a far link to its heart
+      const ang = out + (a.slotIndex - 1) * (130 / R);
       positions[a.spec.id] = [r1(ctr[0] + Math.cos(ang) * R), r1(ctr[1] + Math.sin(ang) * R)];
     } }
   // 6. chapter bands (future chapters): beyond every tier

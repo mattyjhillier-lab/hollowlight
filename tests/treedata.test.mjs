@@ -32,6 +32,7 @@ const GOLD = fx('tree-v2-rescale.json'); // Appendix A of skill-tree-v2.md (T3a)
 const MOVED = fx('tree-t3b-moved.json'); // the four existing ids the tool-cluster build changed afterwards (Satchel steps, Kinder Hearts, Lodestar)
 const T3C = fx('tree-t3c-connected.json'); // T3c connected-unlock patch: li_reach hangs from its bridge, sp_cd1 needs-all -> any-one, + the live bridge br_satchel
 const CH2 = fx('tree-ch2-characters.json'); // CHARACTER SYSTEM v2 overlay (null = retired hero lantern, now a tombstone)
+const S1 = fx('tree-s1-rework.json'); // S1 rework overlay (tree content version 5): changed ids (re-parented branches, roads into hearts / bridges) + every new id
 const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df', 'wd']; // wd = the Wardrobe (EXTRAS v1, zero power)
 const RETIRED = new Set([...Object.keys(CH2).filter((k) => CH2[k] === null), 'cd_radar']); // + Lantern Compass (inert tombstone, Almanac delegation 2026-10-28)
 // the v1 tree has no Wolves / Orbit hearts: compile it with those two ungated, as they were
@@ -39,14 +40,14 @@ const v1data = { ...data, weapons: Object.fromEntries(Object.entries(data.weapon
 const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
 
 test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ranks / requires / condition skill-tree-v2 Appendix A specifies', () => {
-  for (const id of Object.keys(GOLD)) { if (RETIRED.has(id)) { assert.equal(liveDef.nodes[id], undefined, `${id} retired`); continue; } assert.deepEqual(snap(liveDef.nodes[id]), CH2[id] || T3C[id] || MOVED[id] || GOLD[id], id); }
-  for (const id of Object.keys(T3C)) if (id !== '_comment') assert.deepEqual(snap(liveDef.nodes[id]), CH2[id] || T3C[id], `T3c ${id}`);
-  for (const id of Object.keys(CH2)) if (id !== '_comment' && CH2[id]) assert.deepEqual(snap(liveDef.nodes[id]), CH2[id], `CH2 ${id}`);
+  const want = (id) => (Object.hasOwn(S1, id) ? S1[id] : null) || CH2[id] || T3C[id] || MOVED[id] || GOLD[id];
+  for (const id of Object.keys(GOLD)) { if (RETIRED.has(id)) { assert.equal(liveDef.nodes[id], undefined, `${id} retired`); continue; } assert.deepEqual(snap(liveDef.nodes[id]), want(id), id); }
+  for (const id of Object.keys(T3C)) if (id !== '_comment') assert.deepEqual(snap(liveDef.nodes[id]), want(id), `T3c ${id}`);
+  for (const id of Object.keys(CH2)) if (id !== '_comment' && CH2[id]) assert.deepEqual(snap(liveDef.nodes[id]), want(id), `CH2 ${id}`);
+  for (const id of Object.keys(S1)) if (id !== '_comment') assert.deepEqual(snap(liveDef.nodes[id]), S1[id], `S1 ${id}`);
   for (const id of Object.keys(MOVED)) assert.ok(Object.hasOwn(GOLD, id), `${id} is a pre-existing id`);
   // every other live node is a tool-cluster lantern (its own fragment): covered by tests/t3b.test.mjs
-  // EXTRAS v1: the Wardrobe bridge (zero power: one cosmetic, gold only, hangs from Coin Sense / Magnet like the other bridges)
-  assert.deepEqual(snap(liveDef.nodes.br_wardrobe), { effects: [{ cosm: 'flame', id: 'moon_teal' }], cost: { gold: 250, shards: 0 }, rankCost: 1, maxRank: 1, requires: [], requiresAny: ['li_coin', 'li_magnet'], excludes: [], unlock: null });
-  for (const n of real.info.nodes) if (!n.inert && n.id !== 'br_wardrobe' && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id) && !Object.hasOwn(CH2, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in the golden fixture: add it deliberately (tests/fixtures/tree-v2-rescale.json)`);
+  for (const n of real.info.nodes) if (!n.inert && !Object.hasOwn(GOLD, n.id) && !Object.hasOwn(T3C, n.id) && !Object.hasOwn(CH2, n.id) && !Object.hasOwn(S1, n.id)) assert.ok(TOOL_FRAGS.includes(n.frag), `${n.id} is live but not in a golden fixture: add it deliberately (tests/fixtures/tree-s1-rework.json)`);
 });
 
 test('T3a the rescale (Appendix A) changed exactly 47 effects, 26 prices, 14 requires and 2 max ranks on the 82 v1 ids; the live tree IS the v2 view', () => {
@@ -126,7 +127,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 163, '156 + the four T3c bridge lanterns - the six retired hero lanterns + the two new Wolves / Orbit hearts (CHARACTER SYSTEM v2) + the Wardrobe bridge and its 7 lanterns (EXTRAS v1) - the retired Lantern Compass (cd_radar)');
+  assert.equal(real.info.nodes.length, 274, '163 at v4 + S1: 3 magic gardens x (18 forks + 1 lead-in) + the Candle Ring seal + 53 road lanterns');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);
@@ -135,8 +136,16 @@ test('T1 v2 view compiles: every node (125 + the tool clusters), template requir
   assert.ok(v2Def.nodes[apex].gateAnc.includes('gt_raven_flock'), 'the apex still sits behind the Raven gate on every route');
   const wf = real.info.clusters.ghost_wolves;
   assert.deepEqual(v2Def.nodes[wf.outline[0].id].requires, ['gt_ghost_wolves'], 'v2: Wolves hangs from its own heart like every weapon');
-  for (const id of v2Def.list) if (v2Def.nodes[id].permanent) assert.ok(v2Def.nodes[id].requires.every((r) => v2Def.nodes[r].permanent), `${id}: a gate requires only other gates (the Night Gate chain: Long Night after Deep Dusk)`);
-  for (const id of v2Def.list) if (v2Def.nodes[id].permanent && !id.startsWith('gt_cursed_forest')) assert.deepEqual(v2Def.nodes[id].requires, [], `${id}: weapon / evolution gates keep requires []`);
+  // S1: a gate is REACHED: a weapon heart / night gate by its road, a garden seal by its lead-in diamond; outline seals (Wolves, Ravens) stay roots
+  const roadEnd = new Set(real.info.roads.map((r) => r.to));
+  for (const id of v2Def.list) {
+    const n = v2Def.nodes[id];
+    if (!n.permanent) continue;
+    const g = real.info.nodes.find((x) => x.id === id).garden;
+    if (roadEnd.has(id)) assert.deepEqual(n.requires, [real.info.roads.find((r) => r.to === id).ids.at(-1)], `${id}: reached by its road`);
+    else if (g && g.role === 'seal') assert.equal(v2Def.nodes[n.requires[0]].kind === 'bead' || v2Def.nodes[n.requires[0]].kind === 'mastery', true, `${id}: a seal needs its lead-in diamond`);
+    else assert.deepEqual(n.requires, [], `${id}: outline seals keep requires []`);
+  }
   assert.deepEqual(layoutIssues(real.info, v2Def), []);
 });
 
@@ -295,9 +304,10 @@ test('T1 validator: emblem fields (paths, tokens, box, slots)', () => {
 test('T1 validator: clusters (weapon, sockets, slots, heart, template kinds)', () => {
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').sockets.b.evo = 'sanctum_halo'; }, /exactly the weapon's evolutions/);
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').sockets.c = { ...get(fs, 'clusters/ghost_wolves.json').sockets.b }; }, /socket evolutions must differ/);
-  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').slot = 'sky2'; }, /already used by/);
-  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').slot = 'far99'; }, /unknown slot/);
-  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').slot = 'nowhere'; }, /unknown slot/);
+  // S1: placement is `orbit {tier, angle}` (the old slot names are ignored)
+  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').orbit = { tier: 0, angle: 10 }; }, /orbit must be/);
+  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').orbit = { tier: 2 }; }, /orbit must be/);
+  bad((fs) => { get(fs, 'clusters/ghost_wolves.json').orbit = { tier: 2, angle: 10, x: 1 }; }, /orbit must be/);
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').emblem = 'nope'; }, /unknown emblem/);
   bad((fs) => { get(fs, 'clusters/raven_flock.json').heart = null; }, /gated weapon needs its unlock node as heart/);
   bad((fs) => { get(fs, 'clusters/ghost_wolves.json').heart = 'gt_phantom_stampede'; }, /gated weapon needs|does not match/);
@@ -365,13 +375,16 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   const c = compose(fs, d);
   const def = compileTree(c.v2, d);
   assert.equal(def.list.length, real.info.nodes.length + 15 + 3);
-  // R1: positions follow the layout keys (far ring radius, clusterScale, gap relaxation) instead of fixed numbers
-  const far = c.info.core.rings.far, fa = (far.ang0 * Math.PI) / 180, ctr = c.info.centres.lantern_wisps;
-  assert.deepEqual(ctr, [Math.round(far.r * Math.cos(fa) * 10) / 10, Math.round(far.r * Math.sin(fa) * 10) / 10]); // far1 (the tool clusters hold far2/4/6/8/10)
+  // S1: a fragment with no `orbit` auto-slots into the next free angle (deterministic) and lays out round its centre
+  const rec = c.info.regions.find((r) => r.id === 'c:lantern_wisps'), ctr = c.info.centres.lantern_wisps;
+  assert.ok(rec && rec.orbit.auto && rec.orbit.tier >= 1, 'auto-slotted');
+  assert.deepEqual(rec.centre, ctr);
   const em = c.info.emblems[c.info.clusters.lantern_wisps.emblem], reach = Math.max(...[...Object.values(em.slots), ...Object.values(em.sockets)].map((p) => Math.hypot(p[0], p[1]))) * c.info.scale;
   for (const n of c.info.nodes.filter((x) => x.cluster === 'lantern_wisps' && x.role !== 'hero')) assert.ok(Math.hypot(c.info.positions[n.id][0] - ctr[0], c.info.positions[n.id][1] - ctr[1]) <= reach + 80, `${n.id} stays inside the constellation`);
   assert.deepEqual(compose(fs, d).info.positions, c.info.positions, 'same layout every time');
-  assert.ok(Math.abs(Math.hypot(...c.info.positions.th_b) - c.info.core.rings.heroes.r) < 1, 'hero lantern on the hero ring');
+  const heart = c.info.positions.gt_lantern_wisps;
+  assert.ok(Math.hypot(c.info.positions.th_b[0] - heart[0], c.info.positions.th_b[1] - heart[1]) <= c.info.core.layout.linkFar, 'hero lantern beside its signature heart');
+  for (const r of c.info.regions) if (r.id !== 'c:lantern_wisps' && r.id !== 'hub') { const real0 = real.info.regions.find((x) => x.id === r.id); if (real0) assert.deepEqual(r.centre, real0.centre, `${r.id} does not move when a fragment is added`); }
   assert.deepEqual(layoutIssues(c.info, def), []);
   assert.deepEqual(def.nodes.lw_beacon.requiresAny, ['lw_halo', 'lw_hood'].length ? def.nodes.lw_beacon.requiresAny : []);
   assert.deepEqual(def.nodes.lw_wick.requires, ['gt_lantern_wisps']);
@@ -385,17 +398,23 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   // and a broken copy of the fixture fails loudly
   const bad1 = wispsFiles(); get(bad1.fs, 'clusters/lantern_wisps.json').outline[2].kind = 'knot';
   assert.throws(() => compose(bad1.fs, bad1.d), /outline 2 .* must be kind/);
-  const bad2 = wispsFiles(); get(bad2.fs, 'clusters/lantern_wisps.json').slot = 'sky1';
-  assert.throws(() => compose(bad2.fs, bad2.d), /already used by/);
+  const bad2 = wispsFiles(); get(bad2.fs, 'clusters/lantern_wisps.json').orbit = { tier: 99, angle: 0 };
+  assert.throws(() => compose(bad2.fs, bad2.d), /orbit must be/);
   const bad3 = wispsFiles(); get(bad3.fs, 'core.json').retired.push({ id: 'lw_wick', frag: 'core', idx: 901 });
   assert.throws(() => compose(bad3.fs, bad3.d), /retired/);
 });
 
 test('T1 layout checker: overlapping constellations are reported', () => {
+  // S1: an explicit orbit on top of another region is nudged along its angle (never overlaps) ...
   const fs = files();
-  get(fs, 'core.json').skySlots.sky2 = 168; // 6 degrees from the Wolves: the two clusters overlap
+  get(fs, 'clusters/raven_flock.json').orbit = { ...get(fs, 'clusters/ghost_wolves.json').orbit };
   const c = compose(fs);
-  assert.match(layoutIssues(c.info, null).join('|'), /clusters ghost_wolves and raven_flock overlap/);
+  assert.deepEqual(layoutIssues(c.info, null), []);
+  assert.equal(c.info.regions.find((r) => r.id === 'c:raven_flock').orbit.auto, true, 'nudged');
+  // ... and the checker reports a forced overlap
+  const info = clone(c.info);
+  info.regions.find((r) => r.id === 'c:raven_flock').centre = [...info.regions.find((r) => r.id === 'c:ghost_wolves').centre];
+  assert.match(layoutIssues(info, null).join('|'), /regions c:ghost_wolves and c:raven_flock overlap/);
 });
 
 // ---------------------------------------------------------------- synthetic trees

@@ -25,7 +25,7 @@ const raw = (nodes) => ({ ...B, nodes });
 const bad = (nodes, re) => assert.throws(() => compileTree(raw(nodes), udata), re);
 
 test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes', () => {
-  assert.ok(def.list.length >= 120 && def.list.length <= 200, `nodes ${def.list.length}`);
+  assert.ok(def.list.length >= 200 && def.list.length <= 360, `nodes ${def.list.length}`); // S1: + magic gardens (forks) and the roads to every landmark
   assert.deepEqual(Object.keys(def.branches).sort(), ['light', 'magic', 'spirit', 'summoner']);
   const locked = def.list.filter((i) => def.nodes[i].unlock && !def.nodes[i].teaser);
   assert.ok(locked.length >= 12, `locked ${locked.length}`);
@@ -81,7 +81,7 @@ test('costs: rank scaling, totals recomputed from nodes', () => {
   assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2, glass: 0 });
   assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3, glass: 0 }); // junk ids ignored, rank clamped to the node max
   const t = totalCost(def);
-  assert.ok(t.gold > 40000 && t.gold < 125000, `total gold ${t.gold}`); // includes the Wardrobe's 24,250 zero-power gold sink (EXTRAS v1)
+  assert.ok(t.gold > 40000 && t.gold < 200000, `total gold ${t.gold}`); // includes the Wardrobe's 24,250 zero-power gold sink (EXTRAS v1) and the S1 roads + forks
   assert.ok(t.shards >= 20 && t.shards <= 60, `total shards ${t.shards}`);
 });
 
@@ -119,6 +119,7 @@ test('unlock conditions gate buying; teasers never buyable', () => {
   const s = richSave();
   s.stats.runs = 2; // the Wolves heart (v2) asks for 2 runs
   s.stats.killsByEnemy.wolf = 3000; // enough for the path (Red Thread needs 2500) but not for the chin lantern (4000)
+  s.stats.chapters = { cursed_forest: { bestTime: 900 } }; // S1: the Wolves road starts at Twilight's Vow (survive 10:00)
   ownedPath(s, chain('wf_third'));
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'condition');
   assert.equal(buy(s, 'wf_third', def, data).ok, false);
@@ -566,6 +567,7 @@ test('G1e: a node for a gated weapon cannot be bought without its gate; owning t
   assert.equal(nodeStatus(def, s, 'rv_wide', data).reason, 'Locked: unlock Raven Flock first', 'deep chain nodes show the gate too');
   assert.equal(buy(s, 'rv_talon', def, data).ok, false);
   assert.equal(s.tree.rv_talon, undefined);
+  ownedPath(s, chain('gt_raven_flock')); // S1: the heart is reached by its road
   assert.ok(buy(s, 'gt_raven_flock', def, data).ok);
   assert.ok(buy(s, 'rv_talon', def, data).ok, 'gate owned -> node buyable');
 });

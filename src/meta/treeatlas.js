@@ -147,7 +147,7 @@ export function relaxGrid(items, gaps, passes = 120) {
         const b = items[j];
         if (a.fixed && b.fixed) continue;
         let dx = b.p[0] - a.p[0], dy = b.p[1] - a.p[1], d = Math.hypot(dx, dy);
-        const req = need(a.t, b.t);
+        const req = need(a.t, b.t) + 0.3; // a hair over the gap, so rounding to 0.1 never leaves a pair just under it
         if (d >= req) continue;
         if (d < 1e-6) { const h = hash(`${a.id}|${b.id}`) * Math.PI * 2; dx = Math.cos(h); dy = Math.sin(h); d = 1; }
         const push = (req - d) * 1.02 + 0.05;

@@ -42,7 +42,7 @@ test('T13 every gated weapon/evolution has exactly one gate node; gate nodes are
   for (const e of gatedE) assert.equal(gateOf('evolution', e).length, 1, e);
   for (const id of gateNodes) {
     const n = def.nodes[id];
-    assert.deepEqual(n.requires, [], `${id} hangs off the hub`);
+    assert.ok(n.requires.length <= 1, `${id}: S1: reached by its road / lead-in diamond, or a root (outline seals)`);
     assert.equal(n.maxRank, 1);
     assert.ok(n.cost.gold >= 100 && n.cost.gold <= 600 && n.cost.shards === 0, `${id} cost`);
     assert.ok(n.unlock, `${id} has an unlock condition`);
@@ -121,5 +121,5 @@ test('respec keeps gate nodes in the real tree and refunds the rest', () => {
 test('removing a gate node makes compileTree fail (unreachable content)', () => {
   const raw = JSON.parse(JSON.stringify(data.tree));
   raw.nodes = raw.nodes.filter((n) => n.id !== 'gt_soul_lance');
-  assert.throws(() => compileTree(raw, data), /soul_lance.*no unlocking node/);
+  assert.throws(() => compileTree(raw, data), /soul_lance/); // S1: its forks name it as their prerequisite, and the evolution has no unlocking node
 });

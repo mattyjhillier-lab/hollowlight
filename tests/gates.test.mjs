@@ -44,7 +44,7 @@ test('T4 rejects unreachable gated content, dead unlock nodes and gate nodes han
   assert.throws(() => compileTree(raw([gate()]), base), /not gated/);
   const gw = { ...gd, weapons: { ...gd.weapons, raven_flock: { ...gd.weapons.raven_flock, treeGate: true } } };
   assert.throws(() => comp([gate()], gw), /raven_flock.*no unlocking node/);
-  assert.throws(() => comp([node('a'), gate('g_ps', { requires: ['a'] })]), /only require other unlock nodes/);
+  assert.doesNotThrow(() => comp([node('a'), gate('g_ps', { requires: ['a'] })]), 'S1: a gate may hang off an ordinary lantern (a seal needs its lead-in diamond, a heart its road)');
   const gw2 = { ...gd, weapons: { ...gd.weapons, ghost_wolves: { ...gd.weapons.ghost_wolves, treeGate: true } } };
   comp([gate('g0', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }] }), gate('g_ps', { requires: ['g0'], ang: 40 })], gw2); // chained gates are fine
 });

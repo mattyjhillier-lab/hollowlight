@@ -3,7 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { data, treeDef as def } from './helpers.mjs';
-import { aggregateMods, compileTree, canBuy, buy, respec, nodeStatus, conditionProgress, sanitizeTree, emptyEffects, presetTree } from '../src/meta/tree.js';
+import { aggregateMods, compileTree, canBuy, buy, respec, nodeStatus, conditionProgress, sanitizeTree, emptyEffects, presetTree, pathToHub } from '../src/meta/tree.js';
+// S1: buy every lantern on the way to `id` (its road), parents first
+const buyTo = (save, g, id) => { const p = pathToHub(g, id, save.tree).ids; for (const x of g.order) if (x !== id && p.has(x) && !(save.tree[x] >= 1)) { const r = buy(save, x, g, data); if (!r.ok) throw new Error(`${x}: ${r.reason}`); } };
 import { composeTree } from '../src/meta/treedata.js';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
 import { budgetOf } from '../src/meta/treebudget.js';
@@ -259,7 +261,7 @@ const INERT = ['df_ward', 'df_vigil', 'df_star'];
 
 test('DT4 the tool clusters exist as data: eleven moved ids keep their ids and idx, every new node has a permanent (fragment, idx), layout and budget pass', () => {
   assert.deepEqual(Object.keys(composed.info.tools).sort(), ['almanac', 'cardfan', 'hearthkey', 'nightgate', 'satchel', 'wardrobe']); // + the Wardrobe (EXTRAS v1)
-  assert.deepEqual(Object.values(composed.info.tools).map((t) => t.slot).sort(), ['far10', 'far2', 'far3', 'far4', 'far6', 'far8'], 'the five far slots of layout L-A + far3 for the Wardrobe');
+  for (const tid of Object.keys(composed.info.tools)) { const r = composed.info.regions.find((x) => x.id === `t:${tid}`); assert.ok(r && r.orbit && r.orbit.tier >= 1, `${tid}: placed by its orbit (S1 atlas)`); }
   for (const [t, ids] of Object.entries(TOOL)) for (const id of ids) assert.ok(v2.nodes[id], `${t}/${id}`);
   const moved = ['li_reach', 'li_scav', 'li_hearts', 'li_heal', 'li_magnet', 'sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'sp_auto', 'li_last'];
   const besideParent = ['li_hearts', 'li_heal', 'li_magnet', 'sp_reroll2', 'sp_reroll3', 'sp_ban2', 'sp_ban3', 'sp_auto', 'li_last']; // T3c: next ranks moved back beside their parent
@@ -378,7 +380,9 @@ test('DT0 costs can include Dawnglass: buy() checks and spends it, respec refund
   const r = buy(save, 'cd_fourth', v2, data);
   assert.ok(r.ok, r.reason); assert.equal(save.dawnglass, 12); assert.equal(r.cost.glass, 8);
   const gate = { ...save, gold: 1e6, shards: 20, dawnglass: 20, tree: {}, stats: { ...save.stats, chapters: { cursed_forest: { runs: 1, clears: 1, bestTime: 900 } } } };
+  buyTo(gate, v2, 'gt_cursed_forest_hard'); // S1: each night gate sits at the end of its road
   assert.ok(buy(gate, 'gt_cursed_forest_hard', v2, data).ok);
+  buyTo(gate, v2, 'gt_cursed_forest_expert');
   assert.ok(buy(gate, 'gt_cursed_forest_expert', v2, data).ok, 'the Long Night gate costs 10 glass');
   assert.equal(gate.dawnglass, 10);
   const out = respec(save, v2);
@@ -393,8 +397,12 @@ test('DT0 costs can include Dawnglass: buy() checks and spends it, respec refund
 test('DT0 tier gates are permanent, chained (Long Night needs Deep Dusk), name no recipe, and survive an import without their prerequisite gate being forged', () => {
   const hard = v2.nodes.gt_cursed_forest_hard, exp = v2.nodes.gt_cursed_forest_expert;
   assert.ok(hard.permanent && exp.permanent);
-  assert.deepEqual(exp.requires, ['gt_cursed_forest_hard']);
-  assert.deepEqual(hard.requires, []);
+  // S1: Long Night's road starts at Deep Dusk, so the Deep Dusk gate is on its every route; Deep Dusk is reached by its own road
+  const roads = composed.info.roads;
+  assert.deepEqual(exp.requires, [roads.find((r) => r.to === 'gt_cursed_forest_expert').ids.at(-1)]);
+  assert.equal(roads.find((r) => r.to === 'gt_cursed_forest_expert').from, 'gt_cursed_forest_hard');
+  assert.ok(exp.gateAnc.includes('gt_cursed_forest_hard'));
+  assert.deepEqual(hard.requires, [roads.find((r) => r.to === 'gt_cursed_forest_hard').ids.at(-1)]);
   assert.equal(v2.nodes.df_ward.excludes[0], 'df_vigil');
   const forged = sanitizeTree({ gt_cursed_forest_expert: 1, df_ward: 1, df_vigil: 1 }, defaultSave().stats, v2, data);
   assert.deepEqual(forged, {}, 'a forged Long Night gate without Deep Dusk is dropped');
@@ -412,7 +420,7 @@ test('DT4 Dawnglass costs are bounded in the tree data: a node cannot cost more 
 });
 
 test('DT4 the Almanac data only names enemies that exist (lore / tells), and every Habits / Weakness / Tells lantern keeps its slay count order', () => {
-  for (const id of v2.list.filter((i) => i.startsWith('bs_') && i !== 'bs_page')) {
+  for (const id of v2.list.filter((i) => i.startsWith('bs_') && i !== 'bs_page' && !i.startsWith('bs_way'))) { // bs_way*: the Almanac's road (S1)
     const e = v2.nodes[id].effects[0];
     const enemy = e.lore || e.enemy;
     assert.ok(Object.hasOwn(data.enemies, enemy), `${id} -> ${enemy}`);

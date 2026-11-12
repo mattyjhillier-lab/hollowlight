@@ -71,9 +71,9 @@ test('T3a negatives pass through the cap unscaled; flat adds are never scaled; t
 
 test('T3a the new effect kinds reach aggregateMods: status potency / seconds (hero lanterns retired: CHARACTER SYSTEM v2)', () => {
   const a = aggregateMods(own(['wf_bleed', 'wf_rend', 'or_kindle', 'or_ember', 'rv_eye', 'wr_grip', 'el_wheel', 'wr_spark', 'el_lamp']), def, data); // retired ids give nothing
-  const S = 3 + 3 + 3 + 3 + 0.5 * RULE.markFace; // bleed 6, burn 6, mark 0.5 s -> 2 points
+  const S = 3 + 3 + 1 + 1 + 0.5 * RULE.markFace; // bleed 6, burn 2 (S1: the Orbit lead-in diamonds carry +1% burn each), mark 0.5 s -> 2 points
   const fac = soft(S, 16) / S;
-  assert.ok(Math.abs(a.status.bleed - 6 * fac) < 1e-9 && Math.abs(a.status.burn - 6 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
+  assert.ok(Math.abs(a.status.bleed - 6 * fac) < 1e-9 && Math.abs(a.status.burn - 2 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
   assert.equal(a.ability.rallySecs, undefined);
   assert.equal(a.ability.wheel, undefined);
   assert.deepEqual(a.visuals, []);

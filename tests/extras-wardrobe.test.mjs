@@ -12,6 +12,7 @@ const C = data.cosmetics;
 const WD = def.list.filter((id) => def.nodes[id].effects.some((e) => e.cosm !== undefined));
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const fresh = (patch = {}) => Object.assign(defaultSave(), patch);
+const ROAD = Object.fromEntries(def.list.filter((id) => id.startsWith('wd_way')).map((id) => [id, 1])); // S1: the Wardrobe's road, owned
 
 function mkNode(tag) {
   const n = { tag, children: [], attrs: {}, _cls: new Set(), _text: '', listeners: {}, hidden: false, disabled: false, style: { setProperty(k, v) { n.style[k] = v; } },
@@ -48,7 +49,7 @@ test('Wardrobe cluster: 8 zero-power lanterns, gold-only bridge from Coin Sense 
   assert.doesNotThrow(() => validateCosmTree(def, C));
   const b = def.nodes.br_wardrobe;
   assert.deepEqual([b.cost.gold, b.cost.shards, b.cost.glass || 0, b.unlock], [250, 0, 0, null]);
-  assert.deepEqual(b.requiresAny, ['li_coin', 'li_magnet']);
+  assert.deepEqual(b.requires, [Object.keys(ROAD).at(-1)], 'S1: the bridge is the end of the Wardrobe road');
   for (const id of WD) if (id !== 'br_wardrobe') assert.ok(def.nodes[id].requires.length === 1, id);
   // zero power: the full tree with and without every Wardrobe lantern aggregates to the same effects (cosmetics are not in the sim mods)
   const full = presetTree(def, 'full', true);
@@ -61,7 +62,7 @@ test('Wardrobe cluster: 8 zero-power lanterns, gold-only bridge from Coin Sense 
 });
 
 test('Wardrobe prices: own rising-price group (never raises a power lantern); glass lanterns need Dawnglass; gold ones wait for a fully lit web', () => {
-  const s = fresh({ gold: 100000, dawnglass: 20, tree: { li_study: 1, li_coin: 1 } });
+  const s = fresh({ gold: 100000, dawnglass: 20, tree: { li_study: 1, li_coin: 1, ...ROAD } });
   const before = nodeStatus(def, s, 'li_vow', data).next.gold;
   assert.equal(buy(s, 'br_wardrobe', def, data).ok, true);
   assert.equal(nodeStatus(def, s, 'li_vow', data).next.gold, before, 'Light ring prices untouched by a Wardrobe purchase');

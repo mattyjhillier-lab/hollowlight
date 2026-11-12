@@ -466,7 +466,7 @@ export function compileTree(raw, data) {
   for (const id of list) {
     const n = nodes[id];
     if (n.permanent || n.teaser || n.keystone || CREEP_FLAT.includes(n.kind)) continue;
-    const g = cosmOnly(n) ? 'cosm' : n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); // EXTRAS v1: Wardrobe lanterns rise only among themselves (never price a power lantern)
+    const g = cosmOnly(n) ? 'cosm' : n.region === 'paths' ? `paths:${n.frag || 'core'}` : n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); // S1: a road rises only among its own fragment's road lanterns // EXTRAS v1: Wardrobe lanterns rise only among themselves (never price a power lantern)
     cgroup[id] = g;
     (cmembers[g] || (cmembers[g] = [])).push(id);
   }
