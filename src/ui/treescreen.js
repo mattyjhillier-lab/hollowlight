@@ -48,6 +48,7 @@ const ICON_MORE = [['path', { d: 'M6 15l6-6 6 6' }]];
 const hexA = (hex, a) => { const v = parseInt(String(hex).slice(1), 16) || 0; return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const idHash = (id) => { let h = 2166136261; const t = String(id); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }; // stable 0..1 per lantern id
+const hubFade = (A, B) => { const d = Math.min(Math.hypot(A.x, A.y), Math.hypot(B.x, B.y)); return clamp((d - 350) / 600, 0.05, 1); }; // threads near the hub run almost straight (they fan out), bows grow with distance
 const lodFar = (z, L) => clamp(0.78 + (z - L.far) / 0.5, 0.78, 1); // label size factor: 0.78 at the FAR limit and below, 1 from about 0.31 up
 
 // DESKTOP D3: the tree's keys, shown as a quiet hint strip while the keyboard was the last input (these keys are fixed in onKey)
@@ -903,7 +904,9 @@ export class TreeScreen {
     const y0 = L.y + L.r + (L.s === 'ready' ? 13 : 6);
     const rows = [[fs + 2, nw + 8], [sf + 3, lw + 6], [pf + 12, pw]];
     const wAll = Math.max(rows[0][1], rows[1][1], rows[2][1]);
-    const cx = clamp(L.x, wAll / 2 + 6, Math.max(wAll / 2 + 6, this.W - wAll / 2 - 6)); // a name and its pill are never cut off by the screen edge
+    const fx0 = this.freeRect()[0]; // the left edge of the map that is really visible (the hero panel covers the rest)
+    if (L.x + wAll / 2 < fx0 + 4) return;
+    const cx = clamp(L.x, fx0 + wAll / 2 + 6, Math.max(fx0 + wAll / 2 + 6, this.W - wAll / 2 - 6)); // a name and its pill are never cut off by the screen edge or hidden under the panel
     const make = (k) => { let h = 0, w = 0; for (let i = 0; i < k; i++) { h += rows[i][0]; w = Math.max(w, rows[i][1]); } return { x0: cx - w / 2, x1: cx + w / 2, y0, y1: y0 + h, id: L.id }; };
     let k = pt ? 3 : line ? 2 : 1;
     for (; k > 1; k--) if (!hits(make(k), L.id)) break;
@@ -981,7 +984,7 @@ export class TreeScreen {
       if (!A || !B || (a !== 'hub' && A.teaser) || B.teaser) return; // teasers are fog, not threads
       if (!cross && Math.hypot(A.x - B.x, A.y - B.y) > V.linkFar) return; // a requirement longer than a thread can be is shown by the focus path, never across the web (cross links were already picked by distance by the atlas)
       seen.add(k);
-      const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, off = (cross ? 0.18 : 0.1) * L * (idHash(k) < 0.5 ? 1 : -1); // a gentle bow, side picked per thread (like the sandbox)
+      const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, off = (cross ? 0.18 : 0.1) * L * (idHash(k) < 0.5 ? 1 : -1) * hubFade(A, B); // a gentle bow, side picked per thread (like the sandbox)
       out.push({ a, b, ax: A.x, ay: A.y, bx: B.x, by: B.y, cx: (A.x + B.x) / 2 - (dy / L) * off, cy: (A.y + B.y) / 2 + (dx / L) * off, cross, col: this.colorOf(cross ? a : b) });
     };
     for (const e of def.edges) {
@@ -989,7 +992,7 @@ export class TreeScreen {
       if (from === 'hub') { const r = m.region(e.to); if (r && r.kind === 'cluster' && r.heart && r.heart !== e.to) from = r.heart; } // a far seal hangs from its spirit's heart, not from the hub
       add(from, e.to, false);
     }
-    for (const l of V.links) if (def.nodes[l[0]] && def.nodes[l[1]]) add(l[0], l[1], true);
+    for (const l of V.links) { const a = def.nodes[l[0]], b = def.nodes[l[1]]; if (a && b && Math.min(Math.hypot(a.x, a.y), Math.hypot(b.x, b.y)) > V.nearHub * 2) add(l[0], l[1], true); } // no cross links round the hub: the fan stays clean
     this.threads = out;
     this.forkSeal = new Map(); // fork lantern -> its seal (veil, petals, unfurl)
     for (const g of V.gardens || []) for (const f of g.forks) for (const id of f) if (def.nodes[id]) this.forkSeal.set(id, g.seal);
@@ -1039,7 +1042,7 @@ export class TreeScreen {
       c.globalAlpha = this.focus ? 0.4 : 1;
       this.rim(c, x, y, r, awake ? 'lit' : 'dim');
       if (!awake && !d.reserved) this.padlock(c, x + r * 0.72, y - r * 0.72, r);
-      if (lod !== 'far' && d.name) {
+      if (lod !== 'far' && d.name && x - 40 > this.freeRect()[0]) {
         const fs = Math.round((this.small ? 15 : 19) * uk); c.font = `${fs}px ${FONT_HEAD}`; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineJoin = 'round';
         c.lineWidth = 4; c.strokeStyle = 'rgba(8,10,24,.92)'; c.strokeText(d.name, x, y + r + 6); c.fillStyle = awake ? '#fff0c8' : '#d4daf0'; c.fillText(d.name, x, y + r + 6);
       }
@@ -1104,34 +1107,47 @@ export class TreeScreen {
     }
     c.globalAlpha = 1;
   }
-  /** Route chips on roads that have been started: '5 of 12 to Spirit Bolts' (sandbox look). */
+  /** Route chips ('5 of 12 to Spirit Bolts'): only for roads on the hovered / selected path, or else the one started road nearest the middle of the map. At most 3, never on a label. */
   drawChips(c) {
-    const z = this.cam.z, m = this.model;
+    const z = this.cam.z, m = this.model, foc = this.focus;
     if (z <= 0.3 || !this.view.roads || !this.view.roads.length) return;
-    const boxes = (this.lblBoxes || []).slice();
-    c.textBaseline = 'middle'; c.textAlign = 'center';
-    const uk = this.uk || 1;
+    const [fx0, fy0, fx1, fy1] = this.freeRect(); const mx = (fx0 + fx1) / 2, my = (fy0 + fy1) / 2;
+    const cand = [];
     for (const r of this.view.roads) {
       const n = r.ids.length; if (!n) continue;
       let k = 0; for (const id of r.ids) if (m.lit(id)) k++;
       const to = this.def.nodes[r.to]; if (!to || k >= n || m.lit(r.to)) continue;
       if (!(k > 0 || r.from === 'hub' || m.lit(r.from))) continue;
-      const mid = this.def.nodes[r.ids[Math.min(n - 1, Math.floor((n - 1) / 2))]]; if (!mid) continue;
+      const midId = r.ids[Math.min(n - 1, Math.floor((n - 1) / 2))], mid = this.def.nodes[midId]; if (!mid) continue;
       const [x, y] = this.toS(mid.x, mid.y);
-      if (x < -60 || x > this.W + 60 || y < -30 || y > this.H + 30) continue;
-      const ce = m.cache[r.to]; const nm = ce && !ce.d.masked ? ce.d.name : 'a far lantern';
-      const txt = `${k} of ${n} to ${nm}`; c.font = `600 ${13 * uk}px ${FONT_UI}`;
-      const w = this.mw(c, c.font, txt) + 18 * uk, h = 22 * uk, bx = x - w / 2, by = y - 30 * uk - h / 2;
-      if (boxes.some((b) => b.x0 < bx + w && b.x1 > bx && b.y0 < by + h && b.y1 > by)) continue;
-      boxes.push({ x0: bx, x1: bx + w, y0: by, y1: by + h });
-      c.globalAlpha = (this.focus ? 0.55 : 0.95) * clamp((z - 0.3) / 0.1, 0, 1);
-      c.beginPath(); c.roundRect(bx, by, w, h, h / 2); c.fillStyle = 'rgba(12,17,38,.92)'; c.fill(); c.strokeStyle = 'rgba(255,210,122,.6)'; c.lineWidth = 1; c.stroke();
-      c.fillStyle = '#ffe6ae'; c.fillText(txt, x, by + h / 2 + 1);
+      if (x < fx0 + 30 || x > fx1 - 30 || y < fy0 + 20 || y > fy1 - 20) continue;
+      if (foc && !(r.ids.some((id) => foc.nodes.has(id)) || foc.nodes.has(r.to))) continue;
+      cand.push({ r, k, n, x, y, d: Math.hypot(x - mx, y - my) });
+    }
+    if (!cand.length) return;
+    cand.sort((p, q) => p.d - q.d);
+    const take = foc ? cand.slice(0, 3) : cand.slice(0, 1);
+    const boxes = (this.allBoxes || []).slice();
+    c.textBaseline = 'middle'; c.textAlign = 'center';
+    const uk = this.uk || 1;
+    for (const q of take) {
+      const ce = m.cache[q.r.to]; const nm = ce && !ce.d.masked ? ce.d.name : 'a far lantern';
+      const txt = `${q.k} of ${q.n} to ${nm}`; c.font = `600 ${13 * uk}px ${FONT_UI}`;
+      const w = this.mw(c, c.font, txt) + 18 * uk, h = 22 * uk, bx = q.x - w / 2;
+      let placed = false;
+      for (const dy of [-30, 30, -54, 54]) { // try above the road, then below
+        const by = q.y + dy * uk - h / 2;
+        if (bx < fx0 + 4 || bx + w > fx1 || by < fy0 || by + h > fy1 || boxes.some((b) => b.x0 < bx + w && b.x1 > bx && b.y0 < by + h && b.y1 > by)) continue;
+        boxes.push({ x0: bx, x1: bx + w, y0: by, y1: by + h });
+        c.globalAlpha = clamp((z - 0.3) / 0.1, 0, 1) * 0.95;
+        c.beginPath(); c.roundRect(bx, by, w, h, h / 2); c.fillStyle = 'rgba(12,17,38,.92)'; c.fill(); c.strokeStyle = 'rgba(255,210,122,.6)'; c.lineWidth = 1; c.stroke();
+        c.fillStyle = '#ffe6ae'; c.fillText(txt, q.x, by + h / 2 + 1); placed = true; break;
+      }
+      void placed;
     }
     c.globalAlpha = 1;
   }
 
-  // ------------------------------------------------------------------ HERO PANEL + NEXT LIGHTS (tree home, desktop; LOCKED 'TREE AS HOME SCREEN' / sandbox)
   /** Left panel: the last-played hero (portrait, a glow spot where the companion will stand), swap row, Play / Almanac / Goals / Back, purse. */
   buildHeroPanel() {
     const p = el('aside', 'ts-hero');
@@ -1155,11 +1171,13 @@ export class TreeScreen {
     return p;
   }
   /** Paint one portrait into a canvas (cover crop on the face) or a plain initial when there is no picture. */
-  paintPortrait(cv, hero, name, awake) {
+  paintPortrait(cv, hero, name, awake, soft = false) {
     const g = cv.getContext('2d'); if (!g) return;
     const w = cv.width, h = cv.height; g.clearRect(0, 0, w, h);
     const im = this.portraitImg(hero);
-    if (im) { const k = Math.min(w / im.naturalWidth, h / im.naturalHeight); g.globalAlpha = awake ? 1 : 0.45; if (!awake) g.filter = 'grayscale(1) brightness(.6)'; g.drawImage(im, (w - im.naturalWidth * k) / 2, h - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); g.filter = 'none'; g.globalAlpha = 1; }
+    if (im) { const k = Math.min(w / im.naturalWidth, h / im.naturalHeight); g.globalAlpha = awake ? 1 : 0.45; if (!awake) g.filter = 'grayscale(1) brightness(.6)'; g.drawImage(im, (w - im.naturalWidth * k) / 2, h - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); g.filter = 'none'; g.globalAlpha = 1; if (soft) { // cut-out look: the picture's own backdrop fades out softly into the panel (an oval feather inside the picture's rectangle)
+        const iw = im.naturalWidth * k, ih = im.naturalHeight * k;
+        g.save(); g.globalCompositeOperation = 'destination-in'; g.translate(w / 2, h - ih / 2); g.scale(1, ih / iw); const mk = g.createRadialGradient(0, 0, iw * 0.2, 0, 0, iw * 0.5); mk.addColorStop(0, 'rgba(0,0,0,1)'); mk.addColorStop(0.5, 'rgba(0,0,0,.85)'); mk.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = mk; g.fillRect(-w, -h * 2, 2 * w, 4 * h); g.restore(); } }
     else { g.fillStyle = awake ? '#fff1cf' : '#8e97b8'; g.font = `${Math.round(h * 0.5)}px ${FONT_HEAD}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name || '?').slice(0, 1), w / 2, h / 2); }
   }
   renderHero() {
@@ -1171,7 +1189,7 @@ export class TreeScreen {
     this.heroSub.textContent = cur.awake ? `Bond level ${cur.bond}` : `Keepsakes ${cur.keep} of ${cur.need}`;
     const g = this.heroCv.getContext('2d');
     if (g) g.clearRect(0, 0, 400, 430);
-    this.paintPortrait(this.heroCv, cur.id, cur.name, cur.awake);
+    this.paintPortrait(this.heroCv, cur.id, cur.name, cur.awake, true);
     if (g) { // the glow spot: where the companion will stand beside the hero
       g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(100, 360, 0, 100, 360, 120); gr.addColorStop(0, 'rgba(255,210,122,.4)'); gr.addColorStop(1, 'rgba(255,210,122,0)'); g.fillStyle = gr; g.fillRect(0, 0, 400, 430); g.restore();
     }
@@ -1385,7 +1403,8 @@ export class TreeScreen {
     pick.sort((a, b) => pri(a) - pri(b));
     const G = new Map();
     const cells = (b) => { const o = []; for (let i = Math.floor(b.x0 / 64); i <= Math.floor(b.x1 / 64); i++) for (let j = Math.floor(b.y0 / 64); j <= Math.floor(b.y1 / 64); j++) o.push(`${i},${j}`); return o; };
-    const addBox = (b) => { for (const k of cells(b)) { if (!G.has(k)) G.set(k, []); G.get(k).push(b); } };
+    this.allBoxes = [];
+    const addBox = (b) => { this.allBoxes.push(b); for (const k of cells(b)) { if (!G.has(k)) G.set(k, []); G.get(k).push(b); } };
     const hits = (bx, id) => cells(bx).some((k) => (G.get(k) || []).some((b) => b.id !== id && b.x0 < bx.x1 && b.x1 > bx.x0 && b.y0 < bx.y1 && b.y1 > bx.y0));
     for (const L of list) addBox({ x0: L.x - L.r - 3, x1: L.x + L.r + 3, y0: L.y - L.r - 3, y1: L.y + L.r + 3, id: L.id, lm: tr(L) === 'landmark' });
     for (const t of this.toolBoxes || []) addBox({ x0: t.x - t.r, x1: t.x + t.r, y0: t.y - t.r, y1: t.y + t.r, id: 'tool' }); // names keep off the tool coins
@@ -1402,7 +1421,7 @@ export class TreeScreen {
       const txt = m.cache[L.id].d.name; const w = this.mw(c, `${13 * uk}px ${FONT_UI}`, txt) + 8;
       const y0 = L.y + L.r + (L.s === 'ready' ? 10 : 5);
       const bx = { x0: L.x - w / 2, x1: L.x + w / 2, y0, y1: y0 + lh };
-      if (hits(bx, L.id)) continue;
+      if (hits(bx, L.id) || bx.x0 < this.freeRect()[0] + 2) continue;
       addBox(bx);
       c.globalAlpha = this.focus && !this.focus.nodes.has(L.id) ? 0.45 : 1;
       c.fillStyle = 'rgba(10,14,28,.55)'; c.fillRect(bx.x0 + 2, bx.y0 + 1, w - 4, lh - 2); // R2: a light plate (outlined text for every small name cost too much per frame)

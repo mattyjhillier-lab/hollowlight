@@ -59,7 +59,7 @@ try {
       t.recompute(); return true; })()`);
     await sleep(900);
   };
-  const setZoom = async (z, x = 0, y = 0) => { await ev(`(() => { const t = ${T}; t.fly = null; t.cam.x = ${x}; t.cam.y = ${y}; t.cam.z = ${z}; t.limit && t.limit(); t.camSig = ''; t.dirty(); return true; })()`); await sleep(500); };
+  const setZoom = async (z, x = 0, y = 0) => { await ev(`(() => { const t = ${T}; t.fly = null; const fr = t.freeRect(); t.cam.z = ${z}; t.cam.x = ${x} - ((fr[0] + fr[2]) / 2 - t.W / 2) / ${z}; t.cam.y = ${y} - ((fr[1] + fr[3]) / 2 - t.H / 2) / ${z}; t.limit && t.limit(); t.camSig = ''; t.dirty(); return true; })()`); await sleep(500); };
   const shot = async (name) => { const r = await send('Page.captureScreenshot', { format: 'jpeg', quality: 78 }); writeFileSync(join(OUT, `${name}.jpg`), Buffer.from(r.data, 'base64')); console.log('shot', name); };
   mkdirSync(OUT, { recursive: true });
   const want = (n) => !ONLY || n.includes(ONLY);
