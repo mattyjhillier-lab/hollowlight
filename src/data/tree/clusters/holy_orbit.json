@@ -3,7 +3,6 @@
  "weapon": "holy_orbit",
  "prefix": "or",
  "emblem": "orbit",
- "slot": "sky5",
  "chapter": "cursed_forest",
  "region": "launch",
  "heart": "gt_holy_orbit",
@@ -101,34 +100,312 @@
    "hidden": true
   }
  ],
- "outline": [
+ "branches": [
+  {
+   "socket": "a",
+   "lead": [
+    "or_power",
+    "or_spin",
+    "or_wick"
+   ],
+   "diamond": "or_kindle",
+   "seal": "or_halo",
+   "forks": [
+    [
+     "or_hal1",
+     "or_hal2",
+     "or_hal3"
+    ],
+    [
+     "or_hal4",
+     "or_hal5",
+     "or_hal6"
+    ]
+   ]
+  },
+  {
+   "socket": "b",
+   "lead": [
+    "or_tide",
+    "or_bright",
+    "or_swing"
+   ],
+   "diamond": "or_seventh",
+   "seal": "gt_judgement_wheel",
+   "forks": [
+    [
+     "or_jud1",
+     "or_jud2",
+     "or_jud3"
+    ],
+    [
+     "or_jud4",
+     "or_jud5",
+     "or_jud6"
+    ]
+   ]
+  },
+  {
+   "socket": "c",
+   "lead": [
+    "or_wide",
+    "or_vigil",
+    "or_lamp"
+   ],
+   "diamond": "or_ember",
+   "seal": "gt_vesper_tide",
+   "forks": [
+    [
+     "or_ves1",
+     "or_ves2",
+     "or_ves3"
+    ],
+    [
+     "or_ves4",
+     "or_ves5",
+     "or_ves6"
+    ]
+   ]
+  }
+ ],
+ "nodes": [
   {
    "id": "or_power",
    "idx": 2,
    "kind": "knot",
    "name": "Burning Orbs",
-   "desc": "Orb power +2%",
+   "desc": "Orb power +1%",
    "branch": "magic",
    "cost": {
     "gold": 180
    },
-   "requires": [
-    "ma_area"
-   ],
    "effects": [
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 2
+     "pct": 1
     }
    ]
+  },
+  {
+   "id": "or_spin",
+   "idx": 10,
+   "kind": "knot",
+   "name": "Quick Circle",
+   "desc": "Orbit speed +1%",
+   "cost": {
+    "gold": 180
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
   },
   {
    "id": "or_wick",
    "idx": 3,
    "kind": "knot",
    "name": "Long Wick",
-   "desc": "Orb power +4%",
+   "desc": "Orbit size +2%",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 2
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "or_kindle",
+   "idx": 4,
+   "kind": "bead",
+   "name": "Kindling",
+   "desc": "Orb power +2% and Burn potency +1% (status, shared cap)",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 2
+    },
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "or_halo",
+   "idx": 14,
+   "kind": "socket",
+   "name": "Candle Ring",
+   "desc": "A landmark of the first light Holy Orbit learns. No power: it opens the two branches beyond it.",
+   "branch": "magic",
+   "cost": {
+    "gold": 120
+   },
+   "effects": [
+    {
+     "echo": "sanctum_halo"
+    }
+   ]
+  },
+  {
+   "id": "or_hal1",
+   "idx": 15,
+   "kind": "knot",
+   "name": "Ember Ground",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Orbit size +1%"
+  },
+  {
+   "id": "or_hal2",
+   "idx": 16,
+   "kind": "knot",
+   "name": "Warm Floor",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Orb power +1%"
+  },
+  {
+   "id": "or_hal3",
+   "idx": 17,
+   "kind": "bead",
+   "name": "Candle Ash",
+   "branch": "magic",
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Burn potency +1% (status, shared cap)"
+  },
+  {
+   "id": "or_hal4",
+   "idx": 18,
+   "kind": "knot",
+   "name": "Wax Glow",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Orbit speed +1%"
+  },
+  {
+   "id": "or_hal5",
+   "idx": 19,
+   "kind": "knot",
+   "name": "Quiet Wick",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "sanctum_halo"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "or_hal6",
+   "idx": 20,
+   "kind": "bead",
+   "name": "Ring of Tallow",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "sanctum_halo"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "or_tide",
+   "idx": 7,
+   "kind": "knot",
+   "name": "Turning Tide",
+   "desc": "Orbit speed +1%",
+   "cost": {
+    "gold": 450
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "or_bright",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Bright Ring",
+   "desc": "Orbit size +1%",
+   "cost": {
+    "gold": 390
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "or_swing",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Censer Swing",
+   "desc": "Orb power +1%",
    "cost": {
     "gold": 290
    },
@@ -136,64 +413,23 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 4
+     "pct": 1
     }
-   ]
-  },
-  {
-   "id": "or_kindle",
-   "idx": 4,
-   "kind": "bead",
-   "name": "Kindling",
-   "desc": "Burn potency +3% (status, shared cap)",
-   "cost": {
-    "gold": 390
-   },
-   "effects": [
-    {
-     "status": "burn",
-     "pct": 3
-    }
-   ]
-  },
-  {
-   "id": "or_wide",
-   "idx": 5,
-   "kind": "knot",
-   "name": "Wider Halo",
-   "desc": "Orbit size +2%",
-   "branch": "magic",
-   "maxRank": 1,
-   "rankCost": 1,
-   "cost": {
-    "gold": 450
-   },
-   "requires": [
-    "or_power"
    ],
-   "effects": [
-    {
-     "weapon": "holy_orbit",
-     "stat": "radius",
-     "pct": 2
-    }
-   ]
+   "branch": "magic"
   },
   {
    "id": "or_seventh",
    "idx": 6,
    "kind": "mastery",
    "name": "Seventh Light",
-   "desc": "Orb power +2% and Orbit size +2%",
+   "desc": "Orb power +2% and Orbit size +1%",
    "flavour": "Evolve the orbit and the circle widens.",
    "branch": "magic",
    "cost": {
     "gold": 910,
     "shards": 1
    },
-   "requires": [
-    "or_wide"
-   ],
    "effects": [
     {
      "weapon": "holy_orbit",
@@ -203,7 +439,7 @@
     {
      "weapon": "holy_orbit",
      "stat": "radius",
-     "pct": 2
+     "pct": 1
     }
    ],
    "unlock": {
@@ -213,100 +449,134 @@
    }
   },
   {
-   "id": "or_tide",
-   "idx": 7,
+   "id": "or_jud1",
+   "idx": 21,
    "kind": "knot",
-   "name": "Turning Tide",
-   "desc": "Orbit speed +2%",
+   "name": "Rekindled Spark",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Orb power +1%"
+  },
+  {
+   "id": "or_jud2",
+   "idx": 22,
+   "kind": "knot",
+   "name": "Bright Burst",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Orbit size +1%"
+  },
+  {
+   "id": "or_jud3",
+   "idx": 23,
+   "kind": "bead",
+   "name": "Second Flame",
+   "branch": "magic",
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Burn potency +1% (status, shared cap)"
+  },
+  {
+   "id": "or_jud4",
+   "idx": 24,
+   "kind": "knot",
+   "name": "Turning Spokes",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Orbit size +1%"
+  },
+  {
+   "id": "or_jud5",
+   "idx": 25,
+   "kind": "knot",
+   "name": "Wheel Hush",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "judgement_wheel"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "or_jud6",
+   "idx": 26,
+   "kind": "bead",
+   "name": "Rim of Light",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "judgement_wheel"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "or_wide",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Wider Halo",
+   "desc": "Orbit size +1%",
+   "branch": "magic",
+   "maxRank": 1,
+   "rankCost": 1,
    "cost": {
     "gold": 450
    },
    "effects": [
     {
      "weapon": "holy_orbit",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "or_ember",
-   "idx": 8,
-   "kind": "bead",
-   "name": "Votive Embers",
-   "desc": "Burn potency +3% (status, shared cap)",
-   "cost": {
-    "gold": 570
-   },
-   "effects": [
-    {
-     "status": "burn",
-     "pct": 3
-    }
-   ],
-   "unlock": {
-    "t": "evolveWeapon",
-    "id": "holy_orbit",
-    "n": 3
-   }
-  },
-  {
-   "id": "or_swing",
-   "idx": 9,
-   "kind": "knot",
-   "name": "Censer Swing",
-   "desc": "Orbit speed +2%",
-   "cost": {
-    "gold": 290
-   },
-   "effects": [
-    {
-     "weapon": "holy_orbit",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "or_spin",
-   "idx": 10,
-   "kind": "knot",
-   "name": "Quick Circle",
-   "desc": "Orbit speed +2%",
-   "cost": {
-    "gold": 180
-   },
-   "effects": [
-    {
-     "weapon": "holy_orbit",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "or_bright",
-   "idx": 11,
-   "kind": "knot",
-   "name": "Bright Ring",
-   "desc": "Orbit size +2%",
-   "cost": {
-    "gold": 390
-   },
-   "effects": [
-    {
-     "weapon": "holy_orbit",
      "stat": "radius",
-     "pct": 2
+     "pct": 1
     }
    ]
   },
   {
    "id": "or_vigil",
    "idx": 12,
-   "kind": "bead",
+   "kind": "knot",
    "name": "Long Vigil",
-   "desc": "Orb power +4%",
+   "desc": "Orb power +2%",
    "cost": {
     "gold": 490
    },
@@ -314,14 +584,226 @@
     {
      "weapon": "holy_orbit",
      "stat": "power",
-     "pct": 4
+     "pct": 2
     }
    ],
    "unlock": {
     "t": "surviveTime",
     "chapter": "cursed_forest",
     "seconds": 600
-   }
+   },
+   "branch": "magic"
+  },
+  {
+   "id": "or_lamp",
+   "idx": 27,
+   "kind": "knot",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "name": "Vesper Lamp",
+   "cost": {
+    "gold": 320
+   },
+   "desc": "Orbit speed +1%"
+  },
+  {
+   "id": "or_ember",
+   "idx": 8,
+   "kind": "bead",
+   "name": "Votive Embers",
+   "desc": "Orbit speed +2% and Burn potency +1% (status, shared cap)",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "speed",
+     "pct": 2
+    },
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "holy_orbit",
+    "n": 3
+   },
+   "branch": "magic"
+  },
+  {
+   "id": "or_ves1",
+   "idx": 28,
+   "kind": "knot",
+   "name": "Ebbing Light",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "radius",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Orbit size +1%"
+  },
+  {
+   "id": "or_ves2",
+   "idx": 29,
+   "kind": "knot",
+   "name": "Swell of Halos",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Orb power +1%"
+  },
+  {
+   "id": "or_ves3",
+   "idx": 30,
+   "kind": "bead",
+   "name": "Tideburn",
+   "branch": "magic",
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Burn potency +1% (status, shared cap)"
+  },
+  {
+   "id": "or_ves4",
+   "idx": 31,
+   "kind": "knot",
+   "name": "Evening Bell",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "holy_orbit",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Orb power +1%"
+  },
+  {
+   "id": "or_ves5",
+   "idx": 32,
+   "kind": "knot",
+   "name": "Low Water",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "vesper_tide"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "or_ves6",
+   "idx": 33,
+   "kind": "bead",
+   "name": "Still Pool",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "vesper_tide"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  }
+ ],
+ "orbit": {
+  "tier": 1,
+  "angle": 205
+ },
+ "roads": [
+  {
+   "from": "su_swift",
+   "to": "gt_holy_orbit",
+   "nodes": [
+    {
+     "id": "or_way1",
+     "idx": 34,
+     "kind": "knot",
+     "name": "Quiet Spark",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "or_way2",
+     "idx": 35,
+     "kind": "knot",
+     "name": "Pale Moss",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "or_way3",
+     "idx": 36,
+     "kind": "knot",
+     "name": "Thin Pebble",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    }
+   ]
   }
  ]
 }

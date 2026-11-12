@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "satchel",
  "prefix": "co",
- "slot": "far4",
  "name": "The Satchel",
  "blurb": "Gems, pickups and fortune: small, cheap steps that make every run feel kinder.",
  "nodes": [
@@ -93,6 +92,69 @@
      -63.6
     ]
    }
+  }
+ ],
+ "orbit": {
+  "tier": 1,
+  "angle": 40
+ },
+ "roads": [
+  {
+   "from": "li_regen",
+   "to": "br_satchel",
+   "nodes": [
+    {
+     "id": "co_way1",
+     "idx": 3,
+     "kind": "knot",
+     "name": "Dim Moth",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_way2",
+     "idx": 4,
+     "kind": "knot",
+     "name": "Warm Thread",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 110
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "co_way3",
+     "idx": 5,
+     "kind": "knot",
+     "name": "Still Gate",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 130
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
+   ]
   }
  ]
 }

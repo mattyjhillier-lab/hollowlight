@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "nightgate",
  "prefix": "df",
- "slot": "far8",
  "name": "The Night Gate",
  "blurb": "Deeper nights and the lanterns only they can light.",
  "nodes": [
@@ -27,12 +26,6 @@
    "unlock": {
     "t": "clearChapter",
     "id": "cursed_forest"
-   },
-   "place": {
-    "at": [
-     0,
-     -85
-    ]
    }
   },
   {
@@ -64,8 +57,8 @@
    },
    "place": {
     "at": [
-     80.8,
-     -26.3
+     0,
+     0
     ]
    }
   },
@@ -187,11 +180,210 @@
     "n": 9
    },
    "place": {
+    "near": "gt_cursed_forest_hard",
     "at": [
-     -80.8,
-     -26.3
+     96,
+     56
     ]
    }
+  }
+ ],
+ "orbit": {
+  "tier": 3,
+  "angle": 15
+ },
+ "anchors": {
+  "gt_cursed_forest_hard": {
+   "name": "Deep Dusk",
+   "orbit": {
+    "tier": 2,
+    "angle": 30
+   }
+  }
+ },
+ "roads": [
+  {
+   "from": "su_pot",
+   "to": "gt_cursed_forest_hard",
+   "nodes": [
+    {
+     "id": "df_way1",
+     "idx": 5,
+     "kind": "knot",
+     "name": "Dim Way",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 110
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "df_way2",
+     "idx": 6,
+     "kind": "knot",
+     "name": "Warm Bend",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "df_way3",
+     "idx": 7,
+     "kind": "knot",
+     "name": "Still Wick",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "df_way4",
+     "idx": 8,
+     "kind": "bead",
+     "name": "Still Milestone",
+     "desc": "Magic spirits power +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 480
+     },
+     "effects": [
+      {
+       "weapon": "@magic",
+       "stat": "power",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "df_way5",
+     "idx": 9,
+     "kind": "knot",
+     "name": "Small Moth",
+     "desc": "Area +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 180
+     },
+     "effects": [
+      {
+       "mod": "area",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "df_way6",
+     "idx": 10,
+     "kind": "knot",
+     "name": "Faint Thread",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 200
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "from": "gt_cursed_forest_hard",
+   "to": "gt_cursed_forest_expert",
+   "nodes": [
+    {
+     "id": "df_long1",
+     "idx": 11,
+     "kind": "knot",
+     "name": "Pale Moth",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 230
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "df_long2",
+     "idx": 12,
+     "kind": "knot",
+     "name": "Thin Thread",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 240
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "df_long3",
+     "idx": 13,
+     "kind": "knot",
+     "name": "Gentle Gate",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 250
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "df_long4",
+     "idx": 14,
+     "kind": "knot",
+     "name": "Low Ford",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 270
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    }
+   ]
   }
  ]
 }

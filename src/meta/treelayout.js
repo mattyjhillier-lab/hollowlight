@@ -4,7 +4,8 @@
 
 import { tierOf } from './treetier.js';
 
-const EXTRA = 22; // a node's hit radius counts towards its cluster's footprint
+const EXTRA = 22;
+const own = (o, k) => o != null && Object.hasOwn(o, k); // a node's hit radius counts towards its cluster's footprint
 
 // scale = core.layout.clusterScale (R1: the emblem points are spread by it)
 export function clusterRadius(emblem, scale = 1) {
@@ -50,27 +51,17 @@ export function gapIssues(info) {
 
 export function layoutIssues(info, def) {
   const issues = [];
-  const core = info.core;
-  const R = core.rings;
-  const cl = Object.entries(info.clusters).map(([id, c]) => ({ id, c: info.centres[id], r: footprint(info, id, c), slot: c.slot }));
-  // tool clusters (Satchel, Card Fan, Almanac, Hearth-key, Night Gate): footprint = farthest lantern placed in them (own nodes AND moved global lanterns)
-  for (const [id, t] of Object.entries(info.tools || {})) {
-    const c = info.toolCentres[id];
-    let m = 0;
-    for (const n of info.nodes) if (n.tool === id) m = Math.max(m, Math.hypot(info.positions[n.id][0] - c[0], info.positions[n.id][1] - c[1]));
-    cl.push({ id, c, r: m + EXTRA, slot: t.slot });
-  }
-  for (let i = 0; i < cl.length; i++) {
-    const a = cl[i];
-    const d0 = Math.hypot(a.c[0], a.c[1]);
-    if (d0 < a.r + 90) issues.push(`cluster ${a.id} overlaps the hub pool`);
-    for (const k of ['hearth', 'wick', 'dusk']) if (Math.abs(d0 - R[k].r) < a.r + 30) issues.push(`cluster ${a.id} overlaps the ${k} ring`);
-    if (a.slot.startsWith('far') || a.slot.startsWith('band')) {
-      if (d0 - a.r < R.dusk.r + 30) issues.push(`cluster ${a.id} sits inside the Dusk ring`);
-    }
-    for (let j = i + 1; j < cl.length; j++) {
-      const b = cl[j];
-      if (Math.hypot(a.c[0] - b.c[0], a.c[1] - b.c[1]) < a.r + b.r) issues.push(`clusters ${a.id} and ${b.id} overlap`);
+  // S1 ATLAS: regions (constellations, tool groups, anchored lanterns, hero medallions, reserved / night / far records) never overlap each
+  // other or the hub web; footprint = the region record's r
+  const rg = (info.regions || []).filter((r) => r.id !== 'hub' && Array.isArray(r.centre) && Number.isFinite(r.r));
+  const hubR = Number.isFinite(info.hubR) ? info.hubR : 0;
+  for (let i = 0; i < rg.length; i++) {
+    const a = rg[i];
+    const d0 = Math.hypot(a.centre[0], a.centre[1]);
+    if (d0 - a.r < hubR) issues.push(`region ${a.id} overlaps the hub web`);
+    for (let j = i + 1; j < rg.length; j++) {
+      const b = rg[j];
+      if (Math.hypot(a.centre[0] - b.centre[0], a.centre[1] - b.centre[1]) < a.r + b.r) issues.push(`regions ${a.id} and ${b.id} overlap`);
     }
   }
   issues.push(...gapIssues(info));
@@ -139,5 +130,42 @@ export function connectIssues(info, def) {
     const kids = def.children[id].filter((k) => !def.nodes[k].teaser);
     if (!kids.length || kids.every(challenge)) issues.push(`bridge ${id} leads only to challenges (${kids.join(', ') || 'nothing'})`);
   }
+  // S1 web rules: (1) every lantern but a fork leaf's own chain reaches the hub through its requires; (2) forks are LEAVES: a fork lantern
+  // requires only its seal or the step before it in the same fork, and nothing outside its fork requires it; (3) render-only links join two
+  // existing non-fork lanterns, at most 2 per lantern, never along a requires link
+  const fork = Object.create(null);
+  for (const n of info.nodes) if (n.garden && n.garden.role === 'fork') fork[n.id] = n.garden;
+  const sealOf = Object.create(null);
+  for (const c of Object.values(info.clusters || {})) if (c.garden) for (const b of c.branchInfo) for (const f of b.forks) for (const id of f) sealOf[id] = { seal: b.seal, chain: f };
+  const memo = Object.create(null);
+  const reaches = (id, depth = 0) => {
+    if (own(memo, id)) return memo[id];
+    if (depth > 4000) return false;
+    const n = def.nodes[id];
+    memo[id] = false;
+    const req = [...n.requires, ...(n.requiresAny || [])];
+    const ok = !req.length || req.some((r) => own(def.nodes, r) && reaches(r, depth + 1));
+    memo[id] = ok;
+    return ok;
+  };
+  for (const id of def.list) if (!def.nodes[id].teaser && !reaches(id)) issues.push(`${id} is not connected to the hub (no requires path)`);
+  for (const id of def.list) {
+    if (!own(fork, id)) continue;
+    const f = sealOf[id];
+    const k = f ? f.chain.indexOf(id) : -1;
+    const want = k === 0 ? f.seal : k > 0 ? f.chain[k - 1] : null;
+    const req = [...def.nodes[id].requires, ...(def.nodes[id].requiresAny || [])];
+    if (!f || req.length !== 1 || req[0] !== want) issues.push(`fork ${id} must require only ${want || 'its seal'}`);
+    for (const ch of def.children[id] || []) if (!f || f.chain.indexOf(ch) !== k + 1) issues.push(`${ch} requires the fork lantern ${id} (forks are leaves)`);
+  }
+  const deg = Object.create(null);
+  for (const l of info.links || []) {
+    const [a, b] = Array.isArray(l) ? l : [];
+    if (!own(def.nodes, a) || !own(def.nodes, b)) { issues.push(`link ${a} - ${b}: unknown lantern`); continue; }
+    if (own(fork, a) || own(fork, b)) issues.push(`link ${a} - ${b} touches a fork leaf`);
+    if (def.nodes[a].requires.includes(b) || def.nodes[b].requires.includes(a)) issues.push(`link ${a} - ${b} doubles a requires link`);
+    deg[a] = (deg[a] || 0) + 1; deg[b] = (deg[b] || 0) + 1;
+  }
+  for (const [id, n] of Object.entries(deg)) if (n > 2) issues.push(`${id} has ${n} cross-links (max 2)`);
   return issues;
 }

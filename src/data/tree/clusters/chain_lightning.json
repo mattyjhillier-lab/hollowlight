@@ -3,7 +3,6 @@
  "weapon": "chain_lightning",
  "prefix": "cl",
  "emblem": "chain",
- "slot": "sky4",
  "chapter": "cursed_forest",
  "region": "launch",
  "hero": null,
@@ -146,21 +145,139 @@
    "hidden": true
   }
  ],
- "outline": [
+ "branches": [
+  {
+   "socket": "a",
+   "lead": [
+    "cl_power",
+    "cl_quick",
+    "cl_reach"
+   ],
+   "diamond": "cl_arc",
+   "seal": "gt_thunder_judgment",
+   "forks": [
+    [
+     "cl_thu1",
+     "cl_thu2",
+     "cl_thu3"
+    ],
+    [
+     "cl_thu4",
+     "cl_thu5",
+     "cl_thu6"
+    ]
+   ]
+  },
+  {
+   "socket": "b",
+   "lead": [
+    "cl_spark",
+    "cl_hum",
+    "cl_storm"
+   ],
+   "diamond": "cl_kin",
+   "seal": "gt_static_storm",
+   "forks": [
+    [
+     "cl_sta1",
+     "cl_sta2",
+     "cl_sta3"
+    ],
+    [
+     "cl_sta4",
+     "cl_sta5",
+     "cl_sta6"
+    ]
+   ]
+  },
+  {
+   "socket": "c",
+   "lead": [
+    "cl_crack",
+    "cl_ground",
+    "cl_flash"
+   ],
+   "diamond": "cl_crown",
+   "seal": "gt_storm_tether",
+   "forks": [
+    [
+     "cl_tet1",
+     "cl_tet2",
+     "cl_tet3"
+    ],
+    [
+     "cl_tet4",
+     "cl_tet5",
+     "cl_tet6"
+    ]
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "id": "cl_power",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Static Heart",
+   "desc": "Power +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "cl_quick",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Quick Charge",
+   "desc": "Cooldown -1%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "cl_reach",
+   "idx": 7,
+   "kind": "knot",
+   "name": "Long Reach",
+   "desc": "Arc +1%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
   {
    "id": "cl_arc",
    "idx": 4,
    "kind": "bead",
    "name": "Forked Arc",
-   "desc": "Chain Lightning jumps +1 time.",
+   "desc": "Chains +1",
    "branch": "magic",
    "cost": {
     "gold": 210
    },
-   "requires": [
-    "ma_area",
-    "gt_chain_lightning"
-   ],
    "effects": [
     {
      "weapon": "chain_lightning",
@@ -170,32 +287,115 @@
    ]
   },
   {
-   "id": "cl_power",
-   "idx": 5,
+   "id": "cl_thu1",
+   "idx": 15,
    "kind": "knot",
-   "name": "Static Heart",
-   "desc": "Power +2%",
+   "name": "Rolling Thunder",
    "branch": "magic",
-   "cost": {
-    "gold": 210
-   },
-   "requires": [
-    "cl_arc"
-   ],
    "effects": [
     {
      "weapon": "chain_lightning",
      "stat": "power",
-     "pct": 2
+     "pct": 1
     }
-   ]
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Power +1%"
+  },
+  {
+   "id": "cl_thu2",
+   "idx": 16,
+   "kind": "knot",
+   "name": "Charged Sky",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Arc +1%"
+  },
+  {
+   "id": "cl_thu3",
+   "idx": 17,
+   "kind": "bead",
+   "name": "Judging Bolt",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Arc +1%"
+  },
+  {
+   "id": "cl_thu4",
+   "idx": 18,
+   "kind": "knot",
+   "name": "Heavy Air",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Cooldown -1%"
+  },
+  {
+   "id": "cl_thu5",
+   "idx": 19,
+   "kind": "knot",
+   "name": "Far Rumble",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "thunder_judgment"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "cl_thu6",
+   "idx": 20,
+   "kind": "bead",
+   "name": "Thunderhead",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "thunder_judgment"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
   },
   {
    "id": "cl_spark",
    "idx": 6,
    "kind": "knot",
    "name": "Sparkwood",
-   "desc": "Power +2%",
+   "desc": "Power +1%",
    "cost": {
     "gold": 320
    },
@@ -203,88 +403,17 @@
     {
      "weapon": "chain_lightning",
      "stat": "power",
-     "pct": 2
+     "pct": 1
     }
-   ]
-  },
-  {
-   "id": "cl_reach",
-   "idx": 7,
-   "kind": "knot",
-   "name": "Long Reach",
-   "desc": "Arc +2%",
-   "cost": {
-    "gold": 430
-   },
-   "effects": [
-    {
-     "weapon": "chain_lightning",
-     "stat": "area",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "cl_storm",
-   "idx": 8,
-   "kind": "knot",
-   "name": "Storm Mantle",
-   "desc": "Arc +2%",
-   "branch": "magic",
-   "cost": {
-    "gold": 570
-   },
-   "requires": [
-    "cl_power"
    ],
-   "effects": [
-    {
-     "weapon": "chain_lightning",
-     "stat": "area",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "cl_quick",
-   "idx": 9,
-   "kind": "knot",
-   "name": "Quick Charge",
-   "desc": "Cooldown +2%",
-   "cost": {
-    "gold": 320
-   },
-   "effects": [
-    {
-     "weapon": "chain_lightning",
-     "stat": "cooldown",
-     "pct": -2
-    }
-   ]
-  },
-  {
-   "id": "cl_crack",
-   "idx": 10,
-   "kind": "knot",
-   "name": "Thunder Crack",
-   "desc": "Power +2%",
-   "cost": {
-    "gold": 430
-   },
-   "effects": [
-    {
-     "weapon": "chain_lightning",
-     "stat": "power",
-     "pct": 2
-    }
-   ]
+   "branch": "magic"
   },
   {
    "id": "cl_hum",
    "idx": 11,
    "kind": "knot",
    "name": "Humming Air",
-   "desc": "Cooldown +2%",
+   "desc": "Cooldown -1%",
    "cost": {
     "gold": 570
    },
@@ -292,24 +421,26 @@
     {
      "weapon": "chain_lightning",
      "stat": "cooldown",
-     "pct": -2
+     "pct": -1
     }
-   ]
+   ],
+   "branch": "magic"
   },
   {
-   "id": "cl_ground",
-   "idx": 12,
+   "id": "cl_storm",
+   "idx": 8,
    "kind": "knot",
-   "name": "Grounded",
-   "desc": "Arc +2%",
+   "name": "Storm Mantle",
+   "desc": "Arc +1%",
+   "branch": "magic",
    "cost": {
-    "gold": 430
+    "gold": 570
    },
    "effects": [
     {
      "weapon": "chain_lightning",
      "stat": "area",
-     "pct": 2
+     "pct": 1
     }
    ]
   },
@@ -318,7 +449,7 @@
    "idx": 13,
    "kind": "bead",
    "name": "Storm-Caller",
-   "desc": "Power +2%",
+   "desc": "Power +1% and Arc +1%",
    "cost": {
     "gold": 630
    },
@@ -326,21 +457,185 @@
     {
      "weapon": "chain_lightning",
      "stat": "power",
-     "pct": 2
+     "pct": 1
+    },
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
     }
    ],
    "unlock": {
     "t": "bossKill",
     "id": "elder_treant",
     "n": 3
-   }
+   },
+   "branch": "magic"
+  },
+  {
+   "id": "cl_sta1",
+   "idx": 21,
+   "kind": "knot",
+   "name": "Crackling Field",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Cooldown -1%"
+  },
+  {
+   "id": "cl_sta2",
+   "idx": 22,
+   "kind": "knot",
+   "name": "Raised Hair",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Power +1%"
+  },
+  {
+   "id": "cl_sta3",
+   "idx": 23,
+   "kind": "bead",
+   "name": "Ozone",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Arc +1%"
+  },
+  {
+   "id": "cl_sta4",
+   "idx": 24,
+   "kind": "knot",
+   "name": "Static Hum",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Power +1%"
+  },
+  {
+   "id": "cl_sta5",
+   "idx": 25,
+   "kind": "knot",
+   "name": "Blue Haze",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "static_storm"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "cl_sta6",
+   "idx": 26,
+   "kind": "bead",
+   "name": "Still Storm",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "static_storm"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "cl_crack",
+   "idx": 10,
+   "kind": "knot",
+   "name": "Thunder Crack",
+   "desc": "Power +1%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "cl_ground",
+   "idx": 12,
+   "kind": "knot",
+   "name": "Grounded",
+   "desc": "Arc +1%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "cl_flash",
+   "idx": 27,
+   "kind": "knot",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -1
+    }
+   ],
+   "name": "Heat Flash",
+   "cost": {
+    "gold": 320
+   },
+   "desc": "Cooldown -1%"
   },
   {
    "id": "cl_crown",
    "idx": 14,
    "kind": "mastery",
    "name": "Crown of Sparks",
-   "desc": "Power +2% and Arc +2%",
+   "desc": "Power +1% and Cooldown -1%",
    "cost": {
     "gold": 910,
     "shards": 1
@@ -349,19 +644,256 @@
     {
      "weapon": "chain_lightning",
      "stat": "power",
-     "pct": 2
+     "pct": 1
     },
     {
      "weapon": "chain_lightning",
-     "stat": "area",
-     "pct": 2
+     "stat": "cooldown",
+     "pct": -1
     }
    ],
    "unlock": {
     "t": "evolveWeapon",
     "id": "chain_lightning",
     "n": 2
-   }
+   },
+   "branch": "magic"
+  },
+  {
+   "id": "cl_tet1",
+   "idx": 28,
+   "kind": "knot",
+   "name": "Held Arc",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Arc +1%"
+  },
+  {
+   "id": "cl_tet2",
+   "idx": 29,
+   "kind": "knot",
+   "name": "Clinging Spark",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Power +1%"
+  },
+  {
+   "id": "cl_tet3",
+   "idx": 30,
+   "kind": "bead",
+   "name": "Live Wire",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "area",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Arc +1%"
+  },
+  {
+   "id": "cl_tet4",
+   "idx": 31,
+   "kind": "knot",
+   "name": "Copper Taste",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "chain_lightning",
+     "stat": "cooldown",
+     "pct": -1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Cooldown -1%"
+  },
+  {
+   "id": "cl_tet5",
+   "idx": 32,
+   "kind": "knot",
+   "name": "Grounding Rod",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "storm_tether"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "cl_tet6",
+   "idx": 33,
+   "kind": "bead",
+   "name": "Iron Rain",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "storm_tether"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  }
+ ],
+ "orbit": {
+  "tier": 3,
+  "angle": 335
+ },
+ "roads": [
+  {
+   "from": "bo_way3",
+   "to": "gt_chain_lightning",
+   "nodes": [
+    {
+     "id": "cl_way1",
+     "idx": 34,
+     "kind": "knot",
+     "name": "Warm Pebble",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 160
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "cl_way2",
+     "idx": 35,
+     "kind": "knot",
+     "name": "Still Speck",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 170
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cl_way3",
+     "idx": 36,
+     "kind": "knot",
+     "name": "Grey Stile",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 190
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cl_way4",
+     "idx": 37,
+     "kind": "bead",
+     "name": "Hushed Cairn",
+     "desc": "Summoned spirits power +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 630
+     },
+     "effects": [
+      {
+       "weapon": "@summon",
+       "stat": "power",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "cl_way5",
+     "idx": 38,
+     "kind": "knot",
+     "name": "Faint Bend",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 230
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cl_way6",
+     "idx": 39,
+     "kind": "knot",
+     "name": "Late Wick",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 240
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cl_way7",
+     "idx": 40,
+     "kind": "knot",
+     "name": "Quiet Crumb",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 260
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
+   ]
   }
  ]
 }

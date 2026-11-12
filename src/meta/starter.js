@@ -9,6 +9,9 @@ export function starterNodes(info, weaponId) {
   if (!c) return [];
   const out = [];
   if (typeof c.heart === 'string') out.push(c.heart);
+  // S1 garden: the first branch's seal (socket a): its evolution gate, or the zero-power landmark seal of a starter evolution
+  const b = Array.isArray(c.branchInfo) ? c.branchInfo.find((x) => x.socket === 'a') || c.branchInfo[0] : null;
+  if (b && typeof b.seal === 'string') { out.push(b.seal); return out; }
   const a = c.sockets && c.sockets.a;
   if (a && typeof a.gate === 'string') out.push(a.gate);
   return out;

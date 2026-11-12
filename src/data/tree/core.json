@@ -1,7 +1,7 @@
 {
  "kind": "core",
  "schema": 2,
- "version": 4,
+ "version": 5,
  "layout": {
   "ringStep": 110,
   "minGap": 50,
@@ -71,9 +71,9 @@
   "fog": {
    "r": 1720,
    "angles": [
-    180,
-    0,
-    252
+    175,
+    75,
+    255
    ]
   },
   "far": {
@@ -1716,8 +1716,7 @@
     }
    ],
    "place": {
-    "ring": "dusk",
-    "i": 7
+    "entry": "satchel"
    }
   },
   {
@@ -1741,8 +1740,7 @@
     }
    ],
    "place": {
-    "ring": "dusk",
-    "i": 10
+    "entry": "almanac"
    }
   },
   {
@@ -1766,8 +1764,7 @@
     }
    ],
    "place": {
-    "ring": "dusk",
-    "i": 2
+    "entry": "cardfan"
    }
   },
   {
@@ -1791,8 +1788,7 @@
     }
    ],
    "place": {
-    "ring": "dusk",
-    "i": 5
+    "entry": "hearthkey"
    }
   },
   {
@@ -1816,9 +1812,109 @@
     }
    ],
    "place": {
-    "ring": "dusk",
-    "i": 6
+    "entry": "wardrobe"
    }
   }
- ]
+ ],
+ "atlas": {
+  "tiers": [
+   {
+    "id": "hearth",
+    "name": "Hearth",
+    "r": 300
+   },
+   {
+    "id": "wick",
+    "name": "Wick",
+    "r": 1050
+   },
+   {
+    "id": "dusk",
+    "name": "Dusk",
+    "r": 1750
+   },
+   {
+    "id": "far",
+    "name": "Far Hollow",
+    "r": 2450
+   },
+   {
+    "id": "deep",
+    "name": "Deep Hollow",
+    "r": 3150
+   }
+  ],
+  "tierStep": 700,
+  "regionGap": 70,
+  "autoStep": 25,
+  "fogTier": 4,
+  "links": 40,
+  "garden": {
+   "spoke": [
+    75,
+    120,
+    165
+   ],
+   "lead": 215,
+   "seal": 300,
+   "fork": [
+    75,
+    118,
+    160
+   ],
+   "forkSpread": 40,
+   "wave": 14
+  },
+  "heroes": {
+   "wren": {
+    "tier": 2,
+    "angle": 128
+   },
+   "elias": {
+    "tier": 2,
+    "angle": 222
+   }
+  },
+  "regions": [
+   {
+    "id": "twilight",
+    "kind": "night",
+    "name": "Twilight",
+    "lit": true,
+    "medallion": "moon1",
+    "orbit": {
+     "tier": 1,
+     "angle": 130
+    }
+   },
+   {
+    "id": "meteor",
+    "kind": "reserved",
+    "weapon": "dragonfire_meteor",
+    "orbit": {
+     "tier": 4,
+     "angle": 300
+    }
+   },
+   {
+    "id": "chapter2",
+    "kind": "chapter",
+    "name": "The Next Chapter",
+    "reserved": true,
+    "orbit": {
+     "tier": 4,
+     "angle": 40
+    }
+   },
+   {
+    "id": "farhollow",
+    "kind": "far",
+    "name": "The Far Hollow",
+    "orbit": {
+     "tier": 4,
+     "angle": 110
+    }
+   }
+  ]
+ }
 }

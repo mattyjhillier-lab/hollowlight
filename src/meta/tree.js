@@ -342,10 +342,8 @@ export function compileTree(raw, data) {
       gateNodeIds[e.unlock].set(e.id, id);
     }
   }
-  for (const id of gateIds) {
-    for (const r of nodes[id].requires) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
-    for (const r of nodes[id].requiresAny || []) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
-  }
+  // S1 (2026-11-12): an unlock node MAY require ordinary lanterns (a seal needs its lead-in diamond, a heart its road). Safe with respec: links
+  // gate BUYING only (connected-unlock rule), a kept gate is never dropped when the lanterns before it are refunded (sanitizeTree).
   if (data) {
     for (const [kind, pool] of [['weapon', data.weapons], ['evolution', data.evolutions]]) {
       for (const [gid, g] of Object.entries(pool || {})) {
@@ -529,6 +527,9 @@ function checkEffect(e, data, where) {
     // EXTRAS v1 Wardrobe: a zero-power cosmetic (flame tint / trail style); the id is checked against cosmetics.json at boot (validateCosmTree)
     if (!['flame', 'trail'].includes(e.cosm) || typeof e.id !== 'string' || !ID_RE.test(e.id) || keys.some((k) => k !== 'cosm' && k !== 'id')) fail(`${where}: bad cosmetic effect`);
     if (data && isObj(data.cosmetics) && !own(e.cosm === 'flame' ? data.cosmetics.flames : data.cosmetics.trails, e.id)) fail(`${where}: unknown cosmetic ${e.id}`);
+  } else if (e.echo !== undefined) {
+    // S1: zero power. The landmark seal of a starter evolution and the 'flavour beads' of a seal's forks: an echo of that evolution (display only)
+    if (typeof e.echo !== 'string' || !ID_RE.test(e.echo) || keys.length !== 1 || (data && data.evolutions && !own(data.evolutions, e.echo))) fail(`${where}: echo needs a known evolution id`);
   } else if (e.visual !== undefined) {
     if (!(e.visual === 'threeDawns' || heroVisual(data, e.visual))) fail(`${where}: unknown visual effect`); // hero visuals: characters.json treeVisuals
   } else if (e.perk !== undefined) {

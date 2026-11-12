@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "cardfan",
  "prefix": "cd",
- "slot": "far10",
  "name": "The Card Fan",
  "blurb": "Cards and information: see more, choose better, awaken sooner.",
  "nodes": [
@@ -168,6 +167,103 @@
      -89
     ]
    }
+  }
+ ],
+ "orbit": {
+  "tier": 2,
+  "angle": 95
+ },
+ "roads": [
+  {
+   "from": "li_magnet",
+   "to": "br_cardfan",
+   "nodes": [
+    {
+     "id": "cd_way1",
+     "idx": 6,
+     "kind": "knot",
+     "name": "Late Petal",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 110
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cd_way2",
+     "idx": 7,
+     "kind": "knot",
+     "name": "Quiet Mote",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cd_way3",
+     "idx": 8,
+     "kind": "knot",
+     "name": "Pale Step",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "cd_way4",
+     "idx": 9,
+     "kind": "bead",
+     "name": "Small Waystone",
+     "desc": "Your ability lasts 5% longer",
+     "branch": "spirit",
+     "cost": {
+      "gold": 480
+     },
+     "effects": [
+      {
+       "ability": "dur",
+       "pct": 5
+      }
+     ]
+    },
+    {
+     "id": "cd_way5",
+     "idx": 10,
+     "kind": "knot",
+     "name": "Gentle Path",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 180
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
+   ]
   }
  ]
 }
