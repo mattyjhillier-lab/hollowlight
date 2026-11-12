@@ -97,3 +97,29 @@ test('look source rules: locked tune values used, no image path built by the scr
   assert.ok(!/new Image|\.src\s*=/.test(src.replace(/\/\/.*$/gm, '')));
   assert.ok(src.includes('ringProgress(this.def, this.view.ringOf'));
 });
+
+test('hero panel + next lights: desktop only, hero data from the api, no innerHTML, Play goes through the loadout flow', () => {
+  const src = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
+  assert.ok(src.includes("toggle('ts-hero-on', !this.small && this.W >= 860)"));
+  const hp = src.slice(src.indexOf('  buildHeroPanel() {'), src.indexOf('  drawWeb(t) {'));
+  assert.ok(!/innerHTML|insertAdjacentHTML/.test(hp));
+  assert.ok(hp.includes("navTo('play')") && hp.includes("navTo('almanac')") && hp.includes('toggleGoals(false)'));
+  const ui = readFileSync(new URL('../src/ui/ui.js', import.meta.url), 'utf8');
+  assert.ok(ui.includes("dest === 'play'") && ui.includes('this.beginLoadout()'));
+  const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.ok(app.includes('setHero: (id)') && app.includes('isAwake(s, id)') && app.includes('Object.hasOwn(data.weapons, w)'));
+});
+
+test('veil + gardens: forks behind an unlit seal are veiled, a lit seal clears its own', () => {
+  const st = starterNodes(composed.info, 'chain_lightning');
+  const s = save({ notes: NOTES, tree: Object.fromEntries(st.map((id) => [id, 1])) });
+  const t = screen(s);
+  t.unfurl = new Map(); t.sealPrev = null; t.veilState();
+  assert.ok(view.gardens.length >= 9, 'three magic gardens x three branches');
+  const g = view.gardens.find((x) => x.seal === st[1]);
+  assert.ok(g, 'starter seal is a garden seal');
+  for (const f of g.forks) for (const id of f) assert.ok(!t.veil.has(id), 'lit seal: its forks are shown');
+  const other = view.gardens.find((x) => x.seal !== st[1] && !s.tree[x.seal]);
+  for (const f of other.forks) for (const id of f) assert.ok(t.veil.has(id), 'unlit seal: forks veiled');
+  assert.ok(t.fogs.length >= 1 && t.fogs.every((f) => Number.isFinite(f.x) && f.r > 0));
+});

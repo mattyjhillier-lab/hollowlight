@@ -318,6 +318,12 @@ export class TreeScreen {
     this.hoverEl.append(this.hoverName, this.hoverState, this.hoverDesc);
     const keys = el('div', 'ts-keyhint'); keys.setAttribute('aria-hidden', 'true');
     for (const [k, t] of TREE_KEYS) { const b = el('span', 'ts-keyhint__i'); b.append(el('kbd', null, k), document.createTextNode(` ${t}`)); keys.append(b); }
+    this.nextEl = el('div', 'ts-next');
+    this.nextEl.setAttribute('aria-label', 'Next lights');
+    const nl = el('div', 'ts-nl'); nl.append(el('span', null, 'Next'), el('span', null, 'lights'));
+    this.nextList = el('div', 'ts-nlist');
+    this.nextEl.append(nl, this.nextList);
+    root.append(this.buildHeroPanel(), this.nextEl);
     root.append(map, panel, step, this.edge, zoom, this.scrim, idxSheet, helpSheet, tip, this.toastEl, this.noticeEl, this.srEl, this.hoverEl, keys);
     layer.append(root);
     this.bindInput(map);
@@ -373,6 +379,8 @@ export class TreeScreen {
     this.respecBtn.disabled = !Object.keys(s.tree || {}).some((id) => this.def.nodes[id] && !this.def.nodes[id].permanent);
     this.renderGoals();
     this.renderStep();
+    this.renderHero();
+    this.renderNext();
     if (this.selected) this.renderPanel();
     this.itemSig = '';
     this.dirty();
@@ -386,6 +394,7 @@ export class TreeScreen {
     this.H = Math.max(1, r.height);
     this.root.classList.toggle('ts-port', this.W <= 600 && this.H > this.W);
     this.small = this.W <= 640 || this.H <= 520;
+    this.root.classList.toggle('ts-hero-on', !this.small && this.W >= 860); // the hero panel and Next lights are the desktop tree home
     this.root.classList.toggle('ts-small', this.small);
     this.root.classList.toggle('ts-short', this.H <= 520 && this.W > this.H && this.W <= 1000); // phone-landscape sized only: a wide short desktop window keeps the roomy layout
     this.DPR = Math.min(this.def.list.length > 400 ? 1.5 : 2, window.devicePixelRatio || 1); // big webs: fewer canvas pixels on phones
@@ -412,11 +421,12 @@ export class TreeScreen {
   freeRect() {
     if (this.fr) return this.fr; // cached: reading layout every frame would force a reflow (cleared when the panel, bar or size change)
     let x0 = 0, x1 = this.W, y1 = this.H;
+    const hp = this.box(this.heroEl); if (hp) x0 = Math.max(x0, hp.right);
     const b = this.box(this.barEl);
     const y0 = b ? b.bottom : 0;
     const p = this.panelEl.classList.contains('open') ? this.box(this.panelEl) : null;
     if (p) { if (p.width > this.W * 0.8) y1 = Math.min(y1, p.top); else if (p.left > this.W / 2) x1 = Math.min(x1, p.left); else x0 = Math.max(x0, p.right); }
-    const s = this.box(this.stepEl);
+    const s = this.box(this.stepEl) || this.box(this.nextEl);
     if (s) y1 = Math.min(y1, s.top);
     this.fr = [x0, y0, x1, y1];
     return this.fr;
@@ -777,7 +787,7 @@ export class TreeScreen {
     return { ...st, caption: hn && wn ? `${hn} · ${wn}` : hn || wn, color: reg ? reg.color : '#ffd9a0', art: reg ? reg.art : '' };
   }
   portraitImg(hero) {
-    const im = this.portraitOf(hero, () => this.dirty());
+    const im = this.portraitOf(hero, () => { this.dirty(); if (this.open_) this.renderHero(); });
     return im && im.complete && im.naturalWidth > 0 ? im : null;
   }
   /** The hub coin: the chosen hero's portrait with the starter spirit's emblem as a small badge; the plain hearth lantern when no starter is known. */
@@ -1119,6 +1129,101 @@ export class TreeScreen {
       c.fillStyle = '#ffe6ae'; c.fillText(txt, x, by + h / 2 + 1);
     }
     c.globalAlpha = 1;
+  }
+
+  // ------------------------------------------------------------------ HERO PANEL + NEXT LIGHTS (tree home, desktop; LOCKED 'TREE AS HOME SCREEN' / sandbox)
+  /** Left panel: the last-played hero (portrait, a glow spot where the companion will stand), swap row, Play / Almanac / Goals / Back, purse. */
+  buildHeroPanel() {
+    const p = el('aside', 'ts-hero');
+    p.setAttribute('aria-label', 'Your hero');
+    this.heroEl = p;
+    this.heroLabel = el('div', 'ts-hl', 'Your hero');
+    this.heroCv = el('canvas', 'ts-hcv'); this.heroCv.width = 400; this.heroCv.height = 430; this.heroCv.setAttribute('aria-hidden', 'true');
+    this.heroSwap = el('div', 'ts-swap'); this.heroSwap.setAttribute('role', 'group'); this.heroSwap.setAttribute('aria-label', 'Choose your hero');
+    this.heroName = el('div', 'ts-hname');
+    this.heroSub = el('div', 'ts-hsub');
+    const play = btn('ts-hbtn ts-hplay', 'Play');
+    play.addEventListener('click', () => { if (this.host.sound) this.host.sound('ui_step'); this.host.navTo('play'); });
+    const alm = btn('ts-hbtn', 'Almanac'); alm.addEventListener('click', () => this.host.navTo('almanac'));
+    this.heroGoals = btn('ts-hbtn', 'Goals'); this.heroGoals.addEventListener('click', () => this.toggleGoals(false));
+    const back = btn('ts-hbtn', 'Back'); back.addEventListener('click', () => this.close());
+    this.heroGold = el('span'); this.heroShard = el('span');
+    const coins = el('div', 'ts-hcoins');
+    const mk = (icon, v) => { const w = el('span', 'ts-hc'); const i = el('i', icon); i.setAttribute('aria-hidden', 'true'); w.append(i, v); return w; };
+    coins.append(mk('ts-i-gold', this.heroGold), mk('ts-i-shard', this.heroShard));
+    p.append(this.heroLabel, this.heroCv, this.heroSwap, this.heroName, this.heroSub, play, alm, this.heroGoals, back, coins);
+    return p;
+  }
+  /** Paint one portrait into a canvas (cover crop on the face) or a plain initial when there is no picture. */
+  paintPortrait(cv, hero, name, awake) {
+    const g = cv.getContext('2d'); if (!g) return;
+    const w = cv.width, h = cv.height; g.clearRect(0, 0, w, h);
+    const im = this.portraitImg(hero);
+    if (im) { const k = Math.min(w / im.naturalWidth, h / im.naturalHeight); g.globalAlpha = awake ? 1 : 0.45; if (!awake) g.filter = 'grayscale(1) brightness(.6)'; g.drawImage(im, (w - im.naturalWidth * k) / 2, h - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); g.filter = 'none'; g.globalAlpha = 1; }
+    else { g.fillStyle = awake ? '#fff1cf' : '#8e97b8'; g.font = `${Math.round(h * 0.5)}px ${FONT_HEAD}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name || '?').slice(0, 1), w / 2, h / 2); }
+  }
+  renderHero() {
+    if (!this.heroEl || !this.api.heroes) return;
+    const H = this.api.heroes(); const s = this.api.save();
+    const cur = H.list.find((h) => h.id === H.hero) || H.list[0];
+    if (!cur) return;
+    this.heroName.textContent = cur.name;
+    this.heroSub.textContent = cur.awake ? `Bond level ${cur.bond}` : `Keepsakes ${cur.keep} of ${cur.need}`;
+    const g = this.heroCv.getContext('2d');
+    if (g) g.clearRect(0, 0, 400, 430);
+    this.paintPortrait(this.heroCv, cur.id, cur.name, cur.awake);
+    if (g) { // the glow spot: where the companion will stand beside the hero
+      g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(100, 360, 0, 100, 360, 120); gr.addColorStop(0, 'rgba(255,210,122,.4)'); gr.addColorStop(1, 'rgba(255,210,122,0)'); g.fillStyle = gr; g.fillRect(0, 0, 400, 430); g.restore();
+    }
+    this.heroSwap.replaceChildren();
+    for (const h of H.list) {
+      const b = btn(`ts-swapb${h.id === cur.id ? ' on' : ''}${h.awake ? '' : ' asleep'}`, null, h.awake ? `Play as ${h.name}` : `${h.name}, asleep. Keepsakes ${h.keep} of ${h.need}`);
+      b.setAttribute('title', h.awake ? h.name : `${h.name}: keepsakes ${h.keep} of ${h.need}`);
+      b.setAttribute('aria-pressed', h.id === cur.id ? 'true' : 'false');
+      const cv = el('canvas'); cv.width = 80; cv.height = 80; this.paintPortrait(cv, h.id, h.name, h.awake); b.append(cv);
+      if (h.awake) b.addEventListener('click', () => { if (this.api.setHero && this.api.setHero(h.id)) this.renderHero(); });
+      else b.setAttribute('aria-disabled', 'true');
+      this.heroSwap.append(b);
+    }
+    this.heroGold.textContent = fmtN(s.gold); this.heroShard.textContent = fmtN(s.shards);
+    this.heroGoals.textContent = 'Goals';
+  }
+
+  /** 'Next lights': up to three goals. First the evolution seals on the starter spirit's own branches, then the nearest other landmarks, each with the lanterns to go and the gold. */
+  nextLights() {
+    const m = this.model, def = this.def, V = this.view;
+    const dist = new Map(), prev = new Map(), q = [];
+    for (const n of this.adj.keys()) if (n === 'hub' || m.lit(n)) { dist.set(n, 0); q.push(n); }
+    for (let h = 0; h < q.length; h++) { const u = q[h]; for (const { to } of this.adj.get(u) || []) { if (dist.has(to) || this.veil.has(to)) continue; dist.set(to, dist.get(u) + 1); prev.set(to, u); q.push(to); } }
+    const chain = (id) => { const out = []; let u = id; while (u && !(u === 'hub' || m.lit(u)) && out.length < 80) { out.push(u); u = prev.get(u); } return out.reverse(); }; // first lantern to light .. the goal
+    const row = (id) => {
+      const ce = m.cache[id]; if (!ce || ce.s === 'fog' || this.veil.has(id) || !dist.has(id) || m.lit(id)) return null;
+      const steps = chain(id); if (!steps.length) return null;
+      let gold = 0; for (const x of steps) gold += m.costOf(x);
+      return { id, first: steps[0], n: steps.length, gold, name: ce.d.masked ? 'A seal of your spirit' : ce.d.name };
+    };
+    const out = [], seen = new Set();
+    const reg = this.starter ? V.regions.find((r) => r.kind === 'cluster' && r.heart === this.starter.heart) : null;
+    if (reg) { let ix = 0; for (const g of V.gardens || []) { if (m.region(g.seal) !== reg) continue; ix++; const r = row(g.seal); if (r && out.length < 2) { if (m.cache[g.seal].d.masked) r.name = `${r.name} (${ix})`; out.push(r); seen.add(r.id); } } }
+    const lm = def.list.filter((id) => this.tierOfId(id) === 'landmark' && !seen.has(id) && !def.nodes[id].teaser).map(row).filter(Boolean).sort((a, b) => a.n - b.n || a.gold - b.gold);
+    for (const r of lm) { if (out.length >= 3) break; out.push(r); }
+    return out;
+  }
+  renderNext() {
+    if (!this.nextEl) return;
+    const rows = this.nextLights();
+    this.nextList.replaceChildren();
+    if (!rows.length) { this.nextList.append(el('div', 'ts-nc ts-nc0', 'Everything reachable is lit.')); return; }
+    const total = Math.max(1, ...rows.map((r) => r.gold));
+    for (const r of rows) {
+      const b = btn('ts-nc', null); b.setAttribute('aria-label', `${r.name}: ${r.n} to go, about ${fmtN(r.gold)} gold. Show the first lantern`);
+      const have = this.api.save().gold; const bar = el('i'); bar.style.width = `${Math.round(100 * Math.min(1, have / Math.max(1, r.gold)))}%`;
+      const nb = el('div', 'ts-nb'); nb.append(bar);
+      b.append(el('b', null, r.name), el('span', null, `${r.n} to go · ~${fmtN(r.gold)} gold`), nb);
+      b.addEventListener('click', () => this.select(r.first, true));
+      this.nextList.append(b);
+    }
+    void total;
   }
 
   drawWeb(t) {

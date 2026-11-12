@@ -19,6 +19,7 @@ import { touchEnabled } from './input/stick.js';
 import { parseParams } from './params.js';
 import { tierIndex, TIER_IDS, resolveTier } from './sim/tiers.js';
 import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } from './ui/nightcopy.js';
+import { keepsakeDef } from './meta/bond.js';
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
 import { cardFor, hasIntro, withIntro, introsForOffer, CARDS, INTRO_IDS, cleanIntros } from './ui/introcopy.js';
@@ -391,6 +392,23 @@ export const app = {
       bookFrac: (() => { try { const b = this.book(); return b.pages.total ? b.pages.found / b.pages.total : 0; } catch { return 0; } })(),
       clearRegrowth: () => {
         if (this.save.data.notes && this.save.data.notes.regrowth) { delete this.save.data.notes.regrowth; this.save.saveNow(); }
+      },
+      // tree home hero panel: the last-played hero and every hero (awake or asleep); setHero stores the new last hero (awake heroes only, same loadout rule as the loadout screens)
+      heroes: () => {
+        const s = this.save.data; const need = keepsakeDef(data.balance).need;
+        const list = Object.keys(data.characters).map((id) => { const awake = isAwake(s, id); return { id, name: String(data.characters[id].name || id).split(',')[0].slice(0, 24), awake, keep: awake ? 0 : Math.max(0, Math.floor(Number(s.chars && s.chars[id] && s.chars[id].keep) || 0)), need, bond: awake ? bondLevel(s, data, id) : 0 }; });
+        const lo = this.lastLoadout();
+        const cur = list.find((h) => h.id === lo.hero && h.awake) || list.find((h) => h.awake) || list[0];
+        return { hero: cur ? cur.id : '', list };
+      },
+      setHero: (id) => {
+        const s = this.save.data;
+        if (typeof id !== 'string' || !Object.hasOwn(data.characters, id) || !isAwake(s, id) || this.save.readOnly) return false;
+        const n = s.notes || (s.notes = {}); const w = (n.loadout && n.loadout.weapon) || (n.starter && n.starter.weapon);
+        if (!w || !Object.hasOwn(data.weapons, w)) return false;
+        n.loadout = { hero: id, weapon: w };
+        this.save.saveNow();
+        return true;
       },
       clearResetNotice: () => {
         if (this.save.data.notes && this.save.data.notes.treeResetNotice) { delete this.save.data.notes.treeResetNotice; this.save.saveNow(); }

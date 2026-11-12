@@ -171,3 +171,33 @@
 /* Calm motion (setting or system): no fades or slides */
 .ts.ts-calm *, .ts.ts-calm { transition: none !important; animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .ts * { transition: none !important; animation: none !important; } }
+
+/* ---- tree look port: hero panel + Next lights (desktop tree home; hidden on phones and narrow windows) ---- */
+.ts-hero, .ts-next { display: none; }
+.ts.ts-hero-on .ts-hero { position: absolute; left: 0; top: 0; bottom: 0; width: 232px; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px 12px; background: linear-gradient(180deg, #12183a, #0d1230 60%, #271b30); border-right: 1px solid rgba(255, 210, 122, .18); }
+.ts-hl { font: 17px var(--font-display); color: #cdbf95; }
+.ts-hcv { width: 200px; height: 215px; margin-top: -4px; border-radius: 16px; }
+.ts-swap { display: flex; gap: 8px; margin-top: -4px; }
+.ts-swapb { width: 40px; height: 40px; min-width: 40px; min-height: 40px; padding: 0; border-radius: 50%; border: 2px solid #3b4670; background: #171d3c; overflow: hidden; position: relative; }
+.ts-swapb.on { border-color: #ffd27a; box-shadow: 0 0 10px rgba(255, 210, 122, .5); }
+.ts-swapb.asleep { opacity: .7; cursor: default; }
+.ts-swapb canvas { width: 100%; height: 100%; display: block; }
+.ts-hname { font: 36px/1 var(--font-display); color: #fff1cf; }
+.ts-hsub { font-size: 13px; color: #d6b36a; margin-bottom: 4px; }
+.ts-hbtn { width: 100%; padding: 9px 0; min-height: 40px; border-radius: 11px; border: 1px solid rgba(255, 210, 122, .3); background: linear-gradient(#232b52, #161c3b); font-weight: 600; font-size: 14px; }
+.ts-hbtn.ts-hplay { background: linear-gradient(#ffd98a, #f1a94d); color: #3a2308; font: 24px var(--font-display); padding: 6px 0; border-color: #ffe6ae; }
+.ts-hcoins { margin-top: auto; display: flex; justify-content: space-around; width: 100%; padding: 9px 6px; border-radius: 14px; border: 1px solid var(--ts-line); background: rgba(8, 12, 28, .7); font-weight: 700; }
+.ts-hc { display: inline-flex; align-items: center; gap: 6px; }
+.ts-hc i { width: 14px; height: 14px; display: inline-block; flex: none; }
+.ts.ts-hero-on .ts-step { display: none; }
+.ts.ts-hero-on .ts-keyhint { left: 244px; bottom: 84px; }
+.ts.ts-hero-on .ts-next { position: absolute; left: 244px; right: 84px; bottom: 10px; z-index: 5; display: flex; gap: 10px; align-items: stretch; padding: 8px 10px; border-radius: 16px; background: var(--ts-panel); border: 1px solid var(--ts-line); }
+.ts-nl { font: 24px/.95 var(--font-display); color: #ffd27a; align-self: center; padding: 0 4px; display: flex; flex-direction: column; }
+.ts-nlist { flex: 1; min-width: 0; display: flex; gap: 10px; }
+.ts-nc { flex: 1; min-width: 0; text-align: left; padding: 7px 11px; border-radius: 11px; border: 1px solid #333d68; background: #10163a; }
+.ts-nc:hover { border-color: #ffd27a; }
+.ts-nc b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-nc span { font-size: 13px; color: #cfd7f3; }
+.ts-nb { height: 5px; background: #1b2243; border-radius: 4px; margin-top: 5px; overflow: hidden; }
+.ts-nb i { display: block; height: 100%; background: linear-gradient(90deg, #f0b44a, #fff0b8); }
+.ts-nc0 { cursor: default; color: #cfd7f3; }

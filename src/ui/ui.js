@@ -169,6 +169,7 @@ export class UI {
     if (dest === 'home') this.showStart(this.onPick);
     else if (dest === 'character') this.showCharacters();
     else if (dest === 'tree' && h.openTree) h.openTree();
+    else if (dest === 'play') { this.showStart(this.onPick); this.beginLoadout(); }
     else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
     else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }
     else if (dest === 'settings') { this.showStart(this.onPick); this.showSettings(); }
