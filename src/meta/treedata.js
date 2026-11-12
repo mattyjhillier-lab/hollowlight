@@ -95,6 +95,49 @@ function ringPos(core, place) {
   return polar(ring.r, -90 + (360 * place.i) / ring.slots);
 }
 
+// HUB WEB LAYOUT (generated, display only; positions are not part of any fingerprint). The Hearth + Wick web is laid out as a clean radial tree:
+//   * the requires graph of the hub lanterns (a `near` parent counts as the parent) is the tree; a lantern's RADIUS is its level (0 = the Hearth ring, then the
+//     Wick ring, then one step further out per link of a chain), so a chain runs out along one straight spoke and never crosses another;
+//   * Hearth lanterns go round the ring in tree order (a parent sits in the middle of its Hearth children, so every requirement is a neighbour link),
+//     each owning a wedge as wide as its outer subtree needs (at least 26 degrees); the wedges are stretched to fill the circle evenly.
+// Pure and deterministic (data order, no randomness); `place.i` / `place.at` stay in the data as the schema's validated hint but no longer decide the spot.
+const HUB_R = [150, 300, 360, 420, 480];
+function hubLayout(allNodes) {
+  const ringOf = (a) => (a.spec.place && typeof a.spec.place.ring === 'string' ? a.spec.place.ring : '');
+  const base = allNodes.filter((a) => a.ownerKind === 'core' && !a.tool && !a.near && (ringOf(a) === 'hearth' || ringOf(a) === 'wick'));
+  const set = new Map(base.map((a) => [a.spec.id, a]));
+  for (let grew = true; grew;) { grew = false; for (const a of allNodes) if (a.ownerKind === 'core' && a.near && !set.has(a.spec.id) && set.has(a.near)) { set.set(a.spec.id, a); grew = true; } }
+  const parentOf = (a) => { if (a.near) return a.near; const rq = [...(a.spec.requires || []), ...(a.spec.requiresAny || [])].find((x) => set.has(x) && x !== a.spec.id); return rq || null; };
+  const kids = new Map(), roots = [];
+  const order = [...set.values()]; // data order
+  for (const a of order) { const p = parentOf(a); if (p) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(a); } else roots.push(a); }
+  const lvl = new Map();
+  const level = (a) => { if (lvl.has(a.spec.id)) return lvl.get(a.spec.id); lvl.set(a.spec.id, 1); const p = parentOf(a); let v = ringOf(a) === 'hearth' ? 0 : Math.max(1, p ? level(set.get(p)) + 1 : 1); if (ringOf(a) === 'hearth' && p && ringOf(set.get(p)) !== 'hearth') v = 1; v = Math.min(v, HUB_R.length - 1); lvl.set(a.spec.id, v); return v; };
+  for (const a of order) level(a);
+  const deg = (arc, r) => (arc / r) * (180 / Math.PI);
+  const hearth = (a) => lvl.get(a.spec.id) === 0;
+  const outerKids = (a) => (kids.get(a.spec.id) || []).filter((k) => !hearth(k));
+  const wm = new Map();
+  const width = (a) => { if (wm.has(a.spec.id)) return wm.get(a.spec.id); const own = deg(a.spec.kind === 'key' ? 96 : 58, HUB_R[lvl.get(a.spec.id)]); const ks = outerKids(a); const v = Math.max(own, ks.reduce((t, k) => t + width(k), 0)); wm.set(a.spec.id, v); return v; };
+  const sector = (a) => Math.max(26, outerKids(a).reduce((t, k) => t + width(k), 0));
+  const hseq = (a) => { const hk = (kids.get(a.spec.id) || []).filter(hearth); const h = Math.floor(hk.length / 2); return [...hk.slice(0, h).flatMap(hseq), a, ...hk.slice(h).flatMap(hseq)]; }; // a parent sits in the middle of its Hearth children
+  const slotAng = (a) => { const pl = a.spec.place; return pl && Number.isInteger(pl.i) ? -90 + (360 * pl.i) / (ringOf(a) === 'hearth' ? 10 : 26) : 0; };
+  const rootsSorted = roots.map((a, i) => ({ a, i })).sort((x, y) => slotAng(x.a) - slotAng(y.a) || x.i - y.i).map((x) => x.a);
+  const units = []; // { a, seq: [hearth nodes] | null, w }
+  for (const r of rootsSorted) { if (hearth(r)) { const seq = hseq(r); units.push({ seq, w: seq.reduce((t, h) => t + sector(h), 0) }); } else units.push({ seq: null, a: r, w: width(r) }); }
+  const total = units.reduce((t, u) => t + u.w, 0);
+  const k = Math.max(1, 360 / total); // stretch (never squeeze: the layout checks cover a crowded hub)
+  const out = Object.create(null);
+  const put = (a, ang) => { out[a.spec.id] = polar(HUB_R[lvl.get(a.spec.id)], ang); };
+  const sub = (a, ang) => { put(a, ang); const ks = outerKids(a); const kw = ks.reduce((t, c) => t + width(c) * k, 0); let c0 = ang - kw / 2; for (const c of ks) { const cw = width(c) * k; sub(c, c0 + cw / 2); c0 += cw; } };
+  let at = -90 - (units[0] && units[0].seq ? sector(units[0].seq[0]) * k / 2 : 0);
+  for (const u of units) {
+    if (u.seq) for (const h of u.seq) { const sw = sector(h) * k; const ang = at + sw / 2; put(h, ang); const ks = outerKids(h); const kw = ks.reduce((t, c) => t + width(c) * k, 0); let c0 = ang - kw / 2; for (const c of ks) { const cw = width(c) * k; sub(c, c0 + cw / 2); c0 += cw; } at += sw; }
+    else { sub(u.a, at + u.w * k / 2); at += u.w * k; }
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- file checks
 function checkEmblem(e, where) {
   ensure(isObj(e) && ID_RE.test(e.id || ''), `${where}: bad id`);
@@ -559,11 +602,13 @@ export function composeTree(files, data = null) {
   const gaps = { landmark: lay.gapLandmark, diamond: lay.gapDiamond, dot: lay.gapDot ?? lay.v2MinGap };
   // 1. the hub web: hearth + wick ring lanterns and the lanterns hung beside them
   const fogNodes = [];
+  const hubPos = hubLayout(allNodes); // generated radial tree (see hubLayout); lanterns it does not cover fall back to their ring slot / `near` offset
   for (const a of allNodes) {
     if (a.ownerKind !== 'core' || a.near || a.tool) continue;
     if (a.spec.place.ring === 'fog') { fogNodes.push(a); continue; }
-    positions[a.spec.id] = ringPos(core, a.spec.place);
+    positions[a.spec.id] = own(hubPos, a.spec.id) ? hubPos[a.spec.id] : ringPos(core, a.spec.place);
   }
+  for (const a of allNodes) if (a.near && own(hubPos, a.spec.id)) positions[a.spec.id] = hubPos[a.spec.id];
   // lanterns hung beside another lantern: placed as soon as the parent has a place; strict = whatever is left must be placeable
   const resolveNear = (list, parentOf, at, strict = true) => {
     let wait = list;
@@ -575,7 +620,7 @@ export function composeTree(files, data = null) {
     }
     return [];
   };
-  resolveNear(allNodes.filter((a) => a.near), (a) => a.near, (a) => a.spec.place.at, false);
+  resolveNear(allNodes.filter((a) => a.near && !own(positions, a.spec.id)), (a) => a.near, (a) => a.spec.place.at, false);
   let hubR = 0;
   for (const id of Object.keys(positions)) hubR = Math.max(hubR, Math.hypot(positions[id][0], positions[id][1]));
   hubR += 30;

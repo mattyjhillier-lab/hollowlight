@@ -72,7 +72,9 @@ test('T3c validator refuses a far hub root, a far link, a group whose only ways 
 
 test('T3c place {near, at}: a lantern sits at its parent + offset (chains resolve), and bad references fail', () => {
   const p = composed.info.positions;
-  assert.deepEqual(p.li_elder, [Math.round((p.li_last[0] + 74) * 10) / 10, Math.round((p.li_last[1] + 51) * 10) / 10]);
+  // the hub web is generated (hubLayout): a `near` lantern sits one level further out beside its parent, never far from it
+  assert.ok(Math.hypot(p.li_elder[0] - p.li_last[0], p.li_elder[1] - p.li_last[1]) < 130, 'li_elder beside li_last');
+  assert.ok(Math.hypot(...p.li_elder) > Math.hypot(...p.li_last), 'li_elder one step further out');
   const bad = (fn, re) => { const fs = clone(readTreeFiles()); fn(fs.find((f) => f.path === 'core.json').json); assert.throws(() => composeTree(fs, data), re); };
   bad((c) => { c.nodes.find((n) => n.id === 'li_elder').place = { near: 'nope_zz', at: [10, 10] }; }, /place\.near/);
   bad((c) => { c.nodes.find((n) => n.id === 'li_elder').place = { near: 'li_elder', at: [10, 10] }; }, /place\.near/);

@@ -537,13 +537,18 @@ export class TreeScreen {
   ukNow() { const v = Number(document.documentElement.style.getPropertyValue('--uik')); return v >= 1 && v <= 1.6 ? v : 1; }
   /** Q1a: on-screen radius of a lantern = half its tier diameter (scaled to its neighbours, see meta/treetier.js) x zoom, never under the tier floor. */
   radiusOf(id, lod) {
-    const t = this.tiers.tier[id] || 'dot'; const d = this.tiers.d[id];
-    let D = screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1);
-    if (t === 'landmark') D = Math.max(D, this.presence(id) * (this.uk || 1) * this.boost()) * LOOK.medSize; // R2: landmarks keep their presence when zoomed out (overlaps collapse, see collapseFar); medSize = the locked look scale
-    return D / 2;
+    const t = this.tiers.tier[id] || 'dot';
+    if (t === 'landmark') return this.landmarkD(id) / 2; // ONE rule: a landmark's size depends on its KIND and the zoom only, never on its neighbours (layout gives every landmark room)
+    const d = this.tiers.d[id];
+    return screenDiameter(t, Number.isFinite(d) ? d : TIER_SIZE[t], this.cam.z, this.uk || 1) / 2;
   }
-  /** R2: zoomed-out landmark medallion diameter in px by kind (hearts biggest), and how much of it applies at this zoom (full at 0.3 and below, none at NEAR). */
-  presence(id) { const k = this.def.nodes[id].kind; return clamp(0.5 + this.cam.z / 0.6, 0.66, 1) * (this.small ? 62 : 92) * (k === 'heart' ? 1 : k === 'gate' ? 0.8 : k === 'teaser' ? 0.55 : 0.66); }
+  /** Landmark medallion diameter in px: base by kind (heart 1, key / socket / gate / hero / kin 0.6, teaser 0.46) x a gentle zoom factor, same everywhere on the map. */
+  /** Medallion zoom factor shared by every landmark and the hub coin: 0.64 zoomed right out, 1.12 close in. */
+  zoomK() { return clamp(0.58 + 0.7 * this.cam.z, 0.64, 1.12); }
+  /** Radius of a landmark-sized medallion with this size step (heart 1, others 0.6). */
+  stdR(step) { return ((this.small ? 62 : 92) * step * (this.uk || 1) * LOOK.medSize * this.zoomK()) / 2; }
+  landmarkD(id) { return this.presence(id) * (this.uk || 1) * LOOK.medSize * this.zoomK(); }
+  presence(id) { const k = this.def.nodes[id].kind; return (this.small ? 62 : 92) * (k === 'heart' ? 1 : k === 'teaser' ? 0.46 : 0.6); }
   boost() { return clamp((this.view.lod.near - this.cam.z) / (this.view.lod.near - 0.3), 0, 1); }
   /** FAR only: greedy collapse of landmarks that would overlap on screen. Returns Map id -> leader id (leaders map to themselves); this.farCount = leader -> how many hidden behind it. */
   collapseFar(ids) {
@@ -613,7 +618,7 @@ export class TreeScreen {
     c.fillStyle = pool;
     c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
     this.atlas.beginFrame();
-    this.hubR = clamp(150 * z * 1.0, 15, 50) * this.uk;
+    this.hubR = ((this.small ? 62 : 92) * LOOK.medSize * this.zoomK() * 0.56) * this.uk; // the hub coin is the biggest medallion by one clear step (a heart is 0.5 of the base)
     this.drawFarSlots(lod);
     this.drawRegions();
     this.drawToolCoins(lod);
@@ -692,7 +697,6 @@ export class TreeScreen {
     c.fillStyle = hl;
     c.beginPath(); c.arc(hx, hy, hr * 2.6, 0, 7); c.fill();
     this.drawHub(c, hx, hy, hr);
-    this.hubCaption(c, hx, hy, hr);
     if (lod === 'far') {
       const ty = 10 * (this.uk || 1); // docked at the top of the map, never among the landmarks
       if (!this.lastRB.concat(this.lblBoxes || []).some((b) => b.x0 < W / 2 + 100 && b.x1 > W / 2 - 100 && b.y0 < ty + 18 && b.y1 > ty)) {
@@ -703,6 +707,7 @@ export class TreeScreen {
       }
     }
     if (best) this.drawBestMarker(c, t, lod);
+    this.hubCaption(c, hx, hy, hr); // last: nothing (pins, tags, coins) may cover the hero caption
     if (this.atlas.pending) this.dirty(); // over the 4-bakes-per-frame budget: the rest comes next frame
     const now = performance.now();
     this.anims = this.anims.filter((a) => now - a.t0 < 650);
@@ -891,7 +896,7 @@ export class TreeScreen {
     }
     if (this.atlas.pending) this.dirty();
   }
-  toolR(bo) { return (this.small ? 24 : 38) * (this.uk || 1) * (0.6 + 0.4 * bo); }
+  toolR() { return this.stdR(0.6); } // a tool group's picture coin is a plain landmark (same size as a key / socket / gate)
   costText(nx) {
     if (!nx) return '';
     const p = [];
@@ -1014,7 +1019,8 @@ export class TreeScreen {
       seen.add(k);
       const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, off = (cross ? 0.18 : 0.1) * L * (idHash(k) < 0.5 ? 1 : -1) * hubFade(A, B); // a gentle bow, side picked per thread (like the sandbox)
       const knot = Math.max(Math.hypot(A.x, A.y), Math.hypot(B.x, B.y)) < (V.ringTiers[0] ? V.ringTiers[0].r * 1.2 : 360);
-      out.push({ a, b, knot, ax: A.x, ay: A.y, bx: B.x, by: B.y, cx: (A.x + B.x) / 2 - (dy / L) * off, cy: (A.y + B.y) / 2 + (dx / L) * off, cross, col: this.colorOf(cross ? a : b) });
+      const hubz = Math.max(Math.hypot(A.x, A.y), Math.hypot(B.x, B.y)) < 440;
+      out.push({ a, b, knot, hubz, ax: A.x, ay: A.y, bx: B.x, by: B.y, cx: (A.x + B.x) / 2 - (dy / L) * off, cy: (A.y + B.y) / 2 + (dx / L) * off, cross, col: this.colorOf(cross ? a : b) });
     };
     for (const e of def.edges) {
       let from = e.from;
@@ -1054,7 +1060,7 @@ export class TreeScreen {
   drawDisplay(c, lod) {
     if (!this.display || !this.display.length) return;
     const z = this.cam.z, uk = this.uk || 1, s = this.api.save();
-    const r = clamp(34 * z, 19, 80) * LOOK.medSize * uk;
+    const r = this.stdR(0.6); // display medallions (heroes, nights, reserved slots) are plain landmarks too
     for (const d of this.display) {
       const [x, y] = this.toS(d.x, d.y);
       if (x < -r - 60 || x > this.W + r + 60 || y < -r - 40 || y > this.H + r + 60) continue;
@@ -1192,11 +1198,16 @@ export class TreeScreen {
     const alm = this.heroAlm = btn('ts-hbtn', 'Almanac'); alm.addEventListener('click', () => { if (this.host.showAlmanac) this.host.showAlmanac('tree'); }); // opens over the tree: Back returns to it
     this.heroGoals = btn('ts-hbtn', 'Goals'); this.heroGoals.addEventListener('click', () => this.toggleGoals(false));
     const back = btn('ts-hbtn', 'Back'); back.addEventListener('click', () => this.close());
+    this.heroBond = el('div', 'ts-hbond'); // bond pips (display only)
+    const card = this.heroCard = el('div', 'ts-hcard'); // loadout summary: spirit, ability, how much of the web is lit
+    this.heroRows = {};
+    for (const [k, lab] of [['spirit', 'Spirit'], ['ability', 'Ability'], ['lit', 'Lit'], ['ready', 'Can light']]) { const r = el('div', 'ts-hrow'); const v = el('span', 'ts-hv'); this.heroRows[k] = v; r.append(el('span', 'ts-hk', lab), v); card.append(r); }
+    const pair = el('div', 'ts-hpair'); pair.append(alm, this.heroGoals);
     this.heroGold = el('span'); this.heroShard = el('span');
     const coins = el('div', 'ts-hcoins');
     const mk = (icon, v) => { const w = el('span', 'ts-hc'); const i = el('i', icon); i.setAttribute('aria-hidden', 'true'); w.append(i, v); return w; };
     coins.append(mk('ts-i-gold', this.heroGold), mk('ts-i-shard', this.heroShard));
-    p.append(this.heroLabel, this.heroCv, this.heroSwap, this.heroName, this.heroSub, play, alm, this.heroGoals, back, coins);
+    p.append(this.heroLabel, this.heroCv, this.heroSwap, this.heroName, this.heroSub, this.heroBond, card, play, pair, back, coins);
     return p;
   }
   /** Paint one portrait into a canvas (cover crop on the face) or a plain initial when there is no picture. */
@@ -1234,6 +1245,16 @@ export class TreeScreen {
     }
     this.heroGold.textContent = fmtN(s.gold); this.heroShard.textContent = fmtN(s.shards);
     this.heroGoals.textContent = 'Goals';
+    this.heroBond.replaceChildren();
+    if (cur.awake) for (let i = 0; i < 5; i++) { const pip = el('i', i < Math.min(5, cur.bond) ? 'on' : ''); pip.setAttribute('aria-hidden', 'true'); this.heroBond.append(pip); }
+    this.heroBond.style.display = cur.awake ? '' : 'none';
+    const ab = this.data && this.data.characters && this.data.characters[cur.id] && this.data.characters[cur.id].ability;
+    const sp = this.starter && this.starter.caption ? String(this.starter.caption).split(' · ').slice(1).join(' · ') : '';
+    let lit = 0, tot = 0; for (const id of this.def.list) { if (this.def.nodes[id].teaser) continue; tot++; if (this.model.lit(id)) lit++; }
+    this.heroRows.spirit.textContent = sp || 'None yet';
+    this.heroRows.ability.textContent = ab && typeof ab.name === 'string' ? ab.name.slice(0, 24) : '-';
+    this.heroRows.lit.textContent = `${fmtN(lit)} of ${fmtN(tot)}`;
+    this.heroRows.ready.textContent = fmtN(this.model.readyList().length);
   }
 
   /** 'Next lights': up to three goals. First the evolution seals on the starter spirit's own branches, then the nearest other landmarks, each with the lanterns to go and the gold. */
@@ -1413,7 +1434,8 @@ export class TreeScreen {
       if ((ax < -40 && bx < -40) || (ax > W + 40 && bx > W + 40) || (ay < -40 && by < -40) || (ay > H + 40 && by > H + 40)) continue;
       const ao = e.a === 'hub' || m.lit(e.a), bo = m.lit(e.b);
       const st = ao && bo ? 2 : e.cross ? 0 : ao || bo ? 1 : 0;
-      const al = (st > 0 ? 1 : e.cross ? crossA : lockA) * Math.min(this.unfurlA(e.a), this.unfurlA(e.b));
+      let al = (st > 0 ? 1 : e.cross ? crossA : lockA) * Math.min(this.unfurlA(e.a), this.unfurlA(e.b));
+      if (e.hubz && st === 0 && !(foc && foc.edges.has(i))) al *= 0.22; // inside the hub web only the lit threads, the ones next to a lit lantern and the focus path speak; locked requirement lines are a whisper
       if (al < 0.02) continue;
       const fm = foc ? (foc.edges.has(i) ? 1 : 0.4) : 1;
       const col = st === 0 ? '#8592c4' : e.col;
