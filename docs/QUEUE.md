@@ -14,7 +14,7 @@ Matt-only chores: real-phone tests; delete old `hollowlight` Cloudflare project;
 
 Next (Claude, no testing needed): pacing v3 chart; LOCKED rows + build chunk per picked verb; Set B slots (companion egg, hero trial lantern) options rounds.
 Big features (Matt's order): Lucinda DM5-DM10, Chapter 2 Hushbell Hamlet, companions (summons stop being weapons), visuals review, UI alignment pass.
-Wardrobe picks LOCKED 2026-11-12 (build a tune sandbox first). Awaiting picks: docs/design/title-screen-v1.md (Lantern Vigil recommended). Not started: starter synergy extras, Almanac silhouettes/kill counts, Bond cap review.
+Wardrobe + title picks LOCKED 2026-11-12: build the two tune sandboxes (standalone, outside repos) first. Not started:
 Later: chapters 3-8, other heroes/weapons, prestige, Android/Windows app, AI art pipeline.
 Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob.
 
