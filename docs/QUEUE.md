@@ -1,3 +1,23 @@
+## SINGLE SOURCE OF TRUTH (rewritten 2026-11-12; everything below this block is older history and may be stale)
+
+NOW: Matt plays dev.wispwick.pages.dev (tree, tour, results, start flow) and runs docs/REAL-PHONE-CHECKLIST.md.
+Tree rework S1 + look + hero panel + banner/tile/tour + results "what moved" + home flow + a11y: BUILT, merged to dev (not main), 1423 tests green.
+
+Waiting on Matt (decisions):
+1. New-verb picks: docs/design/new-verbs-v1.md (Lamp-lighter A/B/C, Starting Synergy A/B/C; recommended A and A; budget flag: sustain pool 5.00/5).
+2. Q7 landmark promotion/gating, after the pacing chart docs/design/skill-tree-pacing-v3.md (agent running).
+3. Loadout hero step: skip when only one hero awake (recommended).
+4. Deep Dusk clear pace (balance); mid tree 29.4% (band 30-55, pre-existing); Wren/Elias gap at max 78/94.
+5. Merge to main (explicit yes; includes the one-time refund-everything tree restart; run `node scripts/tree-release.mjs --snapshot` at merge).
+
+Matt-only chores: real-phone tests; delete old `hollowlight` Cloudflare project; tell testers saves started fresh; 5 old worktree folders with uncommitted work.
+
+Next (Claude, no testing needed): pacing v3 chart; LOCKED rows + build chunk per picked verb; Set B slots (companion egg, hero trial lantern) options rounds.
+Big features (Matt's order): Lucinda DM5-DM10, Chapter 2 Hushbell Hamlet, companions (summons stop being weapons), visuals review, UI alignment pass.
+Designs not started: Wardrobe + ring-completion costumes (sandbox first), picture title screen, starter synergy extras, Almanac silhouettes/kill counts, Bond cap review.
+Later: chapters 3-8, other heroes/weapons, prestige, Android/Windows app, AI art pipeline.
+Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob.
+
 ## NOW / NEXT / LATER (focus keeper, updated 2026-10-28; the older NOW/NEXT list further down is stale history)
 Game name: Wispwick (LOCKED "NAME LOCKED v2" + "NAME CONFIRMED"). Status and owners: docs/LAUNCH-CHECKLIST.md "STATUS 2026-10-28". Adding content: docs/CONTENT-GUIDE.md.
 - NOW (one chunk, Matt): play the dev build (3 runs on Normal brightness, one run with map events on, one late-game run) and answer "Decisions waiting" below (map events balance 1 to 3, hero-class word Hollowlighters -> Wickbearers, About wording + feedback channel). Right now this is the only thing gating the rest.
