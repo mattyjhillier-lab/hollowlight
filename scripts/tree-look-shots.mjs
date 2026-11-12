@@ -73,6 +73,11 @@ try {
       await setZoom(Z.near, 0, 0); await shot(`${dn}-fresh-near-hub`);
       await setZoom(0.45, -900, 1100); await shot(`${dn}-fresh-hero-medallion`);
     }
+    if (want(`${dn}-n20`)) {
+      await openTree(dev, { lit: 20 });
+      await setZoom(Z.far); await shot(`${dn}-n20-far`);
+      await setZoom(Z.mid); await shot(`${dn}-n20-mid`);
+    }
     if (want(`${dn}-grown`)) {
       await openTree(dev, { lit: 70 });
       await setZoom(Z.far); await shot(`${dn}-grown-far`);
@@ -82,6 +87,7 @@ try {
     if (want(`${dn}-full`)) {
       await openTree(dev, { lit: 5000 });
       await setZoom(Z.far); await shot(`${dn}-full-far`);
+      await setZoom(Z.mid); await shot(`${dn}-full-mid`);
     }
   }
   if (want('hover')) {

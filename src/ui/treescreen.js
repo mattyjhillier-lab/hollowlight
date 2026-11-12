@@ -985,7 +985,8 @@ export class TreeScreen {
       if (!cross && Math.hypot(A.x - B.x, A.y - B.y) > V.linkFar) return; // a requirement longer than a thread can be is shown by the focus path, never across the web (cross links were already picked by distance by the atlas)
       seen.add(k);
       const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, off = (cross ? 0.18 : 0.1) * L * (idHash(k) < 0.5 ? 1 : -1) * hubFade(A, B); // a gentle bow, side picked per thread (like the sandbox)
-      out.push({ a, b, ax: A.x, ay: A.y, bx: B.x, by: B.y, cx: (A.x + B.x) / 2 - (dy / L) * off, cy: (A.y + B.y) / 2 + (dx / L) * off, cross, col: this.colorOf(cross ? a : b) });
+      const knot = Math.max(Math.hypot(A.x, A.y), Math.hypot(B.x, B.y)) < (V.ringTiers[0] ? V.ringTiers[0].r * 1.2 : 360);
+      out.push({ a, b, knot, ax: A.x, ay: A.y, bx: B.x, by: B.y, cx: (A.x + B.x) / 2 - (dy / L) * off, cy: (A.y + B.y) / 2 + (dx / L) * off, cross, col: this.colorOf(cross ? a : b) });
     };
     for (const e of def.edges) {
       let from = e.from;
@@ -1262,19 +1263,21 @@ export class TreeScreen {
       if (al < 0.02) continue;
       const fm = foc ? (foc.edges.has(i) ? 1 : 0.4) : 1;
       const col = st === 0 ? '#8592c4' : e.col;
-      const key = `${st}|${col}|${e.cross ? 1 : 0}|${(al * fm).toFixed(2)}`;
-      let bk = buckets.get(key); if (!bk) { bk = { st, col, a: al * fm, cross: e.cross, path: new Path2D() }; buckets.set(key, bk); }
+      const soft = e.knot ? 1 : 0; // inside the Hearth ring: thinner and softer, so the cluster reads as a glow with readable lanterns
+      const key = `${st}|${col}|${e.cross ? 1 : 0}|${(al * fm).toFixed(2)}|${soft}`;
+      let bk = buckets.get(key); if (!bk) { bk = { st, col, a: al * fm, cross: e.cross, soft, path: new Path2D() }; buckets.set(key, bk); }
       bk.path.moveTo(ax, ay); bk.path.quadraticCurveTo((e.cx - cam.x) * z + W / 2, (e.cy - cam.y) * z + H / 2, bx, by);
     }
     c.lineCap = 'round';
     for (const bk of [...buckets.values()].sort((p, q) => p.st - q.st)) {
       if (bk.st === 2) {
-        c.globalAlpha = bk.a; c.strokeStyle = hexA(bk.col, 0.2 * LOOK.glow); c.lineWidth = 5 * Math.min(z, 1.2) + 3; c.stroke(bk.path);
-        c.globalAlpha = bk.a * LOOK.thrLit * bright; c.strokeStyle = mix(bk.col, '#fff6e0', 0.35); c.lineWidth = Math.max(1.5, 2 * z + 0.5); c.stroke(bk.path);
+        const k = bk.soft ? 0.5 : 1;
+        c.globalAlpha = bk.a * (bk.soft ? 0.5 : 1); c.strokeStyle = hexA(bk.col, 0.2 * LOOK.glow); c.lineWidth = (5 * Math.min(z, 1.2) + 3) * k; c.stroke(bk.path);
+        c.globalAlpha = bk.a * LOOK.thrLit * bright * (bk.soft ? 0.55 : 1); c.strokeStyle = mix(bk.col, '#fff6e0', 0.35); c.lineWidth = Math.max(bk.soft ? 1 : 1.5, (2 * z + 0.5) * k); c.stroke(bk.path);
       } else if (bk.st === 1) {
-        c.globalAlpha = bk.a * LOOK.thrAvail * bright; c.strokeStyle = bk.col; c.lineWidth = Math.max(1.2, 1.5 * z + 0.4); c.stroke(bk.path);
+        c.globalAlpha = bk.a * LOOK.thrAvail * bright * (bk.soft ? 0.6 : 1); c.strokeStyle = bk.col; c.lineWidth = Math.max(bk.soft ? 0.9 : 1.2, (1.5 * z + 0.4) * (bk.soft ? 0.7 : 1)); c.stroke(bk.path);
       } else {
-        c.globalAlpha = bk.a * LOOK.thrLocked * (bk.cross ? 0.8 : 1); c.strokeStyle = bk.col; c.lineWidth = bk.cross ? Math.max(0.8, 0.8 * z) : Math.max(0.9, z); c.stroke(bk.path);
+        c.globalAlpha = bk.a * LOOK.thrLocked * (bk.cross ? 0.8 : 1) * (bk.soft ? 0.7 : 1); c.strokeStyle = bk.col; c.lineWidth = bk.cross ? Math.max(0.8, 0.8 * z) : Math.max(0.9, z); c.stroke(bk.path);
       }
     }
     c.globalAlpha = 1;
