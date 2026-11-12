@@ -18,6 +18,8 @@ Designs written, awaiting Matt picks: docs/design/wardrobe-v2.md (ring costumes 
 Later: chapters 3-8, other heroes/weapons, prestige, Android/Windows app, AI art pipeline.
 Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob.
 
+STATUS wip/tree-q1 2026-11-12: Q7-A BUILT (Murder Storm, Spirit Tempest, Static Storm seals + Wardrobe Path drawn as named chase landmarks with progress chips; display-only `chase` flag, released ids/prices/requires untouched; tests/q7chase.test.mjs; shots docs/screenshots/tree-q7/). Pace re-measure (pace-v2 S1, ~84 min) not re-run yet.
+
 ## NOW / NEXT / LATER (focus keeper, updated 2026-10-28; the older NOW/NEXT list further down is stale history)
 Game name: Wispwick (LOCKED "NAME LOCKED v2" + "NAME CONFIRMED"). Status and owners: docs/LAUNCH-CHECKLIST.md "STATUS 2026-10-28". Adding content: docs/CONTENT-GUIDE.md.
 - NOW (one chunk, Matt): play the dev build (3 runs on Normal brightness, one run with map events on, one late-game run) and answer "Decisions waiting" below (map events balance 1 to 3, hero-class word Hollowlighters -> Wickbearers, About wording + feedback channel). Right now this is the only thing gating the rest.
