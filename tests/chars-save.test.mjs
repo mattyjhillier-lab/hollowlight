@@ -168,8 +168,9 @@ test('step 4: a live lantern bought after a hero lantern keeps an exact refund (
   const creep = { su_call: 0, ch_wren: 1, wf_fang: 2 };
   const paid = costFor(def.nodes.su_bond, 1, 0, def.creep).gold + costFor(def.nodes.su_call, 1, 0, def.creep).gold + frozenCost(PRICES_V4.ch_wren, 1, 1).gold + costFor(def.nodes.wf_fang, 1, 2, def.creep).gold;
   const s = parseSave(v3disk(own, ['ch_wren'], creep)).save;
-  assert.equal(s.tree.wf_fang, 1);
-  assert.equal(s.creep.wf_fang, 1, 'clamped to the purchases still owned');
+  // S1: the v5 restart then refunds what step 4 left (wf_fang at the step it was clamped to): the total is still exactly what was paid
+  assert.equal(s.tree.wf_fang, undefined);
+  assert.deepEqual(s.creep, {});
   const gold0 = s.gold;
   respec(s, def);
   assert.equal(s.gold - 1000, paid, `everything paid comes back: ${s.gold - 1000} vs ${paid} (after ${gold0 - 1000} at migration)`);
@@ -185,7 +186,7 @@ test('step 4 hostile: junk ranks, prototype keys, NaN creep, non-object trees', 
 });
 
 test('the live tree compiles with the retired hero lanterns and a third hero needs no step (additive)', () => {
-  assert.equal(def.treeVersion, 4);
+  assert.equal(def.treeVersion, 5); // S1 rework: tree content version 5
   assert.doesNotThrow(() => compileTree(composeTree(readTreeFiles(), data).live, data));
 });
 

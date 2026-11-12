@@ -17,6 +17,10 @@ export const STARTER_V5 = Object.freeze({
   holy_orbit: ['gt_holy_orbit', 'or_halo'],
 });
 
+// FROZEN: every id a v4 tree could hold (buyable ids, teasers, the v4 tombstones). A tree that owns anything else was written by v5 or later:
+// its version stamp was forged down, so the restart does NOT run again (no replayed refund, nothing cleared).
+const V4_IDS = new Set([...Object.keys(PRICES_V4), 'tz_marsh', 'tz_witch', 'tz_crown', 'ch_wren', 'wr_grip', 'wr_spark', 'ch_elias', 'el_wheel', 'el_lamp', 'cd_radar']);
+
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const rankIn = (t, id, max) => (Object.hasOwn(t, id) ? Math.min(max, Math.max(0, Math.floor(fin(t[id]) ? t[id] : t[id] === true ? 1 : 0))) : 0);
@@ -33,6 +37,7 @@ export function frozenCostV4(p, rank, st) {
 // -> { tree, gold, shards, glass, creep: {}, refunded }
 export function restartTree(rawTree, ctx = {}) {
   const out = { tree: {}, gold: 0, shards: 0, glass: 0, creep: {}, refunded: 0 };
+  if (isObj(rawTree) && Object.keys(rawTree).some((id) => !V4_IDS.has(id) && rankIn(rawTree, id, 1e4) > 0)) return { tree: { ...rawTree }, gold: 0, shards: 0, glass: 0, creep: undefined, refunded: 0, replay: true };
   const starter = typeof ctx.starter === 'string' && Object.hasOwn(STARTER_V5, ctx.starter) ? ctx.starter : null;
   const free = new Set(starter && Object.hasOwn(STARTER_V4, starter) ? STARTER_V4[starter] : []);
   if (starter) for (const id of STARTER_V5[starter]) out.tree[id] = 1;

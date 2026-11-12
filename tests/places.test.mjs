@@ -71,7 +71,7 @@ test('E7 old saves load unchanged: real fixtures re-save byte-identically to the
     const r = parseSave(t);
     assert.ok(r.ok, n);
     const out = JSON.stringify(serializeSave(r.save));
-    assert.equal(createHash('sha256').update(out).digest('hex'), createHash('sha256').update(gold[n]).digest('hex'), `${n} output equals the pre-E7 build`);
+    assert.equal(createHash('sha256').update(out).digest('hex'), createHash('sha256').update(gold[n]).digest('hex'), `${n} output equals the golden build (re-recorded at the S1 tree restart, v5: only gold / shards / tree / creep / seen / notes moved)`);
     assert.equal(Object.hasOwn(r.save.stats, 'sites'), false);
   }
 });

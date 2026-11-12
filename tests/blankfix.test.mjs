@@ -157,7 +157,7 @@ test('a real localStorage dump from build 659be88 loads in the current schema an
   const { dump } = JSON.parse(readFileSync(new URL('./fixtures/ls-659be88.json', import.meta.url), 'utf8'));
   const r = parseSave(dump['hollowlight:lantern:l1:save']);
   assert.ok(r.ok, 'old save parses');
-  assert.ok(Object.keys(r.save.tree).length >= 20, 'tree buys kept');
+  assert.ok(r.save.notes.treeResetNotice && r.save.notes.treeResetNotice.nodes >= 20, 'S1: its 20+ tree buys were refunded by the v5 restart (never lost)');
   assert.equal(r.save.settings.textSize, 'large');
   assert.deepEqual(r.save.settings.keys.up, ['KeyI', 'ArrowUp']);
   assert.ok(Array.isArray(r.save.settings.keys.fullscreen), 'the new fullscreen action is filled in');
