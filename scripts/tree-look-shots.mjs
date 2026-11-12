@@ -11,7 +11,7 @@ const OUT = join(ROOT, process.argv[2] || 'docs/screenshots/tree-look');
 const BASE = process.argv[3] || 'http://127.0.0.1:5301/';
 const ONLY = process.argv[4] || '';
 const CHROME = [process.env.CHROME, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => p && existsSync(p));
-const PORT = 9393;
+const PORT = Number(process.env.CDP_PORT) || 9393;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const D = [1280, 720, 1, false], P = [390, 844, 2, true];
 const profile = mkdtempSync(join(tmpdir(), 'hl-look-'));

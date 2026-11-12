@@ -176,17 +176,26 @@
 .ts-hero, .ts-next { display: none; }
 .ts.ts-hero-on .ts-hero { position: absolute; left: 0; top: 0; bottom: 0; width: 232px; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px 12px; background: linear-gradient(180deg, #12183a, #0d1230 60%, #271b30); border-right: 1px solid rgba(255, 210, 122, .18); }
 .ts-hl { font: 17px var(--font-display); color: #cdbf95; }
-.ts-hcv { width: 200px; height: 215px; margin-top: -4px; border-radius: 16px; }
+.ts-hcv { width: 100%; flex: 1 1 215px; min-height: 150px; max-height: 330px; object-fit: contain; margin-top: -4px; border-radius: 16px; }
 .ts-swap { display: flex; gap: 8px; margin-top: -4px; }
 .ts-swapb { width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; border: 2px solid #3b4670; background: #171d3c; overflow: hidden; position: relative; }
 .ts-swapb.on { border-color: #ffd27a; box-shadow: 0 0 10px rgba(255, 210, 122, .5); }
 .ts-swapb.asleep { opacity: .7; cursor: default; }
 .ts-swapb canvas { width: 100%; height: 100%; display: block; }
 .ts-hname { font: 36px/1 var(--font-display); color: #fff1cf; }
-.ts-hsub { font-size: 13px; color: #d6b36a; margin-bottom: 4px; }
+.ts-hsub { font-size: 13px; color: #d6b36a; margin-bottom: 0; }
+.ts-hbond { display: flex; gap: 6px; height: 10px; align-items: center; margin-bottom: 2px; }
+.ts-hbond i { width: 9px; height: 9px; transform: rotate(45deg); border: 1px solid #6b5a33; background: transparent; }
+.ts-hbond i.on { background: #ffd27a; border-color: #ffe6ae; box-shadow: 0 0 6px rgba(255, 210, 122, .6); }
+.ts-hcard { width: 100%; border-radius: 12px; border: 1px solid rgba(255, 210, 122, .16); background: rgba(8, 12, 28, .5); padding: 6px 10px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.ts-hrow { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.ts-hk { color: #a79a76; }
+.ts-hv { color: #fff1cf; font-weight: 600; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-hpair { display: flex; gap: 6px; width: 100%; }
+.ts-hpair .ts-hbtn { width: auto; flex: 1 1 0; min-width: 0; }
 .ts-hbtn { width: 100%; padding: 9px 0; min-height: 44px; border-radius: 11px; border: 1px solid rgba(255, 210, 122, .3); background: linear-gradient(#232b52, #161c3b); font-weight: 600; font-size: 14px; }
 .ts-hbtn.ts-hplay { background: linear-gradient(#ffd98a, #f1a94d); color: #3a2308; font: 24px var(--font-display); padding: 6px 0; border-color: #ffe6ae; }
-.ts-hcoins { margin-top: auto; display: flex; justify-content: space-around; width: 100%; padding: 9px 6px; border-radius: 14px; border: 1px solid var(--ts-line); background: rgba(8, 12, 28, .7); font-weight: 700; }
+.ts-hcoins { margin-top: 2px; display: flex; justify-content: space-around; width: 100%; padding: 9px 6px; border-radius: 14px; border: 1px solid var(--ts-line); background: rgba(8, 12, 28, .7); font-weight: 700; }
 .ts-hc { display: inline-flex; align-items: center; gap: 6px; }
 .ts-hc i { width: 14px; height: 14px; display: inline-block; flex: none; }
 .ts.ts-hero-on .ts-step { display: none; }
