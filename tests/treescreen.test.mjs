@@ -47,7 +47,7 @@ test('model: five states map 1:1 from the real rules (lit, ready, open, challeng
     assert.equal(ce.s, want, id);
     assert.ok(SAY[ce.s]);
   }
-  const poor = model(save({ gold: 10, stats: { runs: 1 } }));
+  const poor = model(save({ gold: 10, stats: { runs: 1 }, tree: { li_vigor: 1, li_oak: 1 } })); // S1: hearts are reached by roads now, so the challenge shown is a ring lantern beside an owned one (Root-Wise)
   assert.ok(def.list.some((id) => poor.cache[id].s === 'open'), 'not enough gold');
   assert.ok(def.list.some((id) => poor.cache[id].s === 'notyet'), 'not yet reachable');
   assert.ok(def.list.some((id) => poor.cache[id].s === 'challenge'), 'challenge');

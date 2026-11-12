@@ -58,38 +58,51 @@ test('R1 positions are NOT part of the released fingerprints: spreading the web 
   if (rel) for (const id of Object.keys(rel)) assert.equal(a[id], rel[id], id);
 });
 
-test('R1 geometry: five weapon constellations spaced around the hub, tools beyond, web radius in range, rings strictly outward', () => {
-  const R = composed.info.core.rings;
-  assert.ok(R.hearth.r < R.wick.r && R.wick.r < R.heroes.r && R.heroes.r < R.sky.r && R.sky.r < R.dusk.r && R.dusk.r < R.fog.r && R.fog.r < R.far.r);
+test('S1 geometry (supersedes the R1 rings): weapons scattered at varied distances (Holy Orbit + Spirit Bolts near, Chain Lightning farther), no region overlaps, every node inside the web', () => {
+  const rg = (id) => composed.info.regions.find((r) => r.id === id);
+  const t = (w) => rg(`c:${w}`).orbit.tier;
+  assert.ok(t('holy_orbit') === 1 && t('spirit_bolts') === 1, 'two magic weapons near the start');
+  assert.ok(t('chain_lightning') > t('spirit_bolts'), 'Chain Lightning farther');
+  const tiers = new Set(Object.keys(composed.info.clusters).map(t));
+  assert.ok(tiers.size >= 3, 'weapons sit at three or more distances (not one ring)');
+  const ang = (r) => r.orbit.angle;
+  const nights = ['a:gt_cursed_forest_hard', 't:nightgate', 'r:twilight'].map(rg);
+  assert.ok(new Set(nights.map((r) => r.orbit.tier)).size >= 2 && new Set(nights.map(ang)).size === 3, 'nights scattered (varied tiers and angles)');
   const cs = Object.values(composed.info.centres);
   assert.equal(cs.length, 5);
-  for (const c of cs) assert.ok(Math.abs(Math.hypot(c[0], c[1]) - R.sky.r) < 1, 'each weapon sits on the sky ring');
-  for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) assert.ok(Math.hypot(cs[i][0] - cs[j][0], cs[i][1] - cs[j][1]) > 900, 'constellations are far apart');
-  // the hub web (global ring lanterns) ends well inside the first constellation edge
+  assert.deepEqual(layoutIssues(composed.info, def), []);
+  // the hub web (global ring lanterns) stays inside hubR, every region beyond it
   let hubMax = 0;
-  for (const n of composed.info.nodes) if (n.region === 'rings' && !n.tool && !/^(br|bs|co|cd|rs|wd|df)_/.test(n.id) && n.kind !== 'teaser') hubMax = Math.max(hubMax, Math.hypot(...composed.info.positions[n.id]));
-  assert.ok(hubMax < 520, `hub web radius ${hubMax}`);
+  for (const n of composed.info.nodes) if (n.region === 'rings' && !n.tool && n.kind !== 'teaser') hubMax = Math.max(hubMax, Math.hypot(...composed.info.positions[n.id]));
+  assert.ok(hubMax <= composed.info.hubR, `hub web radius ${hubMax} vs ${composed.info.hubR}`);
   const v = buildTreeView(composed.info, def, data);
-  assert.ok(v.webR >= 1900 && v.webR <= 2400, `webR ${v.webR}`);
+  assert.ok(v.webR >= 2000 && v.webR <= 4500, `webR ${v.webR}`);
   for (const id of def.list) assert.ok(Math.hypot(def.nodes[id].x, def.nodes[id].y) <= v.webR, `${id} inside the web`);
 });
 
-test('R1 region records: hub, every constellation, every tool cluster, fog; name, centre, accent colour key, backbone thread to the hub', () => {
+test('S1 region records: hub, constellations, tool groups, the Deep Dusk anchor, display-only heroes, night / reserved / chapter / far records; name, centre, accent, orbit', () => {
   const rg = composed.info.regions;
   const kinds = rg.reduce((a, r) => ((a[r.kind] = (a[r.kind] || 0) + 1), a), {});
-  assert.deepEqual(kinds, { hub: 1, weapon: 5, tool: 6, fog: 1 });
+  assert.deepEqual(kinds, { hub: 1, weapon: 5, tool: 6, anchor: 1, hero: Object.keys(data.characters).length, night: 1, reserved: 1, chapter: 1, far: 1 });
   for (const r of rg) {
     assert.ok(typeof r.name === 'string' && r.name.length > 0, r.id);
     assert.ok(Array.isArray(r.centre) && r.centre.every(Number.isFinite), r.id);
     assert.ok(Object.hasOwn(composed.info.core.branches, r.accent), `${r.id} accent key`);
+    if (r.id !== 'hub') assert.ok(r.orbit && Number.isInteger(r.orbit.tier) && Number.isFinite(r.orbit.angle), `${r.id} orbit`);
     if (r.kind === 'weapon' || r.kind === 'tool') {
       assert.deepEqual(r.thread.from, [0, 0]);
       const [tx, ty] = r.thread.to, d = Math.hypot(r.centre[0], r.centre[1]);
       assert.ok(Math.abs(Math.hypot(tx, ty) - (d - r.r)) < 1.5, `${r.id} thread ends at the region edge`);
     }
   }
+  // display-only: hero medallions and reserved slots own no node
+  for (const r of rg.filter((x) => x.display)) assert.ok(!composed.info.nodes.some((n) => n.id === r.id), r.id);
+  assert.equal(rg.find((r) => r.id === 'r:meteor').weapon, 'dragonfire_meteor');
+  assert.ok(!def.list.some((id) => /meteor|dragonfire/.test(id)), 'the Meteor slot has no ids');
   assert.equal(rg.find((r) => r.id === 'c:ghost_wolves').name, 'Ghost Wolves');
   const v = buildTreeView(composed.info, def, data);
   assert.equal(v.threads.length, 11);
-  assert.deepEqual(v.ringR, ['hearth', 'wick', 'heroes', 'sky', 'dusk'].map((k) => composed.info.core.rings[k].r));
+  assert.deepEqual(v.ringR, composed.info.core.atlas.tiers.map((x) => x.r));
+  assert.deepEqual(v.ringTiers.map((x) => x.name), ['Hearth', 'Wick', 'Dusk', 'Far Hollow', 'Deep Hollow']);
+  for (const id of def.list) assert.ok(Number.isInteger(v.ringOf[id]) && v.ringOf[id] >= 0 && v.ringOf[id] < v.ringTiers.length, `${id} maps to a ring`);
 });

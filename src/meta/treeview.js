@@ -12,6 +12,19 @@ export const LOD = { far: 0.2, near: 0.95 }; // R2: the 'overview' look (big med
 const CLUSTER_R = 170; // emblem half-size used for the region glow and tap area (emblem box 200 + lanterns)
 const TOOL_R = 190;
 
+// S1: what the hub medallion and the 'Your spirit' tag need: { hero, weapon, heart, seal } from notes.starter, or null. Only ids known to the
+// data / layout pass; nothing from the save reaches the screen unchecked.
+export function starterOf(info, data, notes) {
+  const st = notes && typeof notes === 'object' ? notes.starter : null;
+  if (!st || typeof st !== 'object') return null;
+  const hero = typeof st.hero === 'string' && data && data.characters && own(data.characters, st.hero) ? st.hero : null;
+  const weapon = typeof st.weapon === 'string' && data && data.weapons && own(data.weapons, st.weapon) ? st.weapon : null;
+  if (!hero || !weapon) return null;
+  const c = info && info.clusters && own(info.clusters, weapon) ? info.clusters[weapon] : null;
+  const b = c && Array.isArray(c.branchInfo) ? c.branchInfo.find((x) => x.socket === 'a') || c.branchInfo[0] : null;
+  return { hero, weapon, heart: c && typeof c.heart === 'string' ? c.heart : null, seal: b ? b.seal : c && c.sockets && c.sockets.a && c.sockets.a.gate ? c.sockets.a.gate : null };
+}
+
 // info = composeTree(...).info, def = compileTree(live or v2), data = game data (weapons, evolutions).
 export function buildTreeView(info, def, data) {
   const regionOf = Object.create(null);
@@ -95,8 +108,14 @@ export function buildTreeView(info, def, data) {
     beyondR: R.bands && Number.isFinite(R.bands.r0) ? R.bands.r0 + (R.bands.width || 0) * 0.35 : rr('far', 1280) + 300,
     webR: Math.max(reach + 120, rr('far', 1280) + 200),
     lod: { ...LOD },
-    // Q1a: radii of the engraved runic rings of the stone backdrop (the core rings that have a radius, inner to outer; display only)
-    ringR: info.core && info.core.layout && Array.isArray(info.core.layout.runeRings) && info.core.layout.runeRings.length
+    // S1: the distance-tier rings (Hearth, Wick, Dusk, Far Hollow ... from core.atlas.tiers): name, radius and band; each node maps to one
+    ringTiers: Array.isArray(info.ringTiers) ? info.ringTiers.map((t) => ({ id: t.id, name: t.name, r: t.r, inner: t.inner, outer: t.outer })) : [],
+    ringOf: info.ringOf || {},
+    links: Array.isArray(info.links) ? info.links.map((l) => [l[0], l[1]]) : [], // render-only cross-threads between neighbouring regions (never gating)
+    // S1: the starter the hub medallion shows (hero + spirit) and the lit starter heart / first seal: from the save's notes.starter (validated ids)
+    starterOf: (notes) => starterOf(info, data, notes),
+    // Q1a/S1: radii of the engraved rings (the atlas ring tiers when present, else the old core rings that have a radius; display only)
+    ringR: Array.isArray(info.ringTiers) && info.ringTiers.length ? info.ringTiers.map((t) => t.r) : info.core && info.core.layout && Array.isArray(info.core.layout.runeRings) && info.core.layout.runeRings.length
       ? info.core.layout.runeRings.map((k) => (R[k] && Number.isFinite(R[k].r) ? R[k].r : 0)).filter((r) => r > 0).sort((a, b) => a - b) // R1: the named rings only (hub rings, hero lane, sky, dusk)
       : Object.values(R).map((x) => (x && Number.isFinite(x.r) && !Number.isFinite(x.width) ? x.r : 0)).filter((r) => r > 0).sort((a, b) => a - b),
   };
