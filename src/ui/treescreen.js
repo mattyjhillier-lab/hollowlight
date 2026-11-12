@@ -74,7 +74,7 @@ export class TreeScreen {
     this.data = api.data;
     this.view = api.view;
     this.model = new TreeModel(this.def, this.data, this.view);
-    this.hoverFocus = null; this.focus = null; this.threads = []; this.adj = new Map();
+    this.hoverFocus = null; this.focus = null; this.threads = []; this.adj = new Map(); this.veil = new Set(); this.fogs = []; this.unfurl = new Map(); this.sealPrev = null; this.forkSeal = new Map(); this.chipBoxes = [];
     this.buildThreads(); // the geometry of the web, once (states are read per frame)
     this.pins = sanitizePins(store.get(PIN_KEY), this.def);
     this.selected = null;
@@ -337,6 +337,7 @@ export class TreeScreen {
     this.model.recompute(s, this.pins);
     this.mapEl.style.background = this.skyFor(this.model.progress);
     this.starter = this.starterInfo(s);
+    this.veilState();
     this.backdropState();
     this.setFocus();
     this.updateAll();
@@ -534,7 +535,7 @@ export class TreeScreen {
   }
   tierOfId(id) { return this.tiers.tier[id] || 'dot'; }
   /** Drawn (and tappable) at this zoom? FAR = landmarks, plus any lantern you can light now (a small glowing dot). */
-  shownAt(id, lod) { if (lod !== 'near' && this.farMerged && this.farMerged.has(id) && this.farMerged.get(id) !== id && id !== this.selected) return false; return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
+  shownAt(id, lod) { if (this.veil.has(id)) return false; if (lod !== 'near' && this.farMerged && this.farMerged.has(id) && this.farMerged.get(id) !== id && id !== this.selected) return false; return tierShown(this.tierOfId(id), lod) || this.model.cache[id].s === 'ready' || id === this.selected; }
 
   draw(t) {
     const c = this.ctx;
@@ -561,14 +562,15 @@ export class TreeScreen {
       this.bg.drawSky(c, cam, W, H); this.bg.drawScreen(c, W, H); this.bg.drawTints(c, cam, W, H, this.tints);
       const nowMs = performance.now();
       const rings = this.view.ringTiers.map((q, k) => { const bl = !this.reduced && this.ringBloom[k] ? clamp(1 - (nowMs - this.ringBloom[k]) / 1800, 0, 1) : 0; if (bl > 0) this.animNeeded = true; return { r: q.r, name: q.name, frac: this.ringFrac[k] || 0, bloom: bl }; });
-      this.bg.drawRings(c, cam, W, H, rings, FONT_HEAD);
+      if (!this.reduced && this.ringFrac.some((f) => f > 0)) this.animNeeded = true; // the gold of the rings shimmers slowly (still with Calm motion)
+      this.bg.drawRings(c, cam, W, H, rings, FONT_HEAD, this.reduced ? 0 : t);
     }
     const pulse = this.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 420);
     const [hx, hy] = this.toS(0, 0);
     const R = (1100 + 700 * p) * z + 40;
     const pool = c.createRadialGradient(hx, hy, 0, hx, hy, R);
     const ga = this.small ? 0.6 : 1; // C3: the hub wash is calmer on small screens
-    pool.addColorStop(0, `rgba(255,179,90,${(0.14 + 0.3 * p) * ga * 0.8})`); // R3: the hearth's warm pool is wide, so colour returns across the screen as the Hollow is restored
+    pool.addColorStop(0, `rgba(255,179,90,${(0.14 + 0.3 * p) * ga * 0.4})`); // R3: the hearth's warm pool is wide, so colour returns across the screen as the Hollow is restored
     pool.addColorStop(1, 'rgba(255,154,58,0)');
     c.fillStyle = pool;
     c.beginPath(); c.arc(hx, hy, R, 0, 7); c.fill();
@@ -578,6 +580,8 @@ export class TreeScreen {
     this.drawRegions();
     this.drawToolCoins(lod);
     this.drawWeb(t);
+    this.drawFog(t);
+    this.drawPetals(t);
     const vx0 = cam.x - W / 2 / z - 80, vx1 = cam.x + W / 2 / z + 80, vy0 = cam.y - H / 2 / z - 80, vy1 = cam.y + H / 2 / z + 80;
     for (const r of this.view.regions) for (const s of r.display || []) { const [sx, sy] = this.toS(s.x, s.y); if (sx > -40 && sx < W + 40 && sy > -40 && sy < H + 40) this.seal(c, sx, sy, Math.max(lod === 'far' ? 2.5 : 6, 15 * z), 'gold'); }
     // lanterns (culled through the spatial index; at far zoom every lantern is a dot, batched into one path per colour, halos too)
@@ -600,6 +604,7 @@ export class TreeScreen {
       const ce = m.cache[id];
       const s = ce.s;
       if (s === 'fog' && lod === 'far') continue;
+      if (this.veil.has(id)) continue; // forks behind an unlit seal are fog, not lanterns
       const dim = this.onlyLight && s !== 'ready' ? 1 : foc && !foc.nodes.has(id) ? 4 : far && !foc && s === 'notyet' ? 3 : 0;
       const tier = this.tierOfId(id);
       if (lod !== 'near' && merged.has(id) && merged.get(id) !== id) continue;
@@ -609,7 +614,7 @@ export class TreeScreen {
       }
       const r = this.radiusOf(id, lod);
       if (tier === 'landmark') { coins.push({ id, n, x: sx, y: sy, r, s, ce, dim, tier }); labels.push({ id, x: sx, y: sy, r, s }); continue; } // R2: medallions are drawn after the small lanterns, on top of their threads
-      c.globalAlpha = DIMA[dim];
+      c.globalAlpha = DIMA[dim] * this.unfurlA(id);
       if (s === 'ready') { this.affordMark(c, sx, sy, r, pulse, false, best && best.id === id); this.animNeeded = true; }
       this.nodeShape(c, n, sx, sy, r, s, ce, id, lod);
       if (ce.fresh) this.newFlag(c, sx, sy - r - 9);
@@ -966,7 +971,8 @@ export class TreeScreen {
       if (!A || !B || (a !== 'hub' && A.teaser) || B.teaser) return; // teasers are fog, not threads
       if (!cross && Math.hypot(A.x - B.x, A.y - B.y) > V.linkFar) return; // a requirement longer than a thread can be is shown by the focus path, never across the web (cross links were already picked by distance by the atlas)
       seen.add(k);
-      out.push({ a, b, ax: A.x, ay: A.y, bx: B.x, by: B.y, cross, col: this.colorOf(cross ? a : b) });
+      const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, off = (cross ? 0.18 : 0.1) * L * (idHash(k) < 0.5 ? 1 : -1); // a gentle bow, side picked per thread (like the sandbox)
+      out.push({ a, b, ax: A.x, ay: A.y, bx: B.x, by: B.y, cx: (A.x + B.x) / 2 - (dy / L) * off, cy: (A.y + B.y) / 2 + (dx / L) * off, cross, col: this.colorOf(cross ? a : b) });
     };
     for (const e of def.edges) {
       let from = e.from;
@@ -975,6 +981,8 @@ export class TreeScreen {
     }
     for (const l of V.links) if (def.nodes[l[0]] && def.nodes[l[1]]) add(l[0], l[1], true);
     this.threads = out;
+    this.forkSeal = new Map(); // fork lantern -> its seal (veil, petals, unfurl)
+    for (const g of V.gardens || []) for (const f of g.forks) for (const id of f) if (def.nodes[id]) this.forkSeal.set(id, g.seal);
     // display-only medallions (a hero's keepsake coin, the Twilight night, reserved and far slots): drawn quietly, never tapped, never counted as progress
     const KIND_ART = { hero: 'hero', night: 'moon_dusk', reserved: 'fog', chapter: 'forest', far: 'fog' };
     this.display = (V.regionRecords || []).filter((r) => r && r.display && Array.isArray(r.centre) && r.centre.every(Number.isFinite) && Object.hasOwn(KIND_ART, r.kind))
@@ -1029,6 +1037,90 @@ export class TreeScreen {
     }
   }
 
+  // ------------------------------------------------------------------ gardens: veiled forks, petals, unfurl, route chips
+  /** Forks behind an unlit seal are veiled (not drawn: a soft fog stands where they will grow); a seal that has just been lit unfurls its forks. */
+  veilState() {
+    const m = this.model, V = this.view;
+    const veil = new Set(), fogs = [];
+    const litSeals = new Set();
+    for (const g of V.gardens || []) {
+      if (!this.def.nodes[g.seal]) continue;
+      if (m.lit(g.seal)) { litSeals.add(g.seal); continue; }
+      const pts = [];
+      for (const f of g.forks) for (const id of f) { if (this.def.nodes[id]) { veil.add(id); pts.push(this.def.nodes[id]); } }
+      if (pts.length) { const x = pts.reduce((a, p) => a + p.x, 0) / pts.length, y = pts.reduce((a, p) => a + p.y, 0) / pts.length; fogs.push({ x, y, r: Math.max(...pts.map((p) => Math.hypot(p.x - x, p.y - y))) + 40, seal: g.seal }); }
+    }
+    if (this.sealPrev && !this.reduced) { const now = performance.now(); for (const sl of litSeals) if (!this.sealPrev.has(sl)) this.unfurl.set(sl, now); }
+    this.sealPrev = litSeals;
+    this.veil = veil; this.fogs = fogs;
+  }
+  /** 0..1: how far a fork has unfurled (1 once it is done, or when it is not a fork). */
+  unfurlA(id) {
+    if (!this.unfurl.size) return 1;
+    const sl = this.forkSeal.get(id); const t0 = sl ? this.unfurl.get(sl) : undefined;
+    if (t0 === undefined) return 1;
+    const k = (performance.now() - t0) / 600;
+    if (k >= 1) return 1;
+    this.animNeeded = true; this.dirty();
+    return k <= 0 ? 0 : 1 - Math.pow(1 - k, 3);
+  }
+  drawFog(t) {
+    const c = this.ctx, z = this.cam.z;
+    if (!this.fogs.length || z < 0.25) return;
+    for (const f of this.fogs) {
+      const [x, y] = this.toS(f.x, f.y); const R = f.r * z * 1.15;
+      if (x < -R || x > this.W + R || y < -R || y > this.H + R) continue;
+      const g = c.createRadialGradient(x, y, 0, x, y, R); g.addColorStop(0, 'rgba(150,162,205,.16)'); g.addColorStop(1, 'rgba(150,162,205,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, R, 0, 7); c.fill();
+    }
+  }
+  /** Petals: once a seal is lit, each fork chain fills a soft leaf shape in the spirit's colour (more as its lanterns light). */
+  drawPetals(t) {
+    const z = this.cam.z, c = this.ctx, m = this.model;
+    if (z < 0.5) return;
+    const k = clamp((z - 0.5) / 0.2, 0, 1) * LOOK.bright;
+    for (const g of this.view.gardens || []) {
+      const sd = this.def.nodes[g.seal]; if (!sd || !m.lit(g.seal)) continue;
+      const col = this.colorOf(g.seal);
+      for (const f of g.forks) {
+        const tip = this.def.nodes[f[f.length - 1]]; if (!tip) continue;
+        const u = this.unfurlA(f[f.length - 1]); if (u <= 0) continue;
+        let ow = 0; for (const id of f) if (m.lit(id)) ow++;
+        const [ax, ay] = this.toS(sd.x, sd.y), [bx, by] = this.toS(tip.x, tip.y); const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, px = (-dy / L) * L * 0.24, py = (dx / L) * L * 0.24;
+        if (Math.max(ax, bx) < -60 || Math.min(ax, bx) > this.W + 60 || Math.max(ay, by) < -60 || Math.min(ay, by) > this.H + 60) continue;
+        c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo((ax + bx) / 2 + px, (ay + by) / 2 + py, bx, by); c.quadraticCurveTo((ax + bx) / 2 - px, (ay + by) / 2 - py, ax, ay);
+        c.globalAlpha = u * (0.05 + (0.1 * ow) / f.length) * k; c.fillStyle = col; c.fill();
+      }
+    }
+    c.globalAlpha = 1;
+  }
+  /** Route chips on roads that have been started: '5 of 12 to Spirit Bolts' (sandbox look). */
+  drawChips(c) {
+    const z = this.cam.z, m = this.model;
+    if (z <= 0.3 || !this.view.roads || !this.view.roads.length) return;
+    const boxes = (this.lblBoxes || []).slice();
+    c.textBaseline = 'middle'; c.textAlign = 'center';
+    const uk = this.uk || 1;
+    for (const r of this.view.roads) {
+      const n = r.ids.length; if (!n) continue;
+      let k = 0; for (const id of r.ids) if (m.lit(id)) k++;
+      const to = this.def.nodes[r.to]; if (!to || k >= n || m.lit(r.to)) continue;
+      if (!(k > 0 || r.from === 'hub' || m.lit(r.from))) continue;
+      const mid = this.def.nodes[r.ids[Math.min(n - 1, Math.floor((n - 1) / 2))]]; if (!mid) continue;
+      const [x, y] = this.toS(mid.x, mid.y);
+      if (x < -60 || x > this.W + 60 || y < -30 || y > this.H + 30) continue;
+      const ce = m.cache[r.to]; const nm = ce && !ce.d.masked ? ce.d.name : 'a far lantern';
+      const txt = `${k} of ${n} to ${nm}`; c.font = `600 ${13 * uk}px ${FONT_UI}`;
+      const w = this.mw(c, c.font, txt) + 18 * uk, h = 22 * uk, bx = x - w / 2, by = y - 30 * uk - h / 2;
+      if (boxes.some((b) => b.x0 < bx + w && b.x1 > bx && b.y0 < by + h && b.y1 > by)) continue;
+      boxes.push({ x0: bx, x1: bx + w, y0: by, y1: by + h });
+      c.globalAlpha = (this.focus ? 0.55 : 0.95) * clamp((z - 0.3) / 0.1, 0, 1);
+      c.beginPath(); c.roundRect(bx, by, w, h, h / 2); c.fillStyle = 'rgba(12,17,38,.92)'; c.fill(); c.strokeStyle = 'rgba(255,210,122,.6)'; c.lineWidth = 1; c.stroke();
+      c.fillStyle = '#ffe6ae'; c.fillText(txt, x, by + h / 2 + 1);
+    }
+    c.globalAlpha = 1;
+  }
+
   drawWeb(t) {
     const c = this.ctx, z = this.cam.z, cam = this.cam, m = this.model, W = this.W, H = this.H, foc = this.focus;
     const sm = (x, a, b) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
@@ -1038,17 +1130,18 @@ export class TreeScreen {
     const th = this.threads || [];
     for (let i = 0; i < th.length; i++) {
       const e = th[i];
+      if (this.veil.has(e.a) || this.veil.has(e.b)) continue;
       const ax = (e.ax - cam.x) * z + W / 2, ay = (e.ay - cam.y) * z + H / 2, bx = (e.bx - cam.x) * z + W / 2, by = (e.by - cam.y) * z + H / 2;
       if ((ax < -40 && bx < -40) || (ax > W + 40 && bx > W + 40) || (ay < -40 && by < -40) || (ay > H + 40 && by > H + 40)) continue;
       const ao = e.a === 'hub' || m.lit(e.a), bo = m.lit(e.b);
       const st = ao && bo ? 2 : e.cross ? 0 : ao || bo ? 1 : 0;
-      const al = st > 0 ? 1 : e.cross ? crossA : lockA;
+      const al = (st > 0 ? 1 : e.cross ? crossA : lockA) * Math.min(this.unfurlA(e.a), this.unfurlA(e.b));
       if (al < 0.02) continue;
       const fm = foc ? (foc.edges.has(i) ? 1 : 0.4) : 1;
       const col = st === 0 ? '#8592c4' : e.col;
       const key = `${st}|${col}|${e.cross ? 1 : 0}|${(al * fm).toFixed(2)}`;
       let bk = buckets.get(key); if (!bk) { bk = { st, col, a: al * fm, cross: e.cross, path: new Path2D() }; buckets.set(key, bk); }
-      bk.path.moveTo(ax, ay); bk.path.lineTo(bx, by);
+      bk.path.moveTo(ax, ay); bk.path.quadraticCurveTo((e.cx - cam.x) * z + W / 2, (e.cy - cam.y) * z + H / 2, bx, by);
     }
     c.lineCap = 'round';
     for (const bk of [...buckets.values()].sort((p, q) => p.st - q.st)) {
@@ -1065,7 +1158,7 @@ export class TreeScreen {
     if (foc && foc.edges.size) { // the path from your nearest lit lantern, dashed and bright (it moves unless Calm motion is on)
       c.save(); c.setLineDash([11, 8]); c.lineDashOffset = this.reduced ? 0 : -t / 45; c.lineWidth = Math.max(2.2, 2.6 * z); c.strokeStyle = '#fff1c4'; c.globalAlpha = 0.96;
       c.beginPath();
-      for (const i of foc.edges) { const e = th[i]; const [ax, ay] = this.toS(e.ax, e.ay), [bx, by] = this.toS(e.bx, e.by); c.moveTo(ax, ay); c.lineTo(bx, by); }
+      for (const i of foc.edges) { const e = th[i]; const [ax, ay] = this.toS(e.ax, e.ay), [bx, by] = this.toS(e.bx, e.by), [qx, qy] = this.toS(e.cx, e.cy); c.moveTo(ax, ay); c.quadraticCurveTo(qx, qy, bx, by); }
       c.stroke(); c.restore();
       if (!this.reduced) this.animNeeded = true;
     }
@@ -1197,7 +1290,8 @@ export class TreeScreen {
     const uk = this.uk || 1; const lh = Math.round(17 * uk);
     c.font = `${13 * uk}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top';
     const rank = (L) => (L.id === this.selected ? 0 : best && L.id === best.id ? 1 : this.def.nodes[L.id].kind === 'heart' ? 2 : 3);
-    for (const L of lms.sort((a, b) => rank(a) - rank(b))) this.landmarkLabel(c, L, uk, hitsLm, addBox);
+    for (const L of lms.sort((a, b) => rank(a) - rank(b))) { c.globalAlpha = this.focus && !this.focus.nodes.has(L.id) ? 0.45 : 1; this.landmarkLabel(c, L, uk, hitsLm, addBox); }
+    c.globalAlpha = 1;
     c.font = `${13 * uk}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'top';
     for (const L of pick) {
       const txt = m.cache[L.id].d.name; const w = this.mw(c, `${13 * uk}px ${FONT_UI}`, txt) + 8;
@@ -1205,10 +1299,13 @@ export class TreeScreen {
       const bx = { x0: L.x - w / 2, x1: L.x + w / 2, y0, y1: y0 + lh };
       if (hits(bx, L.id)) continue;
       addBox(bx);
+      c.globalAlpha = this.focus && !this.focus.nodes.has(L.id) ? 0.45 : 1;
       c.fillStyle = 'rgba(10,14,28,.55)'; c.fillRect(bx.x0 + 2, bx.y0 + 1, w - 4, lh - 2); // R2: a light plate (outlined text for every small name cost too much per frame)
       c.fillStyle = L.s === 'ready' ? '#fff6e0' : L.s === 'lit' ? '#fff3dc' : L.s === 'open' ? '#f5dfae' : L.s === 'challenge' ? '#9fe6dc' : '#b3bbcf';
       c.fillText(txt, L.x, y0 + 1);
     }
+    c.globalAlpha = 1;
+    this.drawChips(c);
   }
   drawRegionNames(lod) {
     const c = this.ctx; const z = this.cam.z; const m = this.model;

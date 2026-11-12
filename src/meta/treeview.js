@@ -100,6 +100,9 @@ export function buildTreeView(info, def, data) {
       const [tx, ty] = r.thread.to, d = Math.hypot(tx, ty) || 1, k = 90 / d;
       return d > 140 ? [Math.round(tx * k), Math.round(ty * k), tx, ty] : [0, 0, 0, 0];
     }).filter((t) => t[2] !== 0 || t[3] !== 0),
+    // gardens (a seal and its two fork chains) and roads (bought path chains): geometry-free id lists the screen needs for petals, veils and route chips
+    gardens: Object.values(info.clusters || {}).flatMap((cl) => (Array.isArray(cl.branchInfo) ? cl.branchInfo : []).filter((b) => b && typeof b.seal === 'string' && Array.isArray(b.forks)).map((b) => ({ seal: b.seal, forks: b.forks.map((f) => f.filter((x) => typeof x === 'string')) }))),
+    roads: Array.isArray(info.roads) ? info.roads.map((r) => ({ from: r.from, to: r.to, ids: [...r.ids] })) : [],
     regionRecords: info.regions || [], // R1: data-only region records (name, centre, accent, backbone thread to the hub)
     regionOf,
     farFree,

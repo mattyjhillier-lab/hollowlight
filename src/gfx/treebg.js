@@ -152,7 +152,7 @@ export class TreeBackdrop {
    * (owned real lanterns in that tier / all real lanterns in it). A completed ring stays softly lit; `bloom[k]` (0..1) is the short flash right after it completes.
    * rings = [{r, name, frac, bloom}], font = canvas font family for the names. Cheap: vector arcs and one stroke per colour, culled to the screen.
    */
-  drawRings(c, cam, W, H, rings, font) {
+  drawRings(c, cam, W, H, rings, font, tMs = 0) {
     if (!rings || !rings.length) return;
     const z = cam.z, B = LOOK.ringBright, pw = 1 / z, a0 = -Math.PI / 2;
     const hx = W / 2 - cam.x * z, hy = H / 2 - cam.y * z;
@@ -166,7 +166,8 @@ export class TreeBackdrop {
       if (!(R > 0) || sr < dmin - 60 || sr > dmax + 60) return;
       const f = LOOK.ringArcs ? clamp(q.frac || 0, 0, 1) : 0, a1 = a0 + Math.PI * 2 * f, done = f >= 0.999;
       const bloom = clamp(q.bloom || 0, 0, 1);
-      const silA = 0.5 * B * LOOK.bright, goldA = clamp(0.95 * B, 0, 1);
+      const sh = tMs ? 0.9 + 0.1 * Math.sin((tMs / 1000) * 1.3 + k) : 1; // slow shimmer of the gold
+      const silA = 0.5 * B * LOOK.bright, goldA = clamp(0.95 * B * sh, 0, 1);
       const band = Math.max(14, 8 * pw);
       const arc = (r, from, to) => { c.beginPath(); c.arc(0, 0, r, from, to); };
       c.strokeStyle = 'rgba(2,4,14,.35)'; c.lineWidth = 5.5 * pw; arc(R - band, 0, 7); c.stroke(); arc(R + band, 0, 7); c.stroke();

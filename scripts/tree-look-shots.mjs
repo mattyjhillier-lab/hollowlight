@@ -45,6 +45,7 @@ try {
       a.save.saveNow = () => {}; a.save.saveSoon = () => {};
       s.gold = 5000; s.shards = 20; s.settings = { ...s.settings, reducedMotion: true };
       s.notes = { ...(s.notes || {}), starter: { hero: '${hero}', weapon: '${weapon}' }, loadout: { hero: '${hero}', weapon: '${weapon}' } };
+      s.chars = { ...(s.chars || {}), ${hero}: { xp: 0, keep: 0, woke: true } };
       ${restart ? 's.notes.treeResetNotice = { gold: 12345, shards: 7, glass: 3, nodes: 41 };' : ''}
       a.openTree();
       const t = ${T}; const st = t.view.starterOf ? t.view.starterOf(s.notes) : null; s.tree = {}; if (st) { if (st.heart) s.tree[st.heart] = 1; if (st.seal) s.tree[st.seal] = 1; }
@@ -76,6 +77,7 @@ try {
       await openTree(dev, { lit: 70 });
       await setZoom(Z.far); await shot(`${dn}-grown-far`);
       await setZoom(Z.mid); await shot(`${dn}-grown-mid`);
+      { const sp = await ev(starterPos); await setZoom(0.8, sp[0], sp[1] + 250); await shot(`${dn}-grown-garden`); }
     }
     if (want(`${dn}-full`)) {
       await openTree(dev, { lit: 5000 });
