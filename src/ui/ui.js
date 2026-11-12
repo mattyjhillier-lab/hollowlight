@@ -36,6 +36,9 @@ import { buildPause } from './pause.js';
 import { buildSettings } from './settings.js';
 import { pauseView } from './u4copy.js';
 import { buildResults } from './results.js';
+import { buildNextLights } from './nextlights.js';
+import { cleanMoved, movedIds } from '../meta/moved.js';
+import './nextlights.css';
 import { resultsView } from './resultscopy.js';
 import './results.css';
 import './u4.css';
@@ -505,6 +508,7 @@ export class UI {
       onQuit: () => h.menu(),
       onAlmanac: h.almanacView ? () => this.showAlmanac('pause') : null,
       extras,
+      nextLights: h.pauseNear ? (() => { const m = h.pauseNear(); return m && m.nearest.length ? buildNextLights({ moved: m, readOnly: true }).root : null; })() : null, // Q5b: the same goal list, read-only
     });
     const el = this.layer('pause');
     el.className = 'overlay layer-pause u4 u4-pausescreen';
@@ -535,7 +539,7 @@ export class UI {
     this.sound(sim.state === 'victory' ? 'results_win' : 'results_lose');
     const reduced = document.documentElement.classList.contains('reduced-motion') || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
     const cel = bank && bank.cel ? bank.cel : null; // CX4: what this run wrote in the Almanac
-    this.endView = buildResults({ view, reduced, ledger: cel ? cel.ledger : null, onAlmanac: cel && cel.any && h.almanacView ? () => this.showAlmanac('results') : null, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
+    this.endView = buildResults({ view, reduced, ledger: cel ? cel.ledger : null, onAlmanac: cel && cel.any && h.almanacView ? () => this.showAlmanac('results') : null, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree(null, null, { pulse: movedIds(cleanMoved(view.moved)) }) });
     const el = this.layer('end');
     el.className = `overlay layer-end u6 ${view.won ? 'u6-won' : 'u6-lost'}`;
     el.replaceChildren(this.endView.root);

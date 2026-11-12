@@ -13,7 +13,7 @@ const weaponEmblem = (id) => {
 };
 
 /** view: from pauseView(). extras: optional nodes (full screen button, update notice). */
-export function buildPause({ view, onResume, onSettings, onQuit, onAlmanac = null, extras = [] } = {}) {
+export function buildPause({ view, onResume, onSettings, onQuit, onAlmanac = null, extras = [], nextLights = null } = {}) {
   const root = kitRoot();
   root.classList.add('u4-wrap');
   const v = view || { time: '0:00', level: 1, hero: '', weapons: [], whisper: PAUSE.whispers[0] };
@@ -45,7 +45,7 @@ export function buildPause({ view, onResume, onSettings, onQuit, onAlmanac = nul
   function closeConfirm() { confirming = false; confirmBox.hidden = true; menu.hidden = false; quit.focus(); }
   const foot = el('div', 'u4-extras');
   for (const x of extras) add(foot, x);
-  add(root, panel({ title: PAUSE.title, whisper: v.whisper, body: [sum, add(el('div', 'u4-act'), menu, confirmBox, foot)] }));
+  add(root, panel({ title: PAUSE.title, whisper: v.whisper, body: [sum, nextLights ? add(el('div', 'u4-nl'), nextLights) : null, add(el('div', 'u4-act'), menu, confirmBox, foot)].filter(Boolean) }));
   // Up/Down walk the menu like a list; Tab still works.
   const order = [resume, settings, alm, quit].filter(Boolean);
   menu.addEventListener('keydown', (e) => {

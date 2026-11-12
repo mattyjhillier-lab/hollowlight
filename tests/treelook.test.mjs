@@ -169,7 +169,7 @@ test('tour copy: four short plain steps pointing at known places; the screen dra
   assert.ok(fn.includes('this.tourH.textContent = S.t') && fn.includes('this.tourP.textContent = S.p') && !/innerHTML/.test(fn));
   assert.ok(src.includes("if (this.tourOpen && k === 'Escape')"), 'Esc skips the tour');
   assert.ok(src.includes('if (this.tourOpen) this.tourEnd();'), 'closing the tree ends it (seen)');
-  assert.ok(src.includes('if (!this.tourStart()) this.showTip(false);'), 'the tour replaces the older tip');
+  assert.ok(src.includes('if (!this.tourStart() && !(this.pulseSet && this.pulseSet.size)) this.showTip(false);'), 'the tour replaces the older tip');
   const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
   assert.ok(app.includes("tourDue: () => this.canKeepHints() && tourDue(") && app.includes("withBit(this.save.data.hints, 'tour')"), 'never in debug runs or read-only lanterns');
 });

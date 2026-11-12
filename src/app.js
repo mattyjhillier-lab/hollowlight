@@ -20,6 +20,7 @@ import { parseParams } from './params.js';
 import { tierIndex, TIER_IDS, resolveTier } from './sim/tiers.js';
 import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } from './ui/nightcopy.js';
 import { keepsakeDef } from './meta/bond.js';
+import { snapshot, whatMoved, nearestOf } from './meta/moved.js';
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
 import { cardFor, hasIntro, withIntro, introsForOffer, CARDS, INTRO_IDS, cleanIntros } from './ui/introcopy.js';
@@ -421,13 +422,21 @@ export const app = {
   },
 
   // focusId: a lantern to select on open (FD4 'Open in tree' on a ready Night Gate); back: where Back returns (the map screen), else the title.
-  openTree(focusId = null, back = null) {
+  /** Pause: the 3 closest unlocks of the saved lantern (read-only; nothing from the running night is banked yet). */
+  pauseNear() {
+    if (this.isDebugRun()) return null;
+    try { return { chips: [], tiles: [], bars: [], nearest: nearestOf(this.save.data, treeDef, data) }; } catch { return null; }
+  },
+
+  // opts.pulse: lantern ids (what moved) the tree flies to and pulses on open (Continue from results)
+  openTree(focusId = null, back = null, opts = null) {
     this.sim = null;
     this.introClear();
     this.ui.hideAll();
     const api = this.treeApi();
     if (typeof focusId === 'string' && Object.hasOwn(treeDef.nodes, focusId)) api.focusId = focusId;
     if (typeof back === 'function') api.onClose = back;
+    if (opts && Array.isArray(opts.pulse)) api.pulseIds = opts.pulse.filter((id) => typeof id === 'string' && Object.hasOwn(treeDef.nodes, id)).slice(0, 12);
     this.ui.tree.open(api);
   },
 
@@ -851,9 +860,11 @@ export const app = {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
     this.adoptCodex(); // CX1: an old save's progress counts as told BEFORE this run is banked
+    const beforeRun = snapshot(this.save.data); // Q5b: the lantern as it was before this run is banked
     const b = this.save.bankRun({ ...sim.result(), ...(this.siteWoke && this.siteWoke.sim === sim ? { siteWoke: { lamp: this.siteWoke.lamp, road: this.siteWoke.road, knot: this.siteWoke.knot } } : {}) }, { def: treeDef, data, unlockedTiers: this.openTiers(this.save.data) });
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
+    try { b.moved = whatMoved(beforeRun, snapshot(this.save.data), this.save.data, sim.result(), treeDef, data); } catch { b.moved = null; } // Q5b 'what moved' (plain data; the Next-lights component draws it)
     b.night = this.nightResult(b.tier, sim.result());
     { const s = this.save.data; let ch = null; try { ch = sim.state === 'victory' ? null : this.cheapestLantern(); } catch { ch = null; } b.teach = resultTeach({ won: sim.state === 'victory', stats: s.stats, treeOwned: Object.keys(s.tree || {}).length > 0, cheapest: ch, gold: s.gold }); }
     b.cel = this.runCelebrations(sim.state === 'victory');
@@ -946,7 +957,8 @@ export const app = {
       replaceLantern: (id, name) => this.replaceLantern(id, name),
       getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),
       openSettings: () => this.ui.showSettings(),
-      openTree: (focusId, back) => this.openTree(focusId, back),
+      openTree: (focusId, back, opts) => this.openTree(focusId, back, opts),
+      pauseNear: () => this.pauseNear(),
       nightChoice: () => this.nightChoice(),
       nightView: (heroId, tier) => this.nightView(heroId, tier),
       heroUnlocked: (id) => this.heroUnlocked(id),

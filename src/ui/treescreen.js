@@ -124,7 +124,8 @@ export class TreeScreen {
     if (typeof api.focusId === 'string' && this.def.nodes[api.focusId]) this.select(api.focusId, true); // FD4 'Open in tree': fly to the Night Gate lantern
     this.regrowthNote();
     this.resetNotice();
-    if (!this.tourStart()) this.showTip(false);
+    this.pulseStart(api.pulseIds);
+    if (!this.tourStart() && !(this.pulseSet && this.pulseSet.size)) this.showTip(false); // coming back from a run: the moved lanterns are the message, no welcome card
     this.mapEl.focus({ preventScroll: true });
   }
 
@@ -139,6 +140,7 @@ export class TreeScreen {
     this.raf = 0;
     if (this.noticeShown) this.dismissNotice();
     if (this.tourOpen) this.tourEnd();
+    clearTimeout(this.pulseT); this.pulseSet = new Set();
     clearTimeout(this.tipT); clearTimeout(this.toastT); clearTimeout(this.itemT);
     this.host.hide('tree');
     if (this.layer) this.layer.replaceChildren();
@@ -665,6 +667,7 @@ export class TreeScreen {
     }
     c.fillStyle = `rgba(4,7,18,${clamp((1 - LOOK.bright) * 0.6, 0, 0.7).toFixed(3)})`; c.fillRect(0, 0, W, H); // the locked 'bright' level: one flat veil under the names
     this.hubBoxes = this.hubCaptionBoxes(hx, hy, this.hubR);
+    this.drawPulse(t);
     this.drawLabels(labels, lod);
     this.drawRegionNames(lod);
     // hub lantern (R2): a gold-rimmed lantern-glass coin with the hearth lantern inside; its glow grows with total progress
@@ -1358,6 +1361,28 @@ export class TreeScreen {
     for (const e of this.root.querySelectorAll('.ts-tourhl')) e.classList.remove('ts-tourhl');
     if (this.api.tourSeen) this.api.tourSeen();
     if (this.mapEl) this.mapEl.focus({ preventScroll: true });
+  }
+
+  /** Continue from results: fly to what moved and ring those lanterns for a few seconds (a steady ring, no travel, with Calm motion). */
+  pulseStart(ids) {
+    this.pulseSet = new Set(Array.isArray(ids) ? ids.filter((id) => typeof id === 'string' && this.def.nodes[id]) : []);
+    if (!this.pulseSet.size) return;
+    this.pulseT0 = performance.now(); this.pulseUntil = this.pulseT0 + 6000;
+    const first = [...this.pulseSet][0], n = this.def.nodes[first]; // fly to the first one that moved (tiles come first); every one of them is ringed
+    this.flyTo(n.x, n.y, Math.max(this.cam.z, 0.6));
+    clearTimeout(this.pulseT); this.pulseT = setTimeout(() => { this.pulseSet = new Set(); this.dirty(); }, 6100);
+  }
+  drawPulse(t) {
+    if (!this.pulseSet || !this.pulseSet.size || performance.now() > this.pulseUntil) return;
+    const c = this.ctx, k = this.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 260);
+    for (const id of this.pulseSet) {
+      const n = this.def.nodes[id]; if (!n || this.veil.has(id)) continue;
+      const [x, y] = this.toS(n.x, n.y); if (x < -60 || x > this.W + 60 || y < -60 || y > this.H + 60) continue;
+      const r = this.radiusOf(id, this.lodNow || this.lod());
+      c.strokeStyle = `rgba(255,246,224,${(0.55 + 0.4 * k).toFixed(2)})`; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r + 8 + (this.reduced ? 0 : 6 * k), 0, 7); c.stroke();
+      c.strokeStyle = 'rgba(255,179,90,.45)'; c.lineWidth = 8; c.beginPath(); c.arc(x, y, r + 8 + (this.reduced ? 0 : 6 * k), 0, 7); c.stroke();
+    }
+    if (!this.reduced) this.animNeeded = true;
   }
 
   drawWeb(t) {
