@@ -5,7 +5,7 @@ Tree rework S1 + look + hero panel + banner/tile/tour + results "what moved" + h
 
 Waiting on Matt (decisions):
 1. New-verb picks: docs/design/new-verbs-v1.md (Lamp-lighter A/B/C, Starting Synergy A/B/C; recommended A and A; budget flag: sustain pool 5.00/5).
-2. Q7 landmark promotion/gating, after the pacing chart docs/design/skill-tree-pacing-v3.md (agent running).
+2. Q7 landmark promotion/gating: chart DONE (docs/design/skill-tree-pacing-v3.md, 50 journeys). Options A promote hidden seals + chips, no gate change (recommended), B relax Chain/Fourth Card gates (balance call), C two gold-only landmarks.
 3. Loadout hero step: skip when only one hero awake (recommended).
 4. Deep Dusk clear pace (balance); mid tree 29.4% (band 30-55, pre-existing); Wren/Elias gap at max 78/94.
 5. Merge to main (explicit yes; includes the one-time refund-everything tree restart; run `node scripts/tree-release.mjs --snapshot` at merge).
