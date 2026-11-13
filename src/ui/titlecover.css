@@ -43,7 +43,7 @@ html.reduced-motion .overlay.u3.tc-on .lg-wm-flame path { animation: none; }
 .overlay.u3.tc-on.tc-m-portrait .u3-col { flex: 1 1 auto; min-height: 0; width: 100%; max-width: none; align-items: stretch; justify-content: space-between; gap: 8px; }
 .overlay.u3.tc-on.tc-m-portrait .u3-brand { align-items: center; text-align: center; gap: 4px; }
 .overlay.u3.tc-on.tc-m-portrait .u3-h1 { width: min(88%, 330px); }
-.overlay.u3.tc-on.tc-m-portrait .u3-kicker { font-size: 10.5px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-kicker { font-size: 12px; }
 .overlay.u3.tc-on.tc-m-portrait .u3-tagline { font-size: 19px; }
 .overlay.u3.tc-on.tc-m-portrait .u3-side { align-items: stretch; gap: 6px; }
 .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2:has(.fd-row3), .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -64,7 +64,7 @@ html.reduced-motion .overlay.u3.tc-on .lg-wm-flame path { animation: none; }
 .overlay.u3.tc-on.tc-m-landscape .u3-col { flex: 1 1 auto; min-height: 0; flex-direction: column; align-items: stretch; justify-content: space-between; width: 56%; max-width: none; gap: 6px; }
 .overlay.u3.tc-on.tc-m-landscape .u3-brand { flex: none; align-items: flex-start; text-align: left; gap: 3px; }
 .overlay.u3.tc-on.tc-m-landscape .u3-h1 { width: min(100%, 236px); padding-top: 0; }
-.overlay.u3.tc-on.tc-m-landscape .u3-kicker { font-size: 10px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-kicker { font-size: 12px; }
 .overlay.u3.tc-on.tc-m-landscape .u3-tagline { font-size: 16px; }
 .overlay.u3.tc-on.tc-m-landscape .u3-side { flex: none; align-items: stretch; gap: 6px; }
 .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2, .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2:has(.fd-row3), .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -81,4 +81,13 @@ html.reduced-motion .overlay.u3.tc-on .lg-wm-flame path { animation: none; }
 .overlay.u3.tc-on.tc-m-landscape .u3-hint, .overlay.u3.tc-on.tc-m-landscape .u3-orient, .overlay.u3.tc-on.tc-m-landscape .pwa-text { display: none; }
 /* phones: the version and the install link sit bottom right (as in the sandbox), clear of the menu column and the orientation line */
 .overlay.u3.tc-on.tc-m-portrait .u3-foot, .overlay.u3.tc-on.tc-m-landscape .u3-foot { justify-content: flex-end; gap: 10px; }
-.overlay.u3.tc-on.tc-m-portrait .u3-foot .pwa-link, .overlay.u3.tc-on.tc-m-landscape .u3-foot .pwa-link { margin-left: 0; min-height: 0; padding: 0 4px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-foot .pwa-link, .overlay.u3.tc-on.tc-m-landscape .u3-foot .pwa-link { margin-left: 0; }
+
+/* first visit only: the install card must never push the picture or the menu around. Phones: a sheet over the bottom (Not now closes it); short desktops: no benefit paragraph. */
+.overlay.u3.tc-on.tc-m-portrait .u3-side .pwa-slot, .overlay.u3.tc-on.tc-m-landscape .u3-side .pwa-slot { position: fixed; z-index: 6; left: 12px; right: 12px; bottom: 40px; width: auto; }
+.overlay.u3.tc-on.tc-m-landscape .u3-side .pwa-slot { left: auto; width: min(420px, 48%); bottom: 8px; }
+.overlay.u3.tc-on.tc-m-portrait .pwa-card, .overlay.u3.tc-on.tc-m-landscape .pwa-card { background: linear-gradient(180deg, rgba(40, 52, 78, .97), rgba(20, 26, 42, .98)); }
+@media (max-height: 760px) { .overlay.u3.tc-on.tc-m-desktop .pwa-text { display: none; } }
+.overlay.u3.tc-on.tc-m-desktop .u3-side .pwa-slot { position: fixed; z-index: 6; right: 24px; bottom: 40px; left: auto; width: 320px; }
+.overlay.u3.tc-on.tc-m-desktop .pwa-card { background: linear-gradient(180deg, rgba(40, 52, 78, .97), rgba(20, 26, 42, .98)); }
+.overlay.u3.tc-on.tc-m-desktop .pwa-text { display: none; }
