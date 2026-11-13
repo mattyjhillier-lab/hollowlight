@@ -269,11 +269,12 @@ export function drawPupHead(c, ex = 'open') {
 
 // ---- flat composites (Low tier hero, crowd outline source, portraits) ----------------------------------------------------
 export const REST = { tail: -0.05, expr: 'neutral' };
-export function drawWrenFlat(c) {
+export function drawWrenFlat(c, afterBody = null) { // afterBody: the WARDROBE v2 costume motif hook (null = the plain hero, byte-identical)
   c.save(); c.translate(ANCHOR.tail[0], ANCHOR.tail[1]); c.rotate(REST.tail); c.translate(-ANCHOR.tail[0], -ANCHOR.tail[1]); drawWrenTail(c); c.restore();
   c.save(); c.translate(ANCHOR.bootFar[0], ANCHOR.bootFar[1]); drawWrenBoot(c); c.restore();
   c.save(); c.translate(ANCHOR.bootNear[0], ANCHOR.bootNear[1]); drawWrenBoot(c); c.restore();
   drawWrenBody(c);
+  if (afterBody) afterBody(c);
   drawWrenHead(c, 'neutral');
   stroke(c, `M${ANCHOR.hand[0]} ${ANCHOR.hand[1]} Q${ANCHOR.ember[0] * 0.9} ${(ANCHOR.ember[1] + ANCHOR.hand[1]) / 2 + 4} ${ANCHOR.ember[0]} ${ANCHOR.ember[1] + 12}`, P.amber, 1.2, { dash: [1.2, 2.4] });
   c.save(); c.translate(ANCHOR.ember[0], ANCHOR.ember[1]); c.scale(0.95, 0.95); drawEmber(c); c.restore();
@@ -282,7 +283,7 @@ export function drawWrenFlat(c) {
 export const FLAT = { x0: -52, y0: -132, w: 106, h: 140 };
 export const FLAT_TEXEL = 1.5; // texels per du of the flat Wren sprite
 
-export function drawPupFlat(c, pose) {
+export function drawPupFlat(c, pose, afterHead = null) { // afterHead: costume collar hook (pup units at the head centre)
   // pup units, origin ground under the paws. glow baked in (normal alpha) so Low tier still has a soft warm halo
   glowAt(c, 0, -17, 30, P.amber, 0.28);
   ell(c, 0, 1, 12, 2.6, '#04040c', 0.32);
@@ -290,7 +291,7 @@ export function drawPupFlat(c, pose) {
   c.save(); drawPupTail(c, pose); c.restore();
   drawPupBody(c, pose, 0);
   const an = pupAnchors(pose, 0); const hc = an.headC;
-  c.save(); c.translate(hc[0], hc[1]); drawPupHead(c, pose === 'run' ? 'happy' : 'open'); c.restore();
+  c.save(); c.translate(hc[0], hc[1]); drawPupHead(c, pose === 'run' ? 'happy' : 'open'); if (afterHead) afterHead(c); c.restore();
   void tail;
 }
 export const PUP_FLAT = { x0: -40, y0: -56, w: 80, h: 72 };

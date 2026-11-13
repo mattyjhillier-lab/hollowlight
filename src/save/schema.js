@@ -10,7 +10,7 @@ import { cleanIntros, withIntro, VETERAN_SEEN } from '../ui/introcopy.js';
 import { cleanCodex, cleanTitles, defaultCodex, defaultTitles, registerHeroBits } from '../meta/codex.js';
 import { cleanUiScale } from '../ui/uiscale.js';
 import { cleanChars, cleanPick, legacySeed } from './chars.js';
-import { cleanCosm } from '../meta/cosmetics.js';
+import { cleanCosm, compactCosm } from '../meta/cosmetics.js';
 import { cleanKeymap, defaultKeymap } from '../input/keymap.js';
 
 export const SAVE_VERSION = 3;
@@ -56,7 +56,7 @@ export function defaultSave(now = Date.now()) {
     hints: 0, // FM1: lantern whisper bits (src/ui/whispers.js HINT); unknown bits are dropped
     codex: defaultCodex(), // CX1: Almanac read (NEW dots) + told (celebrated once) bitsets over ENTRY_KEYS (src/meta/codex.js); v 0 = not adopted yet
     titles: defaultTitles(), // CX6: earned title ids (fixed list) + the picked one
-    cosm: { worn: { flame: null, trail: null, look: {} } }, // EXTRAS v1: what is WORN only (owned is derived from the tree + Bond)
+    cosm: { worn: { flame: null, trail: null, look: {} } }, // EXTRAS v1: what is WORN (owned is derived from the tree + Bond); WARDROBE v2 adds worn.costume + earned only once used (compactCosm)
     settings: defaultSettings(),
   };
 }
@@ -292,7 +292,7 @@ export function sanitize(raw, now = Date.now()) {
     intros: cleanIntrosField(raw, stats),
     codex: cleanCodex(raw.codex), // CX1: hex bitsets only, unknown bits dropped, bad types -> empty (added inside v3: older saves read as v 0)
     titles: cleanTitles(raw.titles), // CX6: ids from the fixed TITLES list only; pick must be an earned id
-    cosm: cleanCosm(raw.cosm, TREE_DATA), // EXTRAS v1: known cosmetic / hero / look ids only; anything else dropped
+    cosm: compactCosm(cleanCosm(raw.cosm, TREE_DATA)), // EXTRAS v1: known cosmetic / hero / look ids only; anything else dropped
     settings: {
       masterVol: num(st.masterVol, ds.masterVol, 0, 1),
       musicVol: num(st.musicVol, ds.musicVol, 0, 1),

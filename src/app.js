@@ -35,8 +35,9 @@ function charsLine(s, d) { try { const v = charsView(s, d, treeDef).find((x) => 
 const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
 import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
-import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
+import { validateCosmTree, resolveCosm, cleanCosm, compactCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
+import { syncEarned } from './meta/costumes.js';
 import { DARK } from './ui/darkui.js';
 import { SITE_EVENTS, SITE_TOAST } from './ui/sitecopy.js'; // map events v1
 import { createPad } from './ui/padmap.js';
@@ -150,19 +151,32 @@ export const app = {
   // EXTRAS v1 Wear drawer: only owned, known ids are kept (wearView re-checks ownership; cleanCosm drops unknown ids); one save write.
   setWear(heroId, sel) {
     if (!(typeof heroId === 'string' && Object.hasOwn(data.characters, heroId)) || !sel || typeof sel !== 'object') return false;
-    const v = wearView(this.save.data, data, treeDef, heroId, { flame: sel.flame, trail: sel.trail, look: sel.look });
+    this.syncCostumes();
+    const v = wearView(this.save.data, data, treeDef, heroId, { flame: sel.flame, trail: sel.trail, look: sel.look, costume: sel.costume }, treeInfo);
     const s = this.save.data;
-    const cur = cleanCosm(s.cosm, data).worn;
-    s.cosm = cleanCosm({ worn: { flame: v.sel.flame, trail: v.sel.trail, look: { ...cur.look, ...(v.sel.look ? { [heroId]: v.sel.look } : {}) } } }, data);
+    const cur = cleanCosm(s.cosm, data);
+    const costume = { ...cur.worn.costume }; // WARDROBE v2: one costume per hero (null = the everyday look); earned is kept as is
+    if (v.sel.costume) costume[heroId] = v.sel.costume; else delete costume[heroId];
+    s.cosm = compactCosm(cleanCosm({ worn: { flame: v.sel.flame, trail: v.sel.trail, look: { ...cur.worn.look, ...(v.sel.look ? { [heroId]: v.sel.look } : {}) }, costume }, earned: cur.earned }, data));
     if (!this.save.readOnly && !this.isDebugRun()) this.save.saveNow();
     return true;
+  },
+
+  // WARDROBE v2: a closed ring appends its costumes to cosm.earned (append-only; the tree growing later never takes one back). One save write when something was added.
+  syncCostumes() {
+    if (this.save.readOnly || this.isDebugRun()) return { added: [], rings: [], dawn: false };
+    let r = { added: [], rings: [], dawn: false };
+    try { r = syncEarned(this.save.data, data, treeDef, treeInfo); } catch { /* a bad save never blocks play */ }
+    if (r.added.length) this.save.saveNow();
+    return r;
   },
 
   // EXTRAS v1: what this run wears (render only). Defaults -> null (the scene keeps its old paths); a bad save can only fall back to defaults.
   applyCosm(sim) {
     let v = null;
+    this.syncCostumes();
     try { v = resolveCosm(this.save.data, data, treeDef, sim.characterId); } catch { v = null; }
-    const plain = !v || (v.flame.isDefault && v.trail.isDefault && (!v.look || v.look.isDefault));
+    const plain = !v || (v.flame.isDefault && v.trail.isDefault && (!v.look || v.look.isDefault) && !v.costume);
     if (this.scene && this.scene.setCosm) this.scene.setCosm(plain ? null : v);
     if (this.ui.hudView && this.ui.hudView.setFlame) this.ui.hudView.setFlame(v && !v.flame.isDefault ? v.flame.css : null, v && !v.flame.isDefault ? v.flame.cssCore : null);
   },
@@ -383,6 +397,10 @@ export const app = {
       buy: (id) => {
         const r = buyNode(this.save.data, id, treeDef, data);
         if (r.ok) this.save.saveNow();
+        if (r.ok) { // WARDROBE v2: a ring that just closed gives each hero its Keepsake; the tree screen shows the one-time toast from this
+          const e = this.syncCostumes();
+          if (e.rings.length || e.dawn) { const nm = (rid) => { const x = (data.cosmetics.rings || []).find((q) => q.id === rid); return x ? x.name : rid; }; return { ...r, ringsClosed: [...e.rings.map(nm), ...(e.dawn ? [nm('dawn')] : [])] }; }
+        }
         return r;
       },
       respec: () => {
@@ -971,7 +989,7 @@ export const app = {
       lastLoadout: (h) => this.lastLoadout(h),
       bondLevel: (h) => bondLevel(this.save.data, data, h),
       charsView: () => charsView(this.save.data, data, treeDef),
-      wearView: (h, sel) => wearView(this.save.data, data, treeDef, h, sel), // EXTRAS v1 Wear drawer
+      wearView: (h, sel) => { this.syncCostumes(); return wearView(this.save.data, data, treeDef, h, sel, treeInfo); }, // EXTRAS v1 Wear drawer (+ WARDROBE v2 ring shelf)
       setWear: (h, sel) => this.setWear(h, sel),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
       resetTips: () => this.resetTips(),

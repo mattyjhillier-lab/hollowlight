@@ -2,8 +2,9 @@
 // Called from makeStyleTextures(). Browser-only (Canvas2D); the pure maths and geometry live in rigmath.js / wrenart.js.
 import { INV } from './style.js';
 import { ROLE } from './palette.js';
-import { buildRigAtlas, drawWrenFlat, drawPupFlat, FLAT, FLAT_TEXEL, PUP_FLAT, TEX, PUP_K, DU } from './wrenart.js';
-import { ELIAS_FRAMES, drawEliasFlat, E_FLAT, E_FLAT_TEXEL } from './eliasart.js';
+import { buildRigAtlas, drawWrenFlat, drawWrenBody, drawPupFlat, FLAT, FLAT_TEXEL, FRAMES, PUP_FLAT, TEX, PUP_K, DU } from './wrenart.js';
+import { ELIAS_FRAMES, drawEliasFlat, drawEliasBody, E_FLAT, E_FLAT_TEXEL } from './eliasart.js';
+import { withCostume, costumeOverlay, pupCollar, okCost } from './costume.js';
 
 const TAU = Math.PI * 2;
 const mk = (w, h) => {
@@ -80,4 +81,55 @@ export function makeRigTextures(scene) {
     put(scene, `pup_${pose}`, pcv);
     INV[`pup_${pose}`] = DU / TEX;
   }
+}
+
+// ---- WARDROBE v2 Ring Keepsake costume: repaint the EXISTING rig textures in place (same canvas, same frames, same pivots), once per run start.
+// Body frame + flat sprite get the palette and the ring motif; the pup's head frames get the trim collar. Nothing here runs per frame. cost = null restores the plain look.
+function repaint(scene, key, cv) {
+  if (!scene.textures.exists(key)) return false;
+  const tex = scene.textures.get(key);
+  const src = tex && tex.getSourceImage && tex.getSourceImage();
+  if (!src || !src.getContext || src.width !== cv.width || src.height !== cv.height) return false; // layout is deterministic: a mismatch means leave the texture alone
+  const ctx = src.getContext('2d');
+  ctx.clearRect(0, 0, src.width, src.height); ctx.drawImage(cv, 0, 0);
+  if (tex.refresh) tex.refresh();
+  return true;
+}
+const atlasKey = (hero) => (hero === 'wren' ? 'wren_rig' : 'elias_rig');
+/** The costume id baked into this hero's rig texture right now (null = plain). The marker lives on the texture, so a rebuilt texture reads as plain. */
+export function costumeBaked(scene, hero) {
+  const tex = scene.textures.exists(atlasKey(hero)) ? scene.textures.get(atlasKey(hero)) : null;
+  return tex && typeof tex.costumeId === 'string' ? tex.costumeId : null;
+}
+export function paintCostume(scene, hero, cost) {
+  const c0 = okCost(cost) ? cost : null;
+  const done = () => { if (scene.textures.exists(atlasKey(hero))) scene.textures.get(atlasKey(hero)).costumeId = c0 && typeof c0.id === 'string' ? c0.id : null; };
+  withCostume(hero, c0, () => {
+    if (hero === 'wren') {
+      const frames = FRAMES.map((f) => {
+        if (f.name === 'w_body') return { ...f, draw: (c) => { drawWrenBody(c); costumeOverlay(c, 'wren', c0); } };
+        if (c0 && f.name.startsWith('p_head_')) return { ...f, draw: (c) => { f.draw(c); pupCollar(c, c0); } };
+        return f;
+      });
+      repaint(scene, 'wren_rig', buildRigAtlas(mk, frames).cv);
+      const fcv = mk(FLAT.w * FLAT_TEXEL, FLAT.h * FLAT_TEXEL), fc = fcv.getContext('2d');
+      fc.scale(FLAT_TEXEL, FLAT_TEXEL); fc.translate(-FLAT.x0, -FLAT.y0);
+      drawWrenFlat(fc, c0 ? (c) => costumeOverlay(c, 'wren', c0) : null);
+      repaint(scene, 'hero_wren', fcv);
+      for (const pose of ['sit', 'run']) {
+        const pcv = mk(PUP_FLAT.w * TEX * PUP_K, PUP_FLAT.h * TEX * PUP_K), pc = pcv.getContext('2d');
+        pc.scale(TEX * PUP_K, TEX * PUP_K); pc.translate(-PUP_FLAT.x0, -PUP_FLAT.y0);
+        drawPupFlat(pc, pose, c0 ? (c) => pupCollar(c, c0) : null);
+        repaint(scene, `pup_${pose}`, pcv);
+      }
+    } else {
+      const frames = ELIAS_FRAMES.map((f) => (f.name === 'e_body' ? { ...f, draw: (c) => { drawEliasBody(c); costumeOverlay(c, 'elias', c0); } } : f));
+      repaint(scene, 'elias_rig', buildRigAtlas(mk, frames, 768).cv);
+      const fcv = mk(E_FLAT.w * E_FLAT_TEXEL, E_FLAT.h * E_FLAT_TEXEL), fc = fcv.getContext('2d');
+      fc.scale(E_FLAT_TEXEL, E_FLAT_TEXEL); fc.translate(-E_FLAT.x0, -E_FLAT.y0);
+      drawEliasFlat(fc, c0 ? (c) => costumeOverlay(c, 'elias', c0) : null);
+      repaint(scene, 'hero_elias', fcv);
+    }
+  });
+  done();
 }

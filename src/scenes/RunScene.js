@@ -28,6 +28,7 @@ import { Gate, RateCap, SHAKE_GAP, KILL_POPS_PER_SEC, gemPopScale, GEM_POP_LIFE 
 import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
+import { paintCostume, costumeBaked } from '../gfx/rigtex.js';
 import { LOWMEM, IOS } from '../gfx/memprofile.js'; // FIX4d low-memory profile
 import { probe } from '../gfx/probe.js'; // FIX4 ?perf=1 real-device probe
 import { Prebake, guardState } from '../gfx/prebake.js'; // FIX4 loading-phase pre-bake
@@ -764,7 +765,18 @@ export class RunScene extends Phaser.Scene {
 
   // EXTRAS v1: what this run wears (resolveCosm view or null). Light colours only: silhouettes, sizes, the pool's brightness and every hit
   // radius are untouched; the pool keeps half the default lantern colour so a tint never reads as a dimmer or brighter light.
+  // WARDROBE v2: bake (or clear) the worn Ring Keepsake into the hero rig textures, once per run start (never per frame). Plain heroes are left untouched.
+  bakeCostume(v) {
+    const want = v && v.costume ? v.costume : null;
+    for (const hero of ['wren', 'elias']) {
+      const id = want && want.hero === hero ? want.id : null;
+      if (costumeBaked(this, hero) === id) continue;
+      try { paintCostume(this, hero, id ? want : null); } catch { /* a bad costume never blocks the run: the plain hero stays */ }
+    }
+  }
+
   setCosm(v) {
+    this.bakeCostume(v);
     const mixI = (a, b, t) => { let o = 0; for (const sh of [16, 8, 0]) { const x = (a >> sh) & 255, y = (b >> sh) & 255; o |= Math.round(x + (y - x) * t) << sh; } return o; };
     this.cosm = v || null;
     const plain = !v;

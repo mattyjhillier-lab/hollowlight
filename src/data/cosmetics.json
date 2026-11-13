@@ -31,5 +31,31 @@
    { "id": "elias_sage", "name": "Sage ribbon", "bond": 20, "wisp": "#c2e8c0" },
    { "id": "elias_dawn", "name": "Dawn ribbon", "bond": 25, "wisp": "#ffd8c0", "charm": "#fff6e0" }
   ]
+ },
+ "rings": [
+  { "id": "hearth", "name": "Hearth", "line": "Ember cream and rust, with hem stitching.", "rune": "M-7 5 L-7 -3 Q0 -11 7 -3 L7 5 M-3 5 L-3 0 Q0 -3 3 0 L3 5" },
+  { "id": "wick", "name": "Wick", "line": "Wax white and brass, a little wick-curl charm.", "rune": "M0 6 L0 -2 M0 -2 Q1 -7 5 -6 M-3 6 L3 6" },
+  { "id": "dusk", "name": "Dusk", "line": "Dusk indigo with a star pin.", "rune": "M3 -7 Q-6 -5 -5 2 Q-3 8 4 6 Q-2 3 3 -7Z M6 -2 l.1 .1" },
+  { "id": "far", "name": "Far Hollow", "line": "Moss teal and fog silver, a thread fringe.", "rune": "M-6 -4 Q0 -8 6 -4 M-6 0 Q0 -4 6 0 M-6 4 Q0 0 6 4" },
+  { "id": "deep", "name": "Deep Hollow", "line": "Ash black with a pale core line and a faint lit lining.", "rune": "M0 -7 A7 7 0 1 0 .1 -7Z M0 -1 l.1 .1" },
+  { "id": "dawn", "name": "Dawn", "line": "First-light colours from every ring, with a soft glow rising at the hem.", "rune": "M0 3 L0 -2 M-6 3 L6 3 M-4 -1 L-5.5 -3 M4 -1 L5.5 -3 M0 -5 L0 -7" }
+ ],
+ "costumes": {
+  "wren": [
+   { "id": "wren_hearth", "name": "Hearthwarm", "ring": "hearth", "base": "#8f4f38", "second": "#e2c9a6", "mantle": "#ead9c0", "accent": "#3a2a26", "trim": "#f2d9b0", "glow": "#ffc79a", "motifs": ["stitch"] },
+   { "id": "wren_wick", "name": "Wickwhite", "ring": "wick", "base": "#cdbf9e", "second": "#9a7a40", "mantle": "#f0e9d8", "accent": "#4a3c2a", "trim": "#c9a45a", "glow": "#ffe3a8", "motifs": ["wick"] },
+   { "id": "wren_dusk", "name": "Duskwrap", "ring": "dusk", "base": "#3f5a9a", "second": "#2a3560", "mantle": "#cfcade", "accent": "#2b2740", "trim": "#e4e0f2", "glow": "#c9c2ec", "motifs": ["star"] },
+   { "id": "wren_far", "name": "Fogmoss", "ring": "far", "base": "#3a7a70", "second": "#2a4a48", "mantle": "#d3dcd8", "accent": "#233836", "trim": "#c4d2cf", "glow": "#a8d8cc", "motifs": ["fringe"] },
+   { "id": "wren_deep", "name": "Ashveil", "ring": "deep", "base": "#212c33", "second": "#12161c", "mantle": "#bcc1ce", "accent": "#12161c", "trim": "#e6e2f0", "glow": "#cfc8ea", "motifs": ["core"] },
+   { "id": "wren_dawn", "name": "Dawnbearer", "ring": "dawn", "base": "#e8cdb8", "second": "#ffd0bc", "mantle": "#fff3e6", "accent": "#8a6a5a", "trim": "#fff0e0", "glow": "#ffc8a0", "motifs": ["stitch", "wick", "star", "fringe", "core"], "rise": 1 }
+  ],
+  "elias": [
+   { "id": "elias_hearth", "name": "Hearthwarm", "ring": "hearth", "base": "#d2b48e", "second": "#8a4a30", "mantle": "#a85a3c", "accent": "#6a3a2a", "trim": "#8a4a30", "glow": "#ffc79a", "motifs": ["stitch"] },
+   { "id": "elias_wick", "name": "Wickwhite", "ring": "wick", "base": "#e2dac4", "second": "#7a6238", "mantle": "#c6a15a", "accent": "#8a7448", "trim": "#a8843a", "glow": "#ffe3a8", "motifs": ["wick"] },
+   { "id": "elias_dusk", "name": "Duskcoat", "ring": "dusk", "base": "#3f5a9a", "second": "#2a3560", "mantle": "#cfcade", "accent": "#2f4478", "trim": "#e4e0f2", "glow": "#c9c2ec", "motifs": ["star"] },
+   { "id": "elias_far", "name": "Fogmoss", "ring": "far", "base": "#4b7a70", "second": "#2e4a48", "mantle": "#c4d2cf", "accent": "#385a56", "trim": "#c4d2cf", "glow": "#a8d8cc", "motifs": ["fringe"] },
+   { "id": "elias_deep", "name": "Ashcoat", "ring": "deep", "base": "#1f3030", "second": "#161a1c", "mantle": "#c6ccd6", "accent": "#20262a", "trim": "#e6e2f0", "glow": "#cfc8ea", "motifs": ["core"] },
+   { "id": "elias_dawn", "name": "Dawnbearer", "ring": "dawn", "base": "#f0dccb", "second": "#d9b8a0", "mantle": "#ffd9c0", "accent": "#caa890", "trim": "#fff0e0", "glow": "#ffc8a0", "motifs": ["stitch", "wick", "star", "fringe", "core"], "rise": 1 }
+  ]
  }
 }
