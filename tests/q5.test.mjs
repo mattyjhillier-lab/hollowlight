@@ -28,7 +28,7 @@ test('Q5a: the starter offer stays data-driven and validated (1 hero + 1 of the 
 test('Q5a/Q5c: Play on the tree starts the loadout and Back / Esc out of it return to the tree; elsewhere to the title', () => {
   assert.ok(ui.includes("else if (dest === 'play') { this.showStart(this.onPick); this.loadoutFromTree = true; this.beginLoadout(); }"));
   assert.ok(ui.includes('leaveLoadout() {') && ui.includes('if (this.loadoutFromTree) { this.loadoutFromTree = false; this.starterAfter = null; if (this.handlers.openTree) { this.handlers.openTree(); return; } }'));
-  const hs = ui.slice(ui.indexOf('  showHeroSelect() {'), ui.indexOf('  // EXTRAS v1: the Lantern Wardrobe drawer'));
+  const hs = ui.slice(ui.indexOf('  showHeroSelect(back = false) {'), ui.indexOf('  // EXTRAS v1: the Lantern Wardrobe drawer'));
   assert.ok(hs.includes('else this.leaveLoadout()'), 'hero step back');
   assert.ok(ui.slice(ui.indexOf('  showNights('), ui.indexOf('  showNights(') + 2200).includes('onBack: () => this.leaveLoadout()'), 'night step back');
   assert.ok(tree.includes("showAlmanac('tree')"), 'the Almanac opens over the tree and Back returns to it');
@@ -60,4 +60,12 @@ test('hostile loadout saves: unknown / forged heroes and spirits are dropped bef
   assert.ok(heroes.includes('list.find((h) => h.id === lo.hero && h.awake) || list.find((h) => h.awake) || list[0]'), 'an unknown last hero falls back to an awake one');
   const set = app.slice(app.indexOf('      setHero: (id) => {'), app.indexOf('      clearResetNotice'));
   assert.ok(set.includes('!isAwake(s, id) || this.save.readOnly') && set.includes('Object.hasOwn(data.weapons, w)'));
+});
+
+test('LOCKED 2026-11-13: one awake hero skips the hero step going forward; Back from the spirit step never lands on it', () => {
+  const hs = ui.slice(ui.indexOf('  showHeroSelect(back = false) {'), ui.indexOf('  // EXTRAS v1: the Lantern Wardrobe drawer'));
+  assert.ok(hs.includes('if (!back && ids.length === 1) { this.lastHero = ids[0]; this.showSpiritSelect(ids[0]); return; }'));
+  const sp = ui.slice(ui.indexOf('  showSpiritSelect(heroId) {'), ui.indexOf('  showSpiritSelect(heroId) {') + 1200);
+  assert.ok(sp.includes('if (!only) { this.showHeroSelect(true); return; }'));
+  assert.ok(ui.slice(ui.indexOf('  showWear(heroId) {'), ui.indexOf('  showWear(heroId) {') + 700).includes('onBack: () => this.showHeroSelect(true)'));
 });

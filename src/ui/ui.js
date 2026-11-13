@@ -394,10 +394,12 @@ export class UI {
   }
 
   // Step 2: the character (awake heroes only; Bond badge; same body so no Health / Speed pips).
-  showHeroSelect() {
+  showHeroSelect(back = false) {
     const h = this.handlers;
     const ids = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id));
     const choice = !!(h.nightChoice && h.nightChoice());
+    // LOCKED 2026-11-13: one awake hero = nothing to choose, so going forward skips this step (coming Back never lands on it).
+    if (!back && ids.length === 1) { this.lastHero = ids[0]; this.showSpiritSelect(ids[0]); return; }
     const hs = buildHeroSelect({
       heroes: this.heroCards(ids), portraits: PORTRAITS, selected: this.lastHero || (h.lastLoadout && h.lastLoadout().hero), nextLabel: HERO_NEXT,
       copy: { title: LOADOUT.heroTitle, whisper: LOADOUT.heroWhisper },
@@ -415,7 +417,7 @@ export class UI {
     const v = buildWear({
       view: h.wearView(heroId), viewFor: (sel) => h.wearView(heroId, sel),
       onWear: (sel) => { if (h.setWear) h.setWear(heroId, sel); },
-      onBack: () => this.showHeroSelect(),
+      onBack: () => this.showHeroSelect(true),
     });
     v.focusSelected = v.focusFirst;
     this.mountLoadout(v, 'ld-step-wear');
@@ -429,7 +431,11 @@ export class UI {
     const vs = buildSpiritSelect({
       spirits, heroName: heroView(heroId, c, '').name, selected: h.lastLoadout ? h.lastLoadout(heroId).weapon : null,
       onStart: (wid) => { if (this.onPick) this.onPick(heroId, this.pickTier || undefined, wid); },
-      onBack: () => this.showHeroSelect(),
+      onBack: () => {
+        const only = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id)).length === 1;
+        if (!only) { this.showHeroSelect(true); return; }
+        if (h.nightChoice && h.nightChoice()) this.showNights(this.lastHero, this.pickTier); else this.leaveLoadout();
+      },
     });
     this.mountLoadout(vs, 'ld-step-spirit');
   }
