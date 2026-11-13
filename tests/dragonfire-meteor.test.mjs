@@ -41,7 +41,7 @@ test('DM1 staging: never in starter offer, startable list, card pool, tree heart
   const sim = new Sim({ data, characterId: 'wren', seed: 5 });
   for (let i = 0; i < 40; i++) assert.ok(!generateOffer(sim.cardCtx, sim.rng).cards.some((c) => c.weaponId === ID));
   assert.ok(ENTRY_KEYS.includes('c:dragonfire_meteor') && !ENTRY_KEYS.includes('c:ember_breath'));
-  assert.equal(ENTRY_KEYS.indexOf('c:dragonfire_meteor'), ENTRY_KEYS.length - 2, 'same slot: no key moved (DM4 appended e:wildfire after it)');
+  assert.equal(ENTRY_KEYS.indexOf('c:dragonfire_meteor'), ENTRY_KEYS.length - 4, 'same slot: no key moved (DM4-DM6 appended e:wildfire, e:cinder_wyrm, e:cinder_brand after it)');
   assert.ok(!ENTRY_KEYS.some((k) => k === 'weapon:' + ID), 'no Almanac weapon entry until the release switch');
 });
 
