@@ -71,7 +71,7 @@ const STATES = {
   impact: `(()=>{const m=window.__app.scene.meteor;return m.imp.length&&m.imp[0].t>0.05&&m.imp[0].t<0.16})()`,
   pool: `(()=>{const w=${wep};return w&&w.rt.pools&&w.rt.pools.length>=1&&w.rt.pools[0].life<(w.s.duration||3)-0.9})()`,
   wyrm: `(()=>{const w=${wep},y=w&&w.rt.wyrm;return y&&y.on&&y.k>=1&&y.t<5.6&&y.t>2})()`,
-  brand: `(()=>{const w=${wep};return w&&w.rt.brands&&w.rt.brands.length>=3&&window.__app.scene.meteor.sprites>0})()`,
+  brand: `(()=>{const w=${wep};const b=w&&w.rt.brands;return b&&b.length>=3&&window.__app.sim.time-b[0].t>1.0&&window.__app.sim.time-b[0].t<1.8})()`,
   crowd: `(()=>{const w=${wep};return w&&w.rt.pools&&w.rt.pools.length>=3&&window.__app.scene.meteor.imp.length>=1&&window.__app.scene.meteor.imp[0].t>0.06})()`,
 };
 const focus = (c, st) => c.ev(`(()=>{const w=${wep},m=window.__app.scene.meteor;const f=${JSON.stringify(st)};if(f==='wyrm'&&w.rt.wyrm)return [w.rt.wyrm.cx,w.rt.wyrm.cy];if(f==='brand'&&w.rt.brands&&w.rt.brands[0])return [w.rt.brands[0].e.x,w.rt.brands[0].e.y];if(f==='flight'){const b=w.rt.fly[0];return b?[b.x,b.y-30]:null}if(f==='impact'&&m.imp[0])return [m.imp[0].x,m.imp[0].y];const q=w.rt.pools[0];return q?[q.x,q.y]:null})()`);
@@ -87,13 +87,14 @@ async function one(c, out, view, tier, calm, rank, state, n = 22, t = 60, tag = 
   const f = await focus(c, state);
   if (f) { const clip = await around(c, f[0], f[1], view === 'desk' ? 330 : 180, view === 'desk' ? 190 : 150); await shot(c, join(out, name + '-zoom.jpg'), clip); }
   console.log(name, JSON.stringify(await c.ev('({sprites:window.__app.scene.meteor.sprites})')));
+  if (process.env.PROBE) console.log('probe', JSON.stringify(await c.ev(process.env.PROBE))); // optional: PROBE='<js expr>' prints a page value on the frozen frame
   await wake(c);
 }
 const EVLIST = EVO === 'cinder_wyrm' ? [
   ['desk', 'high', 0, 5, 'wyrm', 14], ['desk', 'high', 0, 5, 'wyrm', 22, 60, '-crowd'], ['desk', 'high', 0, 5, 'wyrm', 4, 60, '-sparse'], ['desk', 'high', 0, 5, 'wyrm', 14, 700, '-night'], ['desk', 'med', 0, 5, 'wyrm', 14], ['desk', 'low', 0, 5, 'wyrm', 14], ['desk', 'high', 1, 5, 'wyrm', 14],
   ['phone', 'high', 0, 5, 'wyrm', 14], ['phone', 'med', 0, 5, 'wyrm', 14], ['phone', 'low', 0, 5, 'wyrm', 14],
 ] : [
-  ['desk', 'high', 0, 5, 'brand', 14], ['desk', 'high', 0, 5, 'brand', 22, 60, '-crowd'], ['desk', 'high', 0, 5, 'brand', 14, 700, '-night'], ['desk', 'med', 0, 5, 'brand', 14], ['desk', 'low', 0, 5, 'brand', 14], ['desk', 'high', 1, 5, 'brand', 14],
+  ['desk', 'high', 0, 5, 'brand', 14], ['desk', 'high', 0, 5, 'brand', 4, 60, '-sparse'], ['desk', 'high', 0, 5, 'brand', 22, 60, '-crowd'], ['desk', 'high', 0, 5, 'brand', 14, 700, '-night'], ['desk', 'med', 0, 5, 'brand', 14], ['desk', 'low', 0, 5, 'brand', 14], ['desk', 'high', 1, 5, 'brand', 14],
   ['phone', 'high', 0, 5, 'brand', 14], ['phone', 'med', 0, 5, 'brand', 14], ['phone', 'low', 0, 5, 'brand', 14],
 ];
 async function shots(out) {

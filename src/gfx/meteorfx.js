@@ -19,16 +19,16 @@ export const KEY = 'mt_atlas', K = 2; // texels per world unit in the atlas
 
 // tier -> caps (phone x0.7 on counts; Calm drops everything that moves on its own)
 const BASE = {
-  high: { tongues: 4, tongueMax: 6, embers: 3, impact: 8, sparks: 14, tail: 4, halo: true, flat: false, wrate: 16 },
-  med: { tongues: 3, tongueMax: 4, embers: 1, impact: 5, sparks: 8, tail: 2, halo: true, flat: false, wrate: 6 },
-  low: { tongues: 0, tongueMax: 0, embers: 0, impact: 0, sparks: 0, tail: 0, halo: false, flat: true, wrate: 0 },
+  high: { tongues: 4, tongueMax: 6, embers: 3, impact: 8, sparks: 14, tail: 4, halo: true, flat: false, wrate: 16, bmax: 24, bspark: 3 },
+  med: { tongues: 3, tongueMax: 4, embers: 1, impact: 5, sparks: 8, tail: 2, halo: true, flat: false, wrate: 6, bmax: 12, bspark: 1 },
+  low: { tongues: 0, tongueMax: 0, embers: 0, impact: 0, sparks: 0, tail: 0, halo: false, flat: true, wrate: 0, bmax: 8, bspark: 0 },
 };
 const CACHE = {};
 export function meteorCaps(tier, phone = false, calm = false) {
   const t = BASE[tier] ? tier : 'med', key = t + (phone ? 'p' : '') + (calm ? 'c' : '');
   if (CACHE[key]) return CACHE[key];
   const b = BASE[t], sc = (n) => (n > 0 && phone ? Math.max(1, Math.round(n * 0.7)) : n);
-  const c = { tier: t, flat: b.flat, halo: b.halo, calm: !!calm, tongues: sc(b.tongues), tongueMax: sc(b.tongueMax), embers: calm ? 0 : sc(b.embers), impact: calm ? 0 : sc(b.impact), sparks: calm ? 0 : sc(b.sparks), tail: sc(b.tail), flicker: !calm && !b.flat, pop: !calm, wrate: calm ? 0 : sc(b.wrate) }; // wrate = Wyrm spark-trail sparks per second (about 8 live on High, 3 on Medium, none on Low or Calm)
+  const c = { tier: t, flat: b.flat, halo: b.halo, calm: !!calm, tongues: sc(b.tongues), tongueMax: sc(b.tongueMax), embers: calm ? 0 : sc(b.embers), impact: calm ? 0 : sc(b.impact), sparks: calm ? 0 : sc(b.sparks), tail: sc(b.tail), flicker: !calm && !b.flat, pop: !calm, wrate: calm ? 0 : sc(b.wrate), bmax: sc(b.bmax), bspark: calm ? 0 : sc(b.bspark) }; // bmax = most brand marks drawn at once, bspark = gold sparks per pop (DM6) // wrate = Wyrm spark-trail sparks per second (about 8 live on High, 3 on Medium, none on Low or Calm)
   c.add = !c.flat; // additive blend only above Low
   return (CACHE[key] = c);
 }
@@ -58,7 +58,7 @@ export function poolEnv(rem, now, born, gone, cap, out = {}) {
 }
 
 // ---------------------------------------------------------------- atlas bake (2D canvas, once, on the first Meteor sight)
-const FR = { glow: [0, 0, 64, 64], bloom: [64, 0, 64, 64], ring: [128, 0, 64, 64], ball: [192, 0, 32, 32], ember: [224, 0, 16, 16], shade: [240, 0, 32, 16], poolLow: [160, 64, 96, 96], whead: [0, 160, 48, 40], wseg: [48, 160, 32, 32] }; // DM5: Cinder Wyrm head + body segment (row at y 160)
+const FR = { glow: [0, 0, 64, 64], bloom: [64, 0, 64, 64], ring: [128, 0, 64, 64], ball: [192, 0, 32, 32], ember: [224, 0, 16, 16], shade: [240, 0, 32, 16], poolLow: [160, 64, 96, 96], whead: [0, 160, 48, 40], wseg: [48, 160, 32, 32], bmark: [80, 160, 16, 16] }; // DM5: Cinder Wyrm head + body segment (row at y 160)
 export const ATLAS_W = 288, ATLAS_H = 208;
 for (let i = 0; i < 6; i++) FR['tongue' + i] = [i * 24, 64, 24, 40];
 const rg = (c, x, y, r, stops) => { const g = c.createRadialGradient(x, y, 0, x, y, r); for (const [o, col] of stops) g.addColorStop(o, col); return g; };
@@ -112,6 +112,10 @@ export function bakeAtlas(c) { // c = a 2D context 288 x 208
   const hg = c.createLinearGradient(x + 7, y, x + 45, y); hg.addColorStop(0, 'rgba(255,200,120,1)'); hg.addColorStop(0.55, 'rgba(255,226,160,1)'); hg.addColorStop(1, 'rgba(255,241,194,1)');
   c.fillStyle = hg; c.fill(); c.strokeStyle = 'rgba(224,122,107,0.9)'; c.lineWidth = 1.4; c.stroke();
   for (const sg of [-1, 1]) { c.fillStyle = 'rgba(224,122,107,0.95)'; c.beginPath(); c.arc(x + 29, y + 20 + sg * 5, 2.4, 0, 6.2832); c.fill(); c.fillStyle = 'rgba(255,255,240,1)'; c.beginPath(); c.arc(x + 29.6, y + 19.4 + sg * 5, 1.1, 0, 6.2832); c.fill(); }
+  [x, y] = at('bmark'); // DM6 Cinder Brand mark: a small gold ember-drop with a rose rim and a pale core (one clear glyph, readable at 640x360)
+  c.beginPath(); c.moveTo(x + 8, y + 1); c.quadraticCurveTo(x + 8.6, y + 7.4, x + 15, y + 8); c.quadraticCurveTo(x + 8.6, y + 8.6, x + 8, y + 15); c.quadraticCurveTo(x + 7.4, y + 8.6, x + 1, y + 8); c.quadraticCurveTo(x + 7.4, y + 7.4, x + 8, y + 1); c.closePath(); // a four-pointed ember star (not a teardrop, so it never reads as a ground flame tongue)
+  c.fillStyle = rg(c, x + 8, y + 8, 7, [[0, 'rgba(255,255,236,1)'], [0.5, 'rgba(255,220,140,1)'], [1, 'rgba(255,179,92,1)']]); c.fill(); c.strokeStyle = 'rgba(224,122,107,0.95)'; c.lineWidth = 1.1; c.stroke();
+  c.fillStyle = 'rgba(255,255,240,0.95)'; c.beginPath(); c.arc(x + 8, y + 8, 1.6, 0, 6.2832); c.fill();
   [x, y] = at('poolLow'); // Low: ONE flat sprite (no additive): tint + glow + rim + 5 tongues
   c.fillStyle = rg(c, x + 48, y + 48, 48, BLOOM); c.fillRect(x, y, 96, 96);
   c.fillStyle = rg(c, x + 48, y + 48, 44, [[0, 'rgba(255,226,160,0.6)'], [0.5, 'rgba(255,179,92,0.4)'], [0.9, 'rgba(224,122,107,0.28)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 96, 96);
@@ -141,7 +145,7 @@ export class MeteorLayer {
     this.scene = scene; this.gl = gl; this.ok = false; this.dead = false;
     this.sTint = null; this.sGlow = null; this.sNorm = null; this.sTongue = null; this.sTongueI = null; this.sFx = null; this.sFxN = null;
     this.fly = new Map(); this.pools = new Map(); this.imp = []; this.fr = 0; this.lastT = 0; this.crack = 0;
-    this.wl = 0; this.wsp = 0; this.wn = 0;
+    this.wl = 0; this.wsp = 0; this.wn = 0; this.seenPop = new WeakSet();
     this.pose = { x: 0, y: 0, h: 0, s: 1 }; this.env = { aIn: 0, flame: 0, glow: 0, tint: 0 };
     this.sprites = 0; // sprites placed last frame (probe)
   }
@@ -164,7 +168,7 @@ export class MeteorLayer {
     return this.ok;
   }
   hideAll() { if (!this.ok) return; for (const s of [this.sTint, this.sGlow, this.sNorm, this.sTongue, this.sTongueI, this.sFx, this.sFxN]) s.hide(); this.sprites = 0; }
-  reset() { this.wl = 0; this.wsp = 0; this.wn = 0; this.fly.clear(); this.pools.clear(); this.imp.length = 0; this.lastT = 0; this.crack = 0; this.hideAll(); }
+  reset() { this.wl = 0; this.wsp = 0; this.wn = 0; this.seenPop = new WeakSet(); this.fly.clear(); this.pools.clear(); this.imp.length = 0; this.lastT = 0; this.crack = 0; this.hideAll(); }
 
   // c = { sim, tier, phone, calm, lm (or null), parts, cue(id), vx0, vy0, vx1, vy1 }; call once a frame.
   update(c) {
@@ -230,6 +234,40 @@ export class MeteorLayer {
         this.wsp += dt * caps.wrate;
         while (this.wsp >= 1) { this.wsp -= 1; this.wn++; const i = 1 + (this.wn * 3) % Math.max(1, n - 1), sx = wy.seg[i * 2], sy = wy.seg[i * 2 + 1]; if (Number.isFinite(sx) && inV(sx, sy)) c.parts.emit(sx, sy - 7, ((this.wn % 5) - 2) * 6, -16 - (this.wn % 3) * 6, 0.5, 0.45, 0.1, this.wn % 3 ? COL.amber : COL.core, 0.85); }
         if (this.wsp > 3) this.wsp = 0;
+      }
+    }
+
+    // ---- DM6 Cinder Brand: a gold ember-mark over each branded foe (it brightens as the pop nears), a gold burst where a brand pops
+    if (w.rt.brands && w.rt.brands.length) {
+      let nb = 0;
+      for (const b of w.rt.brands) {
+        if (nb >= caps.bmax) break;
+        const e = b.e, bx = b.x, by = b.y;
+        if (!e || !Number.isFinite(bx) || !Number.isFinite(by) || bx < c.vx0 - 20 || bx > c.vx1 + 20 || by < c.vy0 - 20 || by > c.vy1 + 20) continue;
+        nb++;
+        const near = Number.isFinite(e.burnT) ? Math.min(1, Math.max(0, 1 - e.burnT / 0.8)) : 0, pul = caps.flicker ? 0.12 * Math.sin(T * 8 + bx * 0.3) : 0, up = Math.min(1, (T - b.t) / 0.15), er = Number.isFinite(e.r) ? e.r : 8;
+        const sz = (0.9 + 0.25 * near + pul) * (0.6 + 0.4 * up);
+        if (!caps.flat) sGlA.put('glow', bx, by - er - 7, dF - 13, 0.3 + 0.12 * near, 0.3 + 0.12 * near, (0.45 + 0.4 * near) * up, 0, COL.amber);
+        this.sFxN.put('bmark', bx, by - er - 7 - (caps.flicker ? 1.2 * Math.sin(T * 4 + bx) : 0), dF - 12, sz, sz, up);
+      }
+    }
+    if (w.rt.pops && w.rt.pops.length) {
+      let nsp = 0, cued = false;
+      for (const p of w.rt.pops) {
+        if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+        const age = T - p.t, k = age / 0.3;
+        if (!this.seenPop.has(p)) {
+          this.seenPop.add(p);
+          if (inV(p.x, p.y)) {
+            if (!cued) { cued = true; c.cue('brand_pop'); }
+            if (caps.bspark && c.parts) for (let j = 0; j < caps.bspark && nsp < 8; j++, nsp++) { const a = j / caps.bspark * 6.2832 + frac(p.x * 0.37) * 6, sp = 36 + ((j * 29) % 30); c.parts.emit(p.x, p.y - 6, Math.cos(a) * sp, Math.sin(a) * sp * 0.7 - 20, 0.34, 0.4, 0.1, j % 2 ? COL.amber : COL.core, 0.9); }
+          }
+        }
+        if (k < 0 || k >= 1 || !inV(p.x, p.y)) continue;
+        const e = 1 - (1 - k) * (1 - k), fa = 1 - k, pr = Number.isFinite(p.r) ? p.r : 26;
+        fx.put('glow', p.x, p.y - 4, dF - 8, pr * 1.5 / 32 * (caps.pop ? 0.5 + 0.7 * e : 1), pr * 1.5 / 32 * (caps.pop ? 0.5 + 0.7 * e : 1), (caps.add ? 0.55 : 0.7) * fa);
+        if (!caps.flat) this.sNorm.put('ring', p.x, p.y - 2, dF - 9, pr / 15.2 * (caps.pop ? 0.4 + 0.75 * e : 1), pr / 15.2 * (caps.pop ? 0.4 + 0.75 * e : 1), 0.7 * fa);
+        if (lm && !caps.flat) lm.add(p.x, p.y, pr * 1.6, COL.amber, 0.4 * fa);
       }
     }
 

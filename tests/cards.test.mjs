@@ -25,7 +25,7 @@ test('data sanity: every evolution points at a real weapon and real stats', () =
     assert.notEqual(evo.pair[0], evo.pair[1]);
   }
   // 5 weapons, 2-3 evolutions each, 15 total in this build
-  assert.equal(Object.keys(data.evolutions).length, 17); // 15 live + Wildfire + Cinder Wyrm (hidden with Dragonfire Meteor)
+  assert.equal(Object.keys(data.evolutions).length, 18); // 15 live + Wildfire + Cinder Wyrm + Cinder Brand (hidden with Dragonfire Meteor)
 });
 
 test('open slots: a tree-less run offers no weapon card (v2: every weapon is a tree gate); unlocked weapons join the pool', () => {

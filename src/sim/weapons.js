@@ -982,7 +982,7 @@ function meteorLand(sim, w, f, dmg) {
     const d = Math.hypot(e.x - f.x, e.y - f.y);
     if (d > r + (Number.isFinite(e.r) ? e.r : 0)) continue;
     const dealt = sim.hurt(e, dmg);
-    if (dealt > 0) sim.burn(e, dmg, METEOR.burnTime, METEOR.burnRate);
+    if (dealt > 0) { sim.burn(e, dmg, METEOR.burnTime, METEOR.burnRate); if (w.evo === 'cinder_brand') brandAdd(sim, w, e); }
     w.rt.lock.set(e, sim.time); // the burst counts as this foe's pool tick, so a landing never double-dips
   }
   const pools = w.rt.pools, wf = w.evo === 'wildfire';
@@ -1098,6 +1098,47 @@ function wyrmStep(sim, w, dt, dmg) {
   }
   if (lock.size > 96) for (const [e, tm] of lock) if (e.dead || T - tm > 2) lock.delete(e);
 }
+// DM6 CINDER BRAND (verb POP, recipe power + duration; Matt's pick A): the crash BRANDS every foe it burns with a glowing ember-mark (one brand per foe, the
+// strongest-wins Burn is unchanged). When the foe's Burn ends it POPS: a gold burst (radius 26) for popK (0.6) x Impact on every foe in it. A foe standing in fire
+// keeps its Burn alive, so a brand also pops fuseMax (2.5 s) after it was set at the latest. One generation: pops NEVER brand and never burn. A foe that dies
+// while branded loses the brand (the mark vanishes with it). HARD caps: <= 12 pops/s (extra brands wait their turn in a queue of <= 40), <= 48 live brands,
+// <= 12 foes per pop. Pools stay base-sized. Pop hits use the weapon's boss rule (x1.4) like every other hit. No RNG is drawn; brands pop in the order they were set.
+export const BRAND_HARD = Object.freeze({ popRate: 12, maxLive: 48, maxTargets: 12, queue: 40 });
+function brandAdd(sim, w, e) {
+  const rt = w.rt, B = rt.brands || (rt.brands = []), set = rt.brandSet || (rt.brandSet = new Set());
+  if (set.has(e) || B.length >= wfNum(tune(sim, w, 'maxLive', BRAND_HARD.maxLive), 1, BRAND_HARD.maxLive, BRAND_HARD.maxLive)) return;
+  set.add(e); B.push({ e, t: sim.time, x: e.x, y: e.y });
+}
+function brandStep(sim, w, dt, dmg) {
+  const rt = w.rt, T = sim.time;
+  const B = rt.brands || (rt.brands = []), set = rt.brandSet || (rt.brandSet = new Set()), q = rt.popQ || (rt.popQ = []), times = rt.popT || (rt.popT = []), pops = rt.pops || (rt.pops = []);
+  const fuse = wfNum(tune(sim, w, 'fuseMax', 2.5), 0.5, 6, 2.5);
+  for (let i = 0; i < B.length; i++) { // oldest first, so pops keep the order the brands were set
+    const r = B[i], e = r.e;
+    if (e.dead || !okPt(e)) { set.delete(e); B.splice(i--, 1); continue; } // the mark vanishes with the foe
+    r.x = e.x; r.y = e.y;
+    if (!(e.burnT > 0) || T - r.t >= fuse) { set.delete(e); B.splice(i--, 1); if (q.length < BRAND_HARD.queue) q.push({ x: r.x, y: r.y, boss: !!e.boss }); }
+  }
+  while (times.length && T - times[0] >= 1) times.shift();
+  while (pops.length && T - pops[0].t > 0.5) pops.shift();
+  const rate = wfNum(tune(sim, w, 'popRate', 12), 1, BRAND_HARD.popRate, BRAND_HARD.popRate);
+  const pr = wfNum(tune(sim, w, 'popR', 26), 8, 60, 26), pk = wfNum(tune(sim, w, 'popK', 1.9), 0.05, 3, 1.9), mt = Math.round(wfNum(tune(sim, w, 'maxTargets', 4), 1, BRAND_HARD.maxTargets, BRAND_HARD.maxTargets));
+  const E = sim.enemies;
+  while (q.length && times.length < rate) {
+    const b = q.shift();
+    times.push(T);
+    if (pops.length < 24) pops.push({ x: b.x, y: b.y, r: pr, t: T });
+    let hit = 0;
+    for (let m = 0; m < E.length && hit < mt; m++) {
+      const o = E[m];
+      if (o.dead || !okPt(o)) continue;
+      const dx = o.x - b.x, dy = o.y - b.y, rr = pr + (Number.isFinite(o.r) ? o.r : 0);
+      if (dx * dx + dy * dy > rr * rr) continue;
+      hit++;
+      sim.hurt(o, dmg * pk); // a pop never burns and never brands: one generation
+    }
+  }
+}
 const dragonfireMeteor = {
   update(sim, w, dt) {
     const { s } = w;
@@ -1150,6 +1191,7 @@ const dragonfireMeteor = {
     }
     if (lock.size > 96) for (const [e, tm] of lock) if (e.dead || sim.time - tm > 2) lock.delete(e);
     if (w.evo === 'cinder_wyrm') wyrmStep(sim, w, dt, dmg);
+    else if (w.evo === 'cinder_brand') brandStep(sim, w, dt, dmg);
     // volley
     rt.cd -= dt;
     if (rt.cd > 0) return;
