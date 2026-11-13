@@ -104,10 +104,10 @@ test('ownership: tree lanterns + Bond deeds; worn is validated; anything not own
 });
 
 test('save: cosm is additive, known ids only, prototype keys and junk dropped; round-trips through export/import', () => {
-  assert.deepEqual(defaultSave().cosm, { worn: { flame: null, trail: null, look: {} } });
+  assert.deepEqual(defaultSave().cosm, { worn: { flame: null, trail: null, look: {} } }); // WARDROBE v2 adds costume + earned only once used (compactCosm)
   const raw = JSON.parse('{"worn":{"flame":"ember","trail":"<script>","look":{"wren":"elias_sky","elias":"elias_sky","__proto__":"x","mallory":"wren_fox"},"extra":1},"owned":["lilac_hush"]}');
-  assert.deepEqual(cleanCosm(raw, data), { worn: { flame: 'ember', trail: null, look: { elias: 'elias_sky' } } });
-  for (const bad of [null, 5, 'x', [], { worn: [] }, { worn: { flame: 7, trail: {}, look: [] } }]) assert.deepEqual(cleanCosm(bad, data), { worn: { flame: null, trail: null, look: {} } });
+  assert.deepEqual(cleanCosm(raw, data), { worn: { flame: 'ember', trail: null, look: { elias: 'elias_sky' }, costume: {} }, earned: [] });
+  for (const bad of [null, 5, 'x', [], { worn: [] }, { worn: { flame: 7, trail: {}, look: [] } }]) assert.deepEqual(cleanCosm(bad, data), { worn: { flame: null, trail: null, look: {}, costume: {} }, earned: [] });
   const s = sanitize({ ...defaultSave(), cosm: { worn: { flame: 'dawn_rose', trail: 'motes', look: { wren: 'wren_fox' } } } });
   assert.deepEqual(s.cosm.worn, { flame: 'dawn_rose', trail: 'motes', look: { wren: 'wren_fox' } });
   const back = parseSave(JSON.stringify(serializeSave(s)));
@@ -126,7 +126,7 @@ test('Wear view + drawer: states, Bond progress lines, locked items cannot be pi
   const L = Object.fromEntries(v.items.look.map((i) => [i.id, i]));
   assert.equal(L.wren_fox.line, 'Bond 5 with Wren · 4/5'); assert.equal(L.wren_fox.owned, false);
   assert.equal(wearingLine(v), 'Hearth · Thread · Frost wisp');
-  assert.deepEqual(wearView(s, data, def, 'wren', { flame: 'lilac_hush', trail: 'motes', look: 'wren_star' }).sel, { flame: 'hearth', trail: 'thread', look: 'wren_frost' }, 'a locked pick never sticks');
+  assert.deepEqual(wearView(s, data, def, 'wren', { flame: 'lilac_hush', trail: 'motes', look: 'wren_star' }).sel, { flame: 'hearth', trail: 'thread', look: 'wren_frost', costume: null }, 'a locked pick never sticks');
   let worn = null;
   const ui = buildWear({ view: v, viewFor: (sel) => wearView(s, data, def, 'wren', sel), onWear: (sel) => { worn = sel; }, onBack: () => {} });
   const item = (id) => find(ui.root, (n) => n.attrs['data-id'] === id && n.attrs.role === 'radio')[0];
@@ -135,7 +135,7 @@ test('Wear view + drawer: states, Bond progress lines, locked items cannot be pi
   assert.equal(item('moon_teal').attrs['aria-checked'], 'true');
   assert.equal(item('dawn_rose').attrs['aria-disabled'], 'true');
   ui.onKey({ key: 'Enter', preventDefault() {} });
-  assert.deepEqual(worn, { flame: 'moon_teal', trail: 'thread', look: 'wren_frost' });
+  assert.deepEqual(worn, { flame: 'moon_teal', trail: 'thread', look: 'wren_frost', costume: null });
   ui.onKey({ key: '3', preventDefault() {} });
   assert.equal(ui.tab(), 'look');
   for (const n of find(ui.root, (x) => x.attrs.role === 'radio')) assert.ok(n.attrs['aria-label'] && n.attrs.tabindex !== undefined);

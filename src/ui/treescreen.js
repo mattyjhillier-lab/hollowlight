@@ -13,6 +13,7 @@ import { probe } from '../gfx/probe.js';
 import { TOUR } from './whispers.js';
 import { RESPEC_DONE_SUFFIX } from '../meta/gatewords.js';
 import { CEL } from './codexcopy.js';
+import { WEAR } from './wearcopy.js';
 
 const PIN_KEY = 'hollowlight:tree:pins';
 const TIP_KEY = 'hollowlight:tree:tip';
@@ -1869,6 +1870,7 @@ export class TreeScreen {
     const why = this.model.whyOf(id, 1);
     this.recompute();
     this.pMsg.textContent = `${n.name} is lit.`;
+    if (res.ringsClosed && res.ringsClosed.length) this.ringToast(res.ringsClosed); // WARDROBE v2: a ring just closed (the costume is in the Wear drawer)
     let done = null;
     for (const r of this.view.regions) if (r.done && !before.get(r.key)) done = r;
     if (this.host.sound) this.host.sound(done ? 'tree_whole' : 'tree_light'); // AU6: a lantern catches / a constellation is whole
@@ -1908,8 +1910,24 @@ export class TreeScreen {
     this.helpMsg.textContent = `Refunded ${fmtN(spent.gold)} gold and ${fmtN(spent.shards)} shards.${RESPEC_DONE_SUFFIX}`;
   }
 
+  // WARDROBE v2: one-time 'ring closed' toast with a Wear it link (text only; Calm-safe: no flare, the ring bloom is already off in Calm)
+  ringToast(rings) {
+    const list = rings.filter((r) => r !== 'Dawn').slice(0, 5), dawn = rings.includes('Dawn');
+    const t = this.toastEl;
+    t.textContent = '';
+    t.appendChild(document.createTextNode(WEAR.closedToast(list.length ? list : rings, dawn && list.length > 0)));
+    const b = el('button', 'ts-toast-go', WEAR.wearIt);
+    b.setAttribute('type', 'button');
+    b.addEventListener('click', () => { if (this.host.sound) this.host.sound('ui_step'); this.host.navTo('wear'); });
+    t.appendChild(b);
+    t.classList.add('open', 'has-act');
+    clearTimeout(this.toastT);
+    this.toastT = setTimeout(() => t.classList.remove('open', 'has-act'), 7000);
+  }
+
   toast(msg) {
     this.toastEl.textContent = msg;
+    this.toastEl.classList.remove('has-act');
     this.toastEl.classList.add('open');
     clearTimeout(this.toastT);
     this.toastT = setTimeout(() => this.toastEl.classList.remove('open'), 3200);

@@ -3,6 +3,7 @@
 import { cosmOwned, cleanCosm } from '../meta/cosmetics.js';
 import { nodeStatus } from '../meta/tree.js';
 import { bondLevel } from '../save/chars.js';
+import { ringStates } from '../meta/costumes.js';
 
 export const WEAR = {
   open: 'Wear',
@@ -17,6 +18,16 @@ export const WEAR = {
   path: 'In the Wardrobe (Lantern Web)',
   bond: (lv, hero, cur) => `Bond ${lv} with ${hero} · ${Math.min(cur, lv)}/${lv}`,
   saved: 'Your lantern will wear this tonight.',
+  // WARDROBE v2 ring shelf
+  costume: 'Costume', costumeSub: 'from the five rings',
+  everyday: 'Everyday look',
+  wearOn: (hero) => `Wear on ${hero}`, takeOff: 'Take off', notYet: 'Not yet yours', previewOnly: 'Preview only',
+  kicker: (ring) => `${ring} ring keepsake`, dawnKicker: 'The five rings, together',
+  lock: (ring, n, t) => `Finish the ${ring}: ${n} of ${t} lanterns`, dawnLock: (n, t) => `Close all five rings: ${n} of ${t}`,
+  earned: (ring) => `Earned: the ${ring} ring is closed.`, dawnEarned: 'Earned: all five rings are lit.',
+  peeking: (name) => `Peeking at ${name} (not yours yet)`, tryOn: (name) => `Try on: ${name}`,
+  closedToast: (rings, dawn) => `${rings.join(' and ')} ring closed${dawn ? '. All five are lit: Dawnbearer is ready.' : ': a new costume is ready.'}`,
+  wearIt: 'Wear it',
 };
 
 const group = (n) => String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -47,7 +58,7 @@ function treeLine(def, save, data, nid) {
  * -> { hero: {id, name}, tabs: [{id, label}], items: { flame: [...], trail: [...], look: [...] }, sel: {flame, trail, look} }
  * item = { id, name, color, core?, style?, owned, worn, line, frac }. sel = what is chosen in the drawer (defaults to what is worn).
  */
-export function wearView(save, data, def, heroId, sel = null) {
+export function wearView(save, data, def, heroId, sel = null, info = null) {
   const C = data.cosmetics;
   const owned = cosmOwned(save, data, def);
   const worn = cleanCosm(save && save.cosm, data).worn;
@@ -78,16 +89,50 @@ export function wearView(save, data, def, heroId, sel = null) {
   });
   // a choice must be owned; anything else falls back to what is worn
   const okSel = (list, id, w) => (list.some((x) => x.id === id && x.owned) ? id : w);
+  // WARDROBE v2 ring shelf: one costume per ring (+ Dawnbearer) for this hero; progress arcs = the tree's own ring progress (same definition)
+  const costumes = costumeShelf(save, data, def, heroId, heroName, owned, worn, info, sel);
   return {
     hero: { id: heroId, name: heroName },
+    costume: costumes,
     tabs: [{ id: 'flame', label: WEAR.tabs.flame }, { id: 'trail', label: WEAR.tabs.trail }, ...(look.length ? [{ id: 'look', label: WEAR.tabs.look(heroName) }] : [])],
     items: { flame, trail, look },
-    sel: { flame: okSel(flame, S.flame, wornF), trail: okSel(trail, S.trail, wornT), look: okSel(look, S.look, wornL) },
+    sel: { flame: okSel(flame, S.flame, wornF), trail: okSel(trail, S.trail, wornT), look: okSel(look, S.look, wornL), costume: costumes.sel },
   };
+}
+
+function costumeShelf(save, data, def, heroId, heroName, owned, worn, info, sel) {
+  const C = data.cosmetics;
+  const list = C.costumes && Object.hasOwn(C.costumes, heroId) ? C.costumes[heroId] : [];
+  const have = owned.costumes[heroId] || new Set();
+  let states = [];
+  try { states = info ? ringStates(save, def, info) : []; } catch { states = []; }
+  const ringsAll = states.map((s) => s.id);
+  const ringDone = (rid) => { const x = list.find((c) => c.ring === rid); return !!x && have.has(x.id); };
+  const doneN = ringsAll.filter(ringDone).length;
+  const wornC = Object.hasOwn(worn.costume, heroId) && have.has(worn.costume[heroId]) ? worn.costume[heroId] : null;
+  let selC = wornC;
+  if (sel && Object.hasOwn(sel, 'costume')) selC = sel.costume === null ? null : (typeof sel.costume === 'string' && have.has(sel.costume) ? sel.costume : wornC);
+  const items = list.map((c) => {
+    const ring = (C.rings || []).find((r) => r.id === c.ring) || { name: c.ring, line: '', rune: '' };
+    const dawn = c.ring === 'dawn';
+    const st = states.find((s) => s.id === c.ring) || null;
+    const got = have.has(c.id);
+    const frac = got ? 1 : dawn ? (ringsAll.length ? doneN / ringsAll.length : 0) : (st ? st.frac : 0);
+    const counts = dawn ? { n: doneN, t: ringsAll.length || 5 } : { n: st ? st.owned : 0, t: st ? st.total : 0 };
+    return {
+      id: c.id, name: c.name, ring: c.ring, ringName: clip(ring.name, 24), rune: ring.rune, dawn,
+      kicker: dawn ? WEAR.dawnKicker : WEAR.kicker(clip(ring.name, 24)), line: clip(ring.line, 120),
+      owned: got, worn: c.id === wornC, frac: Math.max(0, Math.min(1, frac)), n: counts.n, t: counts.t,
+      need: got ? (dawn ? WEAR.dawnEarned : WEAR.earned(clip(ring.name, 24))) : (dawn ? WEAR.dawnLock(counts.n, counts.t) : WEAR.lock(clip(ring.name, 24), counts.n, counts.t)),
+      pal: { base: c.base, second: c.second, mantle: c.mantle, accent: c.accent, trim: c.trim, glow: c.glow },
+      motifs: [...c.motifs], rise: c.rise === 1 ? 1 : 0,
+    };
+  });
+  return { items, sel: selC, worn: wornC, hero: heroName };
 }
 
 /** The 'Wearing ...' line under the preview. */
 export function wearingLine(v) {
   const nm = (list, id) => { const x = list.find((i) => i.id === id); return x ? x.name : ''; };
-  return [nm(v.items.flame, v.sel.flame), nm(v.items.trail, v.sel.trail), nm(v.items.look, v.sel.look)].filter(Boolean).join(' · ');
+  return [v.costume ? nm(v.costume.items, v.costume.sel) : '', nm(v.items.flame, v.sel.flame), nm(v.items.trail, v.sel.trail), nm(v.items.look, v.sel.look)].filter(Boolean).join(' · ');
 }

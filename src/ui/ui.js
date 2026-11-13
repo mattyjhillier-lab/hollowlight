@@ -176,6 +176,11 @@ export class UI {
     else if (dest === 'character') this.showCharacters();
     else if (dest === 'tree' && h.openTree) h.openTree();
     else if (dest === 'play') { this.showStart(this.onPick); this.loadoutFromTree = true; this.beginLoadout(); }
+    else if (dest === 'wear' && h.wearView) { // WARDROBE v2: the ring-closed toast's 'Wear it' link: straight to the Wear drawer of the last hero
+      const ids = Object.keys(this.data.characters), lo = h.lastLoadout && h.lastLoadout();
+      const hid = [this.lastHero, lo && lo.hero].find((x) => typeof x === 'string' && Object.hasOwn(this.data.characters, x)) || ids[0];
+      this.showStart(this.onPick); this.loadoutFromTree = true; this.lastHero = hid; this.showWear(hid);
+    }
     else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
     else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }
     else if (dest === 'settings') { this.showStart(this.onPick); this.showSettings(); }

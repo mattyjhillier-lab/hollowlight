@@ -122,6 +122,9 @@
 .ts-scrim.open { display: block; }
 .ts-toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 10; background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 14px; padding: 10px 16px; font: 18px var(--font-display); color: var(--ts-wick); display: none; text-align: center; max-width: 90%; pointer-events: none; }
 .ts-toast.open { display: block; }
+.ts-toast.has-act { pointer-events: auto; }
+.ts-toast-go { margin-left: 12px; min-height: 36px; padding: 2px 16px; border-radius: 18px; border: 2px solid #8a5a1e; background: linear-gradient(180deg, #ffd27a, #e08a2a); color: #2a1608; font: 700 15px var(--font-body, sans-serif); cursor: pointer; }
+.ts-toast-go:focus-visible { outline: 3px solid rgba(255, 243, 220, .7); outline-offset: 2px; }
 .ts-notice { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 11; background: var(--ts-panel); border: 1px solid var(--ts-wick); border-radius: 14px; padding: 12px 16px; box-shadow: 0 0 30px #ffb35a44; display: none; width: min(520px, calc(100% - 24px)); }
 .ts-notice.open { display: block; }
 .ts-noticeh { font: 22px var(--font-display); color: var(--ts-wick); margin-bottom: 4px; }
