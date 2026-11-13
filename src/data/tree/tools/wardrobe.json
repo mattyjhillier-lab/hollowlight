@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "wardrobe",
  "prefix": "wd",
- "slot": "far3",
  "name": "The Wardrobe",
  "blurb": "Dress your lantern: flames and trails that change how your light looks, never how strong it is.",
  "nodes": [
@@ -198,6 +197,103 @@
    },
    "requires": [
     "wd_firefly"
+   ]
+  }
+ ],
+ "orbit": {
+  "tier": 2,
+  "angle": 185
+ },
+ "roads": [
+  {
+   "from": "li_hoard",
+   "to": "br_wardrobe",
+   "nodes": [
+    {
+     "id": "wd_way1",
+     "idx": 7,
+     "kind": "knot",
+     "name": "Low Spark",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "wd_way2",
+     "idx": 8,
+     "kind": "knot",
+     "name": "Kind Moss",
+     "desc": "Area +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "mod": "area",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "wd_way3",
+     "idx": 9,
+     "kind": "knot",
+     "name": "Hushed Pebble",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "wd_way4",
+     "idx": 10,
+     "kind": "bead",
+     "name": "Low Lantern Post",
+     "desc": "Evolutions are offered 10% more often",
+     "branch": "spirit",
+     "cost": {
+      "gold": 480
+     },
+     "effects": [
+      {
+       "perk": "evoLuck",
+       "pct": 10
+      }
+     ]
+    },
+    {
+     "id": "wd_way5",
+     "idx": 11,
+     "kind": "knot",
+     "name": "Slow Stile",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 180
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
    ]
   }
  ]

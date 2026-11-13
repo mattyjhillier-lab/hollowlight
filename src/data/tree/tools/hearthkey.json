@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "hearthkey",
  "prefix": "rs",
- "slot": "far2",
  "name": "The Hearth-key",
  "blurb": "How a run begins and how it is kept safe.",
  "nodes": [
@@ -146,6 +145,69 @@
      -40
     ]
    }
+  }
+ ],
+ "orbit": {
+  "tier": 1,
+  "angle": 88
+ },
+ "roads": [
+  {
+   "from": "li_coin",
+   "to": "br_hearthkey",
+   "nodes": [
+    {
+     "id": "rs_way1",
+     "idx": 4,
+     "kind": "knot",
+     "name": "Grey Ford",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "rs_way2",
+     "idx": 5,
+     "kind": "knot",
+     "name": "Small Ember",
+     "desc": "Area +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 110
+     },
+     "effects": [
+      {
+       "mod": "area",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "rs_way3",
+     "idx": 6,
+     "kind": "knot",
+     "name": "Faint Glow",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 130
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
+   ]
   }
  ]
 }

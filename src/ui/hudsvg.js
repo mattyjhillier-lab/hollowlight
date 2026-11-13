@@ -34,7 +34,7 @@ const P = (doc, d, attrs) => mk(doc, 'path', { d, ...attrs });
 const body = (doc, d, fill, ol, w = 6) => [P(doc, d, { fill: ol, stroke: ol, 'stroke-width': w, 'stroke-linejoin': 'round' }), P(doc, d, { fill })];
 const rim = (doc, d) => P(doc, d, { fill: 'none', stroke: '#fff', 'stroke-width': 1.4, 'stroke-opacity': 0.5, 'stroke-linejoin': 'round' });
 
-// Emblems in a -24..24 box. kind: wolf | raven | orb | bolt | chain | sanctuary | coin
+// Emblems in a -24..24 box. kind: wolf | raven | orb | flame | bolt | chain | sanctuary | coin
 export function emblem(doc, kind, size = 48) {
   const g = mk(doc, 'g', { transform: `scale(${(size / 48).toFixed(3)})` });
   const add = (...n) => n.flat().forEach((x) => x && g.appendChild(x));
@@ -62,6 +62,12 @@ export function emblem(doc, kind, size = 48) {
         P(doc, 'M0 -12 C-6 -4 -6 4 0 6 C6 4 6 -4 0 -12Z', { fill: '#ffc766', stroke: '#6a4a1a', 'stroke-width': 2.4, 'stroke-linejoin': 'round' }),
         P(doc, 'M0 -5 C-2 -2 -2 1 0 2 C2 1 2 -2 0 -5Z', { fill: '#fff' })]));
     }
+  } else if (kind === 'flame') { // Ember Breath: a fan of three candle-flames (tiny, small-tilted, big) breathed to the right, one warm ramp
+    for (const [x, y, s, rot] of [[-14, 9, 0.62, -28], [-9, -9, 0.7, 24], [3, 0, 1, 90]]) {
+      add(mk(doc, 'g', { transform: `translate(${x},${y}) rotate(${rot}) scale(${s})` }, [
+        P(doc, 'M0 -22 C-8 -10 -12 -2 -9 6 C-7 12 7 12 9 6 C12 -2 8 -10 0 -22Z', { fill: '#ef8a5a', stroke: '#8a3a12', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }),
+        P(doc, 'M0 -10 C-4 -4 -5 1 -3 5 C-1 8 1 8 3 5 C5 1 4 -4 0 -10Z', { fill: '#ffd98a' })]));
+    }
   } else if (kind === 'bolt') {
     const d = 'M6 -24 L-13 3 L-2 3 L-8 24 L15 -4 L3 -4Z';
     add(body(doc, d, '#7ff0ff', '#1f5f80', 7), P(doc, 'M4 -18 L-7 -2 L0 -2Z', { fill: '#eaffff', opacity: 0.85 }), rim(doc, d));
@@ -80,8 +86,8 @@ export function emblem(doc, kind, size = 48) {
   }
   return g;
 }
-export const EMBLEM_OF = { ghost_wolves: 'wolf', raven_flock: 'raven', holy_orbit: 'orb', spirit_bolts: 'bolt', chain_lightning: 'chain', rally_pack: 'wolf', pack_howl: 'wolf', pelt_dash: 'wolf', sanctuary: 'sanctuary', candle_wheel: 'sanctuary', sanctuary_ring: 'sanctuary' };
-export const ROLE_COL = { wolf: '#ffb457', raven: '#d894c0', orb: '#ffc766', bolt: '#7ff0ff', chain: '#e8f4ff', sanctuary: '#ffc766' };
+export const EMBLEM_OF = { ghost_wolves: 'wolf', raven_flock: 'raven', holy_orbit: 'orb', dragonfire_meteor: 'flame', spirit_bolts: 'bolt', chain_lightning: 'chain', rally_pack: 'wolf', pack_howl: 'wolf', pelt_dash: 'wolf', sanctuary: 'sanctuary', candle_wheel: 'sanctuary', sanctuary_ring: 'sanctuary' };
+export const ROLE_COL = { wolf: '#ffb457', raven: '#d894c0', orb: '#ffc766', flame: '#ffb35c', bolt: '#7ff0ff', chain: '#e8f4ff', sanctuary: '#ffc766' };
 
 // Lantern (brass cage). The flame group (returned as .flame / .core) is scaled + recoloured by the HUD each tick.
 export function lantern(doc) {

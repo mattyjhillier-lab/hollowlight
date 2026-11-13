@@ -19,10 +19,12 @@ import { touchEnabled } from './input/stick.js';
 import { parseParams } from './params.js';
 import { tierIndex, TIER_IDS, resolveTier } from './sim/tiers.js';
 import { hasNightChoice, defaultNight, mapView, rememberNight, pickRunTier } from './ui/nightcopy.js';
+import { keepsakeDef } from './meta/bond.js';
+import { snapshot, whatMoved, nearestOf } from './meta/moved.js';
 import { buildTreeView } from './meta/treeview.js';
 import { compileTree, aggregateMods, presetTree, buy as buyNode, respec as respecTree, closestUnlocks, nodeStatus } from './meta/tree.js';
 import { cardFor, hasIntro, withIntro, introsForOffer, CARDS, INTRO_IDS, cleanIntros } from './ui/introcopy.js';
-import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN } from './ui/whispers.js';
+import { Whispers, DUR as WHISPER_DUR, startBits, resultTeach, TIPS_AGAIN, tourDue, withBit } from './ui/whispers.js';
 import { almanac, adopt, markRead, markTold, withTitles } from './meta/codex.js';
 import { queue as celQueue, ledgerLine } from './meta/celebrate.js';
 import { TITLES } from './ui/codexcopy.js';
@@ -33,8 +35,10 @@ function charsLine(s, d) { try { const v = charsView(s, d, treeDef).find((x) => 
 const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
 import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
-import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
+import { coverHeroId } from './gfx/titlelogic.js'; // title cover (render only)
+import { validateCosmTree, resolveCosm, cleanCosm, compactCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
+import { syncEarned } from './meta/costumes.js';
 import { DARK } from './ui/darkui.js';
 import { SITE_EVENTS, SITE_TOAST } from './ui/sitecopy.js'; // map events v1
 import { createPad } from './ui/padmap.js';
@@ -148,19 +152,32 @@ export const app = {
   // EXTRAS v1 Wear drawer: only owned, known ids are kept (wearView re-checks ownership; cleanCosm drops unknown ids); one save write.
   setWear(heroId, sel) {
     if (!(typeof heroId === 'string' && Object.hasOwn(data.characters, heroId)) || !sel || typeof sel !== 'object') return false;
-    const v = wearView(this.save.data, data, treeDef, heroId, { flame: sel.flame, trail: sel.trail, look: sel.look });
+    this.syncCostumes();
+    const v = wearView(this.save.data, data, treeDef, heroId, { flame: sel.flame, trail: sel.trail, look: sel.look, costume: sel.costume }, treeInfo);
     const s = this.save.data;
-    const cur = cleanCosm(s.cosm, data).worn;
-    s.cosm = cleanCosm({ worn: { flame: v.sel.flame, trail: v.sel.trail, look: { ...cur.look, ...(v.sel.look ? { [heroId]: v.sel.look } : {}) } } }, data);
+    const cur = cleanCosm(s.cosm, data);
+    const costume = { ...cur.worn.costume }; // WARDROBE v2: one costume per hero (null = the everyday look); earned is kept as is
+    if (v.sel.costume) costume[heroId] = v.sel.costume; else delete costume[heroId];
+    s.cosm = compactCosm(cleanCosm({ worn: { flame: v.sel.flame, trail: v.sel.trail, look: { ...cur.worn.look, ...(v.sel.look ? { [heroId]: v.sel.look } : {}) }, costume }, earned: cur.earned }, data));
     if (!this.save.readOnly && !this.isDebugRun()) this.save.saveNow();
     return true;
+  },
+
+  // WARDROBE v2: a closed ring appends its costumes to cosm.earned (append-only; the tree growing later never takes one back). One save write when something was added.
+  syncCostumes() {
+    if (this.save.readOnly || this.isDebugRun()) return { added: [], rings: [], dawn: false };
+    let r = { added: [], rings: [], dawn: false };
+    try { r = syncEarned(this.save.data, data, treeDef, treeInfo); } catch { /* a bad save never blocks play */ }
+    if (r.added.length) this.save.saveNow();
+    return r;
   },
 
   // EXTRAS v1: what this run wears (render only). Defaults -> null (the scene keeps its old paths); a bad save can only fall back to defaults.
   applyCosm(sim) {
     let v = null;
+    this.syncCostumes();
     try { v = resolveCosm(this.save.data, data, treeDef, sim.characterId); } catch { v = null; }
-    const plain = !v || (v.flame.isDefault && v.trail.isDefault && (!v.look || v.look.isDefault));
+    const plain = !v || (v.flame.isDefault && v.trail.isDefault && (!v.look || v.look.isDefault) && !v.costume);
     if (this.scene && this.scene.setCosm) this.scene.setCosm(plain ? null : v);
     if (this.ui.hudView && this.ui.hudView.setFlame) this.ui.hudView.setFlame(v && !v.flame.isDefault ? v.flame.css : null, v && !v.flame.isDefault ? v.flame.cssCore : null);
   },
@@ -350,7 +367,7 @@ export const app = {
   spiritChoices(heroId) {
     const s = this.save.data;
     const open = startableWeapons(data, treeDef, s.tree);
-    return Object.keys(data.weapons).map((id) => {
+    return Object.keys(data.weapons).filter((id) => !data.weapons[id].unreleased).map((id) => {
       const heart = treeDef.hearts && treeDef.hearts[id];
       let note = '';
       if (!open.includes(id) && heart) { try { const st = nodeStatus(treeDef, s, heart, data); const L = st && st.cond && st.cond.lines && st.cond.lines[0]; note = L ? `Wake it in the Lantern Web · ${String(L.text).slice(0, 48)} ${L.cur}/${L.goal}` : 'Wake it in the Lantern Web'; } catch { note = ''; } }
@@ -381,6 +398,10 @@ export const app = {
       buy: (id) => {
         const r = buyNode(this.save.data, id, treeDef, data);
         if (r.ok) this.save.saveNow();
+        if (r.ok) { // WARDROBE v2: a ring that just closed gives each hero its Keepsake; the tree screen shows the one-time toast from this
+          const e = this.syncCostumes();
+          if (e.rings.length || e.dawn) { const nm = (rid) => { const x = (data.cosmetics.rings || []).find((q) => q.id === rid); return x ? x.name : rid; }; return { ...r, ringsClosed: [...e.rings.map(nm), ...(e.dawn ? [nm('dawn')] : [])] }; }
+        }
         return r;
       },
       respec: () => {
@@ -392,18 +413,51 @@ export const app = {
       clearRegrowth: () => {
         if (this.save.data.notes && this.save.data.notes.regrowth) { delete this.save.data.notes.regrowth; this.save.saveNow(); }
       },
+      // tree home hero panel: the last-played hero and every hero (awake or asleep); setHero stores the new last hero (awake heroes only, same loadout rule as the loadout screens)
+      heroes: () => {
+        const s = this.save.data; const need = keepsakeDef(data.balance).need;
+        const list = Object.keys(data.characters).map((id) => { const awake = isAwake(s, id); return { id, name: String(data.characters[id].name || id).split(',')[0].slice(0, 24), awake, keep: awake ? 0 : Math.max(0, Math.floor(Number(s.chars && s.chars[id] && s.chars[id].keep) || 0)), need, bond: awake ? bondLevel(s, data, id) : 0 }; });
+        const lo = this.lastLoadout();
+        const cur = list.find((h) => h.id === lo.hero && h.awake) || list.find((h) => h.awake) || list[0];
+        return { hero: cur ? cur.id : '', list };
+      },
+      setHero: (id) => {
+        const s = this.save.data;
+        if (typeof id !== 'string' || !Object.hasOwn(data.characters, id) || !isAwake(s, id) || this.save.readOnly) return false;
+        const n = s.notes || (s.notes = {}); const w = (n.loadout && n.loadout.weapon) || (n.starter && n.starter.weapon);
+        if (!w || !Object.hasOwn(data.weapons, w)) return false;
+        n.loadout = { hero: id, weapon: w };
+        this.save.saveNow();
+        return true;
+      },
+      // first-visit tour (whispers.js tourDue/TOUR): due for a lantern with no finished run; the seen bit is the append-only hint bit 'tour'
+      tourDue: () => this.canKeepHints() && tourDue(this.save.data.hints, this.save.data.stats.runs, this.save.data.settings.tips),
+      tourSeen: () => { if (this.canKeepHints()) this.save.setHints(withBit(this.save.data.hints, 'tour')); },
+      clearResetNotice: () => {
+        if (this.save.data.notes && this.save.data.notes.treeResetNotice) { delete this.save.data.notes.treeResetNotice; this.save.saveNow(); }
+      },
       onClose: () => this.showMenu(),
     };
   },
 
   // focusId: a lantern to select on open (FD4 'Open in tree' on a ready Night Gate); back: where Back returns (the map screen), else the title.
-  openTree(focusId = null, back = null) {
+  /** Pause: the 3 closest unlocks of the saved lantern (read-only; nothing from the running night is banked yet). */
+  pauseNear() {
+    if (this.isDebugRun()) return null;
+    try { return { chips: [], tiles: [], bars: [], nearest: nearestOf(this.save.data, treeDef, data) }; } catch { return null; }
+  },
+
+  // opts.pulse: lantern ids (what moved) the tree flies to and pulses on open (Continue from results)
+  openTree(focusId = null, back = null, opts = null) {
     this.sim = null;
     this.introClear();
     this.ui.hideAll();
+    // Q5a: a new profile picks its starter (1 hero + 1 of the offered spirits, nothing preselected) before the home screen; the pick comes back here
+    if (this.needsStarter() && this.ui.showStarterHero) { this.ui.starterAfter = () => this.openTree(focusId, back, opts); this.ui.showStarterHero(); return; }
     const api = this.treeApi();
     if (typeof focusId === 'string' && Object.hasOwn(treeDef.nodes, focusId)) api.focusId = focusId;
     if (typeof back === 'function') api.onClose = back;
+    if (opts && Array.isArray(opts.pulse)) api.pulseIds = opts.pulse.filter((id) => typeof id === 'string' && Object.hasOwn(treeDef.nodes, id)).slice(0, 12);
     this.ui.tree.open(api);
   },
 
@@ -461,7 +515,8 @@ export const app = {
     const s = this.save.data;
     const tiers = this.openTiers(s);
     const entry = L.list().find((x) => x.id === L.active) || { id: 'l1', name: 'Lantern 1' };
-    const heroId = typeof lastHero === 'string' && Object.hasOwn(data.characters, lastHero) ? lastHero : mostPlayedHero(s.stats, data);
+    const loHero = ((s.notes && (s.notes.loadout || s.notes.starter)) || {}).hero; // same source as the title cover, so Continue and the picture name the same hero
+    const heroId = typeof lastHero === 'string' && Object.hasOwn(data.characters, lastHero) ? lastHero : (typeof loHero === 'string' && Object.hasOwn(data.characters, loHero) && isAwake(s, loHero) ? loHero : mostPlayedHero(s.stats, data));
     const heroName = heroId ? splitName(data.characters[heroId].name).name : '';
     const canNew = this.hasProgress() && !L.locked && !L.legacyMode;
     return {
@@ -474,6 +529,25 @@ export const app = {
       treeDot: treeAffordable(treeDef, s, data),
       treeLine: treeWhisperShort(s.gold, s.shards) || (this.hasProgress() ? LANTERN.treeNothing : LANTERN.treeFirst),
       newGame: canNew ? { free: MAX_LANTERNS - L.list().length } : null,
+    };
+  },
+
+  // TITLE COVER: what the picture behind the title shows. The hero is the last-played one, checked against the known + awake heroes (a hostile or stale loadout reads as Wren);
+  // the flame is the one worn (resolveCosm already drops anything not owned). Render-only getters: Calm, Battery saver and Low quality are read live, never stored by the cover.
+  titleCover() {
+    const s = this.save.data, lo = (s.notes && (s.notes.loadout || s.notes.starter)) || {};
+    const hero = coverHeroId(lo && lo.hero, data.characters, (id) => isAwake(s, id));
+    let flame = null;
+    try { const v = resolveCosm(s, data, treeDef, hero); flame = v && v.flame ? { glow: v.flame.css, core: v.flame.cssCore } : null; } catch { flame = null; }
+    const phone = this.isPhone();
+    const st = () => this.save.data.settings || {};
+    const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    return {
+      hero, flame,
+      isCalm: () => !!st().reducedMotion || !!(mq && mq.matches),
+      isSaver: () => phone && !!st().batterySaver,
+      isLow: () => st().quality === 'low',
+      isBaking: () => { const pb = this.scene && this.scene.prebake; return !!(pb && pb.mode && !pb.done); }, // the run assets bake quietly under the title: the cover draws at most 30 fps meanwhile
     };
   },
 
@@ -827,9 +901,11 @@ export const app = {
     if (this.banked || this.isDebugRun()) return null;
     this.banked = true;
     this.adoptCodex(); // CX1: an old save's progress counts as told BEFORE this run is banked
+    const beforeRun = snapshot(this.save.data); // Q5b: the lantern as it was before this run is banked
     const b = this.save.bankRun({ ...sim.result(), ...(this.siteWoke && this.siteWoke.sim === sim ? { siteWoke: { lamp: this.siteWoke.lamp, road: this.siteWoke.road, knot: this.siteWoke.knot } } : {}) }, { def: treeDef, data, unlockedTiers: this.openTiers(this.save.data) });
     b.newly = newlyLines(treeDef, b.newlyMet, data);
     b.closest = closestUnlocks(treeDef, this.save.data, data, 3);
+    try { b.moved = whatMoved(beforeRun, snapshot(this.save.data), this.save.data, sim.result(), treeDef, data); } catch { b.moved = null; } // Q5b 'what moved' (plain data; the Next-lights component draws it)
     b.night = this.nightResult(b.tier, sim.result());
     { const s = this.save.data; let ch = null; try { ch = sim.state === 'victory' ? null : this.cheapestLantern(); } catch { ch = null; } b.teach = resultTeach({ won: sim.state === 'victory', stats: s.stats, treeOwned: Object.keys(s.tree || {}).length > 0, cheapest: ch, gold: s.gold }); }
     b.cel = this.runCelebrations(sim.state === 'victory');
@@ -922,7 +998,8 @@ export const app = {
       replaceLantern: (id, name) => this.replaceLantern(id, name),
       getBank: () => ({ gold: this.save.data.gold, shards: this.save.data.shards }),
       openSettings: () => this.ui.showSettings(),
-      openTree: (focusId, back) => this.openTree(focusId, back),
+      openTree: (focusId, back, opts) => this.openTree(focusId, back, opts),
+      pauseNear: () => this.pauseNear(),
       nightChoice: () => this.nightChoice(),
       nightView: (heroId, tier) => this.nightView(heroId, tier),
       heroUnlocked: (id) => this.heroUnlocked(id),
@@ -933,7 +1010,7 @@ export const app = {
       lastLoadout: (h) => this.lastLoadout(h),
       bondLevel: (h) => bondLevel(this.save.data, data, h),
       charsView: () => charsView(this.save.data, data, treeDef),
-      wearView: (h, sel) => wearView(this.save.data, data, treeDef, h, sel), // EXTRAS v1 Wear drawer
+      wearView: (h, sel) => { this.syncCostumes(); return wearView(this.save.data, data, treeDef, h, sel, treeInfo); }, // EXTRAS v1 Wear drawer (+ WARDROBE v2 ring shelf)
       setWear: (h, sel) => this.setWear(h, sel),
       closeSettings: () => { if (!this.sim) this.showMenu(); },
       resetTips: () => this.resetTips(),
@@ -944,6 +1021,7 @@ export const app = {
       almanacRead: (keys) => this.almanacRead(keys),
       pickTitle: (id) => this.pickTitle(id),
       titleCelebrations: () => this.titleCelebrations(),
+      titleCover: () => this.titleCover(),
       closeAlmanac: () => { if (!this.sim && !this.ui.tree.isOpen) { this.ui.showStart(this.ui.onPick); const t = this.ui.screen && this.ui.screen.title; if (t && t.almanac) t.almanac.focus({ preventScroll: true }); } },
     };
   },

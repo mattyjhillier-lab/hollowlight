@@ -20,7 +20,8 @@ test('DT1 both tier gates are live, permanent, hub challenges with their locked 
   assert.deepEqual([def.nodes[EXPERT].cost.gold, def.nodes[EXPERT].cost.shards, def.nodes[EXPERT].cost.glass], [2500, 4, 10]);
   assert.deepEqual(def.nodes[HARD].unlock, { t: 'clearChapter', id: CID });
   assert.deepEqual(def.nodes[EXPERT].unlock, { t: 'clearTier', chapter: CID, tier: 'hard' });
-  assert.deepEqual(def.nodes[EXPERT].requires, [HARD]);
+  assert.ok(def.nodes[EXPERT].gateAnc.includes(HARD), 'S1: the Long Night road starts at Deep Dusk');
+  assert.ok(/^df_long\d+$/.test(def.nodes[EXPERT].requires[0]) && /^df_way\d+$/.test(def.nodes[HARD].requires[0]), 'S1: each night gate is the end of its road');
   assert.equal(newlyLine(def, HARD, data), 'NEW: Deep Dusk: Cursed Forest is ready to unlock in the Skill Tree (1200 gold + 2 shards).');
   assert.equal(newlyLine(def, EXPERT, data), 'NEW: Long Night: Cursed Forest is ready to unlock in the Skill Tree (2500 gold + 4 shards + 10 Dawnglass).');
   for (const id of ['df_ward', 'df_vigil', 'df_star']) assert.equal(def.nodes[id], undefined, `${id} still pending (no sim / cosmetic hook)`);
@@ -28,6 +29,7 @@ test('DT1 both tier gates are live, permanent, hub challenges with their locked 
 
 test('DT1 end to end: Twilight clear -> buy Deep Dusk -> the night choice appears -> Deep Dusk clear + glass -> buy Long Night; gates survive respec', () => {
   const s = defaultSave();
+  for (const id of def.list) if (/^df_(way|long)\d+$/.test(id)) s.tree[id] = 1; // S1: both night roads already walked (gold only)
   assert.equal(nodeStatus(def, s, HARD, data).state, 'condition', 'needs one Twilight clear');
   assert.equal(hasNightChoice(s, data, def, open(s)), false, 'no choice yet: hero select starts Twilight');
   s.stats.chapters[CID] = { runs: 1, clears: 1, bestTime: 900 };

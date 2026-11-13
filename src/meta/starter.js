@@ -9,6 +9,9 @@ export function starterNodes(info, weaponId) {
   if (!c) return [];
   const out = [];
   if (typeof c.heart === 'string') out.push(c.heart);
+  // S1 garden: the first branch's seal (socket a): its evolution gate, or the zero-power landmark seal of a starter evolution
+  const b = Array.isArray(c.branchInfo) ? c.branchInfo.find((x) => x.socket === 'a') || c.branchInfo[0] : null;
+  if (b && typeof b.seal === 'string') { out.push(b.seal); return out; }
   const a = c.sockets && c.sockets.a;
   if (a && typeof a.gate === 'string') out.push(a.gate);
   return out;
@@ -46,5 +49,5 @@ export function starterPool(data) {
     const ok = all.filter((id) => list.includes(id));
     return ok.length ? ok : all;
   };
-  return { heroes: pick(S && S.heroes, Object.keys(data.characters)), weapons: pick(S && S.weapons, Object.keys(data.weapons)) };
+  return { heroes: pick(S && S.heroes, Object.keys(data.characters)), weapons: pick(S && S.weapons, Object.keys(data.weapons).filter((id) => !data.weapons[id].unreleased)) };
 }

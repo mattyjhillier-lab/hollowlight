@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "satchel",
  "prefix": "co",
- "slot": "far4",
  "name": "The Satchel",
  "blurb": "Gems, pickups and fortune: small, cheap steps that make every run feel kinder.",
  "nodes": [
@@ -93,6 +92,208 @@
      -63.6
     ]
    }
+  },
+  {
+   "id": "co_far",
+   "idx": 6,
+   "kind": "ring",
+   "name": "Far Sight",
+   "desc": "Lamps you have not reached yet glow as small embers at the edge of the screen, showing what they hold. Information only: no power.",
+   "flavour": "The dark is easier to read once you have lit enough of it.",
+   "cost": {
+    "gold": 1800
+   },
+   "effects": [
+    {
+     "info": "lamps"
+    }
+   ],
+   "branch": "light",
+   "unlock": {
+    "t": "lamps",
+    "n": 120
+   },
+   "chase": true
   }
- ]
+ ],
+ "orbit": {
+  "tier": 1,
+  "angle": 40
+ },
+ "roads": [
+  {
+   "from": "li_regen",
+   "to": "br_satchel",
+   "nodes": [
+    {
+     "id": "co_way1",
+     "idx": 3,
+     "kind": "knot",
+     "name": "Dim Moth",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_way2",
+     "idx": 4,
+     "kind": "knot",
+     "name": "Warm Thread",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 110
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "co_way3",
+     "idx": 5,
+     "kind": "knot",
+     "name": "Still Gate",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 130
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "from": "co_pull",
+   "to": "co_far",
+   "nodes": [
+    {
+     "id": "co_seek1",
+     "idx": 7,
+     "kind": "knot",
+     "name": "Low Glimmer",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 250
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_seek2",
+     "idx": 8,
+     "kind": "knot",
+     "name": "Lamp Soot",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 300
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_seek3",
+     "idx": 9,
+     "kind": "knot",
+     "name": "Wick Trimmer",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 360
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_seek4",
+     "idx": 10,
+     "kind": "knot",
+     "name": "Oil Flask",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 420
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_seek5",
+     "idx": 11,
+     "kind": "knot",
+     "name": "Night Glass",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 500
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "co_seek6",
+     "idx": 12,
+     "kind": "knot",
+     "name": "Far Wick",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 600
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "anchors": {
+  "co_far": {
+   "name": "Far Sight",
+   "orbit": {
+    "tier": 3,
+    "angle": 52
+   }
+  }
+ }
 }

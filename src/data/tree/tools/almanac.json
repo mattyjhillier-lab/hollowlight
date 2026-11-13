@@ -2,7 +2,6 @@
  "kind": "tool",
  "tool": "almanac",
  "prefix": "bs",
- "slot": "far6",
  "name": "The Almanac",
  "blurb": "What you have learned of the Hollow: Habits, Weakness and Tells for every foe you have faced.",
  "nodes": [
@@ -426,6 +425,69 @@
     "bs_crow1",
     "bs_crawl1",
     "bs_treant1"
+   ]
+  }
+ ],
+ "orbit": {
+  "tier": 1,
+  "angle": 268
+ },
+ "roads": [
+  {
+   "from": "sp_reroll2",
+   "to": "br_almanac",
+   "nodes": [
+    {
+     "id": "bs_way1",
+     "idx": 13,
+     "kind": "knot",
+     "name": "Hushed Bend",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "bs_way2",
+     "idx": 14,
+     "kind": "knot",
+     "name": "Soft Wick",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 110
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "bs_way3",
+     "idx": 15,
+     "kind": "knot",
+     "name": "Slow Crumb",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    }
    ]
   }
  ]

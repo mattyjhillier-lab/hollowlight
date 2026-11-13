@@ -17,6 +17,7 @@ export const CUES = {
   glyph_bolt: { cap: 3, gap: 0.08, pri: 2 },
   storm_thread: { cap: 2, gap: 0.1, pri: 1 },
   candle_flare: { cap: 3, gap: 0.08, pri: 2 },
+  ember_lick: { cap: 2, gap: 0.14, pri: 2 }, // Dragonfire Meteor: its foes catching (burst + pool ticks)
   gem: { cap: 3, gap: 0.03, pri: 1 },
   heart: { cap: 1, gap: 0.2, pri: 1 },
   magnet: { cap: 1, gap: 0.3, pri: 1 },
@@ -26,7 +27,7 @@ export const CUES = {
   ...MORE_CUES,
 };
 // weapon id (the sim hit log's src tag) -> its verb cue
-export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare' };
+export const HIT_CUE = { ghost_wolves: 'wolf_bite', raven_flock: 'raven_peck', spirit_bolts: 'glyph_bolt', chain_lightning: 'storm_thread', holy_orbit: 'candle_flare', dragonfire_meteor: 'ember_lick' };
 
 export class AudioEngine {
   constructor(win) {
@@ -231,6 +232,11 @@ export class AudioEngine {
         for (let i = 0; i < 3; i++) this.noise(t + 0.05 + i * rnd(0.03, 0.07), 'highpass', 5000, 1, 0.002, 0.006, 0.14 * v);
         this.tone(t, 'sine', 233, 0.02, 0.25, 0.05 * v);
         return 0.35;
+      case 'ember_lick': // two tiny dry ember ticks and a breath of warm air
+        this.noise(t, 'highpass', 4200, 1, 0.002, 0.012, 0.09 * v);
+        this.noise(t + rnd(0.02, 0.05), 'highpass', 5200, 1, 0.002, 0.008, 0.06 * v);
+        this.noise(t, 'lowpass', 700, 1, 0.015, 0.1, 0.07 * v, 1100);
+        return 0.15;
       case 'gem': { const n = this.gemNote(t); this.tone(t, 'sine', hz(n), 0.005, 0.18, 0.12 * v, 0, true); this.tone(t, 'sine', hz(n) * 2.76, 0.005, 0.08, 0.03 * v); return 0.2; }
       case 'heart': for (let i = 0; i < 3; i++) this.tone(t + i * 0.07, 'triangle', hz([0, 7, 12][i] + 12), 0.005, 0.4, 0.12 * v, 0, true); return 0.6;
       case 'magnet': // a rising sweep (the gem climb follows as the gems arrive)

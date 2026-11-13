@@ -138,6 +138,7 @@ export const RIDDLE = Object.freeze({
   vesper_tide: { line: 'The ring swells outward and draws back, like evening breath.' },
   sanctum_halo: { line: 'The candles walk, and the ground they cross burns holy.' },
   judgement_wheel: { line: 'The lights burst and re-form, each one a verdict.' },
+  wildfire: { line: 'Where the fire is fed, it finds the next hearth.' },
 });
 
 // CX6 titles (fixed list; the save keeps only these ids). weapon: Almanac weapon page complete (3 / 3); tab / book completion.

@@ -31,6 +31,26 @@ export function arrowTargets(sites, p, view, out = []) {
   if (best && off(best.x, best.y) && out.length < 2) out.push(best);
   return out;
 }
+// FAR SIGHT (tree, Satchel; LOCKED 'LAMP-LIGHTER LANDMARK = FAR SIGHT'): information only. Awake, unlit lamps within FAR_SIGHT.r of the hero
+// that are OFF the view rect and not already shown by an edge arrow get a small ember with their reward glyph on the view edge; nearest first,
+// at most FAR_SIGHT.cap. Pure (no Phaser, no RNG, never writes the sim): sites OFF or the node not owned = nothing drawn.
+export const FAR_SIGHT = Object.freeze({ r: 900, cap: 4 });
+export function farSightTargets(sites, p, view, skip, out = [], R = FAR_SIGHT.r, cap = FAR_SIGHT.cap) {
+  out.length = 0;
+  if (!sites || !Array.isArray(sites.list) || !p || !view) return out;
+  const r = Number.isFinite(R) ? Math.max(0, Math.min(4000, R)) : 0, n = Number.isInteger(cap) ? Math.max(0, Math.min(8, cap)) : 0;
+  for (const s of sites.list) {
+    if (!s || s.kind !== 'lamp' || s.state !== 'awake' || !LAMP_GLYPHS.includes(s.reward) || !Number.isFinite(s.x) || !Number.isFinite(s.y)) continue;
+    if (skip && skip.some((a) => a.s === s)) continue;
+    if (!(s.x < view.x0 || s.x > view.x1 || s.y < view.y0 || s.y > view.y1)) continue; // on screen: its own badge already shows the reward
+    const d = Math.hypot(s.x - p.x, s.y - p.y);
+    if (d <= r) out.push({ s, x: s.x, y: s.y, d });
+  }
+  out.sort((a, b) => a.d - b.d || a.s.id - b.s.id);
+  if (out.length > n) out.length = n;
+  return out;
+}
+const LAMP_GLYPHS = ['xp', 'gold', 'heart'];
 // a road aims at its nearest unlit lantern; anything else at itself
 function aimOf(s, p) {
   if (s.kind !== 'road') return s;
@@ -120,6 +140,7 @@ export class SiteView {
       else if (vis(s.x, s.y)) this.drawKnot(s, sim, pulse, lm, calm);
     }
     this.drawArrows(sim, view);
+    if (sim.tfx && sim.tfx.farSight) this.drawEmbers(sim, view, calm);
     if (!this.labelOn && this.label && this.label.visible) this.label.setVisible(false);
   }
 
@@ -272,6 +293,23 @@ export class SiteView {
       const kind = a.s.kind === 'lamp' ? a.s.reward : a.s.kind === 'road' ? 'road' : 'knot';
       this.icon(ag, kind, qx - ux * 6, qy - uy * 6, 1.05);
       for (let i = 0; i < pips; i++) ag.fillStyle(CREAM, 0.85 * bright).fillCircle(qx - ux * 18 + nx * (i - (pips - 1) / 2) * 4, qy - uy * 18 + ny * (i - (pips - 1) / 2) * 4, 1.2);
+    }
+  }
+
+  // Far Sight embers: a small amber ember with the lamp's reward glyph, pinned a little further in than the arrows (no chevron, no pips, so
+  // they never read as a second set of arrows). Calm: static, no flicker.
+  drawEmbers(sim, view, calm) {
+    if (!this.embers) this.embers = [];
+    const p = sim.player, ag = this.ag, list = farSightTargets(sim.sites, p, view, this.arrows, this.embers);
+    const fl = calm ? 0.85 : 0.75 + 0.15 * Math.sin(this.time * 2.2);
+    for (const a of list) {
+      const e = edgePoint(p, a, view, 30);
+      const x = e.x, y = e.y;
+      ag.fillStyle(INK, 0.55).fillCircle(x, y, 7.5);
+      ag.fillStyle(LANTERN, 0.35 * fl).fillCircle(x, y, 7.5);
+      ag.lineStyle(1, BRASS, 0.7 * fl).strokeCircle(x, y, 7.5);
+      ag.fillStyle(CORE, 0.9 * fl).fillCircle(x + e.ux * 6.5, y + e.uy * 6.5, 1.6); // the ember spark leans toward the lamp
+      this.icon(ag, a.s.reward, x, y, 0.85);
     }
   }
 }

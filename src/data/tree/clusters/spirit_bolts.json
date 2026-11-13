@@ -3,7 +3,6 @@
  "weapon": "spirit_bolts",
  "prefix": "bo",
  "emblem": "bolt",
- "slot": "sky3",
  "chapter": "cursed_forest",
  "region": "launch",
  "hero": null,
@@ -77,7 +76,8 @@
      }
     ]
    },
-   "hidden": true
+   "hidden": true,
+   "chase": true
   },
   {
    "id": "gt_soul_lance",
@@ -146,32 +146,337 @@
    "hidden": true
   }
  ],
- "outline": [
+ "branches": [
+  {
+   "socket": "a",
+   "lead": [
+    "bo_ink",
+    "bo_quick",
+    "bo_glyph"
+   ],
+   "diamond": "bo_kin",
+   "seal": "gt_spirit_tempest",
+   "forks": [
+    [
+     "bo_tem1",
+     "bo_tem2",
+     "bo_tem3"
+    ],
+    [
+     "bo_tem4",
+     "bo_tem5",
+     "bo_tem6"
+    ]
+   ]
+  },
+  {
+   "socket": "b",
+   "lead": [
+    "bo_swift",
+    "bo_page",
+    "bo_line"
+   ],
+   "diamond": "bo_twin",
+   "seal": "gt_soul_lance",
+   "forks": [
+    [
+     "bo_lan1",
+     "bo_lan2",
+     "bo_lan3"
+    ],
+    [
+     "bo_lan4",
+     "bo_lan5",
+     "bo_lan6"
+    ]
+   ]
+  },
+  {
+   "socket": "c",
+   "lead": [
+    "bo_hand",
+    "bo_seal",
+    "bo_ward"
+   ],
+   "diamond": "bo_pierce",
+   "seal": "gt_returning_pages",
+   "forks": [
+    [
+     "bo_ret1",
+     "bo_ret2",
+     "bo_ret3"
+    ],
+    [
+     "bo_ret4",
+     "bo_ret5",
+     "bo_ret6"
+    ]
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "id": "bo_ink",
+   "idx": 8,
+   "kind": "knot",
+   "name": "Iron Ink",
+   "desc": "Bolt power +1%",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "bo_quick",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Quick Script",
+   "desc": "Swiftness +1%",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "bo_glyph",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Bright Glyph",
+   "desc": "Bolt power +1%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "bo_kin",
+   "idx": 13,
+   "kind": "bead",
+   "name": "Rootbreaker",
+   "desc": "Bolt power +1% and Swiftness +1%",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    },
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "root_crawler",
+    "n": 3000
+   },
+   "branch": "magic"
+  },
+  {
+   "id": "bo_tem1",
+   "idx": 15,
+   "kind": "knot",
+   "name": "Scattered Glyphs",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_tem2",
+   "idx": 16,
+   "kind": "knot",
+   "name": "Wind of Pages",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Bolt power +1%"
+  },
+  {
+   "id": "bo_tem3",
+   "idx": 17,
+   "kind": "bead",
+   "name": "Gusting Script",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_tem4",
+   "idx": 18,
+   "kind": "knot",
+   "name": "Eye of the Storm",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Bolt power +1%"
+  },
+  {
+   "id": "bo_tem5",
+   "idx": 19,
+   "kind": "knot",
+   "name": "Loose Leaves",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "spirit_tempest"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "bo_tem6",
+   "idx": 20,
+   "kind": "bead",
+   "name": "Calm Margin",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "spirit_tempest"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "bo_swift",
+   "idx": 7,
+   "kind": "knot",
+   "name": "Swift Wisps",
+   "desc": "Swiftness +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "bo_page",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Turned Page",
+   "desc": "Bolt power +1%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "bo_line",
+   "idx": 10,
+   "kind": "knot",
+   "name": "Running Line",
+   "desc": "Swiftness +1%",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
   {
    "id": "bo_twin",
    "idx": 4,
    "kind": "mastery",
    "name": "Twin Wisps",
-   "desc": "Bolt power +2% and Swiftness +2%",
+   "desc": "Bolt power +1% and Swiftness +1%",
    "flavour": "Evolve the bolts and the wisps answer in pairs.",
    "branch": "magic",
    "cost": {
     "gold": 910,
     "shards": 1
    },
-   "requires": [
-    "bo_swift"
-   ],
    "effects": [
     {
      "weapon": "spirit_bolts",
      "stat": "power",
-     "pct": 2
+     "pct": 1
     },
     {
      "weapon": "spirit_bolts",
      "stat": "speed",
-     "pct": 2
+     "pct": 1
     }
    ],
    "unlock": {
@@ -181,36 +486,173 @@
    }
   },
   {
-   "id": "bo_glyph",
-   "idx": 5,
+   "id": "bo_lan1",
+   "idx": 21,
    "kind": "knot",
-   "name": "Bright Glyph",
-   "desc": "Bolt power +2%",
+   "name": "Long Stroke",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
    "cost": {
-    "gold": 320
+    "gold": 380
+   },
+   "desc": "Bolt power +1%"
+  },
+  {
+   "id": "bo_lan2",
+   "idx": 22,
+   "kind": "knot",
+   "name": "Burning Line",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_lan3",
+   "idx": 23,
+   "kind": "bead",
+   "name": "Straight Script",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_lan4",
+   "idx": 24,
+   "kind": "knot",
+   "name": "Steady Point",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_lan5",
+   "idx": 25,
+   "kind": "knot",
+   "name": "Inkwell",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "soul_lance"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "bo_lan6",
+   "idx": 26,
+   "kind": "bead",
+   "name": "Underline",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "soul_lance"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "bo_hand",
+   "idx": 12,
+   "kind": "knot",
+   "name": "Steady Hand",
+   "desc": "Swiftness +1%",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "bo_seal",
+   "idx": 14,
+   "kind": "knot",
+   "name": "Sealed Margin",
+   "desc": "Bolt power +1%",
+   "cost": {
+    "gold": 570
    },
    "effects": [
     {
      "weapon": "spirit_bolts",
      "stat": "power",
-     "pct": 2
+     "pct": 1
     }
-   ]
+   ],
+   "branch": "magic"
+  },
+  {
+   "id": "bo_ward",
+   "idx": 27,
+   "kind": "knot",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "name": "Margin Ward",
+   "cost": {
+    "gold": 320
+   },
+   "desc": "Swiftness +1%"
   },
   {
    "id": "bo_pierce",
    "idx": 6,
    "kind": "bead",
    "name": "Piercing Wisp",
-   "desc": "Spirit Bolts pierce +1 enemy.",
+   "desc": "Pierce +1",
    "branch": "magic",
    "cost": {
     "gold": 490
    },
-   "requires": [
-    "ma_cast",
-    "gt_spirit_bolts"
-   ],
    "effects": [
     {
      "weapon": "spirit_bolts",
@@ -220,149 +662,201 @@
    ]
   },
   {
-   "id": "bo_swift",
-   "idx": 7,
+   "id": "bo_ret1",
+   "idx": 28,
    "kind": "knot",
-   "name": "Swift Wisps",
-   "desc": "Swiftness +2%",
+   "name": "Homeward Ink",
    "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
    "cost": {
-    "gold": 290
+    "gold": 380
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_ret2",
+   "idx": 29,
+   "kind": "knot",
+   "name": "Folded Corner",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 470
+   },
+   "desc": "Bolt power +1%"
+  },
+  {
+   "id": "bo_ret3",
+   "idx": 30,
+   "kind": "bead",
+   "name": "Return Flight",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "speed",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 640
+   },
+   "desc": "Swiftness +1%"
+  },
+  {
+   "id": "bo_ret4",
+   "idx": 31,
+   "kind": "knot",
+   "name": "Bookmark",
+   "branch": "magic",
+   "effects": [
+    {
+     "weapon": "spirit_bolts",
+     "stat": "power",
+     "pct": 1
+    }
+   ],
+   "cost": {
+    "gold": 380
+   },
+   "desc": "Bolt power +1%"
+  },
+  {
+   "id": "bo_ret5",
+   "idx": 32,
+   "kind": "knot",
+   "name": "Thumbed Page",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "returning_pages"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "bo_ret6",
+   "idx": 33,
+   "kind": "bead",
+   "name": "Last Chapter",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "returning_pages"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  }
+ ],
+ "orbit": {
+  "tier": 1,
+  "angle": 330
+ },
+ "roads": [
+  {
+   "from": "sp_cd2",
+   "to": "gt_spirit_bolts",
+   "nodes": [
+    {
+     "id": "bo_way1",
+     "idx": 34,
+     "kind": "knot",
+     "name": "Gentle Speck",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "bo_way2",
+     "idx": 35,
+     "kind": "knot",
+     "name": "Low Stile",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "bo_way3",
+     "idx": 36,
+     "kind": "knot",
+     "name": "Kind Way",
+     "desc": "Area +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "mod": "area",
+       "pct": 1
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "extras": [
+  {
+   "id": "bo_kindling",
+   "idx": 37,
+   "kind": "verb",
+   "name": "Kindling Start",
+   "desc": "When you start a run with Spirit Bolts, the bolts fire 25% faster for the first minute, fading to nothing.",
+   "flavour": "The first spark of the night catches quickly.",
+   "cost": {
+    "gold": 2000
    },
    "requires": [
-    "bo_pierce"
+    "gt_spirit_bolts"
    ],
    "effects": [
     {
+     "perk": "kindle",
      "weapon": "spirit_bolts",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "bo_ink",
-   "idx": 8,
-   "kind": "knot",
-   "name": "Iron Ink",
-   "desc": "Bolt power +2%",
-   "cost": {
-    "gold": 210
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "power",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "bo_quick",
-   "idx": 9,
-   "kind": "knot",
-   "name": "Quick Script",
-   "desc": "Swiftness +2%",
-   "cost": {
-    "gold": 210
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "bo_line",
-   "idx": 10,
-   "kind": "knot",
-   "name": "Running Line",
-   "desc": "Swiftness +2%",
-   "cost": {
-    "gold": 320
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "bo_page",
-   "idx": 11,
-   "kind": "knot",
-   "name": "Turned Page",
-   "desc": "Bolt power +2%",
-   "cost": {
-    "gold": 430
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "power",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "bo_hand",
-   "idx": 12,
-   "kind": "knot",
-   "name": "Steady Hand",
-   "desc": "Swiftness +2%",
-   "cost": {
-    "gold": 430
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "speed",
-     "pct": 2
-    }
-   ]
-  },
-  {
-   "id": "bo_kin",
-   "idx": 13,
-   "kind": "bead",
-   "name": "Rootbreaker",
-   "desc": "Bolt power +2%",
-   "cost": {
-    "gold": 490
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "power",
-     "pct": 2
+     "pct": 25,
+     "secs": 60,
+     "pe": 0.1
     }
    ],
    "unlock": {
-    "t": "killEnemy",
-    "id": "root_crawler",
-    "n": 3000
+    "t": "clearChapter",
+    "id": "cursed_forest",
+    "n": 14
    }
-  },
-  {
-   "id": "bo_seal",
-   "idx": 14,
-   "kind": "knot",
-   "name": "Sealed Margin",
-   "desc": "Bolt power +2%",
-   "cost": {
-    "gold": 570
-   },
-   "effects": [
-    {
-     "weapon": "spirit_bolts",
-     "stat": "power",
-     "pct": 2
-    }
-   ]
   }
  ]
 }

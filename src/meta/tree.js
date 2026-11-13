@@ -40,6 +40,7 @@ const LEAF = {
   gems: { need: ['n'] },
   abilityUses: { need: ['n'] },
   blessings: { need: ['n'] },
+  lamps: { need: ['n'] }, // Far Sight (LOCKED 2026-11-12): Lamp Posts lit, banked in stats.sites.lamps (save E7 counters)
   webLit: { need: [] }, // EXTRAS v1 Wardrobe: every lantern of the web lit (cosmetic lanterns and teasers excluded; needs the save's tree)
 };
 
@@ -124,6 +125,7 @@ function leafValue(c, stats, def, tree = null) {
     case 'gems': return stats.gems || 0;
     case 'abilityUses': return stats.abilityUses || 0;
     case 'blessings': return stats.blessingsTaken || 0;
+    case 'lamps': return isObj(stats.sites) && own(stats.sites, 'lamps') && fin(stats.sites.lamps) ? Math.max(0, stats.sites.lamps) : 0;
     case 'webLit': return webLitCount(def, tree);
     default: return 0;
   }
@@ -155,6 +157,7 @@ function leafText(c, data) {
     case 'gems': return `Gather ${n} gems`;
     case 'abilityUses': return `Use your ability ${n} times`;
     case 'blessings': return `Take ${n} Blessings`;
+    case 'lamps': return `Light ${n} lamps`;
     case 'webLit': return 'Light every lantern in the Web';
     default: return '?';
   }
@@ -264,7 +267,7 @@ export function compileTree(raw, data) {
       requires: n.requires ? [...n.requires] : [], excludes: n.excludes ? [...n.excludes] : [],
       effects: Array.isArray(n.effects) ? n.effects : [], unlock: n.unlock || null,
       permanent: false, gateAnc: [],
-      hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true,
+      hidden: n.hidden === true, teaser: n.teaser === true, keystone: n.keystone === true, chase: n.chase === true,
       x: posGiven ? n.pos[0] : 0, y: posGiven ? n.pos[1] : 0,
       ...extra,
     };
@@ -342,14 +345,12 @@ export function compileTree(raw, data) {
       gateNodeIds[e.unlock].set(e.id, id);
     }
   }
-  for (const id of gateIds) {
-    for (const r of nodes[id].requires) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
-    for (const r of nodes[id].requiresAny || []) if (!gateIds.has(r)) fail(`${id}: unlock nodes may only require other unlock nodes (respec keeps them)`);
-  }
+  // S1 (2026-11-12): an unlock node MAY require ordinary lanterns (a seal needs its lead-in diamond, a heart its road). Safe with respec: links
+  // gate BUYING only (connected-unlock rule), a kept gate is never dropped when the lanterns before it are refunded (sanitizeTree).
   if (data) {
     for (const [kind, pool] of [['weapon', data.weapons], ['evolution', data.evolutions]]) {
       for (const [gid, g] of Object.entries(pool || {})) {
-        if (g && g.treeGate && !gateNodeFor[kind].has(gid)) fail(`gated ${kind} "${gid}" has no unlocking node (unreachable)`);
+        if (g && g.treeGate && !g.unreleased && !gateNodeFor[kind].has(gid)) fail(`gated ${kind} "${gid}" has no unlocking node (unreachable)`);
       }
     }
   }
@@ -468,7 +469,7 @@ export function compileTree(raw, data) {
   for (const id of list) {
     const n = nodes[id];
     if (n.permanent || n.teaser || n.keystone || CREEP_FLAT.includes(n.kind)) continue;
-    const g = cosmOnly(n) ? 'cosm' : n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); // EXTRAS v1: Wardrobe lanterns rise only among themselves (never price a power lantern)
+    const g = cosmOnly(n) ? 'cosm' : n.region === 'paths' ? `paths:${n.frag || 'core'}` : n.cluster || (n.frag && n.frag !== 'core' ? n.frag : `rings:${n.branch}`); // S1: a road rises only among its own fragment's road lanterns // EXTRAS v1: Wardrobe lanterns rise only among themselves (never price a power lantern)
     cgroup[id] = g;
     (cmembers[g] || (cmembers[g] = [])).push(id);
   }
@@ -529,6 +530,9 @@ function checkEffect(e, data, where) {
     // EXTRAS v1 Wardrobe: a zero-power cosmetic (flame tint / trail style); the id is checked against cosmetics.json at boot (validateCosmTree)
     if (!['flame', 'trail'].includes(e.cosm) || typeof e.id !== 'string' || !ID_RE.test(e.id) || keys.some((k) => k !== 'cosm' && k !== 'id')) fail(`${where}: bad cosmetic effect`);
     if (data && isObj(data.cosmetics) && !own(e.cosm === 'flame' ? data.cosmetics.flames : data.cosmetics.trails, e.id)) fail(`${where}: unknown cosmetic ${e.id}`);
+  } else if (e.echo !== undefined) {
+    // S1: zero power. The landmark seal of a starter evolution and the 'flavour beads' of a seal's forks: an echo of that evolution (display only)
+    if (typeof e.echo !== 'string' || !ID_RE.test(e.echo) || keys.length !== 1 || (data && data.evolutions && !own(data.evolutions, e.echo))) fail(`${where}: echo needs a known evolution id`);
   } else if (e.visual !== undefined) {
     if (!(e.visual === 'threeDawns' || heroVisual(data, e.visual))) fail(`${where}: unknown visual effect`); // hero visuals: characters.json treeVisuals
   } else if (e.perk !== undefined) {
@@ -536,13 +540,18 @@ function checkEffect(e, data, where) {
     else if (e.perk === 'rush') { num('pct', 0, 300); num('secs', 1, 30); }
     else if (e.perk === 'gemPull') num('pct', 0, 100); // gems fly to you faster (balance.magnetSpeed x (1 + pct))
     else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') num('n', 1, 2);
+    else if (e.perk === 'kindle') { // Kindling Start: the run's STARTER weapon runs faster for the first secs, fading to nothing; priced in sustain/verb
+      if (typeof e.weapon !== 'string' || !ID_RE.test(e.weapon) || !(data && data.weapons && own(data.weapons, e.weapon))) fail(`${where}: kindle needs a known weapon`);
+      num('pct', 1, 50); num('secs', 10, 120); num('pe', 0.001, 0.5);
+      if (keys.some((k) => !['perk', 'weapon', 'pct', 'secs', 'pe'].includes(k))) fail(`${where}: kindle has unknown fields`);
+    }
     else if (['gemCall', 'favour', 'startWeapon', 'startBlessing', 'autoRule', 'blessChoice'].includes(e.perk)) { /* flag perks */ } else fail(`${where}: unknown perk`);
   } else if (e.lore !== undefined) {
     // Almanac: +pct damage against ONE enemy type (id must exist)
     if (typeof e.lore !== 'string' || !ID_RE.test(e.lore) || !(data && data.enemies && own(data.enemies, e.lore))) fail(`${where}: lore needs a known enemy id`);
     num('pct', 0.1, 3);
   } else if (e.info !== undefined) {
-    if (!['tells', 'bars', 'compass', 'peek', 'stir', 'codex'].includes(e.info)) fail(`${where}: unknown info effect`);
+    if (!['tells', 'bars', 'compass', 'peek', 'stir', 'codex', 'lamps'].includes(e.info)) fail(`${where}: unknown info effect`);
     if (e.enemy !== undefined && !(typeof e.enemy === 'string' && ID_RE.test(e.enemy) && data && data.enemies && own(data.enemies, e.enemy))) fail(`${where}: info enemy must be a known enemy`);
   } else if (e.weapon !== undefined) {
     const w = e.weapon;
@@ -808,6 +817,7 @@ export function emptyEffects() {
     evoLuck: 1,
     rush: null,
     weaponBonus: {},
+    kindle: {}, // Kindling Start: weapon id -> { pct, secs } (the sim uses only the run's starter weapon)
     unlocks: { weapons: [], evolutions: [], heroes: [], abilityUpgrades: [], modifiers: [], tiers: [] },
   };
 }
@@ -882,6 +892,7 @@ export function aggregateMods(tree, def, data, opts = null) {
       else if (e.perk === 'evoLuck') add('evoLuck', e.pct * r);
       else if (e.perk === 'gemPull') out.perks.gemPull += e.pct * r;
       else if (e.perk === 'offerSize' || e.perk === 'weaponSlot') out.perks[e.perk] += e.n * r;
+      else if (e.perk === 'kindle') { if (own(data.weapons, e.weapon)) out.kindle[e.weapon] = { pct: Math.min(50, e.pct), secs: Math.min(120, e.secs) }; }
       else if (e.perk && own(out.perks, e.perk)) out.perks[e.perk] = true;
       else if (e.lore) out.lore[e.lore] = Math.min(2, (out.lore[e.lore] || 0) + e.pct * r);
       else if (e.info) { if (!out.info.includes(e.info)) out.info.push(e.info); if (e.info === 'tells' && e.enemy && !out.tells.includes(e.enemy)) out.tells.push(e.enemy); }
@@ -977,14 +988,13 @@ export function closestUnlocks(def, save, data, count = 3) {
 export function describeNode(def, save, id, data) {
   const n = def.nodes[id];
   const s = nodeStatus(def, save, id, data);
-  let masked = (n.hidden || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
-  // a node behind an evolution gate stays '???' until that gate is owned or has progress
+  // Q7-A: a CHASE landmark (hidden seal promoted, LOCKED 'Q7 GATING = PROMOTE HIDDEN SEALS') shows its name and condition progress from the start
+  let masked = ((n.hidden && !n.chase) || n.teaser) && s.rank === 0 && !(s.cond && s.cond.frac > 0);
+  // a node behind an evolution gate (S1: a seal's forks) stays '???' until that seal is LIT (hidden-recipe safety: forks appear only after it)
   if (!masked && s.rank === 0) {
     for (const g of n.gateAnc || []) {
       const ge = def.nodes[g].effects.find((x) => x && x.unlock === 'evolution');
-      if (!ge || rankOf(save.tree || {}, g) >= 1) continue;
-      const gc = def.nodes[g].unlock ? conditionProgress(def.nodes[g].unlock, save.stats, def, data, save.tree) : null;
-      if (!gc || gc.frac <= 0) masked = true;
+      if (ge && rankOf(save.tree || {}, g) < 1) masked = true;
     }
   }
   const lines = masked ? [] : (s.cond ? s.cond.lines : []);

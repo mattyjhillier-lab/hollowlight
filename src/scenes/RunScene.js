@@ -28,6 +28,7 @@ import { Gate, RateCap, SHAKE_GAP, KILL_POPS_PER_SEC, gemPopScale, GEM_POP_LIFE 
 import { STYLE, INV, inv, zoomFor } from '../gfx/style.js';
 import { followStep } from '../gfx/camfollow.js';
 import { makeStyleTextures, makeGroundLazy } from '../gfx/sprites.js';
+import { paintCostume, costumeBaked } from '../gfx/rigtex.js';
 import { LOWMEM, IOS } from '../gfx/memprofile.js'; // FIX4d low-memory profile
 import { probe } from '../gfx/probe.js'; // FIX4 ?perf=1 real-device probe
 import { Prebake, guardState } from '../gfx/prebake.js'; // FIX4 loading-phase pre-bake
@@ -48,6 +49,7 @@ import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
 import { bakeRavenArt, ravenReady } from '../gfx/summon/atlas.js'; // S3 Letter Ravens (lazy bake on first flock)
 import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
 import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
+import { MeteorLayer } from '../gfx/meteorfx.js'; // DM3 Dragonfire Meteor art (render only)
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
 import { bakeBoltArt, boltReady } from '../gfx/summon/atlas.js'; // S5 Ink Glyph Orb (lazy bake on first Spirit Bolts)
@@ -69,6 +71,7 @@ import { Density, quietScale, enemyAlpha, depthOf, depthNear, FADE_R, heroOutTar
 import { HeroLine, OL_RES } from '../gfx/heroline.js'; // OL1: hero outline rebuilt from the hero's own transformed parts
 import { BossView, ADD_SCALE, ADD_ORIGIN } from '../gfx/boss/bossview.js'; // Elder Treant fight: arena, tells, boss art, victory flood
 import { SiteView } from '../gfx/siteview.js'; // map events v1 'Hollow Places' (render only)
+import { KindleCue, kindleTint } from '../gfx/kindlecue.js'; // Kindling Start (tree): starter-weapon ring + Wren pup trail (render only)
 import { MiniView, bakeReliquary } from '../gfx/minibossview.js'; // EN7/EN8 Branch-Mane extras + Lantern Reliquary chest (render only)
 import { POD_KEY, SAP_KEY } from '../gfx/boss/bossart.js';
 import { qualityModeFor } from '../gfx/power.js'; // PHONE HEAT
@@ -224,6 +227,8 @@ export class RunScene extends Phaser.Scene {
     this.dawnBud = { birds: 0, petals: 0, shafts: 0 };
     this.ribSet = new RibbonSet(1000, 12, 64); // W2 trails (+ W7b Lightfoot trail segments) (visual only)
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
+    this.meteor = new MeteorLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM3: lazy-baked on the first Meteor
+    this.meteorCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, cue: (id) => { if (app.audio) app.audio.play(id); }, shake: (ms, k) => this.shake(ms, k), vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
     this.pawLayer = this.sumAtlas ? new PawLayer(this, SUM_KEY, RIBBON_DEPTH + 1, 300) : null; // S2: pawprints over the soft trail ribbon, under every creature/halo/pickup/number
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
@@ -274,6 +279,7 @@ export class RunScene extends Phaser.Scene {
 
     this.bossView = new BossView(this, { lit: D_LIT, ground: -395, tele: D_VIG + 3 });
     this.miniView = new MiniView(this, { lit: D_LIT, ground: D_LIT - 95 }, INV.chest, INV.glow);
+    this.kindleCue = new KindleCue();
     this.siteView = new SiteView(this, { ground: D_LIT - 96, prop: D_LIT - 40, badge: D_PART + 3, arrow: D_VIG + 4 }); // map events v1: under the bodies; badges over them; arrows above the vignette
     this.siteRect = { x0: 0, y0: 0, x1: 0, y1: 0 };
     INV[POD_KEY] = INV[SAP_KEY] = ADD_SCALE;
@@ -595,10 +601,12 @@ export class RunScene extends Phaser.Scene {
     this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
+    this.meteor.reset();
   }
 
   unbindSim() {
     this.sim = null;
+    this.meteor.reset();
     this.parts.clear();
     this.nums.clear();
     this.playerGlow.setVisible(false);
@@ -753,10 +761,22 @@ export class RunScene extends Phaser.Scene {
   }
 
   reducedMotion() { return !!app.save.data.settings.reducedMotion; }
+  kindleTintOf(sim) { if (this.kindleFor !== sim) { this.kindleFor = sim; this.kindleTint = kindleTint(sim.data, sim.kindle && sim.kindle.w); } return this.kindleTint; }
 
   // EXTRAS v1: what this run wears (resolveCosm view or null). Light colours only: silhouettes, sizes, the pool's brightness and every hit
   // radius are untouched; the pool keeps half the default lantern colour so a tint never reads as a dimmer or brighter light.
+  // WARDROBE v2: bake (or clear) the worn Ring Keepsake into the hero rig textures, once per run start (never per frame). Plain heroes are left untouched.
+  bakeCostume(v) {
+    const want = v && v.costume ? v.costume : null;
+    for (const hero of ['wren', 'elias']) {
+      const id = want && want.hero === hero ? want.id : null;
+      if (costumeBaked(this, hero) === id) continue;
+      try { paintCostume(this, hero, id ? want : null); } catch { /* a bad costume never blocks the run: the plain hero stays */ }
+    }
+  }
+
   setCosm(v) {
+    this.bakeCostume(v);
     const mixI = (a, b, t) => { let o = 0; for (const sh of [16, 8, 0]) { const x = (a >> sh) & 255, y = (b >> sh) & 255; o |= Math.round(x + (y - x) * t) << sh; } return o; };
     this.cosm = v || null;
     const plain = !v;
@@ -1348,6 +1368,7 @@ export class RunScene extends Phaser.Scene {
     const fx = this.fxG;
     g.clear();
     fx.clear();
+    if (sim.kindle) this.kindleCue.draw(fx, sim, rig ? this.rig : null, this.reducedMotion(), Math.min(this.game.loop.delta, 100) / 1000, this.kindleTintOf(sim), ROLE.lantern);
     this.teleG.clear();
     const nl = this.nl;
     const nlOn = !!(app.params.arc && app.params.night);
@@ -1365,7 +1386,7 @@ export class RunScene extends Phaser.Scene {
     let nd = 0, top1 = 0, top2 = 0;
     for (let i = 0; i < nh; i++) { const h = sim.hitBuf[i]; if (h.kill) continue; nd++; if (h.a > top1) { top2 = top1; top1 = h.a; } else if (h.a > top2) top2 = h.a; }
     const aoe = nd > 5, aoeMin = top2;
-    const auH = this.auHits || (this.auHits = { ghost_wolves: 0, raven_flock: 0, spirit_bolts: 0, chain_lightning: 0, holy_orbit: 0 }); // AU1: on-screen hits per weapon this frame (audio only)
+    const auH = this.auHits || (this.auHits = { ghost_wolves: 0, raven_flock: 0, spirit_bolts: 0, chain_lightning: 0, holy_orbit: 0, dragonfire_meteor: 0 }); // AU1: on-screen hits per weapon this frame (audio only)
     for (const k in auH) auH[k] = 0;
     for (let i = 0; i < nh; i++) {
       const h = sim.hitBuf[i];
@@ -1918,6 +1939,7 @@ export class RunScene extends Phaser.Scene {
         if (lit) lm.add(t.e.x, t.e.y, 40, ROLE.lightning, 0.7);
       }
     }
+    { const mc = this.meteorCtx; mc.sim = sim; mc.tier = this.quality.tier; mc.phone = this.phone; mc.calm = this.reducedMotion(); mc.lm = lit ? lm : null; mc.parts = this.parts; mc.vx0 = vx0; mc.vy0 = vy0; mc.vx1 = vx1; mc.vy1 = vy1; this.meteor.update(mc); } // DM3
     if (probe.on) for (const w of sim.weapons) probe.first('weapon:' + w.id + (w.evo ? ':' + w.evo : ''));
     for (const f of sim.fx) {
       fi++;
@@ -1925,7 +1947,7 @@ export class RunScene extends Phaser.Scene {
       if (f.kind === 'judgetell' || f.kind === 'judgeflash') { // W11b Thunder Judgment: tell = a faint cyan radius ring (all tiers) + sky darkening (Med/High, not in reduced motion)
         if (f.kind === 'judgetell') {
           const k = 1 - f.ttl / f.life;
-          fx.lineStyle(1, PAL.ice, 0.18 + 0.3 * k).strokeCircle(f.x, f.y, f.r);
+          fx.lineStyle(2, PAL.ice, 0.3 + 0.4 * k).strokeCircle(f.x, f.y, f.r); // clearer tell: the strike reaches the full ring (screens show only ~150 u above/below)
           if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * k);
         } else if (!rmFx && tierFx !== 'low') skyA = Math.max(skyA, 0.34 * (f.ttl / f.life));
       } else if (chArt && f.kind === 'bolt') { // S6 Storm Thread: 3-layer arcs + forks, capped Judgment pillars, tiny Static strikes, crack-star scorches
@@ -1961,6 +1983,7 @@ export class RunScene extends Phaser.Scene {
         if (lit) lm.add(x, y1, 50, ROLE.lightning, 0.9 * a);
       } else if (f.kind === 'burst' || f.kind === 'fizzle') { drawBurstFx(fx, f, this.reducedMotion());
       } else if (f.kind === 'ring') {
+        if (f.color === '#ffb35c' && this.meteor.active) continue; // DM3: the sim's placeholder landing tell / impact rings are replaced by the Meteor art
         const k = Math.max(0, f.ttl / 0.3);
         if (f.color === '#7a4a1b') { // DR2: the Treant's slam landing is the tell resolving: tell red-orange on a dark rim, above the vignette (was a low-contrast brown)
           const rr = f.r * (1.15 - 0.15 * k), a = Math.min(1, k + 0.2);

@@ -71,5 +71,23 @@
       "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "bossReach": 16, "bossX": 2, "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
       "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
     }
+    },
+  "dragonfire_meteor": {
+    "name": "Dragonfire Meteor",
+    "treeGate": true,
+    "unreleased": true,
+    "type": "magic",
+    "tags": [],
+    "color": "#ffb35c",
+    "desc": "A blazing fireball crashes into the thickest crowd, bursts, and leaves a pool of burning ground.",
+    "boss": 1.4,
+    "cd": 2.6,
+    "first": 0.8,
+    "stats": {
+      "count":    { "name": "Fireballs", "base": 1,   "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})" },
+      "power":    { "name": "Impact",    "base": 14,  "perRank": 5.6, "fmt": "int", "hint": "The crash hits harder ({old} → {new}), and the fire it leaves burns harder" },
+      "area":     { "name": "Blaze",     "base": 34,  "perRank": 5,   "fmt": "int", "hint": "The crash and the burning ground are {old} → {new} wide" },
+      "duration": { "name": "Embers",    "base": 2.5, "perRank": 0.5, "fmt": "sec", "hint": "The ground burns {old} → {new}" }
+    }
   }
 }

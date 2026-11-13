@@ -1,5 +1,6 @@
 // Results screen copy + the pure view model behind it (U6). No DOM here, so it is unit-tested in Node. Every string is later set with textContent, never as markup.
 // Voice: docs/design/ui-identity-v1.md (plain label + a quiet line). Defeat is a dimmed-but-lit lantern, never "out" (LOCKED 2026-10-16).
+import { cleanMoved } from '../meta/moved.js';
 import { sitesLine } from './sitecopy.js';
 import { splitName } from './titlecopy.js';
 
@@ -176,13 +177,10 @@ export function resultsView(r, bank, data) {
   }
 
   const newly = bank && Array.isArray(bank.newly) ? bank.newly.filter((s) => typeof s === 'string' && s) : [];
-  const closest = bank && Array.isArray(bank.closest) ? bank.closest.filter((c) => c && typeof c.name === 'string') : [];
+  // Q5b: ONE goal list. 'What moved' (tiles newly lit / unlocked / affordable, bars that grew, the nearest 3 unlocks) replaces the old separate
+  // 'NEW:' line and 'closest unlock' strip. A bank without it (older caller, debug run) shows no list.
+  const moved = bank && bank.moved ? cleanMoved(bank.moved) : null;
   let nudge = null;
-  if (newly.length) nudge = { kind: 'new', text: clip(newly[0].replace(/^NEW:\s*/, ''), 110), more: newly.length - 1 };
-  else if (closest.length) {
-    const c = closest[0];
-    nudge = { kind: 'closest', gate: !!c.gate, name: clip(c.name, 40), text: clip(c.text, 80), frac: Math.max(0, Math.min(1, fin(c.frac))) };
-  }
   // FM3 teaching (src/ui/whispers.js resultTeach): first / second death take the nudge slot (U6 one-screen rule); the first win adds one line.
   const tc = bank && bank.teach && typeof bank.teach === 'object' && ['firstDeath', 'secondDeath', 'firstWin'].includes(bank.teach.kind) ? bank.teach : null;
   let learn = null, treePrimary = false;
@@ -208,7 +206,7 @@ export function resultsView(r, bank, data) {
     } : { gold: whole(r.gold), shards: whole(r.shards) },
     weapons: weaponShares(r.weapons, data),
     recap: hurtRecap(r, data, won),
-    nudge, learn, treePrimary,
+    nudge, learn, treePrimary, moved,
     treeDot: newly.length > 0,
     night: nightBlock(r, bank, hero, won),
     sites: sitesLine(r.sites), // map events v1 'Hollow Places' (null without sites)

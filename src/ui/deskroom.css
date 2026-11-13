@@ -32,7 +32,7 @@
 .ts-hover.on { opacity: 1; }
 .ts-hover__n { font: 400 19px/1.15 var(--font-display); color: var(--ts-cream, #fff3dc); }
 .ts-hover__s { margin-top: 2px; font: 700 12px/1.3 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: #f5dfae; }
-.ts-hover__s.ts-st-ready { color: var(--ts-wick, #fff6e0); }
+.ts-hover__s.ts-st-ready { color: var(--ts-wick, #fff6e0); background: none; box-shadow: none; border-color: transparent; } /* the pill look of .ts-st-ready (cream fill) made this line cream on cream */
 .ts-hover__s.ts-st-notyet, .ts-hover__s.ts-st-fog { color: var(--ts-mute, #b3bbcf); }
 .ts-hover__d { margin-top: 4px; font: 400 14px/1.3 var(--font-body); color: var(--ts-cream, #fff3dc); opacity: .85; }
 .ts-keyhint { position: absolute; left: 12px; bottom: 8px; z-index: 6; display: flex; gap: 14px; padding: 4px 14px; border-radius: 14px; pointer-events: none; white-space: nowrap;

@@ -122,18 +122,13 @@ test('weapon shares from a real sim run match the counters', async () => {
   assert.ok(v.weapons.reduce((a, w) => a + w.pct, 0) <= 100 + 3);
 });
 
-test('unlock nudge uses real tree data: NEW line first, else the closest unlock; no invented copy', () => {
-  const near = mkView(res(), bank({ closest: [{ id: 'a', name: 'Raven Flock', gate: true, frac: 0.84, text: 'Crows slain: 101/120' }] }));
-  assert.equal(near.nudge.kind, 'closest');
-  assert.equal(near.nudge.name, 'Raven Flock');
-  assert.equal(near.nudge.text, 'Crows slain: 101/120');
-  assert.equal(near.treeDot, false);
-  const fresh = mkView(res(), bank({ newly: ['NEW: Raven Flock is ready to unlock in the Skill Tree.', 'b'], closest: [{ id: 'a', name: 'Zzz', frac: 0.5, text: 't' }] }));
-  assert.equal(fresh.nudge.kind, 'new');
-  assert.equal(fresh.nudge.text, 'Raven Flock is ready to unlock in the Skill Tree.');
-  assert.equal(fresh.nudge.more, 1);
-  assert.equal(fresh.treeDot, true);
-  assert.equal(mkView(res(), bank()).nudge, null, 'nothing real to show: the row is hidden');
+test('one goal list: moved tiles / bars / nearest come from the bank, re-validated; the old NEW line and closest strip are gone', () => {
+  const m = { chips: [{ t: '12 slain' }], tiles: [{ id: 'a', name: 'Raven Flock', kind: 'afford', cost: 300 }], bars: [{ id: 'b', name: 'Bite', text: 'Crows: 101 of 120 (+12)', frac0: 0.7, frac1: 0.84 }], nearest: [{ id: 'c', name: 'Zzz', frac: 0.5, text: 't', gate: true }] };
+  const v = mkView(res(), bank({ moved: m, closest: [{ id: 'a', name: 'Old strip', frac: 0.5, text: 'x' }], newly: ['NEW: x'] }));
+  assert.equal(v.nudge, null); assert.equal(v.moved.tiles[0].name, 'Raven Flock'); assert.equal(v.moved.bars[0].frac1, 0.84); assert.equal(v.moved.nearest[0].gate, true);
+  assert.equal(v.treeDot, true);
+  assert.equal(mkView(res(), bank()).moved, null, 'no moved data: no list');
+  assert.equal(mkView(res(), bank()).nudge, null);
   const src = ['src/ui/resultscopy.js', 'src/ui/results.js', 'src/ui/results.css'].map(R).join('\n');
   assert.ok(!/Hall of Dawns/i.test(src));
 });
@@ -244,14 +239,14 @@ test('buttons: Again is the primary with R, Main menu shows Esc, Tree shows T; a
 test('hostile run and tree strings stay inert text', () => {
   const evil = '<img src=x onerror=alert(1)><script>alert(2)</script>';
   const d = { ...data, chapters: { [evil]: { name: evil, bossId: 'elder_treant', bossAt: 600 } }, characters: { '"x': { name: evil } }, enemies: { ...data.enemies } };
-  const v = C.resultsView({ ...res(), chapter: evil, character: '"x', weapons: [W(evil, 10), W('ghost_wolves', 5, evil)] }, bank({ newly: [evil], closest: [{ id: 'a', name: evil, gate: false, frac: 0.5, text: evil }], note: evil }), d);
+  const v = C.resultsView({ ...res(), chapter: evil, character: '"x', weapons: [W(evil, 10), W('ghost_wolves', 5, evil)] }, bank({ newly: [evil], moved: { chips: [{ t: evil }], tiles: [{ id: 'a', name: evil, kind: 'afford' }], bars: [{ id: 'b', name: evil, text: evil, frac0: 0, frac1: 0.5 }], nearest: [{ id: 'c', name: evil, gate: false, frac: 0.5, text: evil }] }, note: evil }), d);
   const { r } = build(v);
   r.mounted();
   const tags = find(r.root, (n) => ['script', 'img', 'iframe', 'style', 'a'].includes(n.tag));
   assert.equal(tags.length, 0);
   assert.ok(allText(r.root).includes('<img'), 'shown as plain text');
-  const long = C.resultsView({ ...res(), weapons: [W('ghost_wolves', 5)], chapter: 'x'.repeat(500) }, bank({ closest: [{ id: 'a', name: 'n'.repeat(500), frac: 2, text: 't'.repeat(500) }] }), data);
-  assert.ok(long.nudge.name.length <= 40 && long.nudge.text.length <= 80 && long.nudge.frac === 1);
+  const long = C.resultsView({ ...res(), weapons: [W('ghost_wolves', 5)], chapter: 'x'.repeat(500) }, bank({ moved: { nearest: [{ id: 'a', name: 'n'.repeat(500), frac: 2, text: 't'.repeat(500) }] } }), data);
+  assert.ok(long.moved.nearest[0].name.length <= 40 && long.moved.nearest[0].text.length <= 90 && long.moved.nearest[0].frac === 1);
   assert.ok(long.kicker.length < 120);
   for (const f of ['src/ui/results.js', 'src/ui/resultscopy.js']) assert.ok(!/innerHTML|insertAdjacentHTML|outerHTML|document\.write|eval\(/.test(R(f).replace(/\/\/.*$/gm, '')), f);
 });
@@ -270,12 +265,12 @@ test('garbage input never throws', () => {
 
 // ---------------------------------------------------------------- short screens drop rows, never scroll
 test('fit(): when the body overflows, rows drop in priority order (weapons, nudge, arc labels, line) and come back when there is room', () => {
-  const v = mkView(res(), bank({ closest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] }));
+  const v = mkView(res(), bank({ moved: { nearest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] } }));
   const { r } = build(v);
   const dropped = () => (r.root.getAttribute('data-dropped') || '').split(' ').filter(Boolean);
   let room = 0; // how many drop groups are needed before it fits
   const hiddenGroups = () => new Set(r.root.querySelectorAll('[data-drop]').filter((n) => n.hidden).map((n) => n.attrs['data-drop']));
-  const order = ['weapons', 'nudge', 'arcl', 'line'];
+  const order = ['weapons', 'moved', 'arcl', 'line'];
   Object.defineProperty(r.main, 'clientHeight', { get: () => 100 });
   const hiddenN = () => order.filter((k) => hiddenGroups().has(k)).length;
   Object.defineProperty(r.main, 'scrollHeight', { get: () => 100 + (hiddenN() < room ? 10 : 0) });
@@ -285,13 +280,13 @@ test('fit(): when the body overflows, rows drop in priority order (weapons, nudg
   Object.defineProperty(r.hero, 'scrollHeight', { get: () => 100 });
   room = 0; r.fit(); assert.deepEqual(dropped(), []);
   room = 1; r.fit(); assert.deepEqual(dropped(), ['weapons']);
-  room = 2; r.fit(); assert.deepEqual(dropped(), ['weapons', 'nudge']);
-  room = 3; r.fit(); assert.deepEqual(dropped(), ['weapons', 'nudge', 'arcl']);
+  room = 2; r.fit(); assert.deepEqual(dropped(), ['weapons', 'moved']);
+  room = 3; r.fit(); assert.deepEqual(dropped(), ['weapons', 'moved', 'arcl']);
   room = 0; r.fit(); assert.deepEqual(dropped(), [], 'rows return when the window grows');
 });
 
 test('fit(): overflow that is there with every row hidden (hero text a few px taller than its cell) does not drop rows', () => {
-  const v = mkView(res(), bank({ closest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] }));
+  const v = mkView(res(), bank({ moved: { nearest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] } }));
   const { r } = build(v);
   const dropped = () => (r.root.getAttribute('data-dropped') || '').split(' ').filter(Boolean);
   let rowsOn = false;
@@ -361,7 +356,7 @@ test('ui.js wiring: showEnd builds through results.js (no HTML strings), end key
   assert.ok(/\.layer-end/.test(ui), 'space activates buttons on the end screen');
   assert.ok(/name === 'end' && this\.endView/.test(ui));
   assert.ok(/import '\.\/results\.css'/.test(ui));
-  assert.ok(/h\.again\(\)/.test(body) && /h\.menu\(\)/.test(body) && /h\.openTree\(\)/.test(body));
+  assert.ok(/h\.again\(\)/.test(body) && /h\.menu\(\)/.test(body) && /h\.openTree\(null, null, \{ pulse: movedIds/.test(body));
 });
 
 test('app.js keeps banking once per run: bankRun guard and again() reset are untouched', () => {
@@ -424,7 +419,7 @@ test('DR4 recap renders as text only, keeps the one-screen drop order and the we
   assert.ok(find(r.root, (n) => n.attrs && n.attrs['data-drop'] === 'hurt').length === 1);
   assert.match(C.resultsSummary(view), /Struck down by a Fell Wolf's lunge at 6:31/);
   const css = R('src/ui/results.js');
-  assert.match(css, /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn']/);
+  assert.match(css, /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'moved', 'arcl', 'line', 'firstdawn']/);
   assert.ok(!/innerHTML/.test(css.replace(/\/\/.*$/gm, '')));
 });
 
@@ -450,11 +445,11 @@ test('DR4 sim counters feed the recap (hurt block of sim.result)', async () => {
 });
 
 test('DR4 fit(): weapons drop first, then the lunge note, then the recap bars; rows come back when there is room', () => {
-  const v = mkView(res({ hurt: hurtOf() }), bank({ closest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] }));
+  const v = mkView(res({ hurt: hurtOf() }), bank({ moved: { nearest: [{ id: 'a', name: 'Raven Flock', frac: 0.5, text: 't' }] } }));
   const { r } = build(v);
   const dropped = () => (r.root.getAttribute('data-dropped') || '').split(' ').filter(Boolean);
   const hiddenGroups = () => new Set(r.root.querySelectorAll('[data-drop]').filter((n) => n.hidden).map((n) => n.attrs['data-drop']));
-  const H = { weapons: 3, hurtnote: 1, hurt: 2, nudge: 1, arcl: 1, line: 1 }; // heights of each droppable group
+  const H = { weapons: 3, hurtnote: 1, hurt: 2, moved: 1, arcl: 1, line: 1 }; // heights of each droppable group
   let cap = 200;
   const used = () => 90 + Object.entries(H).filter(([k]) => !hiddenGroups().has(k)).reduce((a, [, h]) => a + h, 0);
   Object.defineProperty(r.main, 'clientHeight', { get: () => cap });
@@ -465,9 +460,9 @@ test('DR4 fit(): weapons drop first, then the lunge note, then the recap bars; r
   cap = total - 3; r.fit(); assert.deepEqual(dropped(), ['weapons'], 'the weapon bars go first');
   cap = total - 5; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote'], 'then the one-line note, the bars stay');
   cap = total - 7; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt'], 'only then the recap bars');
-  cap = total - 8; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt', 'nudge']);
+  cap = total - 8; r.fit(); assert.deepEqual(dropped(), ['weapons', 'hurtnote', 'hurt', 'moved']);
   cap = total; r.fit(); assert.deepEqual(dropped(), [], 'everything returns');
-  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn'\]/); // FD5 rows (kept, stars, first dawn) slot in by priority
+  assert.match(R('src/ui/results.js'), /DROP_ORDER = \['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'moved', 'arcl', 'line', 'firstdawn'\]/); // FD5 rows (kept, stars, first dawn) slot in by priority
 });
 
 // ---------------------------------------------------------------- Elder Treant fight (boss-treant-v1 (f)): fight-time recap + boss HP line + held clock
@@ -510,7 +505,7 @@ test('FM3 first death: the lesson takes the nudge slot, the Lantern Web is the p
 
 test('FM3 first win adds one lesson line beside the nudge; forged / unknown teach kinds are ignored; text stays inert', () => {
   const v = mkView(res({ outcome: 'victory', time: 900 }), bank({ newly: ['NEW: Raven Flock'], teach: { kind: 'firstWin', title: 'Dawn', whisper: 'The Hollow remembers. Harder nights wait in the Lantern Web.' } }));
-  assert.equal(v.nudge.kind, 'new'); assert.equal(v.learn.title, 'Dawn'); assert.equal(v.treePrimary, false);
+  assert.equal(v.nudge, null, 'the old NEW line is gone: one goal list'); assert.equal(v.learn.title, 'Dawn'); assert.equal(v.treePrimary, false);
   assert.equal(byCls(build(v).r.root, 'is-learn').length, 1);
   const f = mkView(res(), bank({ teach: { kind: '<img src=x onerror=alert(1)>', title: 'x', whisper: 'y', primaryTree: true } }));
   assert.equal(f.learn, null); assert.equal(f.treePrimary, false); assert.notEqual(f.nudge && f.nudge.kind, 'learn');

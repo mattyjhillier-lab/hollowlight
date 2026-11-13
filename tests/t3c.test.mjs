@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { data, treeDef as def } from './helpers.mjs';
-import { compileTree, nodeStatus, canBuy, buy, respec, spentOf, sanitizeTree, sanitizeCreep, creepCount, isLinked, costFor } from '../src/meta/tree.js';
+import { compileTree, nodeStatus, canBuy, buy, respec, spentOf, sanitizeTree, sanitizeCreep, creepCount, isLinked, costFor, pathToHub } from '../src/meta/tree.js';
 import { composeTree } from '../src/meta/treedata.js';
 import { readTreeFiles } from '../src/meta/treefs.mjs';
 import { connectIssues, layoutIssues } from '../src/meta/treelayout.js';
@@ -18,6 +18,9 @@ const composed = composeTree(readTreeFiles(), data);
 const v2 = compileTree(composed.v2, data);
 const rich = (tree = {}) => ({ ...defaultSave(), gold: 1e6, shards: 99, tree: { ...tree }, stats: { ...defaultSave().stats, killsByEnemy: { wolf: 1e6, crow: 1e6, root_crawler: 1e6 }, chapters: { cursed_forest: { runs: 99, clears: 99, bestTime: 900 } }, runs: 99 } });
 const st = (s, id) => nodeStatus(def, s, id, data);
+// S1: buy every lantern on the way to `id` (its road), parents first
+const buyTo = (save, id) => { const p = pathToHub(def, id, save.tree).ids; for (const x of def.order) if (x !== id && p.has(x) && !(save.tree[x] >= 1)) assert.ok(buy(save, x, def, data).ok, x); };
+const roadEnd = (id) => composed.info.roads.find((r) => r.to === id).ids.at(-1);
 const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
 
 // ------------------------------------------------------------------ data patch
@@ -29,7 +32,8 @@ test('T3c patch: every live lantern links to something lit, no far links, every 
   for (const i of pend) assert.ok((i.match(/\b[a-z]{2}_[a-z0-9_]+/g) || []).every((x) => inert.has(x) || !composed.info.nodes.some((n) => n.id === x)), i);
   assert.deepEqual(layoutIssues(composed.info, v2), []);
   // the four bridges: 250 gold, gem pull +5% (utility only), Dusk ring, only br_satchel is live (the other three wait with their groups)
-  for (const b of ['br_satchel', 'br_almanac', 'br_cardfan', 'br_hearthkey']) { const n = v2.nodes[b]; assert.equal(n.cost.gold, 250); assert.deepEqual(n.effects, [{ perk: 'gemPull', pct: 5 }]); assert.ok(!n.unlock && n.requiresAny.length === 2); }
+  // S1: each bridge is the end of its tool's road (gold-only), on the group's rim
+  for (const b of ['br_satchel', 'br_almanac', 'br_cardfan', 'br_hearthkey']) { const n = v2.nodes[b]; assert.equal(n.cost.gold, 250); assert.deepEqual(n.effects, [{ perk: 'gemPull', pct: 5 }]); assert.ok(!n.unlock && !n.requiresAny); assert.deepEqual(n.requires, [roadEnd(b)]); }
   assert.ok(def.nodes.br_satchel && def.nodes.br_almanac && def.nodes.br_cardfan && def.nodes.br_hearthkey, 'T6: all four bridges are live');
   for (const id of ['cd_peek', 'bs_wolf1', 'rs_autoset']) assert.ok(def.nodes[id] && !def.nodes[id].unlock, `${id}: its group's gold-only way in`);
   assert.deepEqual(['li_reach', 'co_pull'].map((i) => def.nodes[i].requires), [['br_satchel'], ['br_satchel']]);
@@ -54,8 +58,12 @@ test('T3c validator refuses a far hub root, a far link, a group whose only ways 
   fs2.find((f) => f.path === 'core.json').json.nodes.find((n) => n.id === 'li_reach').unlock = { t: 'runs', n: 3 };
   c = composeTree(fs2, data);
   const iss = connectIssues(c.info, compileTree(c.live, data)).join('|');
-  assert.match(iss, /group satchel: every way in is a challenge/);
-  assert.match(iss, /bridge br_satchel leads only to challenges/);
+  assert.match(iss, /bridge br_satchel leads only to challenges/); // S1: the bridge itself (gold only, end of its road) is the group's way in
+  const fs4 = clone(readTreeFiles());
+  fs4.find((f) => f.path === 'core.json').json.nodes.find((n) => n.id === 'br_satchel').unlock = { t: 'runs', n: 3 };
+  for (const id of ['co_pull', 'li_reach']) { const n = [...fs4.find((f) => f.path === 'tools/satchel.json').json.nodes, ...fs4.find((f) => f.path === 'core.json').json.nodes].find((x) => x.id === id); n.unlock = { t: 'runs', n: 3 }; }
+  c = composeTree(fs4, data);
+  assert.match(connectIssues(c.info, compileTree(c.live, data)).join('|'), /group satchel: every way in is a challenge/);
   const fs3 = clone(readTreeFiles());
   fs3.find((f) => f.path === 'core.json').json.nodes.find((n) => n.id === 'li_dawn').place = { ring: 'dusk', i: 0 };
   c = composeTree(fs3, data);
@@ -64,7 +72,9 @@ test('T3c validator refuses a far hub root, a far link, a group whose only ways 
 
 test('T3c place {near, at}: a lantern sits at its parent + offset (chains resolve), and bad references fail', () => {
   const p = composed.info.positions;
-  assert.deepEqual(p.li_elder, [Math.round((p.li_last[0] + 74) * 10) / 10, Math.round((p.li_last[1] + 51) * 10) / 10]);
+  // the hub web is generated (hubLayout): a `near` lantern sits one level further out beside its parent, never far from it
+  assert.ok(Math.hypot(p.li_elder[0] - p.li_last[0], p.li_elder[1] - p.li_last[1]) < 130, 'li_elder beside li_last');
+  assert.ok(Math.hypot(...p.li_elder) > Math.hypot(...p.li_last), 'li_elder one step further out');
   const bad = (fn, re) => { const fs = clone(readTreeFiles()); fn(fs.find((f) => f.path === 'core.json').json); assert.throws(() => composeTree(fs, data), re); };
   bad((c) => { c.nodes.find((n) => n.id === 'li_elder').place = { near: 'nope_zz', at: [10, 10] }; }, /place\.near/);
   bad((c) => { c.nodes.find((n) => n.id === 'li_elder').place = { near: 'li_elder', at: [10, 10] }; }, /place\.near/);
@@ -81,13 +91,15 @@ test('T3c connected rule: a fresh save can light only the Hearth/Wick lanterns t
   assert.equal(st(s, 'co_pull').state, 'locked');
   assert.equal(st(s, 'br_satchel').state, 'locked');
   assert.match(st(s, 'br_satchel').reason, /one of/);
-  assert.equal(st(s, 'gt_raven_flock').state, 'available', 'E1: a weapon heart is a hub challenge');
+  assert.equal(st(s, 'gt_raven_flock').state, 'locked', 'S1: a weapon heart is reached by its road (no longer a hub challenge)');
+  assert.match(st(s, 'gt_raven_flock').reason, /Requires/);
   for (const id of def.list) {
     const n = def.nodes[id];
     if (n.teaser || n.requires.length || n.requiresAny) continue;
     assert.ok(n.permanent || n.cluster || Math.hypot(n.x, n.y) <= 360, `${id} touches the hub`);
   }
-  assert.ok(buy(s, 'su_bond', def, data).ok && buy(s, 'su_pot', def, data).ok && buy(s, 'br_satchel', def, data).ok);
+  buyTo(s, 'br_satchel');
+  assert.ok(buy(s, 'br_satchel', def, data).ok);
   assert.equal(st(s, 'li_reach').state, 'available');
   assert.equal(st(s, 'co_pull').state, 'available');
 });
@@ -115,7 +127,8 @@ test('T3c exceptions: E1 hearts are hub challenges; E2 seals and every lantern o
   // E3 (CHARACTER SYSTEM v2): no constellation is a starter any more; the starter grant lights its heart, then its seals are linked
   assert.equal(st(s, 'gt_phantom_stampede').state, 'locked', 'v2: the Wolves seal waits for the Wolves heart like any other');
   assert.equal(isLinked(def, { gt_ghost_wolves: 1 }, 'gt_phantom_stampede'), true);
-  buy(s, 'gt_raven_flock', def, data);
+  buyTo(s, 'gt_raven_flock');
+  assert.ok(buy(s, 'gt_raven_flock', def, data).ok);
   assert.notEqual(st(s, 'gt_dive_bombers').state, 'locked', 'E2: the seal opens once its spirit is woken (then only its own condition remains)');
   assert.equal(isLinked(def, s.tree, 'gt_dive_bombers'), true);
   // a forged neighbour cannot open a gated constellation without its heart
@@ -158,6 +171,7 @@ test('T3c rising price: +8% per purchase on the rest of the group; the price sho
   buy(s, 'su_rush', def, data);
   const s2 = rich(); s2.gold = 1e6;
   for (const id of ['li_vigor', 'li_study', 'li_coin']) assert.ok(buy(s2, id, def, data).ok, id);
+  buyTo(s2, 'br_satchel');
   assert.ok(buy(s2, 'br_satchel', def, data).ok);
   const k = creepCount(def, s2.tree, 'li_reach');
   assert.ok(k >= 4);
@@ -170,7 +184,11 @@ test('T3c rising price: +8% per purchase on the rest of the group; the price sho
 
 test('T3c respec refunds EXACTLY what was paid (rising price included) and clears the price steps; a second respec pays nothing', () => {
   const s = rich(); s.gold = 50000;
-  for (const id of ['su_bond', 'su_pot', 'su_rush', 'sp_reroll1', 'sp_reroll2', 'li_vigor', 'li_study', 'li_coin', 'br_satchel', 'li_reach', 'li_reach', 'gt_raven_flock']) assert.ok(buy(s, id, def, data).ok, id);
+  for (const id of ['su_bond', 'su_pot', 'su_rush', 'sp_reroll1', 'sp_reroll2', 'li_vigor', 'li_study', 'li_coin']) assert.ok(buy(s, id, def, data).ok, id);
+  buyTo(s, 'br_satchel');
+  for (const id of ['br_satchel', 'li_reach', 'li_reach']) assert.ok(buy(s, id, def, data).ok, id);
+  buyTo(s, 'gt_raven_flock');
+  assert.ok(buy(s, 'gt_raven_flock', def, data).ok);
   const paid = 50000 - s.gold;
   const gate = def.nodes.gt_raven_flock.cost.gold;
   const out = respec(s, def);

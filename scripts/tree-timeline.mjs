@@ -106,7 +106,7 @@ if (NODES) {
     const j = f.json;
     if (!(f.path.startsWith('clusters/zw'))) continue;
     const ch = 2 + Math.floor(ci++ / CAL.perChapterClusters);
-    const specs = [...j.outline, ...j.gates];
+    const specs = [...(j.outline || []), ...(j.nodes || []), ...j.gates, ...(j.roads || []).flatMap((r) => r.nodes)];
     const sum = specs.reduce((a, n) => a + n.cost.gold, 0);
     const k = (CAL.clusterRuns * avgIncome(ch)) / sum;
     for (const n of specs) { n.cost.gold = Math.max(10, Math.round((n.cost.gold * k) / 10) * 10); chapterOf.set(n.id, ch); }

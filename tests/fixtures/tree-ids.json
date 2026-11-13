@@ -678,5 +678,497 @@
  "wd_motes": [
   "wd",
   6
+ ],
+ "cl_thu1": [
+  "cl",
+  15
+ ],
+ "cl_thu2": [
+  "cl",
+  16
+ ],
+ "cl_thu3": [
+  "cl",
+  17
+ ],
+ "cl_thu4": [
+  "cl",
+  18
+ ],
+ "cl_thu5": [
+  "cl",
+  19
+ ],
+ "cl_thu6": [
+  "cl",
+  20
+ ],
+ "cl_sta1": [
+  "cl",
+  21
+ ],
+ "cl_sta2": [
+  "cl",
+  22
+ ],
+ "cl_sta3": [
+  "cl",
+  23
+ ],
+ "cl_sta4": [
+  "cl",
+  24
+ ],
+ "cl_sta5": [
+  "cl",
+  25
+ ],
+ "cl_sta6": [
+  "cl",
+  26
+ ],
+ "cl_flash": [
+  "cl",
+  27
+ ],
+ "cl_tet1": [
+  "cl",
+  28
+ ],
+ "cl_tet2": [
+  "cl",
+  29
+ ],
+ "cl_tet3": [
+  "cl",
+  30
+ ],
+ "cl_tet4": [
+  "cl",
+  31
+ ],
+ "cl_tet5": [
+  "cl",
+  32
+ ],
+ "cl_tet6": [
+  "cl",
+  33
+ ],
+ "or_halo": [
+  "or",
+  14
+ ],
+ "or_hal1": [
+  "or",
+  15
+ ],
+ "or_hal2": [
+  "or",
+  16
+ ],
+ "or_hal3": [
+  "or",
+  17
+ ],
+ "or_hal4": [
+  "or",
+  18
+ ],
+ "or_hal5": [
+  "or",
+  19
+ ],
+ "or_hal6": [
+  "or",
+  20
+ ],
+ "or_jud1": [
+  "or",
+  21
+ ],
+ "or_jud2": [
+  "or",
+  22
+ ],
+ "or_jud3": [
+  "or",
+  23
+ ],
+ "or_jud4": [
+  "or",
+  24
+ ],
+ "or_jud5": [
+  "or",
+  25
+ ],
+ "or_jud6": [
+  "or",
+  26
+ ],
+ "or_lamp": [
+  "or",
+  27
+ ],
+ "or_ves1": [
+  "or",
+  28
+ ],
+ "or_ves2": [
+  "or",
+  29
+ ],
+ "or_ves3": [
+  "or",
+  30
+ ],
+ "or_ves4": [
+  "or",
+  31
+ ],
+ "or_ves5": [
+  "or",
+  32
+ ],
+ "or_ves6": [
+  "or",
+  33
+ ],
+ "bo_tem1": [
+  "bo",
+  15
+ ],
+ "bo_tem2": [
+  "bo",
+  16
+ ],
+ "bo_tem3": [
+  "bo",
+  17
+ ],
+ "bo_tem4": [
+  "bo",
+  18
+ ],
+ "bo_tem5": [
+  "bo",
+  19
+ ],
+ "bo_tem6": [
+  "bo",
+  20
+ ],
+ "bo_lan1": [
+  "bo",
+  21
+ ],
+ "bo_lan2": [
+  "bo",
+  22
+ ],
+ "bo_lan3": [
+  "bo",
+  23
+ ],
+ "bo_lan4": [
+  "bo",
+  24
+ ],
+ "bo_lan5": [
+  "bo",
+  25
+ ],
+ "bo_lan6": [
+  "bo",
+  26
+ ],
+ "bo_ward": [
+  "bo",
+  27
+ ],
+ "bo_ret1": [
+  "bo",
+  28
+ ],
+ "bo_ret2": [
+  "bo",
+  29
+ ],
+ "bo_ret3": [
+  "bo",
+  30
+ ],
+ "bo_ret4": [
+  "bo",
+  31
+ ],
+ "bo_ret5": [
+  "bo",
+  32
+ ],
+ "bo_ret6": [
+  "bo",
+  33
+ ],
+ "cl_way1": [
+  "cl",
+  34
+ ],
+ "cl_way2": [
+  "cl",
+  35
+ ],
+ "cl_way3": [
+  "cl",
+  36
+ ],
+ "cl_way4": [
+  "cl",
+  37
+ ],
+ "cl_way5": [
+  "cl",
+  38
+ ],
+ "cl_way6": [
+  "cl",
+  39
+ ],
+ "cl_way7": [
+  "cl",
+  40
+ ],
+ "wf_way1": [
+  "wf",
+  14
+ ],
+ "wf_way2": [
+  "wf",
+  15
+ ],
+ "wf_way3": [
+  "wf",
+  16
+ ],
+ "wf_way4": [
+  "wf",
+  17
+ ],
+ "wf_way5": [
+  "wf",
+  18
+ ],
+ "wf_way6": [
+  "wf",
+  19
+ ],
+ "or_way1": [
+  "or",
+  34
+ ],
+ "or_way2": [
+  "or",
+  35
+ ],
+ "or_way3": [
+  "or",
+  36
+ ],
+ "rv_way1": [
+  "rv",
+  15
+ ],
+ "rv_way2": [
+  "rv",
+  16
+ ],
+ "rv_way3": [
+  "rv",
+  17
+ ],
+ "rv_way4": [
+  "rv",
+  18
+ ],
+ "rv_way5": [
+  "rv",
+  19
+ ],
+ "bo_way1": [
+  "bo",
+  34
+ ],
+ "bo_way2": [
+  "bo",
+  35
+ ],
+ "bo_way3": [
+  "bo",
+  36
+ ],
+ "bs_way1": [
+  "bs",
+  13
+ ],
+ "bs_way2": [
+  "bs",
+  14
+ ],
+ "bs_way3": [
+  "bs",
+  15
+ ],
+ "cd_way1": [
+  "cd",
+  6
+ ],
+ "cd_way2": [
+  "cd",
+  7
+ ],
+ "cd_way3": [
+  "cd",
+  8
+ ],
+ "cd_way4": [
+  "cd",
+  9
+ ],
+ "cd_way5": [
+  "cd",
+  10
+ ],
+ "rs_way1": [
+  "rs",
+  4
+ ],
+ "rs_way2": [
+  "rs",
+  5
+ ],
+ "rs_way3": [
+  "rs",
+  6
+ ],
+ "df_way1": [
+  "df",
+  5
+ ],
+ "df_way2": [
+  "df",
+  6
+ ],
+ "df_way3": [
+  "df",
+  7
+ ],
+ "df_way4": [
+  "df",
+  8
+ ],
+ "df_way5": [
+  "df",
+  9
+ ],
+ "df_way6": [
+  "df",
+  10
+ ],
+ "df_long1": [
+  "df",
+  11
+ ],
+ "df_long2": [
+  "df",
+  12
+ ],
+ "df_long3": [
+  "df",
+  13
+ ],
+ "df_long4": [
+  "df",
+  14
+ ],
+ "co_way1": [
+  "co",
+  3
+ ],
+ "co_way2": [
+  "co",
+  4
+ ],
+ "co_way3": [
+  "co",
+  5
+ ],
+ "wd_way1": [
+  "wd",
+  7
+ ],
+ "wd_way2": [
+  "wd",
+  8
+ ],
+ "wd_way3": [
+  "wd",
+  9
+ ],
+ "wd_way4": [
+  "wd",
+  10
+ ],
+ "wd_way5": [
+  "wd",
+  11
+ ],
+ "co_far": [
+  "co",
+  6
+ ],
+ "co_seek1": [
+  "co",
+  7
+ ],
+ "co_seek2": [
+  "co",
+  8
+ ],
+ "co_seek3": [
+  "co",
+  9
+ ],
+ "co_seek4": [
+  "co",
+  10
+ ],
+ "co_seek5": [
+  "co",
+  11
+ ],
+ "co_seek6": [
+  "co",
+  12
+ ],
+ "wf_kindling": [
+  "wf",
+  20
+ ],
+ "or_kindling": [
+  "or",
+  37
+ ],
+ "rv_kindling": [
+  "rv",
+  20
+ ],
+ "bo_kindling": [
+  "bo",
+  37
+ ],
+ "cl_kindling": [
+  "cl",
+  41
  ]
 }

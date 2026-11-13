@@ -6,10 +6,11 @@ import { tierGlyph, starIcon } from './lanternsui.js';
 import { mk, emblem, EMBLEM_OF, lantern } from './hudsvg.js';
 import { RES, resultsSummary, countAt, group } from './resultscopy.js';
 import { CX } from './codexcopy.js';
+import { buildNextLights } from './nextlights.js';
 
 export const INPUT_LOCK_MS = 250;       // keys right after the screen appears are ignored (a mashed Space or R from the run must not restart it)
 export const COUNT_MS = 900;
-const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
+const DROP_ORDER = ['bossline', 'weapons', 'hurtnote', 'hurt', 'kept', 'stars', 'ledger', 'nudge', 'moved', 'arcl', 'line', 'firstdawn'];   // short screens drop the lowest-priority rows first instead of scrolling
 const add = (p, ...kids) => { for (const k of kids) if (k) p.appendChild(k); return p; };
 const nowMs = () => (globalThis.performance && globalThis.performance.now ? globalThis.performance.now() : Date.now());
 
@@ -159,6 +160,8 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
     put(blk);
   }
 
+  let nl = null;
+  if (v.moved) { nl = buildNextLights({ moved: v.moved, calm: reduced }); const w = el('div', 'u6-moved', null, { 'data-drop': 'moved' }); add(w, nl.root); put(w); }
   if (v.nudge) {
     const n = v.nudge;
     const row = el('div', `u6-nudge is-${n.kind}`, null, { 'data-drop': 'nudge' });
@@ -284,6 +287,7 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
       setArc(0);
       ids.raf = rafFn(tick);
     }
+    if (nl) nl.play();
     fit();
     if (globalThis.addEventListener) { ids.onResize = () => fit(); globalThis.addEventListener('resize', ids.onResize); }
     if (globalThis.ResizeObserver) { ids.ro = new globalThis.ResizeObserver(() => fit()); ids.ro.observe(main); if (sum) ids.ro.observe(sum); }
@@ -314,5 +318,5 @@ export function buildResults({ view, reduced = false, onAgain, onMenu, onTree, o
     if (ids.onResize && globalThis.removeEventListener) globalThis.removeEventListener('resize', ids.onResize);
   }
 
-  return { root, again, menu, tree, almanac: almBtn, main, panel: sum, hero, mounted, onKey, destroy, fit, counters, isUsed: () => used, setShownAt: (t) => { shownAt = t; } };
+  return { root, nextLights: nl, again, menu, tree, almanac: almBtn, main, panel: sum, hero, mounted, onKey, destroy, fit, counters, isUsed: () => used, setShownAt: (t) => { shownAt = t; } };
 }

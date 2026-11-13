@@ -151,11 +151,12 @@ test('picking an evolution restarts that weapon (rt cleared) and the new verb ac
       assert.deepEqual(Object.keys(w.rt), [], `${evoId}: rt restarted`);
       const before = hp(sim), kills0 = sim.kills;
       let first = -1;
-      for (let i = 0; i < 60; i++) { sim.step(1 / 60); if (first < 0 && (hp(sim) < before || sim.kills > kills0)) first = i; }
+      const win = data.weapons[data.evolutions[evoId].weapon].first ? 100 : 60; // Dragonfire Meteor: first volley 0.8 s + 0.45 s in the air by design
+      for (let i = 0; i < win; i++) { sim.step(1 / 60); if (first < 0 && (hp(sim) < before || sim.kills > kills0)) first = i; }
       return first;
     };
     const a = run(), b = run();
     assert.equal(a, b, `${evoId}: deterministic`);
-    assert.ok(a >= 0 && a <= 50, `${evoId}: verb acted within ~0.8 s (Talon Mark has a 0.4 s tell; frame ${a})`);
+    assert.ok(a >= 0 && a <= (data.weapons[data.evolutions[evoId].weapon].first ? 90 : 50), `${evoId}: verb acted within ~0.8 s (Talon Mark has a 0.4 s tell; frame ${a})`);
   }
 });

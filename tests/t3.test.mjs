@@ -38,7 +38,7 @@ test('T3a one cap per category: the whole tree can never pass a category cap, ho
   const shared = a.status.bleed + a.status.burn + a.status.mark * RULE.markFace;
   assert.ok(shared <= caps.status.cap + 1e-9, `status ${shared}`);
   // per weapon: one pool for ALL of that weapon's own stat nodes (flat Pierce / Chains count 2 points each but are never scaled)
-  for (const wid of Object.keys(data.weapons)) {
+  for (const wid of Object.keys(data.weapons).filter((w) => !data.weapons[w].unreleased)) {
     const row = a.softcap[`wpn:${wid}`];
     assert.ok(row, `${wid} has a pool row`);
     assert.equal(row.C, RULE.perWeapon.cap);
@@ -71,9 +71,9 @@ test('T3a negatives pass through the cap unscaled; flat adds are never scaled; t
 
 test('T3a the new effect kinds reach aggregateMods: status potency / seconds (hero lanterns retired: CHARACTER SYSTEM v2)', () => {
   const a = aggregateMods(own(['wf_bleed', 'wf_rend', 'or_kindle', 'or_ember', 'rv_eye', 'wr_grip', 'el_wheel', 'wr_spark', 'el_lamp']), def, data); // retired ids give nothing
-  const S = 3 + 3 + 3 + 3 + 0.5 * RULE.markFace; // bleed 6, burn 6, mark 0.5 s -> 2 points
+  const S = 3 + 3 + 1 + 1 + 0.5 * RULE.markFace; // bleed 6, burn 2 (S1: the Orbit lead-in diamonds carry +1% burn each), mark 0.5 s -> 2 points
   const fac = soft(S, 16) / S;
-  assert.ok(Math.abs(a.status.bleed - 6 * fac) < 1e-9 && Math.abs(a.status.burn - 6 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
+  assert.ok(Math.abs(a.status.bleed - 6 * fac) < 1e-9 && Math.abs(a.status.burn - 2 * fac) < 1e-9 && Math.abs(a.status.mark - 0.5 * fac) < 1e-9);
   assert.equal(a.ability.rallySecs, undefined);
   assert.equal(a.ability.wheel, undefined);
   assert.deepEqual(a.visuals, []);
@@ -155,7 +155,7 @@ test('T3a the live tree compiles from the SAME composed data as the budget view 
   // T6: the Card Fan / Almanac / Hearth-key lanterns are live, so the lore + choice reserve is reclaimed at exactly the faces the design tree carries
   // (lore is clamped at 2% per type at run time, choice perks are discrete: neither is soft-capped, so cap = face sum keeps the budget honest)
   const faces = { lore: 0, choice: 0 };
-  for (const n of c.v2.nodes) for (const e of n.effects || []) { if (e.lore) faces.lore += e.pct * d1.rule.loreShare; else if ((e.perk || e.info) && e.pe > 0 && !(n.scope && n.scope.minTier)) faces.choice += e.pe; }
+  for (const n of c.v2.nodes) for (const e of n.effects || []) { if (e.lore) faces.lore += e.pct * d1.rule.loreShare; else if ((e.perk || e.info) && e.perk !== 'kindle' && e.pe > 0 && !(n.scope && n.scope.minTier)) faces.choice += e.pe; /* Kindling Start is paid from sustain/verb, not choice */ }
   assert.ok(Math.abs(d1.rule.categories.lore.cap - faces.lore) < 1e-9, `lore cap ${d1.rule.categories.lore.cap} = lore faces ${faces.lore}`);
   assert.ok(Math.abs(d1.rule.categories.choice.cap - faces.choice) < 1e-9, `choice cap ${d1.rule.categories.choice.cap} = choice faces ${faces.choice}`);
 });

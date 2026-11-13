@@ -15,6 +15,8 @@
 //   v2   = the FULL tree (live + inert nodes) used by the budget, layout and reachability checks.
 //   info = validated structures for tools (cores, clusters, emblems, heroes, chapters, positions).
 import { STATUSES } from './status.js';
+import { tierOf } from './treetier.js';
+import { placeRegions, gardenLayout, gardenFoot, roadPoints, relaxGrid, crossLinks, ringBands, ringOf, tierRadius } from './treeatlas.js';
 
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const ID_RE = /^[a-z0-9_]{1,40}$/;
@@ -60,12 +62,80 @@ export function clusterCentre(core, slot) {
   return fail(`unknown slot ${slot}`);
 }
 
+// R1 GAP RELAXATION: inside one constellation, push apart any two lanterns closer than the gap of their tiers (core.layout.gapLandmark /
+// gapDiamond / gapDot; a mixed pair needs the mean). Small emblems (the Bolt, the Raven) pack their landmarks tighter than any one scale can fix, so
+// the cheap tier (dots) gives way first: share of a push = mobility / (sum of both mobilities). Deterministic: fixed pair order, fixed pass count.
+const MOBILITY = { landmark: 1, diamond: 2, dot: 3 };
+export function relaxGaps(items, gaps) {
+  const need = (a, b) => (a === b ? gaps[a] : (gaps[a] + gaps[b]) / 2);
+  for (let pass = 0; pass < 400; pass++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const a = items[i], b = items[j];
+      let dx = b.p[0] - a.p[0], dy = b.p[1] - a.p[1], d = Math.hypot(dx, dy);
+      const req = need(a.t, b.t);
+      if (d >= req) continue;
+      if (d < 1e-6) { dx = 1; dy = 0; d = 1; }
+      const push = (req - d) * 1.02 + 0.05, ma = MOBILITY[a.t], mb = MOBILITY[b.t];
+      const sa = ma / (ma + mb), sb = mb / (ma + mb);
+      a.p = [a.p[0] - (dx / d) * push * sa, a.p[1] - (dy / d) * push * sa];
+      b.p = [b.p[0] + (dx / d) * push * sb, b.p[1] + (dy / d) * push * sb];
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  return items;
+}
+
 function ringPos(core, place) {
   const ring = core.rings[place.ring];
   ensure(isObj(ring) && ring.r !== undefined, `unknown ring ${place.ring}`);
   if (place.ring === 'fog') { ensure(Number.isInteger(place.i) && place.i >= 0 && place.i < ring.angles.length, 'fog slot out of range'); return polar(ring.r, ring.angles[place.i]); }
   ensure(Number.isInteger(place.i) && place.i >= 0 && place.i < ring.slots, `${place.ring} slot out of range`);
   return polar(ring.r, -90 + (360 * place.i) / ring.slots);
+}
+
+// HUB WEB LAYOUT (generated, display only; positions are not part of any fingerprint). The Hearth + Wick web is laid out as a clean radial tree:
+//   * the requires graph of the hub lanterns (a `near` parent counts as the parent) is the tree; a lantern's RADIUS is its level (0 = the Hearth ring, then the
+//     Wick ring, then one step further out per link of a chain), so a chain runs out along one straight spoke and never crosses another;
+//   * Hearth lanterns go round the ring in tree order (a parent sits in the middle of its Hearth children, so every requirement is a neighbour link),
+//     each owning a wedge as wide as its outer subtree needs (at least 26 degrees); the wedges are stretched to fill the circle evenly.
+// Pure and deterministic (data order, no randomness); `place.i` / `place.at` stay in the data as the schema's validated hint but no longer decide the spot.
+const HUB_R = [150, 300, 360, 420, 480];
+function hubLayout(allNodes) {
+  const ringOf = (a) => (a.spec.place && typeof a.spec.place.ring === 'string' ? a.spec.place.ring : '');
+  const base = allNodes.filter((a) => a.ownerKind === 'core' && !a.tool && !a.near && (ringOf(a) === 'hearth' || ringOf(a) === 'wick'));
+  const set = new Map(base.map((a) => [a.spec.id, a]));
+  for (let grew = true; grew;) { grew = false; for (const a of allNodes) if (a.ownerKind === 'core' && a.near && !set.has(a.spec.id) && set.has(a.near)) { set.set(a.spec.id, a); grew = true; } }
+  const parentOf = (a) => { if (a.near) return a.near; const rq = [...(a.spec.requires || []), ...(a.spec.requiresAny || [])].find((x) => set.has(x) && x !== a.spec.id); return rq || null; };
+  const kids = new Map(), roots = [];
+  const order = [...set.values()]; // data order
+  for (const a of order) { const p = parentOf(a); if (p) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(a); } else roots.push(a); }
+  const lvl = new Map();
+  const level = (a) => { if (lvl.has(a.spec.id)) return lvl.get(a.spec.id); lvl.set(a.spec.id, 1); const p = parentOf(a); let v = ringOf(a) === 'hearth' ? 0 : Math.max(1, p ? level(set.get(p)) + 1 : 1); if (ringOf(a) === 'hearth' && p && ringOf(set.get(p)) !== 'hearth') v = 1; v = Math.min(v, HUB_R.length - 1); lvl.set(a.spec.id, v); return v; };
+  for (const a of order) level(a);
+  const deg = (arc, r) => (arc / r) * (180 / Math.PI);
+  const hearth = (a) => lvl.get(a.spec.id) === 0;
+  const outerKids = (a) => (kids.get(a.spec.id) || []).filter((k) => !hearth(k));
+  const wm = new Map();
+  const width = (a) => { if (wm.has(a.spec.id)) return wm.get(a.spec.id); const own = deg(a.spec.kind === 'key' ? 96 : 58, HUB_R[lvl.get(a.spec.id)]); const ks = outerKids(a); const v = Math.max(own, ks.reduce((t, k) => t + width(k), 0)); wm.set(a.spec.id, v); return v; };
+  const sector = (a) => Math.max(26, outerKids(a).reduce((t, k) => t + width(k), 0));
+  const hseq = (a) => { const hk = (kids.get(a.spec.id) || []).filter(hearth); const h = Math.floor(hk.length / 2); return [...hk.slice(0, h).flatMap(hseq), a, ...hk.slice(h).flatMap(hseq)]; }; // a parent sits in the middle of its Hearth children
+  const slotAng = (a) => { const pl = a.spec.place; return pl && Number.isInteger(pl.i) ? -90 + (360 * pl.i) / (ringOf(a) === 'hearth' ? 10 : 26) : 0; };
+  const rootsSorted = roots.map((a, i) => ({ a, i })).sort((x, y) => slotAng(x.a) - slotAng(y.a) || x.i - y.i).map((x) => x.a);
+  const units = []; // { a, seq: [hearth nodes] | null, w }
+  for (const r of rootsSorted) { if (hearth(r)) { const seq = hseq(r); units.push({ seq, w: seq.reduce((t, h) => t + sector(h), 0) }); } else units.push({ seq: null, a: r, w: width(r) }); }
+  const total = units.reduce((t, u) => t + u.w, 0);
+  const k = Math.max(1, 360 / total); // stretch (never squeeze: the layout checks cover a crowded hub)
+  const out = Object.create(null);
+  const put = (a, ang) => { out[a.spec.id] = polar(HUB_R[lvl.get(a.spec.id)], ang); };
+  const sub = (a, ang) => { put(a, ang); const ks = outerKids(a); const kw = ks.reduce((t, c) => t + width(c) * k, 0); let c0 = ang - kw / 2; for (const c of ks) { const cw = width(c) * k; sub(c, c0 + cw / 2); c0 += cw; } };
+  let at = -90 - (units[0] && units[0].seq ? sector(units[0].seq[0]) * k / 2 : 0);
+  for (const u of units) {
+    if (u.seq) for (const h of u.seq) { const sw = sector(h) * k; const ang = at + sw / 2; put(h, ang); const ks = outerKids(h); const kw = ks.reduce((t, c) => t + width(c) * k, 0); let c0 = ang - kw / 2; for (const c of ks) { const cw = width(c) * k; sub(c, c0 + cw / 2); c0 += cw; } at += sw; }
+    else { sub(u.a, at + u.w * k / 2); at += u.w * k; }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- file checks
@@ -98,8 +168,13 @@ function checkCore(c) {
   ensure(c.schema === 2, 'core.json: schema must be 2');
   ensure(Number.isInteger(c.version) && c.version >= 3 && c.version <= 99, 'core.json: version');
   ensure(isObj(c.layout) && isObj(c.branches) && Array.isArray(c.nodes), 'core.json: layout/branches/nodes');
+  // R1 layout keys (all optional; a missing key keeps the pre-R1 geometry): constellation / tool-cluster scale, landmark / diamond / dot gaps,
+  // hero spacing in degrees, and the rings that get an engraved runic circle on the stone backdrop
+  const L = c.layout;
+  for (const [k, lo, hi] of [['clusterScale', 0.5, 6], ['toolScale', 0.5, 6], ['gapLandmark', 0, 1000], ['gapDiamond', 0, 1000], ['gapDot', 0, 1000], ['linkFar', 50, 2000], ['heroStep', 1, 90], ['heroSibling', 1, 180]]) if (L[k] !== undefined) num(L[k], lo, hi, `layout.${k}`);
   const R = c.rings;
   ensure(isObj(R), 'core.json: rings');
+  if (L.runeRings !== undefined) ensure(Array.isArray(L.runeRings) && L.runeRings.length <= 12 && L.runeRings.every((k) => typeof k === 'string' && isObj(R[k]) && fin(R[k].r)), 'layout.runeRings must name rings');
   const order = ['hearth', 'wick', 'heroes', 'sky', 'dusk', 'fog', 'far'];
   let last = 0;
   for (const k of order) { ensure(isObj(R[k]), `core.json: ring ${k}`); num(R[k].r, 1, 1e5, `rings.${k}.r`); ensure(R[k].r > last, 'core.json: ring radii must strictly increase'); last = R[k].r; }
@@ -121,6 +196,7 @@ function checkCore(c) {
   // TOMBSTONES: a removed node keeps its id AND its (fragment, idx) forever. Neither can ever be reused, and migration steps still see the id.
   ensure(Array.isArray(c.retired) && c.retired.length <= 5000, 'core.json: retired');
   for (const t of c.retired) ensure(isObj(t) && Object.keys(t).length === 3 && typeof t.id === 'string' && ID_RE.test(t.id) && !BAD_KEYS.has(t.id) && typeof t.frag === 'string' && PREFIX_RE.test(t.frag) && !BAD_KEYS.has(t.frag) && Number.isInteger(t.idx) && t.idx >= 0 && t.idx <= 65535, 'core.json: retired entries are tombstones {id, frag, idx}');
+  checkAtlas(c.atlas);
   const b = c.budget;
   ensure(isObj(b) && isObj(b.base) && isObj(b.perChapter) && isObj(b.categories) && isObj(b.sustain) && isObj(b.utility) && isObj(b.perWeapon), 'core.json: budget');
   for (const [k, v] of Object.entries({ ...b.base, ...b.perChapter, ...b.sustain, ...b.utility })) num(v, 0, 1e4, `budget.${k}`);
@@ -135,7 +211,51 @@ function checkCore(c) {
   for (const [k, v] of Object.entries(b.categories)) { ensure(/^[a-zA-Z][a-zA-Z0-9_]{0,23}$/.test(k) && isObj(v), `budget category ${k}`); num(v.cap, 0, 1000, `budget.${k}.cap`); num(v.weight, 0, 10, `budget.${k}.weight`); }
 }
 
-const NODE_KEYS = new Set(['id', 'idx', 'kind', 'name', 'desc', 'flavour', 'branch', 'maxRank', 'rankCost', 'cost', 'requires', 'requiresAny', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone', 'inert', 'place', 'v2', 'scope']);
+// S1 ATLAS (core.atlas): ring tiers (names + radii), garden geometry, region spacing and the display-only / reserved region records.
+const REGION_KINDS = ['night', 'reserved', 'chapter', 'far'];
+const NAME_RE = /^[A-Za-z0-9 .,'\-]{1,40}$/;
+function checkOrbit(o, where) {
+  ensure(isObj(o) && Object.keys(o).every((k) => k === 'tier' || k === 'angle') && Number.isInteger(o.tier) && o.tier >= 1 && o.tier <= 40 && fin(o.angle) && o.angle >= -360 && o.angle <= 720, `${where}: orbit must be {tier: 1..40, angle: degrees}`);
+}
+function checkAtlas(A) {
+  ensure(isObj(A), 'core.json: atlas');
+  ensure(Array.isArray(A.tiers) && A.tiers.length >= 2 && A.tiers.length <= 12, 'atlas.tiers');
+  let last = -1;
+  for (const t of A.tiers) { ensure(isObj(t) && ID_RE.test(t.id || '') && typeof t.name === 'string' && NAME_RE.test(t.name) && fin(t.r) && t.r > last && t.r <= 1e5, 'atlas.tiers entries {id, name, r} with increasing r'); last = t.r; }
+  num(A.tierStep, 100, 5000, 'atlas.tierStep'); num(A.regionGap, 0, 1000, 'atlas.regionGap'); num(A.autoStep, 3, 90, 'atlas.autoStep');
+  const G = A.garden;
+  ensure(isObj(G) && Array.isArray(G.spoke) && G.spoke.length >= 1 && G.spoke.length <= 6 && Array.isArray(G.fork) && G.fork.length >= 1 && G.fork.length <= 5 && [...G.spoke, ...G.fork, G.lead, G.seal, G.forkSpread, G.wave].every((v) => fin(v) && v >= 0 && v <= 2000), 'atlas.garden');
+  ensure(G.spoke.every((v, i) => i === 0 || v > G.spoke[i - 1]) && G.lead > G.spoke[G.spoke.length - 1] && G.seal > G.lead && G.fork.every((v, i) => i === 0 || v > G.fork[i - 1]), 'atlas.garden radii must increase outward');
+  ensure(Array.isArray(A.regions) && A.regions.length <= 64, 'atlas.regions');
+  const seen = new Set();
+  for (const r of A.regions) {
+    ensure(isObj(r) && ID_RE.test(r.id || '') && !seen.has(r.id) && REGION_KINDS.includes(r.kind), 'atlas.regions entries need a unique id and a kind');
+    seen.add(r.id);
+    for (const k of Object.keys(r)) ensure(['id', 'kind', 'name', 'orbit', 'weapon', 'lit', 'reserved', 'medallion', 'foot'].includes(k), `atlas region ${r.id}: unknown field ${k}`);
+    ensure(r.name === undefined || (typeof r.name === 'string' && NAME_RE.test(r.name)), `atlas region ${r.id}: name`);
+    ensure(r.weapon === undefined || (typeof r.weapon === 'string' && ID_RE.test(r.weapon)), `atlas region ${r.id}: weapon`);
+    ensure(r.medallion === undefined || (typeof r.medallion === 'string' && ID_RE.test(r.medallion)), `atlas region ${r.id}: medallion`);
+    ensure(r.lit === undefined || typeof r.lit === 'boolean', `atlas region ${r.id}: lit`);
+    ensure(r.reserved === undefined || typeof r.reserved === 'boolean', `atlas region ${r.id}: reserved`);
+    if (r.foot !== undefined) num(r.foot, 20, 1000, `atlas region ${r.id}: foot`);
+    if (r.orbit !== undefined) checkOrbit(r.orbit, `atlas region ${r.id}`);
+  }
+  ensure(A.heroes === undefined || (isObj(A.heroes) && Object.keys(A.heroes).length <= 64), 'atlas.heroes');
+  for (const [h, o] of Object.entries(A.heroes || {})) { ensure(ID_RE.test(h) && !BAD_KEYS.has(h), 'atlas.heroes key'); checkOrbit(o, `atlas hero ${h}`); }
+  if (A.links !== undefined) num(A.links, 0, 400, 'atlas.links');
+}
+
+// S1 ROADS: a fragment's bought path chains. road = { from: node id, to: node id, nodes: [specs] }: nodes[0] requires `from`, each next one the
+// previous, and `to` requires the last (its own typed requires are replaced). The road's nodes belong to no constellation or tool group (so they
+// never wait for a heart), carry generic effects only, and are laid out between the two ends.
+function checkRoads(list, where) {
+  if (list === undefined) return [];
+  ensure(Array.isArray(list) && list.length <= 16, `${where}: roads`);
+  for (const r of list) ensure(isObj(r) && Object.keys(r).every((k) => ['from', 'to', 'nodes'].includes(k)) && ID_RE.test(r.from || '') && ID_RE.test(r.to || '') && r.from !== r.to && Array.isArray(r.nodes) && r.nodes.length >= 1 && r.nodes.length <= 24, `${where}: road needs {from, to, nodes[1..24]}`);
+  return list;
+}
+
+const NODE_KEYS = new Set(['id', 'idx', 'kind', 'name', 'desc', 'flavour', 'branch', 'maxRank', 'rankCost', 'cost', 'requires', 'requiresAny', 'excludes', 'effects', 'unlock', 'hidden', 'teaser', 'keystone', 'inert', 'place', 'v2', 'scope', 'chase']);
 const V2_KEYS = new Set(['name', 'desc', 'effects', 'cost', 'maxRank', 'rankCost', 'unlock', 'requires', 'requiresAny', 'excludes', 'hidden']);
 
 // ---------------------------------------------------------------- compose
@@ -221,6 +341,8 @@ export function composeTree(files, data = null) {
     used.add(spec.idx);
     idxUsed.set(ctx.frag, used);
     ensure(spec.inert === undefined || typeof spec.inert === 'boolean', `${w}: inert must be a boolean`);
+    // Q7-A: display-only 'chase landmark' flag (named medallion + progress chip even when hidden); never read by costs, saves or the budget
+    ensure(spec.chase === undefined || spec.chase === true, `${w}: chase must be true when present`);
     if (spec.v2 !== undefined) {
       ensure(isObj(spec.v2), `${w}: v2 block`);
       for (const k of Object.keys(spec.v2)) ensure(V2_KEYS.has(k), `${w}: unknown v2 field ${k}`);
@@ -233,6 +355,12 @@ export function composeTree(files, data = null) {
   ensure(core.nodes.length <= MAX_FILE_NODES, 'core.json: too many nodes');
   const ringSlotUse = new Set();
   for (const s of core.nodes) {
+    if (isObj(s.place) && s.place.entry !== undefined) {
+      // S1: a tool group's gold-only way in (a bridge lantern), placed on the group's rim facing where its road comes from
+      ensure(Object.keys(s.place).length === 1 && typeof s.place.entry === 'string' && own(tools, s.place.entry), `${s.id}: place.entry must name a tool cluster`);
+      addSpec(s, { frag: 'core', owner: 'core', ownerKind: 'core', region: 'rings', tool: s.place.entry, entry: true });
+      continue;
+    }
     if (isObj(s.place) && s.place.tool !== undefined) {
       // a global lantern that lives in a tool cluster (the id and idx stay in the core fragment: ids are permanent)
       ensure(typeof s.place.tool === 'string' && own(tools, s.place.tool), `${s.id}: place.tool must name a tool cluster`);
@@ -255,32 +383,36 @@ export function composeTree(files, data = null) {
     addSpec(s, { frag: 'core', owner: 'core', ownerKind: 'core', region: 'rings' });
   }
 
-  // ---- clusters
-  const slotUse = new Map();
+  // ---- clusters: OUTLINE constellations (the 11-slot emblem template: Ghost Wolves, Raven Flock, synthetic) and GARDENS (S1 magic weapons:
+  // one branch template per evolution = lead dots -> lead diamond -> seal -> forks; counts come from `branches`, never hard-coded)
   const clusterInfo = Object.create(null);
+  const roadSrc = []; // { owner, ownerKind, frag, list }
+  const SOCKET_RE = /^[a-z]$/;
   for (const [wid, c] of Object.entries(clusters)) {
     const frag = claimKey(wid, c.prefix, 'cluster');
     ensure(own(ns, c.prefix) && ns[c.prefix].kind === 'cluster' && ns[c.prefix].owners.includes(wid), `cluster ${wid}: prefix "${c.prefix}" must be a registered cluster namespace owned by ${wid}`);
     ensure(own(emblems, c.emblem), `cluster ${wid}: unknown emblem`);
-    clusterCentre(core, c.slot);
-    ensure(!slotUse.has(c.slot), `cluster ${wid}: slot ${c.slot} already used by ${slotUse.get(c.slot)}`);
-    slotUse.set(c.slot, wid);
+    ensure(c.slot === undefined || (typeof c.slot === 'string' && c.slot.length <= 16), `cluster ${wid}: slot`); // pre-S1 field, ignored (orbit / auto-slot place it)
+    if (c.orbit !== undefined) checkOrbit(c.orbit, `cluster ${wid}`);
     ensure(typeof c.chapter === 'string' && ID_RE.test(c.chapter) && typeof c.region === 'string' && ID_RE.test(c.region), `cluster ${wid}: chapter/region`);
     if (weapons) ensure(own(weapons, wid), `cluster ${wid}: unknown weapon`);
     // `hero` is optional and informational only (a weapon fragment never needs to name a hero: hero fragments name their signature weapon)
     ensure(c.hero === undefined || c.hero === null || (typeof c.hero === 'string' && ID_RE.test(c.hero)), `cluster ${wid}: hero`);
     if (c.hero && data && data.characters) ensure(own(data.characters, c.hero), `cluster ${wid}: unknown hero ${c.hero}`);
-    ensure(isObj(c.sockets) && ['a', 'b', 'c'].every((k) => isObj(c.sockets[k])) && Object.keys(c.sockets).length === 3, `cluster ${wid}: exactly 3 sockets`);
-    ensure(Array.isArray(c.gates) && c.gates.length <= 8 && Array.isArray(c.outline) && c.outline.length === CLUSTER_OUTLINE, `cluster ${wid}: ${CLUSTER_OUTLINE} outline nodes`);
+    const garden = c.branches !== undefined;
+    ensure(isObj(c.sockets) && Object.keys(c.sockets).length >= 1 && Object.keys(c.sockets).length <= 6 && Object.keys(c.sockets).every((k) => SOCKET_RE.test(k) && isObj(c.sockets[k])), `cluster ${wid}: sockets`);
+    if (!garden) ensure(['a', 'b', 'c'].every((k) => isObj(c.sockets[k])) && Object.keys(c.sockets).length === 3, `cluster ${wid}: exactly 3 sockets`);
+    ensure(Array.isArray(c.gates) && c.gates.length <= 8, `cluster ${wid}: gates`);
+    if (!garden) ensure(Array.isArray(c.outline) && c.outline.length === CLUSTER_OUTLINE, `cluster ${wid}: ${CLUSTER_OUTLINE} outline nodes`);
     const gateIds = new Set(c.gates.map((g) => g && g.id));
     const socketEvos = [];
-    for (const k of ['a', 'b', 'c']) {
+    for (const k of Object.keys(c.sockets)) {
       const s = c.sockets[k];
       ensure(typeof s.evo === 'string' && ID_RE.test(s.evo), `cluster ${wid}: socket ${k} evo`);
       ensure(s.gate === null || (typeof s.gate === 'string' && gateIds.has(s.gate)), `cluster ${wid}: socket ${k} gate must be one of the cluster's gate nodes (or null for a starter evolution)`);
       socketEvos.push(s.evo);
     }
-    ensure(new Set(socketEvos).size === 3, `cluster ${wid}: socket evolutions must differ`);
+    ensure(new Set(socketEvos).size === socketEvos.length, `cluster ${wid}: socket evolutions must differ`);
     if (evolutions) {
       const own3 = Object.keys(evolutions).filter((e) => evolutions[e].weapon === wid).sort();
       ensure(JSON.stringify(own3) === JSON.stringify([...socketEvos].sort()), `cluster ${wid}: sockets must be exactly the weapon's evolutions (${own3.join(', ')})`);
@@ -291,7 +423,7 @@ export function composeTree(files, data = null) {
       const gated = !!weapons[wid].treeGate;
       ensure(gated === (heartGate !== null), `cluster ${wid}: a gated weapon needs its unlock node as heart; a starter weapon has none`);
     }
-    for (const k of ['a', 'b', 'c']) {
+    for (const k of Object.keys(c.sockets)) {
       const s = c.sockets[k];
       const gnode = s.gate ? c.gates.find((g) => g && g.id === s.gate) : null;
       const e = gnode && Array.isArray(gnode.effects) ? gnode.effects.find((x) => isObj(x) && x.unlock === 'evolution') : null;
@@ -304,37 +436,109 @@ export function composeTree(files, data = null) {
       const isHeart = g.id === heartGate;
       ensure(isHeart ? eff.unlock === 'weapon' && eff.id === wid : eff.unlock === 'evolution' && socketEvos.includes(eff.id) && Object.values(c.sockets).some((s) => s.gate === g.id), `cluster ${wid}: gate ${g.id} does not match the heart/sockets`);
     }
-    c.gates.forEach((g) => addSpec(g, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: g.id === heartGate ? 'heart' : 'socket' }));
-    c.outline.forEach((s, i) => addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: 'outline', slotIndex: i }));
+    let branchInfo = null;
+    if (garden) {
+      ensure(c.outline === undefined || (Array.isArray(c.outline) && c.outline.length === 0), `cluster ${wid}: a garden has branches, not an outline`);
+      ensure(Array.isArray(c.nodes) && c.nodes.length <= 200, `cluster ${wid}: nodes`);
+      ensure(Array.isArray(c.branches) && c.branches.length === Object.keys(c.sockets).length, `cluster ${wid}: one branch per socket`);
+      const specs = new Map([...c.gates, ...c.nodes].map((s) => [isObj(s) ? s.id : null, s]));
+      const used = new Set(heartGate ? [heartGate] : []);
+      const take = (id, want, what) => {
+        ensure(typeof id === 'string' && specs.has(id) && !used.has(id), `cluster ${wid}: ${what} ${id} must be one of its nodes, used once`);
+        used.add(id);
+        const t = tierOf(specs.get(id));
+        ensure(t === want, `cluster ${wid}: ${what} ${id} must be a ${want} (kind ${specs.get(id).kind})`);
+        return id;
+      };
+      const seenSock = new Set();
+      branchInfo = c.branches.map((b, bi) => {
+        ensure(isObj(b) && Object.keys(b).every((k) => ['socket', 'seal', 'lead', 'diamond', 'forks'].includes(k)) && typeof b.socket === 'string' && own(c.sockets, b.socket) && !seenSock.has(b.socket), `cluster ${wid}: branch ${bi} socket`);
+        seenSock.add(b.socket);
+        const sk = c.sockets[b.socket];
+        ensure(Array.isArray(b.lead) && b.lead.length >= 1 && b.lead.length <= 6 && Array.isArray(b.forks) && b.forks.length >= 1 && b.forks.length <= 3 && b.forks.every((f) => Array.isArray(f) && f.length >= 1 && f.length <= 5), `cluster ${wid}: branch ${b.socket} needs lead[1..6] and forks[1..3] of [1..5]`);
+        const lead = b.lead.map((id) => take(id, 'dot', 'lead-in'));
+        const diamond = take(b.diamond, 'diamond', 'lead-in diamond');
+        const seal = take(b.seal, 'landmark', 'seal');
+        if (sk.gate) ensure(seal === sk.gate, `cluster ${wid}: branch ${b.socket} seal must be its socket gate ${sk.gate}`);
+        else {
+          const sp = specs.get(seal);
+          ensure(!gateIds.has(seal) && Array.isArray(sp.effects) && sp.effects.length === 1 && isObj(sp.effects[0]) && sp.effects[0].echo === sk.evo, `cluster ${wid}: the seal of the starter evolution ${sk.evo} is a zero-power landmark ({echo: "${sk.evo}"})`);
+        }
+        const forks = b.forks.map((f, fi) => f.map((id, k) => take(id, k === f.length - 1 ? 'diamond' : 'dot', `fork ${fi + 1}`)));
+        return { socket: b.socket, evo: sk.evo, lead, diamond, seal, forks };
+      });
+      for (const id of specs.keys()) ensure(used.has(id), `cluster ${wid}: node ${id} is in no branch`);
+    }
+    const roleOf = Object.create(null);
+    if (branchInfo) for (const b of branchInfo) {
+      b.lead.forEach((id, k) => { roleOf[id] = { role: 'lead', socket: b.socket, step: k }; });
+      roleOf[b.diamond] = { role: 'diamond', socket: b.socket };
+      roleOf[b.seal] = { role: 'seal', socket: b.socket };
+      b.forks.forEach((f, fi) => f.forEach((id, k) => { roleOf[id] = { role: 'fork', socket: b.socket, fork: fi, step: k, leaf: k === f.length - 1 }; }));
+    }
+    c.gates.forEach((g) => addSpec(g, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: g.id === heartGate ? 'heart' : branchInfo ? 'seal' : 'socket', ...(roleOf[g.id] ? { garden: roleOf[g.id] } : {}) }));
+    if (garden) c.nodes.forEach((s) => addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: roleOf[s.id] ? roleOf[s.id].role : 'node', garden: roleOf[s.id] }));
+    else c.outline.forEach((s, i) => addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: 'outline', slotIndex: i }));
+    // KINDLING START (LOCKED 2026-11-12): optional weapon-specific diamonds hung just outside the constellation (role 'extra'), each lit from the heart
+    ensure(c.extras === undefined || (Array.isArray(c.extras) && c.extras.length <= 3), `cluster ${wid}: extras (at most 3)`);
+    (c.extras || []).forEach((s, i) => {
+      ensure(isObj(s) && s.place === undefined && tierOf(s) === 'diamond' && typeof heartGate === 'string' && Array.isArray(s.requires) && s.requires.length === 1 && s.requires[0] === heartGate && s.requiresAny === undefined, `cluster ${wid}: extra ${isObj(s) ? s.id : '?'} must be a diamond with requires [heart] and no place`);
+      addSpec(s, { frag, owner: wid, ownerKind: 'cluster', cluster: wid, region: c.region, role: 'extra', slotIndex: i });
+    });
     // template kinds + option share for any region but the grandfathered launch constellations
-    if (c.region !== 'launch') {
+    if (!garden && c.region !== 'launch') {
       c.outline.forEach((s, i) => {
         const want = TEMPLATE_KINDS[i];
         ensure(Array.isArray(want) ? want.includes(s.kind) : s.kind === want, `cluster ${wid}: outline ${i} (${s.id}) must be kind ${Array.isArray(want) ? want.join('|') : want}`);
       });
     }
-    clusterInfo[wid] = { ...c, fragKey: frag };
+    roadSrc.push({ owner: wid, ownerKind: 'cluster', frag, list: checkRoads(c.roads, `cluster ${wid}`) });
+    clusterInfo[wid] = { ...c, fragKey: frag, garden, branchInfo };
   }
 
-  // ---- tool clusters (far slots, free-form lanterns at local offsets)
+  // ---- tool clusters (free-form lanterns at local offsets round the group's centre; `anchors` give single lanterns their own place on the
+  // map (S1: the night gates are scattered), and `place: {near: id, at}` hangs a lantern beside another lantern of the group)
   const toolInfo = Object.create(null);
   for (const [tid, t] of Object.entries(tools)) {
     const frag = claimKey(tid, t.prefix, 'tool');
     ensure(own(ns, t.prefix) && ns[t.prefix].kind === 'tool' && ns[t.prefix].owners.includes(tid), `tool ${tid}: prefix "${t.prefix}" must be a registered tool namespace owned by ${tid}`);
-    ensure(typeof t.slot === 'string' && /^far\d+$/.test(t.slot), `tool ${tid}: slot must be a far slot`);
-    clusterCentre(core, t.slot);
-    ensure(!slotUse.has(t.slot), `tool ${tid}: slot ${t.slot} already used by ${slotUse.get(t.slot)}`);
-    slotUse.set(t.slot, tid);
+    ensure(t.slot === undefined || (typeof t.slot === 'string' && t.slot.length <= 16), `tool ${tid}: slot`); // pre-S1 field, ignored
+    if (t.orbit !== undefined) checkOrbit(t.orbit, `tool ${tid}`);
     ensure(typeof t.name === 'string' && t.name.length >= 1 && t.name.length <= 30 && typeof t.blurb === 'string' && t.blurb.length <= 160, `tool ${tid}: name / blurb`);
     ensure(Array.isArray(t.nodes) && t.nodes.length >= 1 && t.nodes.length <= MAX_FILE_NODES, `tool ${tid}: nodes`);
+    ensure(t.anchors === undefined || (isObj(t.anchors) && Object.keys(t.anchors).length <= 8), `tool ${tid}: anchors`);
+    const ids = new Set(t.nodes.map((s) => isObj(s) && s.id));
+    for (const [aid, o] of Object.entries(t.anchors || {})) {
+      ensure(ids.has(aid), `tool ${tid}: anchor ${aid} is not one of its lanterns`);
+      ensure(isObj(o) && Object.keys(o).every((k) => k === 'orbit' || k === 'name'), `tool ${tid}: anchor ${aid}`);
+      if (o.orbit !== undefined) checkOrbit(o.orbit, `tool ${tid} anchor ${aid}`);
+      ensure(o.name === undefined || (typeof o.name === 'string' && NAME_RE.test(o.name)), `tool ${tid}: anchor ${aid} name`);
+    }
     t.nodes.forEach((s, i) => {
-      ensure(isObj(s.place) && Object.keys(s.place).length === 1, `${s && s.id}: tool nodes use place {at: [dx, dy]}`);
-      checkAt(s.place.at, s.id);
+      const anchored = !!(t.anchors && own(t.anchors, s.id));
+      if (anchored) ensure(s.place === undefined, `${s && s.id}: an anchored lantern has no place`);
+      else if (isObj(s.place) && s.place.near !== undefined) { ensure(Object.keys(s.place).length === 2 && ids.has(s.place.near) && s.place.near !== s.id, `${s && s.id}: place.near must name another lantern of the group`); checkAt(s.place.at, s.id); }
+      else { ensure(isObj(s.place) && Object.keys(s.place).length === 1, `${s && s.id}: tool nodes use place {at: [dx, dy]}`); checkAt(s.place.at, s.id); }
       const eff = Array.isArray(s.effects) ? s.effects.find((e) => isObj(e) && e.unlock === 'tier') : null;
       if (eff) ensure(s.id === `gt_${eff.chapter}_${eff.tier}` && s.kind === 'gate', `${s.id}: a tier gate is a gate node named gt_<chapter>_<tier>`);
-      addSpec(s, { frag, owner: tid, ownerKind: 'tool', region: 'tools', role: 'tool', tool: tid, slotIndex: i });
+      addSpec(s, { frag, owner: tid, ownerKind: 'tool', region: 'tools', role: 'tool', tool: tid, slotIndex: i, ...(anchored ? { anchor: true } : {}), ...(isObj(s.place) && s.place.near ? { toolNear: s.place.near } : {}) });
     });
+    roadSrc.push({ owner: tid, ownerKind: 'tool', frag, list: checkRoads(t.roads, `tool ${tid}`) });
     toolInfo[tid] = { ...t, fragKey: frag };
+  }
+  roadSrc.push({ owner: 'core', ownerKind: 'core', frag: 'core', list: checkRoads(core.roads, 'core.json') });
+
+  // ---- roads (after every fragment, so ends may name any node; the road nodes themselves are added here)
+  const roadOf = Object.create(null); // road node id -> { road index, step }
+  const roads = [];
+  for (const src of roadSrc) for (const r of src.list) {
+    const k = roads.length;
+    r.nodes.forEach((s, i) => {
+      ensure(isObj(s) && (s.place === undefined), `${s && s.id}: road lanterns are laid out by the road (no place)`);
+      addSpec(s, { frag: src.frag, owner: src.owner, ownerKind: src.ownerKind, region: 'paths', role: 'road', road: k, step: i });
+      roadOf[s.id] = { road: k, step: i };
+    });
+    roads.push({ k, owner: src.owner, from: r.from, to: r.to, ids: r.nodes.map((s) => s.id) });
   }
 
   // ---- heroes
@@ -373,57 +577,163 @@ export function composeTree(files, data = null) {
   // ---- gate suffixes must name what they unlock (data-aware)
   if (data) {
     for (const a of allNodes) {
-      if (a.ownerKind !== 'cluster' || !(a.role === 'heart' || a.role === 'socket')) continue;
+      if (a.ownerKind !== 'cluster' || !(a.role === 'heart' || a.role === 'socket' || a.role === 'seal')) continue;
       const eff = a.spec.effects.find((e) => isObj(e) && e.unlock);
       if (eff && eff.id && own(eff, 'id')) ensure(a.spec.id === `gt_${eff.id}`, `${a.spec.id}: gate id must be gt_${eff.id}`);
     }
   }
+  // ---- road ends: both must exist; a node is the end of at most one road; a road never ends on a fork (forks are leaves)
+  const roadTo = Object.create(null);
+  for (const r of roads) {
+    ensure(seenIds.has(r.from), `road to ${r.to}: unknown start ${r.from}`);
+    ensure(seenIds.has(r.to) && !own(roadOf, r.to), `road from ${r.from}: unknown end ${r.to}`);
+    ensure(!own(roadTo, r.to), `${r.to}: more than one road ends here`);
+    const fa = idsOf(r.from), ta = idsOf(r.to);
+    ensure(!(fa.garden && fa.garden.role === 'fork') && !(ta.garden && ta.garden.role === 'fork'), `road ${r.from} -> ${r.to}: forks are leaves (no road starts or ends on one)`);
+    roadTo[r.to] = r;
+  }
+  function idsOf(id) { return allNodes.find((a) => a.spec.id === id); }
 
-  // ---- positions
-  const positions = Object.create(null); // id -> [x, y] (v2 view)
-  const centreOf = Object.create(null);
-  for (const [wid, c] of Object.entries(clusterInfo)) centreOf[wid] = clusterCentre(core, c.slot);
-  const toolCentres = Object.create(null);
-  for (const [tid, t] of Object.entries(toolInfo)) toolCentres[tid] = clusterCentre(core, t.slot);
-  const slotAngle = (wid) => {
-    const m = /^sky\d+$/.test(clusterInfo[wid].slot) ? core.skySlots[clusterInfo[wid].slot] : null;
-    if (m !== null) return m;
-    const [cx, cy] = centreOf[wid];
-    return (Math.atan2(cy, cx) * 180) / Math.PI;
-  };
-  const sigRank = Object.create(null); // heroes sharing a signature weapon, in fragment order: 0, 1, 2 ...
-  { const n = Object.create(null); for (const [hid, h] of Object.entries(heroInfo)) { sigRank[hid] = n[h.signature] || 0; n[h.signature] = sigRank[hid] + 1; } }
+  // ---- positions (S1 ATLAS: src/meta/treeatlas.js). Positions are never saved and never in the released fingerprints.
+  const positions = Object.create(null); // id -> [x, y]
+  const lay = core.layout, AT = core.atlas, G = AT.garden;
+  const SC = fin(lay.clusterScale) ? lay.clusterScale : 1; // outline constellations: the emblem points are spread by this factor
+  const TS = fin(lay.toolScale) ? lay.toolScale : 1; // tool groups: so are the local offsets
+  const gaps = { landmark: lay.gapLandmark, diamond: lay.gapDiamond, dot: lay.gapDot ?? lay.v2MinGap };
+  // 1. the hub web: hearth + wick ring lanterns and the lanterns hung beside them
+  const fogNodes = [];
+  const hubPos = hubLayout(allNodes); // generated radial tree (see hubLayout); lanterns it does not cover fall back to their ring slot / `near` offset
   for (const a of allNodes) {
-    const s = a.spec;
-    let p;
-    if (a.near) continue; // resolved below, once its parent has a position
-    if (a.ownerKind === 'core' && s.place.tool) { const [cx, cy] = clusterCentre(core, tools[s.place.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
-    else if (a.ownerKind === 'core') p = ringPos(core, s.place);
-    else if (a.ownerKind === 'tool') { const [cx, cy] = clusterCentre(core, tools[a.tool].slot); p = [r1(cx + s.place.at[0]), r1(cy + s.place.at[1])]; }
-    else if (a.ownerKind === 'cluster') {
-      const c = clusterInfo[a.cluster];
-      const em = emblems[c.emblem];
-      const [cx, cy] = centreOf[a.cluster];
+    if (a.ownerKind !== 'core' || a.near || a.tool) continue;
+    if (a.spec.place.ring === 'fog') { fogNodes.push(a); continue; }
+    positions[a.spec.id] = own(hubPos, a.spec.id) ? hubPos[a.spec.id] : ringPos(core, a.spec.place);
+  }
+  for (const a of allNodes) if (a.near && own(hubPos, a.spec.id)) positions[a.spec.id] = hubPos[a.spec.id];
+  // lanterns hung beside another lantern: placed as soon as the parent has a place; strict = whatever is left must be placeable
+  const resolveNear = (list, parentOf, at, strict = true) => {
+    let wait = list;
+    while (wait.length) {
+      const next = wait.filter((a) => !own(positions, parentOf(a)));
+      if (next.length === wait.length) { ensure(!strict, `place.near cannot be resolved for ${next.map((a) => a.spec.id).join(', ')}`); return next; }
+      for (const a of wait) if (own(positions, parentOf(a))) { const [px, py] = positions[parentOf(a)]; const d = at(a); positions[a.spec.id] = [r1(px + d[0]), r1(py + d[1])]; }
+      wait = next;
+    }
+    return [];
+  };
+  resolveNear(allNodes.filter((a) => a.near && !own(positions, a.spec.id)), (a) => a.near, (a) => a.spec.place.at, false);
+  let hubR = 0;
+  for (const id of Object.keys(positions)) hubR = Math.max(hubR, Math.hypot(positions[id][0], positions[id][1]));
+  hubR += 30;
+  // 2. region records -> centres (orbit {tier, angle}; a region without one auto-slots)
+  const outlineFoot = (c) => { const em = emblems[c.emblem]; let m = 0; for (const p of [em.heart, ...Object.values(em.slots), ...Object.values(em.sockets)]) m = Math.max(m, Math.hypot(p[0], p[1])); return m * SC + 40; };
+  const toolFoot = (t) => { let m = 0; for (const s of t.nodes) if (isObj(s.place) && Array.isArray(s.place.at) && s.place.near === undefined) m = Math.max(m, Math.hypot(s.place.at[0], s.place.at[1])); return m * TS + 90; };
+  const placeList = [];
+  for (const [wid, c] of Object.entries(clusterInfo)) {
+    const nf = c.garden ? Math.max(...c.branchInfo.map((b) => b.forks.length)) : 0;
+    placeList.push({ id: `c:${wid}`, foot: c.garden ? gardenFoot(G, nf) : outlineFoot(c), orbit: c.orbit, minTier: 1 });
+  }
+  for (const [tid, t] of Object.entries(toolInfo)) {
+    placeList.push({ id: `t:${tid}`, foot: toolFoot(t), orbit: t.orbit, minTier: 1 });
+    for (const [aid, o] of Object.entries(t.anchors || {})) placeList.push({ id: `a:${aid}`, foot: 110, orbit: o.orbit, minTier: 1 });
+  }
+  const heroIds = data && isObj(data.characters) ? Object.keys(data.characters) : [];
+  for (const h of heroIds) {
+    const kin = data.characters[h].kindred;
+    placeList.push({ id: `h:${h}`, foot: 80, orbit: AT.heroes && own(AT.heroes, h) ? AT.heroes[h] : undefined, near: typeof kin === 'string' && own(clusterInfo, kin) ? `c:${kin}` : undefined, minTier: 2 });
+  }
+  for (const r of AT.regions) placeList.push({ id: `r:${r.id}`, foot: r.foot || (r.kind === 'reserved' ? gardenFoot(G, 2) : 90), orbit: r.orbit, minTier: 2 });
+  const fogTier = AT.fogTier || 3;
+  for (const a of fogNodes) { const ang = core.rings.fog.angles[a.spec.place.i]; placeList.push({ id: `n:${a.spec.id}`, foot: 70, orbit: { tier: fogTier, angle: ang }, minTier: fogTier }); }
+  const placed = placeRegions(placeList, AT, hubR);
+  const centreOf = Object.create(null), toolCentres = Object.create(null);
+  for (const wid of Object.keys(clusterInfo)) centreOf[wid] = placed[`c:${wid}`].centre;
+  for (const tid of Object.keys(toolInfo)) toolCentres[tid] = placed[`t:${tid}`].centre;
+  for (const a of fogNodes) positions[a.spec.id] = placed[`n:${a.spec.id}`].centre;
+  const dirTo = (from, to) => (Math.atan2(to[1] - from[1], to[0] - from[0]) * 180) / Math.PI;
+  // 3. constellations
+  const sealPos = Object.create(null);
+  const spokesOf = Object.create(null);
+  for (const [wid, c] of Object.entries(clusterInfo)) {
+    const ctr = centreOf[wid];
+    sealPos[wid] = Object.create(null);
+    if (c.garden) {
+      const heart = c.heart || `heart:${wid}`;
+      const avoid = [dirTo(ctr, [0, 0])];
+      const r = c.heart && roadTo[c.heart];
+      if (r && own(positions, r.from)) avoid.push(dirTo(ctr, positions[r.from]));
+      const g = gardenLayout(ctr, heart, c.branchInfo, avoid, G);
+      for (const [id, p] of Object.entries(g.pos)) if (id === c.heart || !id.startsWith('heart:')) positions[id] = p;
+      spokesOf[wid] = g.spokes;
+      for (const b of c.branchInfo) sealPos[wid][b.socket] = positions[b.seal];
+      continue;
+    }
+    const em = emblems[c.emblem];
+    const items = [];
+    for (const a of allNodes) {
+      if (a.ownerKind !== 'cluster' || a.cluster !== wid || a.role === 'extra') continue;
       let local;
       if (a.role === 'outline') local = em.slots[em.outline[a.slotIndex]];
       else if (a.role === 'heart') local = em.heart;
-      else { const k = Object.keys(c.sockets).find((x) => c.sockets[x].gate === s.id); local = em.sockets[k]; }
-      p = [r1(cx + local[0]), r1(cy + local[1])];
-    } else if (a.ownerKind === 'hero') p = polar(core.rings.heroes.r, slotAngle(a.cluster) + (a.slotIndex - 1) * 8 + (sigRank[a.owner] || 0) * 26); // a 2nd hero on the same signature weapon sits beside the 1st
-    else {
-      const b = core.rings.bands;
-      p = polar(b.r0 + b.width * (a.chapterOrder - 2) + 40, ((s.place.band + 0.5) * 360) / b.slots);
+      else { const k = Object.keys(c.sockets).find((x) => c.sockets[x].gate === a.spec.id); local = em.sockets[k]; }
+      items.push({ id: a.spec.id, t: tierOf(a.spec), p: [ctr[0] + local[0] * SC, ctr[1] + local[1] * SC] });
     }
-    positions[s.id] = p;
+    const seals = [];
+    for (const [k, sk] of Object.entries(c.sockets)) if (!sk.gate) { const it = { id: `seal:${k}`, t: 'landmark', p: [ctr[0] + em.sockets[k][0] * SC, ctr[1] + em.sockets[k][1] * SC] }; seals.push([k, it]); items.push(it); }
+    if (Object.values(gaps).every(fin)) relaxGaps(items, gaps);
+    for (const it of items) if (!it.id.startsWith('seal:')) positions[it.id] = [r1(it.p[0]), r1(it.p[1])];
+    for (const [k, it] of seals) sealPos[wid][k] = [r1(it.p[0]), r1(it.p[1])];
+    for (const [k, sk] of Object.entries(c.sockets)) if (sk.gate) sealPos[wid][k] = positions[sk.gate];
   }
-  // 'near' lanterns: a parent may itself be near-placed (a short chain); each pass places every lantern whose parent is placed, so a cycle or
-  // an unresolvable parent fails instead of looping
-  let wait = allNodes.filter((a) => a.near);
-  while (wait.length) {
-    const next = wait.filter((a) => !own(positions, a.near));
-    ensure(next.length < wait.length, `place.near cannot be resolved for ${next.map((a) => a.spec.id).join(', ')}`);
-    for (const a of wait) if (own(positions, a.near)) { const [px, py] = positions[a.near]; positions[a.spec.id] = [r1(px + a.spec.place.at[0]), r1(py + a.spec.place.at[1])]; }
-    wait = next;
+  // 3b. cluster extras (Kindling Start): beside the heart on the side away from the hub, a short link (never a far link), fanned by slot
+  for (const a of allNodes) {
+    if (a.role !== 'extra') continue;
+    const hp = positions[clusterInfo[a.cluster].heart], ctr = centreOf[a.cluster];
+    const out = ((dirTo([0, 0], ctr) + 50 + a.slotIndex * 25) * Math.PI) / 180, R = Math.min(170, (fin(lay.linkFar) ? lay.linkFar : 440) - 60);
+    positions[a.spec.id] = [r1(hp[0] + Math.cos(out) * R), r1(hp[1] + Math.sin(out) * R)];
+  }
+  // 4. tool groups (+ anchored lanterns on their own spot, lanterns hung beside another one, core lanterns placed in a group)
+  for (const a of allNodes) {
+    if (a.ownerKind === 'tool' && a.role === 'tool' && !a.toolNear && !a.anchor) { const c = toolCentres[a.tool]; positions[a.spec.id] = [r1(c[0] + a.spec.place.at[0] * TS), r1(c[1] + a.spec.place.at[1] * TS)]; }
+    else if (a.ownerKind === 'tool' && a.anchor) positions[a.spec.id] = placed[`a:${a.spec.id}`].centre;
+    else if (a.ownerKind === 'core' && a.tool && !a.entry) { const c = toolCentres[a.tool]; positions[a.spec.id] = [r1(c[0] + a.spec.place.at[0] * TS), r1(c[1] + a.spec.place.at[1] * TS)]; }
+  }
+  resolveNear(allNodes.filter((a) => a.toolNear), (a) => a.toolNear, (a) => a.spec.place.at);
+  resolveNear(allNodes.filter((a) => a.near && !own(positions, a.spec.id)), (a) => a.near, (a) => a.spec.place.at);
+  // the gold-only way into a tool group sits on its rim, facing where its road comes from (or the hub)
+  for (const a of allNodes) {
+    if (!a.entry) continue;
+    const c = toolCentres[a.tool], t = toolInfo[a.tool];
+    const r = roadTo[a.spec.id];
+    const toward = r && own(positions, r.from) ? positions[r.from] : [0, 0];
+    const ang = (dirTo(c, toward) * Math.PI) / 180, R = toolFoot(t) - 40;
+    positions[a.spec.id] = [r1(c[0] + Math.cos(ang) * R), r1(c[1] + Math.sin(ang) * R)];
+  }
+  // 5. hero lanterns (hero fragments, test-only today): an arc just outside their signature constellation, on the side away from the hub
+  { const n = Object.create(null);
+    for (const a of allNodes) {
+      if (a.ownerKind !== 'hero') continue;
+      const hc = clusterInfo[a.cluster].heart, ctr = hc && own(positions, hc) ? positions[hc] : centreOf[a.cluster], out = (dirTo([0, 0], centreOf[a.cluster]) * Math.PI) / 180, rank = n[a.owner] === undefined ? (n[a.owner] = Object.keys(n).length - 1) : n[a.owner];
+      const R = Math.min(placeList.find((x) => x.id === `c:${a.cluster}`).foot + 50 + rank * 70, (fin(lay.linkFar) ? lay.linkFar : 440) - 60); // never a far link to its heart
+      const ang = out + (a.slotIndex - 1) * (130 / R);
+      positions[a.spec.id] = [r1(ctr[0] + Math.cos(ang) * R), r1(ctr[1] + Math.sin(ang) * R)];
+    } }
+  // 6. chapter bands (future chapters): beyond every tier
+  for (const a of allNodes) if (a.ownerKind === 'chapter') { const R = tierRadius(AT, AT.tiers.length + a.chapterOrder); positions[a.spec.id] = polar(R, ((a.spec.place.band + 0.5) * 360) / core.rings.bands.slots); }
+  // 7. roads, in order of resolvable ends
+  { let wait = roads.slice();
+    while (wait.length) {
+      const next = wait.filter((r) => !(own(positions, r.from) && own(positions, r.to)));
+      ensure(next.length < wait.length, `road ends cannot be placed: ${next.map((r) => `${r.from} -> ${r.to}`).join(', ')}`);
+      for (const r of wait) { if (next.includes(r)) continue; roadPoints(positions[r.from], positions[r.to], r.ids.length, `${r.from}>${r.to}`).forEach((p, i) => { positions[r.ids[i]] = p; }); }
+      wait = next;
+    } }
+  for (const a of allNodes) ensure(own(positions, a.spec.id), `${a.spec.id}: no position`);
+  // 8. one gap relaxation over the whole web (cheap tiers give way first)
+  if (Object.values(gaps).every(fin)) {
+    const items = allNodes.map((a) => ({ id: a.spec.id, t: tierOf(a.spec), p: positions[a.spec.id] }));
+    relaxGrid(items, gaps);
+    for (const it of items) positions[it.id] = it.p;
+    for (const [wid, c] of Object.entries(clusterInfo)) for (const [k, sk] of Object.entries(c.sockets)) { if (sk.gate) sealPos[wid][k] = positions[sk.gate]; else if (c.garden) sealPos[wid][k] = positions[c.branchInfo.find((b) => b.socket === k).seal]; }
   }
 
   const common = (a) => {
@@ -442,6 +752,14 @@ export function composeTree(files, data = null) {
     return t === 'magic' ? 'magic' : 'summoner';
   };
   const idsByRole = new Map(allNodes.map((a) => [a.spec.id, a]));
+  // garden requires: lead[0] <- heart, each lead <- the previous, diamond <- last lead, seal <- diamond, fork[0] <- seal, each fork step <- the previous
+  const gardenReq = Object.create(null);
+  for (const c of Object.values(clusterInfo)) if (c.garden) for (const b of c.branchInfo) {
+    b.lead.forEach((id, k) => { gardenReq[id] = k ? [b.lead[k - 1]] : (c.heart ? [c.heart] : []); });
+    gardenReq[b.diamond] = [b.lead[b.lead.length - 1]];
+    gardenReq[b.seal] = [b.diamond];
+    for (const f of b.forks) f.forEach((id, k) => { gardenReq[id] = [k ? f[k - 1] : b.seal]; });
+  }
   const v2Nodes = allNodes.map((a) => {
     const s = a.spec;
     const m = { ...s, ...(s.v2 || {}) };
@@ -451,14 +769,20 @@ export function composeTree(files, data = null) {
     if (m.rankCost) o.rankCost = m.rankCost;
     if (m.unlock) o.unlock = m.unlock;
     if (m.hidden) o.hidden = true;
+    if (s.chase === true) o.chase = true;
     if (m.teaser) o.teaser = true;
     if (m.keystone) o.keystone = true;
     if (m.excludes) o.excludes = m.excludes;
-    if (a.ownerKind === 'cluster') {
+    if (a.role === 'road') {
+      o.branch = s.branch || (a.ownerKind === 'cluster' ? tagBranch(a.owner) : 'spirit');
+      const r = roads[a.road];
+      o.requires = [a.step ? r.ids[a.step - 1] : r.from];
+    } else if (a.ownerKind === 'cluster') {
       o.branch = tagBranch(a.cluster);
       const c = clusterInfo[a.cluster];
-      const em = emblems[c.emblem];
-      if (a.role === 'outline') {
+      if (c.garden && own(gardenReq, s.id)) o.requires = gardenReq[s.id];
+      else if (a.role === 'outline') {
+        const em = emblems[c.emblem];
         const ap = em.outline.indexOf(em.apex);
         const i = a.slotIndex;
         const prev = c.outline[i - 1] && c.outline[i - 1].id, next = c.outline[i + 1] && c.outline[i + 1].id;
@@ -476,8 +800,9 @@ export function composeTree(files, data = null) {
       o.branch = s.branch || 'spirit';
       o.requires = (m.requires || []).filter((r) => idsByRole.has(r) && idsByRole.get(r).ownerKind === 'core');
     }
+    if (own(roadTo, s.id)) { const r = roadTo[s.id]; o.requires = [r.ids[r.ids.length - 1]]; delete o.requiresAny; } // a road's end is reached by its road
     if (o.requires && !o.requires.length) delete o.requires;
-    if (m.requiresAny && !o.requiresAny) o.requiresAny = m.requiresAny;
+    if (m.requiresAny && !o.requiresAny && !own(roadTo, s.id)) o.requiresAny = m.requiresAny;
     return o;
   });
   const layout = { ...core.layout, minGap: core.layout.v2MinGap ?? core.layout.minGap };
@@ -497,9 +822,51 @@ export function composeTree(files, data = null) {
     ],
   };
 
+  // REGION RECORDS (data only): the hub, each constellation / tool group / anchored lantern (with its orbit), the display-only hero medallions
+  // (keepsake hunt, no ids, never bought), the night / reserved / chapter / far records of core.atlas. Derived, so a new fragment gets its region
+  // automatically. accent = a key of core.branches; thread = the backbone line from the hub rim to the region's near edge.
+  const regions = [{ id: 'hub', kind: 'hub', name: 'The Hearth', centre: [0, 0], r: Math.round(hubR), accent: 'light', thread: null, tier: 0 }];
+  const threadTo = (c, r) => { const d = Math.hypot(c[0], c[1]) || 1; return { from: [0, 0], to: [r1(c[0] * (1 - r / d)), r1(c[1] * (1 - r / d))] }; };
+  const orbitOf = (key) => ({ tier: placed[key].tier, angle: Math.round(placed[key].angle * 10) / 10, auto: placed[key].auto });
+  const footOf = (key) => Math.round(placeList.find((x) => x.id === key).foot);
+  for (const [wid] of Object.entries(clusterInfo)) {
+    const key = `c:${wid}`;
+    regions.push({ id: key, kind: 'weapon', name: weapons && own(weapons, wid) && weapons[wid].name ? weapons[wid].name : wid, centre: centreOf[wid], r: footOf(key), accent: tagBranch(wid), thread: threadTo(centreOf[wid], footOf(key)), orbit: orbitOf(key), garden: !!clusterInfo[wid].garden, heart: clusterInfo[wid].heart || null });
+  }
+  for (const [tid, t] of Object.entries(toolInfo)) {
+    const key = `t:${tid}`;
+    const ns = allNodes.filter((a) => a.tool === tid);
+    const br = ns.length && ns[0].spec.branch;
+    regions.push({ id: key, kind: 'tool', name: t.name, centre: toolCentres[tid], r: footOf(key), accent: br && own(core.branches, br) ? br : 'light', thread: threadTo(toolCentres[tid], footOf(key)), orbit: orbitOf(key) });
+    for (const [aid, o] of Object.entries(t.anchors || {})) regions.push({ id: `a:${aid}`, kind: 'anchor', name: o.name || aid, node: aid, tool: tid, centre: placed[`a:${aid}`].centre, r: footOf(`a:${aid}`), accent: 'spirit', thread: null, orbit: orbitOf(`a:${aid}`) });
+  }
+  for (const h of heroIds) {
+    const key = `h:${h}`;
+    regions.push({ id: key, kind: 'hero', hero: h, display: true, name: typeof data.characters[h].name === 'string' ? data.characters[h].name.split(',')[0].slice(0, 30) : h, centre: placed[key].centre, r: footOf(key), accent: 'spirit', thread: null, orbit: orbitOf(key) });
+  }
+  for (const r of AT.regions) {
+    const key = `r:${r.id}`;
+    const wname = r.weapon && weapons && own(weapons, r.weapon) ? weapons[r.weapon].name : null;
+    regions.push({ id: key, kind: r.kind, name: r.name || wname || r.id, display: true, reserved: !!r.reserved || r.kind === 'reserved', lit: !!r.lit, ...(r.weapon ? { weapon: r.weapon } : {}), ...(r.medallion ? { medallion: r.medallion } : {}), centre: placed[key].centre, r: footOf(key), accent: 'spirit', thread: null, orbit: orbitOf(key) });
+  }
+  const bands = ringBands(AT);
+  const ringOfId = Object.create(null);
+  for (const a of allNodes) ringOfId[a.spec.id] = ringOf(bands, positions[a.spec.id]);
+  // region key of each node (render-only cross-links run between different regions)
+  const regionKey = Object.create(null);
+  for (const a of allNodes) regionKey[a.spec.id] = a.role === 'road' ? `p:${a.road}` : a.cluster ? `c:${a.cluster}` : a.anchor ? `a:${a.spec.id}` : a.tool ? `t:${a.tool}` : a.ownerKind === 'core' ? (a.spec.place && a.spec.place.ring === 'fog' ? `n:${a.spec.id}` : 'hub') : `x:${a.frag}`;
+  for (const a of allNodes) if (a.toolNear && regionKey[a.toolNear] && regionKey[a.toolNear].startsWith('a:')) regionKey[a.spec.id] = regionKey[a.toolNear];
+  const edges = [];
+  for (const n of v2Nodes) if (!n.teaser) for (const r of [...(n.requires || []), ...(n.requiresAny || [])]) edges.push([r, n.id]);
+  const links = crossLinks(allNodes.filter((a) => !inertIds.has(a.spec.id) && !a.spec.teaser).map((a) => ({ id: a.spec.id, p: positions[a.spec.id], region: regionKey[a.spec.id], t: tierOf(a.spec), fork: !!(a.garden && a.garden.role === 'fork') })), edges, fin(AT.links) ? AT.links : 40);
+
   return {
     live, v2,
-    info: { core, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres, nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, tool: a.tool, region: a.region, inert: !!a.spec.inert })) },
+    info: {
+      core, regions, scale: SC, toolScale: TS, sealPos, spokes: spokesOf, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres,
+      hubR: Math.round(hubR), ringTiers: bands, ringOf: ringOfId, regionKey, links, roads: roads.map((r) => ({ from: r.from, to: r.to, ids: [...r.ids] })),
+      nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, tool: a.tool, region: a.region, inert: !!a.spec.inert, ...(a.garden ? { garden: { ...a.garden } } : {}), ...(a.role === 'road' ? { road: a.road } : {}) })),
+    },
   };
 }
 

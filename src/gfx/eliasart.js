@@ -198,11 +198,12 @@ export function drawEliasHead(c, expr = 'kind') {
 // ---- flat composite (Low tier hero, crowd outline source, iframe flicker, death) -------------------------------------------------
 export const E_FLAT = { x0: -46, y0: -152, w: 124, h: 166 };
 export const E_FLAT_TEXEL = 1.5;
-export function drawEliasFlat(c) {
+export function drawEliasFlat(c, afterBody = null) { // afterBody: the WARDROBE v2 costume motif hook
   glowAt(c, E_ANCHOR.lantern[0], E_ANCHOR.lantern[1], 26, '#ffc96b', 0.4); // Low tier bakes a small lantern halo
   drawStaffBack(c);
   for (const a of [E_ANCHOR.bootFar, E_ANCHOR.bootNear]) { c.save(); c.translate(a[0], a[1]); drawEliasBoot(c); c.restore(); }
   drawEliasBody(c);
+  if (afterBody) afterBody(c);
   drawEliasHead(c, 'kind');
   drawStaffFront(c);
 }

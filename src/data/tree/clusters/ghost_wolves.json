@@ -3,7 +3,6 @@
  "weapon": "ghost_wolves",
  "prefix": "wf",
  "emblem": "wolf",
- "slot": "sky1",
  "chapter": "cursed_forest",
  "region": "launch",
  "heart": "gt_ghost_wolves",
@@ -325,6 +324,150 @@
      "pct": 2
     }
    ]
+  }
+ ],
+ "orbit": {
+  "tier": 2,
+  "angle": 155
+ },
+ "roads": [
+  {
+   "from": "li_vow",
+   "to": "gt_ghost_wolves",
+   "nodes": [
+    {
+     "id": "wf_way1",
+     "idx": 14,
+     "kind": "knot",
+     "name": "Late Gate",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 100
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "wf_way2",
+     "idx": 15,
+     "kind": "knot",
+     "name": "Quiet Ford",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 120
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "wf_way3",
+     "idx": 16,
+     "kind": "knot",
+     "name": "Pale Ember",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "wf_way4",
+     "idx": 17,
+     "kind": "bead",
+     "name": "Small Shrine",
+     "desc": "Your ability lasts 5% longer",
+     "branch": "spirit",
+     "cost": {
+      "gold": 480
+     },
+     "effects": [
+      {
+       "ability": "dur",
+       "pct": 5
+      }
+     ]
+    },
+    {
+     "id": "wf_way5",
+     "idx": 18,
+     "kind": "knot",
+     "name": "Gentle Petal",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 180
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "wf_way6",
+     "idx": 19,
+     "kind": "knot",
+     "name": "Low Mote",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 190
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "extras": [
+  {
+   "id": "wf_kindling",
+   "idx": 20,
+   "kind": "verb",
+   "name": "Kindling Start",
+   "desc": "When you start a run with Ghost Wolves, the pack runs and bites 25% faster for the first minute, fading to nothing.",
+   "flavour": "The first spark of the night catches quickly.",
+   "cost": {
+    "gold": 1500
+   },
+   "requires": [
+    "gt_ghost_wolves"
+   ],
+   "effects": [
+    {
+     "perk": "kindle",
+     "weapon": "ghost_wolves",
+     "pct": 25,
+     "secs": 60,
+     "pe": 0.1
+    }
+   ],
+   "unlock": {
+    "t": "clearChapter",
+    "id": "cursed_forest",
+    "n": 8
+   }
   }
  ]
 }

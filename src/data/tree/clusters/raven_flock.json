@@ -3,7 +3,6 @@
  "weapon": "raven_flock",
  "prefix": "rv",
  "emblem": "raven",
- "slot": "sky2",
  "chapter": "cursed_forest",
  "region": "launch",
  "hero": null,
@@ -100,7 +99,8 @@
      }
     ]
    },
-   "hidden": true
+   "hidden": true,
+   "chase": true
   },
   {
    "id": "gt_spearhead",
@@ -359,6 +359,133 @@
      "pct": 2
     }
    ]
+  }
+ ],
+ "orbit": {
+  "tier": 2,
+  "angle": 250
+ },
+ "roads": [
+  {
+   "from": "or_way3",
+   "to": "gt_raven_flock",
+   "nodes": [
+    {
+     "id": "rv_way1",
+     "idx": 15,
+     "kind": "knot",
+     "name": "Kind Step",
+     "desc": "Area +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 140
+     },
+     "effects": [
+      {
+       "mod": "area",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "rv_way2",
+     "idx": 16,
+     "kind": "knot",
+     "name": "Hushed Lamp",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 150
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "rv_way3",
+     "idx": 17,
+     "kind": "knot",
+     "name": "Soft Path",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 170
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "rv_way4",
+     "idx": 18,
+     "kind": "bead",
+     "name": "Late Signpost",
+     "desc": "Evolutions are offered 10% more often",
+     "branch": "spirit",
+     "cost": {
+      "gold": 540
+     },
+     "effects": [
+      {
+       "perk": "evoLuck",
+       "pct": 10
+      }
+     ]
+    },
+    {
+     "id": "rv_way5",
+     "idx": 19,
+     "kind": "knot",
+     "name": "Dim Moss",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 200
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "extras": [
+  {
+   "id": "rv_kindling",
+   "idx": 20,
+   "kind": "verb",
+   "name": "Kindling Start",
+   "desc": "When you start a run with Raven Flock, the ravens fly and peck 25% faster for the first minute, fading to nothing.",
+   "flavour": "The first spark of the night catches quickly.",
+   "cost": {
+    "gold": 1850
+   },
+   "requires": [
+    "gt_raven_flock"
+   ],
+   "effects": [
+    {
+     "perk": "kindle",
+     "weapon": "raven_flock",
+     "pct": 25,
+     "secs": 60,
+     "pe": 0.1
+    }
+   ],
+   "unlock": {
+    "t": "clearChapter",
+    "id": "cursed_forest",
+    "n": 12
+   }
   }
  ]
 }

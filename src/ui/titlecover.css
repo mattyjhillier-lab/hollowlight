@@ -1,0 +1,93 @@
+/* Title cover "Lantern Vigil" (docs/design/title-screen-v1.md, LOCKED 2026-11-12 picks + 2026-11-13 tune): layout of the real title menu over the code-drawn picture.
+   Everything is scoped under .overlay.u3.tc-on, which src/ui/ui.js adds only while a cover is mounted (no canvas, no cover: the plain Lantern Glass title is untouched).
+   The cover (src/gfx/titlecover.js) also sets one of .tc-m-desktop / .tc-m-portrait / .tc-m-landscape from the layer's own size, so these rules follow the same split as the art.
+   Text stays live DOM on top of the picture; the art carries its own dark calm-zone gradient behind the menu side. Calm: no animation here either (the wordmark flames stop). */
+
+.overlay.u3.tc-on { background: #05070d; }
+.overlay.u3.tc-on .tc-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; }
+.overlay.u3.tc-on .tc-vig { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 45%, rgba(4, 6, 12, .8)); }
+.overlay.u3.tc-on .u3-title.u3-wrap { position: relative; z-index: 1; background: none; }
+.overlay.u3.tc-on .fd-top, .overlay.u3.tc-on .u3-foot { z-index: 3; }
+.overlay.u3.tc-on .u3-col { opacity: var(--tc-menu, 1); } /* eased in with the entry bloom; the buttons are live and focusable from the first frame */
+.overlay.u3.tc-on .cx-bands { display: none; } /* the old colour-band backdrop is replaced by the picture */
+.overlay.u3.tc-on .u3-kicker, .overlay.u3.tc-on .u3-hint, .overlay.u3.tc-on .u3-orient, .overlay.u3.tc-on .u3-ver { text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 0 8px rgba(0, 0, 0, .6); }
+.overlay.u3.tc-on .u3-ver { color: rgba(255, 243, 220, .62); }
+html.reduced-motion .overlay.u3.tc-on .lg-wm-flame path { animation: none; }
+@media (prefers-reduced-motion: reduce) { .overlay.u3.tc-on .lg-wm-flame path { animation: none; } }
+
+/* ---- desktop: brand top-left, menu bottom-left, hero right of centre ---- */
+.overlay.u3.tc-on.tc-m-desktop .u3-title.u3-wrap { align-items: stretch; justify-content: flex-start; padding: 76px clamp(24px, 4.4vw, 64px) clamp(22px, 4vh, 44px); overflow-x: hidden; }
+.overlay.u3.tc-on.tc-m-desktop .u3-col { flex: 1 1 auto; min-height: 0; align-items: stretch; justify-content: space-between; width: min(46%, 640px); max-width: none; gap: 12px; margin: 0; }
+.overlay.u3.tc-on.tc-m-desktop .u3-brand { align-items: flex-start; text-align: left; width: min(100%, 520px); }
+.overlay.u3.tc-on.tc-m-desktop .u3-h1 { width: 100%; }
+.overlay.u3.tc-on.tc-m-desktop .u3-h1 .lg-wordmark { max-height: 30vh; }
+.overlay.u3.tc-on.tc-m-desktop .u3-side { align-items: stretch; gap: 10px; }
+.overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2, .overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2:has(.fd-row3), .overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) { width: min(100%, 480px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2:has(.fd-row3) > .ch-btn { grid-column: auto; }
+/* the two-by-two keeps its whispers on the cover (the old four-across row hid them) */
+.overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2:has(.ch-btn) > .ch-btn .lg-btn__whisper, .overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2:has(.ch-btn) .fd-row3 > .lg-btn .lg-btn__whisper { display: block; }
+.overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2 .fd-row2 .lg-btn__whisper, .overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2 > .ch-btn .lg-btn__whisper { font-size: 13px; white-space: normal; line-height: 1.2; }
+.overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2 .fd-row3 > .lg-btn, .overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2 > .ch-btn { min-height: 52px; }
+.overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2 .fd-row3 > .lg-btn .lg-btn__label, .overlay.u3.tc-on.tc-m-desktop .u3-menu.fd-menu2 > .ch-btn .lg-btn__label { font-size: 19px; }
+.overlay.u3.tc-on.tc-m-desktop .u3-hint, .overlay.u3.tc-on.tc-m-desktop .u3-note, .overlay.u3.tc-on.tc-m-desktop .pwa-slot, .overlay.u3.tc-on.tc-m-desktop .pwa-update { text-align: left; width: min(100%, 480px); }
+.overlay.u3.tc-on.tc-m-desktop .u3-orient { display: none; }
+
+/* the install / full-screen card (first visit only) stays in the column but compact, so the picture keeps its room */
+.overlay.u3.tc-on .u3-side .pwa-slot { margin: 0; }
+.overlay.u3.tc-on .pwa-card { padding: 8px 12px; border-radius: 16px; }
+.overlay.u3.tc-on .pwa-title { font-size: 18px; }
+.overlay.u3.tc-on .pwa-text { margin: 2px 0 6px; font-size: 12.5px; line-height: 1.3; }
+
+/* ---- phone portrait: brand top centre, hero centre, menu stacked in the bottom third ---- */
+.overlay.u3.tc-on.tc-m-portrait .u3-title.u3-wrap { align-items: stretch; justify-content: flex-start; padding: 62px 16px 34px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-col { flex: 1 1 auto; min-height: 0; width: 100%; max-width: none; align-items: stretch; justify-content: space-between; gap: 8px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-brand { align-items: center; text-align: center; gap: 4px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-h1 { width: min(88%, 330px); }
+.overlay.u3.tc-on.tc-m-portrait .u3-kicker { font-size: 12px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-tagline { font-size: 19px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-side { align-items: stretch; gap: 6px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2:has(.fd-row3), .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2:has(.fd-row3) > .ch-btn { grid-column: auto; }
+.overlay.u3.tc-on.tc-m-portrait .fd-menu2 .fd-row3 > .lg-btn:last-child { grid-column: auto; }
+.overlay.u3.tc-on.tc-m-portrait .fd-menu2:not(:has(.ch-btn)) .fd-row3 > .lg-btn:last-child { grid-column: 1 / -1; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 .fd-row3 > .lg-btn .lg-btn__whisper, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .ch-btn .lg-btn__whisper,
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 .fd-row3 > .lg-btn .lg-btn__key, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .ch-btn .lg-btn__key, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .fd-newgame .lg-btn__key { display: none; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 .fd-row3 > .lg-btn, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .ch-btn { min-height: 48px; padding-left: .8em; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 .fd-row3 > .lg-btn .lg-btn__label, .overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .ch-btn .lg-btn__label { font-size: 19px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .fd-newgame { min-height: 44px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-menu.fd-menu2 > .fd-newgame .lg-btn__whisper { font-size: 12px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-orient { margin: 0; font-size: 12px; }
+.overlay.u3.tc-on.tc-m-portrait .pwa-text { display: none; }
+
+/* ---- phone landscape: brand and menu in the left 56%, hero right ---- */
+.overlay.u3.tc-on.tc-m-landscape .u3-title.u3-wrap { align-items: stretch; justify-content: flex-start; padding: 52px 18px 8px 22px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-col { flex: 1 1 auto; min-height: 0; flex-direction: column; align-items: stretch; justify-content: space-between; width: 56%; max-width: none; gap: 6px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-brand { flex: none; align-items: flex-start; text-align: left; gap: 3px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-h1 { width: min(100%, 236px); padding-top: 0; }
+.overlay.u3.tc-on.tc-m-landscape .u3-kicker { font-size: 12px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-tagline { font-size: 16px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-side { flex: none; align-items: stretch; gap: 6px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2, .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2:has(.fd-row3), .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2:has(.ch-btn):has(.fd-row3) { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2:not(:has(.ch-btn)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.overlay.u3.tc-on.tc-m-landscape .fd-menu2 > .lg-btn--primary, .overlay.u3.tc-on.tc-m-landscape .fd-menu2 > .fd-newgame { grid-column: 1 / -1; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2:has(.fd-row3) > .ch-btn { grid-column: auto; }
+.overlay.u3.tc-on.tc-m-landscape .fd-menu2 .fd-row3 > .lg-btn:last-child { grid-column: auto; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 .fd-row3 > .lg-btn :is(.lg-btn__whisper, .lg-btn__flame, .lg-btn__key), .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 > .ch-btn :is(.lg-btn__whisper, .lg-btn__flame, .lg-btn__key),
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 > .fd-newgame :is(.lg-btn__whisper, .lg-btn__key) { display: none; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 .fd-row3 > .lg-btn, .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 > .ch-btn { min-height: 44px; padding: .1em .4em; justify-content: center; gap: 0; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 .fd-row3 > .lg-btn .lg-btn__label, .overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 > .ch-btn .lg-btn__label { font-size: 16px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 > .fd-newgame { min-height: 44px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-menu.fd-menu2 > .lg-btn--primary { min-height: 44px; }
+.overlay.u3.tc-on.tc-m-landscape .u3-hint, .overlay.u3.tc-on.tc-m-landscape .u3-orient, .overlay.u3.tc-on.tc-m-landscape .pwa-text { display: none; }
+/* phones: the version and the install link sit bottom right (as in the sandbox), clear of the menu column and the orientation line */
+.overlay.u3.tc-on.tc-m-portrait .u3-foot, .overlay.u3.tc-on.tc-m-landscape .u3-foot { justify-content: flex-end; gap: 10px; }
+.overlay.u3.tc-on.tc-m-portrait .u3-foot .pwa-link, .overlay.u3.tc-on.tc-m-landscape .u3-foot .pwa-link { margin-left: 0; }
+
+/* first visit only: the install card must never push the picture or the menu around. Phones: a sheet over the bottom (Not now closes it); short desktops: no benefit paragraph. */
+.overlay.u3.tc-on.tc-m-portrait .u3-side .pwa-slot, .overlay.u3.tc-on.tc-m-landscape .u3-side .pwa-slot { position: fixed; z-index: 6; left: 12px; right: 12px; bottom: 40px; width: auto; }
+.overlay.u3.tc-on.tc-m-landscape .u3-side .pwa-slot { left: auto; width: min(420px, 48%); bottom: 8px; }
+.overlay.u3.tc-on.tc-m-portrait .pwa-card, .overlay.u3.tc-on.tc-m-landscape .pwa-card { background: linear-gradient(180deg, rgba(40, 52, 78, .97), rgba(20, 26, 42, .98)); }
+@media (max-height: 760px) { .overlay.u3.tc-on.tc-m-desktop .pwa-text { display: none; } }
+.overlay.u3.tc-on.tc-m-desktop .u3-side .pwa-slot { position: fixed; z-index: 6; right: 24px; bottom: 40px; left: auto; width: 320px; }
+.overlay.u3.tc-on.tc-m-desktop .pwa-card { background: linear-gradient(180deg, rgba(40, 52, 78, .97), rgba(20, 26, 42, .98)); }
+.overlay.u3.tc-on.tc-m-desktop .pwa-text { display: none; }

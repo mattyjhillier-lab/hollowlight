@@ -19,6 +19,7 @@ import './kit.css';
 import { EvoPlate, plateModel } from './evoplate.js';
 import './evoplate.css';
 import './title.css';
+import { TitleCover } from '../gfx/titlecover.js';
 import { buildTitle, buildHeroSelect, buildSpiritSelect } from './title.js';
 import { buildCharacters } from './charsui.js';
 import './charsui.css';
@@ -36,12 +37,24 @@ import { buildPause } from './pause.js';
 import { buildSettings } from './settings.js';
 import { pauseView } from './u4copy.js';
 import { buildResults } from './results.js';
+import { buildNextLights } from './nextlights.js';
+import { cleanMoved, movedIds } from '../meta/moved.js';
+import './nextlights.css';
 import { resultsView } from './resultscopy.js';
 import './results.css';
 import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
 const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+/** An enemy's code-drawn portrait (the same one the Almanac shows) as a blob url, or null; only our own painters make these. */
+function enemyPortrait(id) { return typeof id === 'string' ? portraitUrl(id) : null; }
+const PORTRAIT_IMGS = new Map(); // hero id -> Image, loaded once from the bundled portrait files (used by the tree's hub medallion)
+function portraitImage(hero, redraw) {
+  if (typeof hero !== 'string' || !Object.hasOwn(PORTRAITS, hero)) return null;
+  let im = PORTRAIT_IMGS.get(hero);
+  if (!im) { im = new Image(); PORTRAIT_IMGS.set(hero, im); im.addEventListener('load', () => redraw && redraw()); im.src = PORTRAITS[hero]; }
+  return im;
+}
 const SPIRIT_LINE = (id, data) => (SPIRIT_LINES[id] || (data.weapons[id] && typeof data.weapons[id].desc === 'string' ? data.weapons[id].desc.split('.')[0] : ''));
 const HERO_NEXT = 'Next';
 import { FIRST_RUN_HINT, NEW_CARD_TOAST, toastWeapons } from '../meta/gatewords.js';
@@ -49,7 +62,9 @@ import { WhisperPlate } from './whisperplate.js';
 import './whispers.css';
 import { cardModel } from './cardview.js';
 import { buildAlmanac } from './codexui.js';
+import { portraitUrl } from '../gfx/husk/portrait.js';
 import './codex.css';
+import './titlecover.css'; // the title cover layout: imported after title / lanterns / chars / codex css so its .tc-on rules win ties
 import './a11y.css';
 import './menunav.css';
 import { buildMenuNav } from './menunav.js';
@@ -67,10 +82,10 @@ export class UI {
     this.handlers = {};
     this.toastTimer = null;
     this.toastedWeapons = new Set(); // per page session: first NEW gated-weapon card only
-    this.tree = new TreeScreen(this);
+    this.tree = new TreeScreen(this, portraitImage, enemyPortrait);
     this.buildHud();
     this.nav = null;
-    if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.appendChild(this.nav.root); }
+    if (root && root.appendChild && typeof document !== 'undefined' && document.createElement) { this.nav = buildMenuNav(document, (id) => this.navTo(id)); root.insertBefore(this.nav.root, root.firstChild || null); } // first in the page: the tab row is the first thing a keyboard or screen-reader user meets, as it is the first thing on screen
     window.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('keydown', (e) => this.onDeskKey(e)); // DESKTOP D5: 1-6 tabs, F full screen (through the key map)
   }
@@ -114,6 +129,7 @@ export class UI {
 
   hide(name) {
     if (name === 'end' && this.endView) { this.endView.destroy(); this.endView = null; }
+    if (name === 'start' && this.cover) this.dropCover();
     if (this.layers[name]) this.layers[name].style.display = 'none';
     this.syncNav();
   }
@@ -162,6 +178,12 @@ export class UI {
     if (dest === 'home') this.showStart(this.onPick);
     else if (dest === 'character') this.showCharacters();
     else if (dest === 'tree' && h.openTree) h.openTree();
+    else if (dest === 'play') { this.showStart(this.onPick); this.loadoutFromTree = true; this.beginLoadout(); }
+    else if (dest === 'wear' && h.wearView) { // WARDROBE v2: the ring-closed toast's 'Wear it' link: straight to the Wear drawer of the last hero
+      const ids = Object.keys(this.data.characters), lo = h.lastLoadout && h.lastLoadout();
+      const hid = [this.lastHero, lo && lo.hero].find((x) => typeof x === 'string' && Object.hasOwn(this.data.characters, x)) || ids[0];
+      this.showStart(this.onPick); this.loadoutFromTree = true; this.lastHero = hid; this.showWear(hid);
+    }
     else if (dest === 'goals' && h.openTree) { h.openTree(); this.tree.toggleGoals(true); }
     else if (dest === 'almanac') { this.showStart(this.onPick); this.showAlmanac('title'); }
     else if (dest === 'settings') { this.showStart(this.onPick); this.showSettings(); }
@@ -261,7 +283,7 @@ export class UI {
       chars: fd && fd.chars ? fd.chars : null,
       nudge: h.backupNudge && !(this.pwa && this.pwa.shouldShowCard && this.pwa.shouldShowCard()) && h.backupNudge() ? { onExport: () => (h.exportBackup ? h.exportBackup() : false), onLater: () => { if (h.dismissNudge) h.dismissNudge(); } } : null, // A1: one title card at a time (the install card first)
       onChars: () => this.showCharacters(),
-      onBegin: () => this.beginLoadout(),
+      onBegin: () => h.openTree(), // Q5a: the Lantern Web is the home screen; Play there runs the 3-step loadout
       onTree: () => h.openTree(),
       onSettings: () => h.openSettings(),
       onSwitch: () => this.showLanterns('pick'),
@@ -280,9 +302,24 @@ export class UI {
       if (link) t.foot.appendChild(link);
       t.side.append(updateNotice(document, this.pwa));
     }
+    this.mountCover(el, t, h);
     this.screen = { id: 'title', title: t };
     t.begin.focus({ preventScroll: true });
     if (h.titleCelebrations) { const q = h.titleCelebrations(); if (q && q.length) this.celebrate(q, { away: true, after: () => { if (this.screen && this.screen.id === 'title') this.screen.title.begin.focus({ preventScroll: true }); } }); } // CX5: big moments held back by a defeat
+  }
+
+  // TITLE COVER (Lantern Vigil): the picture behind the menu. Purely additive: any failure leaves the plain Lantern Glass title exactly as it was; the buttons are never gated by it.
+  mountCover(el, t, h) {
+    this.dropCover();
+    if (!h.titleCover || !TitleCover.supported()) return;
+    try {
+      const spec = h.titleCover(); if (!spec) return;
+      this.cover = new TitleCover(el, spec); el.classList.add('tc-on'); t.root.classList.add('tc-on'); globalThis.__cover = this.cover;
+    } catch (e) { this.dropCover(); }
+  }
+  dropCover() {
+    if (this.cover) { try { this.cover.destroy(); } catch { /* cosmetic */ } this.cover = null; }
+    const el = this.layers.start; if (el) { el.classList.remove('tc-on'); const r = el.querySelector && el.querySelector('.u3-title'); if (r) r.classList.remove('tc-on'); }
   }
 
   // FD3: "Whose lantern?" (mode pick | new | replace). The app supplies the cards and does every store change; this only draws and forwards.
@@ -295,11 +332,11 @@ export class UI {
     const v = buildLanternScreen({
       mode, cards: m.cards, canCreate: m.canCreate, locked: m.locked, note: m.note, status, portraits: PORTRAITS,
       onLight: (id) => { const r = h.lightLantern(id); if (r && r.ok) back(); },
-      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) this.beginLoadout(); return r; },
+      onCreate: (name) => { const r = h.createLantern(name); if (r && r.ok) h.openTree(); return r; },
       onRename: (id, name) => after(h.renameLantern(id, name)),
       onExport: (id) => { const r = h.exportLantern(id); this.showLanterns(mode === 'replace' ? 'replace' : 'pick', { text: r.message }); },
       onDelete: (id) => { const r = h.deleteLantern(id); return after(r, r && r.ok ? { text: r.message, undo: !!r.undo } : null); },
-      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) this.beginLoadout(); return r; },
+      onReplace: (id, name) => { const r = h.replaceLantern(id, name); if (r && r.ok) h.openTree(); return r; },
       onUndo: () => { const r = h.undoDelete(); this.showLanterns('pick', { text: r.message }); },
       onBack: back,
     });
@@ -315,6 +352,13 @@ export class UI {
 
   // CHARACTER SYSTEM v2 loadout (LOCKED 2026-10-24): THREE separate steps, map -> character -> starting spirit (the map step only once there is a
   // night choice, FD4 skip rule). A NEW profile first picks its starter set (one hero + one spirit from the data-driven offer), then walks straight in.
+  /** Back out of a loadout step: to the tree when the loadout was started from it (the home screen), else to the title. */
+  leaveLoadout() {
+    if (this.loadoutFromTree) { this.loadoutFromTree = false; this.starterAfter = null; if (this.handlers.openTree) { this.handlers.openTree(); return; } }
+    this.starterAfter = null;
+    this.showStart(this.onPick);
+  }
+
   beginLoadout() {
     const h = this.handlers;
     this.pickTier = null;
@@ -350,15 +394,17 @@ export class UI {
   }
 
   // Step 2: the character (awake heroes only; Bond badge; same body so no Health / Speed pips).
-  showHeroSelect() {
+  showHeroSelect(back = false) {
     const h = this.handlers;
     const ids = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id));
     const choice = !!(h.nightChoice && h.nightChoice());
+    // LOCKED 2026-11-13: one awake hero = nothing to choose, so going forward skips this step (coming Back never lands on it).
+    if (!back && ids.length === 1) { this.lastHero = ids[0]; this.showSpiritSelect(ids[0]); return; }
     const hs = buildHeroSelect({
       heroes: this.heroCards(ids), portraits: PORTRAITS, selected: this.lastHero || (h.lastLoadout && h.lastLoadout().hero), nextLabel: HERO_NEXT,
       copy: { title: LOADOUT.heroTitle, whisper: LOADOUT.heroWhisper },
       onStart: (id) => { this.lastHero = id; this.showSpiritSelect(id); },
-      onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.showStart(this.onPick); },
+      onBack: () => { if (choice) this.showNights(this.lastHero, this.pickTier); else this.leaveLoadout(); },
       onWear: h.wearView ? (id) => { this.lastHero = id; this.showWear(id); } : null, wearLabel: WEAR.open,
     });
     this.mountLoadout(hs, 'ld-step-hero');
@@ -371,7 +417,7 @@ export class UI {
     const v = buildWear({
       view: h.wearView(heroId), viewFor: (sel) => h.wearView(heroId, sel),
       onWear: (sel) => { if (h.setWear) h.setWear(heroId, sel); },
-      onBack: () => this.showHeroSelect(),
+      onBack: () => this.showHeroSelect(true),
     });
     v.focusSelected = v.focusFirst;
     this.mountLoadout(v, 'ld-step-wear');
@@ -385,7 +431,11 @@ export class UI {
     const vs = buildSpiritSelect({
       spirits, heroName: heroView(heroId, c, '').name, selected: h.lastLoadout ? h.lastLoadout(heroId).weapon : null,
       onStart: (wid) => { if (this.onPick) this.onPick(heroId, this.pickTier || undefined, wid); },
-      onBack: () => this.showHeroSelect(),
+      onBack: () => {
+        const only = Object.keys(this.data.characters).filter((id) => !h.heroUnlocked || h.heroUnlocked(id)).length === 1;
+        if (!only) { this.showHeroSelect(true); return; }
+        if (h.nightChoice && h.nightChoice()) this.showNights(this.lastHero, this.pickTier); else this.leaveLoadout();
+      },
     });
     this.mountLoadout(vs, 'ld-step-spirit');
   }
@@ -398,7 +448,7 @@ export class UI {
       heroes: this.heroCards(pool.heroes), portraits: PORTRAITS, selected: this.starterHero, nextLabel: HERO_NEXT,
       copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterHeroTitle, whisper: LOADOUT.starterHeroWhisper },
       onStart: (id) => { this.starterHero = id; this.showStarterSpirit(id); },
-      onBack: () => this.showStart(this.onPick),
+      onBack: () => this.leaveLoadout(),
     });
     this.mountLoadout(hs, 'ld-step-hero ld-starter');
   }
@@ -411,7 +461,12 @@ export class UI {
     const vs = buildSpiritSelect({
       spirits, heroName: heroView(heroId, c, '').name, selected: null,
       copy: { kicker: LOADOUT.starterKicker, title: LOADOUT.starterSpiritTitle, whisper: LOADOUT.starterSpiritWhisper, walk: LOADOUT.starterBegin },
-      onStart: (wid) => { if (h.chooseStarter && h.chooseStarter(heroId, wid) && this.onPick) this.onPick(heroId, undefined, wid); },
+      onStart: (wid) => {
+        if (!(h.chooseStarter && h.chooseStarter(heroId, wid))) return;
+        const after = this.starterAfter; this.starterAfter = null;
+        if (after) after(); // Q5a: picked from the tree home: back to the tree, now with your spirit lit
+        else if (this.onPick) this.onPick(heroId, undefined, wid);
+      },
       onBack: () => this.showStarterHero(),
     });
     this.mountLoadout(vs, 'ld-step-spirit ld-starter');
@@ -428,7 +483,7 @@ export class UI {
       onPick: (tid) => { if (h.pickNight) h.pickNight(tid); },
       gentle: h.getSettings && h.setSetting ? { get: () => h.getSettings().gentleLight === true, set: (on) => h.setSetting({ gentleLight: on === true }) } : null, // EXTRAS v1 Gentle Light
       onBegin: (tid) => { this.pickTier = tid; this.showHeroSelect(); },
-      onBack: () => this.showStart(this.onPick),
+      onBack: () => this.leaveLoadout(),
       onTree: (gateId) => { if (h.openTree) h.openTree(gateId, () => this.showNights(heroId, this.screen && this.screen.nights ? this.screen.nights.current() : tier)); },
     });
     const el = this.layer('nights');
@@ -494,6 +549,7 @@ export class UI {
       onQuit: () => h.menu(),
       onAlmanac: h.almanacView ? () => this.showAlmanac('pause') : null,
       extras,
+      nextLights: h.pauseNear ? (() => { const m = h.pauseNear(); return m && m.nearest.length ? buildNextLights({ moved: m, readOnly: true }).root : null; })() : null, // Q5b: the same goal list, read-only
     });
     const el = this.layer('pause');
     el.className = 'overlay layer-pause u4 u4-pausescreen';
@@ -524,7 +580,7 @@ export class UI {
     this.sound(sim.state === 'victory' ? 'results_win' : 'results_lose');
     const reduced = document.documentElement.classList.contains('reduced-motion') || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
     const cel = bank && bank.cel ? bank.cel : null; // CX4: what this run wrote in the Almanac
-    this.endView = buildResults({ view, reduced, ledger: cel ? cel.ledger : null, onAlmanac: cel && cel.any && h.almanacView ? () => this.showAlmanac('results') : null, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree() });
+    this.endView = buildResults({ view, reduced, ledger: cel ? cel.ledger : null, onAlmanac: cel && cel.any && h.almanacView ? () => this.showAlmanac('results') : null, onAgain: () => h.again(), onMenu: () => h.menu(), onTree: () => h.openTree(null, null, { pulse: movedIds(cleanMoved(view.moved)) }) });
     const el = this.layer('end');
     el.className = `overlay layer-end u6 ${view.won ? 'u6-won' : 'u6-lost'}`;
     el.replaceChildren(this.endView.root);
@@ -593,14 +649,14 @@ export class UI {
 
   // ------------------------------------------------------------------ CX2/CX3 the Almanac (title J, pause read-only, results link, tree heart link)
   // Opens over the current screen; Esc / Back returns to it (front-door rule). The app supplies the view model and stores read marks / titles.
-  showAlmanac(from = 'title', tab = null) {
+  showAlmanac(from = 'title', tab = null, focus = null) {
     const h = this.handlers;
     if (!h.almanacView || this.codexView) return;
     const v = h.almanacView();
     if (!v) return;
     const prev = document.activeElement;
     const calm = !!(v.calm || document.documentElement.classList.contains('reduced-motion'));
-    this.codexView = buildAlmanac({ book: v.book, from, tab, heroPortraits: PORTRAITS, calm, titles: v.titles,
+    this.codexView = buildAlmanac({ book: v.book, from, tab, focus, heroPortraits: PORTRAITS, calm, titles: v.titles,
       onRead: (keys) => { if (h.almanacRead) h.almanacRead(keys); },
       onPickTitle: (id) => { if (h.pickTitle) h.pickTitle(id); },
       onHelp: h.introReplay ? () => h.introReplay() : null,

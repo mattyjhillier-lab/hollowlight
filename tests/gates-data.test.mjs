@@ -8,8 +8,8 @@ import { Sim } from '../src/sim/Sim.js';
 import { buildPool, goldCards, newWeapon } from '../src/sim/cards.js';
 import { defaultSave } from '../src/save/schema.js';
 
-const gatedW = Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort();
-const gatedE = Object.keys(data.evolutions).filter((e) => data.evolutions[e].treeGate).sort();
+const gatedW = Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate && !data.weapons[w].unreleased).sort();
+const gatedE = Object.keys(data.evolutions).filter((e) => data.evolutions[e].treeGate && !data.evolutions[e].unreleased).sort(); // staged (Wildfire) has its socket in DM8
 const gateNodes = def.list.filter((i) => def.nodes[i].permanent && !def.nodes[i].effects.some((e) => e.unlock === 'tier')); // weapon / evolution gates (the Night Gate's tier gates are tested in dt1.test.mjs)
 const gateOf = (kind, id) => gateNodes.filter((n) => def.nodes[n].effects.some((e) => e.unlock === kind && e.id === id));
 const weaponKeys = (sim) => {
@@ -29,7 +29,7 @@ test('T11 starter pool (v2): no tree = no weapon card (the starting spirit is in
 });
 
 test('T12 ungated evolutions are exactly howling_legion + sanctum_halo; all 5 weapons + 13 evolutions are gated; no hero tree gate', () => {
-  const open = Object.keys(data.evolutions).filter((e) => !data.evolutions[e].treeGate).sort();
+  const open = Object.keys(data.evolutions).filter((e) => !data.evolutions[e].treeGate && !data.evolutions[e].unreleased).sort();
   assert.deepEqual(open, ['howling_legion', 'sanctum_halo']);
   assert.deepEqual(gatedW, ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
   assert.equal(gatedE.length, 13);
@@ -42,7 +42,7 @@ test('T13 every gated weapon/evolution has exactly one gate node; gate nodes are
   for (const e of gatedE) assert.equal(gateOf('evolution', e).length, 1, e);
   for (const id of gateNodes) {
     const n = def.nodes[id];
-    assert.deepEqual(n.requires, [], `${id} hangs off the hub`);
+    assert.ok(n.requires.length <= 1, `${id}: S1: reached by its road / lead-in diamond, or a root (outline seals)`);
     assert.equal(n.maxRank, 1);
     assert.ok(n.cost.gold >= 100 && n.cost.gold <= 600 && n.cost.shards === 0, `${id} cost`);
     assert.ok(n.unlock, `${id} has an unlock condition`);
@@ -121,5 +121,5 @@ test('respec keeps gate nodes in the real tree and refunds the rest', () => {
 test('removing a gate node makes compileTree fail (unreachable content)', () => {
   const raw = JSON.parse(JSON.stringify(data.tree));
   raw.nodes = raw.nodes.filter((n) => n.id !== 'gt_soul_lance');
-  assert.throws(() => compileTree(raw, data), /soul_lance.*no unlocking node/);
+  assert.throws(() => compileTree(raw, data), /soul_lance/); // S1: its forks name it as their prerequisite, and the evolution has no unlocking node
 });

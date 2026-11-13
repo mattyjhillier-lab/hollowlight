@@ -25,7 +25,7 @@ const raw = (nodes) => ({ ...B, nodes });
 const bad = (nodes, re) => assert.throws(() => compileTree(raw(nodes), udata), re);
 
 test('real tree compiles: ~60+ nodes, 4 branches, enough locked and teaser nodes', () => {
-  assert.ok(def.list.length >= 120 && def.list.length <= 200, `nodes ${def.list.length}`);
+  assert.ok(def.list.length >= 200 && def.list.length <= 360, `nodes ${def.list.length}`); // S1: + magic gardens (forks) and the roads to every landmark
   assert.deepEqual(Object.keys(def.branches).sort(), ['light', 'magic', 'spirit', 'summoner']);
   const locked = def.list.filter((i) => def.nodes[i].unlock && !def.nodes[i].teaser);
   assert.ok(locked.length >= 12, `locked ${locked.length}`);
@@ -81,7 +81,7 @@ test('costs: rank scaling, totals recomputed from nodes', () => {
   assert.deepEqual(spentOf({ a: 2 }, d), { gold: 300, shards: 2, glass: 0 });
   assert.deepEqual(spentOf({ a: 99, ghost: 5, __proto__: { a: 3 } }, d), { gold: 700, shards: 3, glass: 0 }); // junk ids ignored, rank clamped to the node max
   const t = totalCost(def);
-  assert.ok(t.gold > 40000 && t.gold < 125000, `total gold ${t.gold}`); // includes the Wardrobe's 24,250 zero-power gold sink (EXTRAS v1)
+  assert.ok(t.gold > 40000 && t.gold < 200000, `total gold ${t.gold}`); // includes the Wardrobe's 24,250 zero-power gold sink (EXTRAS v1) and the S1 roads + forks
   assert.ok(t.shards >= 20 && t.shards <= 60, `total shards ${t.shards}`);
 });
 
@@ -119,6 +119,7 @@ test('unlock conditions gate buying; teasers never buyable', () => {
   const s = richSave();
   s.stats.runs = 2; // the Wolves heart (v2) asks for 2 runs
   s.stats.killsByEnemy.wolf = 3000; // enough for the path (Red Thread needs 2500) but not for the chin lantern (4000)
+  s.stats.chapters = { cursed_forest: { bestTime: 900 } }; // S1: the Wolves road starts at Twilight's Vow (survive 10:00)
   ownedPath(s, chain('wf_third'));
   assert.equal(nodeStatus(def, s, 'wf_third', data).state, 'condition');
   assert.equal(buy(s, 'wf_third', def, data).ok, false);
@@ -528,7 +529,7 @@ test('effects: Last Light revives once; level-up rush buffs summons; attunement 
 
 test('unlock schema: weapon gate and hero gate work with data that opts in (v2: every shipped weapon is gated; heroes wake by keepsakes)', () => {
   // G1b gated three weapons; CHARACTER SYSTEM v2 (2026-10-24) gates all five (the starter set grants one heart).
-  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate).sort(), ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
+  assert.deepEqual(Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate && !data.weapons[w].unreleased).sort(), ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
   assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'no hero is a tree gate');
   const gated = { ...udata, weapons: { ...udata.weapons, ghost_wolves: { ...udata.weapons.ghost_wolves, treeGate: true } } };
   const d = compileTree(raw([node('uw', { effects: [{ unlock: 'weapon', id: 'ghost_wolves' }, { unlock: 'abilityUpgrade', id: 'long_howl' }, { unlock: 'modifier', id: 'hard_dusk' }] })]), gated);
@@ -566,6 +567,7 @@ test('G1e: a node for a gated weapon cannot be bought without its gate; owning t
   assert.equal(nodeStatus(def, s, 'rv_wide', data).reason, 'Locked: unlock Raven Flock first', 'deep chain nodes show the gate too');
   assert.equal(buy(s, 'rv_talon', def, data).ok, false);
   assert.equal(s.tree.rv_talon, undefined);
+  ownedPath(s, chain('gt_raven_flock')); // S1: the heart is reached by its road
   assert.ok(buy(s, 'gt_raven_flock', def, data).ok);
   assert.ok(buy(s, 'rv_talon', def, data).ok, 'gate owned -> node buyable');
 });
@@ -581,7 +583,7 @@ test('G1e: compileTree rejects a node targeting a gated weapon without (transiti
   assert.ok(compileTree(raw([g, stat('rv_a', { requires: ['gt_rf'] }), stat('rv_b', { ring: 3, ang: 80, requires: ['rv_a'] })]), d1), 'transitive is fine');
 });
 
-test('G1e: nodes behind an evolution gate show ??? until that gate has progress or is owned', () => {
+test('G1e + S1: nodes behind an evolution gate (the forks of a seal) show ??? until that gate is LIT (progress alone no longer reveals them)', () => {
   const d1 = ungated(data);
   d1.evolutions.dire_alpha = { ...d1.evolutions.dire_alpha, treeGate: true };
   const g = node('gt_da', { effects: [{ unlock: 'evolution', id: 'dire_alpha' }], unlock: { t: 'totalKills', n: 100 }, hidden: true });
@@ -593,12 +595,13 @@ test('G1e: nodes behind an evolution gate show ??? until that gate has progress 
   assert.ok(!/Dire|Alpha/i.test(JSON.stringify(m)), 'never names the locked evolution');
   assert.ok(!/Dire|Alpha/i.test(nodeStatus(d, none, 'after', d1).reason), 'reason does not name it either');
   const prog = { ...defaultSave(), tree: {}, stats: { ...defaultSave().stats, kills: 10 } };
-  assert.equal(describeNode(d, prog, 'after', d1).masked, false, 'progress begun -> revealed');
+  assert.equal(describeNode(d, prog, 'after', d1).masked, true, 'S1: progress begun -> still veiled (forks appear only after the seal is lit)');
+  assert.equal(describeNode(d, { ...prog, tree: { gt_da: 1 } }, 'after', d1).masked, false, 'seal lit -> revealed');
 });
 
 test('G1e: no non-gate node text names a locked weapon or evolution (data-driven over tree.json)', () => {
-  const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate);
-  const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate);
+  const lockedW = Object.entries(data.weapons).filter(([, w]) => w.treeGate && !w.unreleased); // staged weapons (Ember Breath) have no tree node yet
+  const lockedE = Object.entries(data.evolutions).filter(([, e]) => e.treeGate && !e.unreleased);
   const words = [...lockedW.map(([, w]) => w.name), ...lockedE.map(([, e]) => e.name), 'raven', 'bolt', 'lightning', 'tempest', 'stampede', 'judgment', 'judgement', 'alpha', 'lance'];
   assert.ok(lockedW.length === 5 && lockedE.length === 13);
   for (const id of def.list) {

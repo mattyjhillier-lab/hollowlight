@@ -83,7 +83,8 @@ test('legacy seed: a played pre-v2 save keeps both heroes awake, Bond from histo
 test('starter set: heart + first socket gate, hero awake, notes; startable weapons follow the hearts', () => {
   assert.deepEqual(starterNodes(info, 'ghost_wolves'), ['gt_ghost_wolves']);
   assert.deepEqual(starterNodes(info, 'raven_flock'), ['gt_raven_flock', 'gt_dive_bombers'], 'a weapon with a gated first socket gets that evolution too');
-  for (const w of Object.keys(data.weapons)) assert.ok(starterNodes(info, w).length >= 1, w);
+  for (const w of Object.keys(data.weapons)) assert.ok(starterNodes(info, w).length >= 1 || data.weapons[w].unreleased, w); // staged weapon (dragonfire_meteor): no cluster yet, starterNodes is [] (EW7 adds its heart)
+  assert.deepEqual(starterNodes(info, 'dragonfire_meteor'), []);
   const s = sanitize(defaultSave());
   assert.deepEqual(startableWeapons(data, def, s.tree), []);
   assert.equal(grantStarter(s, data, info, def, 'elias', 'chain_lightning'), true);
@@ -167,8 +168,9 @@ test('step 4: a live lantern bought after a hero lantern keeps an exact refund (
   const creep = { su_call: 0, ch_wren: 1, wf_fang: 2 };
   const paid = costFor(def.nodes.su_bond, 1, 0, def.creep).gold + costFor(def.nodes.su_call, 1, 0, def.creep).gold + frozenCost(PRICES_V4.ch_wren, 1, 1).gold + costFor(def.nodes.wf_fang, 1, 2, def.creep).gold;
   const s = parseSave(v3disk(own, ['ch_wren'], creep)).save;
-  assert.equal(s.tree.wf_fang, 1);
-  assert.equal(s.creep.wf_fang, 1, 'clamped to the purchases still owned');
+  // S1: the v5 restart then refunds what step 4 left (wf_fang at the step it was clamped to): the total is still exactly what was paid
+  assert.equal(s.tree.wf_fang, undefined);
+  assert.deepEqual(s.creep, {});
   const gold0 = s.gold;
   respec(s, def);
   assert.equal(s.gold - 1000, paid, `everything paid comes back: ${s.gold - 1000} vs ${paid} (after ${gold0 - 1000} at migration)`);
@@ -184,14 +186,16 @@ test('step 4 hostile: junk ranks, prototype keys, NaN creep, non-object trees', 
 });
 
 test('the live tree compiles with the retired hero lanterns and a third hero needs no step (additive)', () => {
-  assert.equal(def.treeVersion, 4);
+  assert.equal(def.treeVersion, 5); // S1 rework: tree content version 5
   assert.doesNotThrow(() => compileTree(composeTree(readTreeFiles(), data).live, data));
 });
 
 test('starter pool is data-driven (balance.starter; all by default; junk = all; never empty)', async () => {
   const { starterPool } = await import('../src/meta/starter.js');
   const all = starterPool(data);
-  assert.deepEqual(all.heroes, Object.keys(data.characters)); assert.deepEqual(all.weapons, Object.keys(data.weapons));
+  assert.deepEqual(all.heroes, Object.keys(data.characters)); assert.deepEqual(all.weapons, Object.keys(data.weapons).filter((w) => !data.weapons[w].unreleased));
+  assert.deepEqual(all.weapons, ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_lightning', 'holy_orbit'], 'the live starter offer is exactly the five launch weapons');
+  assert.ok(!starterPool({ ...data, balance: { ...data.balance, starter: { heroes: ['*'], weapons: ['*'] } } }).weapons.includes('dragonfire_meteor'), 'a staged weapon never enters the offer, even with *');
   const D2 = (st) => ({ ...data, balance: { ...data.balance, starter: st } });
   assert.deepEqual(starterPool(D2({ heroes: ['elias', 'nope'], weapons: ['holy_orbit', 'ghost_wolves', '__proto__'] })), { heroes: ['elias'], weapons: ['ghost_wolves', 'holy_orbit'] });
   assert.deepEqual(starterPool(D2({ heroes: ['nope'], weapons: 'x' })), all);

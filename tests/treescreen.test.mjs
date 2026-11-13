@@ -47,7 +47,7 @@ test('model: five states map 1:1 from the real rules (lit, ready, open, challeng
     assert.equal(ce.s, want, id);
     assert.ok(SAY[ce.s]);
   }
-  const poor = model(save({ gold: 10, stats: { runs: 1 } }));
+  const poor = model(save({ gold: 10, stats: { runs: 1 }, tree: { li_vigor: 1, li_oak: 1 } })); // S1: hearts are reached by roads now, so the challenge shown is a ring lantern beside an owned one (Root-Wise)
   assert.ok(def.list.some((id) => poor.cache[id].s === 'open'), 'not enough gold');
   assert.ok(def.list.some((id) => poor.cache[id].s === 'notyet'), 'not yet reachable');
   assert.ok(def.list.some((id) => poor.cache[id].s === 'challenge'), 'challenge');
@@ -191,11 +191,11 @@ test('C3 Lantern Web option A: no second header, right tool rail, compact node s
   assert.match(js, /host\.nav\.setPurse\(purse\)/, 'purse lives in the tab row');
   assert.match(js, /Math\.min\(this\.small \? 13 : 18, 70 \* z\)/, 'region name size capped 13 (small) / 18');
   assert.match(js, /if \(!force && this\.small\) return;/, 'welcome card replaced by the step bar on small screens');
-  assert.match(js, /const DIMA = \[1, 0\.2, 0\.35, 0\.55\]/);
+  assert.match(js, /const DIMA = \[1, 0\.2, 0\.35, 0\.55, 0\.4\]/);
   assert.match(js, /setExpanded\(on\)/);
   // the rail and tab buttons keep 44px hit areas; the close button too (existing rule)
   assert.match(css, /\.ts-btn \{ min-height: 44px; min-width: 44px;/);
-  assert.match(css, /\.ts\.ts-small \.ts-panel:not\(\.exp\) :is\(\.ts-kick, \.ts-why, \.ts-evo, \.ts-flav, \.ts-steps, \.ts-meta, \.ts-cost\) \{ display: none; \}/);
+  assert.match(css, /\.ts\.ts-small \.ts-panel:not\(\.exp\) :is\(\.ts-kick, \.ts-why, \.ts-evo, \.ts-flav, \.ts-steps, \.ts-meta, \.ts-cost, \.ts-ctile, \.ts-chips\) \{ display: none; \}/);
   assert.match(css, /\.ts:not\(\.ts-small\)\.ts-sel \.ts-zoom \{ right: 364px; \}/, 'desktop: docked card, rail steps left of it');
   assert.ok(!/\.ts-bar \{|\.ts-title \{/.test(css), 'old toolbar rules removed');
 });

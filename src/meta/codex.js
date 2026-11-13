@@ -23,7 +23,7 @@ export const ENTRY_KEYS = Object.freeze([
   'n:cursed_forest:normal', 'n:cursed_forest:hard', 'n:cursed_forest:expert',
   'l:1', 'l:2', 'l:3', 'l:4',
   'c:ghost_wolves', 'c:raven_flock', 'c:spirit_bolts', 'c:chain_lightning', 'c:holy_orbit', 'c:foes', 'c:spirits', 'c:nights', 'c:book',
-  's:lamp', 's:road', 's:knot', 'sp:lamp:tells', 'sp:road:tells', 'sp:knot:tells', 'c:places', // E7 Places (appended; s: a place, sp: its Tells page)
+  's:lamp', 's:road', 's:knot', 'sp:lamp:tells', 'sp:road:tells', 'sp:knot:tells', 'c:places', 'c:dragonfire_meteor', 'e:wildfire', // E7 Places (appended; s: a place, sp: its Tells page)
 ]);
 export const MAX_BITS_HEX = 64; // 256 entries before the field must grow (a save test checks the list fits)
 const KEY_INDEX = new Map(ENTRY_KEYS.map((k, i) => [k, i]));
@@ -184,6 +184,7 @@ export function almanac(save, data, def, opts = {}) {
   const spirits = [];
   for (const wid of Object.keys(data.weapons || {})) {
     const w = data.weapons[wid];
+    if (w.unreleased) continue; // staged weapon (not yet in players' hands): no Almanac page
     const wg = w.treeGate ? gateFor(def, 'weapon', wid) : null;
     const wKnown = !w.treeGate || gateOwned(wg) || n0(used[wid]) > 0;
     const evos = [];

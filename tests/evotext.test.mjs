@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 const evos = Object.entries(data.evolutions);
 
 test('every evolution has a plain description under the card clamp, with no recipe stat named', () => {
-  assert.equal(evos.length, 15);
+  assert.equal(evos.length, 16); // 15 live + Wildfire (hidden)
   for (const [id, e] of evos) {
     assert.ok(typeof e.desc === 'string' && e.desc.trim().length >= 20, id);
     assert.ok(e.desc.length <= CLAMP.desc, `${id} ${e.desc.length}`);
@@ -48,7 +48,7 @@ test('Almanac shows the description only once the evolution is found', () => {
 
 test('tree evolution lanterns: gates unlock real evolutions; the lantern panel reads the same text (textContent only)', () => {
   const gates = Object.values(treeDef.nodes).filter((n) => (n.effects || []).some((f) => f && f.unlock === 'evolution'));
-  assert.equal(gates.length, evos.filter(([, e]) => e.treeGate).length);
+  assert.equal(gates.length, evos.filter(([, e]) => e.treeGate && !e.unreleased).length);
   for (const n of gates) { const f = n.effects.find((x) => x.unlock === 'evolution'); assert.ok(data.evolutions[f.id] && data.evolutions[f.id].desc, n.id); }
   const src = readFileSync(new URL('../src/ui/treescreen.js', import.meta.url), 'utf8');
   assert.ok(src.includes('this.pEvo.textContent'));

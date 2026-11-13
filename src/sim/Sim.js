@@ -134,6 +134,7 @@ export class Sim {
       tells: new Set(Array.isArray(T.tells) ? T.tells.filter((id) => typeof id === 'string' && Object.hasOwn(data.enemies, id)) : []),
       peek: Array.isArray(T.info) && T.info.includes('peek'),
       loudStir: Array.isArray(T.info) && T.info.includes('stir'),
+      farSight: Array.isArray(T.info) && T.info.includes('lamps'), // Far Sight (Satchel): render-only edge embers for unlit lamps; never read by the sim
       bars: Array.isArray(T.info) && T.info.includes('bars'), // Hunter's Eye (DT2): render-only health bars + mark names on Hollow-marked foes
     };
     this.hasLore = Object.keys(this.tfx.lore).length > 0;
@@ -287,6 +288,10 @@ export class Sim {
     if (sites === true && this.chapter.sites) { const sd = validateSites(this.chapter.sites, data.enemies); if (sd) this.sites = new Sites(this, sd); }
 
     this.addWeapon(this.startWeapon);
+    // KINDLING START (tree, LOCKED 2026-11-12): the STARTER weapon's clock runs pct% faster at the start, fading linearly to nothing over secs.
+    // Pure and deterministic (no RNG); null when the node for this starter is not owned, so a run without it is byte-identical.
+    const K = T.kindle && typeof T.kindle === 'object' && Object.hasOwn(T.kindle, this.startWeapon) ? T.kindle[this.startWeapon] : null;
+    this.kindle = K && Number.isFinite(K.pct) && Number.isFinite(K.secs) && K.pct > 0 && K.secs > 0 ? { w: this.startWeapon, pct: clamp(K.pct, 0, 50), secs: clamp(K.secs, 1, 120), t0: this.time } : null;
     // run-start offers (T6): Kindred Start, Favoured Spirit, Lantern Blessing, in that order; the world waits (state 'levelup', offer.start)
     this.startQueue = [];
     if (T.perks?.startWeapon) this.startQueue.push('kindred');
@@ -430,11 +435,11 @@ export class Sim {
 
   // Burn (Elias, Holy Orbit hits only): 20% of the triggering hit per second for 2 s. One instance per enemy:
   // potency = strongest, time refreshes to 2 s, potency ends with the burn. Sim-only state (never saved).
-  burn(e, hit) {
+  burn(e, hit, time = BURN_TIME, rate = BURN_RATE) { // time / rate default to Holy Orbit's; Ember Breath passes its own (Smoulder, 25%)
     if (e.dead || !(hit > 0)) return;
     e.burnSrc = this._src;
-    e.burnDps = Math.max(e.burnDps, hit * BURN_RATE * this.tfx.burnMul);
-    e.burnT = Math.max(e.burnT, BURN_TIME);
+    e.burnDps = Math.max(e.burnDps, hit * rate * this.tfx.burnMul);
+    e.burnT = Math.max(e.burnT, time);
   }
 
   nearestEnemy(x, y, maxR, pred) {
@@ -893,10 +898,20 @@ export class Sim {
     this.buffs.speedBoost = Math.max(0, this.buffs.speedBoost - dt);
   }
 
+  /** Kindling Start: 1 at the run start, 0 once its seconds have passed (or no node); the render reads this for the hero cue. */
+  kindleLeft() {
+    const K = this.kindle;
+    if (!K) return 0;
+    return clamp(1 - (this.time - K.t0) / K.secs, 0, 1);
+  }
+  /** The starter weapon's clock multiplier: 1 + pct% x kindleLeft (exactly 1 for every other weapon and after the window). */
+  kindleMul(w) { return this.kindle && w.id === this.kindle.w ? 1 + (this.kindle.pct / 100) * this.kindleLeft() : 1; }
+
   updateWeapons(dt) {
     for (const w of this.weapons) {
       this._src = w.id;
-      WEAPON_BEHAVIOURS[w.id].update(this, w, dt);
+      const k = this.kindle ? this.kindleMul(w) : 1;
+      WEAPON_BEHAVIOURS[w.id].update(this, w, k === 1 ? dt : dt * k);
     }
     this._src = null;
   }

@@ -65,7 +65,7 @@ export class SaveStore {
     else if (rb && rb.code === 'future') this._lock(bak);
     else if (rb && rb.ok) res = rb;
     this.data = res ? res.save : defaultSave();
-    this.stamp = this.data.updatedAt;
+    this.stamp = res ? this.data.updatedAt : 0; // a fresh default copy was never read from storage: ANY stored copy is newer than it (two tabs opened in the same millisecond used to tie on the default's creation time)
     if (this.forceReadOnly && !this.readOnly) this._lock(main !== null ? main : bak);
     return this.data;
   }
