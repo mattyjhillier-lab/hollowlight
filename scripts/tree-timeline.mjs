@@ -186,7 +186,7 @@ const STARTER_E = Object.keys(data.evolutions).filter((e) => !data.evolutions[e]
 const GATED_W = Object.keys(data.weapons).filter((w) => data.weapons[w].treeGate && !w.startsWith('zw'));
 const GATED_E = Object.keys(data.evolutions).filter((e) => data.evolutions[e].treeGate && !e.startsWith('zw'));
 // heroes from the data (TREE-GEN1): the first is the model players' favourite, each hero's signature = its starting weapon
-const HEROES = Object.keys(data.characters).filter((h) => !data.characters[h].treeGate);
+const HEROES = Object.keys(data.characters).filter((h) => !data.characters[h].treeGate && !data.characters[h].unreleased);
 const SIG = Object.fromEntries(HEROES.map((h) => [h, data.characters[h].kindred || data.characters[h].weapon])); // CHARACTER SYSTEM v2: the kindred spirit = the model's starting weapon
 const regionOf = (id) => { const n = def.nodes[id]; return n.cluster || (n.frag && n.frag !== 'core' ? n.frag : n.region || 'rings'); };
 const REGIONS = {};

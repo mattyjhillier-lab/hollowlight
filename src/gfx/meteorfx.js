@@ -73,7 +73,7 @@ function tonguePath(c, ox, oy, lean, hv, sc = 1) { // a licking flame tongue: ro
   c.bezierCurveTo(ox + S(10), oy - S(3), ox + S(6), oy, ox, oy);
   c.closePath();
 }
-function drawTongue(c, ox, oy, lean, hv, sc = 1, a = 1) {
+export function drawTongue(c, ox, oy, lean, hv, sc = 1, a = 1) {
   const g = c.createLinearGradient(0, oy, 0, oy - 36 * sc);
   g.addColorStop(0, `rgba(224,122,107,${0.8 * a})`); g.addColorStop(0.2, `rgba(255,179,92,${a})`); g.addColorStop(0.6, `rgba(255,214,140,${0.97 * a})`); g.addColorStop(1, `rgba(255,236,176,${0.75 * a})`);
   c.fillStyle = g; tonguePath(c, ox, oy, lean, hv, sc); c.fill();

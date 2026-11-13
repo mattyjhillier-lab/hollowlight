@@ -304,7 +304,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, sitesSum: sim.sites ? sim.sites.summary() : null, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, abilityDmg: sim.dmgBy.ophimbers_rise || 0, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, sitesSum: sim.sites ? sim.sites.summary() : null, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {
