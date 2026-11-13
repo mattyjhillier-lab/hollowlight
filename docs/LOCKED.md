@@ -517,3 +517,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | LOADOUT HERO STEP | Skip the hero-pick step when only one hero is awake; it returns once a second hero wakes. (Built 2026-11-13, tests in q5.test.mjs.) | 2026-11-13 | Matt, one-tap |
 | LI_HEAL FIXTURE EDIT OK | Mending Light trimmed +5% to +2.5% heal for Kindling Start; the hand-edit of the v5 release-guard fingerprint (tests/fixtures/tree-released.json, tree-s1-rework.json) is accepted. v4 snapshot untouched. | 2026-11-13 | Matt, one-tap |
 | DEEP DUSK BALANCE | Leave Deep Dusk as is for launch; measure on real testers, ease later if it is a wall. Dry stretch runs 30-56 stays open (not a launch blocker). | 2026-11-13 | Matt, one-tap |
+
+| TREE + WARDROBE + TITLE LIVE | Merged dev to main via PR 13 (CI green, 1464 tests, audit 0) on Matt's explicit yes; tree v5 snapshot recorded (283 ids). Live at wispwick.pages.dev. One-time tree refund + notice for existing saves. | 2026-11-13 | Matt, chat |
