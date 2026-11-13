@@ -1,0 +1,7 @@
+{
+ "sandbox": "title-v1",
+ "tune": {"parallax":1.05,"maxShift":26,"drift":0.5,"glowR":1.15,"glowA":0.65,"flick":0.6,"flickS":1,"spread":0.6,"soft":0.24,"breath":0.08,"night":1,"fog":0.65,"moon":0.85,"grain":0,"vig":0.52,"calmZone":0.7,"motes":60,"moteSz":1.6,"bloomT":1.45,"hsD":0.5,"hxD":0.68,"hyD":0.84,"hsP":0.36,"hxP":0.5,"hyP":0.62,"hsL":0.6,"hxL":0.76,"hyL":0.88},
+ "layerDepth": {"Sky and moon":0.4,"Far trees (grey)":2.5,"Mid trees (colour blooms)":0.5,"Ground":1.25,"Hero, companion, lantern":2.5,"Light and motes":1,"Foreground frame":1.7},
+ "cover": {"hero":"wren","costume":"none","flame":"hearth","hasProgress":true,"companion":true,"calm":true},
+ "note": "Matt's copy had Calm switched ON in the preview; Calm is a player setting, not a default. Grain 0 = no grain."
+}
