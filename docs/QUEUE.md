@@ -1,28 +1,33 @@
-## SINGLE SOURCE OF TRUTH (rewritten 2026-11-12; everything below this block is older history and may be stale)
+## SINGLE SOURCE OF TRUTH (rewritten 2026-11-13; everything below this block is older history and may be stale)
 
-NOW: Matt plays dev.wispwick.pages.dev (tree, tour, results, start flow) and runs docs/REAL-PHONE-CHECKLIST.md.
-Tree rework S1 + look + hero panel + banner/tile/tour + results "what moved" + home flow + a11y: BUILT, merged to dev (not main), 1423 tests green.
+LIVE on main (2026-11-13): tree rework (Lantern Web), Kindling Start, Far Sight, Wardrobe v2 (ring costumes), title cover, hero step skipped with one awake hero. On dev, hidden: Dragonfire Meteor + Wildfire + Cinder Wyrm + Cinder Brand, Lucinda (final art) + Ophimber (she), Ophimber's Rise, DM8 tree cluster.
 
-Waiting on Matt (decisions):
-1. DONE 2026-11-12: Q7 A, Far Sight (120 lamps), Kindling Start (diamond per weapon branch, trim-one-node budget) all LOCKED; BUILD in progress on wip/tree-q1.
-2. Q7 landmark promotion/gating: chart DONE (docs/design/skill-tree-pacing-v3.md, 50 journeys). Options A promote hidden seals + chips, no gate change (recommended), B relax Chain/Fourth Card gates (balance call), C two gold-only landmarks.
-3. Loadout hero step: skip when only one hero awake (recommended).
-4. Deep Dusk clear pace (balance); mid tree 29.4% (band 30-55, pre-existing); Wren/Elias gap at max 78/94.
-5. Merge to main (explicit yes; includes the one-time refund-everything tree restart; run `node scripts/tree-release.mjs --snapshot` at merge).
+RUNNING: Lucinda DM9 balance pass (wip/dm9, resumable sweeps).
 
-Matt-only chores: real-phone tests; delete old `hollowlight` Cloudflare project; tell testers saves started fresh; 5 old worktree folders with uncommitted work.
+WAITING ON MATT
+- Real-phone checks: heat, Battery Saver, long session (docs/REAL-PHONE-CHECKLIST.md); ring 3 of the Rise clips portrait edges.
+- Teaser slot "Dragonfire Meteor" already shows dashed in the live tree: keep (rec) or hide until release.
+- Release switch for Lucinda (DM10): needs his yes + phone heat check + DM9 numbers.
+- Chores: tell testers (one-time tree refund; saves started fresh at new address); delete old `hollowlight` Cloudflare project; 5 old worktree folders with uncommitted work.
+- Older decision items further down that may still be open (audit pending): Hollowlighters -> Wickbearers word, About wording, map events balance picks, desktop/phone design picks, minimap + events-almanac picks, nights retune options, Judgement Wheel stream40, name trademark check, riddle lines.
 
-Next (Claude, no testing needed): pacing v3 chart; LOCKED rows + build chunk per picked verb; Set B slots (companion egg, hero trial lantern) options rounds.
-Big features (Matt's order): Lucinda DM5-DM10, Chapter 2 Hushbell Hamlet, companions (summons stop being weapons), visuals review, UI alignment pass.
-Wardrobe + title picks LOCKED 2026-11-12: build the two tune sandboxes (standalone, outside repos) first. Not started:
-Later: chapters 3-8, other heroes/weapons, prestige, Android/Windows app, AI art pipeline.
-Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob.
+CLAUDE NEXT (in order)
+1. Lucinda DM9 balance, then DM10 release (Matt's yes).
+2. Chapter 2 Hushbell Hamlet (design first; Bond/level cap review 25 vs 30/35 happens here).
+3. Companions: summons stop being weapons (Wolves, Ravens leave the weapon list; Elias needs his own companion, crows do not fit); three-options rounds; reopens V1 weapon scope, 15 evolutions, gates, starter pick, tree branches.
+4. Visuals review, then UI alignment pass.
 
-STATUS wip/tree-q1 2026-11-12: Q7-A BUILT (Murder Storm, Spirit Tempest, Static Storm seals + Wardrobe Path drawn as named chase landmarks with progress chips; display-only `chase` flag, released ids/prices/requires untouched; tests/q7chase.test.mjs; shots docs/screenshots/tree-q7/). Pace re-measure (pace-v2 S1, ~84 min) not re-run yet.
-STATUS wip/tree-q1 2026-11-12: FAR SIGHT BUILT (Satchel landmark co_far, anchored Dusk tier 3 angle 52, 1,800 gold, unlock 'Light 120 lamps' = new condition leaf `lamps` reading the banked stats.sites.lamps; road of 6 gold-only lanterns co_seek1-6 from Eager Gems, 250-600 gold, gem pull / magnet only; effect `info: lamps` = up to 4 edge embers with the reward glyph for awake unlit off-screen lamps within 900 u, never doubling an edge arrow; Calm static; priced 0 PE like Hunter's Eye because the choice category is full; sim byte-identical; tests/farsight.test.mjs). Ranks 2-3 (1,400 / 2,100 u) not built. pace-v2 does not model lamps, so its arrival is not measured.
-STATUS wip/tree-q1 2026-11-12: KINDLING START BUILT (wf/or/rv/bo/cl_kindling, cluster 'extras' beside each heart, Clear Cursed Forest 8/10/12/14/16, base 1,500-2,200 gold (group price creep roughly doubles it on a grown cluster); starter weapon clock x1.25 fading to x1 over 60 s; ring + Wren pup trail + Elias crown flare). Budget: kindle counts once (largest node, only the starter kindles) = 0.10 PE, paid by trimming Mending Light (li_heal) hearts heal +5% -> +2.5%; sustain stays 5.00. NEEDS MATT: li_heal is in the dev-side v5 release snapshot (main is v4), so its v5 fingerprint + S1 golden were hand-updated (snapshot tool not run). BALANCE: see the RESULT line below. Also: tree-polish follow-up (hub glow clamp, labels clear of the tool rail). RESULT (rt-matrix, Twilight random, paired seeds 1-36, 2 heroes x 5 starters = 360 runs per state, noise about +-5): maxed (full tree, Bond 25) 89.2% -> 86.7% (band 65-90, in); mid (half tree, Bond 0; owns li_heal, no Kindling) 29.7% -> 32.2% (band 30-55; base was the known pre-existing 29.4-30% miss, now inside, within noise); deaths before 5:00 0 / 0; death p10-p90 about 9:20-13:50 (spread target 6-14 min, in); Wren vs Elias maxed 87.2/91.1 -> 85.0/88.3, mid 21.1/38.3 -> 27.8/36.7. Fresh cells untouched by construction (no node owned, sim byte-identical; tested). bless-sweep / sweep-all: tree-less, identical by construction (see report).
-STATUS wip/title-build 2026-11-13: TITLE COVER BUILT (Lantern Vigil, LOCKED picks + tune; NOT merged, nothing shown to Matt yet): src/gfx/titlecover.js (renderer: 7 baked parallax layers, colour spreading from the lantern, entry bloom 1.45 s skippable by any key/tap, Calm = still picture, pause when hidden, Battery saver / Low = fewer motes + 30 fps), titlelogic.js (locked tune + pure rules, Node-tested), titlepaint.js, src/ui/titlecover.css (desktop / phone portrait / phone landscape layouts of the real menu), ui.js mountCover / dropCover (any failure = the plain title), app.js titleCover() (last-played hero validated against known + awake, else Wren; worn flame). No new files of art, no new deps, no save writes. Tests tests/titlecover.test.mjs; shots docs/screenshots/title-build/ (scripts/title-shots.mjs). Next: Matt compares with the sandbox, then merge to dev.
-STATUS wip/lucinda-art 2026-11-13: LUCINDA A + OPHIMBER 1 ART BUILT (not merged; render only, sim and data identical, she stays unreleased and unselectable; DM8-DM10 not started): src/gfx/lucindaart.js + lucindarig.js (own rig: tail, boots, body, 5 heads, near arm with the hearth flame, hurt/cast/death faces, cast pose while Ophimber rises), ophimberart.js + lucindapet.js (Ophimber follows 26 u behind with 0.15 s lag and hop, perches on her shoulder after 0.8 s still, flies in the Rise, sleeps in Calm), placeholder blob and flag removed, tests/lucinda-art.test.mjs, scripts/lucinda-shots.mjs, shots docs/screenshots/lucinda-art/.
+SMALL / MEASURE
+- Measure real lamp pace (sweep with sites on) to settle Far Sight 120; pacing v4 says Far Sight 0% is a model gap.
+- Dry stretch runs 30-56 (Chain Lightning ~40, storm seals 39-49, Fourth Card/Long Night ~55): design call if testers feel it.
+- Deep Dusk left as is for launch (LOCKED); watch testers.
+- Wren vs Elias gap at max (watch); Lucinda in the gap check at DM9.
+- Costumes on the title cover (worn costume not shown yet; only flame).
+- Set B reserved slots: companion egg, hero trial lantern (each needs an options round).
+- Starter synergy extras, Almanac silhouettes + kill counts, Far Sight ranks 2-3, Hero's Answer for Kindling, ring-completion costume follow-ups.
+- Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob; perched Ophimber is a small clump at true size; Kindling prices roughly double on grown clusters.
+
+LATER: chapters 3-8, other heroes (Mara, Isolde, Thomas, Gideon, Vane, Agnes, Kael, Hollow One) and roster weapons, prestige, Android/Windows app, AI art pipeline (licence + provenance rules), life-map gameplay link, weather, hero pad movement, hosted itch.io release.
 
 ## NOW / NEXT / LATER (focus keeper, updated 2026-10-28; the older NOW/NEXT list further down is stale history)
 Game name: Wispwick (LOCKED "NAME LOCKED v2" + "NAME CONFIRMED"). Status and owners: docs/LAUNCH-CHECKLIST.md "STATUS 2026-10-28". Adding content: docs/CONTENT-GUIDE.md.
