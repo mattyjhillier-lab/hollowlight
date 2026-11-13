@@ -515,7 +515,8 @@ export const app = {
     const s = this.save.data;
     const tiers = this.openTiers(s);
     const entry = L.list().find((x) => x.id === L.active) || { id: 'l1', name: 'Lantern 1' };
-    const heroId = typeof lastHero === 'string' && Object.hasOwn(data.characters, lastHero) ? lastHero : mostPlayedHero(s.stats, data);
+    const loHero = ((s.notes && (s.notes.loadout || s.notes.starter)) || {}).hero; // same source as the title cover, so Continue and the picture name the same hero
+    const heroId = typeof lastHero === 'string' && Object.hasOwn(data.characters, lastHero) ? lastHero : (typeof loHero === 'string' && Object.hasOwn(data.characters, loHero) && isAwake(s, loHero) ? loHero : mostPlayedHero(s.stats, data));
     const heroName = heroId ? splitName(data.characters[heroId].name).name : '';
     const canNew = this.hasProgress() && !L.locked && !L.legacyMode;
     return {

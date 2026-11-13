@@ -38,7 +38,7 @@ export class TitleCover {
     this.T0 = performance.now(); this.bloomStart = 0; this.skipped = false; this.mouse = { x: 0, y: 0, tx: 0, ty: 0, last: -1e9 };
     this.raf = 0; this.timer = 0; this.started = false; this.dead = false; this.lastDraw = 0; this.calm = false; this.dirty = true;
     this.sumMs = 0; this.nMs = 0; this.maxMs = 0; this.frames = 0; this.low = false; this.saver = false;
-    this.key = ''; if (TitleCover.seen) this.skipped = true;
+    this.key = ''; // the bloom replays on every visit to the title (Matt, 2026-11-13); any key or tap skips it
     this.tick = (now) => this.frame(now);
     this.onMove = (e) => { const r = host.getBoundingClientRect(); if (r.width > 0 && r.height > 0) { this.mouse.tx = clamp(((e.clientX - r.left) / r.width - 0.5) * 2, -1, 1); this.mouse.ty = clamp(((e.clientY - r.top) / r.height - 0.5) * 2, -1, 1); this.mouse.last = performance.now(); } };
     this.onSkip = () => this.skip();
