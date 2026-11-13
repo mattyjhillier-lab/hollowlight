@@ -19,13 +19,14 @@ export const LANDMARKS = ['sp_reroll1', 'gt_holy_orbit', 'gt_spirit_bolts', 'gt_
 export const CHASE = ['gt_murder_storm', 'gt_spirit_tempest', 'gt_static_storm'];
 LANDMARKS.push(...CHASE);
 export const VEILED = ['gt_phantom_stampede'];
+LANDMARKS.push('co_far'); // v4: Far Sight landmark
 // S1 (env S1=1): + the tool bridges (each opens a tool group at the end of its road) as landmarks, + the magic-garden seals as veiled
 export const S1_LANDMARKS = ['br_satchel', 'br_almanac', 'br_hearthkey', 'br_cardfan', 'br_wardrobe'];
 export const S1_VEILED = ['or_halo', 'gt_judgement_wheel', 'gt_vesper_tide', 'gt_soul_lance', 'gt_returning_pages', 'gt_thunder_judgment', 'gt_storm_tether'];
 if (typeof process !== 'undefined' && process.env && process.env.S1 === '1') { LANDMARKS.push(...S1_LANDMARKS); VEILED.push(...S1_VEILED); }
 // diamond-tier rewards (v1 sheet 2.1: keystones / masteries); "wide" adds evolution sockets and unlock-gated beads.
-export const DIAMOND_KINDS = ['key', 'mastery'];
-export const WIDE_KINDS = ['key', 'mastery', 'socket', 'bead'];
+export const DIAMOND_KINDS = ['key', 'mastery', 'verb'];
+export const WIDE_KINDS = ['key', 'mastery', 'verb', 'socket', 'bead'];
 
 // ---- pure stats helpers (unit-tested) ----
 export const pct = (a, p) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; };
