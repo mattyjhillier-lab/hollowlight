@@ -19,6 +19,7 @@ import './kit.css';
 import { EvoPlate, plateModel } from './evoplate.js';
 import './evoplate.css';
 import './title.css';
+import { TitleCover } from '../gfx/titlecover.js';
 import { buildTitle, buildHeroSelect, buildSpiritSelect } from './title.js';
 import { buildCharacters } from './charsui.js';
 import './charsui.css';
@@ -63,6 +64,7 @@ import { cardModel } from './cardview.js';
 import { buildAlmanac } from './codexui.js';
 import { portraitUrl } from '../gfx/husk/portrait.js';
 import './codex.css';
+import './titlecover.css'; // the title cover layout: imported after title / lanterns / chars / codex css so its .tc-on rules win ties
 import './a11y.css';
 import './menunav.css';
 import { buildMenuNav } from './menunav.js';
@@ -127,6 +129,7 @@ export class UI {
 
   hide(name) {
     if (name === 'end' && this.endView) { this.endView.destroy(); this.endView = null; }
+    if (name === 'start' && this.cover) this.dropCover();
     if (this.layers[name]) this.layers[name].style.display = 'none';
     this.syncNav();
   }
@@ -299,9 +302,24 @@ export class UI {
       if (link) t.foot.appendChild(link);
       t.side.append(updateNotice(document, this.pwa));
     }
+    this.mountCover(el, t, h);
     this.screen = { id: 'title', title: t };
     t.begin.focus({ preventScroll: true });
     if (h.titleCelebrations) { const q = h.titleCelebrations(); if (q && q.length) this.celebrate(q, { away: true, after: () => { if (this.screen && this.screen.id === 'title') this.screen.title.begin.focus({ preventScroll: true }); } }); } // CX5: big moments held back by a defeat
+  }
+
+  // TITLE COVER (Lantern Vigil): the picture behind the menu. Purely additive: any failure leaves the plain Lantern Glass title exactly as it was; the buttons are never gated by it.
+  mountCover(el, t, h) {
+    this.dropCover();
+    if (!h.titleCover || !TitleCover.supported()) return;
+    try {
+      const spec = h.titleCover(); if (!spec) return;
+      this.cover = new TitleCover(el, spec); el.classList.add('tc-on'); t.root.classList.add('tc-on'); globalThis.__cover = this.cover;
+    } catch (e) { this.dropCover(); }
+  }
+  dropCover() {
+    if (this.cover) { try { this.cover.destroy(); } catch { /* cosmetic */ } this.cover = null; }
+    const el = this.layers.start; if (el) { el.classList.remove('tc-on'); const r = el.querySelector && el.querySelector('.u3-title'); if (r) r.classList.remove('tc-on'); }
   }
 
   // FD3: "Whose lantern?" (mode pick | new | replace). The app supplies the cards and does every store change; this only draws and forwards.
