@@ -111,7 +111,7 @@ export function bakeAtlas(c) { // c = a 2D context 288 x 208
   c.beginPath(); c.moveTo(x + 7, y + 20); c.bezierCurveTo(x + 7, y + 8, x + 24, y + 6, x + 36, y + 13); c.bezierCurveTo(x + 45, y + 17, x + 45, y + 23, x + 36, y + 27); c.bezierCurveTo(x + 24, y + 34, x + 7, y + 32, x + 7, y + 20); c.closePath();
   const hg = c.createLinearGradient(x + 7, y, x + 45, y); hg.addColorStop(0, 'rgba(255,200,120,1)'); hg.addColorStop(0.55, 'rgba(255,226,160,1)'); hg.addColorStop(1, 'rgba(255,241,194,1)');
   c.fillStyle = hg; c.fill(); c.strokeStyle = 'rgba(224,122,107,0.9)'; c.lineWidth = 1.4; c.stroke();
-  for (const sg of [-1, 1]) { c.fillStyle = 'rgba(224,122,107,0.95)'; c.beginPath(); c.arc(x + 29, y + 20 + sg * 5, 2.4, 0, 6.2832); c.fill(); c.fillStyle = 'rgba(255,255,240,1)'; c.beginPath(); c.arc(x + 29.6, y + 19.4 + sg * 5, 1.1, 0, 6.2832); c.fill(); }
+  for (const sg of [-1, 1]) { c.fillStyle = 'rgba(224,122,107,0.95)'; c.beginPath(); c.arc(x + 29, y + 20 + sg * 5.5, 3.3, 0, 6.2832); c.fill(); c.fillStyle = 'rgba(255,255,240,1)'; c.beginPath(); c.arc(x + 30, y + 19.2 + sg * 5.5, 1.6, 0, 6.2832); c.fill(); }
   [x, y] = at('bmark'); // DM6 Cinder Brand mark: a small gold ember-drop with a rose rim and a pale core (one clear glyph, readable at 640x360)
   c.beginPath(); c.moveTo(x + 8, y + 1); c.quadraticCurveTo(x + 8.6, y + 7.4, x + 15, y + 8); c.quadraticCurveTo(x + 8.6, y + 8.6, x + 8, y + 15); c.quadraticCurveTo(x + 7.4, y + 8.6, x + 1, y + 8); c.quadraticCurveTo(x + 7.4, y + 7.4, x + 8, y + 1); c.closePath(); // a four-pointed ember star (not a teardrop, so it never reads as a ground flame tongue)
   c.fillStyle = rg(c, x + 8, y + 8, 7, [[0, 'rgba(255,255,236,1)'], [0.5, 'rgba(255,220,140,1)'], [1, 'rgba(255,179,92,1)']]); c.fill(); c.strokeStyle = 'rgba(224,122,107,0.95)'; c.lineWidth = 1.1; c.stroke();
@@ -222,12 +222,12 @@ export class MeteorLayer {
         if (sx < c.vx0 - 40 || sx > c.vx1 + 40 || sy < c.vy0 - 40 || sy > c.vy1 + 40) continue;
         const sc = i === 0 ? 1 : 0.8 - 0.4 * (i / (n - 1)), dd = dF - 9 - (n - i) * 0.01;
         if (!caps.flat) sGlA.put('glow', sx, sy - 7, dd - 3, 0.5 * sc + 0.15, 0.5 * sc + 0.15, 0.3 * k, 0, COL.amber);
-        if (i > 0) this.sFxN.put('wseg', sx, sy - 7, dd, 0.9 * sc, 0.9 * sc, k);
+        if (i > 0) this.sFxN.put('wseg', sx, sy - 7, dd, 1.1 * sc, 1.1 * sc, k);
       }
       { const hx = wy.seg[0], hy = wy.seg[1], nx = wy.seg[2], ny = wy.seg[3];
         if (Number.isFinite(hx) && Number.isFinite(hy) && hx >= c.vx0 - 40 && hx <= c.vx1 + 40 && hy >= c.vy0 - 40 && hy <= c.vy1 + 40) {
           const ang = Number.isFinite(nx) && Number.isFinite(ny) ? Math.atan2(hy - ny, hx - nx) : 0;
-          this.sFxN.put('whead', hx, hy - 7, dF - 9.5, 0.8, 0.8, k, ang);
+          this.sFxN.put('whead', hx, hy - 8, dF - 9.5, 1.12, 1.12, k, ang);
           if (lm && !caps.flat) lm.add(hx, hy - 7, 46, COL.amber, 0.45 * k);
         } }
       if (caps.wrate > 0 && c.parts && wy.on) { // spark trail: a few embers shed from the body, one per tick, picked by a counter (no random draws)
