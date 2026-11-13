@@ -8,6 +8,7 @@ import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { HeroRig } from '../gfx/herorig.js';
 import { EliasRig } from '../gfx/eliasrig.js';
+import { LucindaRig } from '../gfx/lucindarig.js'; // hidden hero Lucinda + her pet Ophimber (render only)
 import { FEET, DU } from '../gfx/wrenart.js';
 import { HitFx, HIT_RED, LIFT_Z, iframeFlick, FLICK_ALPHA } from '../gfx/hitfx.js'; // DR1 hit feedback state + invulnerability look
 import { heroHaloAlpha } from '../gfx/rigmath.js';
@@ -366,7 +367,7 @@ export class RunScene extends Phaser.Scene {
     this.bloom = null;
     this.playerImg = this.add.image(0, 0, 'hero_wren').setVisible(false);
     const rigOpts = { depth: D_LIT, glowKey: 'glow', glowInv: inv('glow'), blendAdd: ADD, flat: this.playerImg };
-    this.rigs = [new HeroRig(this, rigOpts), new EliasRig(this, rigOpts)]; // Wren v2 + pup (A1), Elias v2 (A2); both share the flat sprite
+    this.rigs = [new HeroRig(this, rigOpts), new EliasRig(this, rigOpts), new LucindaRig(this, rigOpts)]; // Wren v2 + pup (A1), Elias v2 (A2), hidden Lucinda + Ophimber; all share the flat sprite
     this.rig = this.rigs[0];
     this.camF = { cx: 0, cy: 0, sx: 0, sy: 0, ok: false };
     this.gradeNow = gradeAt(0);
@@ -1365,6 +1366,7 @@ export class RunScene extends Phaser.Scene {
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
       lm.add(lx, ly, this.lanR * fl, this.cLm, 0.9);
       if (rig && this.rig.hasPup) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
+      if (rig && this.rig.petOn) lm.add(this.rig.petX, this.rig.petY - 6, 22, ROLE.lantern, 0.4); // Ophimber's own small warm light
     }
 
     const g = this.groundG;
@@ -1943,7 +1945,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
     { const mc = this.meteorCtx; mc.sim = sim; mc.tier = this.quality.tier; mc.phone = this.phone; mc.calm = this.reducedMotion(); mc.lm = lit ? lm : null; mc.parts = this.parts; mc.vx0 = vx0; mc.vy0 = vy0; mc.vx1 = vx1; mc.vy1 = vy1; this.meteor.update(mc); } // DM3
-    { const rc = this.riseCtx; rc.sim = sim; rc.tier = this.quality.tier; rc.phone = this.phone; rc.calm = this.reducedMotion(); rc.lm = lit ? lm : null; rc.parts = this.parts; rc.vx0 = vx0; rc.vy0 = vy0; rc.vx1 = vx1; rc.vy1 = vy1; this.rise.update(rc); } // DM7 Ophimber's Rise
+    { const rc = this.riseCtx; rc.sim = sim; rc.tier = this.quality.tier; rc.phone = this.phone; rc.calm = this.reducedMotion(); rc.lm = lit ? lm : null; rc.parts = this.parts; rc.pet = this.rig.active && this.rig.id === 'hearthwarden' ? this.rig : null; rc.vx0 = vx0; rc.vy0 = vy0; rc.vx1 = vx1; rc.vy1 = vy1; this.rise.update(rc); } // DM7 Ophimber's Rise
     if (probe.on) for (const w of sim.weapons) probe.first('weapon:' + w.id + (w.evo ? ':' + w.evo : ''));
     for (const f of sim.fx) {
       fi++;

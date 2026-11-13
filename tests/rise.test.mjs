@@ -29,7 +29,7 @@ const dmg = (sim) => sim.dmgBy.ophimbers_rise || 0;
 test('hero data: Lucinda is a hidden (unreleased) hero, never in data.characters, the starter pool or any player path', () => {
   const raw = JSON.parse(readFileSync(new URL('../src/data/characters.json', import.meta.url), 'utf8'));
   const h = raw[HID];
-  assert.equal(h.name.split(',')[0], 'Lucinda'); assert.equal(h.pet, 'Ophimber'); assert.equal(h.unreleased, true); assert.equal(h.placeholder, true, 'Lucinda and Ophimber art are placeholders until Matt picks the looks'); assert.equal(h.kindred, 'dragonfire_meteor');
+  assert.equal(h.name.split(',')[0], 'Lucinda'); assert.equal(h.pet, 'Ophimber'); assert.equal(h.unreleased, true); assert.equal(h.placeholder, undefined, 'the placeholder art is replaced by the locked Lucinda A / Ophimber 1 art'); assert.equal(h.unreleased, true, 'still hidden: the release switch is DM8-DM10'); assert.equal(h.kindred, 'dragonfire_meteor');
   assert.equal(h.ability.id, 'ophimbers_rise'); assert.equal(h.ability.name, "Ophimber's Rise"); assert.equal(h.ability.cooldown, 60);
   assert.ok(!Object.hasOwn(data.characters, HID) && Object.hasOwn(data.hiddenCharacters, HID), 'the loader (and the test helper) split her out');
   const idx = readFileSync(new URL('../src/data/index.js', import.meta.url), 'utf8');

@@ -1,24 +1,27 @@
 // DM7: Ophimber's Rise art (RENDER ONLY: reads `sim.rise`, never writes it; src/sim is untouched). Lucinda's ability (docs/design/fire-weapon-lucinda-v2.md s5).
-// Beat: Ophimber (a PLACEHOLDER gold blob, ~16 px) rises 26 px over her shoulder in 0.4 s, wings spread -> a thin DOTTED outline of the next ring shows 0.25 s before
+// Beat: Ophimber (the real art: ophimberart.js, fly frames) rises 26 px over her shoulder in 0.4 s, wings spread -> a thin DOTTED outline of the next ring shows 0.25 s before
 // it ignites (so the player sees where to stand) -> the ring ignites: the breath sweeps clockwise (a bright head runs round while the band fades in) -> the
 // band burns 3 s and fades out -> Ophimber settles at 2.4 s. Same warm ramp as the Meteor (pale gold #fff1c2, amber #ffb35c, ember-rose #e07a6b rim): it is
 // warm lantern light that blooms colour back, never scorches, no smoke, no black. Fire never reaches her: the rings are fixed on the ground.
-// Cost: ONE baked canvas atlas (6 flame-band frames = 3 rings x 2 flicker variants, 3 dotted outlines, 2 Ophimber wing frames, glow, ember) and at most
+// Cost: ONE baked canvas atlas (6 flame-band frames = 3 rings x 2 flicker variants, 3 dotted outlines, glow, ember) and at most
 // 3 ring sprites + 1 dotted outline + the pet + 1 head glow per frame (<= 8 sprites), never per tile, no per-frame allocation.
 //   High: full (two flicker variants, sweep head + 2 sparks per ring, lights). Medium: one spark, fewer lights. Low: ONE baked band per ring, NORMAL blend, a
 //   2-frame brightness pulse, no sweep animation, no sparks. Calm motion: rings fade in over 0.3 s (no sweep), no flicker, no sparks, Ophimber rises without
 //   bounce and holds still (wings spread), no punch.
 // Flame-budget: the 3 ring sprites are the 3 visuals reserved for the ability (meteorfx.ABILITY_RESERVE), so the weapon cannot starve it.
 import { drawTongue, COL, ABILITY_RESERVE } from './meteorfx.js';
+import { DU, TEX } from './wrenart.js';
 
 export const KEY = 'rise_atlas';
+export const PET_KEY = 'ophimber_pet'; // Ophimber's pose atlas (ophimberart.js): the Rise draws her 'o_fly0' / 'o_fly1' frames
+const PET_K = DU / TEX; // world units per texel of that atlas (she is drawn at the same scale as when she follows Lucinda)
 export const RING_R = [48, 88, 128]; // = characters.json rings (the frames are baked to these radii; the sim's radii are drawn by scale: r / baked)
 export const RISE_FADE_OUT = 0.6, CAL_FADE_IN = 0.3, PET_UP = 26, PET_SHOULDER = 12;
 const SIZE = RING_R.map((r) => 2 * r + 64); // frame side: ring + 32 px margin each side (flame tongues rise above the band)
 const COLX = [0, 328, 656], ROWY = [0, 168, 416];
 const FR = {};
 RING_R.forEach((r, i) => { FR['bandA' + i] = [COLX[0], ROWY[i], SIZE[i], SIZE[i]]; FR['bandB' + i] = [COLX[1], ROWY[i], SIZE[i], SIZE[i]]; FR['dots' + i] = [COLX[2], ROWY[i], SIZE[i], SIZE[i]]; });
-Object.assign(FR, { opha: [0, 744, 64, 64], ophb: [64, 744, 64, 64], glow: [128, 744, 64, 64], ember: [192, 744, 16, 16] });
+Object.assign(FR, { glow: [128, 744, 64, 64], ember: [192, 744, 16, 16] }); // Ophimber herself is the 'ophimber_pet' atlas (ophimberart.js, built in rigtex.js)
 export const ATLAS_W = 984, ATLAS_H = 808;
 
 const rg = (c, x, y, r, stops) => { const g = c.createRadialGradient(x, y, 0, x, y, r); for (const [o, col] of stops) g.addColorStop(o, col); return g; };
@@ -101,18 +104,8 @@ function bakeDots(c, ox, oy, i) {
   c.lineWidth = 3; c.strokeStyle = 'rgba(255,244,206,1)'; c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke();
   c.setLineDash([]); c.shadowBlur = 0; c.restore();
 }
-// PLACEHOLDER (Matt picks Ophimber's real look from three options later; characters.json hearthwarden.placeholder = true): a plain gold blob with two
-// wing ovals and one eye, in the shared warm ramp. Not final art; do not polish.
-function bakeOphimber(c, ox, oy, up) {
-  const P = (x, y) => [ox + x, oy + y];
-  c.lineJoin = 'round';
-  for (const sg of [-1, 1]) { c.beginPath(); c.ellipse(...P(32 + sg * 11, up ? 22 : 38), 6, 11, sg * (up ? -0.5 : 0.5), 0, TAU); c.fillStyle = 'rgba(255,210,140,0.9)'; c.fill(); c.strokeStyle = 'rgba(224,122,107,0.95)'; c.lineWidth = 1.3; c.stroke(); }
-  c.beginPath(); c.arc(...P(32, 32), 12, 0, TAU); c.fillStyle = rg(c, ox + 28, oy + 28, 14, [[0, 'rgba(255,241,194,1)'], [1, 'rgba(255,190,110,1)']]); c.fill(); c.strokeStyle = 'rgba(224,122,107,0.95)'; c.lineWidth = 1.5; c.stroke();
-  c.fillStyle = 'rgba(181,84,74,1)'; c.beginPath(); c.arc(...P(37, 29), 2.4, 0, TAU); c.fill();
-}
 export function bakeAtlas(c) {
   for (let i = 0; i < 3; i++) { bakeBand(c, FR['bandA' + i][0], FR['bandA' + i][1], i, 0); bakeBand(c, FR['bandB' + i][0], FR['bandB' + i][1], i, 1); bakeDots(c, FR['dots' + i][0], FR['dots' + i][1], i); }
-  bakeOphimber(c, FR.opha[0], FR.opha[1], true); bakeOphimber(c, FR.ophb[0], FR.ophb[1], false);
   let [x, y] = FR.glow; c.fillStyle = rg(c, x + 32, y + 32, 32, [[0, 'rgba(255,241,194,0.95)'], [0.25, 'rgba(255,214,140,0.7)'], [0.5, 'rgba(255,179,92,0.38)'], [0.78, 'rgba(224,122,107,0.14)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 64, 64);
   [x, y] = FR.ember; c.fillStyle = rg(c, x + 8, y + 8, 8, [[0, 'rgba(255,241,194,1)'], [0.45, 'rgba(255,200,120,0.7)'], [1, 'rgba(255,179,92,0)']]); c.fillRect(x, y, 16, 16);
 }
@@ -152,7 +145,7 @@ export class RiseLayer {
         if (this.gl.LINEAR !== undefined && tex.setFilter) tex.setFilter(this.gl.LINEAR);
       }
       const g = this.gl;
-      this.sNorm = new Slots(sc, KEY, g.NORMAL); this.sAdd = new Slots(sc, KEY, g.ADD); this.sPet = new Slots(sc, KEY, g.NORMAL);
+      this.sNorm = new Slots(sc, KEY, g.NORMAL); this.sAdd = new Slots(sc, KEY, g.ADD); this.sPet = new Slots(sc, PET_KEY, g.NORMAL);
       this.ok = true;
     } catch { this.dead = true; this.ok = false; } // no canvas: the ability simply has no art (the sim still burns)
     return this.ok;
@@ -202,9 +195,11 @@ export class RiseLayer {
     // Ophimber: rises over her shoulder, wings spread, settles and fades at `settle`
     const pp = petPose(t, D, caps.calm, this.pose);
     if (pp.a > 0.01) {
-      const x = p.x + 11, y = p.y - PET_SHOULDER - pp.lift + pp.bob;
-      if (!bandFlat) this.sAdd.put('glow', x, y, dF - 11, 0.62, 0.62, 0.55 * pp.a);
-      this.sPet.put(pp.wing ? 'ophb' : 'opha', x, y, dF - 10, 0.34, 0.34, pp.a);
+      const rg = c.pet; // the Lucinda rig when it is running: she lifts off from where she perches, facing the way Lucinda faces
+      const dir = rg && rg.petDir < 0 ? -1 : rg && rg.dir < 0 ? -1 : 1;
+      const x = (rg ? rg.perchX : p.x + 11), y = (rg ? rg.perchY : p.y - PET_SHOULDER) - pp.lift + pp.bob;
+      if (!bandFlat) this.sAdd.put('glow', x, y - 12, dF - 11, 0.62, 0.62, 0.55 * pp.a);
+      this.sPet.put(pp.wing ? 'o_fly1' : 'o_fly0', x, y, dF - 10, PET_K * dir, PET_K, pp.a);
       if (lm && !bandFlat) lm.add(x, y, 34, COL.amber, 0.35 * pp.a);
       if (caps.sparks > 0 && c.parts && t < D.rise + 0.5 && Math.floor(t * 30) !== Math.floor((t - dt) * 30)) c.parts.emit(x - 2, y + 4, -6 + ((Math.floor(t * 30) % 3) - 1) * 5, 10, 0.4, 0.4, 0.1, COL.core, 0.8); // a few embers trail the rise
     }
