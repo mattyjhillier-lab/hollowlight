@@ -74,7 +74,6 @@
   "hearthwarden": {
     "name": "Lucinda, the Hearth-Warden",
     "unreleased": true,
-    "placeholder": true,
     "blurb": "Keeper of the old hearth. Her little dragon Ophimber rises and breathes three rings of warm fire.",
     "color": "#ffb35c",
     "kindred": "dragonfire_meteor",
