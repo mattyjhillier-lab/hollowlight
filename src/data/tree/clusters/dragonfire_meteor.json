@@ -1,0 +1,869 @@
+{
+ "kind": "cluster",
+ "weapon": "dragonfire_meteor",
+ "prefix": "dm",
+ "emblem": "flame",
+ "chapter": "cursed_forest",
+ "region": "launch",
+ "hero": null,
+ "heart": "gt_dragonfire_meteor",
+ "sockets": {
+  "a": {
+   "evo": "wildfire",
+   "gate": "gt_wildfire"
+  },
+  "b": {
+   "evo": "cinder_wyrm",
+   "gate": "gt_cinder_wyrm"
+  },
+  "c": {
+   "evo": "cinder_brand",
+   "gate": "gt_cinder_brand"
+  }
+ },
+ "gates": [
+  {
+   "id": "gt_dragonfire_meteor",
+   "idx": 0,
+   "kind": "heart",
+   "name": "Dragonfire Meteor",
+   "desc": "Unlocks Dragonfire Meteor: you can start a run with it, and it can appear in your level-up cards.",
+   "branch": "magic",
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "unlock": "weapon",
+     "id": "dragonfire_meteor"
+    }
+   ],
+   "unlock": {
+    "t": "killEnemy",
+    "id": "wolf",
+    "n": 6000
+   }
+  },
+  {
+   "id": "gt_wildfire",
+   "idx": 1,
+   "kind": "socket",
+   "name": "Wildfire",
+   "desc": "Unlocks the Wildfire evolution for Dragonfire Meteor. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 200
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "wildfire"
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "any",
+    "n": 4
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_cinder_wyrm",
+   "idx": 2,
+   "kind": "socket",
+   "name": "Cinder Wyrm",
+   "desc": "Unlocks the Cinder Wyrm evolution for Dragonfire Meteor. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 400
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "cinder_wyrm"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "dragonfire_meteor",
+      "n": 1
+     },
+     {
+      "t": "killEnemy",
+      "id": "root_crawler",
+      "n": 10000
+     }
+    ]
+   },
+   "hidden": true
+  },
+  {
+   "id": "gt_cinder_brand",
+   "idx": 3,
+   "kind": "socket",
+   "name": "Cinder Brand",
+   "desc": "Unlocks the Cinder Brand evolution for Dragonfire Meteor. It is offered once that spirit has grown.",
+   "branch": "magic",
+   "cost": {
+    "gold": 600
+   },
+   "effects": [
+    {
+     "unlock": "evolution",
+     "id": "cinder_brand"
+    }
+   ],
+   "unlock": {
+    "t": "all",
+    "of": [
+     {
+      "t": "evolveWeapon",
+      "id": "dragonfire_meteor",
+      "n": 3
+     },
+     {
+      "t": "clearChapter",
+      "id": "cursed_forest",
+      "n": 1
+     }
+    ]
+   },
+   "hidden": true
+  }
+ ],
+ "branches": [
+  {
+   "socket": "a",
+   "lead": [
+    "dm_blaze",
+    "dm_embers",
+    "dm_impact"
+   ],
+   "diamond": "dm_kindle",
+   "seal": "gt_wildfire",
+   "forks": [
+    [
+     "dm_wil1",
+     "dm_wil2",
+     "dm_wil3"
+    ],
+    [
+     "dm_wil4",
+     "dm_wil5",
+     "dm_wil6"
+    ]
+   ]
+  },
+  {
+   "socket": "b",
+   "lead": [
+    "dm_fireball",
+    "dm_crash",
+    "dm_quick"
+   ],
+   "diamond": "dm_scale",
+   "seal": "gt_cinder_wyrm",
+   "forks": [
+    [
+     "dm_wyr1",
+     "dm_wyr2",
+     "dm_wyr3"
+    ],
+    [
+     "dm_wyr4",
+     "dm_wyr5",
+     "dm_wyr6"
+    ]
+   ]
+  },
+  {
+   "socket": "c",
+   "lead": [
+    "dm_glow",
+    "dm_linger",
+    "dm_steady"
+   ],
+   "diamond": "dm_kindle2",
+   "seal": "gt_cinder_brand",
+   "forks": [
+    [
+     "dm_bra1",
+     "dm_bra2",
+     "dm_bra3"
+    ],
+    [
+     "dm_bra4",
+     "dm_bra5",
+     "dm_bra6"
+    ]
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "id": "dm_blaze",
+   "idx": 4,
+   "kind": "knot",
+   "name": "Wide Hearth",
+   "desc": "Blaze +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 210
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "area",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_embers",
+   "idx": 5,
+   "kind": "knot",
+   "name": "Slow Coals",
+   "desc": "Embers +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "duration",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_impact",
+   "idx": 6,
+   "kind": "knot",
+   "name": "Heavy Ember",
+   "desc": "Impact +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_kindle",
+   "idx": 7,
+   "kind": "bead",
+   "name": "Hearth Kindle",
+   "desc": "Burn potency +3% (status, shared cap)",
+   "branch": "magic",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 3
+    }
+   ]
+  },
+  {
+   "id": "dm_wil1",
+   "idx": 8,
+   "kind": "knot",
+   "name": "Creeping Glow",
+   "desc": "Blaze +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 380
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "area",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wil2",
+   "idx": 9,
+   "kind": "knot",
+   "name": "Brighter Patch",
+   "desc": "Impact +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 470
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "power",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wil3",
+   "idx": 10,
+   "kind": "bead",
+   "name": "Walking Fire",
+   "desc": "Burn potency +1% (status, shared cap)",
+   "branch": "magic",
+   "cost": {
+    "gold": 640
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wil4",
+   "idx": 11,
+   "kind": "knot",
+   "name": "Long Hearth",
+   "desc": "Embers +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 380
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "duration",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wil5",
+   "idx": 12,
+   "kind": "knot",
+   "name": "Lit Path",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "wildfire"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "dm_wil6",
+   "idx": 13,
+   "kind": "bead",
+   "name": "Warm Field",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "wildfire"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "dm_fireball",
+   "idx": 14,
+   "kind": "knot",
+   "name": "Falling Star",
+   "desc": "Fireballs +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 290
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "count",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_crash",
+   "idx": 15,
+   "kind": "knot",
+   "name": "Loud Crash",
+   "desc": "Impact +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "power",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_quick",
+   "idx": 16,
+   "kind": "knot",
+   "name": "Quick Spark",
+   "desc": "Volley cooldown -2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 490
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "cooldown",
+     "pct": -2
+    }
+   ]
+  },
+  {
+   "id": "dm_scale",
+   "idx": 17,
+   "kind": "mastery",
+   "name": "Old Scale",
+   "desc": "Fireballs +2%",
+   "flavour": "Evolve the meteor and the sky remembers more fire.",
+   "branch": "magic",
+   "cost": {
+    "gold": 910,
+    "shards": 1
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "count",
+     "pct": 2
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "dragonfire_meteor",
+    "n": 1
+   }
+  },
+  {
+   "id": "dm_wyr1",
+   "idx": 18,
+   "kind": "knot",
+   "name": "Serpent Heat",
+   "desc": "Impact +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 380
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "power",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wyr2",
+   "idx": 19,
+   "kind": "knot",
+   "name": "Wide Coil",
+   "desc": "Blaze +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 470
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "area",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wyr3",
+   "idx": 20,
+   "kind": "bead",
+   "name": "Ember Scales",
+   "desc": "Burn potency +1% (status, shared cap)",
+   "branch": "magic",
+   "cost": {
+    "gold": 640
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_wyr4",
+   "idx": 21,
+   "kind": "knot",
+   "name": "Quick Return",
+   "desc": "Volley cooldown -1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 380
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "cooldown",
+     "pct": -1
+    }
+   ]
+  },
+  {
+   "id": "dm_wyr5",
+   "idx": 22,
+   "kind": "knot",
+   "name": "Old Roof",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "cinder_wyrm"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "dm_wyr6",
+   "idx": 23,
+   "kind": "bead",
+   "name": "Remembered Shape",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "cinder_wyrm"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "dm_glow",
+   "idx": 24,
+   "kind": "knot",
+   "name": "Warm Glow",
+   "desc": "Blaze +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 320
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "area",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_linger",
+   "idx": 25,
+   "kind": "knot",
+   "name": "Lingering Coals",
+   "desc": "Embers +2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 430
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "duration",
+     "pct": 2
+    }
+   ]
+  },
+  {
+   "id": "dm_steady",
+   "idx": 26,
+   "kind": "knot",
+   "name": "Steady Fall",
+   "desc": "Volley cooldown -2%",
+   "branch": "magic",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "cooldown",
+     "pct": -2
+    }
+   ]
+  },
+  {
+   "id": "dm_kindle2",
+   "idx": 27,
+   "kind": "bead",
+   "name": "Banked Fire",
+   "desc": "Burn potency +3% (status, shared cap)",
+   "branch": "magic",
+   "cost": {
+    "gold": 570
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 3
+    }
+   ],
+   "unlock": {
+    "t": "evolveWeapon",
+    "id": "dragonfire_meteor",
+    "n": 3
+   }
+  },
+  {
+   "id": "dm_bra1",
+   "idx": 28,
+   "kind": "knot",
+   "name": "Long Mark",
+   "desc": "Embers +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 380
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "duration",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_bra2",
+   "idx": 29,
+   "kind": "knot",
+   "name": "Wide Pop",
+   "desc": "Blaze +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 470
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "area",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_bra3",
+   "idx": 30,
+   "kind": "bead",
+   "name": "Glowing Brand",
+   "desc": "Burn potency +1% (status, shared cap)",
+   "branch": "magic",
+   "cost": {
+    "gold": 640
+   },
+   "effects": [
+    {
+     "status": "burn",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_bra4",
+   "idx": 31,
+   "kind": "knot",
+   "name": "Bright Return",
+   "desc": "Impact +1%",
+   "branch": "magic",
+   "cost": {
+    "gold": 380
+   },
+   "effects": [
+    {
+     "weapon": "dragonfire_meteor",
+     "stat": "power",
+     "pct": 1
+    }
+   ]
+  },
+  {
+   "id": "dm_bra5",
+   "idx": 32,
+   "kind": "knot",
+   "name": "Ember Star",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "cinder_brand"
+    }
+   ],
+   "cost": {
+    "gold": 140
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  },
+  {
+   "id": "dm_bra6",
+   "idx": 33,
+   "kind": "bead",
+   "name": "Gold Echo",
+   "branch": "magic",
+   "effects": [
+    {
+     "echo": "cinder_brand"
+    }
+   ],
+   "cost": {
+    "gold": 300
+   },
+   "desc": "A keepsake of this light. No power: a flavour lantern of the branch."
+  }
+ ],
+ "orbit": {
+  "tier": 4,
+  "angle": 300
+ },
+ "roads": [
+  {
+   "from": "gt_chain_lightning",
+   "to": "gt_dragonfire_meteor",
+   "nodes": [
+    {
+     "id": "dm_way1",
+     "idx": 34,
+     "kind": "knot",
+     "name": "Warm Stone",
+     "desc": "Max health +1%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 260
+     },
+     "effects": [
+      {
+       "player": "maxHp",
+       "pct": 1
+      }
+     ]
+    },
+    {
+     "id": "dm_way2",
+     "idx": 35,
+     "kind": "knot",
+     "name": "Drifting Spark",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 280
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "dm_way3",
+     "idx": 36,
+     "kind": "knot",
+     "name": "Ash Moth",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 300
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "dm_way4",
+     "idx": 37,
+     "kind": "knot",
+     "name": "Star Trail",
+     "desc": "Spirit gems fly to you 2% faster",
+     "branch": "spirit",
+     "cost": {
+      "gold": 320
+     },
+     "effects": [
+      {
+       "perk": "gemPull",
+       "pct": 2
+      }
+     ]
+    },
+    {
+     "id": "dm_way5",
+     "idx": 38,
+     "kind": "knot",
+     "name": "Ember Moss",
+     "desc": "Soul Magnet chance +2%",
+     "branch": "spirit",
+     "cost": {
+      "gold": 340
+     },
+     "effects": [
+      {
+       "drop": "magnet",
+       "pct": 2
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "extras": [
+  {
+   "id": "dm_kindling",
+   "idx": 39,
+   "kind": "verb",
+   "name": "Kindling Start",
+   "desc": "When you start a run with Dragonfire Meteor, the fireballs fall 25% faster for the first minute, fading to nothing.",
+   "flavour": "The first spark of the night catches quickly.",
+   "cost": {
+    "gold": 2400
+   },
+   "requires": [
+    "gt_dragonfire_meteor"
+   ],
+   "effects": [
+    {
+     "perk": "kindle",
+     "weapon": "dragonfire_meteor",
+     "pct": 25,
+     "secs": 60,
+     "pe": 0.1
+    }
+   ],
+   "unlock": {
+    "t": "clearChapter",
+    "id": "cursed_forest",
+    "n": 18
+   }
+  }
+ ]
+}

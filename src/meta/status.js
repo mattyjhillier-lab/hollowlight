@@ -4,7 +4,7 @@
 // T1 only validates and budgets these; the sim hooks arrive in T3/T6.
 export const STATUSES = Object.freeze({
   bleed: { owner: 'ghost_wolves', unit: 'pct' },
-  burn: { owner: 'holy_orbit', unit: 'pct' },
+  burn: { owner: 'holy_orbit', also: ['dragonfire_meteor'], unit: 'pct' }, // DM8: the Meteor's crash and pools apply the same shared Burn, so its constellation carries Burn nodes too (one shared cap)
   mark: { owner: 'raven_flock', unit: 'secs' },
   pin: { owner: null, unit: 'secs' }, // reserved: no node ships at launch (Pin is Rally's, boss-immune)
 });

@@ -41,6 +41,19 @@ export const GATES = [
   { id: 'vesper_tide', kind: 'evo', cond: { t: 'all', of: [{ t: 'evolveWeapon', id: 'holy_orbit', n: 3 }, { t: 'useCharacter', id: 'elias', n: 8 }] } }, // W12: late gate 16 (counts estimated)
 ];
 
+// DM8: REPORT-ONLY conditions of staged content (never unlock anything in the probe, so released gates keep their timing). gates-pace prints the
+// run each one would open. The Meteor heart candidates: a Chapter 1 enemy killed ~6000 times (spec section 6).
+export const WATCH = [
+  { id: 'meteor:wolf6000', cond: { t: 'killEnemy', id: 'wolf', n: 6000 } },
+  { id: 'meteor:crow6000', cond: { t: 'killEnemy', id: 'crow', n: 6000 } },
+  { id: 'meteor:root6000', cond: { t: 'killEnemy', id: 'root_crawler', n: 6000 } },
+  { id: 'meteor:wolf9000', cond: { t: 'killEnemy', id: 'wolf', n: 9000 } },
+  { id: 'kindling:clears18', cond: { t: 'clearChapter', id: 'cursed_forest', n: 18 } },
+];
+export function watchedAfter(stats) {
+  return WATCH.filter((g) => conditionProgress(g.cond, stats, treeDef, base).done).map((g) => g.id);
+}
+
 export function unlockedAfter(stats) {
   const weapons = new Set(), evos = new Set(), done = [];
   for (const g of GATES) {

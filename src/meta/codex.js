@@ -24,6 +24,7 @@ export const ENTRY_KEYS = Object.freeze([
   'l:1', 'l:2', 'l:3', 'l:4',
   'c:ghost_wolves', 'c:raven_flock', 'c:spirit_bolts', 'c:chain_lightning', 'c:holy_orbit', 'c:foes', 'c:spirits', 'c:nights', 'c:book',
   's:lamp', 's:road', 's:knot', 'sp:lamp:tells', 'sp:road:tells', 'sp:knot:tells', 'c:places', 'c:dragonfire_meteor', 'e:wildfire', 'e:cinder_wyrm', 'e:cinder_brand', // E7 Places (appended; s: a place, sp: its Tells page)
+  'p:ophimber', // DM8: reserved slot for Ophimber (Lucinda's pet, she/her); p: a hero's pet. Nothing sets it until the release switch (DM10).
 ]);
 export const MAX_BITS_HEX = 64; // 256 entries before the field must grow (a save test checks the list fits)
 const KEY_INDEX = new Map(ENTRY_KEYS.map((k, i) => [k, i]));
@@ -311,7 +312,7 @@ export function tabOfKey(k) {
   if (k.startsWith('s:') || k.startsWith('sp:') || k === 'c:places') return 'places';
   if (k.startsWith('f:') || k.startsWith('fp:')) return 'foes';
   if (k.startsWith('e:')) return 'spirits';
-  if (k.startsWith('h:')) return 'heroes';
+  if (k.startsWith('h:') || k.startsWith('p:')) return 'heroes'; // p: a hero's pet lives on its hero's page
   if (k.startsWith('n:') || k.startsWith('l:')) return 'nights';
   return '';
 }

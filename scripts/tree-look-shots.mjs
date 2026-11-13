@@ -91,6 +91,19 @@ try {
       await setZoom(Z.mid); await shot(`${dn}-full-mid`);
     }
   }
+  // DM8: the staged Dragonfire Meteor slot (tier 4, 300 deg): the reserved '?' on a players' build, the constellation on a VITE_TREE_UNRELEASED=1 dev build
+  if (want('meteor')) {
+    const ctr = `(() => { const t = ${T}; const r = (t.view.regionRecords || []).find((q) => q.id === 'c:dragonfire_meteor') || (t.view.regionRecords || []).find((q) => q.id === 'r:meteor'); return r ? [r.centre[0], r.centre[1], r.id] : [0, 0, 'none']; })()`;
+    for (const [dn, dev, zf, zn] of [['desk', D, 0.2, 0.42], ['phone', P, 0.11, 0.24]]) {
+      await openTree(dev, { lit: 0 });
+      await setZoom(zf); await shot(`${dn}-meteor-fresh-far`);
+      const c = await ev(ctr); console.log('meteor region', c[2], c[0], c[1]);
+      await setZoom(zn, c[0], c[1]); await shot(`${dn}-meteor-fresh-near`);
+      await openTree(dev, { lit: 5000 });
+      await setZoom(zf); await shot(`${dn}-meteor-full-far`);
+      await setZoom(zn, c[0], c[1]); await shot(`${dn}-meteor-full-near`);
+    }
+  }
   if (want('tour')) {
     for (const [dn, dev] of [['desk', D], ['phone', P]]) {
       await openTree(dev, { lit: 0, tour: true });

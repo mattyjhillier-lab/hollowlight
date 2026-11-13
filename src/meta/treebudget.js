@@ -248,7 +248,7 @@ export function budgetOf(def, rule, W, opts = {}) {
 }
 
 function statusOwnedBy(n, cluster) {
-  for (const e of n.effects) if (isObj(e) && e.status !== undefined && STATUSES[e.status] && STATUSES[e.status].owner !== cluster) return false;
+  for (const e of n.effects) if (isObj(e) && e.status !== undefined && STATUSES[e.status] && STATUSES[e.status].owner !== cluster && !(Array.isArray(STATUSES[e.status].also) && STATUSES[e.status].also.includes(cluster))) return false; // `also`: another weapon that applies the same status
   return true;
 }
 

@@ -1211,7 +1211,9 @@ const dragonfireMeteor = {
       fly.push({ x, y, t: METEOR.arc, r, dmg, life });
       if (sim.fx.length < 48) sim.addFx({ kind: 'ring', x, y, r: Math.min(r, 20), ttl: METEOR.arc, color: '#ffb35c' }); // placeholder landing tell
     }
-    rt.cd = Math.max(0.2, (sdef.cd ?? METEOR.cd) * sim.mods.cooldown / (w.evo === 'cinder_wyrm' ? wfNum(tune(sim, w, 'volley', 0.7), 0.3, 1, 0.7) : 1)); // the Wyrm keeps the volley at 70% rate
+    // tree volley-cooldown nodes (weapon stat 'cooldown' on a fixed-cd weapon, src/meta/tree.js hasTreeStat): w.bonus.cooldown.pct, clamped -50..+50
+    const cb = w.bonus && Object.hasOwn(w.bonus, 'cooldown') && w.bonus.cooldown && Number.isFinite(w.bonus.cooldown.pct) ? Math.min(50, Math.max(-50, w.bonus.cooldown.pct)) : 0;
+    rt.cd = Math.max(0.2, (sdef.cd ?? METEOR.cd) * (1 + cb / 100) * sim.mods.cooldown / (w.evo === 'cinder_wyrm' ? wfNum(tune(sim, w, 'volley', 0.7), 0.3, 1, 0.7) : 1)); // the Wyrm keeps the volley at 70% rate
     sim.pushEvent('ember');
   },
 };
