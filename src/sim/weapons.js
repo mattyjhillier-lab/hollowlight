@@ -1023,6 +1023,81 @@ function wildfireSeed(sim, w, q, pools) {
   st.push(T); q.kids++; q.sd = every;
   return true;
 }
+// DM5 CINDER WYRM (verb LOOP, recipe count + power): the weapon gains ONE flame-serpent spirit. It loops in a great breathing oval (rx 95, ry 62 px at its widest) round the densest
+// cluster at 150 px/s, 7 s up, 2 s down, then re-forms at the next densest cluster (the centre eases toward the current densest cluster, <= 70 px/s, so it
+// follows a crowd or a boss). 7 body segments; each hits every foe it touches for 4.5 x Impact (per-target lockout 0.4 s, so one pass never multiplies),
+// applies the shared Burn, and leaves sparks only (no ground fire, no pools). The normal volley continues at 70% rate (cd / 0.7), so the evolution adds
+// and never removes. HARD caps: one wyrm, <= 40 hits/s, <= 7 segments. No RNG is drawn; the aim visits foes in list order. Calm motion is render-only (it
+// cannot change this speed: the sim must stay identical for everyone), so Calm drops the spark trail and the flicker but not the glide.
+export const WYRM_HARD = Object.freeze({ maxHits: 40, segs: 7 });
+function wyrmAim(sim, p, R, reach) { // densest cluster of radius R within `reach` of the hero (no near limit: a boss at her feet counts); null when nothing is there
+  const E = sim.enemies, r2 = R * R;
+  let cnt = 0;
+  for (let i = 0; i < E.length; i++) { const e = E[i]; if (!e.dead && okPt(e) && Math.hypot(e.x - p.x, e.y - p.y) <= reach) cnt++; }
+  if (!cnt) return null;
+  const stride = Math.max(1, Math.ceil(cnt / METEOR.cands));
+  let best = null, bn = 0, bd = Infinity, k = 0;
+  for (let i = 0; i < E.length; i++) {
+    const s = E[i];
+    if (s.dead || !okPt(s)) continue;
+    const sd = Math.hypot(s.x - p.x, s.y - p.y);
+    if (sd > reach || (k++ % stride)) continue;
+    let n = 0, c = 0, sx = 0, sy = 0;
+    for (let m = 0; m < E.length; m++) { const o = E[m]; if (o.dead || !okPt(o)) continue; const dx = o.x - s.x, dy = o.y - s.y; if (dx * dx + dy * dy <= r2) { n += o.boss ? 3 : 1; c++; sx += o.x; sy += o.y; } } // a boss counts triple: the serpent hunts the big thing
+    if (n > bn || (n === bn && sd < bd)) { bn = n; bd = sd; best = { x: sx / c, y: sy / c, n }; }
+  }
+  return best;
+}
+function wyrmStep(sim, w, dt, dmg) {
+  const rt = w.rt, p = sim.player, T = sim.time;
+  const y = rt.wyrm || (rt.wyrm = { on: false, t: 0.5, k: 0, cx: 0, cy: 0, tx: 0, ty: 0, th: 0, ra: 0, nseg: WYRM_HARD.segs, seg: new Array(WYRM_HARD.segs * 2).fill(0), hx: 0, hy: 0, rx: 95, ry: 62, hits: [], lock: new Map(), loops: 0 });
+  const rx = wfNum(tune(sim, w, 'loopR', 95), 20, 140, 95), ry = rx * wfNum(tune(sim, w, 'ryK', 0.65), 0.3, 1, 0.65), rEff = Math.sqrt((rx * rx + ry * ry) / 2);
+  const reach = wfNum(tune(sim, w, 'reach', 260), 60, 320, 260), aimR = wfNum(tune(sim, w, 'aimR', 95), 20, 140, 95);
+  const up = wfNum(tune(sim, w, 'up', 7), 1, 12, 7), down = wfNum(tune(sim, w, 'down', 2), 0.5, 6, 2);
+  y.nseg = Math.round(wfNum(tune(sim, w, 'segs', 7), 2, WYRM_HARD.segs, WYRM_HARD.segs));
+  y.rx = rx; y.ry = ry;
+  if (!y.on) {
+    y.k = Math.max(0, y.k - dt / 0.4);
+    y.t -= dt;
+    if (y.t > 0) return;
+    const a = wyrmAim(sim, p, aimR, reach);
+    if (!a) { y.t = 0.25; return; } // nothing to hunt: wait, ask again shortly
+    y.on = true; y.t = up; y.cx = y.tx = a.x; y.cy = y.ty = a.y; y.ra = 1; y.th = Math.atan2(p.y - a.y, p.x - a.x); y.loops++;
+  } else {
+    y.t -= dt; y.ra -= dt;
+    if (y.ra <= 0) { y.ra = 1; const a = wyrmAim(sim, p, aimR, reach); if (a) { y.tx = a.x; y.ty = a.y; } }
+    const sp = wfNum(tune(sim, w, 'track', 70), 0, 200, 70) * dt, dx = y.tx - y.cx, dy = y.ty - y.cy, d = Math.hypot(dx, dy);
+    if (d > 1e-6) { const m = Math.min(sp, d) / d; y.cx += dx * m; y.cy += dy * m; }
+    if (y.t <= 0) { y.on = false; y.t = down; return; }
+    y.k = Math.min(1, y.k + dt / 0.5, y.t / 0.5);
+    y.th += wfNum(tune(sim, w, 'speed', 150), 20, 300, 150) / rEff * dt;
+  }
+  const gap = wfNum(tune(sim, w, 'gap', 13), 6, 24, 13) / rEff;
+  const nu = wfNum(tune(sim, w, 'breath', 0.6), 0, 2, 0.6), rmin = wfNum(tune(sim, w, 'rmin', 0.3), 0.05, 1, 0.3); // the oval breathes in and out (radius x 0.3..1 over ~1.7 laps), so the loop sweeps the cluster's heart as well as its rim
+  for (let i = 0; i < y.nseg; i++) { const a = y.th - i * gap, s = rmin + (1 - rmin) * (0.5 + 0.5 * Math.cos(nu * a)); y.seg[i * 2] = y.cx + Math.cos(a) * rx * s; y.seg[i * 2 + 1] = y.cy + Math.sin(a) * ry * s; }
+  y.hx = y.seg[0]; y.hy = y.seg[1];
+  if (y.k < 0.35) return;
+  // hits: every segment, every foe it touches, per-target lockout, <= maxHits per second
+  const hits = y.hits; while (hits.length && T - hits[0] >= 1) hits.shift();
+  const lockT = wfNum(tune(sim, w, 'lock', 0.4), 0.1, 2, 0.4), segR = wfNum(tune(sim, w, 'segR', 11), 3, 20, 11), hk = wfNum(tune(sim, w, 'hitK', 4.5), 0.05, 6, 4.5), cap = WYRM_HARD.maxHits, bk = wfNum(tune(sim, w, 'bossK', 0.55), 0.1, 1, 0.55);
+  const x0 = y.cx - rx - segR - 40, x1 = y.cx + rx + segR + 40, y0 = y.cy - ry - segR - 40, y1 = y.cy + ry + segR + 40, lock = y.lock, E = sim.enemies, h = dmg * hk;
+  for (let m = 0; m < E.length && hits.length < cap; m++) {
+    const e = E[m];
+    if (e.dead || !okPt(e) || e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+    const last = lock.get(e);
+    if (last !== undefined && T - last < lockT - 1e-6) continue;
+    const er = (Number.isFinite(e.r) ? e.r : 0) + segR, er2 = er * er;
+    for (let i = 0; i < y.nseg; i++) {
+      const dx = e.x - y.seg[i * 2], dy = e.y - y.seg[i * 2 + 1];
+      if (dx * dx + dy * dy > er2) continue;
+      lock.set(e, T); hits.push(T);
+      const hh = e.boss ? h * bk : h; // a boss takes 0.55 x a hit (its weapon boss rule x1.4 applies on top), so the serpent is no boss-melter
+      if (sim.hurt(e, hh) > 0) sim.burn(e, hh, METEOR.burnTime, METEOR.burnRate);
+      break;
+    }
+  }
+  if (lock.size > 96) for (const [e, tm] of lock) if (e.dead || T - tm > 2) lock.delete(e);
+}
 const dragonfireMeteor = {
   update(sim, w, dt) {
     const { s } = w;
@@ -1074,6 +1149,7 @@ const dragonfireMeteor = {
       if (q.life <= 0) pools.splice(i, 1);
     }
     if (lock.size > 96) for (const [e, tm] of lock) if (e.dead || sim.time - tm > 2) lock.delete(e);
+    if (w.evo === 'cinder_wyrm') wyrmStep(sim, w, dt, dmg);
     // volley
     rt.cd -= dt;
     if (rt.cd > 0) return;
@@ -1093,7 +1169,7 @@ const dragonfireMeteor = {
       fly.push({ x, y, t: METEOR.arc, r, dmg, life });
       if (sim.fx.length < 48) sim.addFx({ kind: 'ring', x, y, r: Math.min(r, 20), ttl: METEOR.arc, color: '#ffb35c' }); // placeholder landing tell
     }
-    rt.cd = Math.max(0.2, (sdef.cd ?? METEOR.cd) * sim.mods.cooldown);
+    rt.cd = Math.max(0.2, (sdef.cd ?? METEOR.cd) * sim.mods.cooldown / (w.evo === 'cinder_wyrm' ? wfNum(tune(sim, w, 'volley', 0.7), 0.3, 1, 0.7) : 1)); // the Wyrm keeps the volley at 70% rate
     sim.pushEvent('ember');
   },
 };

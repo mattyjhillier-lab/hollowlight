@@ -10,6 +10,7 @@ export const MORE_CUES = {
   evo: { cap: 1, gap: 1, pri: 0 }, hurt: { cap: 1, gap: 0.25, pri: 0 }, swarm: { cap: 1, gap: 2, pri: 0 },
   // Dragonfire Meteor (DM3; the RunScene Meteor layer asks for these, the sim's 'ember' event is not mapped): launch whoosh, impact thump, pool crackle tick. Quiet, never a duck; its hit tick is ember_lick in engine.js
   meteor_launch: { cap: 2, gap: 0.12, pri: 1 }, meteor_impact: { cap: 2, gap: 0.1, pri: 1 }, meteor_crackle: { cap: 1, gap: 0.45, pri: 2 },
+  wyrm_rise: { cap: 1, gap: 1, pri: 1 }, // DM5 Cinder Wyrm forms (quiet low hum + whoosh; the evolve moment itself is evo_cinder_wyrm)
   ability: { cap: 1, gap: 1, pri: 0 }, sanctuary: { cap: 1, gap: 1, pri: 0 }, revive: { cap: 1, gap: 1, pri: 0 },
   boss_tremor: { cap: 1, gap: 4, pri: 0 }, boss_intro: { cap: 1, gap: 2, pri: 0 }, boss_phase: { cap: 1, gap: 1.5, pri: 0 }, boss_fall: { cap: 1, gap: 2, pri: 0 },
   treant_creak: { cap: 1, gap: 0.6, pri: 1 }, treant_slam: { cap: 1, gap: 0.3, pri: 1 },
@@ -24,7 +25,7 @@ export const MORE_CUES = {
   site_lamp: { cap: 1, gap: 0.2, pri: 1 }, road_note: { cap: 1, gap: 0.2, pri: 0 }, site_done: { cap: 1, gap: 1, pri: 0 }, knot_wake: { cap: 1, gap: 1, pri: 0 }, knot_pulse: { cap: 1, gap: 0.5, pri: 1 }, // map events v1
   tree_light: { cap: 1, gap: 0.2, pri: 0 }, bond_level: { cap: 1, gap: 1, pri: 0 }, keepsake: { cap: 1, gap: 1, pri: 0 }, tree_whole: { cap: 1, gap: 1, pri: 0 }, ui_step: { cap: 1, gap: 0.15, pri: 1 },
 };
-export const EVO_IDS = ['phantom_stampede', 'howling_legion', 'dire_alpha', 'murder_storm', 'dive_bombers', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages', 'thunder_judgment', 'static_storm', 'storm_tether', 'vesper_tide', 'sanctum_halo', 'judgement_wheel', 'wildfire'];
+export const EVO_IDS = ['phantom_stampede', 'howling_legion', 'dire_alpha', 'murder_storm', 'dive_bombers', 'spearhead', 'spirit_tempest', 'soul_lance', 'returning_pages', 'thunder_judgment', 'static_storm', 'storm_tether', 'vesper_tide', 'sanctum_halo', 'judgement_wheel', 'wildfire', 'cinder_wyrm'];
 for (const id of EVO_IDS) MORE_CUES['evo_' + id] = { cap: 1, gap: 1, pri: 0 };
 
 // sim event type -> cue (app.js hands every sim event to AudioEngine.event; render/audio only)
@@ -59,6 +60,7 @@ function evoVerb(e, id, t, v) {
     case 'sanctum_halo': for (const n of [0, 7, 12, 16]) e.tone(t, 'triangle', e.hz(n + 12), 0.5, 1.6, 0.035 * v, 0, true, null, rnd(-8, 8)); return 2.2; // soft choir-like pad
     case 'judgement_wheel': e.noise(t, 'lowpass', 600, 1, 0.25, 0.1, 0.18 * v, 3000); e.tone(t + 0.35, 'sine', 100, 0.003, 0.3, 0.35 * v, 50); for (let i = 0; i < 5; i++) e.tone(t + 0.5 + i * 0.08, 'sine', e.hz(31 - i * 2), 0.003, 0.15, 0.04 * v, 0, true); return 1.0; // whoosh-bang, sparks tinkle back
     case 'wildfire': e.noise(t, 'bandpass', 1800, 2, 0.05, 0.5, 0.05 * v, 3600); for (let i = 0; i < 4; i++) e.tone(t + 0.2 + i * 0.17, 'triangle', e.hz(7 + i * 5), 0.01, 0.35, 0.03 * v, 0, true); return 1.2; // a warm crackle that walks upward: fire passing from patch to patch
+    case 'cinder_wyrm': e.tone(t, 'sine', e.hz(-5), 0.25, 1.4, 0.07 * v, 0, true); e.tone(t, 'triangle', e.hz(0), 0.4, 1.2, 0.03 * v, 0, true, null, 6); e.noise(t + 0.15, 'bandpass', 700, 1.2, 0.5, 0.7, 0.08 * v, 1600); return 1.6; // a low warm hum and a slow whoosh: the old fire rising into its shape
     default: return -1;
   }
 }
@@ -101,6 +103,7 @@ export function moreCue(e, id, t, v) {
       e.noise(t + 0.02, 'bandpass', 1500, 0.8, 0.01, 0.16, 0.05 * v, 700);
       for (let i = 0; i < 4; i++) e.noise(t + 0.08 + i * rnd(0.04, 0.08), 'highpass', rnd(3600, 5400), 1, 0.002, 0.01, 0.07 * v);
       return 0.55;
+    case 'wyrm_rise': e.tone(t, 'sine', e.hz(-5), 0.15, 0.9, 0.05 * v, 0, true); e.noise(t, 'bandpass', 600, 1.1, 0.3, 0.5, 0.06 * v, 1400); return 1.0; // the serpent coils into being: a low warm hum and a soft whoosh
     case 'meteor_crackle': // the burning ground: two or three tiny dry ticks and a breath of warm air
       for (let i = 0; i < 3; i++) e.noise(t + i * rnd(0.03, 0.09), 'highpass', rnd(3800, 5600), 1, 0.002, 0.009, 0.05 * v);
       e.noise(t, 'lowpass', 600, 1, 0.03, 0.14, 0.03 * v, 900);

@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 const evos = Object.entries(data.evolutions);
 
 test('every evolution has a plain description under the card clamp, with no recipe stat named', () => {
-  assert.equal(evos.length, 16); // 15 live + Wildfire (hidden)
+  assert.equal(evos.length, 17); // 15 live + Wildfire + Cinder Wyrm (hidden)
   for (const [id, e] of evos) {
     assert.ok(typeof e.desc === 'string' && e.desc.trim().length >= 20, id);
     assert.ok(e.desc.length <= CLAMP.desc, `${id} ${e.desc.length}`);

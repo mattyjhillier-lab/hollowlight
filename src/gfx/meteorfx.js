@@ -11,6 +11,7 @@ import { METEOR } from '../sim/weapons.js';
 export const FLAME_BUDGET = 8, ABILITY_RESERVE = 3, WEAPON_VISUALS = FLAME_BUDGET - ABILITY_RESERVE; // = 5 = the base sim's live-pool cap
 // DM4 Wildfire: up to 6 live pools (WILDFIRE_HARD.maxLive). Only WEAPON_VISUALS (5) are drawn in full; children are always the lighter form
 // (fewer tongues, no embers, dimmer 0.8 / 0.65 per generation) and a 6th live pool is glow + ring only, so the flame budget holds.
+export const WYRM_SEGS = 7; // = the sim's WYRM_HARD.segs
 export const PM_MAX = 6, KID_DIM = [1, 0.8, 0.65], KID_TONGUES = [99, 2, 1];
 export const COL = { core: 0xfff1c2, amber: 0xffb35c, rose: 0xe07a6b };
 export const IMPACT_T = 0.38, LINGER_T = 1.0, CAP_FADE_T = 0.3, FADE_IN_T = 0.18;
@@ -18,16 +19,16 @@ export const KEY = 'mt_atlas', K = 2; // texels per world unit in the atlas
 
 // tier -> caps (phone x0.7 on counts; Calm drops everything that moves on its own)
 const BASE = {
-  high: { tongues: 4, tongueMax: 6, embers: 3, impact: 8, sparks: 14, tail: 4, halo: true, flat: false },
-  med: { tongues: 3, tongueMax: 4, embers: 1, impact: 5, sparks: 8, tail: 2, halo: true, flat: false },
-  low: { tongues: 0, tongueMax: 0, embers: 0, impact: 0, sparks: 0, tail: 0, halo: false, flat: true },
+  high: { tongues: 4, tongueMax: 6, embers: 3, impact: 8, sparks: 14, tail: 4, halo: true, flat: false, wrate: 16 },
+  med: { tongues: 3, tongueMax: 4, embers: 1, impact: 5, sparks: 8, tail: 2, halo: true, flat: false, wrate: 6 },
+  low: { tongues: 0, tongueMax: 0, embers: 0, impact: 0, sparks: 0, tail: 0, halo: false, flat: true, wrate: 0 },
 };
 const CACHE = {};
 export function meteorCaps(tier, phone = false, calm = false) {
   const t = BASE[tier] ? tier : 'med', key = t + (phone ? 'p' : '') + (calm ? 'c' : '');
   if (CACHE[key]) return CACHE[key];
   const b = BASE[t], sc = (n) => (n > 0 && phone ? Math.max(1, Math.round(n * 0.7)) : n);
-  const c = { tier: t, flat: b.flat, halo: b.halo, calm: !!calm, tongues: sc(b.tongues), tongueMax: sc(b.tongueMax), embers: calm ? 0 : sc(b.embers), impact: calm ? 0 : sc(b.impact), sparks: calm ? 0 : sc(b.sparks), tail: sc(b.tail), flicker: !calm && !b.flat, pop: !calm };
+  const c = { tier: t, flat: b.flat, halo: b.halo, calm: !!calm, tongues: sc(b.tongues), tongueMax: sc(b.tongueMax), embers: calm ? 0 : sc(b.embers), impact: calm ? 0 : sc(b.impact), sparks: calm ? 0 : sc(b.sparks), tail: sc(b.tail), flicker: !calm && !b.flat, pop: !calm, wrate: calm ? 0 : sc(b.wrate) }; // wrate = Wyrm spark-trail sparks per second (about 8 live on High, 3 on Medium, none on Low or Calm)
   c.add = !c.flat; // additive blend only above Low
   return (CACHE[key] = c);
 }
@@ -57,7 +58,8 @@ export function poolEnv(rem, now, born, gone, cap, out = {}) {
 }
 
 // ---------------------------------------------------------------- atlas bake (2D canvas, once, on the first Meteor sight)
-const FR = { glow: [0, 0, 64, 64], bloom: [64, 0, 64, 64], ring: [128, 0, 64, 64], ball: [192, 0, 32, 32], ember: [224, 0, 16, 16], shade: [240, 0, 32, 16], poolLow: [160, 64, 96, 96] };
+const FR = { glow: [0, 0, 64, 64], bloom: [64, 0, 64, 64], ring: [128, 0, 64, 64], ball: [192, 0, 32, 32], ember: [224, 0, 16, 16], shade: [240, 0, 32, 16], poolLow: [160, 64, 96, 96], whead: [0, 160, 48, 40], wseg: [48, 160, 32, 32] }; // DM5: Cinder Wyrm head + body segment (row at y 160)
+export const ATLAS_W = 288, ATLAS_H = 208;
 for (let i = 0; i < 6; i++) FR['tongue' + i] = [i * 24, 64, 24, 40];
 const rg = (c, x, y, r, stops) => { const g = c.createRadialGradient(x, y, 0, x, y, r); for (const [o, col] of stops) g.addColorStop(o, col); return g; };
 const GLOW = [[0, 'rgba(255,241,194,0.95)'], [0.25, 'rgba(255,214,140,0.7)'], [0.5, 'rgba(255,179,92,0.38)'], [0.78, 'rgba(224,122,107,0.14)'], [1, 'rgba(224,122,107,0)']];
@@ -80,7 +82,7 @@ function drawTongue(c, ox, oy, lean, hv, sc = 1, a = 1) {
   g2.addColorStop(0, `rgba(255,241,194,${0.7 * a})`); g2.addColorStop(1, 'rgba(255,241,194,0)');
   c.fillStyle = g2; tonguePath(c, ox, oy - 1, lean * 0.5, hv * 0.4 + 7 * sc, sc * 0.5); c.fill();
 }
-export function bakeAtlas(c) { // c = a 2D context 288 x 160
+export function bakeAtlas(c) { // c = a 2D context 288 x 208
   const at = (n) => FR[n];
   let [x, y] = at('glow'); c.fillStyle = rg(c, x + 32, y + 32, 32, GLOW); c.fillRect(x, y, 64, 64);
   [x, y] = at('bloom'); c.fillStyle = rg(c, x + 32, y + 32, 32, BLOOM); c.fillRect(x, y, 64, 64);
@@ -95,6 +97,21 @@ export function bakeAtlas(c) { // c = a 2D context 288 x 160
   [x, y] = at('shade'); c.save(); c.translate(x + 16, y + 8); c.scale(1, 0.5); c.fillStyle = rg(c, 0, 0, 16, [[0, 'rgba(46,40,78,0.55)'], [1, 'rgba(46,40,78,0)']]); c.fillRect(-16, -16, 32, 32); c.restore(); // dusk blue-violet, never black
   const L = [[-3, 0], [2, 3], [-1, -2], [3, 1], [-2, 4], [1, -1]];
   for (let i = 0; i < 6; i++) { const [tx, ty] = at('tongue' + i); drawTongue(c, tx + 12, ty + 38, L[i][0], L[i][1]); }
+  [x, y] = at('wseg'); // DM5 Wyrm body segment: soft halo, round flame body (gold core, amber, rose rim), one dragon-scale arc
+  c.fillStyle = rg(c, x + 16, y + 16, 16, [[0, 'rgba(255,214,140,0.5)'], [0.6, 'rgba(224,122,107,0.28)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 32, 32);
+  c.fillStyle = rg(c, x + 16, y + 16, 12.5, [[0, 'rgba(255,241,194,1)'], [0.45, 'rgba(255,200,120,1)'], [0.85, 'rgba(255,179,92,1)'], [1, 'rgba(240,150,100,0.95)']]); c.beginPath(); c.arc(x + 16, y + 16, 12.5, 0, 6.2832); c.fill();
+  c.strokeStyle = 'rgba(224,122,107,0.85)'; c.lineWidth = 1.4; c.beginPath(); c.arc(x + 16, y + 16, 12.2, 0, 6.2832); c.stroke();
+  c.strokeStyle = 'rgba(224,122,107,0.55)'; c.lineWidth = 1; c.beginPath(); c.arc(x + 18, y + 18, 6, 0.2, 1.9); c.stroke();
+  [x, y] = at('whead'); // DM5 Wyrm head, facing +x: two swept horns, a rounded muzzle, two eye glints (the dragon-kin family tie), gold-to-rose, no black
+  c.fillStyle = rg(c, x + 22, y + 20, 24, [[0, 'rgba(255,214,140,0.5)'], [0.6, 'rgba(224,122,107,0.25)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 48, 40);
+  for (const sg of [-1, 1]) {
+    c.beginPath(); c.moveTo(x + 15, y + 20 + sg * 7); c.quadraticCurveTo(x + 6, y + 20 + sg * 11, x + 2, y + 20 + sg * 18); c.quadraticCurveTo(x + 12, y + 20 + sg * 15, x + 21, y + 20 + sg * 11); c.closePath();
+    c.fillStyle = 'rgba(255,190,110,0.95)'; c.fill(); c.strokeStyle = 'rgba(224,122,107,0.9)'; c.lineWidth = 1.2; c.stroke();
+  }
+  c.beginPath(); c.moveTo(x + 7, y + 20); c.bezierCurveTo(x + 7, y + 8, x + 24, y + 6, x + 36, y + 13); c.bezierCurveTo(x + 45, y + 17, x + 45, y + 23, x + 36, y + 27); c.bezierCurveTo(x + 24, y + 34, x + 7, y + 32, x + 7, y + 20); c.closePath();
+  const hg = c.createLinearGradient(x + 7, y, x + 45, y); hg.addColorStop(0, 'rgba(255,200,120,1)'); hg.addColorStop(0.55, 'rgba(255,226,160,1)'); hg.addColorStop(1, 'rgba(255,241,194,1)');
+  c.fillStyle = hg; c.fill(); c.strokeStyle = 'rgba(224,122,107,0.9)'; c.lineWidth = 1.4; c.stroke();
+  for (const sg of [-1, 1]) { c.fillStyle = 'rgba(224,122,107,0.95)'; c.beginPath(); c.arc(x + 29, y + 20 + sg * 5, 2.4, 0, 6.2832); c.fill(); c.fillStyle = 'rgba(255,255,240,1)'; c.beginPath(); c.arc(x + 29.6, y + 19.4 + sg * 5, 1.1, 0, 6.2832); c.fill(); }
   [x, y] = at('poolLow'); // Low: ONE flat sprite (no additive): tint + glow + rim + 5 tongues
   c.fillStyle = rg(c, x + 48, y + 48, 48, BLOOM); c.fillRect(x, y, 96, 96);
   c.fillStyle = rg(c, x + 48, y + 48, 44, [[0, 'rgba(255,226,160,0.6)'], [0.5, 'rgba(255,179,92,0.4)'], [0.9, 'rgba(224,122,107,0.28)'], [1, 'rgba(224,122,107,0)']]); c.fillRect(x, y, 96, 96);
@@ -124,6 +141,7 @@ export class MeteorLayer {
     this.scene = scene; this.gl = gl; this.ok = false; this.dead = false;
     this.sTint = null; this.sGlow = null; this.sNorm = null; this.sTongue = null; this.sTongueI = null; this.sFx = null; this.sFxN = null;
     this.fly = new Map(); this.pools = new Map(); this.imp = []; this.fr = 0; this.lastT = 0; this.crack = 0;
+    this.wl = 0; this.wsp = 0; this.wn = 0;
     this.pose = { x: 0, y: 0, h: 0, s: 1 }; this.env = { aIn: 0, flame: 0, glow: 0, tint: 0 };
     this.sprites = 0; // sprites placed last frame (probe)
   }
@@ -131,7 +149,7 @@ export class MeteorLayer {
   bake() {
     if (this.ok || this.dead) return this.ok;
     try {
-      const sc = this.scene, tex = sc.textures.exists(KEY) ? sc.textures.get(KEY) : sc.textures.createCanvas(KEY, 288, 160);
+      const sc = this.scene, tex = sc.textures.exists(KEY) ? sc.textures.get(KEY) : sc.textures.createCanvas(KEY, ATLAS_W, ATLAS_H);
       if (!sc.textures.exists(KEY) || !tex.frames || !tex.frames.glow) {
         bakeAtlas(tex.getContext());
         for (const n of Object.keys(FR)) tex.add(n, 0, FR[n][0], FR[n][1], FR[n][2], FR[n][3]);
@@ -146,7 +164,7 @@ export class MeteorLayer {
     return this.ok;
   }
   hideAll() { if (!this.ok) return; for (const s of [this.sTint, this.sGlow, this.sNorm, this.sTongue, this.sTongueI, this.sFx, this.sFxN]) s.hide(); this.sprites = 0; }
-  reset() { this.fly.clear(); this.pools.clear(); this.imp.length = 0; this.lastT = 0; this.crack = 0; this.hideAll(); }
+  reset() { this.wl = 0; this.wsp = 0; this.wn = 0; this.fly.clear(); this.pools.clear(); this.imp.length = 0; this.lastT = 0; this.crack = 0; this.hideAll(); }
 
   // c = { sim, tier, phone, calm, lm (or null), parts, cue(id), vx0, vy0, vx1, vy1 }; call once a frame.
   update(c) {
@@ -187,6 +205,32 @@ export class MeteorLayer {
       this.fly.delete(f);
       if (this.imp.length < 12) this.imp.push({ x: r.x, y: r.y, r: r.r, t: 0, s: poolSeed(r.x, r.y) });
       if (inV(r.x, r.y)) { c.cue('meteor_impact'); if (caps.pop && !caps.flat && c.shake && !punched) { punched = true; c.shake(60, caps.tier === 'high' ? 0.0045 : 0.003); } } // 3 px (High) / 2 px (Med) kick; RunScene.shake obeys Calm + the Screen shake setting + its 0.4 s gate
+    }
+
+    // ---- DM5 Cinder Wyrm: a flame-serpent spirit (7 round segments, taper to the tail, a horned head). Reads the sim's rt.wyrm positions; adds no pools.
+    const wy = w.rt.wyrm;
+    if (wy && wy.seg && wy.k > 0.01 && Number.isFinite(wy.cx) && Number.isFinite(wy.cy)) {
+      if (wy.loops !== this.wl) { this.wl = wy.loops; if (wy.on && inV(wy.cx, wy.cy)) c.cue('wyrm_rise'); }
+      const k = sm(wy.k), n = Math.min(WYRM_SEGS, Math.max(2, wy.nseg | 0));
+      for (let i = n - 1; i >= 0; i--) {
+        const sx = wy.seg[i * 2], sy = wy.seg[i * 2 + 1];
+        if (!Number.isFinite(sx) || !Number.isFinite(sy)) continue;
+        if (sx < c.vx0 - 40 || sx > c.vx1 + 40 || sy < c.vy0 - 40 || sy > c.vy1 + 40) continue;
+        const sc = i === 0 ? 1 : 0.8 - 0.4 * (i / (n - 1)), dd = dF - 9 - (n - i) * 0.01;
+        if (!caps.flat) sGlA.put('glow', sx, sy - 7, dd - 3, 0.5 * sc + 0.15, 0.5 * sc + 0.15, 0.3 * k, 0, COL.amber);
+        if (i > 0) this.sFxN.put('wseg', sx, sy - 7, dd, 0.9 * sc, 0.9 * sc, k);
+      }
+      { const hx = wy.seg[0], hy = wy.seg[1], nx = wy.seg[2], ny = wy.seg[3];
+        if (Number.isFinite(hx) && Number.isFinite(hy) && hx >= c.vx0 - 40 && hx <= c.vx1 + 40 && hy >= c.vy0 - 40 && hy <= c.vy1 + 40) {
+          const ang = Number.isFinite(nx) && Number.isFinite(ny) ? Math.atan2(hy - ny, hx - nx) : 0;
+          this.sFxN.put('whead', hx, hy - 7, dF - 9.5, 0.8, 0.8, k, ang);
+          if (lm && !caps.flat) lm.add(hx, hy - 7, 46, COL.amber, 0.45 * k);
+        } }
+      if (caps.wrate > 0 && c.parts && wy.on) { // spark trail: a few embers shed from the body, one per tick, picked by a counter (no random draws)
+        this.wsp += dt * caps.wrate;
+        while (this.wsp >= 1) { this.wsp -= 1; this.wn++; const i = 1 + (this.wn * 3) % Math.max(1, n - 1), sx = wy.seg[i * 2], sy = wy.seg[i * 2 + 1]; if (Number.isFinite(sx) && inV(sx, sy)) c.parts.emit(sx, sy - 7, ((this.wn % 5) - 2) * 6, -16 - (this.wn % 3) * 6, 0.5, 0.45, 0.1, this.wn % 3 ? COL.amber : COL.core, 0.85); }
+        if (this.wsp > 3) this.wsp = 0;
+      }
     }
 
     // ---- impacts: flash + expanding tongues + sparks

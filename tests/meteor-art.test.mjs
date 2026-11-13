@@ -130,3 +130,31 @@ test('wildfire art: parentless / hostile child records do not throw; the thread 
   pools.shift(); sim.time = 1.9; L.update(k.c); // the parent left the sim list: its record ghosts; the child must not draw a thread to a ghost
   assert.ok(L.sprites <= withThread + 3);
 });
+
+// ---- DM5 Cinder Wyrm art: 7 segments + a head, sparks per tier, Calm trail-free, Low flat, no extra pools
+const wyrmSim = (t = 1, k = 1, on = true) => {
+  const seg = []; for (let i = 0; i < 7; i++) seg.push(100 - i * 13, 20 + i * 2);
+  return { time: t, player: { x: 0, y: 0 }, weapons: [{ id: 'dragonfire_meteor', rt: { fly: [], pools: [], wyrm: { on, k, nseg: 7, seg, cx: 80, cy: 20, loops: 1 } } }] };
+};
+test('wyrm art: High draws 7 body glows + 6 segments + head, Low is flat sprites only, Calm sheds no sparks, rise cue once', () => {
+  const sim = wyrmSim(1);
+  const hi = new MeteorLayer(stub().scene, GL), kh = ctx(sim, 'high'); hi.update(kh.c); sim.time = 1.3; hi.update(kh.c);
+  assert.ok(hi.sprites >= 14 && hi.sprites <= 20, 'high sprites ' + hi.sprites);
+  assert.equal(kh.cues.filter((c) => c === 'wyrm_rise').length, 1);
+  assert.ok(kh.sparks.length > 0 && kh.sparks.length <= 8, 'spark trail ' + kh.sparks.length); // ~16/s x 0.3 s
+  const lo = new MeteorLayer(stub().scene, GL), kl = ctx(sim, 'low'); sim.time = 1; lo.update(kl.c); sim.time = 1.3; lo.update(kl.c);
+  assert.equal(lo.sprites, 7, 'Low: 6 segments + head, no glow, no sparks'); assert.equal(kl.sparks.length, 0);
+  const cl = new MeteorLayer(stub().scene, GL), kc = ctx(sim, 'high', { calm: true }); sim.time = 1; cl.update(kc.c); sim.time = 1.3; cl.update(kc.c);
+  assert.equal(kc.sparks.length, 0); assert.ok(cl.sprites > 0);
+});
+test('wyrm art: faded-out / hostile serpent records never throw and draw nothing', () => {
+  const L = new MeteorLayer(stub().scene, GL), s0 = wyrmSim(1, 0, false), k = ctx(s0, 'high');
+  assert.doesNotThrow(() => L.update(k.c)); assert.equal(L.sprites, 0);
+  const s1 = wyrmSim(1); s1.weapons[0].rt.wyrm.seg[4] = NaN; s1.weapons[0].rt.wyrm.nseg = 99; s1.weapons[0].rt.wyrm.cx = Infinity;
+  assert.doesNotThrow(() => { L.update(ctx(s1, 'med').c); });
+  const s2 = wyrmSim(1); s2.weapons[0].rt.wyrm.seg = [NaN, NaN, 1, 1]; s2.weapons[0].rt.wyrm.nseg = 2;
+  assert.doesNotThrow(() => { L.update(ctx(s2, 'low').c); });
+});
+test('cues: wyrm_rise and evo_cinder_wyrm are registered', () => {
+  assert.ok(CUES.wyrm_rise && CUES.wyrm_rise.pri === 1); assert.ok(CUES.evo_cinder_wyrm);
+});

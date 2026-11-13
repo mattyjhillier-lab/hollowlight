@@ -12,7 +12,8 @@ const PORT = 9492, HTTP = 4292;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
 const VIEWS = { desk: [1280, 720, 1], phone: [390, 844, 2] };
-const R1 = 'dragonfire_meteor', R5 = 'dragonfire_meteor:power=5,area=5,count=5,duration=5';
+const EVO = process.env.EVO || ''; // DM5/DM6: EVO=cinder_wyrm (or cinder_brand) grants the evolution at rank 5 and runs the evolution shot list
+const R1 = 'dragonfire_meteor', R5 = 'dragonfire_meteor:power=5,area=5,count=5,duration=5' + (EVO ? ':' + EVO : '');
 
 function serve(dir) {
   const root = resolve(dir);
@@ -52,11 +53,11 @@ async function open(c, view, tier, calm, grant, t = 60) {
   throw new Error('run did not start');
 }
 // a still hero with one tight crowd ~115 px to the right (+ stragglers); foes cannot die or move, so the pools keep burning them
-const stage = (c, n) => c.ev(`(()=>{const a=window.__app,s=a.sim,p=s.player;s.enemies.length=0;s.xpNeeded=1e9;
+const stage = (c, n, dx = 115) => c.ev(`(()=>{const a=window.__app,s=a.sim,p=s.player;s.enemies.length=0;s.xpNeeded=1e9;
   const T=['wolf','crow','root_crawler'];
   const mk=(x,y)=>{const e=s.spawnEnemy(T[s.enemies.length%3],x,y);e.hp=e.maxHp=1e9;e.speed=0;};
   if(${n}>60){for(let k=0;k<${n};k++){const th=k*2.399,d=70+((k*37)%190);mk(p.x+Math.cos(th)*d*1.5,p.y+Math.sin(th)*d*0.9);}}
-  else{for(let k=0;k<${n};k++){const th=k*2.399,d=6+((k*13)%46);mk(p.x+115+Math.cos(th)*d,p.y-6+Math.sin(th)*d*0.8);}
+  else{for(let k=0;k<${n};k++){const th=k*2.399,d=6+((k*13)%46);mk(p.x+${dx}+Math.cos(th)*d,p.y-6+Math.sin(th)*d*0.8);}
     for(let k=0;k<6;k++)mk(p.x-120+k*18,p.y+70-k*20);}
   p.hp=p.maxHp;return s.enemies.length})()`);
 const wep = "window.__app.sim.weapons.find(w=>w.id==='dragonfire_meteor')";
@@ -69,14 +70,16 @@ const STATES = {
   flight: `(()=>{const w=${wep};return w&&w.rt.fly&&w.rt.fly.some(f=>f.t<0.2&&f.t>0.08)})()`,
   impact: `(()=>{const m=window.__app.scene.meteor;return m.imp.length&&m.imp[0].t>0.05&&m.imp[0].t<0.16})()`,
   pool: `(()=>{const w=${wep};return w&&w.rt.pools&&w.rt.pools.length>=1&&w.rt.pools[0].life<(w.s.duration||3)-0.9})()`,
+  wyrm: `(()=>{const w=${wep},y=w&&w.rt.wyrm;return y&&y.on&&y.k>=1&&y.t<5.6&&y.t>2})()`,
+  brand: `(()=>{const w=${wep};return w&&w.rt.brands&&w.rt.brands.length>=3&&window.__app.scene.meteor.sprites>0})()`,
   crowd: `(()=>{const w=${wep};return w&&w.rt.pools&&w.rt.pools.length>=3&&window.__app.scene.meteor.imp.length>=1&&window.__app.scene.meteor.imp[0].t>0.06})()`,
 };
-const focus = (c, st) => c.ev(`(()=>{const w=${wep},m=window.__app.scene.meteor;const f=${JSON.stringify(st)};if(f==='flight'){const b=w.rt.fly[0];return b?[b.x,b.y-30]:null}if(f==='impact'&&m.imp[0])return [m.imp[0].x,m.imp[0].y];const q=w.rt.pools[0];return q?[q.x,q.y]:null})()`);
+const focus = (c, st) => c.ev(`(()=>{const w=${wep},m=window.__app.scene.meteor;const f=${JSON.stringify(st)};if(f==='wyrm'&&w.rt.wyrm)return [w.rt.wyrm.cx,w.rt.wyrm.cy];if(f==='brand'&&w.rt.brands&&w.rt.brands[0])return [w.rt.brands[0].e.x,w.rt.brands[0].e.y];if(f==='flight'){const b=w.rt.fly[0];return b?[b.x,b.y-30]:null}if(f==='impact'&&m.imp[0])return [m.imp[0].x,m.imp[0].y];const q=w.rt.pools[0];return q?[q.x,q.y]:null})()`);
 
 const ONLY = process.argv[4] ? new RegExp(process.argv[4]) : null; // optional name filter, e.g. 'desk-high-r5'
 async function one(c, out, view, tier, calm, rank, state, n = 22, t = 60, tag = '') {
   if (ONLY && !ONLY.test(`${view}-${tier}${calm ? '-calm' : ''}-r${rank}-${state}${tag}`)) return;
-  await open(c, view, tier, calm, rank === 5 ? R5 : R1, t); await stage(c, n);
+  await open(c, view, tier, calm, rank === 5 ? R5 : R1, t); await stage(c, n, view === 'phone' ? 50 : 115);
   const ok = await freezeWhen(c, STATES[state]);
   const name = `${view}-${tier}${calm ? '-calm' : ''}-r${rank}-${state}${tag}`;
   if (!ok) { console.log(name, 'STATE NOT REACHED'); await wake(c); return; }
@@ -86,11 +89,18 @@ async function one(c, out, view, tier, calm, rank, state, n = 22, t = 60, tag = 
   console.log(name, JSON.stringify(await c.ev('({sprites:window.__app.scene.meteor.sprites})')));
   await wake(c);
 }
+const EVLIST = EVO === 'cinder_wyrm' ? [
+  ['desk', 'high', 0, 5, 'wyrm', 14], ['desk', 'high', 0, 5, 'wyrm', 22, 60, '-crowd'], ['desk', 'high', 0, 5, 'wyrm', 4, 60, '-sparse'], ['desk', 'high', 0, 5, 'wyrm', 14, 700, '-night'], ['desk', 'med', 0, 5, 'wyrm', 14], ['desk', 'low', 0, 5, 'wyrm', 14], ['desk', 'high', 1, 5, 'wyrm', 14],
+  ['phone', 'high', 0, 5, 'wyrm', 14], ['phone', 'med', 0, 5, 'wyrm', 14], ['phone', 'low', 0, 5, 'wyrm', 14],
+] : [
+  ['desk', 'high', 0, 5, 'brand', 14], ['desk', 'high', 0, 5, 'brand', 22, 60, '-crowd'], ['desk', 'high', 0, 5, 'brand', 14, 700, '-night'], ['desk', 'med', 0, 5, 'brand', 14], ['desk', 'low', 0, 5, 'brand', 14], ['desk', 'high', 1, 5, 'brand', 14],
+  ['phone', 'high', 0, 5, 'brand', 14], ['phone', 'med', 0, 5, 'brand', 14], ['phone', 'low', 0, 5, 'brand', 14],
+];
 async function shots(out) {
   mkdirSync(out, { recursive: true });
   const srv = await serve('dist'); const c = await launch();
   try {
-    for (const [view, tier, calm, rank, state, n, t, tag] of [
+    for (const [view, tier, calm, rank, state, n, t, tag] of EVO ? EVLIST : [
       ['desk', 'high', 0, 1, 'flight'], ['desk', 'high', 0, 1, 'impact'], ['desk', 'high', 0, 1, 'pool'],
       ['desk', 'high', 0, 5, 'flight'], ['desk', 'high', 0, 5, 'impact'], ['desk', 'high', 0, 5, 'pool'], ['desk', 'high', 0, 5, 'crowd'],
       ['desk', 'high', 0, 5, 'crowd', 22, 700, '-night'], ['desk', 'high', 0, 5, 'pool', 4, 60, '-sparse'], ['desk', 'high', 0, 1, 'pool', 4, 60, '-sparse'], ['desk', 'high', 0, 5, 'pool', 4, 700, '-sparse-night'], ['desk', 'low', 0, 5, 'pool', 4, 60, '-sparse'], ['phone', 'high', 0, 5, 'pool', 4, 60, '-sparse'],

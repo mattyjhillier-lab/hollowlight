@@ -28,7 +28,7 @@ test('data: wildfire entry (pair, verb, hidden, tune numbers (spec, retuned in D
   assert.equal(e.desc, 'Fire creeps from patch to patch wherever foes stand in it.');
   const t = e.tune;
   assert.deepEqual([t.seedEvery, t.reachMin, t.reachMax, t.childR, t.childLife, t.grow, t.tickK, t.maxGen, t.maxKids, t.maxLive, t.seedRate], [1.2, 20, 30, 0.8, 0.7, 0.5, 0.8, 2, 2, 6, 3]);
-  assert.deepEqual(Object.values(data.evolutions).filter((x) => x.weapon === ID).map((x) => x.pair.join('+')), ['area+duration']);
+  assert.deepEqual(Object.values(data.evolutions).filter((x) => x.weapon === ID).map((x) => x.pair.join('+')), ['area+duration', 'count+power']); // DM5 adds count+power
 });
 
 test('hidden: never offered while the weapon is unreleased', () => {
