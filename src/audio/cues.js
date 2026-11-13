@@ -11,7 +11,7 @@ export const MORE_CUES = {
   // Dragonfire Meteor (DM3; the RunScene Meteor layer asks for these, the sim's 'ember' event is not mapped): launch whoosh, impact thump, pool crackle tick. Quiet, never a duck; its hit tick is ember_lick in engine.js
   meteor_launch: { cap: 2, gap: 0.12, pri: 1 }, meteor_impact: { cap: 2, gap: 0.1, pri: 1 }, meteor_crackle: { cap: 1, gap: 0.45, pri: 2 },
   brand_pop: { cap: 3, gap: 0.07, pri: 2 }, // DM6 Cinder Brand: a brand pops in gold (quiet pip; hit-priority so it is first to be dropped)
-  rise_call: { cap: 1, gap: 1, pri: 0 }, rise_ring: { cap: 1, gap: 0.3, pri: 1 }, // DM7 Ophimber's Rise: a soft chime as he lifts, one warm whoomp per ring (no loops)
+  rise_call: { cap: 1, gap: 1, pri: 0 }, rise_ring: { cap: 1, gap: 0.3, pri: 1 }, // DM7 Ophimber's Rise: a soft chime as she lifts, one warm whoomp per ring (no loops)
   wyrm_rise: { cap: 1, gap: 1, pri: 1 }, // DM5 Cinder Wyrm forms (quiet low hum + whoosh; the evolve moment itself is evo_cinder_wyrm)
   ability: { cap: 1, gap: 1, pri: 0 }, sanctuary: { cap: 1, gap: 1, pri: 0 }, revive: { cap: 1, gap: 1, pri: 0 },
   boss_tremor: { cap: 1, gap: 4, pri: 0 }, boss_intro: { cap: 1, gap: 2, pri: 0 }, boss_phase: { cap: 1, gap: 1.5, pri: 0 }, boss_fall: { cap: 1, gap: 2, pri: 0 },
