@@ -35,6 +35,7 @@ function charsLine(s, d) { try { const v = charsView(s, d, treeDef).find((x) => 
 const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
 import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
+import { coverHeroId } from './gfx/titlelogic.js'; // title cover (render only)
 import { validateCosmTree, resolveCosm, cleanCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
 import { DARK } from './ui/darkui.js';
@@ -512,6 +513,25 @@ export const app = {
     };
   },
 
+  // TITLE COVER: what the picture behind the title shows. The hero is the last-played one, checked against the known + awake heroes (a hostile or stale loadout reads as Wren);
+  // the flame is the one worn (resolveCosm already drops anything not owned). Render-only getters: Calm, Battery saver and Low quality are read live, never stored by the cover.
+  titleCover() {
+    const s = this.save.data, lo = (s.notes && (s.notes.loadout || s.notes.starter)) || {};
+    const hero = coverHeroId(lo && lo.hero, data.characters, (id) => isAwake(s, id));
+    let flame = null;
+    try { const v = resolveCosm(s, data, treeDef, hero); flame = v && v.flame ? { glow: v.flame.css, core: v.flame.cssCore } : null; } catch { flame = null; }
+    const phone = this.isPhone();
+    const st = () => this.save.data.settings || {};
+    const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    return {
+      hero, flame,
+      isCalm: () => !!st().reducedMotion || !!(mq && mq.matches),
+      isSaver: () => phone && !!st().batterySaver,
+      isLow: () => st().quality === 'low',
+      isBaking: () => { const pb = this.scene && this.scene.prebake; return !!(pb && pb.mode && !pb.done); }, // the run assets bake quietly under the title: the cover draws at most 30 fps meanwhile
+    };
+  },
+
   lanternScreen() {
     const L = this.lanterns;
     const cards = L.list().map((e) => {
@@ -982,6 +1002,7 @@ export const app = {
       almanacRead: (keys) => this.almanacRead(keys),
       pickTitle: (id) => this.pickTitle(id),
       titleCelebrations: () => this.titleCelebrations(),
+      titleCover: () => this.titleCover(),
       closeAlmanac: () => { if (!this.sim && !this.ui.tree.isOpen) { this.ui.showStart(this.ui.onPick); const t = this.ui.screen && this.ui.screen.title; if (t && t.almanac) t.almanac.focus({ preventScroll: true }); } },
     };
   },
