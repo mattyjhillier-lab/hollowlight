@@ -2,6 +2,9 @@
 //   node scripts/tree-validate.mjs [--table] [--svg out/tree-layout.svg] [--synthetic 1000|2000]
 // Checks, exit 1 on any failure: fragment schema + namespaces + idx (composeTree), live compile, v2 compile (template requires,
 // requiresAny gate rule, node overlap), layout/clearance, power budget (rule ceilings), id snapshot. Reads src/data/tree/ only.
+// DM8: every check runs twice: on the PLAYERS' tree (staged constellations of `unreleased` weapons left out, what the game composes) and, when
+// any constellation is staged, on the FULL tree (composeTree opts.unreleased) so a hidden cluster is validated and budgeted before its release.
+// The append-only id snapshot is checked against the full tree (staged ids are reserved too).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -24,35 +27,47 @@ const ok = (m) => console.log(`ok   ${m}`);
 // --extra <dir>: also load test-only fragments + <dir>-data.json (TREE-GEN1 synthetic third hero / weapon proof)
 const EXTRA = val('--extra');
 const { files: FILES, data } = addExtra(readTreeFiles(), loadRealData(), EXTRA);
-let composed;
-try { composed = composeTree(FILES, data); ok(`fragments compose (${composed.info.nodes.length} nodes in ${new Set(composed.info.nodes.map((n) => n.frag)).size} fragments)`); } catch (e) { bad(e.message); process.exit(1); }
-let live, v2;
-try { live = compileTree(composed.live, data); ok(`live tree compiles (${live.list.length} live nodes, ${live.pendingList.length} inert)`); } catch (e) { bad(`live: ${e.message}`); }
-try { v2 = compileTree(composed.v2, data); ok(`v2 tree compiles (${v2.list.length} nodes)`); } catch (e) { bad(`v2: ${e.message}`); }
-let issues = [];
-if (v2) {
-  issues = layoutIssues(composed.info, v2);
-  issues.length ? issues.forEach((i) => bad(`layout: ${i}`)) : ok('layout and graph checks');
-  const b = budgetOf(v2, composed.info.core.budget, Object.keys(composed.info.clusters).length);
-  b.violations.length ? b.violations.forEach((v) => bad(`budget: ${v}`)) : ok(`budget: combat PE at cap ${b.combatAtCap.toFixed(2)} (ceiling ${composed.info.core.budget.base.combat}), sustain ${b.sustainPE.toFixed(2)} (ceiling ${composed.info.core.budget.base.sustain})`);
-  if (flag('--table')) console.log(`\n${formatBudget(b)}\n`);
-}
-// connected-unlock rule (LOCKED 2026-10-21): hard on the live tree; on the design tree, a finding about a group that is still inert is PENDING
-// (it must be fixed before that group goes live, when it becomes a live failure)
-if (live) {
-  const ci = connectIssues(composed.info, live);
-  ci.length ? ci.forEach((i) => bad(`connected rule: ${i}`)) : ok('connected rule: every lantern links to something lit, no far links, every group has a gold-only way in');
-}
-if (live && v2) {
-  const liveSet = new Set(connectIssues(composed.info, live));
-  const inert = new Set(composed.info.nodes.filter((n) => n.inert).map((n) => n.id));
-  for (const i of connectIssues(composed.info, v2)) {
-    if (liveSet.has(i)) continue;
-    const ids = (i.match(/\b[a-z]{2}_[a-z0-9_]+/g) || []).filter((x) => composed.info.nodes.some((n) => n.id === x));
-    if (ids.length && ids.every((x) => inert.has(x))) console.log(`pend connected rule (inert group, fix before it goes live): ${i}`);
-    else bad(`connected rule (design tree): ${i}`);
+
+function check(opts, label) {
+  const P = label ? `[${label}] ` : '';
+  let composed;
+  try { composed = composeTree(FILES, data, opts); ok(`${P}fragments compose (${composed.info.nodes.length} nodes in ${new Set(composed.info.nodes.map((n) => n.frag)).size} fragments)`); } catch (e) { bad(`${P}${e.message}`); return null; }
+  let live, v2;
+  try { live = compileTree(composed.live, data); ok(`${P}live tree compiles (${live.list.length} live nodes, ${live.pendingList.length} inert)`); } catch (e) { bad(`${P}live: ${e.message}`); }
+  try { v2 = compileTree(composed.v2, data); ok(`${P}v2 tree compiles (${v2.list.length} nodes)`); } catch (e) { bad(`${P}v2: ${e.message}`); }
+  if (v2) {
+    const issues = layoutIssues(composed.info, v2);
+    issues.length ? issues.forEach((i) => bad(`${P}layout: ${i}`)) : ok(`${P}layout and graph checks`);
+    const W = Object.keys(composed.info.clusters).length;
+    const b = budgetOf(v2, composed.info.core.budget, W);
+    b.violations.length ? b.violations.forEach((v) => bad(`${P}budget: ${v}`)) : ok(`${P}budget: combat PE at cap ${b.combatAtCap.toFixed(2)} (ceiling ${composed.info.core.budget.base.combat}), sustain ${b.sustainPE.toFixed(2)} (ceiling ${composed.info.core.budget.base.sustain}); ${W} weapon constellations`);
+    if (flag('--table')) console.log(`\n${P}\n${formatBudget(b)}\n`);
   }
+  // connected-unlock rule (LOCKED 2026-10-21): hard on the live tree; on the design tree, a finding about a group that is still inert is PENDING
+  // (it must be fixed before that group goes live, when it becomes a live failure)
+  if (live) {
+    const ci = connectIssues(composed.info, live);
+    ci.length ? ci.forEach((i) => bad(`${P}connected rule: ${i}`)) : ok(`${P}connected rule: every lantern links to something lit, no far links, every group has a gold-only way in`);
+  }
+  if (live && v2) {
+    const liveSet = new Set(connectIssues(composed.info, live));
+    const inert = new Set(composed.info.nodes.filter((n) => n.inert).map((n) => n.id));
+    for (const i of connectIssues(composed.info, v2)) {
+      if (liveSet.has(i)) continue;
+      const ids = (i.match(/\b[a-z]{2}_[a-z0-9_]+/g) || []).filter((x) => composed.info.nodes.some((n) => n.id === x));
+      if (ids.length && ids.every((x) => inert.has(x))) console.log(`pend ${P}connected rule (inert group, fix before it goes live): ${i}`);
+      else bad(`${P}connected rule (design tree): ${i}`);
+    }
+  }
+  return { composed, v2 };
 }
+
+const players = check(null, '');
+if (!players) process.exit(1);
+const staged = players.composed.info.hiddenClusters || [];
+const full = staged.length ? check({ unreleased: true }, `full tree incl. staged ${staged.join(', ')}`) : players;
+if (!full) process.exit(1);
+const composed = full.composed, v2 = full.v2;
 try {
   const snap = JSON.parse(readFileSync(join(root, 'tests', 'fixtures', 'tree-ids.json'), 'utf8'));
   const now = Object.fromEntries(composed.info.nodes.map((n) => [n.id, [n.frag, n.idx]]));
@@ -62,7 +77,7 @@ try {
   for (const id of Object.keys(now)) if (!snap[id]) {
     if (EXTRA) { console.log(`extra ${id} (test-only --extra fixture, not in the snapshot)`); continue; }
     bad(`id ${id} is not in tests/fixtures/tree-ids.json (add it deliberately)`); n++; }
-  if (!n) ok('ids and idx match the append-only snapshot');
+  if (!n) ok('ids and idx match the append-only snapshot (full tree, staged ids reserved)');
 } catch (e) { bad(`id snapshot: ${e.message}`); }
 if (val('--synthetic')) {
   const n = Number(val('--synthetic'));

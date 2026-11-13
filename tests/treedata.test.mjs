@@ -95,7 +95,8 @@ test('T3a the 43 new v2 nodes are LIVE: listed, costed, buyable behind their thr
 
 test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbered', () => {
   const snap = fx('tree-ids.json');
-  const now = Object.fromEntries(real.info.nodes.map((n) => [n.id, [n.frag, n.idx]]));
+  // DM8: the FULL tree (staged constellations of unreleased weapons included): their ids are reserved in the snapshot before they ship
+  const now = Object.fromEntries(composeTree(files(), data, { unreleased: true }).info.nodes.map((n) => [n.id, [n.frag, n.idx]]));
   const retired = new Set(real.info.core.retired.map((t) => t.id));
   const tomb = Object.fromEntries(real.info.core.retired.map((t) => [t.id, [t.frag, t.idx]]));
   // every [frag, idx] slot ever shipped (live or retired) is unique and permanent: a retired id keeps its slot as a tombstone
@@ -335,13 +336,13 @@ function wispsFiles() {
   const W = 'lantern_wisps';
   const st = (stat, pct) => [{ weapon: W, stat, pct }];
   const gate = (id, eff, idx, gold, unlock, kind) => ({ id, idx, kind, inert: true, name: id.slice(3).replace(/_/g, ' '), desc: 'Gate', cost: { gold }, effects: [eff], unlock, hidden: true });
-  fs.push({ path: 'emblems/flame.json', json: { kind: 'emblem', id: 'flame', box: 200, heart: [0, 64], closed: false, apex: 'o5', outline: ['o0', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10'],
+  fs.push({ path: 'emblems/wisp.json', json: { kind: 'emblem', id: 'wisp', box: 200, heart: [0, 64], closed: false, apex: 'o5', outline: ['o0', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10'],
     slots: { o0: [-50, 96], o1: [-96, 52], o2: [-110, -4], o3: [-88, -60], o4: [-50, -104], o5: [0, -140], o6: [50, -104], o7: [88, -60], o8: [110, -4], o9: [96, 52], o10: [50, 96] },
     sockets: { a: [0, -192, 'flame tip'], b: [-150, -96, 'left lick'], c: [0, 130, 'ember at the base'] },
     silhouette: 'M0 -150 C30 -110 120 -70 116 6 C112 70 60 108 0 108 C-60 108 -112 70 -116 6 C-120 -50 -70 -80 -40 -120 C-30 -90 -14 -80 0 -70 C8 -100 4 -130 0 -150Z',
     medallion: [{ d: 'M0 -20 C14 -6 16 8 0 18 C-16 8 -14 -6 0 -20Z', fill: 'role.lantern', stroke: 'ink', w: 2.4 }, { d: 'M0 -4 C5 2 5 8 0 12 C-5 8 -5 2 0 -4Z', fill: 'role.lanternCore' }] } });
   fs.push({ path: 'clusters/lantern_wisps.json', json: {
-    kind: 'cluster', weapon: W, prefix: 'lw', emblem: 'flame', slot: 'far1', chapter: 'drowned_marsh', region: 'drowned_marsh', hero: 'thomas', heart: 'gt_lantern_wisps', starterEvo: null,
+    kind: 'cluster', weapon: W, prefix: 'lw', emblem: 'wisp', slot: 'far1', chapter: 'drowned_marsh', region: 'drowned_marsh', hero: 'thomas', heart: 'gt_lantern_wisps', starterEvo: null,
     sockets: { a: { evo: 'wisp_choir', gate: 'gt_wisp_choir' }, b: { evo: 'beacon_line', gate: 'gt_beacon_line' }, c: { evo: 'ember_veil', gate: 'gt_ember_veil' } },
     gates: [
       gate('gt_lantern_wisps', { unlock: 'weapon', id: W }, 0, 400, { t: 'clearChapter', id: 'drowned_marsh' }, 'heart'),

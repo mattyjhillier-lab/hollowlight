@@ -19,7 +19,10 @@ const characters = {}, hiddenCharacters = {};
 for (const [id, c] of Object.entries(allCharacters)) (c && c.unreleased === true ? hiddenCharacters : characters)[id] = c;
 
 // The skill tree is composed from the fragment files in ./tree/ (core, emblems, clusters, heroes, chapters).
-const composed = composeTree(treeFiles(), { weapons, evolutions, characters, chapters });
+// Constellations of STAGED weapons (weapons.json `unreleased`) are left out (composeTree opts.unreleased). DEV-ONLY review build: setting the
+// build-time env VITE_TREE_UNRELEASED=1 composes them too; a normal build has no such switch (the constant folds to false, no URL or save toggles it).
+const TREE_UNRELEASED = import.meta.env && import.meta.env.VITE_TREE_UNRELEASED === '1';
+const composed = composeTree(treeFiles(), { weapons, evolutions, characters, chapters }, { unreleased: TREE_UNRELEASED });
 const tree = composed.live;
 // Layout info (constellations, emblems, tool groups, ring radii) for the tree screen's view regions (src/meta/treeview.js).
 export const treeInfo = composed.info;
