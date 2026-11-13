@@ -798,6 +798,7 @@ export const app = {
     else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet', this.pickupWhisper('magnet')); this.scene.magnetFx(); }
     else if (ev.type === 'dash') { this.ui.toast('Pelt Dash'); this.scene.dashMoment(ev); }
     else if (ev.type === 'sanctuary') this.ui.toast('Sanctuary Ring');
+    else if (ev.type === 'rise') this.ui.toast("Ophimber's Rise");
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
     else if (ev.type === 'bossDead') { this.buzz('boss'); if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
     else if (ev.type === 'bossSoon') { this.ui.toast('Something old wakes'); this.scene.shake(400, 0.003); }

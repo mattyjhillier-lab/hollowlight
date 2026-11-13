@@ -70,5 +70,58 @@
       "warm": "Hearth Blessing",
       "bright": "Tithe Light"
     }
+  },
+  "hearthwarden": {
+    "name": "Lucinda, the Hearth-Warden",
+    "unreleased": true,
+    "placeholder": true,
+    "blurb": "Keeper of the old hearth. Her little dragon Ophimber rises and breathes three rings of warm fire.",
+    "color": "#ffb35c",
+    "kindred": "dragonfire_meteor",
+    "pet": "Ophimber",
+    "ability": {
+      "id": "ophimbers_rise",
+      "name": "Ophimber's Rise",
+      "cooldown": 60,
+      "rise": 0.4,
+      "rings": [
+        {
+          "r": 48,
+          "at": 0.4,
+          "sweep": 0.35
+        },
+        {
+          "r": 88,
+          "at": 1.1,
+          "sweep": 0.45
+        },
+        {
+          "r": 128,
+          "at": 1.8,
+          "sweep": 0.55
+        }
+      ],
+      "band": 20,
+      "burnSecs": 3,
+      "hit": 1.3,
+      "tickK": 0.5,
+      "tick": 0.5,
+      "bossK": 0.5,
+      "base": 14,
+      "perLevel": 0.6,
+      "burnTime": 2,
+      "burnRate": 0.2,
+      "previewT": 0.25,
+      "settle": 2.4,
+      "desc": "Ophimber rises and breathes three rings of fire round you, each further out. Each ring burns for 3 s. Fire never hurts you."
+    },
+    "treeVisuals": [],
+    "bondPerks": {
+      "keen": "Scale Sense",
+      "quick": "Warm Steps",
+      "wise": "Old Ember Lore",
+      "warm": "Hearth Light",
+      "bright": "Dragon's Hoard"
+    }
   }
 }

@@ -11,6 +11,7 @@ export const MORE_CUES = {
   // Dragonfire Meteor (DM3; the RunScene Meteor layer asks for these, the sim's 'ember' event is not mapped): launch whoosh, impact thump, pool crackle tick. Quiet, never a duck; its hit tick is ember_lick in engine.js
   meteor_launch: { cap: 2, gap: 0.12, pri: 1 }, meteor_impact: { cap: 2, gap: 0.1, pri: 1 }, meteor_crackle: { cap: 1, gap: 0.45, pri: 2 },
   brand_pop: { cap: 3, gap: 0.07, pri: 2 }, // DM6 Cinder Brand: a brand pops in gold (quiet pip; hit-priority so it is first to be dropped)
+  rise_call: { cap: 1, gap: 1, pri: 0 }, rise_ring: { cap: 1, gap: 0.3, pri: 1 }, // DM7 Ophimber's Rise: a soft chime as he lifts, one warm whoomp per ring (no loops)
   wyrm_rise: { cap: 1, gap: 1, pri: 1 }, // DM5 Cinder Wyrm forms (quiet low hum + whoosh; the evolve moment itself is evo_cinder_wyrm)
   ability: { cap: 1, gap: 1, pri: 0 }, sanctuary: { cap: 1, gap: 1, pri: 0 }, revive: { cap: 1, gap: 1, pri: 0 },
   boss_tremor: { cap: 1, gap: 4, pri: 0 }, boss_intro: { cap: 1, gap: 2, pri: 0 }, boss_phase: { cap: 1, gap: 1.5, pri: 0 }, boss_fall: { cap: 1, gap: 2, pri: 0 },
@@ -31,7 +32,7 @@ for (const id of EVO_IDS) MORE_CUES['evo_' + id] = { cap: 1, gap: 1, pri: 0 };
 
 // sim event type -> cue (app.js hands every sim event to AudioEngine.event; render/audio only)
 export const EVENT_CUE = {
-  levelup: 'level_up', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', dash: 'ability', sanctuary: 'sanctuary', keepsake: 'keepsake', revive: 'revive',
+  levelup: 'level_up', heart: 'heart', magnet: 'magnet', hurt: 'hurt', swarm: 'swarm', rally: 'ability', wheel: 'sanctuary', dash: 'ability', sanctuary: 'sanctuary', rise: 'rise_call', riseRing: 'rise_ring', keepsake: 'keepsake', revive: 'revive',
   bossTell: 'treant_creak', bossHit: 'treant_slam', slam: 'treant_slam', bossPhase: 'boss_phase', bossDead: 'boss_fall', bossSoon: 'boss_tremor',
   thorn: 'thorn_spit', burst: 'toad_puff', charge: 'hart_charge', mini: 'mane_call', howl: 'mane_howl', miniPhase: 'mane_growl', miniDead: 'mane_fall',
   chestDrop: 'chest_drop', chest: 'chest_open',
@@ -106,6 +107,12 @@ export function moreCue(e, id, t, v) {
       for (let i = 0; i < 4; i++) e.noise(t + 0.08 + i * rnd(0.04, 0.08), 'highpass', rnd(3600, 5400), 1, 0.002, 0.01, 0.07 * v);
       return 0.55;
     case 'brand_pop': e.tone(t, 'triangle', e.hz(19 + (rnd(0, 3) | 0) * 2), 0.003, 0.14, 0.05 * v, 0, true); e.noise(t, 'highpass', 4200, 1, 0.002, 0.04, 0.04 * v); return 0.2; // a tiny warm gold pip
+    case 'rise_call': // Ophimber lifts: a soft two-note chime and a small warm breath (no duck: the rings follow at once)
+      e.tone(t, 'sine', e.hz(12), 0.003, 0.9, 0.09 * v, 0, true); e.tone(t + 0.12, 'sine', e.hz(19), 0.003, 0.8, 0.06 * v, 0, true);
+      e.noise(t, 'bandpass', 700, 1, 0.2, 0.3, 0.05 * v, 1500); return 1.1;
+    case 'rise_ring': // one ring ignites: a low warm whoomp (like the Meteor launch, deeper) + a soft crackle tail
+      e.tone(t, 'sine', 120, 0.01, 0.4, 0.2 * v, 60); e.noise(t, 'lowpass', 600, 0.8, 0.02, 0.3, 0.12 * v, 200);
+      for (let i = 0; i < 3; i++) e.noise(t + 0.1 + i * rnd(0.04, 0.09), 'highpass', rnd(3800, 5400), 1, 0.002, 0.01, 0.05 * v); return 0.6;
     case 'wyrm_rise': e.tone(t, 'sine', e.hz(-5), 0.15, 0.9, 0.05 * v, 0, true); e.noise(t, 'bandpass', 600, 1.1, 0.3, 0.5, 0.06 * v, 1400); return 1.0; // the serpent coils into being: a low warm hum and a soft whoosh
     case 'meteor_crackle': // the burning ground: two or three tiny dry ticks and a breath of warm air
       for (let i = 0; i < 3; i++) e.noise(t + i * rnd(0.03, 0.09), 'highpass', rnd(3800, 5600), 1, 0.002, 0.009, 0.05 * v);

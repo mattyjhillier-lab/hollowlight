@@ -49,6 +49,7 @@ import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
 import { bakeRavenArt, ravenReady } from '../gfx/summon/atlas.js'; // S3 Letter Ravens (lazy bake on first flock)
 import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
 import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
+import { RiseLayer } from '../gfx/risefx.js'; // DM7 Lucinda's Ophimber's Rise art (render only)
 import { MeteorLayer } from '../gfx/meteorfx.js'; // DM3 Dragonfire Meteor art (render only)
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
@@ -229,6 +230,8 @@ export class RunScene extends Phaser.Scene {
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
     this.meteor = new MeteorLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM3: lazy-baked on the first Meteor
     this.meteorCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, cue: (id) => { if (app.audio) app.audio.play(id); }, shake: (ms, k) => this.shake(ms, k), vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
+    this.rise = new RiseLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM7: lazy-baked on the first Rise
+    this.riseCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, shake: (ms, k) => this.shake(ms, k), vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
     this.pawLayer = this.sumAtlas ? new PawLayer(this, SUM_KEY, RIBBON_DEPTH + 1, 300) : null; // S2: pawprints over the soft trail ribbon, under every creature/halo/pickup/number
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
@@ -601,12 +604,12 @@ export class RunScene extends Phaser.Scene {
     this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
-    this.meteor.reset();
+    this.meteor.reset(); this.rise.reset();
   }
 
   unbindSim() {
     this.sim = null;
-    this.meteor.reset();
+    this.meteor.reset(); this.rise.reset();
     this.parts.clear();
     this.nums.clear();
     this.playerGlow.setVisible(false);
@@ -1940,6 +1943,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
     { const mc = this.meteorCtx; mc.sim = sim; mc.tier = this.quality.tier; mc.phone = this.phone; mc.calm = this.reducedMotion(); mc.lm = lit ? lm : null; mc.parts = this.parts; mc.vx0 = vx0; mc.vy0 = vy0; mc.vx1 = vx1; mc.vy1 = vy1; this.meteor.update(mc); } // DM3
+    { const rc = this.riseCtx; rc.sim = sim; rc.tier = this.quality.tier; rc.phone = this.phone; rc.calm = this.reducedMotion(); rc.lm = lit ? lm : null; rc.parts = this.parts; rc.vx0 = vx0; rc.vy0 = vy0; rc.vx1 = vx1; rc.vy1 = vy1; this.rise.update(rc); } // DM7 Ophimber's Rise
     if (probe.on) for (const w of sim.weapons) probe.first('weapon:' + w.id + (w.evo ? ':' + w.evo : ''));
     for (const f of sim.fx) {
       fi++;
