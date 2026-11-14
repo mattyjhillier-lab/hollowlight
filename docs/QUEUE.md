@@ -21,6 +21,8 @@ RECOVERED FROM THE AUDIT (2026-11-14, docs/OPEN-ITEMS-AUDIT.md; Matt voiced thes
 
 NEXT UPDATE = LUCINDA RELEASED + COMPANIONS (LOCKED 2026-11-14). Chapter 2, visuals review, UI alignment pass = the update after. Companions design chunk order: companions-v1.md refresh, three options per companion (Wren wolf, Mara raven later, Elias new idea, Lucinda Ophimber already), independent review, Matt picks, LOCK, then build in chunks; then DM9/DM10.
 
+DESIGN CONCERN (Matt, 2026-11-14): as players unlock more weapons, a run will not give enough levels to rank up and evolve several weapons, so more unlocked options may dilute runs instead of enriching them. Needs a design round (three options) before the next update's weapon list is final. Facts to bring: levels per run at the current XP curve, weapons maxed and evolved per run (bot measure), slot count (4) vs weapon count (Bolts, Chain, Orbit, Meteor after companions = exactly 4 magic weapons), earlier finding that evolution pick dilution lowers wins (ablate re-run 2026-10-30). Candidate levers to evaluate: XP curve / more levels, fewer ranks per weapon, evolutions needing fewer ranks, run loadout choose-your-weapons before the run, bonus cards/chests, card pool weighting.
+
 CLAUDE NEXT (in order)
 1. Lucinda DM9 balance, then DM10 release (Matt's yes).
 2. Chapter 2 Hushbell Hamlet (design first; Bond/level cap review 25 vs 30/35 happens here).
