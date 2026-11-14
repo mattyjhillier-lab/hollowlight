@@ -21,7 +21,8 @@ import { createAudio } from './audio/index.js';
 import { Vibe } from './gfx/feel.js';
 import { pickPrebakeMode } from './gfx/prebake.js';
 import { LOWMEM, LOWMEM_DPR } from './gfx/memprofile.js';
-import { fpsLimitFor, dprCapFor, setLoopLimit } from './gfx/power.js'; // PHONE HEAT (LOCKED 2026-11-01)
+import { fpsLimitFor, dprCapFor, setLoopLimit, restLimitFor } from './gfx/power.js';
+import { installOwnCapture } from './gfx/capture.js'; // FREEZE-1: no per-frame capture-target re-allocation // PHONE HEAT (LOCKED 2026-11-01)
 
 // BLANK-FIX: every optional boot stage is guarded. A stage that throws is noted for the boot guard (window.__boot.errors, shown in its
 // panel and Copy details) and the boot carries on without it, so one odd setting or device quirk never leaves a blank window.
@@ -67,6 +68,7 @@ app.ui.setHandlers({
 // Native-resolution rendering. Phaser 3.90 has no `resolution` option, so the canvas itself is
 // stage size x min(devicePixelRatio, 2); RunScene maps the 640x360 logical world onto it with camera zoom.
 document.documentElement.dataset.style = STYLE;
+optional('own capture', () => installOwnCapture(Phaser.Textures.DynamicTexture)); // FREEZE-1 phone heat
 optional('phone', () => initPhone()); // PHONE-A: html.phone before the first stage measurement
 app.desktop = optional('desktop', () => initDesktop()); // DESKTOP A1 safe frame (--fx) + D1 UI scale (--uik)
 if (app.desktop) optional('menu size', () => app.desktop.setPref(app.save.data.settings.uiScale));
@@ -107,8 +109,15 @@ window.addEventListener('resize', onResize);
 // PHONE HEAT: the Battery saver toggle takes effect at once (frame limit retuned, canvas resized to the new sharpness; quality follows in RunScene).
 app.applyPower = () => {
   const saver = !!app.save.data.settings.batterySaver;
-  setLoopLimit(game.loop, fpsLimitFor({ phone: app.isPhone(), saver }));
+  setLoopLimit(game.loop, restLimitFor({ phone: app.isPhone(), saver, rest: !!app.resting }));
   onResize();
+};
+// FREEZE-1 phone heat: while a run is held (pause, cards, settings, intro) a phone draws 20 fps instead of 60; play returns to the normal limit at once.
+app.setResting = (rest) => {
+  rest = !!rest;
+  if (rest === !!app.resting) return;
+  app.resting = rest;
+  setLoopLimit(game.loop, restLimitFor({ phone: app.isPhone(), saver: !!app.save.data.settings.batterySaver, rest }));
 };
 
 window.addEventListener('pagehide', () => app.save.flush());

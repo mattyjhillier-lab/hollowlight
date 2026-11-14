@@ -11,6 +11,14 @@ export function fpsLimitFor({ phone = false, saver = false } = {}) {
   return saver ? FPS_LIMIT_SAVER : FPS_LIMIT_PHONE;
 }
 
+export const FPS_LIMIT_REST = 20; // FREEZE-1: phones while the run is held (pause, level-up / chest cards, settings, intro cards): the world behind stands still
+
+/** Pure: frame limit for a phone whose run is held (rest = paused / cards / settings / intro). Never raises a lower limit; desktops untouched (0). */
+export function restLimitFor({ phone = false, saver = false, rest = false } = {}) {
+  const base = fpsLimitFor({ phone, saver });
+  return rest && base > 0 ? Math.min(base, FPS_LIMIT_REST) : base;
+}
+
 /** Pure: render-scale cap (device pixels per CSS pixel). saver only counts on phones. */
 export function dprCapFor({ phone = false, saver = false, base = 2 } = {}) {
   return phone && saver ? Math.min(base, DPR_CAP_SAVER) : base;
