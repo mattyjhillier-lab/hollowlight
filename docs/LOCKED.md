@@ -533,3 +533,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | SPIRIT HUNTERS FILE (Matt, 2026-11-14) | The offered paid Spirit Hunters game file is NOT used. Reference stays screenshots and Matt's plain-words notes only (inspiration for structure and rhythm; never copy art, text, names or code). | 2026-11-14 | Matt, chat |
 
 | OLD CLOUDFLARE PROJECT (Matt, 2026-11-14) | Delete was refused by Cloudflare (too many deployments; their only route is an API-token script). Matt chose: stop its builds, leave it. Done: project `hollowlight` (hollowlight-12n.pages.dev) now has Automatic deployments Disabled (production off, previews None); `wispwick` untouched. Delete later only if Matt runs the clean-up script. | 2026-11-14 | Matt, one-tap |
+
+| OLD CLOUDFLARE PROJECT LEFT AS IS (Matt, 2026-11-14) | Not worth the wrangler/API-token clean-up (328 deployments). Left with builds disabled; no security risk (static public build, no secrets, separate origin so no shared saves). Revisit only if Matt wants it gone. | 2026-11-14 | Matt, chat |
