@@ -990,6 +990,8 @@ export const app = {
       isFirstRun: () => (this.save.data.stats.runs || 0) === 0 && Object.keys(this.save.data.tree).length === 0,
       hasProgress: () => this.hasProgress(),
       frontDoor: (lastHero) => this.frontDoor(lastHero),
+      resetNoticeData: () => (this.save.readOnly ? null : (this.save.data.notes && this.save.data.notes.treeResetNotice) || null),
+      clearResetNotice: () => { if (this.save.data.notes && this.save.data.notes.treeResetNotice) { delete this.save.data.notes.treeResetNotice; this.save.saveNow(); } },
       lanternScreen: () => this.lanternScreen(),
       lightLantern: (id) => this.lightLantern(id),
       createLantern: (name) => this.createLantern(name),

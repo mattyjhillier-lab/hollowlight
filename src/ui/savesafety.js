@@ -44,3 +44,21 @@ export function buildNudge({ onExport, onLater } = {}) {
   box.appendChild(line); box.appendChild(row);
   return { root: box, export: ex, later };
 }
+
+/** One-time title card after the v5 tree restart (notes.treeResetNotice). Numbers are re-validated here; text via textContent only.
+ *  Returns null when there is nothing to tell. onDone clears the note from the save. */
+export function buildResetNotice(n, { onDone } = {}) {
+  if (!n || typeof n !== 'object') return null;
+  const q = (v) => { const x = Math.floor(Number(v)); return Number.isFinite(x) && x > 0 ? Math.min(x, 1e9) : 0; };
+  const nodes = q(n.nodes), gold = q(n.gold), shards = q(n.shards), glass = q(n.glass);
+  if (!nodes) return null;
+  const f = (v) => v.toLocaleString('en-GB');
+  const back = [`${f(gold)} gold`]; if (shards) back.push(`${f(shards)} shards`); if (glass) back.push(`${f(glass)} Dawnglass`);
+  const box = el('div', 'pwa-card a1-nudge', null, { role: 'group', 'aria-label': 'Lantern Web notice' });
+  const line = el('div', 'pwa-text a1-nudge__t', `The Lantern Web was rewoven. All ${f(nodes)} of your lit lanterns were put out and paid back in full: ${back.join(', ')}. Spend it again as you like.`);
+  const row = el('div', 'pwa-row');
+  const ok = el('button', 'btn', 'Got it', { type: 'button' });
+  ok.addEventListener('click', () => { if (onDone) onDone(); box.remove(); });
+  row.appendChild(ok); box.appendChild(line); box.appendChild(row);
+  return { root: box, ok };
+}

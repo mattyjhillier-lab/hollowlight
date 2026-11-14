@@ -281,6 +281,7 @@ export class UI {
       bands: fd ? fd.bands : 0,
       onAlmanac: () => this.showAlmanac('title'),
       chars: fd && fd.chars ? fd.chars : null,
+      resetNotice: h.resetNoticeData && h.resetNoticeData() ? { data: h.resetNoticeData(), onDone: () => { if (h.clearResetNotice) h.clearResetNotice(); } } : null,
       nudge: h.backupNudge && !(this.pwa && this.pwa.shouldShowCard && this.pwa.shouldShowCard()) && h.backupNudge() ? { onExport: () => (h.exportBackup ? h.exportBackup() : false), onLater: () => { if (h.dismissNudge) h.dismissNudge(); } } : null, // A1: one title card at a time (the install card first)
       onChars: () => this.showCharacters(),
       onBegin: () => h.openTree(), // Q5a: the Lantern Web is the home screen; Play there runs the 3-step loadout
