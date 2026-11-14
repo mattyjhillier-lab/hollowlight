@@ -19,6 +19,8 @@ RECOVERED FROM THE AUDIT (2026-11-14, docs/OPEN-ITEMS-AUDIT.md; Matt voiced thes
 - Matt offered the paid Spirit Hunters game file (2026-11-02): inspiration only per the standing rule; never copy art, text, names or code; decide whether to take it up (recommend: no need, screenshots and notes are enough).
 - Also open: read the 15 riddle lines (src/ui/codexcopy.js), 'Keys' tab label on phones, Judgement Wheel stream40 exemption, list the 5 old worktree folders with diffs.
 
+NEXT UPDATE = LUCINDA RELEASED + COMPANIONS (LOCKED 2026-11-14). Chapter 2, visuals review, UI alignment pass = the update after. Companions design chunk order: companions-v1.md refresh, three options per companion (Wren wolf, Mara raven later, Elias new idea, Lucinda Ophimber already), independent review, Matt picks, LOCK, then build in chunks; then DM9/DM10.
+
 CLAUDE NEXT (in order)
 1. Lucinda DM9 balance, then DM10 release (Matt's yes).
 2. Chapter 2 Hushbell Hamlet (design first; Bond/level cap review 25 vs 30/35 happens here).
