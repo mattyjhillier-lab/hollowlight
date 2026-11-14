@@ -76,10 +76,18 @@ export function emblem(doc, kind, size = 48) {
     add(body(doc, d, '#e8f4ff', '#3a5a8a', 7), rim(doc, d),
       mk(doc, 'circle', { cx: -15, cy: -14, r: 3.6, fill: '#eaf6ff', stroke: '#3a5a8a', 'stroke-width': 1.6 }), mk(doc, 'circle', { cx: 15, cy: 14, r: 3.6, fill: '#eaf6ff', stroke: '#3a5a8a', 'stroke-width': 1.6 }));
   } else if (kind === 'sanctuary') {
-    // Elias: a halo of consecrated light (ring + eight rays + a small flame)
-    const rays = []; for (let i = 0; i < 8; i++) rays.push(mk(doc, 'path', { d: 'M0 -20 L0 -14', transform: `rotate(${i * 45})`, stroke: '#ffc766', 'stroke-width': 3.4, 'stroke-linecap': 'round' }));
-    add(rays, mk(doc, 'circle', { r: 11, fill: 'none', stroke: '#6a4a1a', 'stroke-width': 7 }), mk(doc, 'circle', { r: 11, fill: 'none', stroke: '#fff4d2', 'stroke-width': 3.2 }),
-      P(doc, 'M0 -7 C-4 -2 -5 3 0 5 C5 3 4 -2 0 -7Z', { fill: '#ffab3a', stroke: '#9a3a0c', 'stroke-width': 1.6, 'stroke-linejoin': 'round' }));
+    // Elias: his lamp-staff, a brass three-candle candelabra with warm flames (solid, outlined, same family as the wolf head)
+    const OL = '#6a4a1a';
+    const arms = 'M-16 -4 C-16 9 -8 11 0 11 C8 11 16 9 16 -4 M0 -9 V20';
+    add(P(doc, arms, { fill: 'none', stroke: OL, 'stroke-width': 9, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+      mk(doc, 'ellipse', { cx: 0, cy: 22, rx: 11, ry: 4, fill: '#e0a63c', stroke: OL, 'stroke-width': 2.6 }),
+      P(doc, arms, { fill: 'none', stroke: '#f0bf5a', 'stroke-width': 4.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    for (const [x, y] of [[-16, -4], [0, -9], [16, -4]]) {
+      add(mk(doc, 'rect', { x: x - 3.2, y: y - 8, width: 6.4, height: 9, rx: 1.4, fill: '#fff4d2', stroke: OL, 'stroke-width': 1.8 }),
+        mk(doc, 'g', { transform: `translate(${x},${y - 9})` }, [
+          P(doc, 'M0 -12 C-5 -6 -5.5 -1 0 1.5 C5.5 -1 5 -6 0 -12Z', { fill: '#ffab3a', stroke: '#9a3a0c', 'stroke-width': 1.7, 'stroke-linejoin': 'round' }),
+          P(doc, 'M0 -6 C-2 -3 -2 -1 0 0 C2 -1 2 -3 0 -6Z', { fill: '#fff6c8' })]));
+    }
   } else if (kind === 'coin') {
     add(mk(doc, 'circle', { r: 20, fill: '#5a3d1a' }), mk(doc, 'circle', { r: 17, fill: 'url(#hlBrass)' }), mk(doc, 'circle', { r: 11, fill: 'none', stroke: '#5a3d1a', 'stroke-width': 2, opacity: 0.55 }),
       P(doc, 'M-4 -5 H4 M-4 0 H4 M-4 5 H4', { stroke: '#5a3d1a', 'stroke-width': 2.4, opacity: 0.6, fill: 'none' }));

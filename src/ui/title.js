@@ -113,7 +113,7 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
     const st = el('div', 'u3-state');
     const stat = (label, n) => add(el('div', 'u3-stat'), el('span', 'u3-stat__l ty-kicker', label), pips({ total: 5, filled: n, label }));
     const kit = el('div', 'u3-kit');
-    add(kit, h.weapon && add(el('span', 'u3-kit__row ty-label'), weaponEmblem(h.weaponId), el('span', null, h.weapon)), add(el('span', 'u3-kit__row ty-label'), icon('flame'), el('span', null, h.ability)));
+    add(kit, h.weapon && add(el('span', 'u3-kit__row ty-label'), weaponEmblem(h.weaponId), el('span', null, h.weapon)), add(el('span', 'u3-kit__row ty-label'), Object.hasOwn(EMBLEM_OF, h.abilityId) ? weaponEmblem(h.abilityId) : icon('flame'), el('span', null, h.ability)));
     const info = el('div', 'u3-info', null, { 'aria-hidden': 'true' });
     const name = h.badge ? add(el('span', 'u3-name u3-name--badge'), el('span', null, h.name), el('span', 'u3-badge ty-label', String(h.badge))) : el('span', 'u3-name', h.name);
     add(info, st, name, h.epithet && el('span', 'u3-epithet', h.epithet), h.line && el('p', 'u3-line ty-body', h.line),
