@@ -40,6 +40,7 @@ export class HeroLine {
     this.colour = colour;
     if (scene.textures.exists(key)) scene.textures.remove(key);
     this.tex = scene.textures.addDynamicTexture(key, TEXN, TEXN);
+    if (this.tex) this.tex.ownCapture = true; // FREEZE-1: own capture target (src/gfx/capture.js), no per-frame GPU re-allocation
     this.box = scene.make.container({ x: 0, y: 0 }, false);
     this.stamps = [];
     for (let i = 0; i < maxParts; i++) {

@@ -34,6 +34,7 @@ export class Lightmap {
       rt.setDisplaySize((this.w / RES) / zoom, (this.h / RES) / zoom);
       this.rt = rt;
       this.tex = rt.texture;
+      if (this.tex) this.tex.ownCapture = true; // FREEZE-1: own capture target (src/gfx/capture.js), no per-frame GPU re-allocation
       this.zoom = zoom;
       this.ok = true;
       return true;
