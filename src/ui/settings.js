@@ -207,7 +207,8 @@ export function buildSettings({ settings = {}, tab = 'sound', message = '', api,
     el('h3', 'u4-about__h', ABOUT.aiTitle), el('p', 'u4-note', ABOUT.ai));
   // ---- tabs ----
   const panes = { sound, picture, controls, saves, about };
-  const tl = tabs({ label: SET.tabsLabel, items: SET.tabs.map((t) => ({ id: t.id, label: t.label })), selected: tab in panes ? tab : 'sound', onSelect: (id) => {
+  // phone portrait: 'Controls' is too snug for its pill, so it reads 'Keys' (LOCKED 2026-11-14)
+  const tl = tabs({ label: SET.tabsLabel, items: SET.tabs.map((t) => ({ id: t.id, label: (t.phoneLabel && typeof document !== 'undefined' && document.documentElement && document.documentElement.classList && document.documentElement.classList.contains('phone')) ? t.phoneLabel : t.label })), selected: tab in panes ? tab : 'sound', onSelect: (id) => {
     for (const [k, p] of Object.entries(panes)) p.hidden = k !== id;
   } });
   for (const b of tl.children) { const id = b.getAttribute('data-id'); b.setAttribute('id', `u4-tab-${id}`); b.setAttribute('aria-controls', `u4-pane-${id}`); }

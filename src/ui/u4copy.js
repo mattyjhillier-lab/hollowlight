@@ -24,7 +24,7 @@ export const SET = {
   tabs: [
     { id: 'sound', label: 'Sound' },
     { id: 'picture', label: 'Picture' },
-    { id: 'controls', label: 'Controls' },
+    { id: 'controls', label: 'Controls', phoneLabel: 'Keys' },
     { id: 'saves', label: 'Saves' },
     { id: 'about', label: 'About' },
   ],
