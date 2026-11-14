@@ -22,12 +22,14 @@ if (process.env.ENEMY_PATCH) {
   const P = JSON.parse(process.env.ENEMY_PATCH);
   for (const id of Object.keys(P)) if (Object.hasOwn(data.enemies, id)) { const { ai, ...rest } = P[id]; data.enemies[id] = { ...data.enemies[id], ...rest, ...(ai ? { ai: { ...data.enemies[id].ai, ...ai } } : {}) }; }
 }
+if (process.env.RISE_PATCH) { const P = JSON.parse(process.env.RISE_PATCH); const A = data.characters.hearthwarden && data.characters.hearthwarden.ability; if (A) for (const k of ['hit', 'tickK', 'tick', 'bossK', 'burnRate', 'burnTime', 'burnSecs', 'band']) if (typeof P[k] === 'number') A[k] = P[k]; } // RISE_PATCH='{"hit":1.0}' (DM9 probe)
+if (process.env.WEAPON_PATCH) { const P = JSON.parse(process.env.WEAPON_PATCH); for (const id of Object.keys(P)) if (Object.hasOwn(data.weapons, id) && data.weapons[id].unreleased === true) { const { stats, ...rest } = P[id]; Object.assign(data.weapons[id], rest); if (stats) for (const k of Object.keys(stats)) if (Object.hasOwn(data.weapons[id].stats, k)) Object.assign(data.weapons[id].stats[k], stats[k]); } } // WEAPON_PATCH='{"dragonfire_meteor":{"boss":2}}' (DM9 probe, staged weapons only)
 if (process.env.WAVE_PATCH) { const P = JSON.parse(process.env.WAVE_PATCH); for (const ch of Object.values(data.chapters)) for (const w of ch.waves) if (Object.hasOwn(P, w.enemy)) Object.assign(w, P[w.enemy]); } // WAVE_PATCH='{"stoat_piper":{"maxAlive":4}}'
 if (process.env.NO_ENEMY) { const drop = process.env.NO_ENEMY.split(','); for (const ch of Object.values(data.chapters)) ch.waves = ch.waves.filter((w) => !drop.includes(w.enemy)); }
 if (process.env.MINI_PATCH) { const P = JSON.parse(process.env.MINI_PATCH); for (const ch of Object.values(data.chapters)) if (ch.minis) for (const k of ['at', 'hp', 'chest']) if (Array.isArray(P[k])) ch.minis[k] = P[k]; } // EN6 probe: MINI_PATCH='{"hp":[450,1600,3200]}'
 if (process.env.NO_MINI === '1') for (const ch of Object.values(data.chapters)) delete ch.minis; // EN6-EN8 ablation: no Branch-Mane, no chests
 if (process.env.NO_CHEST === '1') data.balance = { ...data.balance, chest: { ...data.balance.chest, reach: -1e9 } }; // EN8 ablation: the Branch-Mane comes but its chest is never opened
-const composed = loadTree(data);
+const composed = loadTree(data, undefined, process.env.TREE_UNRELEASED === '1' ? { unreleased: true } : null); // TREE_UNRELEASED=1: compose staged clusters (Dragonfire Meteor) for DM9 probes
 data.tree = composed.live; // fragments in src/data/tree/ (src/meta/treedata.js)
 data.tiers = load('tiers'); // difficulty tiers (src/data/tiers.json)
 // TIER=normal|hard|expert (Twilight / Deep Dusk / Long Night; default normal = byte-identical to before tiers existed)

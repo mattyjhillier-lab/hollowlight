@@ -24,7 +24,7 @@ const hitLog = (sim) => { const log = []; const o = sim.hurt.bind(sim); sim.hurt
 test('DM1 data: stats, staging flags, boss, colour, no fire tag', () => {
   const w = data.weapons[ID], st = w.stats;
   assert.equal(w.name, 'Dragonfire Meteor'); assert.equal(w.treeGate, true); assert.equal(w.unreleased, true); assert.equal(w.color, '#ffb35c'); assert.deepEqual(w.tags, []);
-  assert.equal(w.boss, 1.4); assert.equal(w.cd, 2.6);
+  assert.equal(w.boss, 2.2); assert.equal(w.cd, 2.6);
   assert.deepEqual(Object.keys(st), ['count', 'power', 'area', 'duration']);
   assert.deepEqual([st.count.name, st.power.name, st.area.name, st.duration.name], ['Fireballs', 'Impact', 'Blaze', 'Embers']);
   assert.deepEqual([st.count.base, st.count.perRank, st.power.base, st.power.perRank, st.area.base, st.area.perRank, st.duration.base, st.duration.perRank], [1, 0.6, 14, 5.6, 34, 5, 2.5, 0.5]);
@@ -150,15 +150,15 @@ test('DM2 per-target lockout: overlapping pools never tick one foe twice in 0.5 
   assert.ok(log.length <= 4 / 0.5 + 1, `${log.length} ticks in 4 s from 5 pools`);
 });
 
-test('DM2 boss clause: 1.4 x impact via the weapon rule; pools tick a boss at 0.5 x', () => {
+test('DM2 boss clause: 2.2 x impact via the weapon rule; pools tick a boss at 0.5 x', () => {
   const sim = mk();
   const b = put(sim, 0, 120, 8, true), n = put(sim, 0, 130);
   const log = hitLog(sim);
   run(sim, 2.3);
   const bi = log.find((h) => h.e === b), ni = log.find((h) => h.e === n);
-  assert.ok(Math.abs(bi.a / ni.a - 1.4) < 1e-6);
+  assert.ok(Math.abs(bi.a / ni.a - 2.2) < 1e-6);
   const bt = log.filter((h) => h.e === b)[1], nt = log.filter((h) => h.e === n)[1];
-  assert.ok(Math.abs(bt.a / nt.a - 0.5 * 1.4) < 1e-6, `${bt.a / nt.a}`);
+  assert.ok(Math.abs(bt.a / nt.a - 0.5 * 2.2) < 1e-6, `${bt.a / nt.a}`);
 });
 
 test('DM2 determinism: same seed same numbers; the handler draws no RNG', () => {

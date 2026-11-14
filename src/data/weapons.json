@@ -80,7 +80,7 @@
     "tags": [],
     "color": "#ffb35c",
     "desc": "A blazing fireball crashes into the thickest crowd, bursts, and leaves a pool of burning ground.",
-    "boss": 1.4,
+    "boss": 2.2,
     "cd": 2.6,
     "first": 0.8,
     "stats": {

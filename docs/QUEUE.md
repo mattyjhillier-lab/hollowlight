@@ -2,7 +2,7 @@
 
 LIVE on main (2026-11-13): tree rework (Lantern Web), Kindling Start, Far Sight, Wardrobe v2 (ring costumes), title cover, hero step skipped with one awake hero. On dev, hidden: Dragonfire Meteor + Wildfire + Cinder Wyrm + Cinder Brand, Lucinda (final art) + Ophimber (she), Ophimber's Rise, DM8 tree cluster.
 
-RUNNING: Lucinda DM9 balance pass (wip/dm9, resumable sweeps).
+DM9 DONE on wip/dm9 (re-check: META tiers need GATES=preset BOND=0/25; Lucinda mid 46% max 91%, same as Wren 45/87, Elias 41/96; docs/dm9-partials/P_*) (2026-11-14, not merged): Meteor boss 1.4 -> 2.2 (unreleased data only); Rise unchanged (hit 1.3, tickK 0.5): on-vs-off ~+4-5 win pts (+-3.6, 300 pairs), damage share 1.5-2%. Starter Meteor 26/31% vs median starter 23-32%. Evo bands OK. Raw data docs/dm9-partials. Next: DM10 release (Matt yes + phone heat check).
 
 WAITING ON MATT
 - Real-phone checks: heat, Battery Saver, long session (docs/REAL-PHONE-CHECKLIST.md); ring 3 of the Rise clips portrait edges.
