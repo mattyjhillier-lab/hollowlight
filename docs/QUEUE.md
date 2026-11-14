@@ -11,6 +11,14 @@ WAITING ON MATT
 - Chores: tell testers (one-time tree refund; saves started fresh at new address); delete old `hollowlight` Cloudflare project; 5 old worktree folders with uncommitted work.
 - Older decision items further down that may still be open (audit pending): Hollowlighters -> Wickbearers word, About wording, map events balance picks, desktop/phone design picks, minimap + events-almanac picks, nights retune options, Judgement Wheel stream40, name trademark check, riddle lines.
 
+RECOVERED FROM THE AUDIT (2026-11-14, docs/OPEN-ITEMS-AUDIT.md; Matt voiced these, they were not recorded)
+- Review each chapter's power-ups (Matt, 2026-10-14).
+- Ground goes bland after 3-4 minutes and colour only returns about 8 minutes from the end (Matt, 2026-10-31): investigate, report back.
+- Elias's ability has no symbol like Wren's (Matt, 2026-11-01): check whether built; fix if not.
+- Phone crash when losing a run (Matt, 2026-10-29): fix exists (commit bd7f937 "prebake crash guard"); confirm on a real phone.
+- Matt offered the paid Spirit Hunters game file (2026-11-02): inspiration only per the standing rule; never copy art, text, names or code; decide whether to take it up (recommend: no need, screenshots and notes are enough).
+- Also open: read the 15 riddle lines (src/ui/codexcopy.js), 'Keys' tab label on phones, Judgement Wheel stream40 exemption, list the 5 old worktree folders with diffs.
+
 CLAUDE NEXT (in order)
 1. Lucinda DM9 balance, then DM10 release (Matt's yes).
 2. Chapter 2 Hushbell Hamlet (design first; Bond/level cap review 25 vs 30/35 happens here).
