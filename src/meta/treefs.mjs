@@ -35,6 +35,6 @@ export function addExtra(files, data, dir) {
 }
 
 // -> { live, v2, info } (see treedata.js). `data` = { weapons, evolutions, characters, chapters, ... } enables the data-aware checks.
-export function loadTree(data = null, dir = TREE_DIR) {
-  return composeTree(readTreeFiles(dir), data);
+export function loadTree(data = null, dir = TREE_DIR, opts = null) {
+  return composeTree(readTreeFiles(dir), data, opts);
 }
