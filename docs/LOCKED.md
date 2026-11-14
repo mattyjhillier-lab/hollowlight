@@ -529,3 +529,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | CLEAN-UP PICKS (Matt, 2026-11-14) | (1) Keep the dashed "Dragonfire Meteor" teaser slot in the live tree. (2) CORRECTED same day: the real item was the Settings tab "Controls" being snug at phone width (QUEUE 2026-10-28); the question was misworded as a Keys/Keepsakes rename, so the recommended default is applied: the tab reads "Keys" on phones only, "Controls" elsewhere. Matt can override. (3) Judgement Wheel stream40 exemption stays (LOCKED 2026-10-17 unchanged). | 2026-11-14 | Matt, one-tap |
 
 | RIDDLE LINES (Matt, 2026-11-14) | The 15 Almanac riddle lines (RIDDLE in src/ui/codexcopy.js) are ACCEPTED as drafted. | 2026-11-14 | Matt, chat |
+
+| SPIRIT HUNTERS FILE (Matt, 2026-11-14) | The offered paid Spirit Hunters game file is NOT used. Reference stays screenshots and Matt's plain-words notes only (inspiration for structure and rhythm; never copy art, text, names or code). | 2026-11-14 | Matt, chat |

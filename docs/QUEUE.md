@@ -23,6 +23,8 @@ NEXT UPDATE = LUCINDA RELEASED + COMPANIONS (LOCKED 2026-11-14). Chapter 2, visu
 
 DESIGN CONCERN (Matt, 2026-11-14): as players unlock more weapons, a run will not give enough levels to rank up and evolve several weapons, so more unlocked options may dilute runs instead of enriching them. Needs a design round (three options) before the next update's weapon list is final. Facts to bring: levels per run at the current XP curve, weapons maxed and evolved per run (bot measure), slot count (4) vs weapon count (Bolts, Chain, Orbit, Meteor after companions = exactly 4 magic weapons), earlier finding that evolution pick dilution lowers wins (ablate re-run 2026-10-30). Candidate levers to evaluate: XP curve / more levels, fewer ranks per weapon, evolutions needing fewer ranks, run loadout choose-your-weapons before the run, bonus cards/chests, card pool weighting.
 
+PACING + SENSE REVIEW (Matt, 2026-11-14: "make sure the game is paced well and makes sense") = a gate before the Lucinda + Companions update: (1) first 10 minutes of a new player (hints, first level-ups, first unlock); (2) run pacing (levels per run, weapon ranks/evolutions per run: the dilution concern); (3) unlock cadence over runs (pacing v4: dry stretch 30-56, Far Sight lamp pace); (4) night/difficulty ladder (Deep Dusk, Long Night); (5) does every system make sense to a new player (names, tutorial, what each currency is for). Method: bots + sweeps for numbers, then Matt plays a fresh profile start to finish and says where it dragged or confused.
+
 CLAUDE NEXT (in order)
 1. Lucinda DM9 balance, then DM10 release (Matt's yes).
 2. Chapter 2 Hushbell Hamlet (design first; Bond/level cap review 25 vs 30/35 happens here).
