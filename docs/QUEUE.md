@@ -8,7 +8,7 @@ WAITING ON MATT
 - Real-phone checks: heat, Battery Saver, long session (docs/REAL-PHONE-CHECKLIST.md); ring 3 of the Rise clips portrait edges.
 - Teaser slot "Dragonfire Meteor" already shows dashed in the live tree: keep (rec) or hide until release.
 - Release switch for Lucinda (DM10): needs his yes + phone heat check + DM9 numbers.
-- Chores: tell testers (one-time tree refund; saves started fresh at new address); delete old `hollowlight` Cloudflare project; 5 old worktree folders with uncommitted work.
+- Chores: tell testers (one-time tree refund; saves started fresh at new address); old `hollowlight` Cloudflare project: builds switched off 2026-11-14, delete refused (too many deployments), leave it; 5 old worktree folders with uncommitted work.
 - Older decision items further down that may still be open (audit pending): Hollowlighters -> Wickbearers word, About wording, map events balance picks, desktop/phone design picks, minimap + events-almanac picks, nights retune options, Judgement Wheel stream40, name trademark check, riddle lines.
 
 RECOVERED FROM THE AUDIT (2026-11-14, docs/OPEN-ITEMS-AUDIT.md; Matt voiced these, they were not recorded)

@@ -531,3 +531,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | RIDDLE LINES (Matt, 2026-11-14) | The 15 Almanac riddle lines (RIDDLE in src/ui/codexcopy.js) are ACCEPTED as drafted. | 2026-11-14 | Matt, chat |
 
 | SPIRIT HUNTERS FILE (Matt, 2026-11-14) | The offered paid Spirit Hunters game file is NOT used. Reference stays screenshots and Matt's plain-words notes only (inspiration for structure and rhythm; never copy art, text, names or code). | 2026-11-14 | Matt, chat |
+
+| OLD CLOUDFLARE PROJECT (Matt, 2026-11-14) | Delete was refused by Cloudflare (too many deployments; their only route is an API-token script). Matt chose: stop its builds, leave it. Done: project `hollowlight` (hollowlight-12n.pages.dev) now has Automatic deployments Disabled (production off, previews None); `wispwick` untouched. Delete later only if Matt runs the clean-up script. | 2026-11-14 | Matt, one-tap |
