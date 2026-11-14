@@ -31,3 +31,13 @@ test('setLoopLimit retunes a limited loop and refuses an unlimited one or bad in
   assert.equal(setLoopLimit(loop, NaN), false);
   assert.equal(setLoopLimit(null, 32), false);
 });
+
+test('FREEZE-1: a held run (pause / cards) draws 20 fps on phones; play, desktops and Battery saver limits are unchanged otherwise', async () => {
+  const { restLimitFor, fpsLimitFor, FPS_LIMIT_REST } = await import('../src/gfx/power.js');
+  assert.equal(FPS_LIMIT_REST, 20);
+  assert.equal(restLimitFor({ phone: true, rest: true }), 20);
+  assert.equal(restLimitFor({ phone: true, saver: true, rest: true }), 20);
+  assert.equal(restLimitFor({ phone: true, rest: false }), fpsLimitFor({ phone: true }));
+  assert.equal(restLimitFor({ phone: true, saver: true, rest: false }), fpsLimitFor({ phone: true, saver: true }));
+  assert.equal(restLimitFor({ phone: false, rest: true }), 0); // desktops are never limited
+});
