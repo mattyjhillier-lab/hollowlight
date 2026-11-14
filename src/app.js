@@ -687,6 +687,7 @@ export const app = {
     this.padTick(sim, dt);
     if (this.touch) this.touch.sync(!!sim && sim.state === 'running' && !this.paused && !this.introOpen && !this.ui.settingsOpen);
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
+    if (this.setResting) this.setResting(!!sim && (this.paused || this.introOpen || !!this.ui.settingsOpen || sim.state === 'levelup')); // FREEZE-1: phones draw 20 fps while the run is held
     if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
     if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen && !this.warmHold) sim.step(dt, this.scene.readInput());
     else if ((this.paused || this.introOpen || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
