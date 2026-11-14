@@ -125,10 +125,15 @@ export const OV_OFF_LF = WOLF_POSES.map((st) => ovOff({ ...st, stream: 1 })); //
 
 // grim = gold rim: threshold the body (alpha >= 0.5, so the soft halo and the mist feet never get a rim), then a 2.6 du soft band (blurred) and a
 // 1.1 du hot line OUTSIDE the silhouette. hollow = the Echo look: a faint ghost body (0.22) + a pale 2.2 du edge line, no rim.
-const FU = 'filterUnits="userSpaceOnUse" x="-3000" y="-3000" width="6000" height="6000" color-interpolation-filters="sRGB"';
+// FREEZE-1: the filter region is the union of every summon frame's du box (wolf, Alpha, Light Trails, raven, flame, glyph, tail, lance, torn page)
+// plus a 16 du margin (> 3 x the widest blur). It was 6000 x 6000 du: Chrome clips that to the drawn area, but WebKit (iPhone Safari) filters
+// the whole region on the CPU, so each gold-rim / Echo frame took seconds and an evolution froze the game for ~30 s. Same pixels in Chrome.
+export const FILTER_REGION = [-88, -106, 274, 166];
+const REG = `filterUnits="userSpaceOnUse" x="${FILTER_REGION[0]}" y="${FILTER_REGION[1]}" width="${FILTER_REGION[2]}" height="${FILTER_REGION[3]}"`;
+const FU = REG + ' color-interpolation-filters="sRGB"';
 const MASK = '<feComponentTransfer in="SourceAlpha" result="m"><feFuncA type="discrete" tableValues="0 0 1 1"/></feComponentTransfer>';
-const EXTRA = '<filter id="blur3" filterUnits="userSpaceOnUse" x="-3000" y="-3000" width="6000" height="6000"><feGaussianBlur stdDeviation="3"/></filter>'
-  + '<filter id="blur1" filterUnits="userSpaceOnUse" x="-3000" y="-3000" width="6000" height="6000"><feGaussianBlur stdDeviation="1.2"/></filter>'
+const EXTRA = `<filter id="blur3" ${REG}><feGaussianBlur stdDeviation="3"/></filter>`
+  + `<filter id="blur1" ${REG}><feGaussianBlur stdDeviation="1.2"/></filter>`
   + `<filter id="grim" ${FU}>${MASK}<feMorphology in="m" operator="dilate" radius="${RIM_SOFT}" result="d2"/><feGaussianBlur in="d2" stdDeviation=".8" result="d2b"/>`
   + `<feMorphology in="m" operator="dilate" radius="${RIM_HOT}" result="d1"/><feComposite in="d2b" in2="m" operator="out" result="soft"/><feComposite in="d1" in2="m" operator="out" result="hot"/>`
   + `<feFlood flood-color="${GOLD}" flood-opacity=".8"/><feComposite in2="soft" operator="in" result="sc"/><feFlood flood-color="${GOLD_HOT}"/><feComposite in2="hot" operator="in" result="hc"/>`
