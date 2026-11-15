@@ -541,3 +541,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-15 | GROUND COLOUR EARLIER | Ground-bland fix = bring colour in earlier: ARC ambient/saturation rows from ~3-4 min, lively by 8:00 (touches visibility arc; Matt picked it). | Matt |
 
 | 2026-11-15 | LIVE: PHONE SMOOTHNESS + GROUND | Merged dev to main (PR 15) on Matt's yes: phone frame-limiter fix (72/36/22), governor never drops below Med on slow frames alone, painted meadow trail on Low, ground colour earlier (arc), title refund card, Lucinda DM9 numbers (hidden). | Matt |
+
+| 2026-11-15 | COMPANIONS FRAMEWORK | (1) Companions grow with the hero Bond between runs (no run cards). (2) Companions are never hurt or lost in a run. (3) Holy Orbit stays a picked weapon (4 magic weapons: Bolts, Chain, Orbit, Meteor). Open: Wren wolf jobs, Elias companion, wolf/raven tree migration. | Matt |
