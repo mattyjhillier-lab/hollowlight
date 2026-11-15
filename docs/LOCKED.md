@@ -557,3 +557,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-15 | TRACKER PUP LOOK | A Lantern Scruff: scrappy moon-blue pup, scruffy coat, cheek ruff, low bushy tail, ear tips + tail tip glow Wren amber. Sandbox C:\Users\matty\spirit-pupart-sandbox, sources on wip/pup-look (docs/mockups/pup-look). Poses: idle sit, trot, dart, bite-snap, howl. | Matt |
 
 | 2026-11-15 | PUP NAME | Wren's Tracker pup is named Howie (like Ophimber for Lucinda). Use it in the hero panel, Almanac pet entry, Bond text and card copy; nothing a player reads may call it only "the pup" once built. | Matt |
+
+| 2026-11-15 | WICK NAME | Elias's companion (The Wick) is named Flambe (spelled Flambé in player text, accent kept). Matt confirmed the spelling. | Matt |
