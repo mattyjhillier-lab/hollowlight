@@ -164,9 +164,18 @@ async function chrome(rate) {
   const M = ['LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration', 'TaskDuration', 'LayoutCount', 'RecalcStyleCount'];
   let m0 = null;
   const metrics = async () => { const r = await send('Performance.getMetrics'); const o = {}; for (const x of r.result.metrics) if (M.includes(x.name)) o[x.name] = x.value; return o; };
+  const PROF = !!process.env.PROFILE;
+  if (PROF) { await send('Profiler.enable'); await send('Profiler.setSamplingInterval', { interval: 200 }); }
   onMark = async (b) => {
-    if (b.phase === 'start') { m0 = await metrics(); return null; }
+    if (b.phase === 'start') { m0 = await metrics(); if (PROF) await send('Profiler.start'); return null; }
     const m1 = await metrics(); const n = Math.max(1, b.frames || 1), o = {};
+    if (PROF) { // self time per function (top 25), ms per frame
+      const pr = (await send('Profiler.stop')).result.profile, self = new Map(), byId = new Map(pr.nodes.map((x) => [x.id, x]));
+      const dts = pr.timeDeltas; const cnt = new Map();
+      for (let i = 0; i < pr.samples.length; i++) cnt.set(pr.samples[i], (cnt.get(pr.samples[i]) || 0) + (dts[i] || 0));
+      for (const [id, us] of cnt) { const nd = byId.get(id), cf = nd.callFrame; const k = (cf.functionName || '(anon)') + ' ' + (cf.url ? cf.url.split('/').pop() : '') + ':' + cf.lineNumber + ':' + cf.columnNumber; self.set(k, (self.get(k) || 0) + us); }
+      o.top = [...self].sort((a, z) => z[1] - a[1]).slice(0, 30).map(([k, us]) => k + ' ' + (us / 1000 / n).toFixed(2));
+    }
     for (const k of M) o[k] = k.endsWith('Count') ? +((m1[k] - m0[k]) / n).toFixed(2) : +(((m1[k] - m0[k]) * 1000) / n).toFixed(2);
     return o; // ms (or count) per frame
   };

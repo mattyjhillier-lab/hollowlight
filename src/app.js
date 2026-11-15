@@ -932,11 +932,17 @@ export const app = {
   },
 
   // Phone-sized or touch-first device (drives the Brighter default of the Brightness setting).
+  // IPHONE-PERF: called every frame (RunScene.measure); the answer is cached and recomputed only after a resize (a fresh matchMedia per frame cost ~0.3 ms/f at 4x throttle).
   isPhone() {
+    if (this.phoneC !== undefined) return this.phoneC;
+    let r = false;
     try {
       const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-      return !!(coarse || Math.min(window.innerWidth, window.innerHeight) <= 600);
+      r = !!(coarse || Math.min(window.innerWidth, window.innerHeight) <= 600);
     } catch (err) { return false; }
+    try { if (!this.phoneHook && typeof window.addEventListener === 'function') { this.phoneHook = true; window.addEventListener('resize', () => { this.phoneC = undefined; }); } } catch (err) { /* uncached */ }
+    if (this.phoneHook) this.phoneC = r;
+    return r;
   },
 
   applySettings() {
