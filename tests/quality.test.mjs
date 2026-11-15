@@ -59,3 +59,33 @@ test('hitches and bad input are ignored; caps respect budget', () => {
   assert.equal(CAPS.low.lightmap, false);
   assert.ok(CAPS.med.lights === 40 && CAPS.high.lights === 80 && CAPS.low.lights === 0);
 });
+
+// GROUND-PHONE: a display-capped device (iPhone Low Power Mode 30 Hz, real WebKit ~30 ms on Med AND Low) must not be left on the flat Low ground.
+test('interval-only drop that does not speed frames up is undone, and the tier then holds', () => {
+  const q = new Quality('med');
+  run(q, 33.3, 4, 1.2);
+  assert.equal(q.tier, 'low'); // first judged as slow
+  run(q, 33.3, 3, 4);
+  assert.equal(q.tier, 'med'); // Low did not help: back to Med
+  assert.equal(q.paced, true);
+  run(q, 33.3, 4, 60);
+  assert.equal(q.tier, 'med'); // no flip-flop: the frame interval is no longer judged
+  run(q, 33.3, 18, 3.5);
+  assert.equal(q.tier, 'low'); // real CPU load still steps down
+});
+
+test('interval-only drop that does speed frames up is kept', () => {
+  const q = new Quality('med');
+  run(q, 25, 4, 1.2);
+  assert.equal(q.tier, 'low');
+  run(q, 16.7, 3, 4);
+  assert.equal(q.tier, 'low');
+  assert.equal(q.paced, false);
+});
+
+test('the run harness gate exists for the phone ground (real WebKit + throttled Chrome)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../scripts/ground-probe.mjs', import.meta.url), 'utf8');
+  assert.match(src, /gbOn/);
+  assert.match(src, /setCPUThrottlingRate/);
+});
