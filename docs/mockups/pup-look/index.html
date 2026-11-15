@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tracker pup looks</title>
+<style>
+:root{--bg:#141a26;--pn:#1d2536;--ln:#33405a;--tx:#e8e2d0;--mu:#97a0b4;--am:#ffb84a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,sans-serif;padding:16px}
+h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:18px 0 6px;color:var(--am)}p.s{color:var(--mu);margin:0 0 10px;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.grp{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:6px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.grp b{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+button{background:#26324b;color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit}
+button.on{background:var(--am);color:#2a1a08;border-color:var(--am)}button.pri{background:#3a6a58;border-color:#5aa88a}
+label{font-size:12px;color:var(--mu);display:flex;gap:6px;align-items:center}input[type=range]{width:110px}
+canvas{display:block;border:1px solid var(--ln);border-radius:6px;background:#000;max-width:100%}
+.cv{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}.cap{font-size:11px;color:var(--mu);margin-top:3px}
+#checks .chk{font-size:12px;padding:2px 0}.PASS{color:#7dffc4}.WARN{color:#ffb84a}.FAIL{color:#ff6f6f}
+#info{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}#info div{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;font-size:12px}
+#info h3{margin:0 0 4px;font-size:13px;color:var(--am)}#info p{margin:3px 0}
+#toast{position:fixed;right:14px;bottom:14px;background:#3a6a58;padding:8px 12px;border-radius:6px;display:none}
+</style></head><body>
+<h1>The Tracker (Wren's pup): three look options</h1>
+<p class="s">Sandbox only (canvas, no network). Wren, Elias and the Husk enemies here are the REAL game art code (src/gfx/wrenart.js, eliasart.js, husk/*, bundled unchanged by build-real.mjs); the pups use Wren's own shape/outline/gradient/rim helpers. Sizes use the game camera rule (zoomFor; 1 du = 0.211 world units); small views are baked through a 1.25 texel/du canvas like the rig atlas.</p>
+<div class="row">
+ <div class="grp"><b>Pup</b><span id="bv"></span></div>
+ <div class="grp"><b>Pose</b><span id="bp"></span></div>
+ <div class="grp"><b>View</b><button id="bn">Night</button><button id="bs">Swarm</button></div>
+</div>
+<div class="row">
+ <div class="grp"><label>Pup size <input id="sZ" type="range" min="0.7" max="1.4" step="0.01" value="1"><span id="vZ"></span></label>
+ <label>Glow <input id="sG" type="range" min="0" max="1.6" step="0.05" value="1"><span id="vG"></span></label>
+ <label>Anim speed <input id="sA" type="range" min="0.2" max="2" step="0.05" value="1"><span id="vA"></span></label></div>
+ <button class="pri" id="bcopy">Copy settings</button>
+</div>
+<div id="info"></div>
+<h2>True size: 1280x720 window (camera zoom 2.4: Wren 62 px). Pup darting at a wounded Husk, Husks, gems and a heart around</h2>
+<div class="cv"><div><canvas id="game" width="900" height="420"></canvas><div class="cap">1280x720, true pixels (crop)</div></div>
+<div><canvas id="zoom" width="480" height="300"></canvas><div class="cap">those true pixels around Wren, magnified 4x (no smoothing)</div></div>
+<div><canvas id="small" width="640" height="360"></canvas><div class="cap">640x360 window (zoom 1.2: Wren 31 px), true pixels</div></div></div>
+<h2>Phone landscape 844x390 (zoom 1.36: Wren 35 px): trotting at her heel / the bite</h2>
+<div class="cv"><canvas id="phone" width="844" height="390"></canvas></div>
+<h2>All three at true size (1280x720) in the same crowd, and magnified 3x</h2>
+<div class="cv"><canvas id="crowd" width="900" height="260"></canvas><canvas id="crowdz" width="1260" height="360"></canvas></div>
+<h2>2x (zoom 4.8): beside the real Wren, and the real Elias for scale</h2><canvas id="lineup" width="1260" height="380"></canvas>
+<h2>3x (zoom 7.2): pose strips: idle (sit) / trot / dart / bite-snap / howl</h2><canvas id="poses" width="1260" height="600"></canvas>
+<h2>Silhouette check at 2x: the three pups vs the real Husk enemies (all filled flat)</h2><canvas id="sil" width="1260" height="250"></canvas>
+<h2>5x close-up (craft check, selected option)</h2><canvas id="close" width="1260" height="560"></canvas>
+<h2>Colour and readability check (selected option)</h2><div id="checks"></div>
+<div id="toast"></div>
+<script src="real-rigs.js"></script>
+<script src="art.js"></script>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const Q=new URLSearchParams(location.search);
+const hex2=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const toHex=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const rgba=(h,a)=>{const x=hex2(h);return `rgba(${x[0]},${x[1]},${x[2]},${a})`};
+const hash=(a,b)=>{let h=(a*374761393+b*668265263)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967295};
+const R=RIGS; const {PP,POSES,drawPup,INFO}=PUP; const VS=['A','B','C'];
+const DU=0.211, TEX=1.25;
+const zoomFor=(W,H)=>Math.max(Math.min(W,H)/(H>=W?250:300),Math.max(W,H)/620);
+function glow(c,x,y,r,col,a){c.save();c.globalCompositeOperation='lighter';const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,rgba(col,Math.min(1,a)));g.addColorStop(1,rgba(col,0));c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);c.restore()}
+const ST={v:'A',pose:'trot',night:false,swarm:true,sZ:1,sG:1,sA:1,t:Q.has('t')?+Q.get('t'):0,fixed:Q.has('t')};
+
+// ---- blit a du-space drawing at screen (x,y), ppd px per du; at <= 1.2 px/du bake through a 1.25 texel/du canvas (the rig atlas) ----
+const bakeC=document.createElement('canvas');
+function blit(c,x,y,ppd,bb,fn,flip){
+  if(ppd>1.2){c.save();c.translate(x,y);c.scale(ppd*(flip?-1:1),ppd);fn(c);c.restore();return}
+  const [x0,y0,x1,y1]=bb,w=Math.ceil((x1-x0)*TEX),h=Math.ceil((y1-y0)*TEX);
+  if(bakeC.width<w||bakeC.height<h){bakeC.width=Math.max(bakeC.width,w);bakeC.height=Math.max(bakeC.height,h)}
+  const b=bakeC.getContext('2d');b.setTransform(1,0,0,1,0,0);b.clearRect(0,0,bakeC.width,bakeC.height);b.translate(-x0*TEX,-y0*TEX);b.scale(TEX,TEX);fn(b);
+  const k=ppd/TEX;c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.translate(x,y);c.scale(flip?-1:1,1);c.drawImage(bakeC,0,0,w,h,x0*ppd,y0*ppd,w*k,h*k);c.restore();
+}
+const BB_P=PUP.BB, BB_W=[-52,-132,54,8], BB_E=[-46,-152,78,14];
+const pup=(c,x,y,z,v,pose,t,flip,glowK)=>blit(c,x,y,DU*z*ST.sZ,BB_P,cc=>drawPup(cc,v,pose,t,{glow:(glowK??1)*ST.sG*(ST.night?1.3:1)}),flip);
+const wren=(c,x,y,z)=>{glow(c,x,y-8*z,26*z,'#ffd05a',.22);blit(c,x,y,DU*z,BB_W,cc=>R.wren.drawWrenFlat(cc))};
+const elias=(c,x,y,z)=>blit(c,x,y,DU*z,BB_E,cc=>R.elias.drawEliasFlat(cc));
+
+// ---- real Husks (SVG strings from the game's husk painter, rasterised by the browser) ----
+const HK={}; let pending=0;
+function loadHusk(id,name,st){pending++;const r=HUSKS.svg(id,st);const im=new Image();im.onload=()=>{pending--;if(ST.fixed)draw()};im.onerror=()=>{pending--;console.error('husk img',id)};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(r.svg);HK[id+name]={im,...r}}
+for(const ph of [0,.25,.5,.75]){loadHusk('wolf','w'+ph,{ph});loadHusk('crow','w'+ph,{ph});loadHusk('root_crawler','w'+ph,{ph})}
+loadHusk('wolf','h',{hurt:1,ph:.1});loadHusk('stoat_piper','w0',{ph:0});
+function husk(c,id,fr,x,y,z,flip,flat){const h=HK[id+fr];if(!h||!h.im.complete||!h.im.naturalWidth)return;const k=h.wpd*z,b=h.box;c.save();c.translate(x,y);if(flip)c.scale(-1,1);
+  if(flat){c.drawImage(flatOf(h),b[0]*k,b[1]*k,b[2]*k,b[3]*k)}else c.drawImage(h.im,b[0]*k,b[1]*k,b[2]*k,b[3]*k);c.restore()}
+const flatC={};function flatOf(h){const key=h.svg.length;if(flatC[key])return flatC[key];const cv=document.createElement('canvas');cv.width=h.box[2]*2;cv.height=h.box[3]*2;const x=cv.getContext('2d');x.drawImage(h.im,0,0,cv.width,cv.height);x.globalCompositeOperation='source-in';x.fillStyle='#10131c';x.fillRect(0,0,cv.width,cv.height);flatC[key]=cv;return cv}
+// pickups (ported shapes of sprites.js gem / heart, approx world size gem 7x8.8, heart 13x12)
+function gem(c,x,y,z){c.save();c.translate(x,y);c.scale(z*.875,z*.875);c.translate(-4,-10);glow(c,4,5,9,'#7dffc4',.35);c.beginPath();c.moveTo(4,0);c.lineTo(8,4.2);c.lineTo(4,10);c.lineTo(0,4.2);c.closePath();c.fillStyle='#7dffc4';c.fill();c.fillStyle='#d8fff0';c.beginPath();c.moveTo(4,0);c.lineTo(8,4.2);c.lineTo(4,4.2);c.fill();c.fillStyle='#3fae84';c.beginPath();c.moveTo(8,4.2);c.lineTo(4,4.2);c.lineTo(4,10);c.fill();c.restore()}
+function heart(c,x,y,z){c.save();c.translate(x,y);c.scale(z*1.1,z*1.1);c.translate(-6,-11);c.beginPath();c.moveTo(6,10.6);c.bezierCurveTo(-1.5,5.4,1.2,-.6,6,2.8);c.bezierCurveTo(10.8,-.6,13.5,5.4,6,10.6);c.closePath();c.fillStyle='#ff6f86';c.fill();c.fillStyle='rgba(255,255,255,.75)';c.beginPath();c.ellipse(3.6,3,1.5,1,-.6,0,7);c.fill();c.restore()}
+
+function ground(c,W,H,s,scroll,night){
+  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,night?'#1a2438':'#52638a');g.addColorStop(1,night?'#1f2a40':'#4a5a74');c.fillStyle=g;c.fillRect(0,0,W,H);
+  const cell=34*s;
+  for(let gx=-2;gx<W/cell+2;gx++)for(let gy=-1;gy<H/cell+2;gy++){
+    const wx=Math.floor(scroll/34)+gx,h=hash(wx,gy);const x=gx*cell-((scroll%34)*s)+h*cell*.6,y=gy*cell+hash(gy,wx)*cell*.6;
+    if(h<.5){c.fillStyle=night?'#2a3a50':'#5e7a68';c.beginPath();c.ellipse(x,y,9*s*(.6+h),4*s*(.6+h),0,0,7);c.globalAlpha=.4;c.fill();c.globalAlpha=1;
+      c.strokeStyle=night?'#34486a':'#7a9a7a';c.lineWidth=1.2*s;c.beginPath();c.moveTo(x-2*s,y);c.lineTo(x-3.5*s,y-5*s);c.moveTo(x+s,y);c.lineTo(x+2*s,y-6*s);c.moveTo(x+3.5*s,y);c.lineTo(x+6*s,y-4*s);c.stroke()}
+    else if(h>.88){c.fillStyle=night?'#6a5a80':'#c8b6d8';c.beginPath();c.arc(x,y,1.8*s,0,7);c.fill()}}
+}
+const sorted=(list)=>list.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+// a run moment: Wren at (fx,fy); the pup either at her heel (trot) or out darting/biting a wounded Husk ahead of her
+function moment(c,W,H,z,o){
+  const t=o.t,fx=o.fx??W*.42,fy=o.fy??H*.62,v=o.v,pose=o.pose;
+  ground(c,W,H,z,pose==='trot'?t*30:0,ST.night);
+  const L=[];
+  // pickups
+  for(const [dx,dy] of [[-40,22],[-30,30],[60,26],[70,34],[-75,-6]])L.push({y:fy+dy*z,f:()=>gem(c,fx+dx*z,fy+dy*z,z)});
+  L.push({y:fy+30*z,f:()=>heart(c,fx+18*z,fy+30*z,z)});
+  // Husk crowd (real art)
+  if(o.swarm!==false){const ring=[['wolf',105,-20],['crow',-110,-30],['root_crawler',-95,24],['wolf',-70,-45],['crow',85,-50],['root_crawler',125,30],['wolf',30,-60],['stoat_piper',-140,5]];
+    ring.forEach(([id,dx,dy],i)=>{const x=fx+dx*z,y=fy+dy*z,fr=id==='stoat_piper'?'w0':'w'+[0,.25,.5,.75][(Math.floor(t*6)+i)%4];L.push({y,f:()=>husk(c,id,fr,x,y,z,dx>0)})})}
+  L.push({y:fy,f:()=>wren(c,fx,fy,z)});
+  let px,py,flip=false;
+  if(pose==='trot'||pose==='idle'||pose==='howl'){px=fx-19*z;py=fy+3*z}
+  else{const target=[fx+62*z,fy+6*z];L.push({y:target[1],f:()=>husk(c,'wolf','h',target[0],target[1],z,true)});
+    if(pose==='bite'){px=target[0]-24*z;py=target[1]+1*z}else{px=fx+28*z;py=fy+5*z}}
+  L.push({y:py,f:()=>pup(c,px,py,z,v,pose,t,flip)});
+  sorted(L);
+  return [px,py];
+}
+const panelCtx=(cv,i,n)=>{const c=cv.getContext('2d'),w=cv.width/n;c.save();c.beginPath();c.rect(i*w,0,w,cv.height);c.clip();c.translate(i*w,0);return [c,w]};
+const label=(c,w,txt)=>{c.fillStyle='rgba(10,14,24,.8)';c.fillRect(6,6,Math.min(w-12,c.measureText(txt).width+20),22);c.fillStyle='#ffb84a';c.font='bold 13px system-ui';c.textAlign='left';c.fillText(txt,12,22)};
+const frameEnd=(cv,i,n)=>{const c=cv.getContext('2d'),w=cv.width/n;c.restore();c.strokeStyle='#0a0e18';c.lineWidth=2;c.strokeRect(i*w,0,w,cv.height)};
+function draw(){
+  const t=ST.fixed?ST.t:performance.now()/1000*ST.sA,v=ST.v;
+  // true size 1280x720 crop
+  {const cv=$('#game'),c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);const p=moment(c,900,420,2.4,{t,v,pose:ST.pose==='idle'||ST.pose==='howl'?ST.pose:ST.pose,swarm:ST.swarm});
+   const z=$('#zoom').getContext('2d');z.imageSmoothingEnabled=false;z.fillStyle='#000';z.fillRect(0,0,480,300);const cx=ST.pose==='trot'||ST.pose==='idle'||ST.pose==='howl'?900*.42-30:900*.42+40;z.drawImage(cv,cx-60,420*.62-48,120,75,0,0,480,300)}
+  {const cv=$('#small'),c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);moment(c,640,360,1.2,{t,v,pose:ST.pose,swarm:ST.swarm})}
+  {const cv=$('#phone');const zp=zoomFor(844,390);let [c,w]=panelCtx(cv,0,2);moment(c,w,390,zp,{t,v,pose:'trot',fx:w*.55});label(c,w,'trotting at her heel');frameEnd(cv,0,2);
+   [c,w]=panelCtx(cv,1,2);moment(c,w,390,zp,{t,v,pose:'bite',fx:w*.35});label(c,w,'snapping at the wounded Husk');frameEnd(cv,1,2)}
+  // all three in one crowd at true size + 3x
+  for(const [id,z,lab] of [['#crowd',2.4,false],['#crowdz',7.2,true]]){const cv=$(id);VS.forEach((vv,i)=>{const [c,w]=panelCtx(cv,i,3);const H=cv.height;ground(c,w,H,z,0,ST.night);
+    const fy=H*.7,cx=w*.45;const L=[];
+    L.push({y:fy-8*z,f:()=>husk(c,'wolf','w'+[0,.25,.5,.75][Math.floor(t*6)%4],cx+26*z,fy-8*z,z,true)});
+    L.push({y:fy+6*z,f:()=>husk(c,'crow','w'+[0,.25,.5,.75][Math.floor(t*6+1)%4],cx-30*z,fy+6*z,z,false)});
+    L.push({y:fy-14*z,f:()=>husk(c,'root_crawler','w0',cx-6*z,fy-16*z,z,false)});
+    L.push({y:fy+4*z,f:()=>gem(c,cx+8*z,fy+12*z,z)});L.push({y:fy+10*z,f:()=>heart(c,cx-14*z,fy+16*z,z)});
+    L.push({y:fy+2*z,f:()=>pup(c,cx+2*z,fy+4*z,z,vv,'dart',t)});sorted(L);if(lab)label(c,w,PP[vv].name);frameEnd(cv,i,3)})}
+  // lineup 2x: Elias | Wren + A | Wren + B | Wren + C
+  {const cv=$('#lineup'),z=4.8;const items=[null,...VS];items.forEach((vv,i)=>{const [c,w]=panelCtx(cv,i,4);ground(c,w,cv.height,z,0,ST.night);const fy=cv.height*.9;
+    if(!vv){elias(c,w*.5,fy,z);wren(c,w*.5+0,fy+999,z);label(c,w,'Elias (real game art)')}
+    else{wren(c,w*.38,fy,z);pup(c,w*.74,fy,z,vv,ST.pose==='trot'?'idle':ST.pose,t);label(c,w,'Wren (real) + '+PP[vv].name)}frameEnd(cv,i,4)})}
+  // pose strips 3x
+  {const cv=$('#poses'),c0=cv.getContext('2d'),z=7.2,rh=cv.height/3,cw=cv.width/5;c0.setTransform(1,0,0,1,0,0);
+    VS.forEach((vv,r)=>POSES.forEach((ps,k)=>{const c=c0;c.save();c.beginPath();c.rect(k*cw,r*rh,cw,rh);c.clip();c.translate(k*cw,r*rh);ground(c,cw,rh,z,0,ST.night);
+      pup(c,cw*.58,rh*.9,z,vv,ps,ps==='bite'?0.19+Math.floor(t/0.35)*0.35:t);c.fillStyle='rgba(10,14,24,.8)';c.fillRect(4,4,cw-8,18);c.fillStyle='#ffb84a';c.font='bold 11px system-ui';c.fillText(PP[vv].short+': '+ps,9,17);c.restore();c.strokeStyle='#0a0e18';c.lineWidth=2;c.strokeRect(k*cw,r*rh,cw,rh)}))}
+  // silhouettes 2x
+  {const cv=$('#sil'),c=cv.getContext('2d'),z=4.8;c.setTransform(1,0,0,1,0,0);c.fillStyle='#d8dde6';c.fillRect(0,0,cv.width,cv.height);
+    const cells=[['A','pup'],['B','pup'],['C','pup'],['wolf','husk'],['crow','husk'],['root_crawler','husk']],w=cv.width/6;
+    cells.forEach(([id,k],i)=>{const x=w*i+w*.55,y=cv.height*.82;
+      if(k==='pup'){const tmp=document.createElement('canvas');tmp.width=w;tmp.height=cv.height;const tc=tmp.getContext('2d');blit(tc,w*.55,y,DU*z*ST.sZ,BB_P,cc=>drawPup(cc,id,'trot',.2,{glow:0}));tc.globalCompositeOperation='source-in';tc.fillStyle='#10131c';tc.fillRect(0,0,w,cv.height);c.drawImage(tmp,w*i,0)}
+      else husk(c,id,'w0',x,y,z,false,true);
+      c.fillStyle='#33405a';c.font='bold 12px system-ui';c.fillText(k==='pup'?PP[id].name:'Husk '+id.replace('_',' '),w*i+8,18)})}
+  // close-up
+  {const cv=$('#close'),c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);ground(c,cv.width,cv.height,10,0,ST.night);
+    c.save();c.translate(360,500);c.scale(5,5);drawPup(c,v,'idle',ST.fixed?ST.t:t,{glow:ST.sG});c.restore();
+    c.save();c.translate(930,500);c.scale(5,5);drawPup(c,v,ST.pose==='idle'?'trot':ST.pose,ST.fixed?ST.t:t,{glow:ST.sG});c.restore()}
+}
+// ---- checks: reserved colours + contrast + enemy / pickup confusion ----
+const dist=(a,b)=>{const x=hex2(a),y=hex2(b);return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2])};
+const lum=h=>{const v=hex2(h).map(u=>{u/=255;return u<=.03928?u/12.92:Math.pow((u+.055)/1.055,2.4)});return .2126*v[0]+.7152*v[1]+.0722*v[2]};
+const cr=(a,b)=>{const A=lum(a)+.05,B=lum(b)+.05;return Math.max(A,B)/Math.min(A,B)};
+const RESERVED=[['#ffd36b','evolution gold'],['#fff3c4','evolution hot'],['#ff4a3a','danger red'],['#e5484d','bleed red'],['#7ff0ff','Spirit Bolt cyan'],['#e8f4ff','Chain Lightning white'],['#7dffc4','XP gem green'],['#ff6f86','heart rose'],['#a98aff','magnet violet'],['#c79bff','burn lilac']];
+const ENEMY=[['#5b4f63','Husk body'],['#8a7d92','Husk top'],['#3e3a58','crow body'],['#6c6890','crow top'],['#4e3b34','root body'],['#ff4a2a','Husk ember eye']];
+function runChecks(){
+  const box=$('#checks');box.textContent='';const add=(l,tx)=>{const d=document.createElement('div');d.className='chk';const b=document.createElement('b');b.className=l;b.textContent=l;d.append(b,' ',tx);box.appendChild(d)};
+  const P=PP[ST.v];const body={A:['fur','saddle'],B:['fur','saddle'],C:['fur','saddle','scarf']}[ST.v]; // 'light' (muzzle/bib trim) is excluded like flames in the Lucinda check
+  let bad=0;for(const k of body)for(const [rc,rn] of RESERVED){const d=dist(P[k],rc);if(d<30){add(d<20?'FAIL':'WARN',`${P.name} ${k} ${P[k]} near ${rn} (${d.toFixed(0)})`);bad++}}
+  if(!bad)add('PASS',`${P.name}: body colours clear of evolution gold, danger/bleed red, bolt cyan, lightning white, gem green, heart rose, magnet violet`);
+  const w={fur:5,saddle:2,light:1.5};let r=[0,0,0],n=0;for(const k in w){const c=hex2(P[k]);r=r.map((v,i)=>v+c[i]*w[k]);n+=w[k]}const a=toHex(r.map(v=>v/n));
+  const cd=cr(a,'#4a5a74'),cn=cr(a,'#1f2a40');add(cd>=1.6&&cn>=1.4?'PASS':'WARN',`${P.name} body average ${a}: ${cd.toFixed(2)}:1 on day ground, ${cn.toFixed(2)}:1 at night (needs 1.6 / 1.4)`);
+  let near=null;for(const [rc,rn] of ENEMY){const d=dist(a,rc);if(!near||d<near.d)near={d,rn}}add(near.d>=60?'PASS':'WARN',`${P.name} vs nearest Husk colour (${near.rn}): distance ${near.d.toFixed(0)} (pale glowing pup vs dark masked Husks)`);
+  const dw=dist(P.fur,'#cdd9e2');add(dw>=40?'PASS':'WARN',`${P.name} fur vs Wren's pelt #cdd9e2: distance ${dw.toFixed(0)} (they share the moon-pale family on purpose; she has the dark backing + amber, it has the blue glow)`);
+  add(cr(P.eye,P.light)>4?'PASS':'WARN',`${P.name} eye: dark with a white catchlight on a pale face (Husks: ember in a bark socket) ${cr(P.eye,P.light).toFixed(1)}:1`);
+}
+// ---- UI ----
+function btns(id,items,key,names){const box=$(id);box.textContent='';items.forEach(x=>{const b=document.createElement('button');b.textContent=names?names[x]:x;b.className=ST[key]===x?'on':'';b.onclick=()=>{ST[key]=x;refresh()};box.appendChild(b)})}
+function info(){const box=$('#info');box.textContent='';VS.forEach((v,i)=>{const d=document.createElement('div');const h=document.createElement('h3');h.textContent=PP[v].name+(i===0?' (Recommended)':'');d.appendChild(h);
+  for(const [k,lab] of [['fantasy','Fantasy'],['moves','Moves'],['crowd','In a crowd'],['cost','Cost']]){const p=document.createElement('p');const b=document.createElement('b');b.textContent=lab+': ';p.append(b,INFO[v][k]);d.appendChild(p)}box.appendChild(d)})}
+function refresh(){btns('#bv',VS,'v',Object.fromEntries(VS.map(v=>[v,PP[v].name])));btns('#bp',POSES,'pose');
+  for(const [id,k] of [['bn','night'],['bs','swarm']])$('#'+id).className=ST[k]?'on':'';
+  for(const [id,k] of [['Z','sZ'],['G','sG'],['A','sA']])$('#v'+id).textContent=ST[k].toFixed(2);runChecks();if(ST.fixed)draw()}
+for(const [id,k] of [['bn','night'],['bs','swarm']])$('#'+id).onclick=()=>{ST[k]=!ST[k];refresh()};
+for(const [id,k] of [['Z','sZ'],['G','sG'],['A','sA']])$('#s'+id).oninput=e=>{ST[k]=+e.target.value;refresh()};
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}
+$('#bcopy').onclick=()=>{const out={sandbox:'pup-look-v1',pick:ST.v,name:PP[ST.v].name,tune:{size:ST.sZ,glow:ST.sG,animSpeed:ST.sA},palette:PP[ST.v]};const txt=JSON.stringify(out,null,1);
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Settings copied')}catch(e){toast('Copy failed')}ta.remove()};
+  try{navigator.clipboard.writeText(txt).then(()=>toast('Settings copied'),fb)}catch(e){fb()}};
+if(VS.includes(Q.get('v')))ST.v=Q.get('v');if(POSES.includes(Q.get('pose')))ST.pose=Q.get('pose');if(Q.get('night'))ST.night=true;if(Q.get('noswarm'))ST.swarm=false;
+info();refresh();
+(function loop(){if(!ST.fixed){draw();requestAnimationFrame(loop)}else draw()})();
+window.__checks=()=>[...document.querySelectorAll('#checks .chk')].map(d=>d.textContent);
+window.__ready=()=>pending===0;
+window.__cv=id=>{draw();return $(id).toDataURL('image/png')};
+</script></body></html>
