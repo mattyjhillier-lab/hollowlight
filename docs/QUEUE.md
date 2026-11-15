@@ -597,3 +597,5 @@ STATUS wip/wardrobe-build 2026-11-13: WARDROBE v2 BUILT (not merged): ring shelf
 - 2026-11-15 PAUSED (Matt). Companions design fully locked (see LOCKED 2026-11-15 rows). Independent review agent was running on wip/companions-review (docs/design/companions-review.md): if the PC shut down, re-run it. NEXT: read the review, Matt go on build order, build Howie hidden prototype first. Also waiting: Matt live iPhone check of smoothness (PR 15), tell testers about tree refund.
 
 - 2026-11-15 SPLIT (LOCKED): Update A = Lucinda + Meteor release (DM10: Matt yes + real-phone heat check). Update B = companions chunks C0-C12 (docs/design/companions-review.md) incl. tree v6 with B1 road re-rooting, choose-spirit screen, wind weapon.
+
+- 2026-11-15 RESEARCH DONE: docs/research/42-survivors-pacing-public.md (public sources, thin on exact Spirit Hunters numbers). Hypotheses H1-H8 feed the PACING + SENSE REVIEW gate (section 8). Wispwick pacing v4 model is better cadence evidence than anything public.
