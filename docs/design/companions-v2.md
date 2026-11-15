@@ -173,3 +173,4 @@ Defaults taken without asking (Matt may override): migration is a targeted step 
 
 Fit check: companions follow the hero in the Warm Lantern look (pale-blue pup trailing light, a tiny candle-flame), restore the summoner fantasy through the hero, no gore, no clutter; mechanically one growth axis (Bond), bounded shares, deterministic sim.
 Security check: docs only. The plan keeps saves untrusted (frozen tables, idempotent, forge guard, hostile fixtures), no new dependencies, debug params still never write saves.
+- Decisions 1-3 LOCKED 2026-11-15: retire all six evolutions; choose-new-spirit screen; accept 4 weapons then design a 5th. Next batch: Bond damage row, 5 summons ring nodes, Ophimber between-ability job.
