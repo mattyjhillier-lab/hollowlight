@@ -559,3 +559,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-15 | PUP NAME | Wren's Tracker pup is named Howie (like Ophimber for Lucinda). Use it in the hero panel, Almanac pet entry, Bond text and card copy; nothing a player reads may call it only "the pup" once built. | Matt |
 
 | 2026-11-15 | WICK NAME | Elias's companion (The Wick) is named Flambe (spelled Flambé in player text, accent kept). Matt confirmed the spelling. | Matt |
+
+| 2026-11-15 | FLAMBE LOOK | A Chamberstick: a little flame with a face standing in a wax stub in a tiny floating brass chamberstick (Elias brass + candle colours); ward = swings the dish up like a shield, ring feed = tips the dish and pours light into the Sanctuary Ring; poses idle, follow, ward, dim, relight, feed. Sandbox C:\Users\matty\spirit-wickart-sandbox, sources wip/wick-look (docs/mockups/wick-look). | Matt |
