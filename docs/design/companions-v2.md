@@ -178,3 +178,4 @@ Security check: docs only. The plan keeps saves untrusted (frozen tables, idempo
 - Tracker Bond steps LOCKED 2026-11-15: 5 gem fetch, 10 pawprint speed trail, 15 mark on bite, 25 once-per-run howl stagger. Elias Wick and Ophimber steps still to design with the look rounds.
 - Flambe steps + Ophimber Ember-spitter LOCKED 2026-11-15. Remaining before build: Ophimber Bond steps, tree-replacement options, independent review, then build chunks.
 - Ophimber Bond steps LOCKED 2026-11-15. Remaining before build: tree-replacement options, independent review.
+- Summoner branch replacement LOCKED 2026-11-15: wind weapon home with teaser slot. Remaining before build: independent review of the whole plan.
