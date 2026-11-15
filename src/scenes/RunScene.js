@@ -179,7 +179,7 @@ class SpritePool {
 const PROPS_OFF = { props: { live: 0, density: 1, sway: false }, ambient: { petals: 0 } };
 const DAWN_LAG = 20, DAWN_LAG_UP = 2.0, DAWN_LAG_DOWN = 1.2; // FIX4 warmth-then-brightness: while the flood is easing the sky clock, the ambient BRIGHTNESS trails the WARMTH (wash, saturation, enemy tint) by up to 20 ref-s (lag grows at 2.0/s < the 2.4 ease rate, so brightness never goes backwards; it catches up at 1.2/s after)
 const DAWN_EASE = 2.4; // max reference-seconds the sky clock may advance per real second (a 60 s flood takes 25 s)
-const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
+const LOW_GROUND_K = 0.7; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
 const mulTint = (c, k) => (k === 1 ? c : (Math.min(255, (c >> 16 & 255) * k) << 16) | (Math.min(255, (c >> 8 & 255) * k) << 8) | Math.min(255, (c & 255) * k)); // clamped per channel
 const dimTint = (c, k) => (((c >> 16 & 255) * k | 0) << 16) | (((c >> 8 & 255) * k | 0) << 8) | ((c & 255) * k | 0);
 
@@ -246,8 +246,11 @@ export class RunScene extends Phaser.Scene {
     this.lifeLast = null;
     this.lifeFrames = 0;
     this.lifeDbg = app.params.life ? makeLifeDebug(document.getElementById('stage') || document.body) : null;
-    this.lowPool = Array.from({ length: 14 }, () => this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(-450).setTint(ROLE.lantern).setScale(5.5 * inv('glow')).setAlpha(0).setVisible(false));
+    this.lowPool = Array.from({ length: 24 }, () => this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(-450).setTint(ROLE.lantern).setScale(6.5 * inv('glow')).setAlpha(0).setVisible(false));
     this.lowPoolI = 0;
+    // painted meadow patches (Low look): a patch of the restored tile dropped behind the hero, alpha follows the life map
+    this.lowMeadow = this.textures.exists('meadowPool') ? Array.from({ length: 20 }, () => this.add.image(0, 0, 'meadowPool').setDepth(-455).setScale(inv('meadowPool')).setAlpha(0).setVisible(false)) : [];
+    this.lowMeadowI = 0; this.lowMeadowT = 0;
     // W3 Low fallback: a few soft dark ink blobs (no cracks) under the densest enemy groups; Med/High use the ground shader instead
     this.corrBlobs = Array.from({ length: 10 }, () => this.add.image(0, 0, 'glow').setDepth(-380).setTint(0x080914).setScale(12 * inv('glow')).setAlpha(0).setVisible(false));
     this.corrBin = new Map();
@@ -570,6 +573,7 @@ export class RunScene extends Phaser.Scene {
     this.bossView.reset(sim);
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
+    for (const mm of this.lowMeadow) { mm.setAlpha(0); mm.dropAt = undefined; }
     const size = app.data.balance.worldSize;
     const cam = this.cameras.main;
     cam.setBounds(0, 0, size, size);
@@ -746,6 +750,7 @@ export class RunScene extends Phaser.Scene {
     else this.setGround(this.gradeNow);
     this.gb.setTint(this.lmOn ? 0xffffff : this.gradeNow);
     for (const im of this.lowPool) im.setVisible(false);
+    for (const mm of this.lowMeadow) mm.setVisible(false);
     this.parts.setCap(c.particles);
     this.nums.setCap(c.dmgNums);
     this.playerGlow.setVisible(!!this.sim);
@@ -1203,7 +1208,8 @@ export class RunScene extends Phaser.Scene {
   setGround(col) {
     if (col === this.gradeTint) return;
     this.gradeTint = col;
-    this.ground.setTint(this.lmOn ? col : dimTint(col, LOW_GROUND_K)); // W1: the flat tile is authored at daylight brightness, so Low darkens it a little more than the trees
+    this.ground.setTint(this.lmOn ? col : dimTint(col, LOW_GROUND_K));
+    for (const mm of this.lowMeadow) mm.setTint(dimTint(col, LOW_GROUND_K)); // W1: the flat tile is authored at daylight brightness, so Low darkens it a little more than the trees
     this.gb.setTint(col);
     for (const d of this.decor) d.setTint(col);
     this.props.setTint(this.lmOn ? 0xffffff : col);
@@ -2172,16 +2178,26 @@ export class RunScene extends Phaser.Scene {
     }
     if (!this.gbOn) {
       this.lowPoolT += 0.1;
-      if (this.lowPoolT >= 0.6) { // Low look: a warm pool dropped behind the hero every 0.6 s, alpha follows the life map
+      if (this.lowPoolT >= 0.4) { // Low look: a warm pool dropped behind the hero every 0.6 s, alpha follows the life map
         this.lowPoolT = 0;
         const im = this.lowPool[this.lowPoolI];
         this.lowPoolI = (this.lowPoolI + 1) % this.lowPool.length;
         im.setPosition(p.x, p.y + 8);
         im.dropAt = sim.time;
       }
+      this.lowMeadowT += 0.1;
+      if (this.lowMeadow.length && this.lowMeadowT >= 0.5) { // a painted patch every 0.5 s (20 patches = a ~10 s trail)
+        this.lowMeadowT = 0;
+        const mm = this.lowMeadow[this.lowMeadowI]; this.lowMeadowI = (this.lowMeadowI + 1) % this.lowMeadow.length;
+        mm.setPosition(p.x, p.y + 6); mm.dropAt = sim.time;
+      }
+      for (const mm of this.lowMeadow) {
+        const v = mm.dropAt === undefined ? 0 : life.sample(mm.x, mm.y);
+        mm.setVisible(v > 0.02).setAlpha(Math.min(0.9, 0.9 * v));
+      }
       for (const im of this.lowPool) {
         const v = im.dropAt === undefined ? 0 : life.sample(im.x, im.y);
-        im.setVisible(v > 0.02).setAlpha(0.3 * v);
+        im.setVisible(v > 0.02).setAlpha(0.12 * v);
       }
     }
   }
