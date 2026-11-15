@@ -212,3 +212,17 @@ test('Characters page: awake hero shows Bond, skill, stats, the 5 named gifts; a
   p2.onKey({ key: 'Escape', preventDefault() {} }); assert.deepEqual(out, ['back']);
   assert.deepEqual(charsView({ chars: JSON.parse('{"__proto__":{"woke":true},"wren":{"xp":"x","woke":"yes"}}'), stats: {} }, data, treeDef).map((x) => x.awake), [false, false]);
 });
+
+test('CHK: every hero ability has its own emblem on the hero card (Elias candelabra, Wren wolf), hostile ids fall back', async () => {
+  const { EMBLEM_OF } = await import('../src/ui/hudsvg.js');
+  const hs = heroes();
+  for (const id of ['wren', 'elias']) {
+    const h = hs.find((x) => x.id === id);
+    assert.ok(h.abilityId && Object.hasOwn(EMBLEM_OF, h.abilityId), `${id} ability ${h.abilityId} has an emblem`);
+  }
+  assert.equal(EMBLEM_OF[hs.find((x) => x.id === 'elias').abilityId], 'sanctuary');
+  assert.equal(C.heroView('x', { name: 'A, B', ability: { id: 'y'.repeat(99), name: 'N' } }, '').abilityId.length, 40);
+  assert.equal(C.heroView('x', { name: 'A, B', ability: { id: 5 } }, '').abilityId, '');
+  const r = buildHeroSelect({ heroes: [{ ...hs[0], abilityId: 'constructor' }], portraits: {}, selected: hs[0].id, onPick() {}, onBack() {}, onStart() {} });
+  assert.ok(r && r.root, 'hostile abilityId does not break the card');
+});
