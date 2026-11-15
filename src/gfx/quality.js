@@ -94,7 +94,8 @@ export class Quality {
       }
     }
     const slowFrames = this.avgMs > DOWN_MS && !this.paced && !(this.dropMs > 0); // no second interval drop while the first is being checked
-    if ((slowFrames || this.avgWork > DOWN_WORK) && this.idx > 0) {
+    // slow frames alone (CPU fine) never push below Med: Low did not make them faster on iPhone and its flat ground read as a glitch (a 2 s grey blink at ~25 s); real CPU load still can
+    if (((slowFrames && this.idx > 1) || this.avgWork > DOWN_WORK) && this.idx > 0) {
       this.dropMs = this.avgWork > DOWN_WORK ? 0 : this.avgMs; // only interval-only drops are re-checked
       this.idx--;
       this.afterChange(true);

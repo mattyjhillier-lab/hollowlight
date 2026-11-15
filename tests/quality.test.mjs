@@ -61,26 +61,18 @@ test('hitches and bad input are ignored; caps respect budget', () => {
 });
 
 // GROUND-PHONE: a display-capped device (iPhone Low Power Mode 30 Hz, real WebKit ~30 ms on Med AND Low) must not be left on the flat Low ground.
-test('interval-only drop that does not speed frames up is undone, and the tier then holds', () => {
+test('slow frames alone never drop below Med (no flat-ground blink); High -> Med is still allowed and re-checked', () => {
   const q = new Quality('med');
-  run(q, 33.3, 4, 1.2);
-  assert.equal(q.tier, 'low'); // first judged as slow
-  run(q, 33.3, 3, 4);
-  assert.equal(q.tier, 'med'); // Low did not help: back to Med
-  assert.equal(q.paced, true);
   run(q, 33.3, 4, 60);
-  assert.equal(q.tier, 'med'); // no flip-flop: the frame interval is no longer judged
+  assert.equal(q.tier, 'med'); // display-capped / slow frames with CPU fine: stays on the painted ground
+  const h = new Quality('high');
+  run(h, 33.3, 4, 1.2);
+  assert.equal(h.tier, 'med'); // High -> Med on slow frames is still judged
+  run(h, 33.3, 4, 60);
+  assert.equal(h.tier, 'high'); // the drop did not speed frames up: undone, and frame speed is no longer judged (display-capped)
+  assert.equal(h.paced, true);
   run(q, 33.3, 18, 3.5);
   assert.equal(q.tier, 'low'); // real CPU load still steps down
-});
-
-test('interval-only drop that does speed frames up is kept', () => {
-  const q = new Quality('med');
-  run(q, 25, 4, 1.2);
-  assert.equal(q.tier, 'low');
-  run(q, 16.7, 3, 4);
-  assert.equal(q.tier, 'low');
-  assert.equal(q.paced, false);
 });
 
 test('the run harness gate exists for the phone ground (real WebKit + throttled Chrome)', async () => {
