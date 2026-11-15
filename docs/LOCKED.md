@@ -539,3 +539,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-14 | HOTFIX LIVE | Evolve freeze + phone heat fixes merged to main (PR 14) on Matt's yes. | Matt |
 
 | 2026-11-15 | GROUND COLOUR EARLIER | Ground-bland fix = bring colour in earlier: ARC ambient/saturation rows from ~3-4 min, lively by 8:00 (touches visibility arc; Matt picked it). | Matt |
+
+| 2026-11-15 | LIVE: PHONE SMOOTHNESS + GROUND | Merged dev to main (PR 15) on Matt's yes: phone frame-limiter fix (72/36/22), governor never drops below Med on slow frames alone, painted meadow trail on Low, ground colour earlier (arc), title refund card, Lucinda DM9 numbers (hidden). | Matt |
