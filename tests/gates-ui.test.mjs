@@ -8,8 +8,8 @@ import { defaultSave } from '../src/save/schema.js';
 
 const gates = def.list.filter((i) => def.nodes[i].permanent);
 
-test('G1c gateOf/gateTag: exactly the 20 permanent nodes are gates (18 weapon / evolution + 2 Night Gate tier gates)', () => {
-  assert.equal(gates.length, 20);
+test('G1c gateOf/gateTag: exactly the 24 permanent nodes are gates (22 weapon / evolution + 2 Night Gate tier gates)', () => {
+  assert.equal(gates.length, 24);
   assert.deepEqual(gates.filter((id) => gateOf(def, id).kind === 'tier').sort(), ['gt_cursed_forest_expert', 'gt_cursed_forest_hard']);
   assert.deepEqual(gateOf(def, 'gt_cursed_forest_hard'), { kind: 'tier', id: 'cursed_forest:hard' });
   for (const id of gates) assert.ok(gateOf(def, id) && gateTag(def, id) === 'GATE');

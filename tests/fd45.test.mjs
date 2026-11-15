@@ -162,7 +162,7 @@ test('FD5 results: Twilight = badge only; Deep Dusk first dawn = badge, Dawnglas
   assert.ok(resultsSummary(v).includes('10 Dawnglass'));
   const res = buildResults({ view: v, onAgain() {}, onMenu() {}, onTree() {} });
   const txt = res.root.textContent;
-  for (const s of ['Deep Dusk · first dawn', 'Dawnglass', '+10', '4 + 6 first dawn', 'x1.5 Deep Dusk', 'First dawn with Wren', 'Both heroes', 'Again · Deep Dusk']) assert.ok(txt.includes(s), s);
+  for (const s of ['Deep Dusk · first dawn', 'Dawnglass', '+10', '4 + 6 first dawn', 'x1.5 Deep Dusk', 'First dawn with Wren', 'Two heroes', 'Again · Deep Dusk']) assert.ok(txt.includes(s), s);
   // death on Deep Dusk: kept line, no stars, no first dawn
   const d = resultsView({ ...r, outcome: 'defeat', time: 702 }, { ...bank, tier: { tier: 'hard', glass: 0, shards: 0, firstDawn: false, stars: 0, goldBonus: 300 } }, data);
   assert.deepEqual([d.night.badge, d.night.stars, d.night.firstLine, d.night.kept], ['Deep Dusk', null, '', 'What you earned before the fall is always kept.']);

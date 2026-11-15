@@ -21,28 +21,28 @@ const put = (sim, dx, dy, r = 8, boss = false) => { const e = sim.spawnEnemy('du
 const run = (sim, secs) => { for (let i = 0; i < Math.round(secs / DT); i++) sim.step(DT, {}); };
 const hitLog = (sim) => { const log = []; const o = sim.hurt.bind(sim); sim.hurt = (e, a, x) => { const src = sim._src; const r = o(e, a, x); if (src === ID && r > 0 && !(x && x.silent)) log.push({ e, a: r, t: sim.time }); return r; }; return log; };
 
-test('DM1 data: stats, staging flags, boss, colour, no fire tag', () => {
+test('DM1 data: stats, released (DM10), boss, colour, no fire tag', () => {
   const w = data.weapons[ID], st = w.stats;
-  assert.equal(w.name, 'Dragonfire Meteor'); assert.equal(w.treeGate, true); assert.equal(w.unreleased, true); assert.equal(w.color, '#ffb35c'); assert.deepEqual(w.tags, []);
+  assert.equal(w.name, 'Dragonfire Meteor'); assert.equal(w.treeGate, true); assert.ok(!w.unreleased); assert.equal(w.color, '#ffb35c'); assert.deepEqual(w.tags, []);
   assert.equal(w.boss, 2.2); assert.equal(w.cd, 2.6);
   assert.deepEqual(Object.keys(st), ['count', 'power', 'area', 'duration']);
   assert.deepEqual([st.count.name, st.power.name, st.area.name, st.duration.name], ['Fireballs', 'Impact', 'Blaze', 'Embers']);
   assert.deepEqual([st.count.base, st.count.perRank, st.power.base, st.power.perRank, st.area.base, st.area.perRank, st.duration.base, st.duration.perRank], [1, 0.6, 14, 5.6, 34, 5, 2.5, 0.5]);
   for (const k of Object.keys(st)) assert.ok(hintText(w, k, 0).length > 8 && !hintText(w, k, 0).includes('{'), k);
   assert.ok(!data.weapons.ember_breath);
-  assert.deepEqual(data.balance.starter.weapons, ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_lightning', 'holy_orbit']);
+  assert.deepEqual(data.balance.starter.weapons, ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_lightning', 'holy_orbit', 'dragonfire_meteor']);
 });
 
-test('DM1 staging: never in starter offer, startable list, card pool, tree hearts; codex slot renamed in place', () => {
-  assert.ok(!starterPool(data).weapons.includes(ID));
-  assert.ok(!starterPool({ ...data, balance: { ...data.balance, starter: { heroes: ['*'], weapons: ['*'] } } }).weapons.includes(ID));
-  assert.deepEqual(startableWeapons(data, treeDef, {}), []);
-  assert.ok(!treeDef.hearts || !treeDef.hearts[ID]);
+test('DM10 release: in the starter offer, a normal tree-gated weapon (heart owned = startable + in the card pool); codex slot unchanged', () => {
+  assert.ok(starterPool(data).weapons.includes(ID));
+  assert.deepEqual(startableWeapons(data, treeDef, {}), [], 'tree-gated: nothing startable without its heart');
+  const heart = treeDef.hearts && treeDef.hearts[ID];
+  assert.equal(heart, 'gt_dragonfire_meteor');
+  assert.ok(startableWeapons(data, treeDef, { [heart]: 1 }).includes(ID));
   const sim = new Sim({ data, characterId: 'wren', seed: 5 });
-  for (let i = 0; i < 40; i++) assert.ok(!generateOffer(sim.cardCtx, sim.rng).cards.some((c) => c.weaponId === ID));
+  for (let i = 0; i < 40; i++) assert.ok(!generateOffer(sim.cardCtx, sim.rng).cards.some((c) => c.weaponId === ID), 'not offered without its heart');
   assert.ok(ENTRY_KEYS.includes('c:dragonfire_meteor') && !ENTRY_KEYS.includes('c:ember_breath'));
-  assert.equal(ENTRY_KEYS.indexOf('c:dragonfire_meteor'), 63, 'same slot: no key moved (DM4-DM6 appended e:wildfire, e:cinder_wyrm, e:cinder_brand after it, DM8 p:ophimber)');
-  assert.ok(!ENTRY_KEYS.some((k) => k === 'weapon:' + ID), 'no Almanac weapon entry until the release switch');
+  assert.equal(ENTRY_KEYS.indexOf('c:dragonfire_meteor'), 63, 'same slot: no key moved');
 });
 
 test('DM2 first volley 0.8 s after the pick, then every 2.6 s', () => {

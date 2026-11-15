@@ -73,12 +73,20 @@
   },
   "hearthwarden": {
     "name": "Lucinda, the Hearth-Warden",
-    "unreleased": true,
     "codexBit": 224,
     "blurb": "Keeper of the old hearth. Her little dragon Ophimber rises and breathes three rings of warm fire.",
     "color": "#ffb35c",
     "kindred": "dragonfire_meteor",
     "pet": "Ophimber",
+    "keepsake": {
+      "id": "warm_scale",
+      "name": "Warm Scale",
+      "desc": "A small rose-gold scale, still warm, as if an old hearth fire never quite went out.",
+      "hint": {
+        "t": "lamps",
+        "n": 24
+      }
+    },
     "ability": {
       "id": "ophimbers_rise",
       "name": "Ophimber's Rise",

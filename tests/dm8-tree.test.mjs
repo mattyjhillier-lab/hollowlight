@@ -24,23 +24,18 @@ const fullDef = compileTree(full.live, data);
 const dmIds = full.info.nodes.filter((n) => n.cluster === ID || n.frag === 'dm').map((n) => n.id);
 const NEW_GATES = ['gt_dragonfire_meteor', 'gt_wildfire', 'gt_cinder_wyrm', 'gt_cinder_brand'];
 
-test('DM8 hidden while unreleased: the players\' tree has no Meteor node, region, link or budget term; the reserved slot stays', () => {
-  assert.deepEqual(players.info.hiddenClusters, [ID]);
-  assert.ok(!players.info.clusters[ID]);
-  for (const id of [...dmIds, ...NEW_GATES]) { assert.ok(!treeDef.nodes[id], `${id} is not in the game tree`); assert.ok(!players.info.positions[id], id); }
-  assert.ok(!treeDef.list.some((id) => id.startsWith('dm_')));
-  assert.ok(!players.info.regions.some((r) => r.id === `c:${ID}`));
-  assert.ok(players.info.regions.some((r) => r.id === 'r:meteor' && r.reserved), 'the reserved slot still holds its place');
-  assert.ok(!players.info.links.some(([a, b]) => String(a).startsWith('dm_') || String(b).startsWith('dm_')));
-  // byte-identical to a tree without the file at all (positions, links, live + v2 raw trees)
-  const without = composeTree(files().filter((f) => f.path !== `clusters/${ID}.json`), data);
-  assert.deepEqual(players.live, without.live);
-  assert.deepEqual(players.v2, without.v2);
-  assert.deepEqual(players.info.positions, without.info.positions);
-  assert.deepEqual(players.info.links, without.info.links);
-  // the same mechanism every unreleased weapon gets: starter / codex skip it, and so does the tree
-  assert.equal(data.weapons[ID].unreleased, true);
-  for (const e of ['wildfire', 'cinder_wyrm', 'cinder_brand']) assert.equal(data.evolutions[e].unreleased, true, e);
+test('DM10 released: the players tree composes the Meteor constellation; the reserved slot gives way (its record stays in core.json)', () => {
+  assert.deepEqual(players.info.hiddenClusters, []);
+  assert.ok(players.info.clusters[ID]);
+  for (const id of [...dmIds, ...NEW_GATES]) { assert.ok(treeDef.nodes[id], `${id} is in the game tree`); assert.ok(players.info.positions[id], id); }
+  assert.ok(players.info.regions.some((r) => r.id === `c:${ID}`));
+  assert.ok(!players.info.regions.some((r) => r.id === 'r:meteor'), 'the reserved slot gives way to the constellation');
+  assert.ok(players.info.core.atlas.regions.some((r) => r.id === 'meteor' && r.kind === 'reserved'), 'the teaser record id stays stable in core.json');
+  // the players' tree is now the full tree (no staged cluster left)
+  assert.deepEqual(players.live, full.live);
+  assert.deepEqual(players.info.positions, full.info.positions);
+  assert.ok(!data.weapons[ID].unreleased);
+  for (const e of ['wildfire', 'cinder_wyrm', 'cinder_brand']) assert.ok(!data.evolutions[e].unreleased, e);
 });
 
 test('DM8 purely additive: the released v5 snapshot is unchanged, on the players\' tree and on the full tree', () => {
@@ -50,11 +45,13 @@ test('DM8 purely additive: the released v5 snapshot is unchanged, on the players
   const retired = new Set(full.info.core.retired.map((t) => t.id));
   assert.deepEqual(releaseProblems(fx, fingerprints(treeDef), treeDef.treeVersion, STEPS, retired), []);
   assert.deepEqual(releaseProblems(fx, fingerprints(fullDef), fullDef.treeVersion, STEPS, retired), []);
-  for (const id of dmIds) assert.ok(!(id in fx.released[v]), `${id} is new (never released)`);
+  const nowFp = fingerprints(treeDef);
+  for (const id of dmIds) assert.equal(fx.released[v][id], nowFp[id], `${id} was released with the Lucinda update (snapshot taken at the launch merge)`);
   // every node the players have keeps its compiled shape in the full tree (requires, costs, effects, unlocks), so release = nothing moves but the new region
   const fp0 = fingerprints(treeDef), fp1 = fingerprints(fullDef);
   for (const id of treeDef.list) assert.equal(fp1[id], fp0[id], id);
-  assert.equal(fullDef.list.length - treeDef.list.length, dmIds.length);
+  assert.equal(fullDef.list.length, treeDef.list.length);
+  for (const id of dmIds) assert.ok(treeDef.nodes[id], `${id} composed for players`);
 });
 
 test('DM8 shape: a magic-weapon garden (3 spokes: 3 dots, a lead-in diamond, a hidden seal, 2 forks), heart, road and Kindling Start', () => {
@@ -130,18 +127,15 @@ test('DM8 volley cooldown hook: only a fixed-cd weapon takes a tree "cooldown" s
   assert.ok(z[1] - z[0] >= 1.3 - 0.03, 'a forged bonus is clamped at -50%');
 });
 
-test('DM8 hostile saves: Meteor ids or a dm fragment in a save are dropped while unreleased; nothing unlocks the weapon', () => {
-  const forged = { gt_dragonfire_meteor: 1, gt_wildfire: 1, dm_blaze: 1, dm_kindle: 1, dm_kindling: 1, sp_reroll1: 1 };
-  const clean = sanitizeTree(forged, { runs: 50, kills: 1e6 }, treeDef, data);
-  for (const id of Object.keys(forged)) if (id !== 'sp_reroll1') assert.ok(!clean || !(id in clean), id);
-  const agg = aggregateMods(forged, treeDef, data);
-  assert.ok(!agg.unlocks || !(agg.unlocks.weapons || []).includes(ID));
-  assert.ok(!agg.weaponBonus || !agg.weaponBonus[ID]);
-  // a compact save carrying the dm fragment (as the full tree would write it) decodes to nothing on the players' tree
+test('DM10 hostile saves: forged Meteor ids are kept only where their conditions allow; a forged dm fragment decodes to known ids only', () => {
+  const forged = { gt_dragonfire_meteor: 1, gt_wildfire: 1, dm_blaze: 1, dm_kindle: 1, dm_kindling: 1, dm_bogus: 1, __proto__x: 1 };
+  const clean = sanitizeTree(forged, { runs: 0, kills: 0 }, treeDef, data);
+  assert.ok(!clean || !('dm_bogus' in clean));
+  assert.ok(!clean || !('gt_dragonfire_meteor' in clean) || !treeDef.nodes.gt_dragonfire_meteor.unlock, 'an unmet heart condition is not bought by a forged save');
   const enc = encodeTree({ gt_dragonfire_meteor: 1, dm_blaze: 1, dm_crash: 1 }, fullDef, fullDef.treeVersion);
-  assert.ok(enc.o && enc.o.dm, 'the full tree writes a dm fragment');
+  assert.ok(enc.o && enc.o.dm, 'the tree writes a dm fragment');
   const dec = decodeTree(enc, treeDef);
-  assert.deepEqual(Object.keys(dec.tree).filter((id) => id.startsWith('dm_') || NEW_GATES.includes(id)), []);
+  for (const id of Object.keys(dec.tree)) assert.ok(treeDef.nodes[id], id);
   for (const v of ['__proto__', 'constructor']) { const o = JSON.parse(`{"o":{"${v}":"AAAA","dm":"////"}}`); assert.doesNotThrow(() => decodeTree(o, treeDef)); }
 });
 
@@ -149,8 +143,8 @@ test('DM8 codex: weapon + evolution keys already appended; Ophimber gets a reser
   for (const k of ['c:dragonfire_meteor', 'e:wildfire', 'e:cinder_wyrm', 'e:cinder_brand']) assert.ok(ENTRY_KEYS.includes(k), k);
   assert.equal(ENTRY_KEYS[ENTRY_KEYS.length - 1], 'p:ophimber');
   assert.equal(tabOfKey('p:ophimber'), 'heroes');
-  const lu = data.hiddenCharacters ? data.hiddenCharacters.hearthwarden : null;
+  const lu = data.characters.hearthwarden;
   const bit = (lu || {}).codexBit;
   assert.ok(Number.isInteger(bit) && bit >= ENTRY_KEYS.length && bit < 256, `hearthwarden codexBit ${bit}`);
-  for (const c of Object.values(data.characters)) assert.notEqual(c.codexBit, bit);
+  for (const [id, c] of Object.entries(data.characters)) if (id !== 'hearthwarden') assert.notEqual(c.codexBit, bit);
 });

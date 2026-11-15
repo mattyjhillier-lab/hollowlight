@@ -3,6 +3,7 @@
 // Serves a built dist/ plus a harness page that iframes the game (same origin, no service worker), starts a Wren run, walks the hero, and at
 // sim seconds 2,5,8,12,20,30,60 records: quality tier, ground shader on/ok/failed (+ why), lightmap, set-B tile paint progress, life under the hero,
 // WebGL info, console warnings, and a canvas snapshot (written to <outDir>/<engine>-<t>s.png).
+// HERO=<id> WEAPON=<id> env: run another hero / starting spirit (default Wren, her kindred).
 // Usage: node scripts/ground-probe.mjs [webkit|chrome4|chrome6|all=all] [outDir=docs/screenshots/ground-phone] [distDir=dist]
 // Exit 1 if at any mark >= 2 s the ground shader is off while the tier is Med/High (or the shader failed). Exit 3: browser not found.
 import http from 'node:http';
@@ -37,7 +38,8 @@ const key = (w, type, code) => w.dispatchEvent(new w.KeyboardEvent(type, { code,
     const glInfo = gl ? { webgl2: typeof w.WebGL2RenderingContext !== 'undefined' && gl instanceof w.WebGL2RenderingContext, maxTex: gl.getParameter(gl.MAX_TEXTURE_SIZE), units: gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS), fragHigh: (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT) || {}).precision, renderer: gl.getParameter(gl.RENDERER), canvas: sc.game.canvas.width + 'x' + sc.game.canvas.height, dpr: w.devicePixelRatio } : null;
     await sleep(1500);
     const tBoot = performance.now();
-    app.startRun('wren');
+    { const H = q.get('hero'), W = q.get('weapon'), sv = app.save.data; if (H) { sv.chars = sv.chars || {}; sv.chars[H] = { xp: 0, keep: 0, woke: true }; } if (W) { sv.tree = sv.tree || {}; sv.tree['gt_' + W] = 1; } } // throwaway probe profile: wake the hero, own the spirit's heart
+    app.startRun(q.get('hero') || 'wren', 'normal', q.get('weapon') || null); // HERO / WEAPON env (DM10: HERO=hearthwarden WEAPON=dragonfire_meteor)
     for (let i = 0; i < 8000; i++) { if (app.sim && app.sim.time > 0.02) break; await sleep(25); }
     const tRun = performance.now();
     const dirs = ['KeyD', 'KeyS', 'KeyA', 'KeyW']; let di = 0, lastTurn = 0; key(w, 'keydown', dirs[0]);
@@ -86,7 +88,9 @@ const srv = http.createServer((req, res) => {
 });
 await new Promise((r) => srv.listen(5396, '127.0.0.1', r));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const url = (tag, extra = '') => `http://127.0.0.1:5396/__h.html?tag=${tag}&marks=${MARKS.join(',')}&extra=${encodeURIComponent(extra)}`;
+const ID_OK = (v) => (/^[a-z_]{1,32}$/.test(v || '') ? v : '');
+const HERO = ID_OK(process.env.HERO), WEAPON = ID_OK(process.env.WEAPON);
+const url = (tag, extra = '') => `http://127.0.0.1:5396/__h.html?tag=${tag}&marks=${MARKS.join(',')}&extra=${encodeURIComponent(extra)}${HERO ? `&hero=${HERO}` : ''}${WEAPON ? `&weapon=${WEAPON}` : ''}`;
 const wait = (ms) => { const got = new Promise((r) => { done = r; }); return Promise.race([got, sleep(ms).then(() => null)]); };
 
 async function webkit() {

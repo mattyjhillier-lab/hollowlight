@@ -59,6 +59,7 @@ export const HERO_LINES = {
   // CHARACTER SYSTEM v2: same body for all; the line + gift speak of the ability (the one thing that differs) and the look
   wren: { line: 'Quick and forward, a ghost pup at her heels.', gift: 'Darts out of trouble' },
   elias: { line: 'Still and tall, a lamplighter who stands his ground.', gift: 'Shelters in candlelight' },
+  hearthwarden: { line: 'Warm and bold, her little dragon Ophimber at her shoulder.', gift: 'Rings of warm fire' },
 };
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -102,6 +103,7 @@ export function heroView(id, c, weaponName) {
     gift: trait ? (copy ? `${copy.gift}: ${trait}` : trait) : copy ? copy.gift : '',
     weapon: typeof weaponName === 'string' ? weaponName : '',
     ability: c && c.ability && typeof c.ability.name === 'string' ? `${c.ability.name}${cd}` : '',
+    abilityId: c && c.ability && typeof c.ability.id === 'string' ? c.ability.id.slice(0, 40) : '',
     pips: heroPips(c),
   };
 }

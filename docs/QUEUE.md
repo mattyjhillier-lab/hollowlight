@@ -7,7 +7,7 @@ DM9 DONE on wip/dm9 (re-check: META tiers need GATES=preset BOND=0/25; Lucinda m
 WAITING ON MATT
 - Real-phone checks: heat, Battery Saver, long session (docs/REAL-PHONE-CHECKLIST.md); ring 3 of the Rise clips portrait edges.
 - Teaser slot "Dragonfire Meteor" already shows dashed in the live tree: keep (rec) or hide until release.
-- Release switch for Lucinda (DM10): needs his yes + phone heat check + DM9 numbers.
+- DM10 BUILT on dev (2026-11-15, test link only): Lucinda + Dragonfire Meteor are playable (starter pick or Warm Scale keepsake = 'Light 24 lamps'). Matt: play her on the iPhone (heat + feel), check the defaults in LOCKED 'DM10 ... BUILT', then the separate merge-to-main yes. Open: Lucinda wardrobe looks/costumes (three options round), Ophimber Almanac page (Update B).
 - Chores: tell testers (one-time tree refund; saves started fresh at new address); old `hollowlight` Cloudflare project: builds switched off 2026-11-14, delete refused (too many deployments), leave it; 5 old worktree folders with uncommitted work.
 - Older decision items further down that may still be open (audit pending): Hollowlighters -> Wickbearers word, About wording, map events balance picks, desktop/phone design picks, minimap + events-almanac picks, nights retune options, Judgement Wheel stream40, name trademark check, riddle lines.
 
@@ -26,7 +26,7 @@ DESIGN CONCERN (Matt, 2026-11-14): as players unlock more weapons, a run will no
 PACING + SENSE REVIEW (Matt, 2026-11-14: "make sure the game is paced well and makes sense") = a gate before the Lucinda + Companions update: (1) first 10 minutes of a new player (hints, first level-ups, first unlock); (2) run pacing (levels per run, weapon ranks/evolutions per run: the dilution concern); (3) unlock cadence over runs (pacing v4: dry stretch 30-56, Far Sight lamp pace); (4) night/difficulty ladder (Deep Dusk, Long Night); (5) does every system make sense to a new player (names, tutorial, what each currency is for). Method: bots + sweeps for numbers, then Matt plays a fresh profile start to finish and says where it dragged or confused.
 
 CLAUDE NEXT (in order)
-1. Lucinda DM9 balance, then DM10 release (Matt's yes).
+1. DM10 done on dev; next: Update B companions chunks (C0-C12) per docs/design/companions-review.md.
 2. Chapter 2 Hushbell Hamlet (design first; Bond/level cap review 25 vs 30/35 happens here).
 3. Companions: summons stop being weapons (Wolves, Ravens leave the weapon list; Elias needs his own companion, crows do not fit); three-options rounds; reopens V1 weapon scope, 15 evolutions, gates, starter pick, tree branches.
 4. Visuals review, then UI alignment pass.
@@ -589,3 +589,13 @@ STATUS wip/wardrobe-build 2026-11-13: WARDROBE v2 BUILT (not merged): ring shelf
 - PARKED (Matt, 2026-11-13): at the Companions chunk, discuss what Elias gets as his companion (Matt: crows do not fit his character). Note: the plan has Raven Flock for Mara and Holy Orbit for Elias; options round (three options) when we reach companions-v1.
 
 - 2026-11-15 PAUSED: iPhone flat-ground bug (dev link, Matt screenshots 14:49 and 13:52 still flat after arc lift 8f18151 + governor warm-up adccc35). Agent was reproducing in real WebKit on wip/ground-phone (new worktree spirit-ground); restart it tomorrow from docs/QUEUE.md. Also waiting: iPhone re-check of live hotfix; Elias icon merge (wip/chk); Companions design.
+
+- 2026-11-15 IDEA (Matt): 5th magic weapon = wind tornadoes. Do the three-options round (verb, look, sound, numbers, 3 evolutions with distinct recipe pairs) AFTER the companions build starts, per LOCKED decision 3; check fit with identity (spirit-wind that carries colour/light, not generic elemental) and an element not already covered (Bolts/Chain = lightning, Meteor = fire, Orbit = holy light).
+
+- 2026-11-15 TO DESIGN (Matt): what REPLACES the 36 retired wolf/raven tree nodes (Summoner branch becomes empty). Constraints: companion power comes from Bond only (no companion stat nodes, LOCKED decision 4), keep the 11 road nodes re-pointed, power = unlocked options behind gates not small stats (LOCKED progression direction), tree screen must not look hollow. Three-options round after the pup Bond steps; likely homes: 5th weapon (wind) gate, Bond-linked unlocks, companion cosmetics/keepsakes, new verbs. Add to docs/design/companions-v2.md before lock.
+
+- 2026-11-15 PAUSED (Matt). Companions design fully locked (see LOCKED 2026-11-15 rows). Independent review agent was running on wip/companions-review (docs/design/companions-review.md): if the PC shut down, re-run it. NEXT: read the review, Matt go on build order, build Howie hidden prototype first. Also waiting: Matt live iPhone check of smoothness (PR 15), tell testers about tree refund.
+
+- 2026-11-15 SPLIT (LOCKED): Update A = Lucinda + Meteor release (DM10: Matt yes + real-phone heat check). Update B = companions chunks C0-C12 (docs/design/companions-review.md) incl. tree v6 with B1 road re-rooting, choose-spirit screen, wind weapon.
+
+- 2026-11-15 RESEARCH DONE: docs/research/42-survivors-pacing-public.md (public sources, thin on exact Spirit Hunters numbers). Hypotheses H1-H8 feed the PACING + SENSE REVIEW gate (section 8). Wispwick pacing v4 model is better cadence evidence than anything public.

@@ -78,15 +78,15 @@ test('expression + cast arm: hurt beats cast, death beats all; the arm rises in 
   assert.ok(castArm(2.6, 2.4) > 0 && castArm(2.6, 2.4) < 1); assert.equal(castArm(3, 2.4), 0); assert.equal(castArm(NaN, 2.4), 0); assert.equal(castArm(1, NaN), 1);
 });
 
-test('still hidden, no placeholder left, she/her everywhere, render-only art (never imports the sim)', () => {
-  const h = data.hiddenCharacters.hearthwarden;
-  assert.equal(h.unreleased, true); assert.equal(h.placeholder, undefined); assert.ok(!data.characters.hearthwarden, 'not selectable');
+test('released (DM10), no placeholder left, she/her everywhere, render-only art (never imports the sim)', () => {
+  const h = data.characters.hearthwarden;
+  assert.ok(!h.unreleased); assert.equal(h.placeholder, undefined);
   const him = /\b(he|him|his|himself)\b/i;
   for (const f of ['src/gfx/ophimberart.js', 'src/gfx/lucindaart.js', 'src/gfx/lucindarig.js', 'src/gfx/lucindapet.js', 'src/gfx/risefx.js', 'src/sim/rise.js']) {
     const lines = txt(f).split('\n').filter((l) => him.test(l) && /ophimber|dragon|pet\b|hatchling/i.test(l));
     assert.deepEqual(lines, [], `${f}: Ophimber is a she`);
   }
-  assert.ok(!him.test(h.blurb + ' ' + h.ability.desc + ' ' + JSON.stringify(h.bondPerks)), 'character text uses she / her');
+  assert.ok(!him.test(h.blurb + ' ' + h.ability.desc + ' ' + JSON.stringify(h.bondPerks) + ' ' + JSON.stringify(h.keepsake)), 'character text uses she / her');
   for (const f of ['src/gfx/lucindaart.js', 'src/gfx/ophimberart.js', 'src/gfx/lucindapet.js', 'src/gfx/lucindarig.js']) assert.ok(!/from '\.\.\/sim|sim\/Sim/.test(txt(f)), `${f} never imports the sim`);
   assert.ok(!/opha|ophb|PLACEHOLDER/.test(txt('src/gfx/risefx.js')), 'the old placeholder blob is gone');
 });

@@ -124,7 +124,8 @@ export function recordTierRun(save, r, ctx) {
       }
     }
     const hs = heroesOf(data);
-    if (!assisted && hs.length > 1 && hs.every((h) => own(rec.heroes, h) && rec.heroes[h].clears > 0)) rec.stars |= STAR_BITS.bothHeroes;
+    // star 2 = cleared with TWO different heroes (DM10: with a third hero it never asks for every hero, so the star means what it meant at launch)
+    if (!assisted && hs.length > 1 && hs.filter((h) => own(rec.heroes, h) && rec.heroes[h].clears > 0).length >= 2) rec.stars |= STAR_BITS.bothHeroes;
     if (!assisted && r.bright === true) rec.stars |= STAR_BITS.brightDawn; // Bright Dawn needs the Grey Alphas (EN7); until then the sim never sets it
     out.stars = rec.stars;
   }

@@ -69,7 +69,7 @@ test('S1 geometry (supersedes the R1 rings): weapons scattered at varied distanc
   const nights = ['a:gt_cursed_forest_hard', 't:nightgate', 'r:twilight'].map(rg);
   assert.ok(new Set(nights.map((r) => r.orbit.tier)).size >= 2 && new Set(nights.map(ang)).size === 3, 'nights scattered (varied tiers and angles)');
   const cs = Object.values(composed.info.centres);
-  assert.equal(cs.length, 5);
+  assert.equal(cs.length, 6); // DM10: + Dragonfire Meteor
   assert.deepEqual(layoutIssues(composed.info, def), []);
   // the hub web (global ring lanterns) stays inside hubR, every region beyond it
   let hubMax = 0;
@@ -83,7 +83,7 @@ test('S1 geometry (supersedes the R1 rings): weapons scattered at varied distanc
 test('S1 region records: hub, constellations, tool groups, the Deep Dusk anchor, display-only heroes, night / reserved / chapter / far records; name, centre, accent, orbit', () => {
   const rg = composed.info.regions;
   const kinds = rg.reduce((a, r) => ((a[r.kind] = (a[r.kind] || 0) + 1), a), {});
-  assert.deepEqual(kinds, { hub: 1, weapon: 5, tool: 6, anchor: 2, hero: Object.keys(data.characters).length, night: 1, reserved: 1, chapter: 1, far: 1 });
+  assert.deepEqual(kinds, { hub: 1, weapon: 6, tool: 6, anchor: 2, hero: Object.keys(data.characters).length, night: 1, chapter: 1, far: 1 });
   for (const r of rg) {
     assert.ok(typeof r.name === 'string' && r.name.length > 0, r.id);
     assert.ok(Array.isArray(r.centre) && r.centre.every(Number.isFinite), r.id);
@@ -97,11 +97,11 @@ test('S1 region records: hub, constellations, tool groups, the Deep Dusk anchor,
   }
   // display-only: hero medallions and reserved slots own no node
   for (const r of rg.filter((x) => x.display)) assert.ok(!composed.info.nodes.some((n) => n.id === r.id), r.id);
-  assert.equal(rg.find((r) => r.id === 'r:meteor').weapon, 'dragonfire_meteor');
-  assert.ok(!def.list.some((id) => /meteor|dragonfire/.test(id)), 'the Meteor slot has no ids');
+  assert.ok(!rg.some((r) => r.id === 'r:meteor'), 'DM10: the reserved Meteor slot gave way to its constellation');
+  assert.deepEqual(rg.find((r) => r.id === 'c:dragonfire_meteor').orbit, { tier: 4, angle: 300, auto: false }, 'in the same place the teaser held');
   assert.equal(rg.find((r) => r.id === 'c:ghost_wolves').name, 'Ghost Wolves');
   const v = buildTreeView(composed.info, def, data);
-  assert.equal(v.threads.length, 11);
+  assert.equal(v.threads.length, 12); // DM10: + the Meteor constellation's thread
   assert.deepEqual(v.ringR, composed.info.core.atlas.tiers.map((x) => x.r));
   assert.deepEqual(v.ringTiers.map((x) => x.name), ['Hearth', 'Wick', 'Dusk', 'Far Hollow', 'Deep Hollow']);
   for (const id of def.list) assert.ok(Number.isInteger(v.ringOf[id]) && v.ringOf[id] >= 0 && v.ringOf[id] < v.ringTiers.length, `${id} maps to a ring`);

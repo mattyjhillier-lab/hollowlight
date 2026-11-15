@@ -28,3 +28,9 @@ Fit: a bonded creature matches Spirits of the Dusk and the Warm Lantern tone; he
 3. Can a companion fall and be re-called (see research 32 framing D), or stay unhurtable?
 4. Migration for existing wolf/raven unlocks (tree nodes become companion nodes?).
 5. Does Holy Orbit stay a weapon?
+
+## Framework LOCKED 2026-11-15 (Matt)
+- Growth: with hero Bond between runs, no run cards. Never hurt or lost in a run. Holy Orbit stays a weapon (4 magic weapons).
+- Next: three options for Wren wolf jobs, then Elias companion, then migration plan; independent review before lock.
+- Wren wolf job LOCKED 2026-11-15: The Tracker (see LOCKED).
+- Elias companion LOCKED 2026-11-15: The Wick (see LOCKED). Next: migration plan for wolf/raven tree nodes + evolutions, Mara later, independent review of the whole design before build.

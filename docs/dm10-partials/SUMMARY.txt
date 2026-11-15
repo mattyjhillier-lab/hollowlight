@@ -1,0 +1,8 @@
+elias|full|b25|focus       before 91+-2.9 (n100) evo 498s d5 0% | after 94+-2.4 (n100) evo 503s d5 0% meteor 62% | diff +3 z=0.8 noise | band 65-90: ABOVE
+elias|full|b25|random      before 90+-3.0 (n100) evo 629s d5 0% | after 96+-2.0 (n100) evo 643s d5 0% meteor 60% | diff +6 z=1.7 noise | band 65-90: ABOVE
+elias|half|b0|focus        before 52+-5.0 (n100) evo 619s d5 0% | after 49+-5.0 (n100) evo 635s d5 0% meteor 57% | diff -3 z=-0.4 noise | band 30-55: in
+elias|half|b0|random       before 42+-4.9 (n100) evo 674s d5 0% | after 41+-4.9 (n100) evo 665s d5 0% meteor 53% | diff -1 z=-0.1 noise | band 30-55: in
+wren|full|b25|focus        before 84+-3.7 (n100) evo 456s d5 0% | after 95+-2.2 (n100) evo 504s d5 0% meteor 62% | diff +11 z=2.6 SIG | band 65-90: ABOVE
+wren|full|b25|random       before 81+-3.9 (n100) evo 616s d5 0% | after 87+-3.4 (n100) evo 610s d5 0% meteor 64% | diff +6 z=1.2 noise | band 65-90: in
+wren|half|b0|focus         before 39+-4.9 (n100) evo 543s d5 0% | after 42+-4.9 (n100) evo 592s d5 0% meteor 51% | diff +3 z=0.4 noise | band 30-55: in
+wren|half|b0|random        before 32+-4.7 (n100) evo 713s d5 0% | after 45+-5.0 (n100) evo 678s d5 0% meteor 61% | diff +13 z=1.9 noise | band 30-55: in

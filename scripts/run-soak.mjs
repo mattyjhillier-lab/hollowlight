@@ -3,6 +3,7 @@
 // Also the start-of-run ground timeline (tier, ground shader on, Deep Forest tiles ready) and optional screenshots at chosen seconds.
 // Usage: node scripts/run-soak.mjs <baseUrl> [minutes=14] [throttle=4] [profile=iphone|android|desktop] [quality=auto|high|med|low|saver]
 //        [grant spec, e.g. ghost_wolves:count=5,power=5,speed=5,duration=5] [evolveAt=sim seconds:evoId] [step=30] [shots=dir:0,1,3,10]
+// HERO=<id> (default wren) and WEAPON=<id> pick the run's hero and starting spirit (DM10: HERO=hearthwarden WEAPON=dragonfire_meteor RISE=1 for Lucinda).
 // NOPREBAKE=1: both pre-bake modes start switched off by the crash guard (the in-run lazy path a device gets after two unfinished loads).
 // Budget (exit 1): heap growth per minute after minute 2 > HEAP_MB_MIN (default 4), canvas count growth > 20, worst frame after 1:00 > LONG_BUDGET (default 1000 ms).
 import { spawn } from 'node:child_process';
@@ -49,7 +50,10 @@ await send('Page.navigate', { url: `${base}/?perf=1&god=1&seed=1${process.env.T0
 for (let i = 0; i < 200; i++) { if (await ev('!!(window.__app && window.__app.scene && window.__app.scene.sys && window.__app.save)')) break; await sleep(300); }
 await sleep(+(process.env.LINGER || 1.5) * 1000);
 await ev(`(window.__app.save.setSettings({quality:${JSON.stringify(saver ? 'auto' : quality)},batterySaver:${saver}}), window.__app.applySettings(), 0)`);
-const tStart = await ev("(window.__app.startRun('wren'), performance.now())");
+const HERO = /^[a-z_]{1,32}$/.test(process.env.HERO || '') ? process.env.HERO : 'wren', WPN = /^[a-z_]{1,32}$/.test(process.env.WEAPON || '') ? process.env.WEAPON : null;
+// a fresh throwaway profile: wake the chosen hero and own the chosen spirit's heart so startRun accepts them (no ?auto=, which changes run behaviour)
+if (HERO !== 'wren' || WPN) await ev(`(()=>{const a=window.__app,s=a.save.data;s.chars=s.chars||{};s.chars[${JSON.stringify(HERO)}]={xp:0,keep:0,woke:true};const w=${JSON.stringify(WPN)};if(w){s.tree=s.tree||{};s.tree['gt_'+w]=1;}return 1})()`);
+const tStart = await ev(`(window.__app.startRun(${JSON.stringify(HERO)}, 'normal', ${JSON.stringify(WPN)}), performance.now())`);
 let simAt = null; for (let i = 0; i < 1200; i++) { if (await ev('!!(window.__app.sim && window.__app.sim.time > 0.02)')) { simAt = await ev('performance.now()'); break; } await sleep(50); }
 if (simAt === null) { console.log(JSON.stringify({ error: 'run never started' })); proc.kill(); process.exit(1); }
 // a walker: the hero circles (radius ~300 px, one lap ~25 s) and dashes now and then, so gems are collected and the camera moves like a player's
@@ -82,8 +86,8 @@ while (true) {
   }
   // level-up / chest / offer cards: take the first card at once (the run never waits on a pick; evolution cards are declined so the evolve moment is ours)
   await ev(`(()=>{const a=window.__app,s=a.sim;if(!s||s.state!=='levelup'||!s.offer)return 0;const c=s.offer.cards.find(c=>c.kind!=='evolution')||s.offer.cards[0];if(c)a.pick(c.key);return 1})()`);
-  // RISE=1 (dev builds): swap in Lucinda's hidden Ophimber's Rise (sim only, as scripts/rise-shots.mjs does) and cast it whenever it is ready
-  if (process.env.RISE) await ev(`(()=>{const a=window.__app,s=a.sim;if(!s||s.state!=='running'||!a.data.hiddenCharacters||!a.data.hiddenCharacters.hearthwarden)return 0;s.character=a.data.hiddenCharacters.hearthwarden;s.ability.id='ophimbers_rise';if(s.ability.cdLeft<=0)s.useAbility();return 1})()`);
+  // RISE=1: cast the hero's ability whenever it is ready (Lucinda's Ophimber's Rise with HERO=hearthwarden; DM10 released her, no swap needed)
+  if (process.env.RISE) await ev(`(()=>{const a=window.__app,s=a.sim;if(!s||s.state!=='running')return 0;if(s.ability.cdLeft<=0)s.useAbility();return 1})()`);
   if (rt >= nextSample) { const s = await ev(SAMPLE); samples.push(s); nextSample += STEP; console.error(`${s.t}s sim ${s.simT} heap ${s.heapMB} cv ${s.canvases} tex ${s.texMB} ch ${s.children} spr ${s.sprites} rib ${s.rib} e ${s.enemies} work ${s.work} calls ${s.calls} tier ${s.tier}`); }
   if (now >= end) break;
   await sleep(rt < 20 ? 100 : 1000);

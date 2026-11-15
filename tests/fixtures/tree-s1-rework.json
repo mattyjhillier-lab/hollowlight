@@ -1,5 +1,5 @@
 {
- "_comment": "S1 rework (tree content version 5, 2026-11-12): every live id whose effect / price / requires changed, and every new id (garden branches, roads). Overlay on the older golden fixtures; generated, then reviewed. 2026-11-12 Kindling Start budget trim (LOCKED NEW VERB DETAILS): li_heal hearts heal +5% -> +2.5% (-0.10 sustain PE).",
+ "_comment": "S1 rework (tree content version 5, 2026-11-12): every live id whose effect / price / requires changed, and every new id (garden branches, roads). Overlay on the older golden fixtures; generated, then reviewed. 2026-11-12 Kindling Start budget trim (LOCKED NEW VERB DETAILS): li_heal hearts heal +5% -> +2.5% (-0.10 sustain PE). 2026-11-15 DM10 release: the 40 Dragonfire Meteor ids (dm fragment + its 4 gates) appended as built in DM8 (additive; no existing id changed).",
  "br_satchel": {
   "effects": [
    {
@@ -3627,5 +3627,869 @@
    "id": "cursed_forest",
    "n": 16
   }
+ },
+ "gt_dragonfire_meteor": {
+  "effects": [
+   {
+    "unlock": "weapon",
+    "id": "dragonfire_meteor"
+   }
+  ],
+  "cost": {
+   "gold": 200,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_way5"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "killEnemy",
+   "id": "wolf",
+   "n": 6000
+  }
+ },
+ "gt_wildfire": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "wildfire"
+   }
+  ],
+  "cost": {
+   "gold": 200,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_kindle"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "any",
+   "n": 4
+  }
+ },
+ "gt_cinder_wyrm": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "cinder_wyrm"
+   }
+  ],
+  "cost": {
+   "gold": 400,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_scale"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "dragonfire_meteor",
+     "n": 1
+    },
+    {
+     "t": "killEnemy",
+     "id": "root_crawler",
+     "n": 10000
+    }
+   ]
+  }
+ },
+ "gt_cinder_brand": {
+  "effects": [
+   {
+    "unlock": "evolution",
+    "id": "cinder_brand"
+   }
+  ],
+  "cost": {
+   "gold": 600,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_kindle2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "all",
+   "of": [
+    {
+     "t": "evolveWeapon",
+     "id": "dragonfire_meteor",
+     "n": 3
+    },
+    {
+     "t": "clearChapter",
+     "id": "cursed_forest",
+     "n": 1
+    }
+   ]
+  }
+ },
+ "dm_blaze": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "area",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 210,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_dragonfire_meteor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_embers": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "duration",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_blaze"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_impact": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_embers"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_kindle": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 3
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_impact"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wil1": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "area",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 380,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_wildfire"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wil2": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "power",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 470,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wil1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wil3": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 640,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wil2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wil4": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "duration",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 380,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_wildfire"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wil5": {
+  "effects": [
+   {
+    "echo": "wildfire"
+   }
+  ],
+  "cost": {
+   "gold": 140,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wil4"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wil6": {
+  "effects": [
+   {
+    "echo": "wildfire"
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wil5"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_fireball": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "count",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 290,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_dragonfire_meteor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_crash": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "power",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_fireball"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_quick": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "cooldown",
+    "pct": -2
+   }
+  ],
+  "cost": {
+   "gold": 490,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_crash"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_scale": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "count",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 910,
+   "shards": 1
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_quick"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "dragonfire_meteor",
+   "n": 1
+  }
+ },
+ "dm_wyr1": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "power",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 380,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_cinder_wyrm"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wyr2": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "area",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 470,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wyr1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wyr3": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 640,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wyr2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wyr4": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "cooldown",
+    "pct": -1
+   }
+  ],
+  "cost": {
+   "gold": 380,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_cinder_wyrm"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wyr5": {
+  "effects": [
+   {
+    "echo": "cinder_wyrm"
+   }
+  ],
+  "cost": {
+   "gold": 140,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wyr4"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_wyr6": {
+  "effects": [
+   {
+    "echo": "cinder_wyrm"
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_wyr5"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_glow": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "area",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_dragonfire_meteor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_linger": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "duration",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 430,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_glow"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_steady": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "cooldown",
+    "pct": -2
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_linger"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_kindle2": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 3
+   }
+  ],
+  "cost": {
+   "gold": 570,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_steady"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "evolveWeapon",
+   "id": "dragonfire_meteor",
+   "n": 3
+  }
+ },
+ "dm_bra1": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "duration",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 380,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_cinder_brand"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_bra2": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "area",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 470,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_bra1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_bra3": {
+  "effects": [
+   {
+    "status": "burn",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 640,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_bra2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_bra4": {
+  "effects": [
+   {
+    "weapon": "dragonfire_meteor",
+    "stat": "power",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 380,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_cinder_brand"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_bra5": {
+  "effects": [
+   {
+    "echo": "cinder_brand"
+   }
+  ],
+  "cost": {
+   "gold": 140,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_bra4"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_bra6": {
+  "effects": [
+   {
+    "echo": "cinder_brand"
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_bra5"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_kindling": {
+  "effects": [
+   {
+    "perk": "kindle",
+    "weapon": "dragonfire_meteor",
+    "pct": 25,
+    "secs": 60,
+    "pe": 0.1
+   }
+  ],
+  "cost": {
+   "gold": 2400,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_dragonfire_meteor"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": {
+   "t": "clearChapter",
+   "id": "cursed_forest",
+   "n": 18
+  }
+ },
+ "dm_way1": {
+  "effects": [
+   {
+    "player": "maxHp",
+    "pct": 1
+   }
+  ],
+  "cost": {
+   "gold": 260,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "gt_chain_lightning"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_way2": {
+  "effects": [
+   {
+    "perk": "gemPull",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 280,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_way1"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_way3": {
+  "effects": [
+   {
+    "drop": "magnet",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 300,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_way2"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_way4": {
+  "effects": [
+   {
+    "perk": "gemPull",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 320,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_way3"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
+ },
+ "dm_way5": {
+  "effects": [
+   {
+    "drop": "magnet",
+    "pct": 2
+   }
+  ],
+  "cost": {
+   "gold": 340,
+   "shards": 0
+  },
+  "rankCost": 1,
+  "maxRank": 1,
+  "requires": [
+   "dm_way4"
+  ],
+  "requiresAny": null,
+  "excludes": [],
+  "unlock": null
  }
 }

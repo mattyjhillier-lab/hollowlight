@@ -36,7 +36,9 @@ const S1 = fx('tree-s1-rework.json'); // S1 rework overlay (tree content version
 const TOOL_FRAGS = ['co', 'cd', 'bs', 'rs', 'df', 'wd']; // wd = the Wardrobe (EXTRAS v1, zero power)
 const RETIRED = new Set([...Object.keys(CH2).filter((k) => CH2[k] === null), 'cd_radar']); // + Lantern Compass (inert tombstone, Almanac delegation 2026-10-28)
 // the v1 tree has no Wolves / Orbit hearts: compile it with those two ungated, as they were
-const v1data = { ...data, weapons: Object.fromEntries(Object.entries(data.weapons).map(([k, w]) => [k, ['ghost_wolves', 'holy_orbit'].includes(k) ? (({ treeGate, ...r }) => r)(w) : w])) };
+// weapons released after the v1 tree (DM10: Dragonfire Meteor) did not exist then: left out with their evolutions
+const LATER = new Set(['dragonfire_meteor']);
+const v1data = { ...data, weapons: Object.fromEntries(Object.entries(data.weapons).filter(([k]) => !LATER.has(k)).map(([k, w]) => [k, ['ghost_wolves', 'holy_orbit'].includes(k) ? (({ treeGate, ...r }) => r)(w) : w])), evolutions: Object.fromEntries(Object.entries(data.evolutions).filter(([, e]) => !LATER.has(e.weapon))) };
 const snap = (n) => ({ effects: n.effects, cost: n.cost, rankCost: n.rankCost, maxRank: n.maxRank, requires: [...n.requires].sort(), requiresAny: n.requiresAny ? [...n.requiresAny] : null, excludes: [...n.excludes].sort(), unlock: n.unlock });
 
 test('T3a GOLDEN: every id of the live tree has exactly the effect / price / ranks / requires / condition skill-tree-v2 Appendix A specifies', () => {
@@ -117,7 +119,7 @@ test('T1 ids and idx are append-only (snapshot); ids are never reused or renumbe
 
 test('T1 fragment save keys are short, unique and idx are stable small integers', () => {
   const keys = new Set(real.info.nodes.map((n) => n.frag));
-  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'or', 'rs', 'rv', 'wd', 'wf']); // v2: no hero fragments; wd = Wardrobe (EXTRAS v1)
+  assert.deepEqual([...keys].sort(), ['bo', 'bs', 'cd', 'cl', 'co', 'core', 'df', 'dm', 'or', 'rs', 'rv', 'wd', 'wf']); // v2: no hero fragments; dm = Dragonfire Meteor (DM10); wd = Wardrobe (EXTRAS v1)
   for (const k of Object.keys(liveDef.frags)) {
     const f = liveDef.frags[k];
     assert.ok(f.max < 64, k);
@@ -128,7 +130,7 @@ test('T1 fragment save keys are short, unique and idx are stable small integers'
 // ---------------------------------------------------------------- v2 view
 test('T1 v2 view compiles: every node (125 + the tool clusters), template requires, apex uses requiresAny, gates stay root nodes', () => {
   assert.equal(v2Def.list.length, real.info.nodes.length);
-  assert.equal(real.info.nodes.length, 286, '163 at v4 + S1: 3 magic gardens x (18 forks + 1 lead-in) + the Candle Ring seal + 53 road lanterns; + Far Sight (co_far) and its 6-lantern road + 5 Kindling Start diamonds (2026-11-12)');
+  assert.equal(real.info.nodes.length, 326, '163 at v4 + S1: 3 magic gardens x (18 forks + 1 lead-in) + the Candle Ring seal + 53 road lanterns; + Far Sight (co_far) and its 6-lantern road + 5 Kindling Start diamonds (2026-11-12); + the 40-node Dragonfire Meteor constellation (DM10 release)');
   const rv = real.info.clusters.raven_flock;
   const apex = rv.outline[5].id;
   assert.deepEqual(v2Def.nodes[apex].requiresAny, [rv.outline[4].id, rv.outline[6].id]);
@@ -391,7 +393,7 @@ test('T1 a SIXTH weapon (Lantern Wisps, C.4) is data only: compiles, lays out as
   assert.deepEqual(def.nodes.lw_wick.requires, ['gt_lantern_wisps']);
   const b = budgetOf(def, c.info.core.budget, Object.keys(c.info.clusters).length);
   assert.deepEqual(b.violations, []);
-  assert.equal(b.W, 6);
+  assert.equal(b.W, W + 1);
   const base = budgetOf(v2Def, RULE, W);
   assert.ok(Math.abs(b.combatAtCap - base.combatAtCap) < 1e-9, 'a new weapon adds choices, not power: the pool stays 3.44 PE');
   // the live (game) tree is untouched by it: all new nodes are inert and the gates of a missing live weapon are not required
@@ -443,7 +445,7 @@ for (const n of [1000, 2000]) {
 }
 
 test('T1 synthetic trees: deep chains do not overflow the stack, a cycle is still caught, bad frags are rejected', () => {
-  const { files: fs, data: d } = synthTree(loadRealData(), 300);
+  const { files: fs, data: d } = synthTree(loadRealData(), 400);
   const c = compose(fs, d);
   const raw = clone(c.v2);
   const first = raw.nodes.find((n) => n.id === 'z00_n0');

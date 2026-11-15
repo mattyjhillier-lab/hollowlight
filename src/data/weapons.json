@@ -75,7 +75,6 @@
   "dragonfire_meteor": {
     "name": "Dragonfire Meteor",
     "treeGate": true,
-    "unreleased": true,
     "type": "magic",
     "tags": [],
     "color": "#ffb35c",

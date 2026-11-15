@@ -1,4 +1,4 @@
-// DM4: Wildfire (SPREAD), the first Dragonfire Meteor evolution. Hidden with the weapon (unreleased).
+// DM4: Wildfire (SPREAD), the first Dragonfire Meteor evolution. Released with the weapon (DM10).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Sim } from '../src/sim/Sim.js';
@@ -24,14 +24,14 @@ const R = { count: 4, area: 5, duration: 5, power: 3 };
 test('data: wildfire entry (pair, verb, hidden, tune numbers (spec, retuned in DM4 for the 1.8-2.3x home band: grow 0.5, tickK 0.8))', () => {
   const e = data.evolutions.wildfire;
   assert.equal(e.weapon, ID); assert.deepEqual(e.pair, ['area', 'duration']); assert.equal(e.verb, 'SPREAD'); assert.equal(e.name, 'Wildfire');
-  assert.equal(e.treeGate, true); assert.equal(e.unreleased, true); assert.equal(e.cue, 'evo_wildfire');
+  assert.equal(e.treeGate, true); assert.ok(!e.unreleased); assert.equal(e.cue, 'evo_wildfire');
   assert.equal(e.desc, 'Fire creeps from patch to patch wherever foes stand in it.');
   const t = e.tune;
   assert.deepEqual([t.seedEvery, t.reachMin, t.reachMax, t.childR, t.childLife, t.grow, t.tickK, t.maxGen, t.maxKids, t.maxLive, t.seedRate], [1.2, 20, 30, 0.8, 0.7, 0.5, 0.8, 2, 2, 6, 3]);
   assert.deepEqual(Object.values(data.evolutions).filter((x) => x.weapon === ID).map((x) => x.pair.join('+')), ['area+duration', 'count+power', 'power+duration']); // DM5 adds count+power, DM6 power+duration
 });
 
-test('hidden: never offered while the weapon is unreleased', () => {
+test('tree-gated: never offered without the weapon heart (no tree)', () => {
   const sim = new Sim({ data, characterId: 'wren', seed: 5 });
   for (let i = 0; i < 40; i++) { const o = generateOffer(sim.cardCtx, sim.rng); assert.ok(!o.cards.some((c) => c.weaponId === ID || c.evoId === 'wildfire')); }
 });

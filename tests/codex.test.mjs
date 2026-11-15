@@ -30,7 +30,7 @@ test('CX1 bitsets round-trip; hostile input -> empty / masked', () => {
   assert.deepEqual(bitsToSet(setToBits(keys)), keys);
   assert.equal(setToBits(new Set(['nope', '__proto__'])), '');
   for (const bad of [null, undefined, 5, {}, [], 'XYZ', 'f'.repeat(65), '0x1f', '1f ', '<img>', 'ＦＦ']) assert.equal(cleanBits(bad), '', String(bad));
-  assert.equal(cleanBits('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff').length <= Math.ceil(ENTRY_KEYS.length / 4), true); // bits beyond the list dropped
+  assert.equal(cleanBits('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff').length <= Math.ceil(Math.max(ENTRY_KEYS.length, ...Object.values(data.characters).map((c) => (Number.isInteger(c.codexBit) ? c.codexBit + 1 : 0))) / 4) /* + registered hero bits (DM10: Lucinda 224) */, true); // bits beyond the list dropped
   assert.equal(cleanBits('000'), ''); // trailing zero nibbles trimmed
 });
 
@@ -143,7 +143,7 @@ test('CX4 queue: sizes, caps (1 big + 3 medium), order, once only, defeat holds 
   const q = queue(b, s.codex, data, { won: true });
   assert.equal(q.big.length, CAP.big);
   assert.equal(q.medium.length, CAP.medium);
-  assert.equal(q.waiting, 5, 'the other completions wait'); // 5 weapon pages + spirits tab, one shown
+  assert.equal(q.waiting, 6, 'the other completions wait'); // 6 weapon pages (DM10: + Dragonfire Meteor) + spirits tab, one shown
   assert.ok(q.more >= 12);
   assert.ok(q.medium.every((i) => i.kind === 'evo' && i.gold && !/Recipe/.test(i.sub) && i.cue.startsWith('evo_')));
   assert.ok(q.big[0].pills.length === 2 && q.big[0].cue === 'tree_whole');

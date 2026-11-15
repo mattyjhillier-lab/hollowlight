@@ -30,8 +30,8 @@ export const TOUR = Object.freeze([
 
 // ---------------------------------------------------------------- copy (plain text; the plate draws it with textContent)
 // parts: [{key:'W'} | {text:'...'}]; sr: the line the screen reader hears once.
-const HERO_TAP = { wren: 'the wolf', elias: 'the candle' };
-const HERO_WHISPER = { wren: 'Your wolves rush in together. It recharges.', elias: 'Stand in the ring of light to heal. It recharges.' };
+const HERO_TAP = { wren: 'the wolf', elias: 'the candle', hearthwarden: 'the flame' };
+const HERO_WHISPER = { wren: 'Your wolves rush in together. It recharges.', elias: 'Stand in the ring of light to heal. It recharges.', hearthwarden: 'Ophimber breathes three rings of fire round you. It recharges.' };
 export const COPY = {
   move: {
     kb: [{ key: 'W' }, { key: 'A' }, { key: 'S' }, { key: 'D' }, { text: ' or arrows to walk' }], // default keys; plateFor uses the live keymap (A3)
