@@ -587,3 +587,5 @@ Tree rework state: look LOCKED from the sandbox (night sky, rune rings, Tune val
 STATUS wip/wardrobe-build 2026-11-13: WARDROBE v2 BUILT (not merged): ring shelf + costumes + earned list + run bake + toast; tests/wardrobe-v2.test.mjs; shots docs/screenshots/wardrobe-build/. Needs Matt's side-by-side look vs the sandbox, then merge to dev.
 
 - PARKED (Matt, 2026-11-13): at the Companions chunk, discuss what Elias gets as his companion (Matt: crows do not fit his character). Note: the plan has Raven Flock for Mara and Holy Orbit for Elias; options round (three options) when we reach companions-v1.
+
+- 2026-11-15 PAUSED: iPhone flat-ground bug (dev link, Matt screenshots 14:49 and 13:52 still flat after arc lift 8f18151 + governor warm-up adccc35). Agent was reproducing in real WebKit on wip/ground-phone (new worktree spirit-ground); restart it tomorrow from docs/QUEUE.md. Also waiting: iPhone re-check of live hotfix; Elias icon merge (wip/chk); Companions design.
