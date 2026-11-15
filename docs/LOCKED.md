@@ -545,3 +545,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-15 | COMPANIONS FRAMEWORK | (1) Companions grow with the hero Bond between runs (no run cards). (2) Companions are never hurt or lost in a run. (3) Holy Orbit stays a picked weapon (4 magic weapons: Bolts, Chain, Orbit, Meteor). Open: Wren wolf jobs, Elias companion, wolf/raven tree migration. | Matt |
 
 | 2026-11-15 | WREN WOLF COMPANION JOB | The Tracker: pup darts out and snaps at the weakest/most wounded nearby enemy, small steady bite (~5-8% of Wren damage, not a second weapon); on Pelt Dash it runs the dash line and bites what she passes. Pale-blue wolf pup trailing light. Never hurt; grows with Bond. | Matt |
+
+| 2026-11-15 | ELIAS COMPANION | The Wick: tiny living candle-flame by his shoulder; every ~20 s it takes one hit for him (ward flash), never hurt itself; feeds Sanctuary Ring (a little longer). ~4-6% of his survival, no damage. Grows with Bond. | Matt |
