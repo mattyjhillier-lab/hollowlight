@@ -164,7 +164,7 @@ test('GEN1 tree-validate and the timeline sim run with the third hero (--extra),
   assert.match(v, /fragments compose/);
   assert.doesNotMatch(v, /^FAIL/m);
   const t = execFileSync(process.execPath, ['scripts/tree-timeline.mjs', '--extra', 'tests/fixtures/hero3', '--players', '4', '--runs', '60'], { cwd: ROOT, encoding: 'utf8' });
-  assert.match(t, /heroes: wren, elias, sable/);
+  assert.match(t, /heroes: wren, elias, hearthwarden, sable/);
   const m = t.match(/nothing-to-buy (\d+(?:\.\d+)?)%/);
   assert.ok(m, 'timeline prints its nothing-to-buy share');
   assert.equal(Number(m[1]), 0, 'nothing-to-buy stays 0% with the third hero');

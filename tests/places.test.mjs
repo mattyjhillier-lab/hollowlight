@@ -57,11 +57,11 @@ test('E7 codex bitset keys: hostile text and out-of-range bits for the new keys'
   for (const bad of [null, 5, {}, [], '__proto__', 'f'.repeat(65), '<img>', '-1', '1g3']) assert.equal(cleanBits(bad), '', String(bad));
   const keys = new Set(['s:lamp', 'sp:knot:tells', 'c:places']);
   assert.deepEqual(bitsToSet(setToBits(keys)), keys);
-  assert.ok(cleanBits('f'.repeat(64)).length <= Math.ceil(ENTRY_KEYS.length / 4)); // bits past the list are dropped
+  assert.ok(cleanBits('f'.repeat(64)).length <= Math.ceil(Math.max(ENTRY_KEYS.length, ...Object.values(data.characters).map((c) => (Number.isInteger(c.codexBit) ? c.codexBit + 1 : 0))) / 4) /* + registered hero bits (DM10: Lucinda 224) */); // bits past the list are dropped
   assert.equal(setToBits(new Set(['s:nope', 'sp:x', '__proto__', 'c:places'])), setToBits(new Set(['c:places'])));
   const s = sanitize({ ...defaultSave(1), codex: { v: 1, read: 'f'.repeat(32), told: '__proto__', evil: 1 } });
   assert.equal(s.codex.told, '');
-  assert.ok(s.codex.read.length <= Math.ceil(ENTRY_KEYS.length / 4));
+  assert.ok(s.codex.read.length <= Math.ceil(Math.max(ENTRY_KEYS.length, ...Object.values(data.characters).map((c) => (Number.isInteger(c.codexBit) ? c.codexBit + 1 : 0))) / 4) /* + registered hero bits (DM10: Lucinda 224) */);
 });
 
 test('E7 old saves load unchanged: real fixtures re-save byte-identically to the pre-E7 build (golden), no sites key added', () => {

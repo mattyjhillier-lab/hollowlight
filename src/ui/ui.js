@@ -45,7 +45,8 @@ import './results.css';
 import './u4.css';
 import wrenPortrait from '../assets/heroes/wren.webp';
 import eliasPortrait from '../assets/heroes/elias.webp';
-const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait };
+import lucindaPortrait from '../assets/heroes/hearthwarden.webp';
+const PORTRAITS = { wren: wrenPortrait, elias: eliasPortrait, hearthwarden: lucindaPortrait };
 /** An enemy's code-drawn portrait (the same one the Almanac shows) as a blob url, or null; only our own painters make these. */
 function enemyPortrait(id) { return typeof id === 'string' ? portraitUrl(id) : null; }
 const PORTRAIT_IMGS = new Map(); // hero id -> Image, loaded once from the bundled portrait files (used by the tree's hub medallion)

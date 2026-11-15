@@ -95,6 +95,7 @@ export function buildHeroSelect({ heroes = [], portraits = {}, selected, onStart
   const C = { kicker: HERO.kicker, title: HERO.title, whisper: HERO.whisper, ...(copy || {}) };
   add(head, el('div', 'u3-kicker ty-kicker', String(C.kicker)), el('h1', 'u3-htitle ty-title', String(C.title), { id: hid }), el('p', 'u3-goal ty-whisper', String(C.whisper)), divider());
   const group = el('div', 'u3-heroes', null, { role: 'radiogroup', 'aria-labelledby': hid });
+  if (heroes.length >= 3) group.classList.add('u3-heroes--many'); // DM10: three heroes side by side (portrait over text) instead of a 2 + 1 wrap that scrolls
   const cards = [];
   let cur = Math.max(0, heroes.findIndex((h) => h.id === selected));
   const state = (i) => {

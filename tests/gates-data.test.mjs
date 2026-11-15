@@ -28,16 +28,16 @@ test('T11 starter pool (v2): no tree = no weapon card (the starting spirit is in
   assert.deepEqual([...weaponKeys(new Sim({ data, characterId: 'elias', seed: 3, tree: launch }))], ['ghost_wolves']);
 });
 
-test('T12 ungated evolutions are exactly howling_legion + sanctum_halo; all 5 weapons + 13 evolutions are gated; no hero tree gate', () => {
+test('T12 ungated evolutions are exactly howling_legion + sanctum_halo; all 6 weapons + 16 evolutions are gated (DM10 adds the Meteor + 3); no hero tree gate', () => {
   const open = Object.keys(data.evolutions).filter((e) => !data.evolutions[e].treeGate && !data.evolutions[e].unreleased).sort();
   assert.deepEqual(open, ['howling_legion', 'sanctum_halo']);
-  assert.deepEqual(gatedW, ['chain_lightning', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
-  assert.equal(gatedE.length, 13);
+  assert.deepEqual(gatedW, ['chain_lightning', 'dragonfire_meteor', 'ghost_wolves', 'holy_orbit', 'raven_flock', 'spirit_bolts']);
+  assert.equal(gatedE.length, 16);
   assert.ok(Object.values(data.characters).every((c) => !c.treeGate), 'heroes wake by keepsakes, never by the tree');
 });
 
 test('T13 every gated weapon/evolution has exactly one gate node; gate nodes are permanent, hub-attached, cheap, no shards', () => {
-  assert.equal(gateNodes.length, 18);
+  assert.equal(gateNodes.length, 22);
   for (const w of gatedW) assert.equal(gateOf('weapon', w).length, 1, w);
   for (const e of gatedE) assert.equal(gateOf('evolution', e).length, 1, e);
   for (const id of gateNodes) {

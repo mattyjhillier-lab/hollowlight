@@ -16,7 +16,7 @@ export const RES = {
     lineBoss: 'The sun is generous. Every grey thing wakes. The Treant sleeps at last.',
   },
   // 3-6 word hero barks at victory (BIBLE section 8). Placeholder wording until Matt writes his own; unknown heroes simply get none.
-  barks: { wren: 'Still here. Still lit.', elias: 'The flame held. So did we.' },
+  barks: { wren: 'Still here. Still lit.', elias: 'The flame held. So did we.', hearthwarden: 'The hearth still burns.' },
   timeSurvived: 'Time survived',
   timeWon: 'Survived the night',
   shortOfDawn: 'short of dawn',
@@ -59,7 +59,7 @@ export const RES = {
     goldMul: (mul, night) => `x${mul} ${night}`,
     firstShard: (n) => `+${n} first dawn`,
     boss: 'boss',
-    stars: ['Cleared', 'Both heroes', 'Bright Dawn'],
+    stars: ['Cleared', 'Two heroes', 'Bright Dawn'],
     starsLabel: 'Night stars',
     kept: 'What you earned before the fall is always kept.',
     again: (night) => `Again · ${night}`,

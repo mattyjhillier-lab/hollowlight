@@ -1,4 +1,4 @@
-// DM5: Cinder Wyrm (LOOP), the second Dragonfire Meteor evolution. Hidden with the weapon (unreleased).
+// DM5: Cinder Wyrm (LOOP), the second Dragonfire Meteor evolution. Released with the weapon (DM10).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Sim } from '../src/sim/Sim.js';
@@ -24,7 +24,7 @@ const R = { count: 4, area: 3, duration: 3, power: 5 };
 test('data: cinder_wyrm entry (pair count + power, verb LOOP, hidden, tune numbers)', () => {
   const e = data.evolutions[EVO];
   assert.equal(e.weapon, ID); assert.deepEqual(e.pair, ['count', 'power']); assert.equal(e.verb, 'LOOP'); assert.equal(e.name, 'Cinder Wyrm');
-  assert.equal(e.treeGate, true); assert.equal(e.unreleased, true); assert.equal(e.cue, 'evo_cinder_wyrm');
+  assert.equal(e.treeGate, true); assert.ok(!e.unreleased); assert.equal(e.cue, 'evo_cinder_wyrm');
   assert.equal(e.codex, 'It was a hearth once. It remembers being a roof.');
   const t = e.tune;
   assert.deepEqual([t.loopR, t.speed, t.up, t.down, t.segs, t.lock, t.volley], [95, 150, 7, 2, 7, 0.4, 0.7]);
@@ -32,7 +32,7 @@ test('data: cinder_wyrm entry (pair count + power, verb LOOP, hidden, tune numbe
   assert.notDeepEqual(e.pair, data.evolutions.wildfire.pair);
 });
 
-test('hidden: never offered while the weapon is unreleased', () => {
+test('tree-gated: never offered without the weapon heart (no tree)', () => {
   const sim = new Sim({ data, characterId: 'wren', seed: 5 });
   for (let i = 0; i < 40; i++) { const o = generateOffer(sim.cardCtx, sim.rng); assert.ok(!o.cards.some((c) => c.weaponId === ID || c.evoId === EVO)); }
 });

@@ -1,4 +1,4 @@
-// DM6: Cinder Brand (POP), the third Dragonfire Meteor evolution (Matt's pick A). Hidden with the weapon (unreleased).
+// DM6: Cinder Brand (POP), the third Dragonfire Meteor evolution (Matt's pick A). Released with the weapon (DM10).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Sim } from '../src/sim/Sim.js';
@@ -24,7 +24,7 @@ const R = { count: 2, area: 3, duration: 5, power: 5 };
 test('data: cinder_brand entry (pair power + duration, verb POP, hidden, tune numbers, distinct from the siblings)', () => {
   const e = data.evolutions[EVO];
   assert.equal(e.weapon, ID); assert.deepEqual(e.pair, ['power', 'duration']); assert.equal(e.verb, 'POP'); assert.equal(e.name, 'Cinder Brand');
-  assert.equal(e.treeGate, true); assert.equal(e.unreleased, true); assert.equal(e.cue, 'evo_cinder_brand');
+  assert.equal(e.treeGate, true); assert.ok(!e.unreleased); assert.equal(e.cue, 'evo_cinder_brand');
   assert.equal(e.codex, 'What it touches, it remembers, and returns.');
   const t = e.tune;
   assert.deepEqual([t.popR, t.fuseMax, t.popRate, t.maxLive, t.maxTargets], [26, 2.5, 12, 48, 4]);
@@ -34,7 +34,7 @@ test('data: cinder_brand entry (pair power + duration, verb POP, hidden, tune nu
   assert.equal(new Set(Object.values(data.evolutions).filter((x) => x.weapon === ID).map((x) => x.verb)).size, 3);
 });
 
-test('hidden: never offered while the weapon is unreleased', () => {
+test('tree-gated: never offered without the weapon heart (no tree)', () => {
   const sim = new Sim({ data, characterId: 'wren', seed: 5 });
   for (let i = 0; i < 40; i++) { const o = generateOffer(sim.cardCtx, sim.rng); assert.ok(!o.cards.some((c) => c.weaponId === ID || c.evoId === EVO)); }
 });

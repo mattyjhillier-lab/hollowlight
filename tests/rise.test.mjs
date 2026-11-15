@@ -13,7 +13,7 @@ import { data } from './helpers.mjs';
 import { sanitize } from '../src/save/schema.js';
 
 const DT = 1 / 60, HID = 'hearthwarden';
-const HIT = data.hiddenCharacters[HID].ability.hit; // the ignition multiplier is tuned by the sweeps (data only), so the tests read it
+const HIT = data.characters[HID].ability.hit; // the ignition multiplier is tuned by the sweeps (data only), so the tests read it
 const dd = { ...data, enemies: { ...data.enemies, dummy: { name: 'Dummy', hp: 1e9, speed: 0, dmg: 0, r: 8, xp: 0, gold: 0, color: '#fff', shape: 'wolf', mass: 1 } } };
 const mk = (opts = {}) => {
   const sim = new Sim({ data: dd, characterId: HID, seed: 5, godMode: true, ...opts });
@@ -26,20 +26,16 @@ const run = (sim, secs, input = {}) => { for (let i = 0; i < Math.round(secs / D
 const cast = (sim) => { sim.ability.cdLeft = 0; sim.step(DT, { ability: true }); };
 const dmg = (sim) => sim.dmgBy.ophimbers_rise || 0;
 
-test('hero data: Lucinda is a hidden (unreleased) hero, never in data.characters, the starter pool or any player path', () => {
+test('hero data: Lucinda is released (DM10): in data.characters and the starter pool, woken like the others (starter pick or her Warm Scale keepsake)', () => {
   const raw = JSON.parse(readFileSync(new URL('../src/data/characters.json', import.meta.url), 'utf8'));
   const h = raw[HID];
-  assert.equal(h.name.split(',')[0], 'Lucinda'); assert.equal(h.pet, 'Ophimber'); assert.equal(h.unreleased, true); assert.equal(h.placeholder, undefined, 'the placeholder art is replaced by the locked Lucinda A / Ophimber 1 art'); assert.equal(h.unreleased, true, 'still hidden: the release switch is DM8-DM10'); assert.equal(h.kindred, 'dragonfire_meteor');
+  assert.equal(h.name.split(',')[0], 'Lucinda'); assert.equal(h.pet, 'Ophimber'); assert.ok(!h.unreleased); assert.equal(h.placeholder, undefined); assert.equal(h.kindred, 'dragonfire_meteor');
   assert.equal(h.ability.id, 'ophimbers_rise'); assert.equal(h.ability.name, "Ophimber's Rise"); assert.equal(h.ability.cooldown, 60);
-  assert.ok(!Object.hasOwn(data.characters, HID) && Object.hasOwn(data.hiddenCharacters, HID), 'the loader (and the test helper) split her out');
-  const idx = readFileSync(new URL('../src/data/index.js', import.meta.url), 'utf8');
-  assert.ok(/unreleased === true \? hiddenCharacters : characters/.test(idx), 'src/data/index.js does the same split');
-  assert.ok(!starterPool(data).heroes.includes(HID) && !starterPool({ ...data, balance: { ...data.balance, starter: { heroes: ['*'], weapons: ['*'] } } }).heroes.includes(HID));
-  assert.ok(!JSON.stringify(data.tree).includes(HID), 'no tree node, hero region or starter list names her');
-  const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8'), main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-  assert.ok(/Object\.hasOwn\(data\.characters, characterId\)/.test(app) && /Object\.hasOwn\(app\.data\.characters, app\.params\.auto\)/.test(main), 'startRun and ?auto= only accept ids in data.characters');
+  assert.ok(Object.hasOwn(data.characters, HID) && !Object.hasOwn(data.hiddenCharacters, HID));
+  assert.ok(starterPool(data).heroes.includes(HID));
+  assert.ok(!JSON.stringify(data.tree).includes(HID), 'heroes are not tree nodes (CHARACTER SYSTEM v2)');
   for (const p of ['keen', 'quick', 'wise', 'warm', 'bright']) assert.equal(typeof h.bondPerks[p], 'string');
-  assert.equal(Object.hasOwn(h, 'keepsake'), false, 'no keepsake/tree hook until DM8');
+  assert.equal(h.keepsake.id, 'warm_scale'); assert.equal(h.keepsake.name, 'Warm Scale'); assert.equal(h.keepsake.hint.t, 'lamps');
 });
 
 test('sim: only the sim resolves her (hidden) id; an unknown id still falls back to a TypeError-free path for released heroes', () => {
@@ -231,8 +227,10 @@ test('cues: rise_call + rise_ring registered and mapped; quiet, no duck', () => 
   assert.ok(CUES.rise_call && CUES.rise_ring); assert.ok(MORE_CUES.rise_ring.pri === 1 && MORE_CUES.rise_call.cap === 1);
 });
 
-test('hostile save: a forged save that names Lucinda as awake, starter or last loadout is cleaned (she can never be started from storage)', () => {
-  const s = sanitize({ version: 3, chars: { [HID]: { woke: true }, wren: { woke: true } }, notes: { loadout: { hero: HID, weapon: 'ghost_wolves' }, starter: { hero: HID, weapon: 'ghost_wolves' } } });
-  assert.ok(!Object.hasOwn(s.chars, HID) && Object.hasOwn(s.chars, 'wren'));
-  assert.ok(!s.notes.loadout && !s.notes.starter);
+test('save: after release Lucinda is a normal hero id in chars / starter / loadout; hostile values are still clamped and unknown heroes dropped', () => {
+  const s = sanitize({ version: 3, chars: { [HID]: { woke: 'yes', xp: 1e99, keep: -4 }, wren: { woke: true }, hearthwardenx: { woke: true } }, notes: { loadout: { hero: HID, weapon: 'dragonfire_meteor' }, starter: { hero: HID, weapon: 'dragonfire_meteor' } } });
+  assert.ok(Object.hasOwn(s.chars, HID) && Object.hasOwn(s.chars, 'wren') && !Object.hasOwn(s.chars, 'hearthwardenx'));
+  assert.equal(s.chars[HID].woke, false, 'only a real true wakes her');
+  assert.ok(Number.isFinite(s.chars[HID].xp) && s.chars[HID].keep === 0);
+  assert.deepEqual(s.notes.loadout, { hero: HID, weapon: 'dragonfire_meteor' });
 });

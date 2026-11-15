@@ -54,7 +54,7 @@ test('S1 every magic weapon is a garden: one branch per evolution = 3 dots -> le
 test('S1 the starter evolution without a gate gets a zero-power landmark seal (new id); hidden seals stay hidden', () => {
   const halo = def.nodes.or_halo;
   assert.equal(halo.kind, 'socket'); assert.deepEqual(halo.effects, [{ echo: 'sanctum_halo' }]); assert.equal(halo.permanent, false);
-  const b = budgetOf(V2, C.info.core.budget, 5);
+  const b = budgetOf(V2, C.info.core.budget, Object.keys(C.info.clusters).length);
   assert.deepEqual(b.violations, []);
   for (const w of MAGIC) for (const br of C.info.clusters[w].branchInfo) if (def.nodes[br.seal].effects.some((e) => e.unlock === 'evolution')) assert.equal(def.nodes[br.seal].hidden, true, br.seal);
   // Wolves / Ravens keep their small outline clusters (companions-to-be): no branches
@@ -197,7 +197,7 @@ test('S1 starter: the starter heart + first seal are lit where they sit; every n
 
 // ---------------------------------------------------------------- budget
 test('S1 budget: each magic weapon pool rises about 5% PE (soft cap 17.2), status stays inside its shared cap, the rule ceiling holds', () => {
-  const b = budgetOf(V2, C.info.core.budget, 5);
+  const b = budgetOf(V2, C.info.core.budget, Object.keys(C.info.clusters).length);
   assert.deepEqual(b.violations, []);
   const soft = (S, Cc) => Cc * (1 - Math.exp(-S / Cc));
   for (const w of MAGIC) {
@@ -206,7 +206,7 @@ test('S1 budget: each magic weapon pool rises about 5% PE (soft cap 17.2), statu
     assert.ok(gain > 0.03 && gain < 0.07, `${w}: PE ${(gain * 100).toFixed(1)}%`);
   }
   for (const w of ['ghost_wolves', 'raven_flock']) assert.ok(b.rows[`wpn:${w}`].S <= 24);
-  assert.ok(b.rows.status.S <= 14, 'the shared status pool did not grow');
+  assert.ok(b.rows.status.S <= 22, 'the shared status pool grew only by the Meteor Burn nodes (DM8/DM10: 14 -> 22, inside its shared cap, no violation)');
   assert.ok(b.combatAtCap <= C.info.core.budget.base.combat);
 });
 

@@ -67,18 +67,19 @@ test('hostile hero names, lines, version and bank are inert text (no innerHTML a
   assert.equal(C.splitName(42).name, 'Hero');
 });
 
-test('hero select: Wren and Elias cards, stats as pips with names, ability line, radio semantics', () => {
+test('hero select: Wren, Elias and Lucinda cards, stats as pips with names, ability line, radio semantics', () => {
   const hs = buildHeroSelect({ heroes: heroes(), selected: 'wren' });
   const s = texts(hs.root);
-  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Pelt Dash', 'Sanctuary Ring', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Darts out of trouble']) assert.ok(s.includes(w), w);
-  assert.ok(!/Ghost Wolves|Holy Orbit|kindred/i.test(s), 'hero cards carry no weapon / kindred text');
+  for (const w of ['Who carries the lantern?', 'Wren', 'the Orphan', 'Elias', 'the Priest', 'Pelt Dash', 'Sanctuary Ring', 'Lucinda', 'the Hearth-Warden', "Ophimber's Rise", 'Rings of warm fire', 'Walk with Wren', 'Back', 'Chosen', 'Ready', 'Darts out of trouble']) assert.ok(s.includes(w), w);
+  assert.ok(!/Ghost Wolves|Holy Orbit|Dragonfire Meteor|kindred/i.test(s), 'hero cards carry no weapon / kindred text');
   assert.equal(hs.group.attrs.role, 'radiogroup');
-  assert.deepEqual(hs.cards.map((c) => c.el.attrs['aria-checked']), ['true', 'false']);
-  assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['0', '-1']);
+  assert.deepEqual(hs.cards.map((c) => c.el.attrs['aria-checked']), ['true', 'false', 'false']);
+  assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['0', '-1', '-1']);
   assert.equal(hs.cards[0].el.attrs['aria-label'], 'Wren, the Orphan');
-  assert.equal(find(hs.root, (n) => /^Health \d of 5$/.test(n.attrs['aria-label'] || '')).length, 2);
+  assert.equal(find(hs.root, (n) => /^Health \d of 5$/.test(n.attrs['aria-label'] || '')).length, 3);
   assert.deepEqual(C.heroPips(data.characters.wren), { health: 4, speed: 4 }, 'v2: one shared body');
   assert.deepEqual(C.heroPips(data.characters.elias), C.heroPips(data.characters.wren));
+  assert.deepEqual(C.heroPips(data.characters.hearthwarden), C.heroPips(data.characters.wren));
 });
 
 test('hero select keyboard: arrows/digits move the choice, Enter starts, Esc goes back, buttons keep native Enter', () => {
@@ -89,11 +90,13 @@ test('hero select keyboard: arrows/digits move the choice, Enter starts, Esc goe
   hs.onKey(ev('ArrowRight'));
   assert.equal(hs.current(), 'elias');
   assert.equal(globalThis.document.activeElement, hs.cards[1].el);
-  assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['-1', '0']);
+  assert.deepEqual(hs.cards.map((c) => c.el.attrs.tabindex), ['-1', '0', '-1']);
   hs.onKey(ev('1'));
   assert.equal(hs.current(), 'wren');
   hs.onKey(ev('ArrowLeft'));
-  assert.equal(hs.current(), 'elias'); // wraps
+  assert.equal(hs.current(), 'hearthwarden'); // wraps to the last card
+  hs.onKey(ev('2'));
+  assert.equal(hs.current(), 'elias');
   hs.onKey(ev('Enter'));
   assert.deepEqual(out, ['start:elias']);
   globalThis.document.activeElement = hs.start;
@@ -113,7 +116,7 @@ test('hero select DOM order: cards, Back, Start (Tab order)', () => {
   const hs = buildHeroSelect({ heroes: heroes(), selected: 'wren' });
   const order = [];
   walk(hs.root, (n) => { if (n.attrs.role === 'radio') order.push('card'); else if (n.tag === 'button') order.push(n.textContent.slice(0, 4)); });
-  assert.deepEqual(order, ['card', 'card', 'Back', 'Walk']);
+  assert.deepEqual(order, ['card', 'card', 'card', 'Back', 'Walk']);
 });
 
 test('CSS: every rule scoped under .overlay.u3 / .u3; no external URLs; no backdrop-filter; asset + source safety', () => {
@@ -121,7 +124,7 @@ test('CSS: every rule scoped under .overlay.u3 / .u3; no external URLs; no backd
   assert.ok(!/url\(\s*['"]?https?:/.test(css) && !/backdrop-filter/.test(css));
   const sels = [...css.matchAll(/(?:^|[};{])\s*([^{};@]+)\{/g)].map((m) => m[1].trim()).filter((x) => x && !/^\d|^from|^to/.test(x));
   for (const sel of sels) for (const part of sel.split(',')) assert.ok(/\.u3\b/.test(part), 'unscoped: ' + part.trim());
-  assert.ok(statSync(R('src/assets/heroes/wren.webp')).size <= 15360 && statSync(R('src/assets/heroes/elias.webp')).size <= 15360);
+  for (const h of ['wren', 'elias', 'hearthwarden']) assert.ok(statSync(R(`src/assets/heroes/${h}.webp`)).size <= 15360, h);
   const js = (readFileSync(R('src/ui/title.js'), 'utf8') + readFileSync(R('src/ui/titlecopy.js'), 'utf8')).replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(!/innerHTML|insertAdjacentHTML|outerHTML/.test(js));
 });
@@ -192,7 +195,7 @@ const { buildCharacters } = await import('../src/ui/charsui.js');
 const { charsView } = await import('../src/ui/charcopy.js');
 const { treeDef } = await import('./helpers.mjs');
 test('Characters page: awake hero shows Bond, skill, stats, the 5 named gifts; a sleeping hero shows its keepsake + hint progress; hostile text inert', () => {
-  const save = { chars: { wren: { xp: 2000, keep: 0, woke: true }, elias: { xp: 0, keep: 2, woke: false } }, stats: { killsByEnemy: { root_crawler: 120 } } };
+  const save = { chars: { wren: { xp: 2000, keep: 0, woke: true }, elias: { xp: 0, keep: 2, woke: false } }, stats: { killsByEnemy: { root_crawler: 120 }, sites: { lamps: 9 } } };
   const v = charsView(save, data, treeDef);
   const w = v.find((x) => x.id === 'wren'), e = v.find((x) => x.id === 'elias');
   assert.equal(w.bond.lvl, 7);
@@ -201,6 +204,8 @@ test('Characters page: awake hero shows Bond, skill, stats, the 5 named gifts; a
   assert.equal(e.awake, false);
   assert.equal(e.keep.line, 'Candle Stub 2/5');
   assert.ok(/Root Crawler: 120\/400/.test(e.keep.hint), e.keep.hint);
+  const lu = v.find((x) => x.id === 'hearthwarden');
+  assert.equal(lu.awake, false); assert.equal(lu.keep.line, 'Warm Scale 0/5'); assert.ok(/9\/24/.test(lu.keep.hint), lu.keep.hint);
   const evil = '<img src=x onerror=alert(1)>';
   const page = buildCharacters({ view: [{ ...w, name: evil }, e], onBack: () => {} });
   assert.ok(texts(page.root).includes(evil));
@@ -210,13 +215,13 @@ test('Characters page: awake hero shows Bond, skill, stats, the 5 named gifts; a
   assert.ok(texts(page.page).includes('Candle Stub 2/5') && !texts(page.page).includes('Elias'), 'a sleeping hero stays a mystery');
   const out = []; const p2 = buildCharacters({ view: v, onBack: () => out.push('back') });
   p2.onKey({ key: 'Escape', preventDefault() {} }); assert.deepEqual(out, ['back']);
-  assert.deepEqual(charsView({ chars: JSON.parse('{"__proto__":{"woke":true},"wren":{"xp":"x","woke":"yes"}}'), stats: {} }, data, treeDef).map((x) => x.awake), [false, false]);
+  assert.deepEqual(charsView({ chars: JSON.parse('{"__proto__":{"woke":true},"wren":{"xp":"x","woke":"yes"}}'), stats: {} }, data, treeDef).map((x) => x.awake), [false, false, false]);
 });
 
 test('CHK: every hero ability has its own emblem on the hero card (Elias candelabra, Wren wolf), hostile ids fall back', async () => {
   const { EMBLEM_OF } = await import('../src/ui/hudsvg.js');
   const hs = heroes();
-  for (const id of ['wren', 'elias']) {
+  for (const id of ['wren', 'elias', 'hearthwarden']) {
     const h = hs.find((x) => x.id === id);
     assert.ok(h.abilityId && Object.hasOwn(EMBLEM_OF, h.abilityId), `${id} ability ${h.abilityId} has an emblem`);
   }

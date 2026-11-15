@@ -108,7 +108,7 @@ File `src/data/tree/clusters/dragonfire_meteor.json`, prefix `dm`, emblem `flame
 | DM7 | Hearth Rings + Ophimber rise art; `hearthwarden` entry (unreleased) | tests, ability on/off 2-5 points |
 | DM8 | Tree cluster + emblem + gates + codex + hostile-save tests | `tree-validate --table`, `gates-*`, budget decision |
 | DM9 | Balance pass (section 6 list) + starter check | numbers, seeds, noise |
-| DM10 | Release switch (Matt's yes): starter list, unflag, launch-merge snapshot | checklist, PR |
+| DM10 | Release switch (Matt's yes): starter list, unflag, launch-merge snapshot | checklist, PR. BUILT on dev 2026-11-15 (LOCKED "DM10 ... BUILT"); snapshot at the merge to main |
 
 DM3 may overlap DM2 (render vs sim, separate files).
 

@@ -99,9 +99,18 @@ html.touch .overlay.u3 .u3-keys { display: none; }
 .overlay.u3 .u3-kbd { display: inline-block; min-width: 1.7em; margin: 0 2px; padding: 0 .35em; text-align: center; font: var(--fw-body-strong) var(--fs-small)/1.5 var(--font-body); color: #ffe0a0;
   border-radius: 7px; background: linear-gradient(#4a3826, #26190f); box-shadow: 0 0 0 1.5px #c99a4e, 0 0 0 3px #2a1a0c; }
 
+.overlay.u3 .u3-heroes.u3-heroes--many { --por-w: clamp(70px, 8.4vw, 112px); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 2vw, 28px); padding-top: 36px; }
+.overlay.u3 .u3-heroes--many .u3-hero { flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: clamp(12px, 2.2vh, 20px) clamp(12px, 1.6vw, 22px) clamp(10px, 1.8vh, 16px); }
+.overlay.u3 .u3-heroes--many .u3-info { align-items: center; }
+.overlay.u3 .u3-heroes--many .u3-name { font-size: clamp(26px, 4.4vh, 40px); }
+.overlay.u3 .u3-heroes--many .u3-line { font-size: var(--fs-small); }
+
 /* ---- portrait phones: one column, rounded windows (the kit already drops the hanging cap) ---- */
 @media (orientation: portrait) {
   .overlay.u3 .u3-heroes { --por-w: 100px; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 0; }
+  .overlay.u3 .u3-heroes.u3-heroes--many { --por-w: 84px; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .overlay.u3 .u3-heroes--many .u3-hero { flex-direction: row; align-items: flex-start; text-align: left; }
+  .overlay.u3 .u3-heroes--many .u3-info { align-items: stretch; }
   .overlay.u3 .u3-hero { padding: 14px 14px 14px 18px; gap: 12px; align-items: flex-start; }
   .overlay.u3 .u3-line { display: none; }
   .overlay.u3 .u3-head .u3-htitle { font-size: 30px; }
@@ -129,6 +138,10 @@ html.touch .overlay.u3 .u3-keys { display: none; }
   .overlay.u3 .u3-head .u3-kicker, .overlay.u3 .u3-head .lg-divider, .overlay.u3 .u3-goal, .overlay.u3 .u3-line, .overlay.u3 .u3-help, .overlay.u3 .u3-hero > .lg-eyelet { display: none; }
   .overlay.u3 .u3-head .u3-htitle { font-size: 24px; }
   .overlay.u3 .u3-heroes { --por-w: 74px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-top: 0; }
+  .overlay.u3 .u3-heroes.u3-heroes--many { --por-w: 58px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .overlay.u3 .u3-heroes--many .u3-hero { flex-direction: row; align-items: flex-start; text-align: left; padding: 8px 10px 8px 12px; gap: 8px; }
+  .overlay.u3 .u3-heroes--many .u3-info { align-items: stretch; }
+  .overlay.u3 .u3-heroes--many .u3-name { font-size: 22px; }
   .overlay.u3 .u3-hero { padding: 10px 12px 10px 16px; gap: 10px; }
   .overlay.u3 .u3-name { font-size: 26px; }
   .overlay.u3 .u3-info { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 2px; align-content: start; }
