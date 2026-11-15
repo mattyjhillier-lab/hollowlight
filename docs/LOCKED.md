@@ -555,3 +555,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-15 | TRACKER BOND STEPS | New verb at each step (all within the ~5-8% of Wren damage share; numbers to be sweep-tuned): Bond 5 fetches a nearby gem now and then; 10 leaves a short pawprint trail that speeds Wren a little; 15 its bite marks the enemy (all damage on it slightly higher); 25 one howl per run staggers nearby enemies. | Matt |
 
 | 2026-11-15 | TRACKER PUP LOOK | A Lantern Scruff: scrappy moon-blue pup, scruffy coat, cheek ruff, low bushy tail, ear tips + tail tip glow Wren amber. Sandbox C:\Users\matty\spirit-pupart-sandbox, sources on wip/pup-look (docs/mockups/pup-look). Poses: idle sit, trot, dart, bite-snap, howl. | Matt |
+
+| 2026-11-15 | PUP NAME | Wren's Tracker pup is named Howie (like Ophimber for Lucinda). Use it in the hero panel, Almanac pet entry, Bond text and card copy; nothing a player reads may call it only "the pup" once built. | Matt |
