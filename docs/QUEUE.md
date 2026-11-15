@@ -589,3 +589,5 @@ STATUS wip/wardrobe-build 2026-11-13: WARDROBE v2 BUILT (not merged): ring shelf
 - PARKED (Matt, 2026-11-13): at the Companions chunk, discuss what Elias gets as his companion (Matt: crows do not fit his character). Note: the plan has Raven Flock for Mara and Holy Orbit for Elias; options round (three options) when we reach companions-v1.
 
 - 2026-11-15 PAUSED: iPhone flat-ground bug (dev link, Matt screenshots 14:49 and 13:52 still flat after arc lift 8f18151 + governor warm-up adccc35). Agent was reproducing in real WebKit on wip/ground-phone (new worktree spirit-ground); restart it tomorrow from docs/QUEUE.md. Also waiting: iPhone re-check of live hotfix; Elias icon merge (wip/chk); Companions design.
+
+- 2026-11-15 IDEA (Matt): 5th magic weapon = wind tornadoes. Do the three-options round (verb, look, sound, numbers, 3 evolutions with distinct recipe pairs) AFTER the companions build starts, per LOCKED decision 3; check fit with identity (spirit-wind that carries colour/light, not generic elemental) and an element not already covered (Bolts/Chain = lightning, Meteor = fire, Orbit = holy light).
