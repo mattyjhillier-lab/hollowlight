@@ -537,3 +537,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | OLD CLOUDFLARE PROJECT LEFT AS IS (Matt, 2026-11-14) | Not worth the wrangler/API-token clean-up (328 deployments). Left with builds disabled; no security risk (static public build, no secrets, separate origin so no shared saves). Revisit only if Matt wants it gone. | 2026-11-14 | Matt, chat |
 
 | 2026-11-14 | HOTFIX LIVE | Evolve freeze + phone heat fixes merged to main (PR 14) on Matt's yes. | Matt |
+
+| 2026-11-15 | GROUND COLOUR EARLIER | Ground-bland fix = bring colour in earlier: ARC ambient/saturation rows from ~3-4 min, lively by 8:00 (touches visibility arc; Matt picked it). | Matt |

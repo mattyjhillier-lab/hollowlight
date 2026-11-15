@@ -16,14 +16,14 @@ test('table: ascending seconds from 0 to 900, 10 columns per row, design keyfram
   for (let i = 1; i < ARC_A.length; i++) assert.ok(ARC_A[i][0] > ARC_A[i - 1][0]);
   for (const r of ARC_A) assert.equal(r.length, 10);
   assert.equal(at(0).amb, 0x222b54);
-  assert.equal(at(600).amb, 0x56609a);
+  assert.equal(at(600).amb, 0x6a6aa4);
   assert.equal(at(900).amb, 0xffe2c4);
   assert.equal(at(0).lan, 150);
   assert.equal(at(690).lan, 130);
 });
 
 test('design luminance table: Y at each keyframe matches the sheet (+-0.003)', () => {
-  const Y = [0.027, 0.031, 0.044, 0.074, 0.127, 0.195, 0.283, 0.530, 0.796];
+  const Y = [0.027, 0.031, 0.061, 0.111, 0.161, 0.195, 0.283, 0.530, 0.796];
   ARC_A.forEach((r, i) => assert.ok(Math.abs(lumY(r[1]) - Y[i]) < 0.003, `row ${i}: ${lumY(r[1])}`));
 });
 
