@@ -549,3 +549,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-15 | ELIAS COMPANION | The Wick: tiny living candle-flame by his shoulder; every ~20 s it takes one hit for him (ward flash), never hurt itself; feeds Sanctuary Ring (a little longer). ~4-6% of his survival, no damage. Grows with Bond. | Matt |
 
 | 2026-11-15 | COMPANIONS DECISIONS 1-3 | (1) All six wolf+raven evolutions are RETIRED (Matt overrode the recommendation to keep wolf ones as pup milestones; pup Bond steps need a separate design; owners refunded via the tree step). (2) One-time choose-your-new-spirit screen (free heart + first seal of the chosen magic weapon); Wren default becomes Spirit Bolts. (3) Accept 4 magic weapons now, then a 5th-magic-weapon three-options round straight after. Plan: docs/design/companions-v2.md. | Matt |
+
+| 2026-11-15 | COMPANIONS DECISIONS 4-6 | (4) Companion power REPLACES Bond +5% damage row (total power unchanged). (5) The 5 summons ring nodes are retired and refunded with the other wolf/raven nodes. (6) Design Ophimber's between-ability job now (three options), so all three heroes match at release. | Matt |
