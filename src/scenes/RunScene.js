@@ -698,8 +698,9 @@ export class RunScene extends Phaser.Scene {
     // Auto-tier ignores the first 8 s of a run and the lazy ground-tile build: one-off start-up work (shader/texture uploads, tile slices)
     // looked like a slow device and dropped a capable PC to the Low look for 15 s+.
     const lz = this.bState && this.bState.lazy && !this.bState.lazy.done;
+    // the first ~20 s are never judged: textures and tiles are still being built, so a slow start is not a slow device (a phone dropped to the flat Low ground at ~10 s)
     if (this.sim && this.sim.state === 'running' && !app.paused && dt < 250) this.warmMs = (this.warmMs || 0) + dt;
-    if (this.sim && this.sim.state === 'running' && !app.paused && (this.warmMs || 0) > 8000 && !lz && q.sample(dt, this.workMs)) this.applyTier();
+    if (this.sim && this.sim.state === 'running' && !app.paused && (this.warmMs || 0) > 20000 && !lz && q.sample(dt, this.workMs)) this.applyTier();
     const info = this.perfInfo;
     info.sprites = this.countSprites();
     info.particles = this.parts.count;
