@@ -45,7 +45,8 @@ test('DM8 purely additive: the released v5 snapshot is unchanged, on the players
   const retired = new Set(full.info.core.retired.map((t) => t.id));
   assert.deepEqual(releaseProblems(fx, fingerprints(treeDef), treeDef.treeVersion, STEPS, retired), []);
   assert.deepEqual(releaseProblems(fx, fingerprints(fullDef), fullDef.treeVersion, STEPS, retired), []);
-  for (const id of dmIds) assert.ok(!(id in fx.released[v]), `${id} is new (never released)`);
+  const nowFp = fingerprints(treeDef);
+  for (const id of dmIds) assert.equal(fx.released[v][id], nowFp[id], `${id} was released with the Lucinda update (snapshot taken at the launch merge)`);
   // every node the players have keeps its compiled shape in the full tree (requires, costs, effects, unlocks), so release = nothing moves but the new region
   const fp0 = fingerprints(treeDef), fp1 = fingerprints(fullDef);
   for (const id of treeDef.list) assert.equal(fp1[id], fp0[id], id);
