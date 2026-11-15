@@ -4,6 +4,8 @@ import { INV } from './style.js';
 import { ROLE } from './palette.js';
 import { buildRigAtlas, drawWrenFlat, drawWrenBody, drawPupFlat, FLAT, FLAT_TEXEL, FRAMES, PUP_FLAT, TEX, PUP_K, DU } from './wrenart.js';
 import { ELIAS_FRAMES, drawEliasFlat, drawEliasBody, E_FLAT, E_FLAT_TEXEL } from './eliasart.js';
+import { LUCINDA_FRAMES, drawLucindaFlat, L_FLAT, L_FLAT_TEXEL } from './lucindaart.js';
+import { OPHIMBER_FRAMES, OPHIMBER_ATLAS } from './ophimberart.js';
 import { withCostume, costumeOverlay, pupCollar, okCost } from './costume.js';
 
 const TAU = Math.PI * 2;
@@ -56,6 +58,29 @@ function makeEliasTextures(scene) {
   crowdOutline(scene, fcv, 'hero_elias');
 }
 
+// Lucinda (hidden hero) + Ophimber: rig atlas, flat sprite (Low tier, crowd outline source, flicker/death) and the pet's pose atlas (also used by risefx.js)
+function makeLucindaTextures(scene) {
+  const { cv, frames } = buildRigAtlas(mk, LUCINDA_FRAMES, 768);
+  const tex = put(scene, 'lucinda_rig', cv);
+  for (const [name, f] of Object.entries(frames)) {
+    const fr = tex.add(name, 0, f.x, f.y, f.w, f.h);
+    fr.customPivot = true; fr.pivotX = f.ox; fr.pivotY = f.oy;
+  }
+  const fcv = mk(L_FLAT.w * L_FLAT_TEXEL, L_FLAT.h * L_FLAT_TEXEL);
+  const fc = fcv.getContext('2d');
+  fc.scale(L_FLAT_TEXEL, L_FLAT_TEXEL); fc.translate(-L_FLAT.x0, -L_FLAT.y0);
+  drawLucindaFlat(fc);
+  flatPivot(put(scene, 'hero_hearthwarden', fcv), L_FLAT);
+  INV.hero_hearthwarden = DU / L_FLAT_TEXEL;
+  crowdOutline(scene, fcv, 'hero_hearthwarden');
+  const o = buildRigAtlas(mk, OPHIMBER_FRAMES, 1024);
+  const ot = put(scene, OPHIMBER_ATLAS, o.cv);
+  for (const [name, f] of Object.entries(o.frames)) {
+    const fr = ot.add(name, 0, f.x, f.y, f.w, f.h);
+    fr.customPivot = true; fr.pivotX = f.ox; fr.pivotY = f.oy;
+  }
+}
+
 export function makeRigTextures(scene) {
   const { cv, frames } = buildRigAtlas(mk);
   const tex = put(scene, 'wren_rig', cv);
@@ -72,6 +97,7 @@ export function makeRigTextures(scene) {
   INV.hero_wren = DU / FLAT_TEXEL;
   crowdOutline(scene, fcv, 'hero_wren');
   makeEliasTextures(scene);
+  makeLucindaTextures(scene);
   // flat pups (Low tier): glow baked in
   for (const pose of ['sit', 'run']) {
     const pcv = mk(PUP_FLAT.w * TEX * PUP_K, PUP_FLAT.h * TEX * PUP_K);

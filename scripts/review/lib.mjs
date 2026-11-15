@@ -69,5 +69,5 @@ export const BIG_STATS = {
   chapters: { cursed_forest: { runs: 99, clears: 99, bestTime: 900 } },
   evolved: Object.fromEntries(Object.keys(readJson('src/data/evolutions.json')).map((k) => [k, 50])),
   weaponsUsed: Object.fromEntries(Object.keys(readJson('src/data/weapons.json')).map((k) => [k, 50])),
-  charsUsed: Object.fromEntries(Object.keys(readJson('src/data/characters.json')).map((k) => [k, 99])),
+  charsUsed: Object.fromEntries(Object.entries(readJson('src/data/characters.json')).filter(([, c]) => !c.unreleased).map(([k]) => k).map((k) => [k, 99])),
 };

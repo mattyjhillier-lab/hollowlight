@@ -26,6 +26,7 @@ import { aiStep, aiInterrupt, updateEnemyShots } from './enemyai.js';
 import { BossFight, validateFight } from './boss.js';
 import { bondDef, bondBonus, keepsakeDef } from '../meta/bond.js';
 import { validateSites, Sites, siteSeed } from './sites.js';
+import { startRise, updateRise } from './rise.js'; // DM7 Lucinda's Ophimber's Rise (ability)
 
 const FIGHT_OK = new WeakSet(); // boss fight blocks already validated (shipped data: validated once per object, not per run)
 
@@ -72,7 +73,7 @@ export class Sim {
     this.tier = resolveTier(data.tiers, chapterId, tier);
     // EXTRAS v1 Gentle Light: Twilight only (strict true); null = off, and every assist read below is guarded, so off runs are byte-identical
     this.assist = resolveAssist(data.tiers, this.tier.id, assist);
-    this.character = data.characters[characterId];
+    this.character = data.characters[characterId] ?? (Object.hasOwn(data.hiddenCharacters || {}, characterId) ? data.hiddenCharacters[characterId] : undefined); // hidden (unreleased) heroes resolve only here: the app, the tree and the saves never see them
     this.characterId = characterId;
     // CHARACTER SYSTEM v2: one shared body (balance.body); the starting spirit is any weapon id (the app only offers tree-unlocked ones; a bad id
     // falls back to the character's kindred spirit); Bond level is read ONCE here (banked between runs, never changes mid-run).
@@ -269,6 +270,7 @@ export class Sim {
 
     const ab = this.character.ability;
     this.ability = { id: ab.id, name: ab.name, cooldown: ab.cooldown, cdLeft: 10 };
+    this.rise = null; // Ophimber's Rise in progress (src/sim/rise.js; null otherwise)
     this.dash = null; // Pelt Dash in flight: { t, vx, vy } (px/s along the heading)
     this.ability.cdLeft = Math.min(this.ability.cdLeft, this.abilityCooldown);
 
@@ -1152,6 +1154,9 @@ export class Sim {
       this.zones = this.zones.filter((z) => !z.wheel);
       this.spawnZone({ wheel: true, sanctuary: true, x: p.x, y: p.y, r: d.radius ?? 80, ttl: dur, dur, age: 0, dps: 0, heal: d.heal ?? 1.5, slow: Math.max(0, Math.min(0.8, d.slow ?? 0.4)), color: '#fff3b0' });
       this.pushEvent('sanctuary');
+    } else if (a.id === 'ophimbers_rise') {
+      // Ophimber's Rise (Lucinda, LOCKED 2026-11-01): three rings of fire round the spot she stood on (src/sim/rise.js); offence only, she keeps moving.
+      startRise(this, d);
     }
     return true;
   }
@@ -1351,6 +1356,7 @@ export class Sim {
     this.updateWeapons(dt);
     this.updateProjectiles(dt);
     this.updateZones(dt);
+    if (this.rise) updateRise(this, dt);
     this.ability.cdLeft = Math.max(0, this.ability.cdLeft - dt);
     if (input.ability) this.useAbility();
     else if (this.autoRule !== null) { if (this.autoFires()) this.useAbility(); }

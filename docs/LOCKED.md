@@ -517,3 +517,25 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | LOADOUT HERO STEP | Skip the hero-pick step when only one hero is awake; it returns once a second hero wakes. (Built 2026-11-13, tests in q5.test.mjs.) | 2026-11-13 | Matt, one-tap |
 | LI_HEAL FIXTURE EDIT OK | Mending Light trimmed +5% to +2.5% heal for Kindling Start; the hand-edit of the v5 release-guard fingerprint (tests/fixtures/tree-released.json, tree-s1-rework.json) is accepted. v4 snapshot untouched. | 2026-11-13 | Matt, one-tap |
 | DEEP DUSK BALANCE | Leave Deep Dusk as is for launch; measure on real testers, ease later if it is a wall. Dry stretch runs 30-56 stays open (not a launch blocker). | 2026-11-13 | Matt, one-tap |
+
+| TREE + WARDROBE + TITLE LIVE | Merged dev to main via PR 13 (CI green, 1464 tests, audit 0) on Matt's explicit yes; tree v5 snapshot recorded (283 ids). Live at wispwick.pages.dev. One-time tree refund + notice for existing saves. | 2026-11-13 | Matt, chat |
+
+| COMPANIONS CONFIRMED (Matt, 2026-11-13) | Ghost Wolves and Raven Flock should NOT stay weapons once companions are done: summons become hero companions, weapon slots become magic. Confirms the 2026-11-02 direction. Elias needs his own companion idea (crows do not fit him): three-options round at companions-v1. | 2026-11-13 | Matt, chat |
+
+| LUCINDA + OPHIMBER LOOKS (Matt, 2026-11-13) | Lucinda = option A Ember Horns, hood down (female half-dragon: horns, ear-fins, back spines, flame-tipped tail, scale-hide cloak). Ophimber = option 1 Hatchling, and OPHIMBER IS A SHE (use she/her in every line of text, codex, Almanac, bond). Sandbox C:\Users\matty\spirit-lucinda-sandbox, doc docs/design/lucinda-ophimber-look-v1.md on wip/lucinda-look. Rounds 1-2 rejected; round 3 drawn with the real Wren/Elias rig code. | 2026-11-13 | Matt, chat |
+
+| NEXT UPDATE SCOPE (Matt, 2026-11-14) | The next update to main = LUCINDA RELEASED + COMPANIONS (summons become hero companions; Wolves and Ravens leave the weapon list; Elias gets his own companion). Chapter 2 Hushbell Hamlet, the visuals review and the UI alignment pass are the update AFTER. Everything needed for these two must be ready before that update (companions reopen V1 weapons scope, the 15 evolutions, gates, starter pick, tree branches: three-options rounds first). | 2026-11-14 | Matt, one-tap |
+
+| CLEAN-UP PICKS (Matt, 2026-11-14) | (1) Keep the dashed "Dragonfire Meteor" teaser slot in the live tree. (2) CORRECTED same day: the real item was the Settings tab "Controls" being snug at phone width (QUEUE 2026-10-28); the question was misworded as a Keys/Keepsakes rename, so the recommended default is applied: the tab reads "Keys" on phones only, "Controls" elsewhere. Matt can override. (3) Judgement Wheel stream40 exemption stays (LOCKED 2026-10-17 unchanged). | 2026-11-14 | Matt, one-tap |
+
+| RIDDLE LINES (Matt, 2026-11-14) | The 15 Almanac riddle lines (RIDDLE in src/ui/codexcopy.js) are ACCEPTED as drafted. | 2026-11-14 | Matt, chat |
+
+| SPIRIT HUNTERS FILE (Matt, 2026-11-14) | The offered paid Spirit Hunters game file is NOT used. Reference stays screenshots and Matt's plain-words notes only (inspiration for structure and rhythm; never copy art, text, names or code). | 2026-11-14 | Matt, chat |
+
+| OLD CLOUDFLARE PROJECT (Matt, 2026-11-14) | Delete was refused by Cloudflare (too many deployments; their only route is an API-token script). Matt chose: stop its builds, leave it. Done: project `hollowlight` (hollowlight-12n.pages.dev) now has Automatic deployments Disabled (production off, previews None); `wispwick` untouched. Delete later only if Matt runs the clean-up script. | 2026-11-14 | Matt, one-tap |
+
+| OLD CLOUDFLARE PROJECT LEFT AS IS (Matt, 2026-11-14) | Not worth the wrangler/API-token clean-up (328 deployments). Left with builds disabled; no security risk (static public build, no secrets, separate origin so no shared saves). Revisit only if Matt wants it gone. | 2026-11-14 | Matt, chat |
+
+| 2026-11-14 | HOTFIX LIVE | Evolve freeze + phone heat fixes merged to main (PR 14) on Matt's yes. | Matt |
+
+| 2026-11-15 | GROUND COLOUR EARLIER | Ground-bland fix = bring colour in earlier: ARC ambient/saturation rows from ~3-4 min, lively by 8:00 (touches visibility arc; Matt picked it). | Matt |

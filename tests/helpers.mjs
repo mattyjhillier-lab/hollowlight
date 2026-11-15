@@ -5,11 +5,17 @@ import { dirname, join } from 'node:path';
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data');
 const load = (n) => JSON.parse(readFileSync(join(dir, `${n}.json`), 'utf8'));
 
+// Mirror of src/data/index.js: unreleased (hidden) heroes are split out of data.characters.
+const allChars = load('characters');
+const hiddenCharacters = Object.fromEntries(Object.entries(allChars).filter(([, c]) => c.unreleased === true));
+const releasedChars = Object.fromEntries(Object.entries(allChars).filter(([, c]) => c.unreleased !== true));
+
 export const data = {
   balance: load('balance'),
   weapons: load('weapons'),
   evolutions: load('evolutions'),
-  characters: load('characters'),
+  characters: releasedChars,
+  hiddenCharacters,
   enemies: load('enemies'),
   chapters: load('chapters'),
 };

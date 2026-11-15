@@ -5,7 +5,7 @@ import { Worker, isMainThread, workerData, parentPort } from 'node:worker_thread
 import { fileURLToPath } from 'node:url';
 
 if (!isMainThread) {
-  const { playGated, unlockedAfter, STARTER_EVOS, GATES, base } = await import('./gates-lib.mjs');
+  const { playGated, unlockedAfter, watchedAfter, STARTER_EVOS, GATES, base } = await import('./gates-lib.mjs');
   const { journeys, runs, focus, heroOrder } = workerData;
   const out = [];
   for (const j of journeys) {
@@ -25,6 +25,7 @@ if (!isMainThread) {
       st.charsUsed[hero] = (st.charsUsed[hero] || 0) + 1;
       const after = unlockedAfter(st);
       for (const id of after.done) if (opened[id] === undefined) opened[id] = r;
+      for (const id of watchedAfter(st)) if (opened[id] === undefined) opened[id] = r; // report-only (staged content), unlocks nothing
       log.push({ r, hero, win: res.outcome === 'victory', t: Math.floor(res.time), lvl: res.level, evos: res.weapons.filter((w) => w.evo).length });
     }
     out.push({ j, opened, log, kills: st.killsByEnemy, evolved: st.evolved });
@@ -33,7 +34,8 @@ if (!isMainThread) {
 } else {
   const J = Number(process.argv[2] || 16);
   const R = Number(process.argv[3] || 30);
-  const { GATES, fmtT } = await import('./gates-lib.mjs');
+  const { GATES: G0, WATCH, fmtT } = await import('./gates-lib.mjs');
+  const GATES = [...G0, ...WATCH.map((w) => ({ ...w, kind: 'watch' }))];
   const jobs = [];
   for (const focus of [false, true]) for (let j = 1; j <= J; j++) jobs.push({ focus, j });
   const results = { false: [], true: [] };

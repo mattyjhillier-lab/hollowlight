@@ -1,8 +1,10 @@
 // PHONE HEAT (LOCKED 2026-11-01): fewer frames and fewer pixels on phones so they run cooler. Render only; the sim runs on its own clock.
-// Phaser's frame limiter skips a frame when the elapsed time is under 1000/limit ms, and a 60 Hz screen delivers frames a hair under
-// 16.67 ms, so the limit sits just above the target (62 for "60", 32 for "30") to never drop a 60 Hz phone to 30 fps.
-export const FPS_LIMIT_PHONE = 62; // a 90/120 Hz phone draws 60 (or 45 at 90 Hz) instead of 90-120
-export const FPS_LIMIT_SAVER = 32; // Battery saver: 30
+// Phaser's frame limiter skips a frame when the time since the last DRAWN frame is under 1000/limit ms. IPHONE-PERF: Safari/WebKit
+// rounds rAF timestamps to whole milliseconds, so a 60 Hz screen delivers 16, 17, 17, 16 ... ms; with the old limit 62 (16.13 ms) every
+// 16 ms tick was skipped and an iPhone drew ~40 fps (probe "frame 25 ms" on any tier, real WebKit raw rAF p50 16 ms vs drawn 33 ms).
+// The limit now sits well above the target (rate ~0.85 of the target interval) so jittered / rounded ticks still land on the right count.
+export const FPS_LIMIT_PHONE = 72; // 13.9 ms: 60 Hz draws every tick, 120 Hz every 2nd (60), 90 Hz every 2nd (45)
+export const FPS_LIMIT_SAVER = 36; // Battery saver: 27.8 ms: 60 Hz every 2nd tick (30), 120 Hz every 4th (30)
 export const DPR_CAP_SAVER = 1.25; // Battery saver: fewer pixels (desktop and normal phones keep the existing cap of 2)
 
 /** Pure: Phaser frame limit (0 = none). Desktops are never limited. */
@@ -11,7 +13,7 @@ export function fpsLimitFor({ phone = false, saver = false } = {}) {
   return saver ? FPS_LIMIT_SAVER : FPS_LIMIT_PHONE;
 }
 
-export const FPS_LIMIT_REST = 20; // FREEZE-1: phones while the run is held (pause, level-up / chest cards, settings, intro cards): the world behind stands still
+export const FPS_LIMIT_REST = 22; // 45.5 ms = every 3rd 60 Hz tick (20 fps) even with 1 ms rounding (16+16+17 = 49 ms) // FREEZE-1: phones while the run is held (pause, level-up / chest cards, settings, intro cards): the world behind stands still
 
 /** Pure: frame limit for a phone whose run is held (rest = paused / cards / settings / intro). Never raises a lower limit; desktops untouched (0). */
 export function restLimitFor({ phone = false, saver = false, rest = false } = {}) {

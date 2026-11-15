@@ -18,6 +18,8 @@ const UP_MS = 17.5; // holding ~60 fps ...
 const UP_WORK = 7; // ... with headroom
 const UP_NEED = 8; // consecutive good evaluations (~8 s) before stepping up
 const MIN_HOLD = 15000; // ms after any change before stepping up
+const PROBE_MS = 3000; // GROUND-PHONE: re-check an interval-only drop after a full 3 s window on the lower tier
+const DROP_GAIN = 0.85; // ... it must have made frames >= 15% faster, otherwise it is undone (see sample)
 
 export class Quality {
   constructor(initial = 'med') {
@@ -31,6 +33,8 @@ export class Quality {
     this.lock = MIN_HOLD;
     this.avgMs = 0;
     this.avgWork = 0;
+    this.dropMs = 0; // GROUND-PHONE: avg frame ms that caused an interval-only drop, pending its re-check
+    this.paced = false; // GROUND-PHONE: frame rate is set by the screen/browser; only CPU work steps the tier down
   }
 
   get tier() { return TIERS[this.idx]; }
@@ -76,7 +80,23 @@ export class Quality {
     this.avgWork = w / n;
     if (this.mode !== 'auto') return false;
 
-    if ((this.avgMs > DOWN_MS || this.avgWork > DOWN_WORK) && this.idx > 0) {
+    // GROUND-PHONE: a drop made only for slow frames (CPU work fine) is checked ~3 s later. If the frames did not get faster, the frame
+    // rate is set by the screen/browser (iPhone Low Power Mode 30 Hz, a capped compositor), not by our load: undo the drop and stop judging
+    // the frame interval for this session (CPU work still steps down). Real WebKit went Med -> Low at 20 s and stayed ~30 ms a frame on both.
+    if (this.dropMs > 0 && this.sinceChange >= PROBE_MS) {
+      const helped = this.avgMs < this.dropMs * DROP_GAIN;
+      this.dropMs = 0;
+      if (!helped && this.avgWork <= DOWN_WORK && this.idx < TIERS.length - 1) {
+        this.paced = true;
+        this.idx++;
+        this.resetWindow();
+        return true;
+      }
+    }
+    const slowFrames = this.avgMs > DOWN_MS && !this.paced && !(this.dropMs > 0); // no second interval drop while the first is being checked
+    // slow frames alone (CPU fine) never push below Med: Low did not make them faster on iPhone and its flat ground read as a glitch (a 2 s grey blink at ~25 s); real CPU load still can
+    if (((slowFrames && this.idx > 1) || this.avgWork > DOWN_WORK) && this.idx > 0) {
+      this.dropMs = this.avgWork > DOWN_WORK ? 0 : this.avgMs; // only interval-only drops are re-checked
       this.idx--;
       this.afterChange(true);
       return true;

@@ -634,6 +634,16 @@ export function makeStyleTextures(scene, style) {
     }
   }
   INV.ground = 0.5;
+  // LOW GROUND: a soft round patch cut from the RESTORED meadow tile; the Low tier drops these behind the hero so a phone on Low still sees painted ground (160 world units wide at 2 texels per unit)
+  try {
+    const src = scene.textures.get('groundR').getSourceImage();
+    const pcv = mkCanvas(320, 320); const pg = pcv.getContext('2d');
+    pg.drawImage(src, 0, 0, 320, 320, 0, 0, 320, 320);
+    const rg = pg.createRadialGradient(160, 160, 0, 160, 160, 160);
+    rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(0.5, 'rgba(0,0,0,0.9)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    pg.globalCompositeOperation = 'destination-in'; pg.fillStyle = rg; pg.fillRect(0, 0, 320, 320);
+    setTex('meadowPool', pcv); INV.meadowPool = 0.5;
+  } catch (e) { /* cosmetic: without it Low keeps its glow pools only */ }
   vignette(scene);
   for (const [key, brass] of [['digits', false], ['digitsB', true]]) {
     const dg = digitsCanvas(style, brass);

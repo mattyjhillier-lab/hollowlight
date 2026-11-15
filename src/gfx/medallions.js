@@ -6,7 +6,7 @@
 // tier emblem; no path, URL or markup is ever built from a tree string, and nothing here touches the DOM (the canvas factory is injected).
 export const MANIFEST = Object.freeze({
   // weapon hearts (ids match the emblem ids of the constellations)
-  wolf: 1, raven: 1, bolt: 1, chain: 1, orbit: 1,
+  wolf: 1, raven: 1, bolt: 1, chain: 1, orbit: 1, flame: 1,
   // seals, keys, fog
   evolution: 1, veil: 1, key: 1, fog: 1, hero: 1, hub: 1,
   // nights (Twilight / Deep Dusk / Long Night / Dawn) and chapters
@@ -82,6 +82,10 @@ const GLYPH = {
     g.beginPath(); g.arc(0, 0, 0.74, 0, 7); g.lineWidth = 0.17; g.strokeStyle = f; g.stroke(); g.lineWidth = 0.05; g.strokeStyle = s; g.beginPath(); g.arc(0, 0, 0.83, 0, 7); g.stroke(); g.beginPath(); g.arc(0, 0, 0.65, 0, 7); g.stroke();
     g.beginPath(); g.arc(0, 0, 0.26, 0, 7); fillStroke(g, f, s, 0.06); g.beginPath(); g.arc(0, 0, 0.1, 0, 7); g.fillStyle = light(f, 0.8); g.fill();
     for (const a of [-0.75, 2.4]) { g.beginPath(); g.arc(Math.cos(a) * 0.74, Math.sin(a) * 0.74, 0.15, 0, 7); fillStroke(g, light(f, 0.5), s, 0.05); }
+  },
+  flame(g, f, s) { // Dragonfire Meteor: a candle flame, a teardrop with a pale gold heart (warm lantern fire: no smoke, no char)
+    g.beginPath(); g.moveTo(0, -1); g.bezierCurveTo(0.3, -0.62, 0.74, -0.26, 0.68, 0.24); g.bezierCurveTo(0.62, 0.72, 0.3, 0.96, 0, 0.96); g.bezierCurveTo(-0.3, 0.96, -0.62, 0.72, -0.68, 0.24); g.bezierCurveTo(-0.74, -0.26, -0.3, -0.62, 0, -1); g.closePath(); fillStroke(g, f, s);
+    g.beginPath(); g.moveTo(0, -0.3); g.bezierCurveTo(0.2, -0.06, 0.38, 0.2, 0.32, 0.46); g.bezierCurveTo(0.26, 0.7, 0.1, 0.78, 0, 0.78); g.bezierCurveTo(-0.1, 0.78, -0.26, 0.7, -0.32, 0.46); g.bezierCurveTo(-0.38, 0.2, -0.2, -0.06, 0, -0.3); g.closePath(); g.fillStyle = light(f, 0.75); g.fill();
   },
   evolution(g, f, s) { // a faceted diamond: the seal of an evolution
     poly(g, [[0, -1], [0.78, 0], [0, 1], [-0.78, 0]]); fillStroke(g, f, s);

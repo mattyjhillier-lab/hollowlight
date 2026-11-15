@@ -33,7 +33,7 @@ export function synthTree(realData, n, baseFiles = readTreeFiles()) {
   const data = JSON.parse(JSON.stringify(realData));
   // launch size = every node of the real fragments (core ring nodes + clusters + heroes + tool clusters)
   let count = 0;
-  for (const f of baseFiles) { if (f.path.startsWith('emblems/')) continue; const j = f.json; for (const l of [j.nodes, j.gates, j.outline, j.lanterns, ...(Array.isArray(j.roads) ? j.roads.map((r) => r.nodes) : [])]) if (Array.isArray(l)) count += l.length; }
+  for (const f of baseFiles) { if (f.path.startsWith('emblems/')) continue; const j = f.json; if (f.path.startsWith('clusters/') && realData.weapons[j.weapon] && realData.weapons[j.weapon].unreleased === true) continue; /* staged: not composed (DM8) */ for (const l of [j.nodes, j.gates, j.outline, j.lanterns, ...(Array.isArray(j.roads) ? j.roads.map((r) => r.nodes) : [])]) if (Array.isArray(l)) count += l.length; }
   const K = Math.max(0, Math.ceil((n - count) / 15));
   const bands = new Set();
   files.find((f) => f.path === 'clusters/ghost_wolves.json');

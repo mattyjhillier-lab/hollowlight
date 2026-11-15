@@ -1170,5 +1170,165 @@
  "cl_kindling": [
   "cl",
   41
+ ],
+ "gt_dragonfire_meteor": [
+  "dm",
+  0
+ ],
+ "gt_wildfire": [
+  "dm",
+  1
+ ],
+ "gt_cinder_wyrm": [
+  "dm",
+  2
+ ],
+ "gt_cinder_brand": [
+  "dm",
+  3
+ ],
+ "dm_blaze": [
+  "dm",
+  4
+ ],
+ "dm_embers": [
+  "dm",
+  5
+ ],
+ "dm_impact": [
+  "dm",
+  6
+ ],
+ "dm_kindle": [
+  "dm",
+  7
+ ],
+ "dm_wil1": [
+  "dm",
+  8
+ ],
+ "dm_wil2": [
+  "dm",
+  9
+ ],
+ "dm_wil3": [
+  "dm",
+  10
+ ],
+ "dm_wil4": [
+  "dm",
+  11
+ ],
+ "dm_wil5": [
+  "dm",
+  12
+ ],
+ "dm_wil6": [
+  "dm",
+  13
+ ],
+ "dm_fireball": [
+  "dm",
+  14
+ ],
+ "dm_crash": [
+  "dm",
+  15
+ ],
+ "dm_quick": [
+  "dm",
+  16
+ ],
+ "dm_scale": [
+  "dm",
+  17
+ ],
+ "dm_wyr1": [
+  "dm",
+  18
+ ],
+ "dm_wyr2": [
+  "dm",
+  19
+ ],
+ "dm_wyr3": [
+  "dm",
+  20
+ ],
+ "dm_wyr4": [
+  "dm",
+  21
+ ],
+ "dm_wyr5": [
+  "dm",
+  22
+ ],
+ "dm_wyr6": [
+  "dm",
+  23
+ ],
+ "dm_glow": [
+  "dm",
+  24
+ ],
+ "dm_linger": [
+  "dm",
+  25
+ ],
+ "dm_steady": [
+  "dm",
+  26
+ ],
+ "dm_kindle2": [
+  "dm",
+  27
+ ],
+ "dm_bra1": [
+  "dm",
+  28
+ ],
+ "dm_bra2": [
+  "dm",
+  29
+ ],
+ "dm_bra3": [
+  "dm",
+  30
+ ],
+ "dm_bra4": [
+  "dm",
+  31
+ ],
+ "dm_bra5": [
+  "dm",
+  32
+ ],
+ "dm_bra6": [
+  "dm",
+  33
+ ],
+ "dm_way1": [
+  "dm",
+  34
+ ],
+ "dm_way2": [
+  "dm",
+  35
+ ],
+ "dm_way3": [
+  "dm",
+  36
+ ],
+ "dm_way4": [
+  "dm",
+  37
+ ],
+ "dm_way5": [
+  "dm",
+  38
+ ],
+ "dm_kindling": [
+  "dm",
+  39
  ]
 }

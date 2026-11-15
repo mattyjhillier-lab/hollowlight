@@ -130,3 +130,62 @@ test('wildfire art: parentless / hostile child records do not throw; the thread 
   pools.shift(); sim.time = 1.9; L.update(k.c); // the parent left the sim list: its record ghosts; the child must not draw a thread to a ghost
   assert.ok(L.sprites <= withThread + 3);
 });
+
+// ---- DM5 Cinder Wyrm art: 7 segments + a head, sparks per tier, Calm trail-free, Low flat, no extra pools
+const wyrmSim = (t = 1, k = 1, on = true) => {
+  const seg = []; for (let i = 0; i < 7; i++) seg.push(100 - i * 13, 20 + i * 2);
+  return { time: t, player: { x: 0, y: 0 }, weapons: [{ id: 'dragonfire_meteor', rt: { fly: [], pools: [], wyrm: { on, k, nseg: 7, seg, cx: 80, cy: 20, loops: 1 } } }] };
+};
+test('wyrm art: High draws 7 body glows + 6 segments + head, Low is flat sprites only, Calm sheds no sparks, rise cue once', () => {
+  const sim = wyrmSim(1);
+  const hi = new MeteorLayer(stub().scene, GL), kh = ctx(sim, 'high'); hi.update(kh.c); sim.time = 1.3; hi.update(kh.c);
+  assert.ok(hi.sprites >= 14 && hi.sprites <= 20, 'high sprites ' + hi.sprites);
+  assert.equal(kh.cues.filter((c) => c === 'wyrm_rise').length, 1);
+  assert.ok(kh.sparks.length > 0 && kh.sparks.length <= 8, 'spark trail ' + kh.sparks.length); // ~16/s x 0.3 s
+  const lo = new MeteorLayer(stub().scene, GL), kl = ctx(sim, 'low'); sim.time = 1; lo.update(kl.c); sim.time = 1.3; lo.update(kl.c);
+  assert.equal(lo.sprites, 7, 'Low: 6 segments + head, no glow, no sparks'); assert.equal(kl.sparks.length, 0);
+  const cl = new MeteorLayer(stub().scene, GL), kc = ctx(sim, 'high', { calm: true }); sim.time = 1; cl.update(kc.c); sim.time = 1.3; cl.update(kc.c);
+  assert.equal(kc.sparks.length, 0); assert.ok(cl.sprites > 0);
+});
+test('wyrm art: faded-out / hostile serpent records never throw and draw nothing', () => {
+  const L = new MeteorLayer(stub().scene, GL), s0 = wyrmSim(1, 0, false), k = ctx(s0, 'high');
+  assert.doesNotThrow(() => L.update(k.c)); assert.equal(L.sprites, 0);
+  const s1 = wyrmSim(1); s1.weapons[0].rt.wyrm.seg[4] = NaN; s1.weapons[0].rt.wyrm.nseg = 99; s1.weapons[0].rt.wyrm.cx = Infinity;
+  assert.doesNotThrow(() => { L.update(ctx(s1, 'med').c); });
+  const s2 = wyrmSim(1); s2.weapons[0].rt.wyrm.seg = [NaN, NaN, 1, 1]; s2.weapons[0].rt.wyrm.nseg = 2;
+  assert.doesNotThrow(() => { L.update(ctx(s2, 'low').c); });
+});
+test('cues: wyrm_rise and evo_cinder_wyrm are registered', () => {
+  assert.ok(CUES.wyrm_rise && CUES.wyrm_rise.pri === 1); assert.ok(CUES.evo_cinder_wyrm);
+});
+
+// ---- DM6 Cinder Brand art: ember-marks over branded foes (capped per tier), a gold burst + pip per pop, hostile records are safe
+const brandSim = (n = 30, t = 1) => {
+  const brands = [], pops = [];
+  for (let i = 0; i < n; i++) brands.push({ e: { burnT: 0.5, r: 8 }, t: 0.5, x: (i % 10) * 20 - 90, y: Math.floor(i / 10) * 20 });
+  pops.push({ x: 10, y: 10, r: 26, t: t - 0.05 }, { x: 40, y: 10, r: 26, t: t - 0.04 });
+  return { time: t, player: { x: 0, y: 0 }, weapons: [{ id: 'dragonfire_meteor', rt: { fly: [], pools: [], brands, pops } }] };
+};
+test('brand art: marks are capped per tier (High 24, Med 12, Low 8), each pop cues once per frame, sparks per pop follow the tier, Calm sheds none', () => {
+  assert.equal(meteorCaps('high').bmax, 24); assert.equal(meteorCaps('med').bmax, 12); assert.equal(meteorCaps('low').bmax, 8);
+  assert.ok(meteorCaps('high', true).bmax < 24);
+  const sim = brandSim(), hi = new MeteorLayer(stub().scene, GL), kh = ctx(sim, 'high'); hi.update(kh.c);
+  assert.ok(hi.sprites >= 24 && hi.sprites <= 24 * 2 + 12, 'high sprites ' + hi.sprites);
+  assert.equal(kh.cues.filter((c) => c === 'brand_pop').length, 1); assert.equal(kh.sparks.length, 2 * meteorCaps('high').bspark);
+  hi.update(kh.c); assert.equal(kh.cues.filter((c) => c === 'brand_pop').length, 1, 'a pop already seen cues nothing more');
+  const lo = new MeteorLayer(stub().scene, GL), kl = ctx(brandSim(), 'low'); lo.update(kl.c);
+  assert.ok(lo.sprites <= 8 + 4 && kl.sparks.length === 0, 'Low sprites ' + lo.sprites);
+  const md = new MeteorLayer(stub().scene, GL), km = ctx(brandSim(), 'med'); md.update(km.c); assert.ok(md.sprites <= 12 * 2 + 8);
+  const cl = new MeteorLayer(stub().scene, GL), kc = ctx(brandSim(), 'high', { calm: true }); cl.update(kc.c); assert.equal(kc.sparks.length, 0);
+});
+test('brand art: hostile mark and pop records never throw', () => {
+  const s = brandSim(3);
+  s.weapons[0].rt.brands.push({ e: null, x: NaN, y: 1 }, { e: { burnT: NaN, r: NaN }, x: 1e9, y: -1e9, t: NaN }, { e: { r: 4 }, x: 5, y: 5, t: 0 });
+  s.weapons[0].rt.pops.push({ x: NaN, y: 3, r: 5, t: 0.9 }, { x: 3, y: 3, r: 1e9, t: NaN }, null);
+  const L = new MeteorLayer(stub().scene, GL);
+  assert.doesNotThrow(() => { L.update(ctx(s, 'high').c); s.time = 1.1; L.update(ctx(s, 'med').c); });
+  const L2 = new MeteorLayer(stub().scene, GL); assert.doesNotThrow(() => L2.update(ctx(s, 'low', { calm: true }).c));
+});
+test('cues: brand_pop and evo_cinder_brand are registered, pop is a quiet first-to-drop hit-priority cue', () => {
+  assert.ok(CUES.brand_pop && CUES.brand_pop.pri === 2); assert.ok(CUES.evo_cinder_brand);
+});

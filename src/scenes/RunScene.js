@@ -8,6 +8,7 @@ import { createRng } from '../sim/rng.js';
 import { Quality } from '../gfx/quality.js';
 import { HeroRig } from '../gfx/herorig.js';
 import { EliasRig } from '../gfx/eliasrig.js';
+import { LucindaRig } from '../gfx/lucindarig.js'; // hidden hero Lucinda + her pet Ophimber (render only)
 import { FEET, DU } from '../gfx/wrenart.js';
 import { HitFx, HIT_RED, LIFT_Z, iframeFlick, FLICK_ALPHA } from '../gfx/hitfx.js'; // DR1 hit feedback state + invulnerability look
 import { heroHaloAlpha } from '../gfx/rigmath.js';
@@ -49,6 +50,7 @@ import { wolfFrame, wolfLook, wolfSkin } from '../gfx/summon/wolfanim.js';
 import { bakeRavenArt, ravenReady } from '../gfx/summon/atlas.js'; // S3 Letter Ravens (lazy bake on first flock)
 import { ravenPose, ravenSkin } from '../gfx/summon/ravenanim.js';
 import { RAVEN_BOX, RAVEN_WPD } from '../gfx/summon/raven.js';
+import { RiseLayer } from '../gfx/risefx.js'; // DM7 Lucinda's Ophimber's Rise art (render only)
 import { MeteorLayer } from '../gfx/meteorfx.js'; // DM3 Dragonfire Meteor art (render only)
 import { PawLayer } from '../gfx/summon/pawtrail.js'; // S2 Light Trails pawprint ribbon
 import { bakeOrbitArt, orbitReady } from '../gfx/summon/atlas.js'; // S4 Candle Flames (lazy bake on first Holy Orbit)
@@ -177,7 +179,7 @@ class SpritePool {
 const PROPS_OFF = { props: { live: 0, density: 1, sway: false }, ambient: { petals: 0 } };
 const DAWN_LAG = 20, DAWN_LAG_UP = 2.0, DAWN_LAG_DOWN = 1.2; // FIX4 warmth-then-brightness: while the flood is easing the sky clock, the ambient BRIGHTNESS trails the WARMTH (wash, saturation, enemy tint) by up to 20 ref-s (lag grows at 2.0/s < the 2.4 ease rate, so brightness never goes backwards; it catches up at 1.2/s after)
 const DAWN_EASE = 2.4; // max reference-seconds the sky clock may advance per real second (a 60 s flood takes 25 s)
-const LOW_GROUND_K = 0.62; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
+const LOW_GROUND_K = 0.7; // Low-tier ground-only grade factor (W1 tiles are daylight bright; the lightmap normally does this)
 const mulTint = (c, k) => (k === 1 ? c : (Math.min(255, (c >> 16 & 255) * k) << 16) | (Math.min(255, (c >> 8 & 255) * k) << 8) | Math.min(255, (c & 255) * k)); // clamped per channel
 const dimTint = (c, k) => (((c >> 16 & 255) * k | 0) << 16) | (((c >> 8 & 255) * k | 0) << 8) | ((c & 255) * k | 0);
 
@@ -229,6 +231,8 @@ export class RunScene extends Phaser.Scene {
     this.ribLayer = new RibbonLayer(this, 'glow', inv('glow'), ADD, 1000);
     this.meteor = new MeteorLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM3: lazy-baked on the first Meteor
     this.meteorCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, cue: (id) => { if (app.audio) app.audio.play(id); }, shake: (ms, k) => this.shake(ms, k), vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
+    this.rise = new RiseLayer(this, { ADD, NORMAL: Phaser.BlendModes.NORMAL, LINEAR: Phaser.Textures.FilterMode.LINEAR, depthGround: RIBBON_DEPTH, depthLit: D_LIT, depthFx: D_FX }); // DM7: lazy-baked on the first Rise
+    this.riseCtx = { sim: null, tier: 'med', phone: false, calm: false, lm: null, parts: null, shake: (ms, k) => this.shake(ms, k), vx0: 0, vy0: 0, vx1: 0, vy1: 0 };
     this.pawLayer = this.sumAtlas ? new PawLayer(this, SUM_KEY, RIBBON_DEPTH + 1, 300) : null; // S2: pawprints over the soft trail ribbon, under every creature/halo/pickup/number
     this.ribSrc = Array.from({ length: 48 }, () => ({ id: 0, x: 0, y: 0, col: 0, life: 0, fast: false }));
     this.ribHero = { lx: 0, ly: 0, sx: 0, sy: 0 };
@@ -242,8 +246,11 @@ export class RunScene extends Phaser.Scene {
     this.lifeLast = null;
     this.lifeFrames = 0;
     this.lifeDbg = app.params.life ? makeLifeDebug(document.getElementById('stage') || document.body) : null;
-    this.lowPool = Array.from({ length: 14 }, () => this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(-450).setTint(ROLE.lantern).setScale(5.5 * inv('glow')).setAlpha(0).setVisible(false));
+    this.lowPool = Array.from({ length: 24 }, () => this.add.image(0, 0, 'glow').setBlendMode(ADD).setDepth(-450).setTint(ROLE.lantern).setScale(6.5 * inv('glow')).setAlpha(0).setVisible(false));
     this.lowPoolI = 0;
+    // painted meadow patches (Low look): a patch of the restored tile dropped behind the hero, alpha follows the life map
+    this.lowMeadow = this.textures.exists('meadowPool') ? Array.from({ length: 20 }, () => this.add.image(0, 0, 'meadowPool').setDepth(-455).setScale(inv('meadowPool')).setAlpha(0).setVisible(false)) : [];
+    this.lowMeadowI = 0; this.lowMeadowT = 0;
     // W3 Low fallback: a few soft dark ink blobs (no cracks) under the densest enemy groups; Med/High use the ground shader instead
     this.corrBlobs = Array.from({ length: 10 }, () => this.add.image(0, 0, 'glow').setDepth(-380).setTint(0x080914).setScale(12 * inv('glow')).setAlpha(0).setVisible(false));
     this.corrBin = new Map();
@@ -363,7 +370,7 @@ export class RunScene extends Phaser.Scene {
     this.bloom = null;
     this.playerImg = this.add.image(0, 0, 'hero_wren').setVisible(false);
     const rigOpts = { depth: D_LIT, glowKey: 'glow', glowInv: inv('glow'), blendAdd: ADD, flat: this.playerImg };
-    this.rigs = [new HeroRig(this, rigOpts), new EliasRig(this, rigOpts)]; // Wren v2 + pup (A1), Elias v2 (A2); both share the flat sprite
+    this.rigs = [new HeroRig(this, rigOpts), new EliasRig(this, rigOpts), new LucindaRig(this, rigOpts)]; // Wren v2 + pup (A1), Elias v2 (A2), hidden Lucinda + Ophimber; all share the flat sprite
     this.rig = this.rigs[0];
     this.camF = { cx: 0, cy: 0, sx: 0, sy: 0, ok: false };
     this.gradeNow = gradeAt(0);
@@ -402,7 +409,7 @@ export class RunScene extends Phaser.Scene {
     probe.on = !!app.params.perf; probe.hook(this); probe.mount(document.getElementById('stage') || document.body); if (probe.on) window.__probe = probe;
     this.flatGround = !!app.params.flat;
     this.prebake = new Prebake(this, () => app.ownedWeapons());
-    probe.status = () => { const p = this.prebake, b = this.bState; return 'prebake ' + (p ? p.mode + ' ' + (p.done ? 'done' : Math.round(p.p * 100) + '%') : 'off') + '  tier ' + this.quality.tier + '  gb ' + (this.gbOn ? 'on' : 'off') + ' ready ' + (b ? b.ready.toFixed(1) : '-') + '  lm ' + (this.lmOn ? 'on' : 'off') + '  canvas ' + this.game.canvas.width + 'x' + this.game.canvas.height + '  cores ' + (navigator.hardwareConcurrency || '?') + (LOWMEM ? '  lowmem' : '') + '  guard ground:' + guardState('ground') + ' full:' + guardState('full'); };
+    probe.status = () => { const p = this.prebake, b = this.bState; return 'prebake ' + (p ? p.mode + ' ' + (p.done ? 'done' : Math.round(p.p * 100) + '%') : 'off') + '  tier ' + this.quality.tier + '  gb ' + (this.gbOn ? 'on' : 'off') + ' ready ' + (b ? b.ready.toFixed(1) : '-') + '  lm ' + (this.lmOn ? 'on' : 'off') + '  canvas ' + this.game.canvas.width + 'x' + this.game.canvas.height + '  cores ' + (navigator.hardwareConcurrency || '?') + (LOWMEM ? '  lowmem' : '') + '  guard ground:' + guardState('ground') + ' full:' + guardState('full') + (this.quality.paced ? '  paced' : '') + '  build ' + (typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : '?'); };
     this.workT0 = 0;
     this.lastStep = 0;
     this.frameMs = 16.7;
@@ -415,8 +422,10 @@ export class RunScene extends Phaser.Scene {
     this.perfInfo = { sprites: 0, particles: 0, tier: '', mode: '' };
     const ev = this.game.events;
     ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); probe.frame(this.workT0); });
+    if (probe.on) { probe.gpu = new URLSearchParams(location.search).get('gpu') === '1'; probe.startRaf(); ev.on(Phaser.Core.Events.PRE_RENDER, () => { this.renderT0 = performance.now(); }); } // IPHONE-PERF ?perf=1 split line
     ev.on(Phaser.Core.Events.POST_RENDER, () => {
       this.workMs = performance.now() - this.workT0;
+      if (probe.on) probe.endFrame(this.workMs, performance.now() - (this.renderT0 || this.workT0), this.sim ? this.sec : null, this.renderer.gl);
       this.perf.frameEnd();
     });
     this.input.keyboard.on('keydown-F3', (e) => { e.preventDefault(); this.perf.toggle(); });
@@ -566,6 +575,7 @@ export class RunScene extends Phaser.Scene {
     this.bossView.reset(sim);
     this.lifeLast = null;
     for (const im of this.lowPool) { im.setAlpha(0); im.dropAt = undefined; }
+    for (const mm of this.lowMeadow) { mm.setAlpha(0); mm.dropAt = undefined; }
     const size = app.data.balance.worldSize;
     const cam = this.cameras.main;
     cam.setBounds(0, 0, size, size);
@@ -601,12 +611,12 @@ export class RunScene extends Phaser.Scene {
     this.updateGrade(this.showClock(sim) / app.data.balance.runSeconds, this.clkB / app.data.balance.runSeconds);
     this.applyTier();
     for (const p of Object.values(this.pools)) p.clear();
-    this.meteor.reset();
+    this.meteor.reset(); this.rise.reset();
   }
 
   unbindSim() {
     this.sim = null;
-    this.meteor.reset();
+    this.meteor.reset(); this.rise.reset();
     this.parts.clear();
     this.nums.clear();
     this.playerGlow.setVisible(false);
@@ -694,8 +704,9 @@ export class RunScene extends Phaser.Scene {
     // Auto-tier ignores the first 8 s of a run and the lazy ground-tile build: one-off start-up work (shader/texture uploads, tile slices)
     // looked like a slow device and dropped a capable PC to the Low look for 15 s+.
     const lz = this.bState && this.bState.lazy && !this.bState.lazy.done;
+    // the first ~20 s are never judged: textures and tiles are still being built, so a slow start is not a slow device (a phone dropped to the flat Low ground at ~10 s)
     if (this.sim && this.sim.state === 'running' && !app.paused && dt < 250) this.warmMs = (this.warmMs || 0) + dt;
-    if (this.sim && this.sim.state === 'running' && !app.paused && (this.warmMs || 0) > 8000 && !lz && q.sample(dt, this.workMs)) this.applyTier();
+    if (this.sim && this.sim.state === 'running' && !app.paused && (this.warmMs || 0) > 20000 && !lz && q.sample(dt, this.workMs)) this.applyTier();
     const info = this.perfInfo;
     info.sprites = this.countSprites();
     info.particles = this.parts.count;
@@ -741,6 +752,7 @@ export class RunScene extends Phaser.Scene {
     else this.setGround(this.gradeNow);
     this.gb.setTint(this.lmOn ? 0xffffff : this.gradeNow);
     for (const im of this.lowPool) im.setVisible(false);
+    for (const mm of this.lowMeadow) mm.setVisible(false);
     this.parts.setCap(c.particles);
     this.nums.setCap(c.dmgNums);
     this.playerGlow.setVisible(!!this.sim);
@@ -1198,7 +1210,8 @@ export class RunScene extends Phaser.Scene {
   setGround(col) {
     if (col === this.gradeTint) return;
     this.gradeTint = col;
-    this.ground.setTint(this.lmOn ? col : dimTint(col, LOW_GROUND_K)); // W1: the flat tile is authored at daylight brightness, so Low darkens it a little more than the trees
+    this.ground.setTint(this.lmOn ? col : dimTint(col, LOW_GROUND_K));
+    for (const mm of this.lowMeadow) mm.setTint(dimTint(col, LOW_GROUND_K)); // W1: the flat tile is authored at daylight brightness, so Low darkens it a little more than the trees
     this.gb.setTint(col);
     for (const d of this.decor) d.setTint(col);
     this.props.setTint(this.lmOn ? 0xffffff : col);
@@ -1362,6 +1375,7 @@ export class RunScene extends Phaser.Scene {
       const fl = 1 + 0.03 * (Math.sin(sim.time * 44) + Math.sin(sim.time * 69)) * 0.5; // 7 Hz + 11 Hz
       lm.add(lx, ly, this.lanR * fl, this.cLm, 0.9);
       if (rig && this.rig.hasPup) lm.add(this.rig.pupX, this.rig.pupY - 5, 24, ROLE.lantern, 0.5); // the pup's own small warm light
+      if (rig && this.rig.petOn) lm.add(this.rig.petX, this.rig.petY - 6, 22, ROLE.lantern, 0.4); // Ophimber's own small warm light
     }
 
     const g = this.groundG;
@@ -1940,6 +1954,7 @@ export class RunScene extends Phaser.Scene {
       }
     }
     { const mc = this.meteorCtx; mc.sim = sim; mc.tier = this.quality.tier; mc.phone = this.phone; mc.calm = this.reducedMotion(); mc.lm = lit ? lm : null; mc.parts = this.parts; mc.vx0 = vx0; mc.vy0 = vy0; mc.vx1 = vx1; mc.vy1 = vy1; this.meteor.update(mc); } // DM3
+    { const rc = this.riseCtx; rc.sim = sim; rc.tier = this.quality.tier; rc.phone = this.phone; rc.calm = this.reducedMotion(); rc.lm = lit ? lm : null; rc.parts = this.parts; rc.pet = this.rig.active && this.rig.id === 'hearthwarden' ? this.rig : null; rc.vx0 = vx0; rc.vy0 = vy0; rc.vx1 = vx1; rc.vy1 = vy1; this.rise.update(rc); } // DM7 Ophimber's Rise
     if (probe.on) for (const w of sim.weapons) probe.first('weapon:' + w.id + (w.evo ? ':' + w.evo : ''));
     for (const f of sim.fx) {
       fi++;
@@ -2165,16 +2180,26 @@ export class RunScene extends Phaser.Scene {
     }
     if (!this.gbOn) {
       this.lowPoolT += 0.1;
-      if (this.lowPoolT >= 0.6) { // Low look: a warm pool dropped behind the hero every 0.6 s, alpha follows the life map
+      if (this.lowPoolT >= 0.4) { // Low look: a warm pool dropped behind the hero every 0.6 s, alpha follows the life map
         this.lowPoolT = 0;
         const im = this.lowPool[this.lowPoolI];
         this.lowPoolI = (this.lowPoolI + 1) % this.lowPool.length;
         im.setPosition(p.x, p.y + 8);
         im.dropAt = sim.time;
       }
+      this.lowMeadowT += 0.1;
+      if (this.lowMeadow.length && this.lowMeadowT >= 0.5) { // a painted patch every 0.5 s (20 patches = a ~10 s trail)
+        this.lowMeadowT = 0;
+        const mm = this.lowMeadow[this.lowMeadowI]; this.lowMeadowI = (this.lowMeadowI + 1) % this.lowMeadow.length;
+        mm.setPosition(p.x, p.y + 6); mm.dropAt = sim.time;
+      }
+      for (const mm of this.lowMeadow) {
+        const v = mm.dropAt === undefined ? 0 : life.sample(mm.x, mm.y);
+        mm.setVisible(v > 0.02).setAlpha(Math.min(0.9, 0.9 * v));
+      }
       for (const im of this.lowPool) {
         const v = im.dropAt === undefined ? 0 : life.sample(im.x, im.y);
-        im.setVisible(v > 0.02).setAlpha(0.3 * v);
+        im.setVisible(v > 0.02).setAlpha(0.12 * v);
       }
     }
   }

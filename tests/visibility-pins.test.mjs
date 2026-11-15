@@ -15,7 +15,7 @@ test('PIN arc: keyframe times, lantern radii, eye alpha, quiet rims, far-body fl
   assert.deepEqual(ARC_A.map((r) => r[5]), [1.0, 1.0, 1.0, 0.9, 0.75, 0.70, 0.55, 0.40, 0.30]);
   assert.deepEqual(ARC_A.map((r) => r[6]), [0.30, 0.30, 0.26, 0.21, 0.12, 0, 0, 0, 0]); // WL6b2 quiet rims
   assert.deepEqual(ARC_A.map((r) => r[4]).slice(0, 5), [0.34, 0.34, 0.37, 0.44, 0.47]); // WL6b2 far-body V (0.34 is the G3 floor)
-  assert.deepEqual(ARC_A.map((r) => r[7]), [0.80, 0.82, 0.88, 0.95, 1.00, 1.08, 1.16, 1.26, 1.30]);
+  assert.deepEqual(ARC_A.map((r) => r[7]), [0.80, 0.82, 0.94, 1.03, 1.06, 1.08, 1.16, 1.26, 1.30]);
   assert.deepEqual(ARC_A.map((r) => r[9]), [1, 1, 1, 1, 1, 0.72, 0.72, 0.72, 0.8]);
   assert.equal(ARC_A[0][1], 0x222b54); assert.equal(ARC_A[ARC_A.length - 1][1], 0xffe2c4);
   assert.ok(Math.min(...ARC_A.map((r) => r[4])) >= 0.34, 'G3: far body never darker than the pinned floor');

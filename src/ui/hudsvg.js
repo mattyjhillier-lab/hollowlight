@@ -86,7 +86,7 @@ export function emblem(doc, kind, size = 48) {
   }
   return g;
 }
-export const EMBLEM_OF = { ghost_wolves: 'wolf', raven_flock: 'raven', holy_orbit: 'orb', dragonfire_meteor: 'flame', spirit_bolts: 'bolt', chain_lightning: 'chain', rally_pack: 'wolf', pack_howl: 'wolf', pelt_dash: 'wolf', sanctuary: 'sanctuary', candle_wheel: 'sanctuary', sanctuary_ring: 'sanctuary' };
+export const EMBLEM_OF = { ghost_wolves: 'wolf', raven_flock: 'raven', holy_orbit: 'orb', dragonfire_meteor: 'flame', spirit_bolts: 'bolt', chain_lightning: 'chain', rally_pack: 'wolf', pack_howl: 'wolf', pelt_dash: 'wolf', sanctuary: 'sanctuary', candle_wheel: 'sanctuary', sanctuary_ring: 'sanctuary', ophimbers_rise: 'flame' };
 export const ROLE_COL = { wolf: '#ffb457', raven: '#d894c0', orb: '#ffc766', flame: '#ffb35c', bolt: '#7ff0ff', chain: '#e8f4ff', sanctuary: '#ffc766' };
 
 // Lantern (brass cage). The flame group (returned as .flame / .core) is scaled + recoloured by the HUD each tick.

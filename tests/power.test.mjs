@@ -34,10 +34,37 @@ test('setLoopLimit retunes a limited loop and refuses an unlimited one or bad in
 
 test('FREEZE-1: a held run (pause / cards) draws 20 fps on phones; play, desktops and Battery saver limits are unchanged otherwise', async () => {
   const { restLimitFor, fpsLimitFor, FPS_LIMIT_REST } = await import('../src/gfx/power.js');
-  assert.equal(FPS_LIMIT_REST, 20);
-  assert.equal(restLimitFor({ phone: true, rest: true }), 20);
-  assert.equal(restLimitFor({ phone: true, saver: true, rest: true }), 20);
+  assert.equal(FPS_LIMIT_REST, 22); // 20 fps after 1 ms rounding (see the IPHONE-PERF test)
+  assert.equal(restLimitFor({ phone: true, rest: true }), 22);
+  assert.equal(restLimitFor({ phone: true, saver: true, rest: true }), 22);
   assert.equal(restLimitFor({ phone: true, rest: false }), fpsLimitFor({ phone: true }));
   assert.equal(restLimitFor({ phone: true, saver: true, rest: false }), fpsLimitFor({ phone: true, saver: true }));
   assert.equal(restLimitFor({ phone: false, rest: true }), 0); // desktops are never limited
+});
+
+// Phaser 3 TimeStep.stepLimitFPS: delta since the last tick is added up; a frame is drawn (and the sum reset) once it reaches 1000/limit.
+function drawnFps(limit, hz, { round = true, jitter = 0, seconds = 10 } = {}) {
+  const rate = 1000 / limit; let t = 0, last = 0, acc = 0, drawn = 0, seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 - 0.5; };
+  for (let i = 1; t < seconds * 1000; i++) {
+    t = i * (1000 / hz) + jitter * rnd();
+    const ts = round ? Math.round(t) : t; // Safari / WebKit: whole-millisecond rAF timestamps
+    acc += Math.max(0, ts - last); last = ts;
+    if (acc >= rate) { drawn++; acc = 0; }
+  }
+  return drawn / seconds;
+}
+
+test('IPHONE-PERF: with whole-ms (Safari) rAF timestamps the phone limits still give 60 / 30 / 20 fps at 60 and 120 Hz', async () => {
+  const { FPS_LIMIT_REST } = await import('../src/gfx/power.js');
+  assert.ok(drawnFps(62, 60) < 45, 'the old limit 62 dropped a 60 Hz iPhone to ~40 fps (the bug)');
+  for (const hz of [60, 120]) {
+    for (const [limit, want] of [[FPS_LIMIT_PHONE, 60], [FPS_LIMIT_SAVER, 30], [FPS_LIMIT_REST, 20]]) {
+      for (const o of [{ round: true }, { round: false }, { round: true, jitter: 1.5 }]) {
+        const got = drawnFps(limit, hz, o);
+        assert.ok(Math.abs(got - want) <= want * 0.04, `limit ${limit} at ${hz} Hz ${JSON.stringify(o)}: ${got.toFixed(1)} fps, want ${want}`);
+      }
+    }
+  }
+  assert.ok(Math.abs(drawnFps(FPS_LIMIT_PHONE, 90) - 45) < 2, '90 Hz phone draws 45 (unchanged)');
 });

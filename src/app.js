@@ -1,6 +1,7 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
 import { showLoading } from './ui/loading.js';
 import { Prebake } from './gfx/prebake.js'; // FIX4 run-start loading bar
+import { probe } from './gfx/probe.js'; // IPHONE-PERF ?perf=1 sim / HUD split (no-op unless on)
 import { shouldNudge } from './save/nudge.js';
 import { downloadText, SAFE } from './ui/savesafety.js';
 import { applyTextSize } from './ui/textsize.js';
@@ -689,7 +690,7 @@ export const app = {
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
     if (this.setResting) this.setResting(!!sim && (this.paused || this.introOpen || !!this.ui.settingsOpen || sim.state === 'levelup')); // FREEZE-1: phones draw 20 fps while the run is held
     if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
-    if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen && !this.warmHold) sim.step(dt, this.scene.readInput());
+    if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen && !this.warmHold) { const t0 = probe.on ? performance.now() : 0; sim.step(dt, this.scene.readInput()); if (t0) probe.add('sim', performance.now() - t0); }
     else if ((this.paused || this.introOpen || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
     this.mapTick(sim, dt);
@@ -719,6 +720,7 @@ export const app = {
     this.hudAcc += dt;
     if (this.hudAcc > 0.08) {
       this.hudAcc = 0;
+      const h0 = probe.on ? performance.now() : 0;
       this.ui.updateHud(sim);
       if (this.touch) {
         const a = sim.ability;
@@ -726,8 +728,9 @@ export const app = {
         if (this.abFaceId !== a.id) { this.abFaceId = a.id; this.touch.setFace(abilityEmblem(globalThis.document, a.id)); } // the phone ability button shows the hero's emblem
         this.touch.setAbility(a.name, a.cdLeft <= 0, a.cdLeft <= 0 ? 1 : 1 - a.cdLeft / cd, Math.ceil(a.cdLeft));
       }
+      if (h0) probe.add('hud', performance.now() - h0);
     }
-    if (this.touch) this.touch.render();
+    if (this.touch) { const t0 = probe.on ? performance.now() : 0; this.touch.render(); if (t0) probe.add('hud', performance.now() - t0); }
   },
 
   // EXTRAS v1 Endless Dusk (C1-A): after a dawn won at the boss, offer 'Stay in the dark' (not in ?auto= bot / screenshot runs);
@@ -799,6 +802,7 @@ export const app = {
     else if (ev.type === 'magnet') { this.ui.toast('Soul Magnet', this.pickupWhisper('magnet')); this.scene.magnetFx(); }
     else if (ev.type === 'dash') { this.ui.toast('Pelt Dash'); this.scene.dashMoment(ev); }
     else if (ev.type === 'sanctuary') this.ui.toast('Sanctuary Ring');
+    else if (ev.type === 'rise') this.ui.toast("Ophimber's Rise");
     else if (ev.type === 'revive') this.ui.toast('Last Light: you rise again');
     else if (ev.type === 'bossDead') { this.buzz('boss'); if (!(this.sim && this.sim.fight)) this.ui.toast('The Elder Treant falls (+soul shards)'); }
     else if (ev.type === 'bossSoon') { this.ui.toast('Something old wakes'); this.scene.shake(400, 0.003); }
@@ -928,11 +932,17 @@ export const app = {
   },
 
   // Phone-sized or touch-first device (drives the Brighter default of the Brightness setting).
+  // IPHONE-PERF: called every frame (RunScene.measure); the answer is cached and recomputed only after a resize (a fresh matchMedia per frame cost ~0.3 ms/f at 4x throttle).
   isPhone() {
+    if (this.phoneC !== undefined) return this.phoneC;
+    let r = false;
     try {
       const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-      return !!(coarse || Math.min(window.innerWidth, window.innerHeight) <= 600);
+      r = !!(coarse || Math.min(window.innerWidth, window.innerHeight) <= 600);
     } catch (err) { return false; }
+    try { if (!this.phoneHook && typeof window.addEventListener === 'function') { this.phoneHook = true; window.addEventListener('resize', () => { this.phoneC = undefined; }); } } catch (err) { /* uncached */ }
+    if (this.phoneHook) this.phoneC = r;
+    return r;
   },
 
   applySettings() {
@@ -989,6 +999,8 @@ export const app = {
       isFirstRun: () => (this.save.data.stats.runs || 0) === 0 && Object.keys(this.save.data.tree).length === 0,
       hasProgress: () => this.hasProgress(),
       frontDoor: (lastHero) => this.frontDoor(lastHero),
+      resetNoticeData: () => (this.save.readOnly ? null : (this.save.data.notes && this.save.data.notes.treeResetNotice) || null),
+      clearResetNotice: () => { if (this.save.data.notes && this.save.data.notes.treeResetNotice) { delete this.save.data.notes.treeResetNotice; this.save.saveNow(); } },
       lanternScreen: () => this.lanternScreen(),
       lightLantern: (id) => this.lightLantern(id),
       createLantern: (name) => this.createLantern(name),

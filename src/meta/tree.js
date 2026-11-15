@@ -494,6 +494,10 @@ export function abilityParam(data, key) {
 const heroVisual = (data, v) => typeof v === 'string' && PARAM_RE.test(v) && !!data && isObj(data.characters)
   && Object.values(data.characters).some((c) => isObj(c) && Array.isArray(c.treeVisuals) && c.treeVisuals.includes(v));
 
+// A weapon stat a tree node may name: one of its card stats, or 'cooldown' for a weapon whose volley rate is a fixed top-level `cd` (Dragonfire
+// Meteor: no Cooldown card, so the tree's volley-cooldown nodes are the only per-weapon cooldown; the sim reads w.bonus.cooldown there).
+export const hasTreeStat = (w, stat) => isObj(w) && ((isObj(w.stats) && own(w.stats, stat)) || (stat === 'cooldown' && fin(w.cd) && !(isObj(w.stats) && own(w.stats, 'cooldown'))));
+
 function checkEffect(e, data, where) {
   if (!isObj(e)) fail(`${where}: bad effect`);
   const keys = Object.keys(e);
@@ -563,7 +567,7 @@ function checkEffect(e, data, where) {
     if (hasPct === hasAdd) fail(`${where}: weapon effect needs exactly one of pct/add`);
     if (hasPct) num('pct', -90, 300); else num('add', -20, 20);
     const ids = tagOk ? Object.keys(data.weapons).filter((i) => w === '@all' || data.weapons[i].type === w.slice(1)) : [w];
-    if (!ids.some((i) => own(data.weapons[i].stats, e.stat))) fail(`${where}: no matching weapon has stat ${e.stat}`);
+    if (!ids.some((i) => hasTreeStat(data.weapons[i], e.stat))) fail(`${where}: no matching weapon has stat ${e.stat}`);
   } else if (e.unlock !== undefined) {
     if (e.unlock === 'rerolls' || e.unlock === 'banishes') num('n', 1, 9);
     else if (e.unlock === 'autoAbility') num('hp', 0.05, 0.9);
@@ -901,7 +905,7 @@ export function aggregateMods(tree, def, data, opts = null) {
         const ids = ['@summon', '@magic', '@all'].includes(e.weapon)
           ? Object.keys(data.weapons).filter((i) => e.weapon === '@all' || data.weapons[i].type === e.weapon.slice(1))
           : [e.weapon];
-        for (const wid of ids) if (own(data.weapons[wid].stats, e.stat)) bonus(wid, e.stat, e.pct !== undefined ? 'pct' : 'add', (e.pct !== undefined ? e.pct * (e.pct > 0 || e.stat === 'cooldown' ? m : 1) : e.add) * r);
+        for (const wid of ids) if (hasTreeStat(data.weapons[wid], e.stat)) bonus(wid, e.stat, e.pct !== undefined ? 'pct' : 'add', (e.pct !== undefined ? e.pct * (e.pct > 0 || e.stat === 'cooldown' ? m : 1) : e.add) * r);
       } else if (e.unlock === 'rerolls') out.meta.rerolls += e.n * r;
       else if (e.unlock === 'banishes') out.meta.banishes += e.n * r;
       else if (e.unlock === 'autoAbility') out.ability.autoHp = Math.max(out.ability.autoHp, e.hp);

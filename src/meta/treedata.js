@@ -259,8 +259,13 @@ const NODE_KEYS = new Set(['id', 'idx', 'kind', 'name', 'desc', 'flavour', 'bran
 const V2_KEYS = new Set(['name', 'desc', 'effects', 'cost', 'maxRank', 'rankCost', 'unlock', 'requires', 'requiresAny', 'excludes', 'hidden']);
 
 // ---------------------------------------------------------------- compose
-export function composeTree(files, data = null) {
+// opts.unreleased === true: also compose the constellations of STAGED weapons (weapons.json `unreleased: true`, e.g. Dragonfire Meteor before its
+// release switch). Default (the game, the release guard, every balance script): such a cluster is validated nowhere and composed nowhere, so not one
+// of its ids, positions, links, budget terms or regions exists for a player; the reserved region record that holds its slot stays. The full view is
+// for tree-validate, the id snapshot and a dev-only build (VITE_TREE_UNRELEASED=1). Release = drop the weapon's `unreleased` flag.
+export function composeTree(files, data = null, opts = null) {
   ensure(Array.isArray(files) && files.length >= 1 && files.length <= MAX_FILES, 'bad file list');
+  const withUnreleased = !!(opts && opts.unreleased === true);
   const sorted = files.map((f) => {
     ensure(isObj(f) && typeof f.path === 'string' && /^[a-z0-9_/]+\.json$/.test(f.path) && !f.path.includes('..') && !f.path.includes('//'), 'bad fragment path');
     return f;
@@ -286,6 +291,11 @@ export function composeTree(files, data = null) {
     map[stem] = j;
   }
   ensure(core, 'core.json missing');
+  // STAGED constellations (see opts.unreleased above): dropped before anything reads them, so the composed tree is byte-identical to one without the file
+  const hiddenClusters = [];
+  if (!withUnreleased && data && isObj(data.weapons)) {
+    for (const wid of Object.keys(clusters)) if (own(data.weapons, wid) && isObj(data.weapons[wid]) && data.weapons[wid].unreleased === true) { hiddenClusters.push(wid); delete clusters[wid]; }
+  }
   for (const [id, e] of Object.entries(emblems)) checkEmblem(e, `emblems/${id}`);
   // namespaces: core.json registers the core / ring / tool / chapter prefixes; a weapon or hero fragment's own prefix registers itself (TREE-GEN1:
   // a new hero or weapon is its fragment + its game data, no core.json edit). A prefix already registered keeps its kind and owners.
@@ -641,7 +651,9 @@ export function composeTree(files, data = null) {
     const kin = data.characters[h].kindred;
     placeList.push({ id: `h:${h}`, foot: 80, orbit: AT.heroes && own(AT.heroes, h) ? AT.heroes[h] : undefined, near: typeof kin === 'string' && own(clusterInfo, kin) ? `c:${kin}` : undefined, minTier: 2 });
   }
-  for (const r of AT.regions) placeList.push({ id: `r:${r.id}`, foot: r.foot || (r.kind === 'reserved' ? gardenFoot(G, 2) : 90), orbit: r.orbit, minTier: 2 });
+  // a reserved slot held for a weapon gives way to that weapon's constellation once it is composed (its cluster carries the same orbit)
+  const atlasRegions = AT.regions.filter((r) => !(r.kind === 'reserved' && typeof r.weapon === 'string' && own(clusterInfo, r.weapon)));
+  for (const r of atlasRegions) placeList.push({ id: `r:${r.id}`, foot: r.foot || (r.kind === 'reserved' ? gardenFoot(G, 2) : 90), orbit: r.orbit, minTier: 2 });
   const fogTier = AT.fogTier || 3;
   for (const a of fogNodes) { const ang = core.rings.fog.angles[a.spec.place.i]; placeList.push({ id: `n:${a.spec.id}`, foot: 70, orbit: { tier: fogTier, angle: ang }, minTier: fogTier }); }
   const placed = placeRegions(placeList, AT, hubR);
@@ -844,7 +856,7 @@ export function composeTree(files, data = null) {
     const key = `h:${h}`;
     regions.push({ id: key, kind: 'hero', hero: h, display: true, name: typeof data.characters[h].name === 'string' ? data.characters[h].name.split(',')[0].slice(0, 30) : h, centre: placed[key].centre, r: footOf(key), accent: 'spirit', thread: null, orbit: orbitOf(key) });
   }
-  for (const r of AT.regions) {
+  for (const r of atlasRegions) {
     const key = `r:${r.id}`;
     const wname = r.weapon && weapons && own(weapons, r.weapon) ? weapons[r.weapon].name : null;
     regions.push({ id: key, kind: r.kind, name: r.name || wname || r.id, display: true, reserved: !!r.reserved || r.kind === 'reserved', lit: !!r.lit, ...(r.weapon ? { weapon: r.weapon } : {}), ...(r.medallion ? { medallion: r.medallion } : {}), centre: placed[key].centre, r: footOf(key), accent: 'spirit', thread: null, orbit: orbitOf(key) });
@@ -863,7 +875,7 @@ export function composeTree(files, data = null) {
   return {
     live, v2,
     info: {
-      core, regions, scale: SC, toolScale: TS, sealPos, spokes: spokesOf, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres,
+      core, regions, hiddenClusters, scale: SC, toolScale: TS, sealPos, spokes: spokesOf, emblems, clusters: clusterInfo, heroes: heroInfo, chapters: chapterInfo, tools: toolInfo, positions, centres: centreOf, toolCentres,
       hubR: Math.round(hubR), ringTiers: bands, ringOf: ringOfId, regionKey, links, roads: roads.map((r) => ({ from: r.from, to: r.to, ids: [...r.ids] })),
       nodes: allNodes.map((a) => ({ id: a.spec.id, frag: a.frag, idx: a.spec.idx, kind: a.spec.kind, role: a.role, cluster: a.cluster, tool: a.tool, region: a.region, inert: !!a.spec.inert, ...(a.garden ? { garden: { ...a.garden } } : {}), ...(a.role === 'road' ? { road: a.road } : {}) })),
     },
