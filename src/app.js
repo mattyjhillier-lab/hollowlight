@@ -1,6 +1,7 @@
 // Glue between the simulation, the Phaser scene and the DOM overlay.
 import { showLoading } from './ui/loading.js';
 import { Prebake } from './gfx/prebake.js'; // FIX4 run-start loading bar
+import { probe } from './gfx/probe.js'; // IPHONE-PERF ?perf=1 sim / HUD split (no-op unless on)
 import { shouldNudge } from './save/nudge.js';
 import { downloadText, SAFE } from './ui/savesafety.js';
 import { applyTextSize } from './ui/textsize.js';
@@ -689,7 +690,7 @@ export const app = {
     if (this.audio) this.audio.frame(this.audioView(sim), sim, dt);
     if (this.setResting) this.setResting(!!sim && (this.paused || this.introOpen || !!this.ui.settingsOpen || sim.state === 'levelup')); // FREEZE-1: phones draw 20 fps while the run is held
     if (!sim) { if (this.ui.whisperOn && this.ui.whisperOn()) this.ui.whisper(null); return; }
-    if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen && !this.warmHold) sim.step(dt, this.scene.readInput());
+    if (sim.state === 'running' && !this.paused && !this.freeze && !this.introOpen && !this.warmHold) { const t0 = probe.on ? performance.now() : 0; sim.step(dt, this.scene.readInput()); if (t0) probe.add('sim', performance.now() - t0); }
     else if ((this.paused || this.introOpen || sim.state !== 'running') && this.scene.drainAbilityKey) this.scene.drainAbilityKey(); // Space on a pause button, a level-up card or the end screen must not queue an ability for when play resumes
 
     this.mapTick(sim, dt);
@@ -719,6 +720,7 @@ export const app = {
     this.hudAcc += dt;
     if (this.hudAcc > 0.08) {
       this.hudAcc = 0;
+      const h0 = probe.on ? performance.now() : 0;
       this.ui.updateHud(sim);
       if (this.touch) {
         const a = sim.ability;
@@ -726,8 +728,9 @@ export const app = {
         if (this.abFaceId !== a.id) { this.abFaceId = a.id; this.touch.setFace(abilityEmblem(globalThis.document, a.id)); } // the phone ability button shows the hero's emblem
         this.touch.setAbility(a.name, a.cdLeft <= 0, a.cdLeft <= 0 ? 1 : 1 - a.cdLeft / cd, Math.ceil(a.cdLeft));
       }
+      if (h0) probe.add('hud', performance.now() - h0);
     }
-    if (this.touch) this.touch.render();
+    if (this.touch) { const t0 = probe.on ? performance.now() : 0; this.touch.render(); if (t0) probe.add('hud', performance.now() - t0); }
   },
 
   // EXTRAS v1 Endless Dusk (C1-A): after a dawn won at the boss, offer 'Stay in the dark' (not in ?auto= bot / screenshot runs);

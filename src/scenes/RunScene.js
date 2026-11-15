@@ -422,8 +422,10 @@ export class RunScene extends Phaser.Scene {
     this.perfInfo = { sprites: 0, particles: 0, tier: '', mode: '' };
     const ev = this.game.events;
     ev.on(Phaser.Core.Events.PRE_STEP, () => { this.workT0 = performance.now(); probe.frame(this.workT0); });
+    if (probe.on) { probe.gpu = new URLSearchParams(location.search).get('gpu') === '1'; probe.startRaf(); ev.on(Phaser.Core.Events.PRE_RENDER, () => { this.renderT0 = performance.now(); }); } // IPHONE-PERF ?perf=1 split line
     ev.on(Phaser.Core.Events.POST_RENDER, () => {
       this.workMs = performance.now() - this.workT0;
+      if (probe.on) probe.endFrame(this.workMs, performance.now() - (this.renderT0 || this.workT0), this.sim ? this.sec : null, this.renderer.gl);
       this.perf.frameEnd();
     });
     this.input.keyboard.on('keydown-F3', (e) => { e.preventDefault(); this.perf.toggle(); });
