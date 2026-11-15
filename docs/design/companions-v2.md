@@ -176,3 +176,4 @@ Security check: docs only. The plan keeps saves untrusted (frozen tables, idempo
 - Decisions 1-3 LOCKED 2026-11-15: retire all six evolutions; choose-new-spirit screen; accept 4 weapons then design a 5th. Next batch: Bond damage row, 5 summons ring nodes, Ophimber between-ability job.
 - Decisions 4-6 LOCKED 2026-11-15: companion power replaces Bond +5% damage; retire+refund 5 ring nodes; design Ophimber everyday job now. Remaining before build: pup Bond steps (no evolutions now), look rounds (Tracker, Wick, Ophimber job), independent review of the final plan.
 - Tracker Bond steps LOCKED 2026-11-15: 5 gem fetch, 10 pawprint speed trail, 15 mark on bite, 25 once-per-run howl stagger. Elias Wick and Ophimber steps still to design with the look rounds.
+- Flambe steps + Ophimber Ember-spitter LOCKED 2026-11-15. Remaining before build: Ophimber Bond steps, tree-replacement options, independent review, then build chunks.
