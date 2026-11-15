@@ -32,3 +32,4 @@ Fit: a bonded creature matches Spirits of the Dusk and the Warm Lantern tone; he
 ## Framework LOCKED 2026-11-15 (Matt)
 - Growth: with hero Bond between runs, no run cards. Never hurt or lost in a run. Holy Orbit stays a weapon (4 magic weapons).
 - Next: three options for Wren wolf jobs, then Elias companion, then migration plan; independent review before lock.
+- Wren wolf job LOCKED 2026-11-15: The Tracker (see LOCKED).
