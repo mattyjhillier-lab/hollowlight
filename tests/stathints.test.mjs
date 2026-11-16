@@ -47,7 +47,7 @@ test('E1 every stat hint at every rank: fits the card clamp, no leftover tokens,
 
 test('E1/E3 Rend hint quotes the real per-rank potency and the fixed time; card view uses the same text', () => {
   assert.equal(BLEED_TIME, 4);
-  assert.equal(weapons.ghost_wolves.stats.duration.name, 'Rend');
+  assert.equal(weapons.ghost_wolves.stats.duration.name, 'Bleed');
   const h = hintText(weapons.ghost_wolves, 'duration', 0);
   assert.ok(h.includes('15% → 19%') && h.includes('4s'), h);
   assert.ok(hintText(weapons.ghost_wolves, 'duration', 4).includes('31% → 35%'));

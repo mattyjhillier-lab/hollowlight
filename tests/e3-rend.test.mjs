@@ -9,7 +9,7 @@ const DT = 1 / 60;
 const def = data.weapons.ghost_wolves;
 
 test('E3 Rend ranks 0..5 are 15,19,23,27,31,35% (id stays "duration": saves and tree stay valid)', () => {
-  assert.equal(def.stats.duration.name, 'Rend');
+  assert.equal(def.stats.duration.name, 'Bleed'); // display name 'Rend' -> 'Bleed' (PLAIN STAT NAMES 2026-11-16)
   assert.deepEqual([0, 1, 2, 3, 4, 5].map((r) => Math.round(statValue(def, 'duration', r) * 100)), [15, 19, 23, 27, 31, 35]);
   assert.equal(BLEED_TIME, 4);
   assert.ok(hintText(def, 'duration', 2).includes('23% → 27%'));

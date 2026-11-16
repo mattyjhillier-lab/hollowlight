@@ -36,7 +36,7 @@ test('jargon stat names are explained on the card, and damage stats quote real d
         // single jargon-ish name: the hint must either start with the name and a colon or use plain effect words
         assert.ok(t.startsWith(`${s.name}:`) || /damage|reach|bleed|every|faster|harder|fewer|more|wider|longer|burn/i.test(t), `${wid}.${key} "${s.name}" unexplained: ${t}`);
       }
-      if (/power|impact/i.test(s.name)) {
+      if (/power|damage/i.test(s.name)) {
         assert.ok(/damage/i.test(t) && t.includes(formatValue(s.fmt, statValue(def, key, 0))), `${wid}.${key} must quote damage: ${t}`);
       }
     }
@@ -70,3 +70,20 @@ test('evolution, fallback and blessing cards carry plain text with real numbers'
   for (const [id, b] of Object.entries(bl.items)) assert.ok(b.desc.length >= 12 && /\d+%/.test(b.desc), `blessing ${id}: ${b.desc}`);
   assert.equal(effectOf({ kind: 'fallback', fallback: 'heal', desc: data.balance.fallback.heal.desc }, data).num, '+35%');
 });
+
+test('PLAIN STAT NAMES (LOCKED 2026-11-16): no stat shows the old vague names, on cards or in tree text', () => {
+  const OLD = /(Impact|Blaze|Embers|Rend|Arc|Watch)/;
+  for (const [wid, def] of Object.entries(weapons)) for (const [key, s] of Object.entries(def.stats)) {
+    assert.ok(!OLD.test(s.name), `${wid}.${key} name: ${s.name}`);
+    for (let r = 0; r < 5; r++) assert.ok(!OLD.test(hintText(def, key, r)), `${wid}.${key}@${r}: ${hintText(def, key, r)}`);
+  }
+  assert.deepEqual(['ghost_wolves.duration', 'raven_flock.range', 'chain_lightning.area', 'dragonfire_meteor.power', 'dragonfire_meteor.area', 'dragonfire_meteor.duration'].map((p) => { const [w, k] = p.split('.'); return weapons[w].stats[k].name; }),
+    ['Bleed', 'Sight', 'Jump reach', 'Crash damage', 'Blast radius', 'Burn time']);
+  for (const f of ['chain_lightning', 'dragonfire_meteor', 'raven_flock']) {
+    const descs = [], walk = (o) => { if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (k === 'desc' && typeof v === 'string') descs.push(v); else walk(v); } };
+    walk(rd(`tree/clusters/${f}.json`));
+    assert.ok(descs.length > 5, f);
+    for (const d of descs) assert.ok(!OLD.test(d), `${f}: ${d}`);
+  }
+});
+

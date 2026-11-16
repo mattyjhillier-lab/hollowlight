@@ -26,7 +26,7 @@ test('DM1 data: stats, released (DM10), boss, colour, no fire tag', () => {
   assert.equal(w.name, 'Dragonfire Meteor'); assert.equal(w.treeGate, true); assert.ok(!w.unreleased); assert.equal(w.color, '#ffb35c'); assert.deepEqual(w.tags, []);
   assert.equal(w.boss, 2.2); assert.equal(w.cd, 2.6);
   assert.deepEqual(Object.keys(st), ['count', 'power', 'area', 'duration']);
-  assert.deepEqual([st.count.name, st.power.name, st.area.name, st.duration.name], ['Fireballs', 'Impact', 'Blaze', 'Embers']);
+  assert.deepEqual([st.count.name, st.power.name, st.area.name, st.duration.name], ['Fireballs', 'Crash damage', 'Blast radius', 'Burn time']);
   assert.deepEqual([st.count.base, st.count.perRank, st.power.base, st.power.perRank, st.area.base, st.area.perRank, st.duration.base, st.duration.perRank], [1, 0.6, 14, 5.6, 34, 5, 2.5, 0.5]);
   for (const k of Object.keys(st)) assert.ok(hintText(w, k, 0).length > 8 && !hintText(w, k, 0).includes('{'), k);
   assert.ok(!data.weapons.ember_breath);

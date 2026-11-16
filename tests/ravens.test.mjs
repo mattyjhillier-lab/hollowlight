@@ -123,7 +123,7 @@ test('Watch: a foe outside Watch is left alone, a foe inside is attacked', () =>
 });
 
 test('card hints are honest: Watch, Wingbeat, Peck and Flock size', () => {
-  assert.equal(RF.stats.range.name, 'Watch');
+  assert.equal(RF.stats.range.name, 'Sight');
   assert.equal(RF.stats.speed.name, 'Wingbeat');
   assert.match(hintText(RF, 'range', 0), /80 → 92/);
   assert.match(hintText(RF, 'speed', 0), /15% more often/);

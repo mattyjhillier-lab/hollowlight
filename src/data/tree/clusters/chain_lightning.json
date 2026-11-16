@@ -256,7 +256,7 @@
    "idx": 7,
    "kind": "knot",
    "name": "Long Reach",
-   "desc": "Arc +1%",
+   "desc": "Jump reach +1%",
    "cost": {
     "gold": 430
    },
@@ -321,7 +321,7 @@
    "cost": {
     "gold": 470
    },
-   "desc": "Arc +1%"
+   "desc": "Jump reach +1%"
   },
   {
    "id": "cl_thu3",
@@ -339,7 +339,7 @@
    "cost": {
     "gold": 640
    },
-   "desc": "Arc +1%"
+   "desc": "Jump reach +1%"
   },
   {
    "id": "cl_thu4",
@@ -432,7 +432,7 @@
    "idx": 8,
    "kind": "knot",
    "name": "Storm Mantle",
-   "desc": "Arc +1%",
+   "desc": "Jump reach +1%",
    "branch": "magic",
    "cost": {
     "gold": 570
@@ -450,7 +450,7 @@
    "idx": 13,
    "kind": "bead",
    "name": "Storm-Caller",
-   "desc": "Power +1% and Arc +1%",
+   "desc": "Power +1% and Jump reach +1%",
    "cost": {
     "gold": 630
    },
@@ -525,7 +525,7 @@
    "cost": {
     "gold": 640
    },
-   "desc": "Arc +1%"
+   "desc": "Jump reach +1%"
   },
   {
    "id": "cl_sta4",
@@ -600,7 +600,7 @@
    "idx": 12,
    "kind": "knot",
    "name": "Grounded",
-   "desc": "Arc +1%",
+   "desc": "Jump reach +1%",
    "cost": {
     "gold": 430
    },
@@ -676,7 +676,7 @@
    "cost": {
     "gold": 380
    },
-   "desc": "Arc +1%"
+   "desc": "Jump reach +1%"
   },
   {
    "id": "cl_tet2",
@@ -712,7 +712,7 @@
    "cost": {
     "gold": 640
    },
-   "desc": "Arc +1%"
+   "desc": "Jump reach +1%"
   },
   {
    "id": "cl_tet4",

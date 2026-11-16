@@ -25,7 +25,7 @@ const spy = (sim) => { const log = []; const o = sim.hurt.bind(sim); sim.hurt = 
 test('W11a data: Power 13.2 -> 46.2 (+6.6, RT1 2026-10-25), Arc 60 -> 110 (+10) with first strike 1.5x and decay 5% -> 0% (-1%/rank)', () => {
   const st = data.weapons.chain_lightning.stats;
   assert.equal(st.power.base, 13.2); assert.equal(st.power.perRank, 6.6);
-  assert.equal(st.area.name, 'Arc'); assert.equal(st.area.base, 60); assert.equal(st.area.perRank, 10);
+  assert.equal(st.area.name, 'Jump reach'); assert.equal(st.area.base, 60); assert.equal(st.area.perRank, 10);
   assert.equal(st.area.first, 1.5);
   assert.ok(Math.abs(st.area.decay0 - 5 * st.area.decayPer) < 1e-9, 'decay reaches 0 at rank 5');
 });

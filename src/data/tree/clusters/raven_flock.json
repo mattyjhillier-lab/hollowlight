@@ -181,7 +181,7 @@
    "idx": 6,
    "kind": "knot",
    "name": "Wider Murder",
-   "desc": "Watch +2%",
+   "desc": "Sight +2%",
    "branch": "summoner",
    "maxRank": 1,
    "rankCost": 1,
@@ -242,7 +242,7 @@
    "idx": 9,
    "kind": "knot",
    "name": "High Watch",
-   "desc": "Watch +2%",
+   "desc": "Sight +2%",
    "cost": {
     "gold": 490
    },
@@ -259,7 +259,7 @@
    "idx": 10,
    "kind": "mastery",
    "name": "Black Feather Oath",
-   "desc": "Peck power +2% and Watch +2%",
+   "desc": "Peck power +2% and Sight +2%",
    "flavour": "The crows now count you as kin.",
    "branch": "summoner",
    "cost": {

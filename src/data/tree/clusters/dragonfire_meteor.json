@@ -208,7 +208,7 @@
    "idx": 4,
    "kind": "knot",
    "name": "Wide Hearth",
-   "desc": "Blaze +2%",
+   "desc": "Blast radius +2%",
    "branch": "magic",
    "cost": {
     "gold": 210
@@ -226,7 +226,7 @@
    "idx": 5,
    "kind": "knot",
    "name": "Slow Coals",
-   "desc": "Embers +2%",
+   "desc": "Burn time +2%",
    "branch": "magic",
    "cost": {
     "gold": 320
@@ -244,7 +244,7 @@
    "idx": 6,
    "kind": "knot",
    "name": "Heavy Ember",
-   "desc": "Impact +2%",
+   "desc": "Crash damage +2%",
    "branch": "magic",
    "cost": {
     "gold": 430
@@ -279,7 +279,7 @@
    "idx": 8,
    "kind": "knot",
    "name": "Creeping Glow",
-   "desc": "Blaze +1%",
+   "desc": "Blast radius +1%",
    "branch": "magic",
    "cost": {
     "gold": 380
@@ -297,7 +297,7 @@
    "idx": 9,
    "kind": "knot",
    "name": "Brighter Patch",
-   "desc": "Impact +1%",
+   "desc": "Crash damage +1%",
    "branch": "magic",
    "cost": {
     "gold": 470
@@ -332,7 +332,7 @@
    "idx": 11,
    "kind": "knot",
    "name": "Long Hearth",
-   "desc": "Embers +1%",
+   "desc": "Burn time +1%",
    "branch": "magic",
    "cost": {
     "gold": 380
@@ -400,7 +400,7 @@
    "idx": 15,
    "kind": "knot",
    "name": "Loud Crash",
-   "desc": "Impact +2%",
+   "desc": "Crash damage +2%",
    "branch": "magic",
    "cost": {
     "gold": 430
@@ -461,7 +461,7 @@
    "idx": 18,
    "kind": "knot",
    "name": "Serpent Heat",
-   "desc": "Impact +1%",
+   "desc": "Crash damage +1%",
    "branch": "magic",
    "cost": {
     "gold": 380
@@ -479,7 +479,7 @@
    "idx": 19,
    "kind": "knot",
    "name": "Wide Coil",
-   "desc": "Blaze +1%",
+   "desc": "Blast radius +1%",
    "branch": "magic",
    "cost": {
     "gold": 470
@@ -564,7 +564,7 @@
    "idx": 24,
    "kind": "knot",
    "name": "Warm Glow",
-   "desc": "Blaze +2%",
+   "desc": "Blast radius +2%",
    "branch": "magic",
    "cost": {
     "gold": 320
@@ -582,7 +582,7 @@
    "idx": 25,
    "kind": "knot",
    "name": "Lingering Coals",
-   "desc": "Embers +2%",
+   "desc": "Burn time +2%",
    "branch": "magic",
    "cost": {
     "gold": 430
@@ -640,7 +640,7 @@
    "idx": 28,
    "kind": "knot",
    "name": "Long Mark",
-   "desc": "Embers +1%",
+   "desc": "Burn time +1%",
    "branch": "magic",
    "cost": {
     "gold": 380
@@ -658,7 +658,7 @@
    "idx": 29,
    "kind": "knot",
    "name": "Wide Pop",
-   "desc": "Blaze +1%",
+   "desc": "Blast radius +1%",
    "branch": "magic",
    "cost": {
     "gold": 470
@@ -693,7 +693,7 @@
    "idx": 31,
    "kind": "knot",
    "name": "Bright Return",
-   "desc": "Impact +1%",
+   "desc": "Crash damage +1%",
    "branch": "magic",
    "cost": {
     "gold": 380
