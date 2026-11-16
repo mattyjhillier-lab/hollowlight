@@ -16,7 +16,7 @@ const statCard = (w, key, ranks = {}) => { Object.assign(w.ranks, ranks); return
 test('HUD-2 effect numbers: percent / count / seconds / label per stat kind', () => {
   const w = wolves();
   const speed = statCard(w, 'speed'); // 110 -> 122 = +11%
-  assert.deepEqual(effectOf(speed, data), { mode: 'percent', num: '+11%', unit: '110 → 122' });
+  assert.deepEqual(effectOf(speed, data), { mode: 'percent', num: '+11%', unit: '110 → 122 run speed' });
   const count = statCard(w, 'count', { count: 1 }); // 3 wolves total
   assert.equal(effectOf(count, data).mode, 'count');
   assert.equal(effectOf(count, data).num, '4');

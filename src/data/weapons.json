@@ -7,12 +7,12 @@
     "color": "#9fd8ff",
     "desc": "Spectral wolves hunt the nearest enemy and bite. Bites cause bleeding.",
     "stats": {
-      "count":    { "name": "Pack size",     "base": 2,   "perRank": 1,   "fmt": "int",  "hint": "One more wolf joins the hunt",
+      "count":    { "name": "Pack size",     "base": 2,   "perRank": 1,   "fmt": "int",  "hint": "One more wolf joins the hunt", "unit": "wolves",
         "evoName": { "dire_alpha": "Alpha might" },
         "evoHint": { "dire_alpha": "The Alpha grows bigger and bites harder" } },
-      "power":    { "name": "Bite power",    "base": 7,   "perRank": 3,   "fmt": "int",  "hint": "Each bite hits harder, and bleed grows with it" },
-      "speed":    { "name": "Wolf speed",    "base": 110, "perRank": 12,  "fmt": "int",  "rate": 0.04, "hint": "Wolves run {old} → {new} and bite {rate} faster" },
-      "duration": { "name": "Rend",          "base": 0.15, "perRank": 0.04, "fmt": "pct", "hint": "Bleed drains {old} → {new} of a bite every second, for {bleedSec}s" }
+      "power":    { "name": "Bite power", "base": 7, "perRank": 3, "fmt": "int", "hint": "Each bite deals {old} → {new} damage, and the bleed it causes grows with it", "unit": "damage" },
+      "speed":    { "name": "Wolf speed", "base": 110, "perRank": 12, "fmt": "int", "rate": 0.04, "hint": "Wolves run {old} → {new} and bite {rate} faster", "unit": "run speed" },
+      "duration": { "name": "Rend", "base": 0.15, "perRank": 0.04, "fmt": "pct", "hint": "Bites make foes bleed for {bleedSec}s: {old} → {new} of the bite's damage every second" }
     }
   },
   "raven_flock": {
@@ -23,10 +23,10 @@
     "color": "#b79cff",
     "desc": "Ravens perch by you, then swoop on foes they spot, peck, and fly back.",
     "stats": {
-      "count": { "name": "Flock size",   "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more raven joins the flock" },
-      "power": { "name": "Peck power",   "base": 3.8, "perRank": 1.7,   "fmt": "int", "hint": "Each peck hits harder" },
-      "range": { "name": "Watch",        "base": 80,  "perRank": 12,   "fmt": "int", "hint": "Ravens spot foes {old} → {new} out from you" },
-      "speed": { "name": "Wingbeat",     "base": 1.0, "perRank": 0.15, "fmt": "dec", "hint": "Ravens swoop {upct} more often and fly faster" }
+      "count": { "name": "Flock size", "base": 2, "perRank": 1, "fmt": "int", "hint": "One more raven joins the flock", "unit": "ravens" },
+      "power": { "name": "Peck power", "base": 3.8, "perRank": 1.7, "fmt": "int", "hint": "Each peck deals {old} → {new} damage", "unit": "damage" },
+      "range": { "name": "Watch", "base": 80, "perRank": 12, "fmt": "int", "hint": "Watch: ravens spot foes {old} → {new} away and swoop on them", "unit": "reach" },
+      "speed": { "name": "Wingbeat", "base": 1, "perRank": 0.15, "fmt": "dec", "hint": "Ravens swoop {upct} more often and fly faster", "unit": "speed" }
     }
   },
   "spirit_bolts": {
@@ -38,10 +38,10 @@
     "desc": "Homing spirit orbs seek out the nearest enemies.",
     "boss": 2,
     "stats": {
-      "count":  { "name": "Bolt count",  "base": 1,   "perRank": 1,   "fmt": "int", "hint": "One more bolt in every volley" },
-      "power":  { "name": "Bolt power",  "base": 7.2, "perRank": 2.3, "fmt": "int", "hint": "Each bolt hits harder" },
-      "speed":  { "name": "Swiftness",   "base": 150, "perRank": 22,  "fmt": "int", "rate": 0.02, "turn0": 5, "turnPer": 0.6, "hint": "Bolts fly {upct} faster, curve tighter and fire {rate} sooner" },
-      "pierce": { "name": "Pierce",      "base": 0,   "perRank": 1,   "fmt": "int", "hint": "Each bolt passes through one more foe" }
+      "count":  { "name": "Bolt count", "base": 1, "perRank": 1, "fmt": "int", "hint": "One more bolt in every volley", "unit": "bolts" },
+      "power":  { "name": "Bolt power", "base": 7.2, "perRank": 2.3, "fmt": "int", "hint": "Each bolt deals {old} → {new} damage", "unit": "damage" },
+      "speed":  { "name": "Swiftness", "base": 150, "perRank": 22, "fmt": "int", "rate": 0.02, "turn0": 5, "turnPer": 0.6, "hint": "Bolts fly {upct} faster, curve tighter and fire {rate} sooner", "unit": "speed" },
+      "pierce": { "name": "Pierce", "base": 0, "perRank": 1, "fmt": "int", "hint": "Each bolt passes through one more foe", "unit": "foes pierced" }
     }
   },
   "chain_lightning": {
@@ -52,10 +52,10 @@
     "color": "#b8f2ff",
     "desc": "Lightning strikes the nearest enemy and jumps between foes.",
     "stats": {
-      "chains":   { "name": "Chains",   "base": 2,   "perRank": 1,     "fmt": "int", "hint": "Lightning jumps to one more foe" },
-      "power":    { "name": "Power",    "base": 13.2, "perRank": 6.6,    "fmt": "int", "hint": "Each strike hits harder (the first foe takes 1.5x)" },
-      "cooldown": { "name": "Cooldown", "base": 1.6, "perRank": -0.15, "fmt": "sec", "hint": "Strikes more often (every {new})" },
-      "area":     { "name": "Arc",       "base": 60, "perRank": 10,    "fmt": "int", "first": 1.5, "boss": 3, "decay0": 0.05, "decayPer": 0.01, "hint": "Each jump reaches {old} → {new} away and loses less power (5% → 0% per jump at full Arc)" }
+      "chains":   { "name": "Chains", "base": 2, "perRank": 1, "fmt": "int", "hint": "Lightning jumps to one more foe", "unit": "jumps" },
+      "power":    { "name": "Power", "base": 13.2, "perRank": 6.6, "fmt": "int", "hint": "Each strike deals {old} → {new} damage (the first foe takes 1.5x)", "unit": "damage" },
+      "cooldown": { "name": "Cooldown", "base": 1.6, "perRank": -0.15, "fmt": "sec", "hint": "A strike every {old} → {new}" },
+      "area":     { "name": "Arc", "base": 60, "perRank": 10, "fmt": "int", "first": 1.5, "boss": 3, "decay0": 0.05, "decayPer": 0.01, "hint": "Arc: each jump reaches {old} → {new} away and loses less power (5% → 0% per jump at full Arc)", "unit": "reach" }
     }
   },
   "holy_orbit": {
@@ -66,10 +66,10 @@
     "color": "#e8e0ff",
     "desc": "Holy orbs circle you and burn anything they touch.",
     "stats": {
-      "count":  { "name": "Orb count",  "base": 2,   "perRank": 1,    "fmt": "int", "hint": "One more candle light circles you" },
-      "power":  { "name": "Orb power",  "base": 12,   "perRank": 4.8,   "fmt": "int", "hint": "Each light hits harder" },
-      "radius": { "name": "Orbit size", "base": 38,  "perRank": 6,    "fmt": "int", "bossReach": 16, "bossX": 2, "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you" },
-      "speed":  { "name": "Orbit speed","base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often" }
+      "count":  { "name": "Orb count", "base": 2, "perRank": 1, "fmt": "int", "hint": "One more candle light circles you", "unit": "orbs" },
+      "power":  { "name": "Orb power", "base": 12, "perRank": 4.8, "fmt": "int", "hint": "Each light deals {old} → {new} damage every time it hits", "unit": "damage" },
+      "radius": { "name": "Orbit size", "base": 38, "perRank": 6, "fmt": "int", "bossReach": 16, "bossX": 2, "hint": "Ring reaches {old} → {new} out; it pulls in tight when foes press against you", "unit": "reach" },
+      "speed":  { "name": "Orbit speed", "base": 2.2, "perRank": 0.35, "fmt": "dec", "rate": 0.05, "hint": "Lights circle {upct} faster and hit the same foe {rate} more often", "unit": "speed" }
     }
     },
   "dragonfire_meteor": {
@@ -83,10 +83,10 @@
     "cd": 2.6,
     "first": 0.8,
     "stats": {
-      "count":    { "name": "Fireballs", "base": 1,   "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})" },
-      "power":    { "name": "Impact",    "base": 14,  "perRank": 5.6, "fmt": "int", "hint": "The crash hits harder ({old} → {new}), and the fire it leaves burns harder" },
-      "area":     { "name": "Blaze",     "base": 34,  "perRank": 5,   "fmt": "int", "hint": "The crash and the burning ground are {old} → {new} wide" },
-      "duration": { "name": "Embers",    "base": 2.5, "perRank": 0.5, "fmt": "sec", "hint": "The ground burns {old} → {new}" }
+      "count":    { "name": "Fireballs", "base": 1, "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})", "unit": "fireballs", "hintSame": "No new fireball this pick; it builds toward fireball {soon} on the next" },
+      "power":    { "name": "Impact", "base": 14, "perRank": 5.6, "fmt": "int", "hint": "Impact: each crash deals {old} → {new} damage; the burning ground and burn grow with it", "unit": "damage" },
+      "area":     { "name": "Blaze", "base": 34, "perRank": 5, "fmt": "int", "hint": "Blaze: the crash reaches {old} → {new} out from where it lands; the fire fills most of it", "unit": "reach" },
+      "duration": { "name": "Embers", "base": 2.5, "perRank": 0.5, "fmt": "sec", "hint": "Embers: the burning ground keeps hurting foes for {old} → {new}" }
     }
   }
 }

@@ -26,7 +26,8 @@ export const BURN_RATE = 0.2;
 export const BURN_TIME = 2;
 
 // Card hint text is a template over the real per-rank numbers so it stays true if the data changes.
-// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds), {rate} (attack-rate bonus per rank, stat.rate).
+// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds), {rate} (attack-rate bonus per rank, stat.rate), {soon} (value two ranks on).
+// Optional stat fields: `unit` (short word after the value arrow on the card: '14 → 20 damage'), `hintSame` (see hintText).
 // rateMult: speed stats with a `rate` shorten the weapon's hit gap: gap / (1 + rate x rank).
 export const rateMult = (def, key, rank) => 1 + (def?.stats?.[key]?.rate || 0) * rank;
 export function hintText(def, key, rank) {
@@ -35,8 +36,11 @@ export function hintText(def, key, rank) {
   const nxt = statValue(def, key, rank + 1);
   const pct = Math.abs(cur) > 0 ? `${nxt >= cur ? '+' : '-'}${Math.round(Math.abs((nxt - cur) / cur) * 100)}%` : '';
   const upct = pct ? pct.slice(1) : '';
-  const vals = { upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedSec: String(BLEED_TIME), rate: `${Math.round((s.rate || 0) * 100)}%` };
-  return String(s.hint).replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : ''));
+  const soon = formatValue(s.fmt, statValue(def, key, rank + 2));
+  const vals = { soon, upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedSec: String(BLEED_TIME), rate: `${Math.round((s.rate || 0) * 100)}%` };
+  // hintSame: a stat whose shown value rounds (Meteor fireballs 1.6 -> 2.2 both read 2) says so instead of a misleading 'N → N'.
+  const same = s.hintSame && formatValue(s.fmt, cur) === formatValue(s.fmt, nxt);
+  return String(same ? s.hintSame : s.hint).replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : ''));
 }
 
 export function formatValue(fmt, v) {

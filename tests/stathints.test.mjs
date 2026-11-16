@@ -18,7 +18,7 @@ test('E1 every stat hint at every rank: fits the card clamp, no leftover tokens,
         const t = hintText(def, key, r);
         assert.ok(t.length > 0 && t.length <= CLAMP.desc, `${wid}.${key}@${r} length ${t.length}: ${t}`);
         assert.ok(!/[{}]/.test(t) && !/undefined|NaN/.test(t), `${wid}.${key}@${r}: ${t}`);
-        if (s.hint.includes('{old}')) {
+        if (s.hint.includes('{old}') && !(s.hintSame && formatValue(s.fmt, statValue(def, key, r)) === formatValue(s.fmt, statValue(def, key, r + 1)))) {
           assert.ok(t.includes(formatValue(s.fmt, statValue(def, key, r))), `${wid}.${key}@${r} old: ${t}`);
           assert.ok(t.includes(formatValue(s.fmt, statValue(def, key, r + 1))), `${wid}.${key}@${r} new: ${t}`);
         }
