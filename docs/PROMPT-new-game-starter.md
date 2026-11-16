@@ -39,6 +39,8 @@ Loop for each chunk: RESEARCH, DESIGN, REVIEW, LOCK, BUILD (small), VERIFY, owne
 - Anything that publishes, pushes to main, changes account or repo settings, deletes things, or downloads new files needs a clear yes first. Account or security-setting changes (2FA, tokens) are done by the owner, never by you. Never enter passwords, tokens or API keys anywhere. Never put secrets in code, commits, docs or chat.
 - Notify the owner's phone only when something is ready for review or a decision is needed, one short line.
 
+- **Release cadence.** Do not push many small updates to the live site. Only major bugs (lost or stuck progress, unplayable, security) go out alone as hotfixes; everything else batches on `dev` and ships as one checked update with a 'What's new' note. List what is waiting before proposing a release.
+
 ## 5. Security rules (every change)
 - As few dependencies as possible; each must be well known and maintained. Run `npm audit` and report; never `npm audit fix --force` blindly.
 - Assets: only well-known free sources with a clear licence (CC0 etc.); treat downloads as untrusted; record in a CREDITS file. Prefer assets drawn by code.
