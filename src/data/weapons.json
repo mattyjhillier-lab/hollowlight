@@ -83,8 +83,8 @@
     "cd": 2.6,
     "first": 0.8,
     "stats": {
-      "count":    { "name": "Fireballs", "base": 1, "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})", "unit": "fireballs", "hintSame": "No new fireball this pick; it builds toward fireball {soon} on the next" },
-      "power":    { "name": "Crash damage", "base": 14, "perRank": 5.6, "fmt": "int", "hint": "Each crash deals {old} → {new} damage; the burning ground and burn grow with it", "unit": "damage" },
+      "count":    { "name": "Fireballs", "base": 1, "perRank": 0.6, "fmt": "int", "hint": "More fireballs fall each volley ({old} → {new})", "unit": "fireballs", "sameDmg": 0.04, "hintSame": "No new fireball yet: every crash hits {sameUp} harder ({crashOld} → {crashNew} damage); fireball {soon} comes next pick" },
+      "power":    { "name": "Crash damage", "base": 12.6, "perRank": 5.04, "fmt": "int", "hint": "Each crash deals {old} → {new} damage; the burning ground and burn grow with it", "unit": "damage" },
       "area":     { "name": "Blast radius", "base": 34, "perRank": 5, "fmt": "int", "hint": "The crash reaches {old} → {new} out from where it lands; the fire fills most of it", "unit": "reach" },
       "duration": { "name": "Burn time", "base": 2.5, "perRank": 0.5, "fmt": "sec", "hint": "The burning ground keeps hurting foes for {old} → {new}" }
     }

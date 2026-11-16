@@ -2,7 +2,7 @@
 // w = { id, ranks, evo, s (computed stats), rt (runtime scratch) }.
 // Evolutions are handled inside each weapon by branching on w.evo.
 
-import { BLEED_TIME, rateMult } from './cards.js';
+import { BLEED_TIME, rateMult, crashMult } from './cards.js';
 
 const TAU = Math.PI * 2;
 
@@ -1147,7 +1147,7 @@ const dragonfireMeteor = {
     if (!rt.pools) { rt.pools = []; rt.fly = []; rt.lock = new Map(); rt.taken = new Array(METEOR.maxCount * 2).fill(0); rt.cd = sdefOf(sim, w).first ?? METEOR.first; }
     if (!(dt > 0) || !okPt(p)) return;
     const sdef = sdefOf(sim, w);
-    const dmg = Math.max(0, s.power * sim.dmgMult(w)) || 0;
+    const dmg = Math.max(0, s.power * crashMult(sdef, w.ranks.count || 0) * sim.dmgMult(w)) || 0; // FIREBALL PICKS: +4% per Fireballs pick that adds no whole fireball (cards.js)
     const r = Math.max(1, s.area * sim.mods.area) || 1;
     const life = Number.isFinite(s.duration) ? s.duration : METEOR.cd;
     // fireballs in the air

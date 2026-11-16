@@ -26,10 +26,22 @@ export const BURN_RATE = 0.2;
 export const BURN_TIME = 2;
 
 // Card hint text is a template over the real per-rank numbers so it stays true if the data changes.
-// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds), {rate} (attack-rate bonus per rank, stat.rate), {soon} (value two ranks on).
+// Tokens: {old} {new} (formatted stat values), {pct} (signed percent change), {upct} (unsigned), {bleedSec} (fixed bleed seconds), {rate} (attack-rate bonus per rank, stat.rate), {soon} (value two ranks on),
+// {sameUp} {crashOld} {crashNew} (stat.sameDmg: crash-damage share per pick and the total bonus before/after this pick).
 // Optional stat fields: `unit` (short word after the value arrow on the card: '14 → 20 damage'), `hintSame` (see hintText).
 // rateMult: speed stats with a `rate` shorten the weapon's hit gap: gap / (1 + rate x rank).
 export const rateMult = (def, key, rank) => 1 + (def?.stats?.[key]?.rate || 0) * rank;
+// FIREBALL PICKS (LOCKED 2026-11-16): a count stat with `sameDmg` (Meteor Fireballs, 1 + 0.6/rank rounded) gives the picks that add no whole
+// fireball (ranks 2 and 4) a small extra instead: each such rank makes every crash sameDmg (4%) harder. Pure; weapons.js and the card read the same numbers.
+// (A 4% faster volley was tried first and rejected: it cut Cinder Brand's pops and moved its band.)
+export function sameSteps(def, key, rank) {
+  const s = def && def.stats && def.stats[key];
+  if (!s || !(Number.isFinite(s.sameDmg) && s.sameDmg > 0 && s.sameDmg <= 0.2)) return 0;
+  let n = 0;
+  for (let r = 1; r <= Math.min(Math.max(0, rank | 0), 10); r++) if (Math.round(statValue(def, key, r)) === Math.round(statValue(def, key, r - 1))) n++;
+  return n;
+}
+export const crashMult = (def, rank) => 1 + (def?.stats?.count?.sameDmg || 0) * sameSteps(def, 'count', rank);
 export function hintText(def, key, rank) {
   const s = def.stats[key];
   const cur = statValue(def, key, rank);
@@ -37,7 +49,8 @@ export function hintText(def, key, rank) {
   const pct = Math.abs(cur) > 0 ? `${nxt >= cur ? '+' : '-'}${Math.round(Math.abs((nxt - cur) / cur) * 100)}%` : '';
   const upct = pct ? pct.slice(1) : '';
   const soon = formatValue(s.fmt, statValue(def, key, rank + 2));
-  const vals = { soon, upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedSec: String(BLEED_TIME), rate: `${Math.round((s.rate || 0) * 100)}%` };
+  const vals = { soon, upct, old: formatValue(s.fmt, cur), new: formatValue(s.fmt, nxt), pct, bleedSec: String(BLEED_TIME), rate: `${Math.round((s.rate || 0) * 100)}%`,
+    sameUp: `${Math.round((s.sameDmg || 0) * 100)}%`, crashOld: `+${Math.round((crashMult(def, rank) - 1) * 100)}%`, crashNew: `+${Math.round((crashMult(def, rank + 1) - 1) * 100)}%` };
   // hintSame: a stat whose shown value rounds (Meteor fireballs 1.6 -> 2.2 both read 2) says so instead of a misleading 'N → N'.
   const same = s.hintSame && formatValue(s.fmt, cur) === formatValue(s.fmt, nxt);
   return String(same ? s.hintSame : s.hint).replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : ''));
