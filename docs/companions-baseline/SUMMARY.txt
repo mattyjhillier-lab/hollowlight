@@ -1,0 +1,72 @@
+COMPANIONS C1 BASELINE (Update B, before any companion change). Code = origin/dev @ c8dbeda (Update A live; same src/data as main 5f3755a). No src/ or data change.
+Bots: scripts/bot.mjs playRun, random (FOCUS=0) + focus (FOCUS=1), ability on, blessings on, Twilight (TIER=normal), sites off. 100 seeds (1-100) per cell.
+Sets: fresh = GATES=starter META=none BOND=0 (brand-new save, starter grant only) | mid = GATES=preset META=half BOND=0 | max = GATES=preset META=full BOND=25.
+Exact commands: docs/companions-baseline/run.sh (resumable; finished seeds skipped). Summary: node scripts/companions-baseline.mjs --sum
+Noise: +-SE shown per cell (binomial, n=100: about +-4-5 pts at 20-60%). A difference between two cells needs ~13+ pts to be 2 SE. hearthwarden = Lucinda.
+Run was interrupted once by a PC shutdown at 2163/3600 fresh rows and resumed; no lines were lost or duplicated (checked).
+
+HEADLINE
+fresh pooled (all 6 starters): Wren 26+-1.3, Elias 32+-1.3, Lucinda 35+-1.4 (n=1200 each); all 31+-0.8.
+fresh pooled, the 4 magic starters that stay after Update B: Wren 26+-1.5, Elias 28+-1.6, Lucinda 34+-1.7 (n=800 each); all 29+-0.9. Median live cell 30.5.
+fresh outliers vs band 15-30: Chain Lightning low (Elias 12-14, Wren 15, Lucinda 15-19); Lucinda+Spirit Bolts 57-58 and Elias+Ravens 46-60 high. Spread across starters far wider than the ~6-pt target (known, LOCKED accepted misses).
+first evolution (fresh): Meteor ~4:00, Wolves 4:08-4:37, Lucinda most starters ~4:30; Wren/Elias on Bolts 6:29-7:37, Chain 6:13-6:45, Orbit 7:54-8:51, Ravens 8:06-9:20.
+deaths before 5:00 (fresh): Wren 4.7%, Elias 2.5%, Lucinda 5.1% of runs (up to 9/100 in a cell: Wren Chain random, Lucinda Meteor focus).
+mid (band 30-55): all in band except Lucinda Meteor focus 57+-5 (edge). Wren wolves 42/45, Wren Bolts 50/37, Elias Orbit 49/41, Lucinda 57/46 (focus/random).
+max (band 65-90): Wren wolves 95/87, Wren Bolts 95/91, Elias Orbit 94/96, Lucinda 99/91 (focus/random): above band as in the accepted DM10 miss (LOCKED MAX-TREE BAND MISS ACCEPTED). No deaths before 5:00 in mid/max.
+
+PER CELL
+== fresh (GATES=starter META=none BOND=0, Twilight) band 15-30
+elias:chain_lightning/focus        n=100 win  14% +-3.5 BELOW firstEvo 6:37 (81/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 7/20/10/24/19/6
+elias:chain_lightning/random       n=100 win  12% +-3.2 BELOW firstEvo 6:18 (82/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 10/14/7/22/24/11
+elias:dragonfire_meteor/focus      n=100 win  33% +-4.7 ABOVE firstEvo 4:06 (97/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 4/1/0/3/4/55
+elias:dragonfire_meteor/random     n=100 win  36% +-4.8 ABOVE firstEvo 4:02 (95/100 evolved)  deaths<5:00 6  deaths by min <6/8/10/12/14/later: 6/1/0/1/6/50
+elias:ghost_wolves/focus           n=100 win  23% +-4.2 in    firstEvo 4:37 (86/100 evolved)  deaths<5:00 3  deaths by min <6/8/10/12/14/later: 5/10/5/16/37/4
+elias:ghost_wolves/random          n=100 win  31% +-4.6 ABOVE firstEvo 4:19 (89/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 8/3/3/10/41/4
+elias:holy_orbit/focus             n=100 win  32% +-4.7 ABOVE firstEvo 8:28 (75/100 evolved)  deaths<5:00 2  deaths by min <6/8/10/12/14/later: 5/16/8/10/18/11
+elias:holy_orbit/random            n=100 win  29% +-4.5 in    firstEvo 8:01 (81/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 6/17/8/8/23/9
+elias:raven_flock/focus            n=100 win  46% +-5.0 ABOVE firstEvo 9:18 (79/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 4/8/9/5/7/21
+elias:raven_flock/random           n=100 win  60% +-4.9 ABOVE firstEvo 9:03 (83/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 5/5/10/4/5/11
+elias:spirit_bolts/focus           n=100 win  33% +-4.7 ABOVE firstEvo 7:37 (66/100 evolved)  deaths<5:00 1  deaths by min <6/8/10/12/14/later: 9/19/7/10/16/6
+elias:spirit_bolts/random          n=100 win  37% +-4.8 ABOVE firstEvo 6:59 (72/100 evolved)  deaths<5:00 2  deaths by min <6/8/10/12/14/later: 7/16/7/15/12/6
+hearthwarden:chain_lightning/focus n=100 win  15% +-3.6 in    firstEvo 4:47 (89/100 evolved)  deaths<5:00 8  deaths by min <6/8/10/12/14/later: 11/3/0/15/47/9
+hearthwarden:chain_lightning/random n=100 win  19% +-3.9 in    firstEvo 4:24 (93/100 evolved)  deaths<5:00 5  deaths by min <6/8/10/12/14/later: 7/2/0/23/43/6
+hearthwarden:dragonfire_meteor/focus n=100 win  26% +-4.4 in    firstEvo 4:03 (91/100 evolved)  deaths<5:00 9  deaths by min <6/8/10/12/14/later: 9/0/0/1/8/56
+hearthwarden:dragonfire_meteor/random n=100 win  31% +-4.6 ABOVE firstEvo 4:00 (94/100 evolved)  deaths<5:00 6  deaths by min <6/8/10/12/14/later: 6/0/0/2/3/58
+hearthwarden:ghost_wolves/focus    n=100 win  35% +-4.8 ABOVE firstEvo 4:09 (93/100 evolved)  deaths<5:00 5  deaths by min <6/8/10/12/14/later: 8/0/0/10/41/6
+hearthwarden:ghost_wolves/random   n=100 win  32% +-4.7 ABOVE firstEvo 4:08 (96/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 4/1/0/18/43/2
+hearthwarden:holy_orbit/focus      n=100 win  24% +-4.3 in    firstEvo 4:37 (91/100 evolved)  deaths<5:00 7  deaths by min <6/8/10/12/14/later: 7/14/5/17/24/9
+hearthwarden:holy_orbit/random     n=100 win  40% +-4.9 ABOVE firstEvo 4:34 (93/100 evolved)  deaths<5:00 8  deaths by min <6/8/10/12/14/later: 9/10/3/14/22/2
+hearthwarden:raven_flock/focus     n=100 win  39% +-4.9 ABOVE firstEvo 5:07 (83/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 11/12/6/11/14/7
+hearthwarden:raven_flock/random    n=100 win  38% +-4.9 ABOVE firstEvo 5:11 (84/100 evolved)  deaths<5:00 2  deaths by min <6/8/10/12/14/later: 9/19/2/8/10/14
+hearthwarden:spirit_bolts/focus    n=100 win  57% +-5.0 ABOVE firstEvo 4:33 (92/100 evolved)  deaths<5:00 3  deaths by min <6/8/10/12/14/later: 7/1/0/14/13/8
+hearthwarden:spirit_bolts/random   n=100 win  58% +-4.9 ABOVE firstEvo 4:24 (93/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 6/1/0/8/14/13
+wren:chain_lightning/focus         n=100 win  15% +-3.6 in    firstEvo 6:45 (75/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 10/20/11/17/21/6
+wren:chain_lightning/random        n=100 win  15% +-3.6 in    firstEvo 6:13 (71/100 evolved)  deaths<5:00 9  deaths by min <6/8/10/12/14/later: 14/19/10/17/22/3
+wren:dragonfire_meteor/focus       n=100 win  27% +-4.4 in    firstEvo 4:07 (92/100 evolved)  deaths<5:00 8  deaths by min <6/8/10/12/14/later: 8/0/0/0/3/62
+wren:dragonfire_meteor/random      n=100 win  40% +-4.9 ABOVE firstEvo 4:02 (95/100 evolved)  deaths<5:00 6  deaths by min <6/8/10/12/14/later: 6/0/0/2/8/44
+wren:ghost_wolves/focus            n=100 win  23% +-4.2 in    firstEvo 4:32 (81/100 evolved)  deaths<5:00 8  deaths by min <6/8/10/12/14/later: 15/9/2/14/34/3
+wren:ghost_wolves/random           n=100 win  23% +-4.2 in    firstEvo 4:16 (88/100 evolved)  deaths<5:00 6  deaths by min <6/8/10/12/14/later: 10/3/1/15/46/2
+wren:holy_orbit/focus              n=100 win  24% +-4.3 in    firstEvo 8:51 (73/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 7/15/7/16/16/15
+wren:holy_orbit/random             n=100 win  22% +-4.1 in    firstEvo 7:54 (70/100 evolved)  deaths<5:00 2  deaths by min <6/8/10/12/14/later: 8/17/14/13/17/9
+wren:raven_flock/focus             n=100 win  32% +-4.7 ABOVE firstEvo 9:20 (66/100 evolved)  deaths<5:00 1  deaths by min <6/8/10/12/14/later: 11/11/13/8/5/20
+wren:raven_flock/random            n=100 win  30% +-4.6 in    firstEvo 8:06 (50/100 evolved)  deaths<5:00 2  deaths by min <6/8/10/12/14/later: 10/15/21/7/6/11
+wren:spirit_bolts/focus            n=100 win  31% +-4.6 ABOVE firstEvo 7:08 (59/100 evolved)  deaths<5:00 2  deaths by min <6/8/10/12/14/later: 7/22/12/4/20/4
+wren:spirit_bolts/random           n=100 win  30% +-4.6 in    firstEvo 6:29 (63/100 evolved)  deaths<5:00 4  deaths by min <6/8/10/12/14/later: 17/11/10/13/12/7
+== mid (GATES=preset META=half BOND=0, Twilight) band 30-55
+elias:holy_orbit/focus             n=100 win  49% +-5.0 in    firstEvo 10:35 (57/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/8/3/17/13/10
+elias:holy_orbit/random            n=100 win  41% +-4.9 in    firstEvo 11:05 (40/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/2/5/21/28/3
+hearthwarden:dragonfire_meteor/focus n=100 win  57% +-5.0 ABOVE firstEvo 9:53 (65/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/5/5/22/8/3
+hearthwarden:dragonfire_meteor/random n=100 win  46% +-5.0 in    firstEvo 11:04 (54/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/3/6/22/17/6
+wren:ghost_wolves/focus            n=100 win  42% +-4.9 in    firstEvo 9:52 (49/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/5/13/19/18/3
+wren:ghost_wolves/random           n=100 win  45% +-5.0 in    firstEvo 11:18 (47/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/1/3/26/22/3
+wren:spirit_bolts/focus            n=100 win  50% +-5.0 in    firstEvo 9:22 (60/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/3/6/16/19/6
+wren:spirit_bolts/random           n=100 win  37% +-4.8 in    firstEvo 10:52 (41/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/3/5/23/26/6
+== max (GATES=preset META=full BOND=25, Twilight) band 65-90
+elias:holy_orbit/focus             n=100 win  94% +-2.4 ABOVE firstEvo 8:23 (93/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/1/3/2
+elias:holy_orbit/random            n=100 win  96% +-2.0 ABOVE firstEvo 10:43 (92/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/2/2/0
+hearthwarden:dragonfire_meteor/focus n=100 win  99% +-1.0 ABOVE firstEvo 8:20 (99/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/0/0/1
+hearthwarden:dragonfire_meteor/random n=100 win  91% +-2.9 ABOVE firstEvo 10:12 (89/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/0/6/3
+wren:ghost_wolves/focus            n=100 win  95% +-2.2 ABOVE firstEvo 8:24 (97/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/1/3/1
+wren:ghost_wolves/random           n=100 win  87% +-3.4 in    firstEvo 10:10 (87/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/4/9/0
+wren:spirit_bolts/focus            n=100 win  95% +-2.2 ABOVE firstEvo 8:16 (96/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/1/0/1/1/2
+wren:spirit_bolts/random           n=100 win  91% +-2.9 ABOVE firstEvo 10:17 (88/100 evolved)  deaths<5:00 0  deaths by min <6/8/10/12/14/later: 0/0/0/3/6/0

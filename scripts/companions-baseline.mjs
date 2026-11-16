@@ -23,7 +23,7 @@ function summary() {
       const ev = g.filter((r) => r.evo != null).map((r) => r.evo), evo = ev.length ? ev.reduce((a, b) => a + b, 0) / ev.length : NaN;
       const b = [6, 8, 10, 12, 14].map((c, i, a) => d.filter((t) => t >= (i ? a[i - 1] : 0) && t < c).length);
       const pc = p * 100, tag = pc < lo ? 'BELOW' : pc > hi ? 'ABOVE' : 'in';
-      console.log(`${k.padEnd(34)} n=${String(n).padStart(3)} win ${pc.toFixed(0).padStart(3)}% +-${(100 * Math.sqrt(p * (1 - p) / n)).toFixed(1)} ${tag.padEnd(5)} firstEvo ${isNaN(evo) ? '  -' : `${Math.floor(evo / 60)}:${String(Math.round(evo % 60)).padStart(2, '0')}`} (${ev.length}/${n} evolved)  deaths<5:00 ${early}  deaths by min <6/8/10/12/14/later: ${b.join('/')}/${d.filter((t) => t >= 14).length}`);
+      console.log(`${k.padEnd(34)} n=${String(n).padStart(3)} win ${pc.toFixed(0).padStart(3)}% +-${(100 * Math.sqrt(p * (1 - p) / n)).toFixed(1)} ${tag.padEnd(5)} firstEvo ${isNaN(evo) ? '  -' : `${Math.floor(Math.round(evo) / 60)}:${String(Math.round(evo) % 60).padStart(2, '0')}`} (${ev.length}/${n} evolved)  deaths<5:00 ${early}  deaths by min <6/8/10/12/14/later: ${b.join('/')}/${d.filter((t) => t >= 14).length}`);
     }
   }
 }
