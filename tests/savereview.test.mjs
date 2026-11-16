@@ -249,12 +249,12 @@ T('R11 a migration step can see a node that was retired (so it can refund it)', 
   c.nodes = c.nodes.filter((n) => n.id !== 'sp_cd4');
   const bridge = c.nodes.find((n) => n.id === 'br_cardfan'); delete bridge.requiresAny; bridge.requires = ['sp_cd3']; // T6: the live Card Fan bridge also hangs from sp_cd4
   c.retired.push({ id: 'sp_cd4', frag: 'core', idx: gone.idx });
-  c.version = 6; // (step 4 is the real CHARACTER SYSTEM v2 hero-lantern retirement, 5 the S1 restart)
+  c.version = 7; // (step 4 is the real CHARACTER SYSTEM v2 hero-lantern retirement, 5 the S1 restart, 6 the Meteor road hotfix)
   const def = liveOf(fs);
   let seenByStep = null;
-  TREE_STEPS[6] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
-  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[6]; }
-  assert.ok(seenByStep, 'step 6 ran');
+  TREE_STEPS[7] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
+  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[7]; }
+  assert.ok(seenByStep, 'step 7 ran');
   assert.equal(seenByStep.sp_cd4, 1, 'the retired node (2100 gold + 2 shards) must reach the step that refunds it');
 });
 
@@ -262,11 +262,11 @@ T('R12 a migration step can see the full owned rank of a node whose maxRank was 
   const disk = serializeSave(fullSave());
   disk.tree.r = { ...disk.tree.r, rv_wide: 2 }; // an older build allowed two ranks; the rescale cut Watch to one (T3a)
   const fs = files();
-  core(fs).version = 6;
+  core(fs).version = 7;
   const def = liveOf(fs);
   let seenByStep = null;
-  TREE_STEPS[6] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
-  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[6]; }
+  TREE_STEPS[7] = (tree) => { seenByStep = { ...tree }; return { tree, gold: 0, shards: 0 }; };
+  try { withDef(def, () => parseSave(JSON.stringify(disk))); } finally { delete TREE_STEPS[7]; }
   assert.equal(seenByStep && seenByStep.rv_wide, 2, 'rank 2 (960 gold) must reach the step');
 });
 
