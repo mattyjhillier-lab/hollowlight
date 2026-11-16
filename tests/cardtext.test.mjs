@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { hintText, statValue, formatValue } from '../src/sim/cards.js';
+import { hintText, statValue, formatValue, crashMult } from '../src/sim/cards.js';
 import { CLAMP, cardModel, effectOf } from '../src/ui/cardview.js';
 
 const rd = (f) => JSON.parse(readFileSync(new URL(`../src/data/${f}`, import.meta.url)));
@@ -87,3 +87,15 @@ test('PLAIN STAT NAMES (LOCKED 2026-11-16): no stat shows the old vague names, o
   }
 });
 
+test('FIREBALL PICKS (LOCKED 2026-11-16): picks that add no whole fireball make every crash 4% harder, said on the card in damage', () => {
+  const def = weapons.dragonfire_meteor;
+  assert.equal(def.stats.count.base, 1); assert.equal(def.stats.count.perRank, 0.6); // the count curve is unchanged
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map((r) => Math.round(statValue(def, 'count', r))), [1, 2, 2, 3, 3, 4]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map((r) => +crashMult(def, r).toFixed(3)), [1, 1, 1.04, 1.04, 1.08, 1.08]);
+  for (const r of [1, 3]) {
+    const m = cardModel(card('dragonfire_meteor', 'count', r), data);
+    const a = Math.round((crashMult(def, r) - 1) * 100), b = Math.round((crashMult(def, r + 1) - 1) * 100);
+    assert.ok(m.desc.includes('4% harder') && m.desc.includes(`+${a}% → +${b}% damage`) && !m.desc.endsWith('…'), m.desc);
+  }
+  for (const [wid, w] of Object.entries(weapons)) if (wid !== 'dragonfire_meteor') assert.equal(crashMult(w, 5), 1, wid); // opt-in only
+});

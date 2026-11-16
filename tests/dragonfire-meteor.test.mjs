@@ -27,7 +27,7 @@ test('DM1 data: stats, released (DM10), boss, colour, no fire tag', () => {
   assert.equal(w.boss, 2.2); assert.equal(w.cd, 2.6);
   assert.deepEqual(Object.keys(st), ['count', 'power', 'area', 'duration']);
   assert.deepEqual([st.count.name, st.power.name, st.area.name, st.duration.name], ['Fireballs', 'Crash damage', 'Blast radius', 'Burn time']);
-  assert.deepEqual([st.count.base, st.count.perRank, st.power.base, st.power.perRank, st.area.base, st.area.perRank, st.duration.base, st.duration.perRank], [1, 0.6, 14, 5.6, 34, 5, 2.5, 0.5]);
+  assert.deepEqual([st.count.base, st.count.perRank, st.power.base, st.power.perRank, st.area.base, st.area.perRank, st.duration.base, st.duration.perRank], [1, 0.6, 12.6, 5.04, 34, 5, 2.5, 0.5]);
   for (const k of Object.keys(st)) assert.ok(hintText(w, k, 0).length > 8 && !hintText(w, k, 0).includes('{'), k);
   assert.ok(!data.weapons.ember_breath);
   assert.deepEqual(data.balance.starter.weapons, ['ghost_wolves', 'raven_flock', 'spirit_bolts', 'chain_lightning', 'holy_orbit', 'dragonfire_meteor']);
@@ -102,9 +102,9 @@ test('DM2 impact: burst damage + Burn through the shared status path; pool follo
   run(sim, 1.3);
   const first = log.find((h) => h.e === a);
   assert.ok(first, 'hit');
-  assert.ok(Math.abs(first.a - 14 * sim.dmgMult(sim.weapons[0])) < 1e-6);
+  assert.ok(Math.abs(first.a - sim.data.weapons.dragonfire_meteor.stats.power.base * sim.dmgMult(sim.weapons[0])) < 1e-6);
   assert.deepEqual(args.slice(2), [2, 0.2]);
-  assert.ok(Math.abs(a.burnDps - 0.2 * 14 * sim.dmgMult(sim.weapons[0]) * sim.tfx.burnMul) < 1e-6);
+  assert.ok(Math.abs(a.burnDps - 0.2 * sim.data.weapons.dragonfire_meteor.stats.power.base * sim.dmgMult(sim.weapons[0]) * sim.tfx.burnMul) < 1e-6);
   assert.equal(a.burnSrc, ID);
   assert.ok(!log.some((h) => h.e === far), 'outside the burst radius');
   assert.equal(sim.weapons[0].rt.pools.length, 1);
@@ -117,7 +117,7 @@ test('DM2 pool: ticks every 0.5 s at 0.3 x Impact for Embers seconds, then ends'
   const log = hitLog(sim);
   run(sim, 3.8); // before the second volley lands
   const ticks = log.filter((h) => h.e === a && h.t > 1.3);
-  const imp = 14 * sim.dmgMult(sim.weapons[0]);
+  const imp = sim.data.weapons.dragonfire_meteor.stats.power.base * sim.dmgMult(sim.weapons[0]);
   assert.ok(ticks.length >= 3 && ticks.length <= 5, `ticks ${ticks.length}`);
   assert.ok(Math.abs(ticks[0].a - 0.3 * imp) < 1e-6);
   for (let i = 1; i < ticks.length; i++) assert.ok(ticks[i].t - ticks[i - 1].t >= 0.49);
