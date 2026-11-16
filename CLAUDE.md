@@ -84,6 +84,9 @@ Use the cheapest model/effort that does the job well; save the most powerful mod
 - Prefer deterministic scripts (sweep/bot/tests) over repeated model reasoning; batch tool calls.
 - Never trade away the security rule below to save tokens.
 
+## Standing rule: release cadence, few live updates (set by Matt, 2026-11-16)
+Do not push many small updates to main. Only two things go live on their own: (a) a MAJOR bug (lost or stuck progress, unplayable game, security) as a small hotfix, and (b) a planned update when a batch is ready and fully checked. Everything else (text fixes, small tuning, polish, QoL) collects on `dev` and the test link and ships together. Before proposing a release, list what is waiting on dev in plain words; the owner decides. Every release has a 'What's new' note and a real-phone check; never release on the same day as a risky change without the owner's yes. Minor fixes that look urgent are shown to Matt first, who decides if they wait.
+
 ## Standing rule: security first (set by Matt, applies to everything)
 Every change, dependency, asset, workflow and deploy gets a security check and is made as safe as possible before it is shipped. Minimum, each time:
 - Dependencies: add as few as possible; check each is well-known and maintained; run `npm audit` and report results; never `npm audit fix --force` blindly (test upgrades on `dev` branch).
