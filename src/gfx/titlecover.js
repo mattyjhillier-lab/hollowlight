@@ -5,9 +5,11 @@
 // Calm (and a finished bloom under Calm) draws once and then idles; hidden tab / hidden layer stop the loop; Battery saver and Low tier cut motes and frame rate.
 import * as WA from './wrenart.js';
 import * as EA from './eliasart.js';
+import * as LA from './lucindaart.js';
+import { drawOphimber } from './ophimberart.js';
 import { glow, PALS, paintGround, drawTree } from './titlepaint.js';
 import { probe } from './probe.js'; // ?perf=1 real-device probe (a no-op unless the page was opened with it)
-import { TUNE as T, coverMode, heroPos, horizonFrac, bakeMargin, bloomProgress, layerShift, driftTarget, moteCount, flicker, frameGapMs, clamp, mixc, rgba, coverFlame } from './titlelogic.js';
+import { TUNE as T, coverMode, heroPos, horizonFrac, bakeMargin, bloomProgress, layerShift, driftTarget, moteCount, flicker, frameGapMs, clamp, mixc, rgba, coverFlame, COVER_HEROES } from './titlelogic.js';
 
 const TAU = Math.PI * 2;
 const MODES = ['tc-m-desktop', 'tc-m-portrait', 'tc-m-landscape'];
@@ -26,7 +28,7 @@ export class TitleCover {
   /** host: the title overlay element (its first children become the canvas and the vignette). o: { hero, flame:{glow,core}, companion, isCalm(), isLow(), isSaver(), isBaking(), onReady() }. */
   constructor(host, o = {}) {
     this.host = host; this.o = o;
-    this.hero = o.hero === 'elias' ? 'elias' : 'wren';
+    this.hero = typeof o.hero === 'string' && COVER_HEROES.includes(o.hero) ? o.hero : 'wren'; // a hero without a cover rig is never requested (titlelogic.coverHeroId)
     this.flame = coverFlame(o.flame && o.flame.glow, o.flame && o.flame.core);
     this.companion = o.companion !== false;
     this.cv = document.createElement('canvas'); this.cv.className = 'tc-cv'; this.cv.setAttribute('aria-hidden', 'true');
@@ -179,6 +181,14 @@ export class TitleCover {
       S.blink = sprite(bb, (g) => WA.drawWrenHead(g, 'blink'));
       S.ember = sprite({ x0: -22, y0: -26, w: 44, h: 52 }, (g) => WA.drawEmber(g));
       S.pup = sprite({ x0: -48, y0: -62, w: 96, h: 80 }, (g) => WA.drawPupFlat(g, 'sit'));
+    } else if (this.hero === 'hearthwarden') { // Lucinda: tail (sways) + boots, body, kind face, near arm with her hearth flame; Ophimber perched on her back shoulder (3 poses, baked at perch size)
+      const A = LA.L_ANCHOR, PS = LA.PERCH_SCALE; const bb = { x0: -66, y0: -134, w: 128, h: 148 };
+      S.tail = sprite({ x0: -88, y0: -68, w: 90, h: 76 }, (g) => LA.lucTail(g));
+      S.main = sprite(bb, (g) => { for (const b of [A.bootFar, A.bootNear]) { g.save(); g.translate(b[0], b[1]); LA.lucBoot(g); g.restore(); } LA.lucBody(g); LA.lucHead(g, 'kind'); LA.lucArmNear(g); });
+      S.blink = sprite({ x0: -58, y0: -134, w: 104, h: 86 }, (g) => LA.lucHead(g, 'blink'));
+      const ob = { x0: -72 * PS, y0: -80 * PS, w: 112 * PS, h: 90 * PS };
+      const pet = (pose) => sprite(ob, (g) => { g.scale(PS, PS); drawOphimber(g, pose); });
+      S.pet = pet({ mode: 'sit', fl: 0 }); S.petW = pet({ mode: 'sit', fl: 1 }); S.petZ = pet({ mode: 'sit', fl: 0, asleep: true });
     } else {
       const A = EA.E_ANCHOR; const bb = { x0: -62, y0: -164, w: 160, h: 182 };
       S.main = sprite(bb, (g) => { EA.drawStaffBack(g); for (const b of [A.bootFar, A.bootNear]) { g.save(); g.translate(b[0], b[1]); EA.drawEliasBoot(g); g.restore(); } EA.drawEliasBody(g); EA.drawEliasHead(g, 'kind'); EA.drawStaffFront(g); });
@@ -216,6 +226,7 @@ export class TitleCover {
     const { W, H, DPR, M, L, cx: c } = this; const calm = this.calm; const t = calm ? 0 : (now - this.T0) / 1000;
     const b = bloomProgress(now - this.bloomStart, { calm, skipped: this.skipped }); const hp = heroPos(this.mode); const hz = this.horizon();
     const kdu = this.kdu, hx = W * hp.x, hy = H * hp.y; const fl = this.flame; const wren = this.hero === 'wren';
+    const la = this.hero === 'hearthwarden' ? LA.L_ANCHOR.flame : null; // Lucinda's light is the hearth flame cupped in her near hand
     // pointer parallax (desktop) or slow auto-drift (touch, or an idle pointer)
     const mo = this.mouse; const idle = now - mo.last > 3500; let tx = calm ? 0 : mo.tx, ty = calm ? 0 : mo.ty;
     if (!calm && idle) { const d = driftTarget(t); tx = d[0]; ty = d[1]; }
@@ -223,9 +234,9 @@ export class TitleCover {
     const sh = (i) => layerShift(i, mo.x, mo.y, { calm, margin: M });
     c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.fillStyle = '#05070d'; c.fillRect(0, 0, W, H);
     const ho = sh(4);
-    const lamp = wren ? [33 * 0.95 * kdu, -80 * kdu] : [EA.E_ANCHOR.lantern[0] * kdu, EA.E_ANCHOR.lantern[1] * kdu];
-    const br = 1 + (calm ? 0 : 0.03 * Math.sin((t / 2.4) * TAU)); if (!wren) lamp[1] *= br; // Elias's lantern rides the staff, which breathes with the sprite
-    const lx = hx + ho[0] + lamp[0], ly = hy + ho[1] + lamp[1];
+    const lx0 = wren ? 33 * 0.95 : la ? la[0] : EA.E_ANCHOR.lantern[0], ly0 = wren ? -80 : la ? la[1] : EA.E_ANCHOR.lantern[1];
+    const br = 1 + (calm ? 0 : 0.03 * Math.sin((t / 2.4) * TAU)); // Elias's lantern (staff) and Lucinda's flame (near arm) ride the main sprite, which breathes
+    const lx = hx + ho[0] + lx0 * kdu, ly = hy + ho[1] + ly0 * kdu * (wren ? 1 : br);
     const fk = flicker(t, { calm });
     const spreadR = Math.max(1, Math.min(W, H * 1.6) * 0.75 * T.spread * b * (1 + (calm ? 0 : Math.sin(t * 0.8) * T.breath)));
     const blit = (img, i) => { const o = sh(i); c.drawImage(img, o[0] - M, o[1] - M, W + 2 * M, H + 2 * M); };
@@ -280,6 +291,16 @@ export class TitleCover {
       WA.glowAt(c, ex, ey, 70, fl.glow, 0.34 * 0.45); WA.glowAt(c, ex, ey, 22, fl.core, 0.5 * 0.45);
       c.save(); c.strokeStyle = '#ffb84a'; c.lineWidth = 1.2; c.lineCap = 'round'; c.setLineDash([1.2, 2.4]); c.beginPath(); c.moveTo(A.hand[0], A.hand[1]); c.quadraticCurveTo(ex * 0.9, (ey + A.hand[1]) / 2 + 4, ex, ey + 12); c.stroke(); c.restore();
       c.save(); c.translate(ex, ey); c.scale(0.95, 0.95); this.drawSpr(c, S.ember); c.restore();
+    } else if (this.hero === 'hearthwarden') {
+      const A = LA.L_ANCHOR; const sway = Math.sin(t * 1.5 - 1) * 0.07 * k;
+      WA.glowAt(c, A.flame[0], A.flame[1] * br, 60, fl.glow, 0.3 * 0.45);
+      c.save(); c.translate(A.tail[0], A.tail[1]); c.rotate(sway); c.translate(-A.tail[0], -A.tail[1]); this.drawSpr(c, S.tail); c.restore();
+      c.save(); c.scale(1, br); this.drawSpr(c, S.main); if (blink) this.drawSpr(c, S.blink); c.restore();
+      if (this.companion) { // Ophimber on her back shoulder, in front of the cloak (as in a run): a wing twitch now and then; asleep under Calm (as in a run)
+        const px = A.perch[0], py = A.perch[1] * br; const ps = calm ? S.petZ : t % 5.2 < 0.18 ? S.petW : S.pet;
+        WA.glowAt(c, px + 3, py - 8, 22, fl.glow, (calm ? 0.28 : 0.32 + 0.05 * Math.sin(t * 3)) * 0.45);
+        c.save(); c.translate(px, py); this.drawSpr(c, ps); c.restore();
+      }
     } else {
       const A = EA.E_ANCHOR;
       WA.glowAt(c, A.lantern[0], A.lantern[1], 60, fl.glow, 0.3 * 0.45);
@@ -292,6 +313,8 @@ export class TitleCover {
     if (this.hero === 'wren') {
       const bob = calm ? 0 : Math.sin(t * 2.6) * 0.8;
       c.save(); c.translate(74, 3); c.scale(0.78, 0.78); c.translate(0, bob); this.drawSpr(c, this.S.pup); c.restore();
+    } else if (this.hero === 'hearthwarden') {
+      // Ophimber perches on Lucinda's shoulder, so she is drawn after the hero (drawHero)
     } else {
       const p = calm ? 0.3 : t * 0.8;
       c.save(); c.translate(0, 4); c.save(); c.scale(1, 0.28); c.strokeStyle = rgba(fl.glow, 0.85); c.lineWidth = 5; c.beginPath(); c.arc(0, 0, 30, 0, TAU); c.stroke(); c.strokeStyle = rgba(fl.core, 0.8); c.lineWidth = 1.8; c.stroke(); c.restore();

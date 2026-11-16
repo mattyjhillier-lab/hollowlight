@@ -36,7 +36,7 @@ function charsLine(s, d) { try { const v = charsView(s, d, treeDef).find((x) => 
 const SPIRIT_LINE_OF = (id) => (Object.hasOwn(SPIRIT_LINES, id) ? SPIRIT_LINES[id] : '');
 import { startableWeapons, grantStarter, starterPool } from './meta/starter.js';
 import { isAwake, bondLevel, keepsakeEligible } from './save/chars.js';
-import { coverHeroId } from './gfx/titlelogic.js'; // title cover (render only)
+import { coverHeroId, titleHeroId } from './gfx/titlelogic.js'; // title cover (render only)
 import { validateCosmTree, resolveCosm, cleanCosm, compactCosm } from './meta/cosmetics.js';
 import { wearView } from './ui/wearcopy.js';
 import { syncEarned } from './meta/costumes.js';
@@ -108,7 +108,8 @@ export const app = {
     const startable = startableWeapons(data, treeDef, s0.tree);
     const want = [weaponId, s0.notes.loadout && s0.notes.loadout.hero === characterId ? s0.notes.loadout.weapon : null, s0.notes.loadout && s0.notes.loadout.weapon]; // never the hero's built-in (kindred) weapon: heroes are not tied to a spirit
     const startWeapon = want.find((w) => typeof w === 'string' && startable.includes(w)) || startable[0] || data.characters[characterId].kindred;
-    if (!p.auto && !this.save.readOnly && !this.isDebugRun()) { s0.notes.loadout = { hero: characterId, weapon: startWeapon }; }
+    const lo0 = s0.notes.loadout, loNew = !lo0 || lo0.hero !== characterId || lo0.weapon !== startWeapon;
+    if (!p.auto && !this.save.readOnly && !this.isDebugRun()) { s0.notes.loadout = { hero: characterId, weapon: startWeapon }; if (loNew) this.save.saveNow(); } // saved at once: a reload or closed tab mid-run still shows this hero on the title cover + Continue whisper
     this.characterId = characterId;
     this.startWeaponId = startWeapon;
     const cid = this.firstChapter();
@@ -516,8 +517,7 @@ export const app = {
     const s = this.save.data;
     const tiers = this.openTiers(s);
     const entry = L.list().find((x) => x.id === L.active) || { id: 'l1', name: 'Lantern 1' };
-    const loHero = ((s.notes && (s.notes.loadout || s.notes.starter)) || {}).hero; // same source as the title cover, so Continue and the picture name the same hero
-    const heroId = typeof lastHero === 'string' && Object.hasOwn(data.characters, lastHero) ? lastHero : (typeof loHero === 'string' && Object.hasOwn(data.characters, loHero) && isAwake(s, loHero) ? loHero : mostPlayedHero(s.stats, data));
+    const heroId = this.titleHero(lastHero); // same source as the title cover, so Continue and the picture name the same hero
     const heroName = heroId ? splitName(data.characters[heroId].name).name : '';
     const canNew = this.hasProgress() && !L.locked && !L.legacyMode;
     return {
@@ -535,9 +535,13 @@ export const app = {
 
   // TITLE COVER: what the picture behind the title shows. The hero is the last-played one, checked against the known + awake heroes (a hostile or stale loadout reads as Wren);
   // the flame is the one worn (resolveCosm already drops anything not owned). Render-only getters: Calm, Battery saver and Low quality are read live, never stored by the cover.
-  titleCover() {
+  titleHero(lastHero) {
     const s = this.save.data, lo = (s.notes && (s.notes.loadout || s.notes.starter)) || {};
-    const hero = coverHeroId(lo && lo.hero, data.characters, (id) => isAwake(s, id));
+    return titleHeroId(lastHero, lo && lo.hero, data.characters, (id) => isAwake(s, id), mostPlayedHero(s.stats, data));
+  },
+  titleCover(lastHero) {
+    const s = this.save.data;
+    const hero = coverHeroId(this.titleHero(lastHero), data.characters, (id) => isAwake(s, id));
     let flame = null;
     try { const v = resolveCosm(s, data, treeDef, hero); flame = v && v.flame ? { glow: v.flame.css, core: v.flame.cssCore } : null; } catch { flame = null; }
     const phone = this.isPhone();
@@ -1034,7 +1038,7 @@ export const app = {
       almanacRead: (keys) => this.almanacRead(keys),
       pickTitle: (id) => this.pickTitle(id),
       titleCelebrations: () => this.titleCelebrations(),
-      titleCover: () => this.titleCover(),
+      titleCover: (lastHero) => this.titleCover(lastHero),
       closeAlmanac: () => { if (!this.sim && !this.ui.tree.isOpen) { this.ui.showStart(this.ui.onPick); const t = this.ui.screen && this.ui.screen.title; if (t && t.almanac) t.almanac.focus({ preventScroll: true }); } },
     };
   },

@@ -315,7 +315,7 @@ export class UI {
     this.dropCover();
     if (!h.titleCover || !TitleCover.supported()) return;
     try {
-      const spec = h.titleCover(); if (!spec) return;
+      const spec = h.titleCover(this.lastHero); if (!spec) return; // the same hero the Continue whisper names (frontDoor(this.lastHero))
       this.cover = new TitleCover(el, spec); el.classList.add('tc-on'); t.root.classList.add('tc-on'); globalThis.__cover = this.cover;
     } catch (e) { this.dropCover(); }
   }

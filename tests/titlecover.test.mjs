@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { data } from './helpers.mjs';
+import { data, treeDef } from './helpers.mjs';
 import * as L from '../src/gfx/titlelogic.js';
 
 const R = (p) => new URL('../' + p, import.meta.url);
@@ -36,6 +36,45 @@ test('cover hero: last-played, known and awake; Wren on first launch; hostile lo
   const proto = Object.create({ elias: {} });
   assert.equal(L.coverHeroId('elias', proto, () => true), 'wren', 'inherited keys do not count');
   assert.ok(L.COVER_HEROES.every((id) => Object.hasOwn(known, id)), 'every cover hero exists in characters.json');
+  assert.equal(L.coverHeroId('hearthwarden', known, awake(['wren', 'hearthwarden'])), 'hearthwarden', 'Lucinda shows when she was last played');
+  assert.equal(L.coverHeroId('hearthwarden', known, awake(['wren'])), 'wren', 'asleep Lucinda is not shown');
+  for (const bad of ['HEARTHWARDEN', 'hearthwarden ', 'lucinda', 'ophimber']) assert.equal(L.coverHeroId(bad, known, () => true), 'wren', 'hostile ' + bad);
+});
+
+test('every released hero has a cover rig (a new hero can never silently fall back to Wren)', () => {
+  for (const id of Object.keys(data.characters)) {
+    assert.ok(L.COVER_HEROES.includes(id), `${id} is released (characters.json) but has no title cover rig: add it to COVER_HEROES + titlecover.js bakeHero/drawHero`);
+    assert.equal(L.coverHeroId(id, data.characters, () => true), id, id + ' is shown when last played');
+  }
+  const cover = read('src/gfx/titlecover.js');
+  for (const id of L.COVER_HEROES) if (id !== 'wren' && id !== 'elias') assert.ok(cover.includes(`this.hero === '${id}'`), id + ' has its own branch in titlecover.js (not the Wren default)');
+  assert.ok(/this\.hero = typeof o\.hero === 'string' && COVER_HEROES\.includes\(o\.hero\) \? o\.hero : 'wren'/.test(cover), 'the cover itself re-checks the id against COVER_HEROES');
+});
+
+test('the Continue whisper and the cover name the same hero (one source: titleHeroId)', () => {
+  const known = data.characters, aw = (ids) => (id) => ids.includes(id);
+  assert.equal(L.titleHeroId('hearthwarden', 'wren', known, aw(['wren', 'hearthwarden'])), 'hearthwarden', 'this session pick first');
+  assert.equal(L.titleHeroId(undefined, 'hearthwarden', known, aw(['wren', 'hearthwarden'])), 'hearthwarden', 'after a reload: the saved loadout');
+  assert.equal(L.titleHeroId('elias', 'hearthwarden', known, aw(['wren', 'hearthwarden'])), 'hearthwarden', 'a sleeping session pick is skipped');
+  assert.equal(L.titleHeroId(undefined, undefined, known, aw(['wren', 'elias']), 'elias'), 'elias', 'old save: most played');
+  assert.equal(L.titleHeroId(undefined, undefined, known, aw(['wren']), 'elias'), null, 'most played but asleep: nothing named');
+  assert.equal(L.titleHeroId('__proto__', 'constructor', known, () => true, 'toString'), null, 'hostile ids');
+  assert.equal(L.titleHeroId('wren', 'wren', known, () => { throw new Error('x'); }), null, 'never throws');
+  for (const id of Object.keys(known)) assert.equal(L.coverHeroId(L.titleHeroId(undefined, id, known, () => true), known, () => true), id, id + ': picture = whisper');
+  const app = read('src/app.js');
+  assert.ok(/const heroId = this\.titleHero\(lastHero\);/.test(app), 'frontDoor (the whisper) uses titleHero');
+  assert.ok(/hero = coverHeroId\(this\.titleHero\(lastHero\)/.test(app), 'the cover uses titleHero');
+  assert.ok(/h\.titleCover\(this\.lastHero\)/.test(read('src/ui/ui.js')) && /h\.frontDoor\(this\.lastHero\)/.test(read('src/ui/ui.js')), 'both get the same session pick');
+});
+
+test('a hero with no wardrobe costumes: the cover only asks for the worn flame, and a hostile worn costume for Lucinda resolves to none', async () => {
+  const { resolveCosm } = await import('../src/meta/cosmetics.js');
+  const cover = read('src/gfx/titlecover.js');
+  assert.ok(!/costume|resolveCosm/.test(cover), 'the cover never reads costumes');
+  const s = { cosm: { worn: { costume: { hearthwarden: 'wren_hearth' }, flame: 'nope' } }, tree: {}, stats: {}, chars: {} };
+  let v; assert.doesNotThrow(() => { v = resolveCosm(s, data, treeDef, 'hearthwarden'); });
+  assert.equal(v.costume, null, 'no costume list for her: none requested');
+  assert.deepEqual(L.coverFlame(v.flame.css, v.flame.cssCore), { ...L.HEARTH }, 'default Hearth flame');
 });
 
 test('flame colours: only #rrggbb is accepted, anything else is the Hearth flame', () => {
@@ -118,7 +157,7 @@ test('security + front door: no innerHTML, no network, no storage, never swallow
   assert.ok(i > 0 && j > i && j - i < 200, 'Continue (begin) keeps the focus right after the cover mounts');
   assert.ok(/mountCover\(el, t, h\) \{[\s\S]*?try \{[\s\S]*?catch \(e\) \{ this\.dropCover\(\); \}/.test(ui), 'a cover failure falls back to the plain title');
   assert.ok(/if \(name === 'start' && this\.cover\) this\.dropCover\(\);/.test(ui), 'leaving the title stops the cover');
-  assert.ok(/titleCover: \(\) => this\.titleCover\(\)/.test(read('src/app.js')));
+  assert.ok(/titleCover: \(lastHero\) => this\.titleCover\(lastHero\)/.test(read('src/app.js')));
   const css = read('src/ui/titlecover.css');
   assert.ok(!/url\(/.test(css) && !/@import/.test(css), 'css loads nothing');
   assert.ok(!existsSync(R('src/gfx/title.png')) && !existsSync(R('src/gfx/title.webp')), 'no image files');

@@ -37,6 +37,7 @@ SMALL / MEASURE
 - Deep Dusk left as is for launch (LOCKED); watch testers.
 - Wren vs Elias gap at max (watch); Lucinda in the gap check at DM9.
 - Costumes on the title cover (worn costume not shown yet; only flame).
+- DONE 2026-11-16 (wip/lucinda-cover): title cover shows Lucinda + Ophimber when she was last played (was always Wren); shots docs/screenshots/lucinda-cover/.
 - Set B reserved slots: companion egg, hero trial lantern (each needs an options round).
 - Starter synergy extras, Almanac silhouettes + kill counts, Far Sight ranks 2-3, Hero's Answer for Kindling, ring-completion costume follow-ups.
 - Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob; perched Ophimber is a small clump at true size; Kindling prices roughly double on grown clusters.
