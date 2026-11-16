@@ -11,8 +11,9 @@ export const TUNE = Object.freeze({
 export const LAYER_DEPTH = Object.freeze([0.4, 2.5, 0.5, 1.25, 2.5, 1, 1.7]);
 export const LAYER_NAMES = Object.freeze(['Sky and moon', 'Far trees (grey)', 'Mid trees (colour blooms)', 'Ground', 'Hero, companion, lantern', 'Light and motes', 'Foreground frame']);
 
-/** Heroes that have a cover rig. Any other id (a future hero without one, or junk) falls back to Wren. */
-export const COVER_HEROES = Object.freeze(['wren', 'elias']);
+/** Heroes that have a cover rig (titlecover.js bakeHero / drawHero). Any other id (junk, or a hidden hero) falls back to Wren.
+ *  Every released hero in characters.json must be listed here (tests/titlecover.test.mjs fails otherwise), so a new hero never silently shows as Wren. */
+export const COVER_HEROES = Object.freeze(['wren', 'elias', 'hearthwarden']);
 /** The hero on the cover: the last-played id when it is a known, awake hero with a cover rig; Wren otherwise (first launch, hostile or stale loadout).
  *  known = data.characters (own-property check only); awake(id) = the save's own check. Never throws. */
 export function coverHeroId(raw, known, awake) {
@@ -22,6 +23,17 @@ export function coverHeroId(raw, known, awake) {
     if (typeof awake === 'function' && !awake(raw)) return 'wren';
     return raw;
   } catch { return 'wren'; }
+}
+
+/** The hero the title talks about (the Continue whisper) and shows (the cover): the hero picked this session, else the last loadout's hero, each only when known
+ *  (own key of data.characters) and awake; else the most-played hero (same checks), else null. One source for both, so the words and the picture always agree. Never throws. */
+export function titleHeroId(session, loadout, known, awake, mostPlayed = null) {
+  try {
+    const ok = (id) => typeof id === 'string' && !!known && Object.hasOwn(known, id) && (typeof awake !== 'function' || !!awake(id));
+    if (ok(session)) return session;
+    if (ok(loadout)) return loadout;
+    return ok(mostPlayed) ? mostPlayed : null;
+  } catch { return null; }
 }
 
 /** Flame colours worn (resolveCosm flame css strings). Only #rrggbb is accepted, anything else is the default Hearth flame. */

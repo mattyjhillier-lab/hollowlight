@@ -4,6 +4,8 @@ LIVE on main (2026-11-13): tree rework (Lantern Web), Kindling Start, Far Sight,
 
 DM9 DONE on wip/dm9 (re-check: META tiers need GATES=preset BOND=0/25; Lucinda mid 46% max 91%, same as Wren 45/87, Elias 41/96; docs/dm9-partials/P_*) (2026-11-14, not merged): Meteor boss 1.4 -> 2.2 (unreleased data only); Rise unchanged (hit 1.3, tickK 0.5): on-vs-off ~+4-5 win pts (+-3.6, 300 pairs), damage share 1.5-2%. Starter Meteor 26/31% vs median starter 23-32%. Evo bands OK. Raw data docs/dm9-partials. Next: DM10 release (Matt yes + phone heat check).
 
+UPDATE B (companions) on wip/companions-c0 (2026-11-16): C0 spec rewritten (docs/design/companions-v2.md, matches every locked pick + review B1-B5); C1 baseline in docs/companions-baseline/. Waiting on Matt: companions QUESTIONS 1-3 (Bond 0 strength, Howie howl trigger, wolf/raven titles). Next: C2 Howie Bond 0 (sim only). Later (dated): remove retired wolf/raven data one release after Update B.
+
 WAITING ON MATT
 - Real-phone checks: heat, Battery Saver, long session (docs/REAL-PHONE-CHECKLIST.md); ring 3 of the Rise clips portrait edges.
 - Teaser slot "Dragonfire Meteor" already shows dashed in the live tree: keep (rec) or hide until release.
@@ -37,6 +39,7 @@ SMALL / MEASURE
 - Deep Dusk left as is for launch (LOCKED); watch testers.
 - Wren vs Elias gap at max (watch); Lucinda in the gap check at DM9.
 - Costumes on the title cover (worn costume not shown yet; only flame).
+- DONE 2026-11-16 (wip/lucinda-cover): title cover shows Lucinda + Ophimber when she was last played (was always Wren); shots docs/screenshots/lucinda-cover/.
 - Set B reserved slots: companion egg, hero trial lantern (each needs an options round).
 - Starter synergy extras, Almanac silhouettes + kill counts, Far Sight ranks 2-3, Hero's Answer for Kindling, ring-completion costume follow-ups.
 - Known small gaps: hero portrait is a soft fade not a cut-out; phone has no hero panel (layout lock); veiled forks use one fog blob; perched Ophimber is a small clump at true size; Kindling prices roughly double on grown clusters.
