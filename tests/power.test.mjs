@@ -13,7 +13,7 @@ test('frame limit: desktops never limited; phones get 60 (a hair above, so 60 Hz
 
 test('render scale and quality: Battery saver only affects phones', () => {
   assert.equal(dprCapFor({ phone: true, saver: true }), 1.25);
-  assert.equal(dprCapFor({ phone: true, saver: false }), 2);
+  assert.equal(dprCapFor({ phone: true, saver: false }), 1.25); // HEAT: phones render at most 1.25
   assert.equal(dprCapFor({ phone: false, saver: true }), 2);
   assert.equal(dprCapFor({ phone: true, saver: true, base: 1 }), 1);
   assert.equal(qualityModeFor('high', { phone: true, saver: true }), 'low');

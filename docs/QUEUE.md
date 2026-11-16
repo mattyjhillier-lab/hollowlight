@@ -599,3 +599,7 @@ STATUS wip/wardrobe-build 2026-11-13: WARDROBE v2 BUILT (not merged): ring shelf
 - 2026-11-15 SPLIT (LOCKED): Update A = Lucinda + Meteor release (DM10: Matt yes + real-phone heat check). Update B = companions chunks C0-C12 (docs/design/companions-review.md) incl. tree v6 with B1 road re-rooting, choose-spirit screen, wind weapon.
 
 - 2026-11-15 RESEARCH DONE: docs/research/42-survivors-pacing-public.md (public sources, thin on exact Spirit Hunters numbers). Hypotheses H1-H8 feed the PACING + SENSE REVIEW gate (section 8). Wispwick pacing v4 model is better cadence evidence than anything public.
+
+- 2026-11-16 TO BUILD: blessings join the level-up pool from the start (LOCKED 2026-11-16). Also queued: PACING + SENSE REVIEW; phone heat check on test link (DPR 1.25).
+
+- 2026-11-16 APPROVED IDEAS (Matt, parked, not built): (1) real-WebKit gates in CI (webkit-evo, ground-probe, iphone-perf budgets on every PR); (2) Settings "Copy diagnostics" button (build id, tier, frame ms, refresh Hz, saver/Low Power hints; text only, copy to clipboard); (3) level-up cards show now -> next numbers; (4) results screen names top killer + one tip. DROPPED for now: shareable run card. QoL IDEAS to review with Matt: What's new card after update; pause-screen/long-press stat explanations; 0.4 s tap guard on level-up cards (check if exists); screen wake lock setting; resume-after-interruption checkpoint (needs design+review, touches saves); left-handed layout (check if exists).
