@@ -10,6 +10,7 @@
 import { regrow } from './tree-v3.js';
 import { retireHeroLanterns } from './tree-v4.js';
 import { restartTree } from './tree-v5.js';
+import { repairStarter } from './tree-v6.js';
 
 export const OLD_TREE_VERSION = 2; // object-form trees written before the compact form existed
 
@@ -28,6 +29,12 @@ export const TREE_STEPS = {
   5: (tree, ctx) => {
     const r = restartTree(tree, ctx);
     return { tree: r.tree, gold: r.gold, shards: r.shards, glass: r.glass, creep: r.creep, note: r.refunded > 0 ? { treeResetNotice: { gold: r.gold, shards: r.shards, glass: r.glass, nodes: r.refunded } } : undefined };
+  },
+  // Meteor road hotfix (2026-11-16): dm_way1 re-rooted off the Chain heart; re-grants a starter's missing PERMANENT starter nodes (the
+  // Meteor starter lost its heart + Wildfire seal on the first reload). No refund, no currency, no notice, creep unchanged (tree-v6.js).
+  6: (tree, ctx) => {
+    const r = repairStarter(tree, ctx);
+    return { tree: r.tree, gold: 0, shards: 0 };
   },
 };
 

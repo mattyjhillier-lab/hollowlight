@@ -186,7 +186,7 @@ test('step 4 hostile: junk ranks, prototype keys, NaN creep, non-object trees', 
 });
 
 test('the live tree compiles with the retired hero lanterns and a third hero needs no step (additive)', () => {
-  assert.equal(def.treeVersion, 5); // S1 rework: tree content version 5
+  assert.equal(def.treeVersion, 6); // S1 rework: tree content version 5; 6 = the Meteor road hotfix (tree-v6.js)
   assert.doesNotThrow(() => compileTree(composeTree(readTreeFiles(), data).live, data));
 });
 
