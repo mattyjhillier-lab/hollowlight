@@ -5,6 +5,7 @@
 // The limit now sits well above the target (rate ~0.85 of the target interval) so jittered / rounded ticks still land on the right count.
 export const FPS_LIMIT_PHONE = 72; // 13.9 ms: 60 Hz draws every tick, 120 Hz every 2nd (60), 90 Hz every 2nd (45)
 export const FPS_LIMIT_SAVER = 36; // Battery saver: 27.8 ms: 60 Hz every 2nd tick (30), 120 Hz every 4th (30)
+export const DPR_CAP_PHONE = 1.25; // HEAT (2026-11-16, Matt picked "slightly softer picture, still 60 fps"): every phone renders at most 1.25 device px per CSS px
 export const DPR_CAP_SAVER = 1.25; // Battery saver: fewer pixels (desktop and normal phones keep the existing cap of 2)
 
 /** Pure: Phaser frame limit (0 = none). Desktops are never limited. */
@@ -23,7 +24,7 @@ export function restLimitFor({ phone = false, saver = false, rest = false } = {}
 
 /** Pure: render-scale cap (device pixels per CSS pixel). saver only counts on phones. */
 export function dprCapFor({ phone = false, saver = false, base = 2 } = {}) {
-  return phone && saver ? Math.min(base, DPR_CAP_SAVER) : base;
+  return phone ? Math.min(base, saver ? DPR_CAP_SAVER : DPR_CAP_PHONE) : base; // HEAT: phones draw ~30-45% fewer pixels than DPR 1.5-2 (Matt: slightly softer picture for a cooler phone)
 }
 
 /** Pure: the Picture quality mode the game should use. Battery saver forces Low on phones. */
