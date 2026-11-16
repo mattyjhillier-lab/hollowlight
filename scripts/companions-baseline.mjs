@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { appendFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 const OUT = fileURLToPath(new URL('../docs/companions-baseline', import.meta.url));
 const SETS = { fresh: { GATES: 'starter', META: 'none', BOND: '0', band: [15, 30] }, mid: { GATES: 'preset', META: 'half', BOND: '0', band: [30, 55] }, max: { GATES: 'preset', META: 'full', BOND: '25', band: [65, 90] } };
-const rows = (f) => (existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
+const parse = (l) => { try { return JSON.parse(l); } catch { return null; } }; // a line cut by a shutdown is skipped (that seed re-runs)
+const rows = (f) => (existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).map(parse).filter(Boolean) : []);
 function summary() {
   for (const set of Object.keys(SETS)) {
     const R = rows(`${OUT}/${set}.jsonl`);
