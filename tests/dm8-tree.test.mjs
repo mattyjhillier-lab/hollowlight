@@ -131,7 +131,11 @@ test('DM10 hostile saves: forged Meteor ids are kept only where their conditions
   const forged = { gt_dragonfire_meteor: 1, gt_wildfire: 1, dm_blaze: 1, dm_kindle: 1, dm_kindling: 1, dm_bogus: 1, __proto__x: 1 };
   const clean = sanitizeTree(forged, { runs: 0, kills: 0 }, treeDef, data);
   assert.ok(!clean || !('dm_bogus' in clean));
-  assert.ok(!clean || !('gt_dragonfire_meteor' in clean) || !treeDef.nodes.gt_dragonfire_meteor.unlock, 'an unmet heart condition is not bought by a forged save');
+  // M1 (LOCKED save v3 review): unlock conditions gate BUYING, not owning, so a forged Meteor heart is treated exactly like every other forged
+  // weapon heart. (Before the v6 hotfix it was dropped only because the Meteor road wrongly hung from the Chain Lightning heart.)
+  const other = sanitizeTree({ gt_chain_lightning: 1 }, { runs: 0, kills: 0 }, treeDef, data);
+  assert.equal('gt_dragonfire_meteor' in clean, 'gt_chain_lightning' in other, 'a forged Meteor heart follows the same rule as any forged weapon heart');
+  for (const id of Object.keys(clean)) assert.ok(treeDef.nodes[id], id);
   const enc = encodeTree({ gt_dragonfire_meteor: 1, dm_blaze: 1, dm_crash: 1 }, fullDef, fullDef.treeVersion);
   assert.ok(enc.o && enc.o.dm, 'the tree writes a dm fragment');
   const dec = decodeTree(enc, treeDef);

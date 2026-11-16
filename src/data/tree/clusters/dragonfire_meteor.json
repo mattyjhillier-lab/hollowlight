@@ -745,7 +745,7 @@
  },
  "roads": [
   {
-   "from": "gt_chain_lightning",
+   "from": "cl_way7",
    "to": "gt_dragonfire_meteor",
    "nodes": [
     {

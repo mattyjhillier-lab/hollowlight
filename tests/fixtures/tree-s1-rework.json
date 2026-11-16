@@ -4406,7 +4406,7 @@
   "rankCost": 1,
   "maxRank": 1,
   "requires": [
-   "gt_chain_lightning"
+   "cl_way7"
   ],
   "requiresAny": null,
   "excludes": [],

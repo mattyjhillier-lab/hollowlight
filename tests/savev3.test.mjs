@@ -162,7 +162,7 @@ test('T2 compact form: save.tree is { v, o: {fragment: bitset}, r: ranks>1 }, no
   const save = sanitize({ ...defaultSave(), stats: STATS_OK, tree: owned, seen: Object.fromEntries(Object.keys(owned).slice(0, 9).map((k) => [k, true])), gold: 77, shards: 2 });
   assert.deepEqual(save.tree, owned, 'the preset survives sanitize with generous stats');
   const disk = serializeSave(save);
-  assert.equal(disk.tree.v, 5); // tree content version 5 since the S1 rework (4 = CHARACTER SYSTEM v2)
+  assert.equal(disk.tree.v, 6); // tree content version 6 since the Meteor road hotfix (5 = S1 rework, 4 = CHARACTER SYSTEM v2)
   assert.ok(Object.keys(disk.tree.o).every((k) => /^[a-z]{2,4}$/.test(k)));
   assert.ok(Object.values(disk.tree.o).every((s) => /^[A-Za-z0-9_-]+$/.test(s)));
   const text = JSON.stringify(disk);
@@ -184,7 +184,7 @@ test('T2 SaveStore writes the compact form, reloads it, exports it and imports i
   a.saveNow();
   const raw = JSON.parse(st.m.get('hollowlight:save'));
   assert.equal(raw.version, 3);
-  assert.equal(raw.tree.v, 5);
+  assert.equal(raw.tree.v, 6);
   assert.ok(isCompact(raw.tree));
   const b = new SaveStore(st);
   assert.deepEqual(b.load().tree, a.data.tree);
@@ -369,27 +369,27 @@ test('T2 migration registry: ordered steps, missing steps skipped, forged low ve
   assert.deepEqual(log, [4, 6]);
   assert.equal(r.gold, 15); assert.equal(r.shards, 1); assert.deepEqual(r.notes, { four: 1 }); assert.deepEqual(r.tree, { a: 1, four: 1 });
   assert.deepEqual(runTreeSteps({ a: 1 }, 6, 6, steps).tree, { a: 1 });
-  assert.deepEqual(Object.keys(TREE_STEPS), ['3', '4', '5']);
+  assert.deepEqual(Object.keys(TREE_STEPS), ['3', '4', '5', '6']);
   // parseSave runs a registered newer step once for a compact save written at the older tree version
   const raw = JSON.parse(JSON.stringify(readTreeFiles().find((f) => f.path === 'core.json').json));
   assert.ok(raw.version >= 3);
-  const bumped = compileTree({ ...composeTree(readTreeFiles(), data).live, treeVersion: 6 }, data); // 4 = the real CHARACTER SYSTEM v2 step, 5 = the S1 restart
-  assert.equal(bumped.treeVersion, 6);
-  TREE_STEPS[6] = (t) => ({ tree: { ...t, sp_ban1: 1 }, gold: 25, shards: 0, note: { regrowth: { gold: 25, shards: 0, nodes: 1 } } });
+  const bumped = compileTree({ ...composeTree(readTreeFiles(), data).live, treeVersion: 7 }, data); // 4 = the real CHARACTER SYSTEM v2 step, 5 = the S1 restart, 6 = the Meteor road hotfix
+  assert.equal(bumped.treeVersion, 7);
+  TREE_STEPS[7] = (t) => ({ tree: { ...t, sp_ban1: 1 }, gold: 25, shards: 0, note: { regrowth: { gold: 25, shards: 0, nodes: 1 } } });
   try {
     withDef(bumped, data, () => {
-      const old = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: encodeTree({ sp_reroll1: 1 }, bumped, 5) });
+      const old = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: encodeTree({ sp_reroll1: 1 }, bumped, 6) });
       const a = parseSave(old).save;
       assert.deepEqual(a.tree, { sp_reroll1: 1, sp_ban1: 1 }); assert.equal(a.gold, 26);
-      const cur = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: encodeTree({ sp_reroll1: 1 }, bumped, 6) });
+      const cur = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: encodeTree({ sp_reroll1: 1 }, bumped, 7) });
       const b = parseSave(cur).save;
       assert.deepEqual(b.tree, { sp_reroll1: 1 }); assert.equal(b.gold, 1, 'already current: no step');
-      const forged = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: { ...encodeTree({ sp_reroll1: 1 }, bumped, 6), v: 0 } });
+      const forged = JSON.stringify({ version: 3, gold: 1, chars: {}, tree: { ...encodeTree({ sp_reroll1: 1 }, bumped, 7), v: 0 } });
       const c = parseSave(forged).save;
       assert.equal(c.gold, 1 + 150 + 25, 'v=0 is clamped to 3: only the steps above 3 run (4 refunds nothing here, the S1 restart refunds Second Glance once), never the Regrowth');
-      assert.equal(parseSave(JSON.stringify({ version: 3, tree: { ...encodeTree({}, bumped, 7), v: 7 } })).code, 'future');
+      assert.equal(parseSave(JSON.stringify({ version: 3, tree: { ...encodeTree({}, bumped, 8), v: 8 } })).code, 'future');
     });
-  } finally { delete TREE_STEPS[6]; }
+  } finally { delete TREE_STEPS[7]; }
 });
 
 test('T2 oldCost matches the old cost rule for ranks and rank multipliers', () => {
