@@ -600,3 +600,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-17 | NEW BLESSING 1: PATIENT LANTERN | Hero ability recharges 3% faster per rank, 3 ranks, capped (about 9%). Whisper: "It waits, then it warms." Two more new Blessings still to pick (three options each). | Matt, one-tap |
 
 | 2026-11-17 | NEW BLESSING 2: STEADY HEART | Hearts heal 4% more per rank, 3 ranks, capped. Whisper: "Kindness stays a little longer." One more new Blessing to pick. | Matt, one-tap |
+
+| 2026-11-17 | NEW BLESSING 3: WIDE HUSH | Spirits' attacks reach 2% wider per rank, 3 ranks, capped. Whisper: "Their glow spills over the edges." Needs a sweep. All 3 new Blessings picked: build chunk next (+9 ranks, 14 -> 23). | Matt, one-tap |
