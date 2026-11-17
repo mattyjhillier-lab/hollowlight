@@ -65,7 +65,7 @@ test('draw rule validates; missing or bad draw falls back to the fill-only rule'
   for (const bad of [undefined, null, 'x', { scale: -1, maxPerOffer: 1 }, { scale: NaN, maxPerOffer: 1 }, { scale: 99, maxPerOffer: 1 }, { scale: 0.1, maxPerOffer: 1.5 }, { scale: 0.1, maxPerOffer: 9 }, { scale: 0.1 }]) {
     const v = validateBlessings({ ...data.blessings, draw: bad });
     assert.equal(v.draw.scale, 0, JSON.stringify(bad));
-    assert.equal(blessingCount(v), 5, 'bad draw never drops the Blessings themselves');
+    assert.equal(blessingCount(v), 8, 'bad draw never drops the Blessings themselves');
   }
   // scale 0 = old rule: with 3+ real cards no Blessing is ever offered
   const old = { ...oneWeapon(), blessings: validateBlessings({ ...data.blessings, draw: undefined }) };
