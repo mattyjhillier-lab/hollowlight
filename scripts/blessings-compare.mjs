@@ -5,6 +5,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const P = (s) => fileURLToPath(new URL(`../docs/${s}`, import.meta.url));
 const rows = (f) => (existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean) : []);
+// B2=1: BLESSINGS 2 mode: before = docs/blessings-partials/after (the shipped 5-Blessing rule), after = docs/blessings2-partials (8 Blessings).
+const B2 = process.env.B2 === '1';
+const DA = B2 ? 'blessings2-partials' : 'blessings-partials/after', DB = B2 ? 'blessings-partials/after' : 'blessings-partials/before';
 const BANDS = { fresh: [15, 30], mid: [30, 55], max: [65, 90] };
 const mmss = (s) => (Number.isFinite(s) ? `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, '0')}` : '  -');
 const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN);
@@ -17,9 +20,9 @@ function stats(g) {
 const key = (r) => `${r.combo}/${r.focus ? 'focus' : 'random'}`;
 let flags = 0;
 for (const set of Object.keys(BANDS)) {
-  const A = rows(P(`blessings-partials/after/${set}.jsonl`));
+  const A = rows(P(`${DA}/${set}.jsonl`));
   if (!A.length) continue;
-  const Bown = rows(P(`blessings-partials/before/${set}.jsonl`)), Bbase = rows(P(`companions-baseline/${set}.jsonl`));
+  const Bown = rows(P(`${DB}/${set}.jsonl`)), Bbase = rows(P(`companions-baseline/${set}.jsonl`));
   const [lo, hi] = BANDS[set];
   console.log(`== ${set} band ${lo}-${hi}   win before -> after (diff, 2SE)   firstEvo before -> after   deaths<5:00   deaths <6/8/10/12/14/later after`);
   for (const k of [...new Set(A.map(key))].sort()) {
@@ -36,8 +39,8 @@ for (const set of Object.keys(BANDS)) {
 }
 // One-weapon starter runs (fresh): card mix per run.
 console.log('== fresh one-weapon runs: per run means (offered cards R real / B Blessing / F fallback; picks R/B/F), level reached, share with every rank used by level 23, fallback-only share of offers');
-for (const [lab, f] of [['before', 'before'], ['after', 'after']]) {
-  const R = rows(P(`blessings-partials/${f}/fresh.jsonl`)).filter((r) => r.mix && r.w && r.w.length === 1 && r.seed <= 20); // seeds 1-20 of every cell on both sides
+for (const [lab, f] of [['before', B2 ? 'blessings-partials/after' : 'blessings-partials/before'], ['after', B2 ? 'blessings2-partials' : 'blessings-partials/after']]) {
+  const R = rows(P(`${f}/fresh.jsonl`)).filter((r) => r.mix && r.w && r.w.length === 1 && r.seed <= 20); // seeds 1-20 of every cell on both sides
   if (!R.length) continue;
   const m = (k) => avg(R.map((r) => r.mix[k]));
   const used23 = R.filter((r) => r.mix.allUsedLvl != null && r.mix.allUsedLvl <= 23).length / R.length;
@@ -47,7 +50,7 @@ for (const [lab, f] of [['before', 'before'], ['after', 'after']]) {
   console.log(`${lab.padEnd(7)} n=${R.length} level ${avg(R.map((r) => r.lvl)).toFixed(1)}  offered R ${m('oR').toFixed(1)} B ${m('oB').toFixed(1)} F ${m('oF').toFixed(1)}  picked R ${m('pR').toFixed(1)} B ${m('pB').toFixed(1)} F ${m('pF').toFixed(1)}  all ranks used by L23: ${(100 * used23).toFixed(0)}% of runs (${(100 * reach23.filter((r) => r.mix.allUsedLvl != null && r.mix.allUsedLvl <= 23).length / Math.max(1, reach23.length)).toFixed(0)}% of runs reaching L23)  fallback cards ${(100 * fb / offers).toFixed(0)}% of cards shown, ${(100 * fbPick / picks).toFixed(0)}% of picks  first offer with no weapon/stat card: median level L${[...R.map((r) => r.mix.allUsedLvl ?? 99)].sort((x, y) => x - y)[R.length >> 1]}`);
 }
 // Identity check: BLESS_DRAW=old must reproduce the C1 rows for cells whose data did not change since C1 (everything but Meteor).
-{
+if (!B2) {
   const C1 = new Map(rows(P('companions-baseline/fresh.jsonl')).map((r) => [`${key(r)}/${r.seed}`, r]));
   let same = 0, diff = 0;
   for (const r of rows(P('blessings-partials/before/fresh.jsonl'))) {

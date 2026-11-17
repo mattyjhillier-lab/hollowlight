@@ -68,10 +68,10 @@ const NATURAL = `(() => {
 const STAGED = `(() => {
   const a = window.__app, s = a.sim, d = a.data || s.data, B = d.blessings.items;
   const b = (id, rank) => ({ key: 'b:' + id, kind: 'blessing', blessId: id, effect: B[id].effect, title: B[id].name, desc: B[id].desc, badge: 'BLESSING', rank, nextRank: rank + 1, maxRank: B[id].ranks, color: '#e8d9a8' });
-  const w = s.weapons[0];
+  const M = %MODE%, w = s.weapons[0];
   const st = { key: 's:' + w.id + ':power', kind: 'stat', weaponId: w.id, stat: 'power', rank: 4, nextRank: 5, maxRank: 5, title: '', desc: '', color: d.weapons[w.id].color };
   s.state = 'running'; s.pending = 1; s.xp = 0; s.beginLevelUp();
-  s.offer = { gold: [], cards: %MODE% === 'mix' ? [st, b('kindled_spirits', 1), b('wrapped_warmth', 0)] : [b('wider_glow', 2), b('kind_fortune', 0), b('dawnlit_soles', 1)] };
+  s.offer = { gold: [], cards: M === 'new' ? [b('patient_lantern', 0), b('steady_heart', 1), b('wide_hush', 2)] : M === 'mix' ? [st, b('kindled_spirits', 1), b('wrapped_warmth', 0)] : [b('wider_glow', 2), b('kind_fortune', 0), b('dawnlit_soles', 1)] };
   a.ui.showLevelUp(s);
   return s.offer.cards.map((c) => c.key);
 })()`;
@@ -92,7 +92,7 @@ try {
   for (const [tag, w, h, mobile] of VIEWS) {
     console.log(`== ${tag}`);
     await load(w, h, mobile, `?auto=wren&seed=1&god=1&rr=2&ban=1${mobile ? '&touch=1' : ''}`);
-    for (const [name, expr] of [['natural', NATURAL], ['mix', STAGED.replace('%MODE%', "'mix'")], ['all-blessings', STAGED.replace('%MODE%', "'all'")]]) {
+    for (const [name, expr] of [['natural', NATURAL], ['mix', STAGED.replace('%MODE%', "'mix'")], ['all-blessings', STAGED.replace('%MODE%', "'all'")], ['new-blessings', STAGED.replace('%MODE%', "'new'")]]) {
       const keys = await ev(expr);
       await sleep(900);
       const m = await ev(MEASURE);
