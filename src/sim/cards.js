@@ -208,7 +208,8 @@ export function buildPool(ctx) {
 export const FAVOUR_WEIGHT = 1.5;
 const offerSizeOf = (ctx) => ctx.offerSize || ctx.data.balance.offerSize; // Fourth Card (tier-bought) raises it on Deep Dusk+ only
 
-function drawWeighted(pool, n, rng) {
+// raw=true returns the drawn pool entries (not just their cards).
+function drawWeighted(pool, n, rng, raw = false) {
   const items = pool.slice();
   const out = [];
   while (out.length < n && items.length) {
@@ -221,7 +222,7 @@ function drawWeighted(pool, n, rng) {
       if (r <= 0) break;
     }
     if (idx >= items.length) idx = items.length - 1;
-    out.push(items[idx].card);
+    out.push(raw ? items[idx] : items[idx].card);
     items.splice(idx, 1);
   }
   return out;
@@ -249,14 +250,29 @@ export function goldCards(ctx) {
 }
 
 // Draws the normal cards for an offer. `exclude` keys (cards already on screen) are skipped.
+// LEVEL-UP PACING (LOCKED 2026-11-16 'BLESSINGS FROM THE START'): Blessings sit in the same weighted draw as weapon/stat cards from the first
+// level-up, each at its own weight x blessings.draw.scale, and at most draw.maxPerOffer of them (counting any already on screen) while real
+// cards remain, so weapon/stat cards are never starved. Once the real pool cannot fill the offer, Blessings fill the rest (as before);
+// fallbacks only if those run out too. RNG: one rng.next() per drawn card exactly as before, so only the card draw order changes.
 export function drawNormalCards(ctx, rng, count, exclude = new Set()) {
   const pool = buildPool(ctx).filter((p) => !exclude.has(p.card.key));
-  const cards = drawWeighted(pool, count, rng);
-  // Blessings only fill slots the real pool cannot (fewer than `count` real cards left); fallbacks only if those run out too.
-  if (cards.length < count && ctx.blessings) {
+  const bdef = ctx.blessings;
+  const bp = bdef ? blessingPool(ctx).filter((p) => !exclude.has(p.card.key)) : [];
+  const scale = bdef && bdef.draw ? bdef.draw.scale : 0;
+  let room = scale > 0 ? Math.max(0, bdef.draw.maxPerOffer - [...exclude].filter((k) => typeof k === 'string' && k.startsWith('b:')).length) : 0;
+  const items = pool.slice();
+  if (room > 0) for (const p of bp) items.push({ card: p.card, w: p.w * scale, b: true });
+  const cards = [];
+  while (cards.length < count && items.length) {
+    const [it] = drawWeighted(items, 1, rng, true);
+    cards.push(it.card);
+    items.splice(items.indexOf(it), 1);
+    if (it.b && --room <= 0) for (let i = items.length - 1; i >= 0; i--) if (items[i].b) items.splice(i, 1);
+  }
+  // Blessings fill slots the real pool cannot (fewer than `count` real cards left); fallbacks only if those run out too.
+  if (cards.length < count && bdef) {
     const have = new Set(cards.map((c) => c.key));
-    const bp = blessingPool(ctx).filter((p) => !exclude.has(p.card.key) && !have.has(p.card.key));
-    cards.push(...drawWeighted(bp, count - cards.length, rng));
+    cards.push(...drawWeighted(bp.filter((p) => !have.has(p.card.key)), count - cards.length, rng));
   }
   return fillWithFallbacks(cards, count, ctx.data, rng, ctx);
 }

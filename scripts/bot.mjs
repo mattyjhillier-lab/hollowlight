@@ -39,6 +39,8 @@ export const PREFER_W = /^[a-z_]{1,32}$/.test(process.env.PREFER_W || '') ? proc
 export const BLESS = process.env.BLESS === 'off' ? 'off' : 'on';
 export const BLESSPICK = ['defence', 'offence'].includes(process.env.BLESSPICK) ? process.env.BLESSPICK : 'random';
 try { if (BLESS === 'on') data.blessings = load('blessings'); } catch { /* baseline checkout: no blessings.json */ }
+// BLESS_DRAW=old: Blessings only fill slots the real pool cannot (the rule before LEVEL-UP PACING 2026-11-16), for before/after sweeps.
+if (process.env.BLESS_DRAW === 'old' && data.blessings) data.blessings.draw = { scale: 0, maxPerOffer: 1 };
 const BPREF = { defence: { maxHp: 1.2, pickup: 0.6, gold: 0.3, damage: 0.3, speed: 0.8 }, offence: { damage: 1.2, speed: 0.8, maxHp: 0.4, pickup: 0.4, gold: 0.3 } };
 
 // META=none|half|full buys a preset of the skill tree (ignores unlock conditions) for balance probes.
@@ -276,6 +278,7 @@ export function playRun(charId, seed, opts = {}) {
   const rng = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const DT = 1 / 60;
   const marks = {};
+  const mix = { oR: 0, oB: 0, oF: 0, pR: 0, pB: 0, pF: 0, allUsedLvl: null }; // level-up offers/picks by kind: R real (weapon/stat/evolution), B Blessing, F fallback
   let levelups = 0, filler = 0, dead = 0, short = 0, blessPicks = 0, healSwaps = 0, hpLost = 0; // filler = level-ups whose first-shown offer was only fallback cards (heal/gold/xp)
   const t0 = Date.now();
   const darkMore = () => (opts.endless ?? ENDLESS) && sim.state === 'victory' && !sim.endless && sim.stayInDark();
@@ -288,8 +291,12 @@ export function playRun(charId, seed, opts = {}) {
       if (real === 0) { dead++; if (marks.dead === undefined) marks.dead = Math.round(sim.time); }
       if (real < 3) { short++; if (marks.short === undefined) marks.short = Math.round(sim.time); }
       if (sim.offer.cards.some((c) => c.kind === 'blessing') && marks.bless === undefined) marks.bless = Math.round(sim.time);
+      for (const c of sim.offer.cards) mix[c.kind === 'blessing' ? 'oB' : c.kind === 'fallback' ? 'oF' : 'oR']++;
+      mix.oR += sim.offer.gold.length;
+      if (real === 0 && mix.allUsedLvl === null) mix.allUsedLvl = sim.level; // first offer with no weapon/stat/evolution card left
       if (opts.onOffer) opts.onOffer(sim);
       const key = pick(sim, rng);
+      mix[key.startsWith('b:') ? 'pB' : key.startsWith('f:') ? 'pF' : 'pR']++;
       if (key.startsWith('b:')) blessPicks++;
       if (key === 'f:heal' && sim.offer?.cards.some((c) => c.key === key && c.swapped)) healSwaps++;
       sim.pickCard(key);
@@ -306,7 +313,7 @@ export function playRun(charId, seed, opts = {}) {
   }
   const r = sim.result();
   const ev = (t) => sim.events.filter((e) => e.type === t).length;
-  return { ...r, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, abilityDmg: sim.dmgBy.ophimbers_rise || 0, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, sitesSum: sim.sites ? sim.sites.summary() : null, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
+  return { ...r, mix, hurtBy: { ...sim.hurtBy }, levelups, filler, hearts: ev("heart"), magnets: ev("magnet"), hurts: ev("hurt"), dead, short, blessPicks, healSwaps, hpLost, dmg: sim.damageDealt, abilityDmg: sim.dmgBy.ophimbers_rise || 0, alive: sim.enemies.length, wall: (Date.now() - t0) / 1000, minis: sim.miniKills, chests: sim.chests, sitesSum: sim.sites ? sim.sites.summary() : null, chestTiers: sim.chestLog.slice(), boss: sim.fight ? { dmgBoss: sim.fight.dmgBoss, dmgAdds: sim.fight.dmgAdds, by: { ...sim.bossDmgBy }, hits: { ...sim.fight.byMove }, moves: sim.fight.moves, hpAtStart: sim.fight.hp0 ?? null } : null, marks, evolved: sim.weapons.filter((w) => w.evo).map((w) => w.evo), weaponIds: sim.weapons.map((w) => w.id) };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('bot.mjs')) {

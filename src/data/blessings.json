@@ -1,4 +1,5 @@
 {
+  "draw": { "scale": 0.1, "maxPerOffer": 1 },
   "heal": { "hpBelow": 0.4, "cooldown": 45 },
   "caps": { "damage": 1.06, "maxHp": 1.12, "speed": 1.04, "pickup": 1.24, "gold": 1.24 },
   "combined": { "damage": 1.09, "maxHp": 1.18, "speed": 1.08, "pickup": 1.45, "gold": 1.40 },

@@ -51,9 +51,96 @@ test('offer fills real first then blessings then fallbacks', () => {
   assert.ok(cards.every((c) => c.kind === 'blessing'));
 });
 
-test('no blessing while 3 real cards exist', () => {
-  const c = ctxWith(['0:power', '0:speed', '1:power']);
-  for (let i = 0; i < 200; i++) assert.ok(generateOffer(c, createRng(i)).cards.every((x) => x.kind === 'stat'));
+// LEVEL-UP PACING (LOCKED 2026-11-16): Blessings join the weighted draw from the first level-up, at most draw.maxPerOffer while real cards remain.
+const oneWeapon = (id = 'spirit_bolts', ranks = {}, extra = {}) => {
+  const w = newWeapon(id, data.weapons[id]);
+  Object.assign(w.ranks, ranks);
+  return { weapons: [w], data, banished: new Set(), blessings: def, blessRanks: {}, ...extra };
+};
+const share = (ctx, n = 2000, seed = 3) => { const rng = createRng(seed); let b = 0; for (let i = 0; i < n; i++) if (generateOffer(ctx, rng).cards.some((c) => c.kind === 'blessing')) b++; return b / n; };
+
+test('draw rule validates; missing or bad draw falls back to the fill-only rule', () => {
+  assert.equal(def.draw.maxPerOffer, 1);
+  assert.ok(def.draw.scale > 0 && def.draw.scale <= 1);
+  for (const bad of [undefined, null, 'x', { scale: -1, maxPerOffer: 1 }, { scale: NaN, maxPerOffer: 1 }, { scale: 99, maxPerOffer: 1 }, { scale: 0.1, maxPerOffer: 1.5 }, { scale: 0.1, maxPerOffer: 9 }, { scale: 0.1 }]) {
+    const v = validateBlessings({ ...data.blessings, draw: bad });
+    assert.equal(v.draw.scale, 0, JSON.stringify(bad));
+    assert.equal(blessingCount(v), 5, 'bad draw never drops the Blessings themselves');
+  }
+  // scale 0 = old rule: with 3+ real cards no Blessing is ever offered
+  const old = { ...oneWeapon(), blessings: validateBlessings({ ...data.blessings, draw: undefined }) };
+  for (let i = 0; i < 200; i++) assert.ok(generateOffer(old, createRng(i)).cards.every((x) => x.kind === 'stat'));
+});
+
+test('level 1, one weapon: a Blessing on roughly 1 offer in 3, never more than one, never starving stat cards', () => {
+  const c = oneWeapon();
+  const p = share(c);
+  assert.ok(p > 0.25 && p < 0.45, `share ${p}`);
+  const rng = createRng(11);
+  for (let i = 0; i < 500; i++) {
+    const { cards } = generateOffer(c, rng);
+    assert.equal(cards.length, 3);
+    assert.ok(cards.filter((x) => x.kind === 'blessing').length <= 1);
+    assert.ok(cards.filter((x) => x.kind === 'stat').length >= 2);
+    assert.ok(!cards.some((x) => x.kind === 'fallback'));
+  }
+});
+
+test('more Blessings once weapon stat cards run out; one weapon fully maxed = all Blessings, no fallback', () => {
+  const two = oneWeapon('spirit_bolts', { power: 5, speed: 5 }); // 2 real cards left
+  const rng = createRng(2);
+  for (let i = 0; i < 200; i++) { const { cards } = generateOffer(two, rng); assert.equal(real(cards).length, 2); assert.equal(cards.filter((x) => x.kind === 'blessing').length, 1); }
+  const maxed = oneWeapon();
+  maxAll(maxed.weapons[0]);
+  for (let i = 0; i < 200; i++) { const { cards } = generateOffer(maxed, rng); assert.ok(cards.every((x) => x.kind === 'blessing')); assert.equal(new Set(cards.map((x) => x.key)).size, 3); }
+  // many open weapon cards (a tree run) dilute the Blessing share: real cards keep the offer
+  const open = oneWeapon('spirit_bolts', {}, { unlockedWeapons: new Set(Object.keys(data.weapons)) });
+  assert.ok(share(open) < share(oneWeapon()) / 2);
+});
+
+test('blessing draw is deterministic per seed and uses one rng step per card', () => {
+  const keys = (seed) => { const rng = createRng(seed); return Array.from({ length: 30 }, () => generateOffer(oneWeapon(), rng).cards.map((c) => c.key).join(',')).join('|'); };
+  assert.equal(keys(8), keys(8));
+  let calls = 0;
+  const counting = { next: () => { calls++; return 0.37; }, shuffle: (a) => a };
+  generateOffer(oneWeapon(), counting);
+  assert.equal(calls, 3);
+});
+
+test('banish/reroll with a Blessing on screen keep the one-per-offer cap and never repeat a card', () => {
+  const rng = createRng(21);
+  for (let i = 0; i < 300; i++) {
+    const c = oneWeapon();
+    let offer = generateOffer(c, rng);
+    if (i % 2) offer = rerollOffer(c, rng, offer);
+    else offer = banishCard(c, rng, offer, offer.cards.find((x) => x.kind === 'stat').key);
+    assert.equal(new Set(offer.cards.map((x) => x.key)).size, offer.cards.length);
+    assert.ok(offer.cards.filter((x) => x.kind === 'blessing').length <= 1);
+    assert.equal(offer.cards.length, 3);
+  }
+  // banishing a Blessing removes it for the run; the replacement may be another Blessing only once the cap allows it
+  const c = oneWeapon();
+  let offer;
+  for (let s = 0; !(offer && offer.cards.some((x) => x.kind === 'blessing')); s++) offer = generateOffer(c, createRng(s));
+  const victim = offer.cards.find((x) => x.kind === 'blessing').key;
+  offer = banishCard(c, rng, offer, victim);
+  assert.ok(!offer.cards.some((x) => x.key === victim));
+  for (let i = 0; i < 300; i++) assert.ok(!generateOffer(c, rng).cards.some((x) => x.key === victim));
+});
+
+test('maxed or capped Blessings leave the mixed draw; hostile ctx never throws or duplicates', () => {
+  const ranks = Object.fromEntries(IDS.map((id) => [id, 99]));
+  const c = { ...oneWeapon(), blessRanks: ranks };
+  for (let i = 0; i < 100; i++) assert.ok(generateOffer(c, createRng(i)).cards.every((x) => x.kind === 'stat'));
+  const hostile = [{ ...oneWeapon(), blessRanks: { kindled_spirits: NaN, __proto__: null } }, { ...oneWeapon(), blessRanks: { wider_glow: -5, dawnlit_soles: Infinity } }, { ...oneWeapon(), blessRanks: undefined }];
+  for (const h of hostile) for (let i = 0; i < 50; i++) {
+    const { cards } = generateOffer(h, createRng(i));
+    assert.equal(cards.length, 3);
+    assert.equal(new Set(cards.map((x) => x.key)).size, 3);
+  }
+  // an exclude set with junk (non-strings) is tolerated
+  const { cards } = banishCard(oneWeapon(), createRng(1), { cards: [{ key: 's:spirit_bolts:power', kind: 'stat' }, { key: 5 }, { key: null }], gold: [] }, 's:spirit_bolts:power');
+  assert.ok(cards.length >= 1);
 });
 
 test('no duplicate blessing within one offer, including after banish and reroll', () => {
@@ -208,31 +295,24 @@ test('blessing effects reach the sim: gold and summon damage', () => {
   assert.ok(Math.abs(b.dmgMult(b.weapons[0]) / a.dmgMult(w) - 1.06) < 1e-9);
 });
 
-test('seed identical to pre-blessing build until first short offer', () => {
-  const run = (d) => {
-    const sim = new Sim({ data: d, characterId: 'wren', seed: 7, godMode: true });
-    const offers = [];
-    const stop = { t: null };
-    const DT = 1 / 60;
-    while ((sim.state === 'running' || sim.state === 'levelup') && sim.time < 900) {
-      if (sim.state === 'levelup') {
-        const o = sim.offer;
-        const nreal = real(o.cards).length + o.gold.length;
-        if (nreal < 3) { stop.t = sim.time; break; }
-        offers.push(o.gold.concat(real(o.cards)).map((c) => c.key).join(',')); // real cards only: a blessing may replace a heal filler (designed swap)
-        const stats = o.cards.filter((c) => c.kind === 'stat').sort((x, y) => y.rank - x.rank);
-        sim.pickCard(o.gold[0]?.key ?? stats[0]?.key ?? o.cards[0].key);
-        continue;
-      }
-      sim.step(DT, { x: Math.sin(sim.time / 3), y: Math.cos(sim.time / 4) });
+test('Blessings from the start: a real run sees Blessings early and almost never a fallback-only offer', () => {
+  const sim = new Sim({ data, characterId: 'wren', seed: 7, godMode: true });
+  const DT = 1 / 60;
+  let offers = 0, withB = 0, firstB = null, onlyFallback = 0;
+  while ((sim.state === 'running' || sim.state === 'levelup') && sim.time < 900) {
+    if (sim.state === 'levelup') {
+      const o = sim.offer;
+      offers++;
+      if (o.cards.some((c) => c.kind === 'blessing')) { withB++; if (firstB === null) firstB = sim.level; }
+      if (!o.gold.length && o.cards.every((c) => c.kind === 'fallback') && offers <= 34) onlyFallback++; // 20 stat ranks + 14 Blessing ranks: no filler before they are all used
+      const stats = o.cards.filter((c) => c.kind === 'stat').sort((x, y) => y.rank - x.rank);
+      sim.pickCard(o.gold[0]?.key ?? stats[0]?.key ?? o.cards[0].key);
+      continue;
     }
-    return { offers, stop: stop.t, px: sim.player.x, kills: sim.kills };
-  };
-  const withB = run(data);
-  const without = run({ ...data, blessings: undefined });
-  assert.ok(withB.stop !== null, 'reached a short offer');
-  assert.ok(withB.offers.length >= 10);
-  // up to (not including) the first short offer, both builds saw exactly the same offers and world
-  assert.deepEqual(withB.offers, without.offers.slice(0, withB.offers.length));
-  assert.equal(without.stop === null || without.stop >= withB.stop, true);
+    sim.step(DT, { x: Math.sin(sim.time / 3), y: Math.cos(sim.time / 4) });
+  }
+  assert.ok(offers >= 10);
+  assert.ok(firstB !== null && firstB <= 8, `first Blessing at level ${firstB}`);
+  assert.ok(withB / offers > 0.25);
+  assert.equal(onlyFallback, 0, `fallback-only offers ${onlyFallback}`);
 });

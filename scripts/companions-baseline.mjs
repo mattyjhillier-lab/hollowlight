@@ -6,7 +6,9 @@
 import { Worker, isMainThread, workerData, parentPort } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
-const OUT = fileURLToPath(new URL('../docs/companions-baseline', import.meta.url));
+// OUT_DIR=docs/blessings-partials/after (relative to the repo root, one or two folders, letters/digits/-/_ only) writes elsewhere; default docs/companions-baseline.
+const OUT_SUB = /^docs(\/[A-Za-z0-9_-]{1,40}){1,2}$/.test(process.env.OUT_DIR || '') ? process.env.OUT_DIR : 'docs/companions-baseline';
+const OUT = fileURLToPath(new URL(`../${OUT_SUB}`, import.meta.url));
 const SETS = { fresh: { GATES: 'starter', META: 'none', BOND: '0', band: [15, 30] }, mid: { GATES: 'preset', META: 'half', BOND: '0', band: [30, 55] }, max: { GATES: 'preset', META: 'full', BOND: '25', band: [65, 90] } };
 const parse = (l) => { try { return JSON.parse(l); } catch { return null; } }; // a line cut by a shutdown is skipped (that seed re-runs)
 const rows = (f) => (existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).map(parse).filter(Boolean) : []);
@@ -31,7 +33,7 @@ if (!isMainThread) {
   const { playRun } = await import('./bot.mjs');
   for (const sd of workerData.seeds) {
     const r = playRun(workerData.hero, sd, { weapon: workerData.weapon });
-    appendFileSync(workerData.file, JSON.stringify({ combo: workerData.combo, focus: workerData.focus, seed: sd, win: r.outcome === 'victory' ? 1 : 0, time: Math.round(r.time), evo: r.marks.evo ?? null, boss: r.bossKilled ? 1 : 0, w: r.weaponIds, ev: r.evolved }) + '\n');
+    appendFileSync(workerData.file, JSON.stringify({ combo: workerData.combo, focus: workerData.focus, seed: sd, win: r.outcome === 'victory' ? 1 : 0, time: Math.round(r.time), evo: r.marks.evo ?? null, boss: r.bossKilled ? 1 : 0, w: r.weaponIds, ev: r.evolved, lvl: r.level, mix: r.mix }) + '\n');
     parentPort.postMessage(sd);
   }
 } else if (process.argv[2] === '--sum') summary();

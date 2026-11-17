@@ -7,6 +7,7 @@ DM9 DONE on wip/dm9 (re-check: META tiers need GATES=preset BOND=0/25; Lucinda m
 UPDATE B (companions) on wip/companions-c0 (2026-11-16): C0 spec rewritten (docs/design/companions-v2.md, matches every locked pick + review B1-B5); C1 baseline in docs/companions-baseline/. Waiting on Matt: companions QUESTIONS 1-3 (Bond 0 strength, Howie howl trigger, wolf/raven titles). Next: C2 Howie Bond 0 (sim only). Later (dated): remove retired wolf/raven data one release after Update B.
 
 WAITING ON MATT
+- Blessings from the start BUILT on dev (2026-11-17, LOCKED row). Decision needed: one-weapon runs still run out of picks (~level 24 real cards gone, 14 Blessing ranks, then heal/gold/xp ~22% of cards); options: more Blessing ranks/items, a second weapon earlier on fresh saves, or accept.
 - Real-phone checks: heat, Battery Saver, long session (docs/REAL-PHONE-CHECKLIST.md); ring 3 of the Rise clips portrait edges.
 - Teaser slot "Dragonfire Meteor" already shows dashed in the live tree: keep (rec) or hide until release.
 - DM10 BUILT on dev (2026-11-15, test link only): Lucinda + Dragonfire Meteor are playable (starter pick or Warm Scale keepsake = 'Light 24 lamps'). Matt: play her on the iPhone (heat + feel), check the defaults in LOCKED 'DM10 ... BUILT', then the separate merge-to-main yes. Open: Lucinda wardrobe looks/costumes (three options round), Ophimber Almanac page (Update B).

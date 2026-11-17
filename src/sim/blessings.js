@@ -7,7 +7,7 @@ const ID_RE = /^[a-z][a-z0-9_]{0,31}$/;
 const TEXT_RE = /^[A-Za-z0-9 .,'%+-]{1,80}$/; // plain text only: safe to template into a card
 
 const fin = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
-const empty = () => ({ items: Object.create(null), caps: Object.create(null), combined: null, heal: { hpBelow: 0.4, cooldown: 45 } });
+const empty = () => ({ items: Object.create(null), caps: Object.create(null), combined: null, heal: { hpBelow: 0.4, cooldown: 45 }, draw: { scale: 0, maxPerOffer: 1 } });
 
 // Returns { items: null-prototype map id -> def, caps, heal }. Bad entries are dropped; a bad shell yields empty.
 export function validateBlessings(raw) {
@@ -25,6 +25,11 @@ export function validateBlessings(raw) {
     out.combined = {};
     for (const e of EFFECTS) out.combined[e] = raw.combined[e];
   }
+  // LEVEL-UP PACING (LOCKED 2026-11-16 'BLESSINGS FROM THE START'): Blessings join the normal weighted draw. draw.scale multiplies every
+  // Blessing's own weight inside that draw; draw.maxPerOffer = the most Blessings an offer holds while real (weapon/stat) cards remain.
+  // Absent or invalid = scale 0 = the old rule (Blessings only fill slots the real pool cannot).
+  const dr = raw.draw;
+  if (dr && typeof dr === 'object' && fin(dr.scale, 0, 10) && Number.isInteger(dr.maxPerOffer) && dr.maxPerOffer >= 0 && dr.maxPerOffer <= 3) out.draw = { scale: dr.scale, maxPerOffer: dr.maxPerOffer };
   const h = raw.heal;
   if (h && fin(h.hpBelow, 0.05, 0.9) && fin(h.cooldown, 5, 600)) out.heal = { hpBelow: h.hpBelow, cooldown: h.cooldown };
   for (const id of Object.keys(raw.items)) {
