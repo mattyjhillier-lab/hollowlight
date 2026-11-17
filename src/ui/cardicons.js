@@ -41,6 +41,23 @@ const BLESS = {
     P(d, 'M-7 -17 L3 -17 L3 -4 C8 -2 14 2 16 7 L16 14 L-10 14 L-10 6 L-7 6Z', { fill: '#f3e6c4', stroke: '#6a4a1a', ...OL(2.6) }),
     P(d, 'M-10 14 H16', { stroke: '#8d6c34', ...OL(3.2) }),
     P(d, 'M-7 -9 H3', { stroke: '#d8b26a', ...OL(1.8) })],
+  // Patient Lantern: a lantern with a slow ring of light filling around it
+  patient_lantern: (d) => [
+    mk(d, 'circle', { r: 19, fill: 'none', stroke: '#ffe0a0', 'stroke-opacity': 0.7, 'stroke-width': 2.6, 'stroke-dasharray': '22 8' }),
+    P(d, 'M-6 -9 H6 L8 6 C8 10 -8 10 -8 6Z', { fill: '#ffc766', stroke: '#8a4a12', ...OL(2.2) }),
+    P(d, 'M-3 -3 C-4 1 -3 4 0 5 C3 4 4 1 3 -3 C1 -1 -1 -1 -3 -3Z', { fill: '#fff6c8' }),
+    P(d, 'M-3 -9 C-3 -14 3 -14 3 -9', { fill: 'none', stroke: '#8a4a12', ...OL(2) })],
+  // Steady Heart: a calm cream-rose heart resting in a soft glow
+  steady_heart: (d) => [
+    mk(d, 'circle', { r: 19, fill: '#ffe0a0', 'fill-opacity': 0.22 }),
+    P(d, 'M0 16 C-18 4 -17 -12 -8 -14 C-3 -15 0 -11 0 -8 C0 -11 3 -15 8 -14 C17 -12 18 4 0 16Z', { fill: '#f6c9b8', stroke: '#8a4a3a', ...OL(2.6) }),
+    P(d, 'M-9 -8 C-12 -6 -12 -1 -10 1', { fill: 'none', stroke: '#fff', 'stroke-opacity': 0.7, ...OL(2) })],
+  // Wide Hush: a small wisp whose glow spills past a dashed edge
+  wide_hush: (d) => [
+    mk(d, 'circle', { r: 19, fill: 'none', stroke: '#ffe0a0', 'stroke-opacity': 0.45, 'stroke-width': 2, 'stroke-dasharray': '3 5' }),
+    mk(d, 'circle', { r: 11, fill: '#ffe0a0', 'fill-opacity': 0.35 }),
+    P(d, 'M0 -9 C-6 -2 -7 5 0 8 C7 5 6 -2 0 -9Z', { fill: '#dff1fa', stroke: '#27465f', ...OL(2.2) }),
+    P(d, 'M-3 3 L-3 5 M3 3 L3 5', { stroke: '#27465f', ...OL(1.6) })],
 };
 
 const FALLBACK = {

@@ -158,7 +158,7 @@ export class Sim {
     }
     this.baseMaxHp = this.player.maxHp;
     // The tree's own multiplier for each Blessing effect: Blessings are clamped so tree x Blessing stays under the combined cap (blessings.js).
-    this.treeMul = { damage: this.mods.damage, maxHp: T.player?.maxHp ?? 1, speed: this.mods.speed, pickup: this.mods.pickup, gold: this.mods.gold };
+    this.treeMul = { damage: this.mods.damage, maxHp: T.player?.maxHp ?? 1, speed: this.mods.speed, pickup: this.mods.pickup, gold: this.mods.gold, abilityCd: 1 / Math.max(0.05, this.mods.abilityCd), heartHeal: this.tfx.heartHeal, area: this.mods.area };
     // Bond (BOND SIZE LOCKED 2026-10-24): damage + milestone perks, applied once AFTER the tree's Blessing-cap reference (Bond is its own row,
     // outside the tree PE budget). Bond 0 = nothing touched, so ordinary runs stay byte-identical.
     if (this.bondFx.level > 0) {
@@ -174,6 +174,7 @@ export class Sim {
     const bdef = validateBlessings(data.blessings);
     this.blessDef = blessingCount(bdef) ? bdef : null;
     this.blessRanks = Object.create(null);
+    this.baseFx = { area: this.mods.area, abilityCd: this.mods.abilityCd, heartHeal: this.tfx.heartHeal }; // before Blessings; setBlessRank re-derives from these
     this._bless = {};
     this.healSwapReady = 0;
     this.killsByEnemy = {};
@@ -1273,8 +1274,10 @@ export class Sim {
     const d = this.blessDef && Object.hasOwn(this.blessDef.items, id) ? this.blessDef.items[id] : null;
     if (!d || !Number.isFinite(rank)) return false;
     this.blessRanks[id] = Math.min(d.ranks, Math.max(0, Math.floor(rank)));
+    const bt = this.bless, bf = this.baseFx; // area / recharge / heart heal Blessings fold into the same values the tree uses (recharge: the 30 s floor still holds in abilityCooldown)
+    this.mods.area = bf.area * bt.area; this.mods.abilityCd = bf.abilityCd / bt.abilityCd; this.tfx.heartHeal = bf.heartHeal * bt.heartHeal;
     const p = this.player;
-    const nm = Math.round(this.baseMaxHp * this.bless.maxHp);
+    const nm = Math.round(this.baseMaxHp * bt.maxHp);
     if (nm !== p.maxHp) {
       const gain = nm - p.maxHp;
       p.maxHp = nm;

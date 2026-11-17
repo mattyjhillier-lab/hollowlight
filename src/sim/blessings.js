@@ -2,7 +2,7 @@
 // Pure logic (no Phaser/DOM). Data comes from blessings.json and is validated here; invalid data fails closed
 // (an empty set = the game behaves exactly as before Blessings existed).
 
-export const EFFECTS = ['pickup', 'maxHp', 'damage', 'gold', 'speed'];
+export const EFFECTS = ['pickup', 'maxHp', 'damage', 'gold', 'speed', 'abilityCd', 'heartHeal', 'area'];
 const ID_RE = /^[a-z][a-z0-9_]{0,31}$/;
 const TEXT_RE = /^[A-Za-z0-9 .,'%+-]{1,80}$/; // plain text only: safe to template into a card
 
@@ -20,7 +20,7 @@ export function validateBlessings(raw) {
     out.caps[e] = v;
   }
   // COMBINED caps (docs/design/difficulty-tiers-economy-v1.md 8.6): tree multiplier x Blessing multiplier may not exceed one number per
-  // shared effect (pickup 1.45, gold 1.40, speed 1.08, max HP 1.18, damage 1.09). Absent or invalid = no combined limit.
+  // shared effect (pickup 1.45, gold 1.40, speed 1.08, max HP 1.18, damage 1.09, ability recharge rate 1.95 (the 30 s floor still applies), heart heal 1.30, area 1.16). Absent or invalid = no combined limit.
   if (raw.combined && typeof raw.combined === 'object' && EFFECTS.every((e) => Object.hasOwn(raw.combined, e) && fin(raw.combined[e], 1, 3))) {
     out.combined = {};
     for (const e of EFFECTS) out.combined[e] = raw.combined[e];

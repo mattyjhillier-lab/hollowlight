@@ -20,8 +20,8 @@ const ctxWith = (open = [], ranks = {}) => {
 const real = (cards) => cards.filter((c) => ['weapon', 'stat', 'evolution'].includes(c.kind));
 
 test('blessings data validates and rejects bad ids', () => {
-  assert.equal(blessingCount(def), 5);
-  assert.deepEqual(IDS.sort(), ['dawnlit_soles', 'kind_fortune', 'kindled_spirits', 'wider_glow', 'wrapped_warmth']);
+  assert.equal(blessingCount(def), 8);
+  assert.deepEqual(IDS.sort(), ['dawnlit_soles', 'kind_fortune', 'kindled_spirits', 'patient_lantern', 'steady_heart', 'wide_hush', 'wider_glow', 'wrapped_warmth']);
   const item = { name: 'Ok One', desc: 'Fine text.', effect: 'gold', perRank: 0.05, ranks: 2, weight: 1 };
   const raw = JSON.parse(JSON.stringify({ caps: data.blessings.caps, heal: data.blessings.heal, items: {} }));
   const bad = JSON.parse('{"__proto__": {"name":"x","desc":"y","effect":"gold","perRank":0.05,"ranks":2,"weight":1}}');
@@ -315,4 +315,42 @@ test('Blessings from the start: a real run sees Blessings early and almost never
   assert.ok(firstB !== null && firstB <= 8, `first Blessing at level ${firstB}`);
   assert.ok(withB / offers > 0.25);
   assert.equal(onlyFallback, 0, `fallback-only offers ${onlyFallback}`);
+});
+
+// BLESSINGS 2 (LOCKED 2026-11-17): Patient Lantern, Steady Heart, Wide Hush.
+test('new blessings: data, text, caps and fail-closed', () => {
+  const want = { patient_lantern: ['abilityCd', 0.03, 'It waits, then it warms.'], steady_heart: ['heartHeal', 0.04, 'Kindness stays a little longer.'], wide_hush: ['area', 0.02, 'Their glow spills over the edges.'] };
+  for (const [id, [eff, per, whisper]] of Object.entries(want)) {
+    const d = data.blessings.items[id];
+    assert.equal(d.effect, eff); assert.equal(d.perRank, per); assert.equal(d.ranks, 3); assert.equal(d.weight, 0.7); assert.equal(d.whisper, whisper);
+    assert.ok(def.items[id], `${id} validates`);
+  }
+  assert.deepEqual([def.caps.abilityCd, def.caps.heartHeal, def.caps.area], [1.09, 1.12, 1.06]);
+  const cut = JSON.parse(JSON.stringify(data.blessings)); delete cut.caps.area;
+  assert.equal(blessingCount(validateBlessings(cut)), 0, 'a missing new cap fails closed');
+  const unk = JSON.parse(JSON.stringify(data.blessings)); unk.items.patient_lantern.effect = 'warp';
+  assert.ok(!validateBlessings(unk).items.patient_lantern, 'unknown effect is dropped');
+});
+
+test('new blessings: effects reach the sim, floor and caps hold', () => {
+  const mk = (tree) => new Sim({ data, seed: 1, characterId: 'wren', tree });
+  const sim = mk();
+  const a0 = sim.abilityCooldown, h0 = sim.tfx.heartHeal, m0 = sim.mods.area;
+  sim.setBlessRank('patient_lantern', 3); sim.setBlessRank('steady_heart', 3); sim.setBlessRank('wide_hush', 3);
+  assert.ok(Math.abs(sim.abilityCooldown - a0 / 1.09) < 1e-9);
+  assert.ok(Math.abs(sim.tfx.heartHeal - h0 * 1.12) < 1e-9);
+  assert.ok(Math.abs(sim.mods.area - m0 * 1.06) < 1e-9);
+  sim.setBlessRank('wide_hush', 0); assert.equal(sim.mods.area, m0, 'back to base');
+  // tree already near the floor: the 30 s floor still holds
+  const fast = mk({ mods: { abilityCd: 0.5 } });
+  fast.setBlessRank('patient_lantern', 3);
+  assert.ok(fast.abilityCooldown >= Math.min(fast.ability.cooldown, data.balance.abilityCdFloor ?? 30) - 1e-9);
+  // combined cap trims a Blessing when the tree already holds most of the room
+  const tree = mk({ mods: { area: 1.12 } });
+  tree.setBlessRank('wide_hush', 3);
+  assert.ok(tree.mods.area <= 1.16 + 1e-9);
+  // cards draw
+  const c = ctxWith(); const ids = new Set();
+  for (let i = 0; i < 40; i++) for (const k of generateOffer(c, createRng(i)).cards) ids.add(k.blessId);
+  for (const id of Object.keys({ patient_lantern: 1, steady_heart: 1, wide_hush: 1 })) assert.ok(ids.has(id), id);
 });

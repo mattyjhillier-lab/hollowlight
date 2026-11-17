@@ -4,7 +4,7 @@ import { statValue, formatValue, hintText, FAVOUR_WEIGHT } from '../sim/cards.js
 
 export const CLAMP = { title: 26, unit: 24, tag: 20, desc: 96, num: 7, from: 30, label: 220 };
 export const COUNT_KEYS = new Set(['count', 'chains', 'pierce']); // shown as a new total, not a percentage
-export const BLESS_UNIT = { pickup: 'pickup radius', maxHp: 'max HP', damage: 'spirit damage', gold: 'gold', speed: 'move speed' };
+export const BLESS_UNIT = { pickup: 'pickup radius', maxHp: 'max HP', damage: 'spirit damage', gold: 'gold', speed: 'move speed', abilityCd: 'faster recharge', heartHeal: 'heart healing', area: 'attack reach' };
 
 // Safe, bounded text: strings only, control chars dropped, long text cut with an ellipsis.
 export function clampText(v, max) {

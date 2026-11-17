@@ -98,7 +98,7 @@ test('T3a status hooks in the sim: Bleed and Burn potency, Mark seconds (the amp
 
 test('T3a Blessings: tree x Blessing is held under the combined cap, a tree-less run is never trimmed', () => {
   const def0 = validateBlessings(data.blessings);
-  assert.deepEqual(def0.combined, { damage: 1.09, maxHp: 1.18, speed: 1.08, pickup: 1.45, gold: 1.40 });
+  assert.deepEqual(def0.combined, { damage: 1.09, maxHp: 1.18, speed: 1.08, pickup: 1.45, gold: 1.40, abilityCd: 1.95, heartHeal: 1.30, area: 1.16 });
   assert.equal(effectiveCap(def0, 'pickup', { pickup: 1 }), 1.24, 'no tree: the Blessing keeps its own cap');
   assert.equal(effectiveCap(def0, 'pickup', null), 1.24);
   assert.ok(Math.abs(effectiveCap(def0, 'pickup', { pickup: 1.2 }) - 1.45 / 1.2) < 1e-12, 'tree 1.20 leaves 1.208 for Blessings');
