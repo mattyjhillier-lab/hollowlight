@@ -621,3 +621,5 @@ STATUS wip/wardrobe-build 2026-11-13: WARDROBE v2 BUILT (not merged): ring shelf
 - 2026-11-16 TO BUILD (prevention): CI/PR-gate script for the real-browser persistence loop (every hero x starter: new profile, run, buy, reload, play) and an all-starters round-trip test; tree lint for accidental foreign gate ancestors; add reload step to docs/LAUNCH-CHECKLIST.md release checklist. Part of the hotfix agent (wip/hotfix-meteor) for the first two; checklist edit by Claude.
 
 - 2026-11-16 WAITING ON DEV FOR THE NEXT BATCH (not live): card text audit (units, plain explanations), plain stat names, phone render scale 1.25 (awaiting Matt heat check), Lucinda title cover (in progress), Meteor fireball +4% with base trim (in progress). Ship together as one update with a What's new card.
+
+- 2026-11-27 NEW BLESSINGS on dev (Patient Lantern, Steady Heart, Wide Hush + late heal slot): waiting for the next planned update. Look at with the Chain Lightning balance work: wren:spirit_bolts/random first evolution +39 s (accepted miss, LOCKED).
