@@ -7,7 +7,8 @@ const P = (s) => fileURLToPath(new URL(`../docs/${s}`, import.meta.url));
 const rows = (f) => (existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean) : []);
 // B2=1: BLESSINGS 2 mode: before = docs/blessings-partials/after (the shipped 5-Blessing rule), after = docs/blessings2-partials (8 Blessings).
 const B2 = process.env.B2 === '1';
-const DA = B2 ? 'blessings2-partials' : 'blessings-partials/after', DB = B2 ? 'blessings-partials/after' : 'blessings-partials/before';
+const AFTER_DIR = process.env.AFTER_DIR || 'blessings2-partials';
+const DA = B2 ? AFTER_DIR : 'blessings-partials/after', DB = B2 ? 'blessings-partials/after' : 'blessings-partials/before';
 const BANDS = { fresh: [15, 30], mid: [30, 55], max: [65, 90] };
 const mmss = (s) => (Number.isFinite(s) ? `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, '0')}` : '  -');
 const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN);
@@ -39,7 +40,7 @@ for (const set of Object.keys(BANDS)) {
 }
 // One-weapon starter runs (fresh): card mix per run.
 console.log('== fresh one-weapon runs: per run means (offered cards R real / B Blessing / F fallback; picks R/B/F), level reached, share with every rank used by level 23, fallback-only share of offers');
-for (const [lab, f] of [['before', B2 ? 'blessings-partials/after' : 'blessings-partials/before'], ['after', B2 ? 'blessings2-partials' : 'blessings-partials/after']]) {
+for (const [lab, f] of [['before', B2 ? 'blessings-partials/after' : 'blessings-partials/before'], ['after', B2 ? AFTER_DIR : 'blessings-partials/after']]) {
   const R = rows(P(`${f}/fresh.jsonl`)).filter((r) => r.mix && r.w && r.w.length === 1 && r.seed <= 20); // seeds 1-20 of every cell on both sides
   if (!R.length) continue;
   const m = (k) => avg(R.map((r) => r.mix[k]));
