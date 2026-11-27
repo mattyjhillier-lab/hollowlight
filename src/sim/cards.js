@@ -263,17 +263,23 @@ export function drawNormalCards(ctx, rng, count, exclude = new Set()) {
   const items = pool.slice();
   if (room > 0) for (const p of bp) items.push({ card: p.card, w: p.w * scale, b: true });
   const cards = [];
-  while (cards.length < count && items.length) {
+  // LATE HEAL SLOT (LOCKED 2026-11-27): once the real pool cannot fill the offer, every offer keeps exactly one heal card (drawn last, no RNG);
+  // the weighted draw and the Blessing fill share the other slots. Banished heal = no slot.
+  const lateHeal = !!bdef && pool.length < count && !exclude.has('f:heal') && !(ctx.banished && ctx.banished.has('f:heal'));
+  const want = lateHeal ? count - 1 : count;
+  if (lateHeal) cards.push(...pool.map((p) => p.card)); // fewer real cards than slots: they all stay
+  while (!lateHeal && cards.length < want && items.length) {
     const [it] = drawWeighted(items, 1, rng, true);
     cards.push(it.card);
     items.splice(items.indexOf(it), 1);
     if (it.b && --room <= 0) for (let i = items.length - 1; i >= 0; i--) if (items[i].b) items.splice(i, 1);
   }
   // Blessings fill slots the real pool cannot (fewer than `count` real cards left); fallbacks only if those run out too.
-  if (cards.length < count && bdef) {
+  if (cards.length < want && bdef) {
     const have = new Set(cards.map((c) => c.key));
-    cards.push(...drawWeighted(bp.filter((p) => !have.has(p.card.key)), count - cards.length, rng));
+    cards.push(...drawWeighted(bp.filter((p) => !have.has(p.card.key)), want - cards.length, rng));
   }
+  if (lateHeal) cards.push(fallbackCard('heal', ctx.data));
   return fillWithFallbacks(cards, count, ctx.data, rng, ctx);
 }
 

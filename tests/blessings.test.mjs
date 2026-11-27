@@ -43,12 +43,13 @@ test('offer fills real first then blessings then fallbacks', () => {
     const { cards } = generateOffer(c1, createRng(i));
     assert.equal(cards.length, 3);
     assert.equal(real(cards).length, 1);
-    assert.equal(cards.filter((c) => c.kind === 'blessing').length, 2);
-    assert.ok(!cards.some((c) => c.kind === 'fallback'));
+    assert.equal(cards.filter((c) => c.kind === 'blessing').length, 1);
+    assert.deepEqual(cards.filter((c) => c.kind === 'fallback').map((c) => c.key), ['f:heal'], 'LATE HEAL SLOT: exactly one heal card');
   }
   const c0 = ctxWith();
   const { cards } = generateOffer(c0, createRng(1));
-  assert.ok(cards.every((c) => c.kind === 'blessing'));
+  assert.equal(cards.filter((c) => c.key === 'f:heal').length, 1);
+  assert.equal(cards.filter((c) => c.kind === 'blessing').length, 2);
 });
 
 // LEVEL-UP PACING (LOCKED 2026-11-16): Blessings join the weighted draw from the first level-up, at most draw.maxPerOffer while real cards remain.
@@ -89,10 +90,10 @@ test('level 1, one weapon: a Blessing on roughly 1 offer in 3, never more than o
 test('more Blessings once weapon stat cards run out; one weapon fully maxed = all Blessings, no fallback', () => {
   const two = oneWeapon('spirit_bolts', { power: 5, speed: 5 }); // 2 real cards left
   const rng = createRng(2);
-  for (let i = 0; i < 200; i++) { const { cards } = generateOffer(two, rng); assert.equal(real(cards).length, 2); assert.equal(cards.filter((x) => x.kind === 'blessing').length, 1); }
+  for (let i = 0; i < 200; i++) { const { cards } = generateOffer(two, rng); assert.equal(real(cards).length, 2); assert.deepEqual(cards.filter((x) => x.kind !== 'stat').map((x) => x.key), ['f:heal']); }
   const maxed = oneWeapon();
   maxAll(maxed.weapons[0]);
-  for (let i = 0; i < 200; i++) { const { cards } = generateOffer(maxed, rng); assert.ok(cards.every((x) => x.kind === 'blessing')); assert.equal(new Set(cards.map((x) => x.key)).size, 3); }
+  for (let i = 0; i < 200; i++) { const { cards } = generateOffer(maxed, rng); assert.equal(cards.filter((x) => x.key === 'f:heal').length, 1); assert.equal(cards.filter((x) => x.kind === 'blessing').length, 2); assert.equal(new Set(cards.map((x) => x.key)).size, 3); }
   // many open weapon cards (a tree run) dilute the Blessing share: real cards keep the offer
   const open = oneWeapon('spirit_bolts', {}, { unlockedWeapons: new Set(Object.keys(data.weapons)) });
   assert.ok(share(open) < share(oneWeapon()) / 2);
@@ -151,7 +152,7 @@ test('no duplicate blessing within one offer, including after banish and reroll'
     if (i % 3 === 1) offer = rerollOffer(c, rng, offer);
     if (i % 3 === 2) offer = banishCard({ ...c, banished: new Set() }, rng, offer, offer.cards[0].key);
     assert.equal(new Set(offer.cards.map((x) => x.key)).size, offer.cards.length);
-    assert.ok(offer.cards.every((x) => /^b:/.test(x.key)));
+    assert.ok(offer.cards.every((x) => /^b:/.test(x.key) || x.key === 'f:heal'));
   }
 });
 
@@ -193,7 +194,7 @@ test('evolution gold card unaffected by blessings', () => {
   c.weapons[0] = w;
   const offer = generateOffer(c, createRng(1));
   assert.ok(offer.gold.length >= 1 && offer.gold.every((x) => x.kind === 'evolution'));
-  assert.ok(offer.cards.every((x) => x.kind === 'blessing'));
+  assert.ok(offer.cards.every((x) => x.kind === 'blessing' || x.key === 'f:heal'));
 });
 
 function lowHpSim(pending = 3) {
@@ -206,37 +207,28 @@ function lowHpSim(pending = 3) {
   return sim;
 }
 
-test('heal swap needs hp<40pct and respects cooldown (3 pending chain)', () => {
+test('late heal slot: every late offer keeps exactly one heal card; the swap never doubles it', () => {
   const sim = lowHpSim(3);
-  const swapped = (o) => o.cards.filter((c) => c.swapped);
   sim.beginLevelUp();
-  assert.equal(swapped(sim.offer).length, 1, 'low hp: one swap');
-  assert.equal(sim.offer.cards.filter((c) => c.key === 'f:heal').length, 1);
-  assert.ok(sim.offer.cards.some((c) => c.kind === 'blessing'), 'only the last blessing replaced');
+  const heals = (o) => o.cards.filter((c) => c.key === 'f:heal');
+  assert.equal(heals(sim.offer).length, 1, 'low hp: one heal card');
+  assert.ok(sim.offer.cards.some((c) => c.kind === 'blessing'), 'Blessings fill the other slots');
   sim.pickCard('f:heal');
   assert.ok(sim.player.hp > sim.player.maxHp * 0.2);
-  sim.player.hp = sim.player.maxHp * 0.1; // low again immediately
-  assert.equal(sim.state, 'levelup', 'chain continues');
-  assert.equal(swapped(sim.offer).length, 0, 'cannot chain inside the cooldown');
-  sim.pickCard(sim.offer.cards[0].key);
-  assert.equal(swapped(sim.offer).length, 0, '3rd in chain: still none');
-  sim.pickCard(sim.offer.cards[0].key);
-  assert.equal(sim.state, 'running');
-  sim.time += 46;
-  sim.pending = 1;
-  sim.beginLevelUp();
-  assert.equal(swapped(sim.offer).length, 1, 'ready again after the cooldown');
+  sim.pickCard(sim.offer.cards.find((c) => c.kind === 'blessing').key);
+  assert.equal(heals(sim.offer).length, 1, 'next late offer still holds one');
   const healthy = lowHpSim(1);
-  healthy.player.hp = healthy.player.maxHp * 0.5;
+  healthy.player.hp = healthy.player.maxHp * 0.9;
   healthy.beginLevelUp();
-  assert.equal(swapped(healthy.offer).length, 0, 'above 40pct: no swap');
+  assert.equal(heals(healthy.offer).length, 1, 'healthy too: the slot is kept');
+  assert.ok(!healthy.offer.cards.some((c) => c.swapped), 'a natural heal card is not a swap');
 });
 
-test('banishing the swapped heal disables the swap for the run', () => {
+test('banishing the heal card removes it for the run', () => {
   const sim = lowHpSim(1);
   sim.banishesLeft = 2;
   sim.beginLevelUp();
-  assert.ok(sim.offer.cards.some((c) => c.swapped));
+  assert.ok(sim.offer.cards.some((c) => c.key === 'f:heal'));
   assert.ok(sim.banish('f:heal'));
   assert.ok(!sim.offer.cards.some((c) => c.key === 'f:heal'));
 });
