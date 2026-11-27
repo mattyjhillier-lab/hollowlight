@@ -604,3 +604,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-17 | NEW BLESSING 3: WIDE HUSH | Spirits' attacks reach 2% wider per rank, 3 ranks, capped. Whisper: "Their glow spills over the edges." Needs a sweep. All 3 new Blessings picked: build chunk next (+9 ranks, 14 -> 23). | Matt, one-tap |
 
 | 2026-11-27 | NEW BLESSINGS: FRESH-RUN FIX | Sweep showed filler 22% -> 10% but fresh win 28% -> 23% pooled (Wren Orbit focus 26 -> 11). Fix before merge: Wide Hush must not push Holy Orbit's ring outward (it grows orb hit size instead), and a heal card can still be offered when health is low despite Blessings in the pool. Re-sweep, then merge to dev if bands hold. | Matt, one-tap |
+
+| 2026-11-27 | NEW BLESSINGS: LATE HEAL SLOT | Orbit-ring + low-HP heal fixes did not recover fresh win (23.4% vs 28.0%). Fix: once weapon/stat cards run out, each late offer keeps one heal card; Blessings fill the other slots. Re-sweep, merge to dev only if fresh is back near 28% and bands hold. | Matt, one-tap |
