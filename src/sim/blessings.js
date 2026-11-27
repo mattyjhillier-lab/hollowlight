@@ -87,13 +87,18 @@ export function blessingPool(ctx) {
   return pool;
 }
 
-// Heal swap (approach C): when low on HP and the swap is off cooldown, the last Blessing in the offer becomes Restoring Light.
+// Heal swap (approach C): when low on HP and the swap is off cooldown, the last Blessing in the offer (else the last stat card) becomes Restoring Light.
 export function healSwap(cards, ctx, hp, maxHp, time, readyAt, makeHeal) {
   const def = ctx.blessings;
   if (!def || !(hp < maxHp * def.heal.hpBelow) || time < readyAt || ctx.banished.has('f:heal')) return cards;
   if (cards.some((c) => c.key === 'f:heal')) return cards;
   for (let i = cards.length - 1; i >= 0; i--) {
     if (cards[i].kind === 'blessing') { const out = cards.slice(); out[i] = { ...makeHeal(), swapped: true }; return out; }
+  }
+  // BLESSINGS 2 fix: Blessings now sit in the pool, so an offer may hold none. A low-HP player still gets a heal card: it takes the last
+  // plain stat card (never a weapon or evolution card). Same threshold and cooldown, no RNG.
+  for (let i = cards.length - 1; i >= 0; i--) {
+    if (cards[i].kind === 'stat') { const out = cards.slice(); out[i] = { ...makeHeal(), swapped: true }; return out; }
   }
   return cards;
 }

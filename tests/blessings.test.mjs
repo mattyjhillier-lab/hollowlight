@@ -5,7 +5,7 @@ import { data } from './helpers.mjs';
 import { createRng } from '../src/sim/rng.js';
 import { Sim } from '../src/sim/Sim.js';
 import { newWeapon, generateOffer, rerollOffer, banishCard } from '../src/sim/cards.js';
-import { validateBlessings, blessingCount } from '../src/sim/blessings.js';
+import { validateBlessings, blessingCount, healSwap } from '../src/sim/blessings.js';
 
 const def = validateBlessings(data.blessings);
 const IDS = Object.keys(def.items);
@@ -353,4 +353,37 @@ test('new blessings: effects reach the sim, floor and caps hold', () => {
   const c = ctxWith(); const ids = new Set();
   for (let i = 0; i < 40; i++) for (const k of generateOffer(c, createRng(i)).cards) ids.add(k.blessId);
   for (const id of Object.keys({ patient_lantern: 1, steady_heart: 1, wide_hush: 1 })) assert.ok(ids.has(id), id);
+});
+
+// BLESSINGS 2 FIX (LOCKED 2026-11-27): Wide Hush never moves Holy Orbit's ring; a low-HP offer with no Blessing still gets a heal card.
+test('Wide Hush: Orbit ring distance stays on the tree area, lights reach further', () => {
+  const run = (hush) => {
+    const sim = new Sim({ data, seed: 1, characterId: 'elias', tree: { mods: { area: 1.05 } } });
+    if (hush) sim.setBlessRank('wide_hush', 3);
+    sim.addWeapon?.('holy_orbit');
+    return sim;
+  };
+  const a = run(false), b = run(true);
+  assert.ok(b.mods.area > a.mods.area, 'blessing raises mods.area');
+  assert.equal(b.baseFx.area, a.baseFx.area, 'tree-only area is untouched');
+  for (const sim of [a, b]) { sim.step?.(0.5); }
+  const ring = (sim) => { const w = sim.weapons.find((x) => x.id === 'holy_orbit'); return w ? Math.hypot(w.rt.units?.[0]?.x - sim.player.x, w.rt.units?.[0]?.y - sim.player.y) : null; };
+  const ra = ring(a), rb = ring(b);
+  if (ra != null && rb != null && Number.isFinite(ra) && Number.isFinite(rb)) assert.ok(Math.abs(ra - rb) < 1e-6, `ring ${ra} vs ${rb}`);
+});
+
+test('low HP with no Blessing in the offer: the last stat card becomes the heal card, once per cooldown', () => {
+  const ctx = { blessings: def, banished: new Set() };
+  const stat = (k) => ({ key: k, kind: 'stat' });
+  const cards = [{ key: 'w', kind: 'weapon' }, stat('s1'), stat('s2')];
+  const heal = () => ({ key: 'f:heal', kind: 'fallback', fallback: 'heal' });
+  const out = healSwap(cards, ctx, 20, 100, 100, 0, heal);
+  assert.deepEqual(out.map((c) => c.key), ['w', 's1', 'f:heal']);
+  assert.ok(out[2].swapped);
+  assert.equal(healSwap(cards, ctx, 90, 100, 100, 0, heal), cards, 'healthy: untouched');
+  assert.equal(healSwap(cards, ctx, 20, 100, 10, 50, heal), cards, 'cooldown: untouched');
+  const onlyReal = [{ key: 'w', kind: 'weapon' }, { key: 'e', kind: 'evolution' }];
+  assert.equal(healSwap(onlyReal, ctx, 20, 100, 100, 0, heal), onlyReal, 'never replaces a weapon or evolution card');
+  const withB = [stat('s1'), { key: 'b:x', kind: 'blessing' }, stat('s2')];
+  assert.deepEqual(healSwap(withB, ctx, 20, 100, 100, 0, heal).map((c) => c.key), ['s1', 'f:heal', 's2'], 'a Blessing is still swapped first');
 });

@@ -352,7 +352,7 @@ function ravenWall(sim, w, dmg, dt) {
   const { s, rt } = w;
   const p = sim.player;
   const ranks = w.ranks || {};
-  const watch = s.range * sim.mods.area;
+  const watch = s.range * sim.baseFx.area; // wall ring distance: tree area only (Wide Hush never moves the ring)
   const rIn = watch * tune(sim, w, 'inner', 0.55);
   const rOut = watch * tune(sim, w, 'outer', 0.7);
   const count = Math.max(0, Math.min(s.count, tune(sim, w, 'cap', 12) - s.count));
@@ -400,7 +400,7 @@ function ravenWall(sim, w, dmg, dt) {
 function ravenWedge(sim, w, dmg, dt) {
   const { s, rt } = w;
   const p = sim.player;
-  const watch = s.range * sim.mods.area;
+  const watch = s.range * sim.baseFx.area; // wedge distance: tree area only
   const n = Math.min(tune(sim, w, 'max', 4), Math.ceil(s.count * tune(sim, w, 'extraK', 0.5)));
   const list = rt.wedge || (rt.wedge = []);
   while (list.length > n) list.pop().dead = true;
@@ -825,7 +825,8 @@ const holyOrbit = {
     const { s, evo, rt } = w;
     const p = sim.player;
     let count = s.count;
-    let radius = s.radius * sim.mods.area;
+    let radius = s.radius * sim.baseFx.area; // ring distance follows the TREE area only: Wide Hush must not push the ring outward (it grows the lights' reach instead)
+    const hush = sim.mods.area / sim.baseFx.area;
     let spin = s.speed;
     const dmg = s.power * sim.dmgMult(w);
     let contact = 1;
@@ -876,7 +877,7 @@ const holyOrbit = {
         if (e.dead) continue;
         const dx = e.x - u.x;
         const dy = e.y - u.y;
-        const rr = e.r + u.r + 1 + (e.boss ? bossReach : 0); // RT2: lights touch a boss's wide crown a little sooner (weapons.json radius.bossReach)
+        const rr = (e.r + u.r + 1 + (e.boss ? bossReach : 0)) * hush; // RT2: lights touch a boss's wide crown a little sooner (weapons.json radius.bossReach)
         if (dx * dx + dy * dy >= rr * rr) continue;
         if (evo === 'judgement_wheel') {
           // W6 Bursting Lights: blast 34 px + 3 px per Orbit size rank, one blast per foe per 0.1 s, applies Burn (never from the Candle Wheel lock)
