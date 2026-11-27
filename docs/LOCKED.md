@@ -602,3 +602,5 @@ Rule: design each thing fully, get Matt's approval, LOCK it here, then build exa
 | 2026-11-17 | NEW BLESSING 2: STEADY HEART | Hearts heal 4% more per rank, 3 ranks, capped. Whisper: "Kindness stays a little longer." One more new Blessing to pick. | Matt, one-tap |
 
 | 2026-11-17 | NEW BLESSING 3: WIDE HUSH | Spirits' attacks reach 2% wider per rank, 3 ranks, capped. Whisper: "Their glow spills over the edges." Needs a sweep. All 3 new Blessings picked: build chunk next (+9 ranks, 14 -> 23). | Matt, one-tap |
+
+| 2026-11-27 | NEW BLESSINGS: FRESH-RUN FIX | Sweep showed filler 22% -> 10% but fresh win 28% -> 23% pooled (Wren Orbit focus 26 -> 11). Fix before merge: Wide Hush must not push Holy Orbit's ring outward (it grows orb hit size instead), and a heal card can still be offered when health is low despite Blessings in the pool. Re-sweep, then merge to dev if bands hold. | Matt, one-tap |
